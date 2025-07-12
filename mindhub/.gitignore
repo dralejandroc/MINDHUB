@@ -1,0 +1,138 @@
+# Dependencies
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Runtime data
+pids
+*.pid
+*.seed
+*.pid.lock
+
+# Coverage directory used by tools like istanbul
+coverage/
+*.lcov
+
+# Instrumentation libraries 
+.nyc_output
+
+# Environment variables
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Logs
+logs/
+*.log
+
+# Runtime data
+tmp/
+temp/
+
+# Editor directories and files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Build outputs
+dist/
+build/
+out/
+
+# Next.js build output
+.next/
+.vercel/
+
+# Prisma generated files
+generated/
+
+# Google Cloud credentials
+*.json
+!package*.json
+!tsconfig*.json
+
+# XAMPP/Local database files
+*.sql.bak
+*.sql.dump
+
+# File uploads (but keep directory structure)
+uploads/
+!uploads/.gitkeep
+!uploads/*/.gitkeep
+!uploads/*/*/.gitkeep
+
+# Uploaded files in all categories
+uploads/patients/documents/*
+!uploads/patients/documents/.gitkeep
+uploads/patients/images/*
+!uploads/patients/images/.gitkeep
+uploads/patients/reports/*
+!uploads/patients/reports/.gitkeep
+
+uploads/assessments/reports/*
+!uploads/assessments/reports/.gitkeep
+uploads/assessments/data/*
+!uploads/assessments/data/.gitkeep
+
+uploads/resources/documents/*
+!uploads/resources/documents/.gitkeep
+uploads/resources/videos/*
+!uploads/resources/videos/.gitkeep
+uploads/resources/images/*
+!uploads/resources/images/.gitkeep
+uploads/resources/audio/*
+!uploads/resources/audio/.gitkeep
+
+uploads/forms/templates/*
+!uploads/forms/templates/.gitkeep
+uploads/forms/submissions/*
+!uploads/forms/submissions/.gitkeep
+
+uploads/system/backups/*
+!uploads/system/backups/.gitkeep
+uploads/system/logs/*
+!uploads/system/logs/.gitkeep
+uploads/system/temp/*
+!uploads/system/temp/.gitkeep
+
+# Metadata files (contain sensitive info)
+*.meta.json
+
+# Development certificates
+*.pem
+*.key
+*.crt
+
+# Package manager lockfiles (keep package-lock.json for consistency)
+yarn.lock
+pnpm-lock.yaml
+
+# Testing
+coverage/
+test-results/
+
+# Local SSL certificates
+ssl/
+
+# Backup files
+*.backup
+*.bak
+
+# Cache files
+.cache/
+.parcel-cache/
+.eslintcache

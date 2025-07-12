@@ -1,0 +1,639 @@
+// Prisma Schema for MindHub - MySQL/XAMPP Version
+// Simplified schema without multi-schema support for MySQL compatibility
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+// =============================================================================
+// AUTH MODELS - User Management and Authentication
+// =============================================================================
+
+model User {
+  id                           String    @id @default(uuid()) @db.Char(36)
+  auth0Id                      String    @unique @map("auth0_id")
+  email                        String    @unique
+  name                         String
+  picture                      String?
+  licenseNumber                String?   @map("license_number")
+  licenseType                  String?   @map("license_type")
+  specialty                    String?
+  isActive                     Boolean   @default(true) @map("is_active")
+  licenseVerified              Boolean   @default(false) @map("license_verified")
+  licenseExpiryDate            DateTime? @map("license_expiry_date")
+  lastLoginAt                  DateTime? @map("last_login_at")
+  createdAt                    DateTime  @default(now()) @map("created_at")
+  updatedAt                    DateTime  @updatedAt @map("updated_at")
+  
+  // Relations
+  userRoles                    UserRole[]
+  userSessions                 UserSession[]
+  createdPatients              Patient[]
+  createdConsultations         Consultation[]
+  createdPrescriptions         Prescription[]
+  createdAssessmentScales      AssessmentScale[]
+  createdScaleAdministrations  ScaleAdministration[]
+  createdFormTemplates         FormTemplate[]
+  createdFormInstances         FormInstance[]
+  createdFieldTypes            FieldType[]
+  createdResources             Resource[]
+  createdCategories            Category[]
+  createdTags                  Tag[]
+  createdCollections           Collection[]
+  createdMedications           Medication[]
+
+  @@map("auth_users")
+}
+
+model Role {
+  id          String   @id @default(uuid()) @db.Char(36)
+  name        String   @unique
+  description String?  @db.Text
+  isActive    Boolean  @default(true) @map("is_active")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+  
+  // Relations
+  userRoles       UserRole[]
+  rolePermissions RolePermission[]
+
+  @@map("auth_roles")
+}
+
+model Permission {
+  id          String   @id @default(uuid()) @db.Char(36)
+  name        String   @unique
+  description String?  @db.Text
+  resource    String
+  action      String
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+  
+  // Relations
+  rolePermissions RolePermission[]
+
+  @@map("auth_permissions")
+}
+
+model UserRole {
+  userId    String   @map("user_id") @db.Char(36)
+  roleId    String   @map("role_id") @db.Char(36)
+  assignedAt DateTime @default(now()) @map("assigned_at")
+  assignedBy String?  @map("assigned_by") @db.Char(36)
+  
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role Role @relation(fields: [roleId], references: [id], onDelete: Cascade)
+
+  @@id([userId, roleId])
+  @@map("auth_user_roles")
+}
+
+model RolePermission {
+  roleId       String @map("role_id") @db.Char(36)
+  permissionId String @map("permission_id") @db.Char(36)
+  
+  // Relations
+  role       Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permission Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  @@id([roleId, permissionId])
+  @@map("auth_role_permissions")
+}
+
+model UserSession {
+  id        String    @id @default(uuid()) @db.Char(36)
+  userId    String    @map("user_id") @db.Char(36)
+  sessionId String    @unique @map("session_id")
+  ipAddress String?   @map("ip_address")
+  userAgent String?   @map("user_agent") @db.Text
+  expiresAt DateTime  @map("expires_at")
+  createdAt DateTime  @default(now()) @map("created_at")
+  
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("auth_user_sessions")
+}
+
+// =============================================================================
+// EXPEDIX MODELS - Patient Management
+// =============================================================================
+
+model Patient {
+  id                         String    @id @default(uuid()) @db.Char(36)
+  medicalRecordNumber        String    @unique @map("medical_record_number")
+  curp                       String?   @unique // Mexican ID
+  firstName                  String    @map("first_name")
+  middleName                 String?   @map("middle_name")
+  lastName                   String    @map("last_name")
+  secondLastName             String?   @map("second_last_name")
+  dateOfBirth                DateTime  @map("date_of_birth")
+  gender                     String
+  maritalStatus              String?   @map("marital_status")
+  occupation                 String?
+  education                  String?
+  primaryLanguage            String    @default("es") @map("primary_language")
+  emergencyContactName       String?   @map("emergency_contact_name")
+  emergencyContactPhone      String?   @map("emergency_contact_phone")
+  emergencyContactRelation   String?   @map("emergency_contact_relation")
+  patientCategory            String    @default("general") @map("patient_category")
+  consentToTreatment         Boolean   @default(false) @map("consent_to_treatment")
+  consentToDataProcessing    Boolean   @default(false) @map("consent_to_data_processing")
+  isActive                   Boolean   @default(true) @map("is_active")
+  createdBy                  String    @map("created_by") @db.Char(36)
+  createdAt                  DateTime  @default(now()) @map("created_at")
+  updatedAt                  DateTime  @updatedAt @map("updated_at")
+  
+  // Relations
+  creator           User                  @relation(fields: [createdBy], references: [id])
+  medicalHistory    MedicalHistory[]
+  consultations     Consultation[]
+  prescriptions     Prescription[]
+  scaleAdministrations ScaleAdministration[]
+
+  @@map("expedix_patients")
+}
+
+model MedicalHistory {
+  id                        String   @id @default(uuid()) @db.Char(36)
+  patientId                 String   @map("patient_id") @db.Char(36)
+  chiefComplaint            String   @map("chief_complaint") @db.Text
+  historyOfPresentIllness   String?  @map("history_of_present_illness") @db.Text
+  psychiatricHistory        String?  @map("psychiatric_history") @db.Text
+  medicalHistory            String?  @map("medical_history") @db.Text
+  familyHistory             String?  @map("family_history") @db.Text
+  socialHistory             String?  @map("social_history") @db.Text
+  substanceUseHistory       String?  @map("substance_use_history") @db.Text
+  allergies                 String?  @db.Text
+  currentMedications        String?  @map("current_medications") @db.Text
+  createdBy                 String   @map("created_by") @db.Char(36)
+  createdAt                 DateTime @default(now()) @map("created_at")
+  updatedAt                 DateTime @updatedAt @map("updated_at")
+  
+  // Relations
+  patient Patient @relation(fields: [patientId], references: [id], onDelete: Cascade)
+
+  @@map("expedix_medical_history")
+}
+
+model Consultation {
+  id                            String    @id @default(uuid()) @db.Char(36)
+  patientId                     String    @map("patient_id") @db.Char(36)
+  consultationDate              DateTime  @map("consultation_date")
+  consultationType              String    @map("consultation_type")
+  subjectiveNotes               String?   @map("subjective_notes") @db.Text
+  objectiveNotes                String?   @map("objective_notes") @db.Text
+  assessment                    String?   @db.Text
+  plan                          String?   @db.Text
+  primaryDiagnosisCode          String?   @map("primary_diagnosis_code")
+  primaryDiagnosisDescription   String?   @map("primary_diagnosis_description")
+  secondaryDiagnosisCodes       String?   @map("secondary_diagnosis_codes") @db.Text // JSON stored as text
+  secondaryDiagnosisDescriptions String?  @map("secondary_diagnosis_descriptions") @db.Text // JSON stored as text
+  nextAppointmentDate           DateTime? @map("next_appointment_date")
+  duration                      Int?      // in minutes
+  createdBy                     String    @map("created_by") @db.Char(36)
+  createdAt                     DateTime  @default(now()) @map("created_at")
+  updatedAt                     DateTime  @updatedAt @map("updated_at")
+  
+  // Relations
+  patient Patient @relation(fields: [patientId], references: [id])
+  creator User    @relation(fields: [createdBy], references: [id])
+
+  @@map("expedix_consultations")
+}
+
+model Medication {
+  id                 String   @id @default(uuid()) @db.Char(36)
+  genericName        String   @map("generic_name")
+  brandNames         String   @map("brand_names") @db.Text // JSON stored as text
+  therapeuticClass   String   @map("therapeutic_class")
+  availableStrengths String   @map("available_strengths") @db.Text // JSON stored as text
+  availableForms     String   @map("available_forms") @db.Text // JSON stored as text
+  contraindications  String?  @db.Text
+  sideEffects        String?  @map("side_effects") @db.Text
+  interactions       String?  @db.Text
+  isActive           Boolean  @default(true) @map("is_active")
+  createdBy          String   @map("created_by") @db.Char(36)
+  createdAt          DateTime @default(now()) @map("created_at")
+  updatedAt          DateTime @updatedAt @map("updated_at")
+  
+  // Relations
+  creator       User           @relation(fields: [createdBy], references: [id])
+  prescriptions Prescription[]
+
+  @@map("expedix_medications")
+}
+
+model Prescription {
+  id                  String    @id @default(uuid()) @db.Char(36)
+  patientId           String    @map("patient_id") @db.Char(36)
+  medicationId        String    @map("medication_id") @db.Char(36)
+  prescriptionNumber  String    @unique @map("prescription_number")
+  dosage              String
+  frequency           String
+  instructions        String?   @db.Text
+  quantity            Int
+  refills             Int       @default(0)
+  startDate           DateTime  @map("start_date")
+  endDate             DateTime? @map("end_date")
+  qrCode              String?   @map("qr_code") @db.Text
+  status              String    @default("active")
+  prescribedBy        String    @map("prescribed_by") @db.Char(36)
+  createdAt           DateTime  @default(now()) @map("created_at")
+  updatedAt           DateTime  @updatedAt @map("updated_at")
+  
+  // Relations
+  patient    Patient    @relation(fields: [patientId], references: [id])
+  medication Medication @relation(fields: [medicationId], references: [id])
+  prescriber User       @relation(fields: [prescribedBy], references: [id])
+
+  @@map("expedix_prescriptions")
+}
+
+// =============================================================================
+// CLINIMETRIX MODELS - Clinical Assessments
+// =============================================================================
+
+model AssessmentScale {
+  id                        String   @id @default(uuid()) @db.Char(36)
+  name                      String
+  abbreviation              String?
+  description               String?  @db.Text
+  targetPopulation          String   @map("target_population")
+  administrationMode        String   @map("administration_mode")
+  estimatedDurationMinutes  Int?     @map("estimated_duration_minutes")
+  category                  String
+  subcategory              String?
+  availableLanguages       String   @map("available_languages") @db.Text // JSON stored as text
+  scoringInstructions      String?  @map("scoring_instructions") @db.Text
+  interpretationGuide      String?  @map("interpretation_guide") @db.Text
+  isActive                 Boolean  @default(true) @map("is_active")
+  version                  String   @default("1.0")
+  createdBy                String   @map("created_by") @db.Char(36)
+  createdAt                DateTime @default(now()) @map("created_at")
+  updatedAt                DateTime @updatedAt @map("updated_at")
+  
+  // Relations
+  creator              User                  @relation(fields: [createdBy], references: [id])
+  scaleItems           ScaleItem[]
+  scaleAdministrations ScaleAdministration[]
+
+  @@map("clinimetrix_assessment_scales")
+}
+
+model ScaleItem {
+  id              String   @id @default(uuid()) @db.Char(36)
+  scaleId         String   @map("scale_id") @db.Char(36)
+  itemNumber      Int      @map("item_number")
+  questionText    String   @map("question_text") @db.Text
+  responseType    String   @map("response_type")
+  responseOptions String   @map("response_options") @db.Text // JSON stored as text
+  displayOrder    Int      @map("display_order")
+  isRequired      Boolean  @default(true) @map("is_required")
+  scoringWeight   Float?   @map("scoring_weight")
+  reverseScored   Boolean  @default(false) @map("reverse_scored")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+  
+  // Relations
+  scale         AssessmentScale @relation(fields: [scaleId], references: [id], onDelete: Cascade)
+  itemResponses ItemResponse[]
+
+  @@unique([scaleId, itemNumber])
+  @@map("clinimetrix_scale_items")
+}
+
+model ScaleAdministration {
+  id                String    @id @default(uuid()) @db.Char(36)
+  patientId         String    @map("patient_id") @db.Char(36)
+  scaleId           String    @map("scale_id") @db.Char(36)
+  administeredBy    String    @map("administered_by") @db.Char(36)
+  administrationDate DateTime @map("administration_date")
+  status            String    @default("in_progress")
+  rawScore          Float?    @map("raw_score")
+  percentileScore   Float?    @map("percentile_score")
+  tScore            Float?    @map("t_score")
+  interpretation    String?   @db.Text
+  completedAt       DateTime? @map("completed_at")
+  createdAt         DateTime  @default(now()) @map("created_at")
+  updatedAt         DateTime  @updatedAt @map("updated_at")
+  
+  // Relations
+  patient           Patient            @relation(fields: [patientId], references: [id])
+  scale             AssessmentScale    @relation(fields: [scaleId], references: [id])
+  administrator     User               @relation(fields: [administeredBy], references: [id])
+  itemResponses     ItemResponse[]
+
+  @@map("clinimetrix_scale_administrations")
+}
+
+model ItemResponse {
+  id                    String   @id @default(uuid()) @db.Char(36)
+  scaleAdministrationId String   @map("scale_administration_id") @db.Char(36)
+  scaleItemId           String   @map("scale_item_id") @db.Char(36)
+  responseValue         String?  @map("response_value") @db.Text
+  responseScore         Float?   @map("response_score")
+  responseTime          Int?     @map("response_time") // in milliseconds
+  skipped              Boolean  @default(false)
+  createdAt            DateTime @default(now()) @map("created_at")
+  
+  // Relations
+  scaleAdministration ScaleAdministration @relation(fields: [scaleAdministrationId], references: [id], onDelete: Cascade)
+  scaleItem           ScaleItem           @relation(fields: [scaleItemId], references: [id])
+
+  @@unique([scaleAdministrationId, scaleItemId])
+  @@map("clinimetrix_item_responses")
+}
+
+// =============================================================================
+// FORMX MODELS - Form Builder
+// =============================================================================
+
+model FieldType {
+  id               String   @id @default(uuid()) @db.Char(36)
+  typeName         String   @unique @map("type_name")
+  displayName      String   @map("display_name")
+  description      String?  @db.Text
+  category         String
+  dataType         String   @map("data_type")
+  supportsValidation Boolean @default(true) @map("supports_validation")
+  isInteractive    Boolean  @default(true) @map("is_interactive")
+  configSchema     String?  @map("config_schema") @db.Text // JSON stored as text
+  createdBy        String   @map("created_by") @db.Char(36)
+  createdAt        DateTime @default(now()) @map("created_at")
+  updatedAt        DateTime @updatedAt @map("updated_at")
+  
+  // Relations
+  creator User @relation(fields: [createdBy], references: [id])
+
+  @@map("formx_field_types")
+}
+
+model FormTemplate {
+  id                         String   @id @default(uuid()) @db.Char(36)
+  name                       String
+  slug                       String   @unique
+  description                String?  @db.Text
+  category                   String
+  displayTitle               String   @map("display_title")
+  instructions               String?  @db.Text
+  formSchema                 String   @map("form_schema") @db.Text // JSON stored as text
+  estimatedCompletionMinutes Int?     @map("estimated_completion_minutes")
+  status                     String   @default("draft")
+  version                    String   @default("1.0")
+  isPublic                   Boolean  @default(false) @map("is_public")
+  createdBy                  String   @map("created_by") @db.Char(36)
+  createdAt                  DateTime @default(now()) @map("created_at")
+  updatedAt                  DateTime @updatedAt @map("updated_at")
+  
+  // Relations
+  creator       User           @relation(fields: [createdBy], references: [id])
+  formInstances FormInstance[]
+
+  @@map("formx_form_templates")
+}
+
+model FormInstance {
+  id                String    @id @default(uuid()) @db.Char(36)
+  templateId        String    @map("template_id") @db.Char(36)
+  name              String
+  slug              String    @unique
+  customizations    String?   @db.Text // JSON stored as text
+  accessType        String    @default("private") @map("access_type")
+  requiresAuth      Boolean   @default(true) @map("requires_auth")
+  expiresAt         DateTime? @map("expires_at")
+  maxSubmissions    Int?      @map("max_submissions")
+  status            String    @default("active")
+  createdBy         String    @map("created_by") @db.Char(36)
+  createdAt         DateTime  @default(now()) @map("created_at")
+  updatedAt         DateTime  @updatedAt @map("updated_at")
+  
+  // Relations
+  template        FormTemplate    @relation(fields: [templateId], references: [id])
+  creator         User            @relation(fields: [createdBy], references: [id])
+  submissions     FormSubmission[]
+
+  @@map("formx_form_instances")
+}
+
+model FormSubmission {
+  id             String    @id @default(uuid()) @db.Char(36)
+  formInstanceId String    @map("form_instance_id") @db.Char(36)
+  submitterEmail String?   @map("submitter_email")
+  submitterName  String?   @map("submitter_name")
+  responseData   String    @map("response_data") @db.Text // JSON stored as text
+  isComplete     Boolean   @default(false) @map("is_complete")
+  submittedAt    DateTime? @map("submitted_at")
+  ipAddress      String?   @map("ip_address")
+  userAgent      String?   @map("user_agent") @db.Text
+  createdAt      DateTime  @default(now()) @map("created_at")
+  updatedAt      DateTime  @updatedAt @map("updated_at")
+  
+  // Relations
+  formInstance FormInstance @relation(fields: [formInstanceId], references: [id])
+
+  @@map("formx_form_submissions")
+}
+
+// =============================================================================
+// RESOURCES MODELS - Educational Materials
+// =============================================================================
+
+model Category {
+  id           String   @id @default(uuid()) @db.Char(36)
+  name         String
+  slug         String   @unique
+  description  String?  @db.Text
+  displayOrder Int      @map("display_order")
+  level        Int      @default(0)
+  parentId     String?  @map("parent_id") @db.Char(36)
+  path         String
+  isActive     Boolean  @default(true) @map("is_active")
+  createdBy    String   @map("created_by") @db.Char(36)
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+  
+  // Relations
+  creator            User                @relation(fields: [createdBy], references: [id])
+  parent             Category?           @relation("CategoryHierarchy", fields: [parentId], references: [id])
+  children           Category[]          @relation("CategoryHierarchy")
+  resourceCategories ResourceCategory[]
+
+  @@map("resources_categories")
+}
+
+model Tag {
+  id          String   @id @default(uuid()) @db.Char(36)
+  name        String
+  slug        String   @unique
+  description String?  @db.Text
+  tagType     String   @map("tag_type")
+  color       String?
+  isActive    Boolean  @default(true) @map("is_active")
+  createdBy   String   @map("created_by") @db.Char(36)
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+  
+  // Relations
+  creator      User          @relation(fields: [createdBy], references: [id])
+  resourceTags ResourceTag[]
+
+  @@map("resources_tags")
+}
+
+model Resource {
+  id                    String   @id @default(uuid()) @db.Char(36)
+  title                 String
+  slug                  String   @unique
+  description           String   @db.Text
+  summary               String?  @db.Text
+  resourceType          String   @map("resource_type")
+  format                String
+  targetAudience        String   @map("target_audience")
+  ageGroup              String   @map("age_group")
+  clinicalConditions    String   @map("clinical_conditions") @db.Text // JSON stored as text
+  therapeuticApproaches String   @map("therapeutic_approaches") @db.Text // JSON stored as text
+  difficulty            String   @default("beginner")
+  estimatedDuration     Int?     @map("estimated_duration")
+  language              String   @default("es")
+  filePath              String?  @map("file_path")
+  fileSize              Int?     @map("file_size")
+  mimeType              String?  @map("mime_type")
+  thumbnailPath         String?  @map("thumbnail_path")
+  downloadCount         Int      @default(0) @map("download_count")
+  viewCount             Int      @default(0) @map("view_count")
+  averageRating         Float?   @map("average_rating")
+  ratingCount           Int      @default(0) @map("rating_count")
+  status                String   @default("draft")
+  version               String   @default("1.0")
+  isPublic              Boolean  @default(false) @map("is_public")
+  requiresAuth          Boolean  @default(true) @map("requires_auth")
+  createdBy             String   @map("created_by") @db.Char(36)
+  createdAt             DateTime @default(now()) @map("created_at")
+  updatedAt             DateTime @updatedAt @map("updated_at")
+  
+  // Relations
+  creator                 User                     @relation(fields: [createdBy], references: [id])
+  resourceCategories      ResourceCategory[]
+  resourceTags            ResourceTag[]
+  collectionResources     CollectionResource[]
+
+  @@map("resources_resources")
+}
+
+model ResourceCategory {
+  resourceId String  @map("resource_id") @db.Char(36)
+  categoryId String  @map("category_id") @db.Char(36)
+  isPrimary  Boolean @default(false) @map("is_primary")
+  
+  // Relations
+  resource Resource @relation(fields: [resourceId], references: [id], onDelete: Cascade)
+  category Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  @@id([resourceId, categoryId])
+  @@map("resources_resource_categories")
+}
+
+model ResourceTag {
+  resourceId String @map("resource_id") @db.Char(36)
+  tagId      String @map("tag_id") @db.Char(36)
+  
+  // Relations
+  resource Resource @relation(fields: [resourceId], references: [id], onDelete: Cascade)
+  tag      Tag      @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([resourceId, tagId])
+  @@map("resources_resource_tags")
+}
+
+model Collection {
+  id          String   @id @default(uuid()) @db.Char(36)
+  name        String
+  slug        String   @unique
+  description String?  @db.Text
+  isPublic    Boolean  @default(false) @map("is_public")
+  isActive    Boolean  @default(true) @map("is_active")
+  createdBy   String   @map("created_by") @db.Char(36)
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+  
+  // Relations
+  creator             User                 @relation(fields: [createdBy], references: [id])
+  collectionResources CollectionResource[]
+
+  @@map("resources_collections")
+}
+
+model CollectionResource {
+  collectionId String  @map("collection_id") @db.Char(36)
+  resourceId   String  @map("resource_id") @db.Char(36)
+  displayOrder Int     @map("display_order")
+  isRequired   Boolean @default(false) @map("is_required")
+  
+  // Relations
+  collection Collection @relation(fields: [collectionId], references: [id], onDelete: Cascade)
+  resource   Resource   @relation(fields: [resourceId], references: [id], onDelete: Cascade)
+
+  @@id([collectionId, resourceId])
+  @@map("resources_collection_resources")
+}
+
+// =============================================================================
+// AUDIT MODELS - Compliance and Logging
+// =============================================================================
+
+model AuditLog {
+  id             String   @id @default(uuid()) @db.Char(36)
+  tableName      String   @map("table_name")
+  recordId       String   @map("record_id") @db.Char(36)
+  operation      String
+  oldValues      String?  @map("old_values") @db.Text // JSON stored as text
+  newValues      String?  @map("new_values") @db.Text // JSON stored as text
+  changedBy      String?  @map("changed_by") @db.Char(36)
+  sessionId      String?  @map("session_id")
+  ipAddress      String?  @map("ip_address")
+  userAgent      String?  @map("user_agent") @db.Text
+  changeReason   String?  @map("change_reason") @db.Text
+  timestamp      DateTime @default(now())
+
+  @@map("audit_log")
+}
+
+model DataAccessLog {
+  id           String   @id @default(uuid()) @db.Char(36)
+  userId       String   @map("user_id") @db.Char(36)
+  tableName    String   @map("table_name")
+  recordId     String?  @map("record_id") @db.Char(36)
+  accessType   String   @map("access_type")
+  purpose      String?  @db.Text
+  dataCategory String   @map("data_category")
+  isAuthorized Boolean  @map("is_authorized")
+  sessionId    String?  @map("session_id")
+  ipAddress    String?  @map("ip_address")
+  userAgent    String?  @map("user_agent") @db.Text
+  timestamp    DateTime @default(now())
+
+  @@map("audit_data_access_log")
+}
+
+model SystemEvent {
+  id        String   @id @default(uuid()) @db.Char(36)
+  eventType String   @map("event_type")
+  severity  String
+  message   String   @db.Text
+  details   String?  @db.Text // JSON stored as text
+  userId    String?  @map("user_id") @db.Char(36)
+  sessionId String?  @map("session_id")
+  ipAddress String?  @map("ip_address")
+  userAgent String?  @map("user_agent") @db.Text
+  timestamp DateTime @default(now())
+
+  @@map("audit_system_events")
+}

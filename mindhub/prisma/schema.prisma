@@ -1,0 +1,855 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+// =============================================================================
+// AUTH SCHEMA - User Management and Authentication
+// =============================================================================
+
+model User {
+  id                           String    @id @default(uuid()) @db.Uuid
+  auth0Id                      String    @unique @map("auth0_id")
+  email                        String    @unique
+  name                         String
+  picture                      String?
+  licenseNumber                String?   @map("license_number")
+  licenseType                  String?   @map("license_type")
+  specialty                    String?
+  isActive                     Boolean   @default(true) @map("is_active")
+  licenseVerified              Boolean   @default(false) @map("license_verified")
+  licenseExpiryDate            DateTime? @map("license_expiry_date")
+  lastLoginAt                  DateTime? @map("last_login_at")
+  createdAt                    DateTime  @default(now()) @map("created_at")
+  updatedAt                    DateTime  @updatedAt @map("updated_at")
+  
+  // Relations
+  userRoles                    UserRole[]
+  userSessions                 UserSession[]
+  createdPatients              Patient[]
+  createdConsultations         Consultation[]
+  createdPrescriptions         Prescription[]
+  createdAssessmentScales      AssessmentScale[]
+  createdScaleAdministrations  ScaleAdministration[]
+  createdFormTemplates         FormTemplate[]
+  createdFormInstances         FormInstance[]
+  createdFieldTypes            FieldType[]
+  createdResources             Resource[]
+  createdCategories            Category[]
+  createdTags                  Tag[]
+  createdCollections           Collection[]
+  createdMedications           Medication[]
+
+  @@map("users")
+  @@schema("auth")
+}
+
+model Role {
+  id          String   @id @default(uuid()) @db.Uuid
+  name        String   @unique
+  description String?
+  isActive    Boolean  @default(true) @map("is_active")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+  
+  // Relations
+  userRoles       UserRole[]
+  rolePermissions RolePermission[]
+
+  @@map("roles")
+  @@schema("auth")
+}
+
+model Permission {
+  id          String   @id @default(uuid()) @db.Uuid
+  name        String   @unique
+  description String?
+  resource    String
+  action      String
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+  
+  // Relations
+  rolePermissions RolePermission[]
+
+  @@map("permissions")
+  @@schema("auth")
+}
+
+model UserRole {
+  userId    String   @map("user_id") @db.Uuid
+  roleId    String   @map("role_id") @db.Uuid
+  assignedAt DateTime @default(now()) @map("assigned_at")
+  assignedBy String?  @map("assigned_by") @db.Uuid
+  
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role Role @relation(fields: [roleId], references: [id], onDelete: Cascade)
+
+  @@id([userId, roleId])
+  @@map("user_roles")
+  @@schema("auth")
+}
+
+model RolePermission {
+  roleId       String @map("role_id") @db.Uuid
+  permissionId String @map("permission_id") @db.Uuid
+  
+  // Relations
+  role       Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permission Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  @@id([roleId, permissionId])
+  @@map("role_permissions")
+  @@schema("auth")
+}
+
+model UserSession {
+  id        String    @id @default(uuid()) @db.Uuid
+  userId    String    @map("user_id") @db.Uuid
+  sessionId String    @unique @map("session_id")
+  ipAddress String?   @map("ip_address")
+  userAgent String?   @map("user_agent")
+  expiresAt DateTime  @map("expires_at")
+  createdAt DateTime  @default(now()) @map("created_at")
+  
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("user_sessions")
+  @@schema("auth")
+}
+
+// =============================================================================
+// EXPEDIX SCHEMA - Patient Management
+// =============================================================================
+
+model Patient {
+  id                         String    @id @default(uuid()) @db.Uuid
+  medicalRecordNumber        String    @unique @map("medical_record_number")
+  curp                       String?   @unique // Mexican ID
+  firstName                  String    @map("first_name")
+  middleName                 String?   @map("middle_name")
+  lastName                   String    @map("last_name")
+  secondLastName             String?   @map("second_last_name")
+  dateOfBirth                DateTime  @map("date_of_birth")
+  gender                     String
+  maritalStatus              String?   @map("marital_status")
+  occupation                 String?
+  education                  String?
+  primaryLanguage            String    @default("es") @map("primary_language")
+  emergencyContactName       String?   @map("emergency_contact_name")
+  emergencyContactPhone      String?   @map("emergency_contact_phone")
+  emergencyContactRelation   String?   @map("emergency_contact_relation")
+  patientCategory            String    @default("general") @map("patient_category")
+  consentToTreatment         Boolean   @default(false) @map("consent_to_treatment")
+  consentToDataProcessing    Boolean   @default(false) @map("consent_to_data_processing")
+  isActive                   Boolean   @default(true) @map("is_active")
+  createdBy                  String    @map("created_by") @db.Uuid
+  createdAt                  DateTime  @default(now()) @map("created_at")
+  updatedAt                  DateTime  @updatedAt @map("updated_at")
+  
+  // Relations
+  creator           User                  @relation(fields: [createdBy], references: [id])
+  medicalHistory    MedicalHistory[]
+  consultations     Consultation[]
+  prescriptions     Prescription[]
+  scaleAdministrations ScaleAdministration[]
+
+  @@map("patients")
+  @@schema("expedix")
+}
+
+model MedicalHistory {
+  id                        String   @id @default(uuid()) @db.Uuid
+  patientId                 String   @map("patient_id") @db.Uuid
+  chiefComplaint            String   @map("chief_complaint")
+  historyOfPresentIllness   String?  @map("history_of_present_illness")
+  psychiatricHistory        String?  @map("psychiatric_history")
+  medicalHistory            String?  @map("medical_history")
+  familyHistory             String?  @map("family_history")
+  socialHistory             String?  @map("social_history")
+  substanceUseHistory       String?  @map("substance_use_history")
+  allergies                 String?
+  currentMedications        String?  @map("current_medications")
+  createdBy                 String   @map("created_by") @db.Uuid
+  createdAt                 DateTime @default(now()) @map("created_at")
+  updatedAt                 DateTime @updatedAt @map("updated_at")
+  
+  // Relations
+  patient Patient @relation(fields: [patientId], references: [id], onDelete: Cascade)
+
+  @@map("medical_history")
+  @@schema("expedix")
+}
+
+model Consultation {
+  id                            String    @id @default(uuid()) @db.Uuid
+  patientId                     String    @map("patient_id") @db.Uuid
+  consultationDate              DateTime  @map("consultation_date")
+  consultationType              String    @map("consultation_type")
+  subjectiveNotes               String?   @map("subjective_notes")
+  objectiveNotes                String?   @map("objective_notes")
+  assessment                    String?
+  plan                          String?
+  primaryDiagnosisCode          String?   @map("primary_diagnosis_code")
+  primaryDiagnosisDescription   String?   @map("primary_diagnosis_description")
+  secondaryDiagnosisCodes       String[]  @map("secondary_diagnosis_codes")
+  secondaryDiagnosisDescriptions String[] @map("secondary_diagnosis_descriptions")
+  nextAppointmentDate           DateTime? @map("next_appointment_date")
+  duration                      Int?      // in minutes
+  createdBy                     String    @map("created_by") @db.Uuid
+  createdAt                     DateTime  @default(now()) @map("created_at")
+  updatedAt                     DateTime  @updatedAt @map("updated_at")
+  
+  // Relations
+  patient Patient @relation(fields: [patientId], references: [id])
+  creator User    @relation(fields: [createdBy], references: [id])
+
+  @@map("consultations")
+  @@schema("expedix")
+}
+
+model Medication {
+  id                 String   @id @default(uuid()) @db.Uuid
+  genericName        String   @map("generic_name")
+  brandNames         String[] @map("brand_names")
+  therapeuticClass   String   @map("therapeutic_class")
+  availableStrengths String[] @map("available_strengths")
+  availableForms     String[] @map("available_forms")
+  contraindications  String?
+  sideEffects        String?  @map("side_effects")
+  interactions       String?
+  isActive           Boolean  @default(true) @map("is_active")
+  createdBy          String   @map("created_by") @db.Uuid
+  createdAt          DateTime @default(now()) @map("created_at")
+  updatedAt          DateTime @updatedAt @map("updated_at")
+  
+  // Relations
+  creator       User           @relation(fields: [createdBy], references: [id])
+  prescriptions Prescription[]
+
+  @@map("medications")
+  @@schema("expedix")
+}
+
+model Prescription {
+  id                  String    @id @default(uuid()) @db.Uuid
+  patientId           String    @map("patient_id") @db.Uuid
+  medicationId        String    @map("medication_id") @db.Uuid
+  prescriptionNumber  String    @unique @map("prescription_number")
+  dosage              String
+  frequency           String
+  instructions        String?
+  quantity            Int
+  refills             Int       @default(0)
+  startDate           DateTime  @map("start_date")
+  endDate             DateTime? @map("end_date")
+  qrCode              String?   @map("qr_code")
+  status              String    @default("active")
+  prescribedBy        String    @map("prescribed_by") @db.Uuid
+  createdAt           DateTime  @default(now()) @map("created_at")
+  updatedAt           DateTime  @updatedAt @map("updated_at")
+  
+  // Relations
+  patient    Patient    @relation(fields: [patientId], references: [id])
+  medication Medication @relation(fields: [medicationId], references: [id])
+  prescriber User       @relation(fields: [prescribedBy], references: [id])
+  fills      PrescriptionFill[]
+
+  @@map("prescriptions")
+  @@schema("expedix")
+}
+
+model PrescriptionFill {
+  id             String    @id @default(uuid()) @db.Uuid
+  prescriptionId String    @map("prescription_id") @db.Uuid
+  fillDate       DateTime  @map("fill_date")
+  quantityFilled Int       @map("quantity_filled")
+  pharmacyName   String?   @map("pharmacy_name")
+  pharmacistName String?   @map("pharmacist_name")
+  notes          String?
+  createdAt      DateTime  @default(now()) @map("created_at")
+  
+  // Relations
+  prescription Prescription @relation(fields: [prescriptionId], references: [id])
+
+  @@map("prescription_fills")
+  @@schema("expedix")
+}
+
+// =============================================================================
+// CLINIMETRIX SCHEMA - Clinical Assessments
+// =============================================================================
+
+model AssessmentScale {
+  id                        String   @id @default(uuid()) @db.Uuid
+  name                      String
+  abbreviation              String?
+  description               String?
+  targetPopulation          String   @map("target_population")
+  administrationMode        String   @map("administration_mode")
+  estimatedDurationMinutes  Int?     @map("estimated_duration_minutes")
+  category                  String
+  subcategory              String?
+  availableLanguages       String[] @map("available_languages")
+  scoringInstructions      String?  @map("scoring_instructions")
+  interpretationGuide      String?  @map("interpretation_guide")
+  isActive                 Boolean  @default(true) @map("is_active")
+  version                  String   @default("1.0")
+  createdBy                String   @map("created_by") @db.Uuid
+  createdAt                DateTime @default(now()) @map("created_at")
+  updatedAt                DateTime @updatedAt @map("updated_at")
+  
+  // Relations
+  creator              User                  @relation(fields: [createdBy], references: [id])
+  scaleItems           ScaleItem[]
+  scaleAdministrations ScaleAdministration[]
+
+  @@map("assessment_scales")
+  @@schema("clinimetrix")
+}
+
+model ScaleItem {
+  id              String   @id @default(uuid()) @db.Uuid
+  scaleId         String   @map("scale_id") @db.Uuid
+  itemNumber      Int      @map("item_number")
+  questionText    String   @map("question_text")
+  responseType    String   @map("response_type")
+  responseOptions Json     @map("response_options")
+  displayOrder    Int      @map("display_order")
+  isRequired      Boolean  @default(true) @map("is_required")
+  scoringWeight   Float?   @map("scoring_weight")
+  reverseScored   Boolean  @default(false) @map("reverse_scored")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+  
+  // Relations
+  scale         AssessmentScale @relation(fields: [scaleId], references: [id], onDelete: Cascade)
+  itemResponses ItemResponse[]
+
+  @@unique([scaleId, itemNumber])
+  @@map("scale_items")
+  @@schema("clinimetrix")
+}
+
+model AssessmentSession {
+  id                   String    @id @default(uuid()) @db.Uuid
+  patientId            String    @map("patient_id") @db.Uuid
+  sessionDate          DateTime  @map("session_date")
+  sessionType          String    @map("session_type")
+  administeredBy       String?   @map("administered_by") @db.Uuid
+  location             String?
+  notes                String?
+  status               String    @default("in_progress")
+  completedAt          DateTime? @map("completed_at")
+  createdAt            DateTime  @default(now()) @map("created_at")
+  updatedAt            DateTime  @updatedAt @map("updated_at")
+  
+  // Relations
+  scaleAdministrations ScaleAdministration[]
+
+  @@map("assessment_sessions")
+  @@schema("clinimetrix")
+}
+
+model ScaleAdministration {
+  id                String    @id @default(uuid()) @db.Uuid
+  assessmentSessionId String? @map("assessment_session_id") @db.Uuid
+  patientId         String    @map("patient_id") @db.Uuid
+  scaleId           String    @map("scale_id") @db.Uuid
+  administeredBy    String    @map("administered_by") @db.Uuid
+  administrationDate DateTime @map("administration_date")
+  status            String    @default("in_progress")
+  rawScore          Float?    @map("raw_score")
+  percentileScore   Float?    @map("percentile_score")
+  tScore            Float?    @map("t_score")
+  interpretation    String?
+  completedAt       DateTime? @map("completed_at")
+  createdAt         DateTime  @default(now()) @map("created_at")
+  updatedAt         DateTime  @updatedAt @map("updated_at")
+  
+  // Relations
+  assessmentSession AssessmentSession? @relation(fields: [assessmentSessionId], references: [id])
+  patient           Patient            @relation(fields: [patientId], references: [id])
+  scale             AssessmentScale    @relation(fields: [scaleId], references: [id])
+  administrator     User               @relation(fields: [administeredBy], references: [id])
+  itemResponses     ItemResponse[]
+  reports           AssessmentReport[]
+
+  @@map("scale_administrations")
+  @@schema("clinimetrix")
+}
+
+model ItemResponse {
+  id                    String   @id @default(uuid()) @db.Uuid
+  scaleAdministrationId String   @map("scale_administration_id") @db.Uuid
+  scaleItemId           String   @map("scale_item_id") @db.Uuid
+  responseValue         String?  @map("response_value")
+  responseScore         Float?   @map("response_score")
+  responseTime          Int?     @map("response_time") // in milliseconds
+  skipped              Boolean  @default(false)
+  createdAt            DateTime @default(now()) @map("created_at")
+  
+  // Relations
+  scaleAdministration ScaleAdministration @relation(fields: [scaleAdministrationId], references: [id], onDelete: Cascade)
+  scaleItem           ScaleItem           @relation(fields: [scaleItemId], references: [id])
+
+  @@unique([scaleAdministrationId, scaleItemId])
+  @@map("item_responses")
+  @@schema("clinimetrix")
+}
+
+model AssessmentToken {
+  id                    String    @id @default(uuid()) @db.Uuid
+  scaleAdministrationId String    @map("scale_administration_id") @db.Uuid
+  token                 String    @unique
+  expiresAt             DateTime  @map("expires_at")
+  isUsed                Boolean   @default(false) @map("is_used")
+  createdAt             DateTime  @default(now()) @map("created_at")
+
+  @@map("assessment_tokens")
+  @@schema("clinimetrix")
+}
+
+model AssessmentReport {
+  id                    String    @id @default(uuid()) @db.Uuid
+  scaleAdministrationId String    @map("scale_administration_id") @db.Uuid
+  reportType            String    @map("report_type")
+  reportData            Json      @map("report_data")
+  generatedAt           DateTime  @map("generated_at")
+  format                String    @default("pdf")
+  filePath              String?   @map("file_path")
+  
+  // Relations
+  scaleAdministration ScaleAdministration @relation(fields: [scaleAdministrationId], references: [id])
+
+  @@map("assessment_reports")
+  @@schema("clinimetrix")
+}
+
+// =============================================================================
+// FORMX SCHEMA - Form Builder
+// =============================================================================
+
+model FieldType {
+  id               String   @id @default(uuid()) @db.Uuid
+  typeName         String   @unique @map("type_name")
+  displayName      String   @map("display_name")
+  description      String?
+  category         String
+  dataType         String   @map("data_type")
+  supportsValidation Boolean @default(true) @map("supports_validation")
+  isInteractive    Boolean  @default(true) @map("is_interactive")
+  configSchema     Json?    @map("config_schema")
+  createdBy        String   @map("created_by") @db.Uuid
+  createdAt        DateTime @default(now()) @map("created_at")
+  updatedAt        DateTime @updatedAt @map("updated_at")
+  
+  // Relations
+  creator User @relation(fields: [createdBy], references: [id])
+
+  @@map("field_types")
+  @@schema("formx")
+}
+
+model FormTemplate {
+  id                         String   @id @default(uuid()) @db.Uuid
+  name                       String
+  slug                       String   @unique
+  description                String?
+  category                   String
+  displayTitle               String   @map("display_title")
+  instructions               String?
+  formSchema                 Json     @map("form_schema")
+  estimatedCompletionMinutes Int?     @map("estimated_completion_minutes")
+  status                     String   @default("draft")
+  version                    String   @default("1.0")
+  isPublic                   Boolean  @default(false) @map("is_public")
+  createdBy                  String   @map("created_by") @db.Uuid
+  createdAt                  DateTime @default(now()) @map("created_at")
+  updatedAt                  DateTime @updatedAt @map("updated_at")
+  
+  // Relations
+  creator       User           @relation(fields: [createdBy], references: [id])
+  formInstances FormInstance[]
+
+  @@map("form_templates")
+  @@schema("formx")
+}
+
+model FormInstance {
+  id                String    @id @default(uuid()) @db.Uuid
+  templateId        String    @map("template_id") @db.Uuid
+  name              String
+  slug              String    @unique
+  customizations    Json?
+  accessType        String    @default("private") @map("access_type")
+  requiresAuth      Boolean   @default(true) @map("requires_auth")
+  expiresAt         DateTime? @map("expires_at")
+  maxSubmissions    Int?      @map("max_submissions")
+  status            String    @default("active")
+  createdBy         String    @map("created_by") @db.Uuid
+  createdAt         DateTime  @default(now()) @map("created_at")
+  updatedAt         DateTime  @updatedAt @map("updated_at")
+  
+  // Relations
+  template        FormTemplate    @relation(fields: [templateId], references: [id])
+  creator         User            @relation(fields: [createdBy], references: [id])
+  submissions     FormSubmission[]
+  accessTokens    FormAccessToken[]
+
+  @@map("form_instances")
+  @@schema("formx")
+}
+
+model FormSubmission {
+  id             String    @id @default(uuid()) @db.Uuid
+  formInstanceId String    @map("form_instance_id") @db.Uuid
+  submitterEmail String?   @map("submitter_email")
+  submitterName  String?   @map("submitter_name")
+  responseData   Json      @map("response_data")
+  isComplete     Boolean   @default(false) @map("is_complete")
+  submittedAt    DateTime? @map("submitted_at")
+  ipAddress      String?   @map("ip_address")
+  userAgent      String?   @map("user_agent")
+  createdAt      DateTime  @default(now()) @map("created_at")
+  updatedAt      DateTime  @updatedAt @map("updated_at")
+  
+  // Relations
+  formInstance   FormInstance    @relation(fields: [formInstanceId], references: [id])
+  fieldResponses FieldResponse[]
+
+  @@map("form_submissions")
+  @@schema("formx")
+}
+
+model FieldResponse {
+  id               String   @id @default(uuid()) @db.Uuid
+  formSubmissionId String   @map("form_submission_id") @db.Uuid
+  fieldId          String   @map("field_id")
+  fieldType        String   @map("field_type")
+  responseValue    String?  @map("response_value")
+  responseData     Json?    @map("response_data")
+  createdAt        DateTime @default(now()) @map("created_at")
+  
+  // Relations
+  formSubmission FormSubmission @relation(fields: [formSubmissionId], references: [id], onDelete: Cascade)
+
+  @@map("field_responses")
+  @@schema("formx")
+}
+
+model FormAccessToken {
+  id             String    @id @default(uuid()) @db.Uuid
+  formInstanceId String    @map("form_instance_id") @db.Uuid
+  token          String    @unique
+  expiresAt      DateTime  @map("expires_at")
+  isUsed         Boolean   @default(false) @map("is_used")
+  maxUses        Int?      @map("max_uses")
+  usedCount      Int       @default(0) @map("used_count")
+  createdAt      DateTime  @default(now()) @map("created_at")
+  
+  // Relations
+  formInstance FormInstance @relation(fields: [formInstanceId], references: [id])
+
+  @@map("form_access_tokens")
+  @@schema("formx")
+}
+
+model FormAnalytics {
+  id             String   @id @default(uuid()) @db.Uuid
+  formInstanceId String   @map("form_instance_id") @db.Uuid
+  metric         String
+  value          Float
+  recordedAt     DateTime @map("recorded_at")
+  metadata       Json?
+
+  @@map("form_analytics")
+  @@schema("formx")
+}
+
+// =============================================================================
+// RESOURCES SCHEMA - Educational Materials
+// =============================================================================
+
+model Category {
+  id           String   @id @default(uuid()) @db.Uuid
+  name         String
+  slug         String   @unique
+  description  String?
+  displayOrder Int      @map("display_order")
+  level        Int      @default(0)
+  parentId     String?  @map("parent_id") @db.Uuid
+  path         String
+  isActive     Boolean  @default(true) @map("is_active")
+  createdBy    String   @map("created_by") @db.Uuid
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+  
+  // Relations
+  creator            User                @relation(fields: [createdBy], references: [id])
+  parent             Category?           @relation("CategoryHierarchy", fields: [parentId], references: [id])
+  children           Category[]          @relation("CategoryHierarchy")
+  resourceCategories ResourceCategory[]
+
+  @@map("categories")
+  @@schema("resources")
+}
+
+model Tag {
+  id          String   @id @default(uuid()) @db.Uuid
+  name        String
+  slug        String   @unique
+  description String?
+  tagType     String   @map("tag_type")
+  color       String?
+  isActive    Boolean  @default(true) @map("is_active")
+  createdBy   String   @map("created_by") @db.Uuid
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+  
+  // Relations
+  creator      User          @relation(fields: [createdBy], references: [id])
+  resourceTags ResourceTag[]
+
+  @@map("tags")
+  @@schema("resources")
+}
+
+model Resource {
+  id                    String   @id @default(uuid()) @db.Uuid
+  title                 String
+  slug                  String   @unique
+  description           String
+  summary               String?
+  resourceType          String   @map("resource_type")
+  format                String
+  targetAudience        String   @map("target_audience")
+  ageGroup              String   @map("age_group")
+  clinicalConditions    String[] @map("clinical_conditions")
+  therapeuticApproaches String[] @map("therapeutic_approaches")
+  difficulty            String   @default("beginner")
+  estimatedDuration     Int?     @map("estimated_duration")
+  language              String   @default("es")
+  filePath              String?  @map("file_path")
+  fileSize              Int?     @map("file_size")
+  mimeType              String?  @map("mime_type")
+  thumbnailPath         String?  @map("thumbnail_path")
+  downloadCount         Int      @default(0) @map("download_count")
+  viewCount             Int      @default(0) @map("view_count")
+  averageRating         Float?   @map("average_rating")
+  ratingCount           Int      @default(0) @map("rating_count")
+  status                String   @default("draft")
+  version               String   @default("1.0")
+  isPublic              Boolean  @default(false) @map("is_public")
+  requiresAuth          Boolean  @default(true) @map("requires_auth")
+  createdBy             String   @map("created_by") @db.Uuid
+  createdAt             DateTime @default(now()) @map("created_at")
+  updatedAt             DateTime @updatedAt @map("updated_at")
+  
+  // Relations
+  creator                 User                     @relation(fields: [createdBy], references: [id])
+  resourceCategories      ResourceCategory[]
+  resourceTags            ResourceTag[]
+  collectionResources     CollectionResource[]
+  resourceDistributions   ResourceDistribution[]
+  resourceReviews         ResourceReview[]
+  resourceAnalytics       ResourceAnalytics[]
+  resourceVersions        ResourceVersion[]
+
+  @@map("resources")
+  @@schema("resources")
+}
+
+model ResourceCategory {
+  resourceId String  @map("resource_id") @db.Uuid
+  categoryId String  @map("category_id") @db.Uuid
+  isPrimary  Boolean @default(false) @map("is_primary")
+  
+  // Relations
+  resource Resource @relation(fields: [resourceId], references: [id], onDelete: Cascade)
+  category Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  @@id([resourceId, categoryId])
+  @@map("resource_categories")
+  @@schema("resources")
+}
+
+model ResourceTag {
+  resourceId String @map("resource_id") @db.Uuid
+  tagId      String @map("tag_id") @db.Uuid
+  
+  // Relations
+  resource Resource @relation(fields: [resourceId], references: [id], onDelete: Cascade)
+  tag      Tag      @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([resourceId, tagId])
+  @@map("resource_tags")
+  @@schema("resources")
+}
+
+model Collection {
+  id          String   @id @default(uuid()) @db.Uuid
+  name        String
+  slug        String   @unique
+  description String?
+  isPublic    Boolean  @default(false) @map("is_public")
+  isActive    Boolean  @default(true) @map("is_active")
+  createdBy   String   @map("created_by") @db.Uuid
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+  
+  // Relations
+  creator             User                 @relation(fields: [createdBy], references: [id])
+  collectionResources CollectionResource[]
+
+  @@map("collections")
+  @@schema("resources")
+}
+
+model CollectionResource {
+  collectionId String  @map("collection_id") @db.Uuid
+  resourceId   String  @map("resource_id") @db.Uuid
+  displayOrder Int     @map("display_order")
+  isRequired   Boolean @default(false) @map("is_required")
+  
+  // Relations
+  collection Collection @relation(fields: [collectionId], references: [id], onDelete: Cascade)
+  resource   Resource   @relation(fields: [resourceId], references: [id], onDelete: Cascade)
+
+  @@id([collectionId, resourceId])
+  @@map("collection_resources")
+  @@schema("resources")
+}
+
+model ResourceDistribution {
+  id                String    @id @default(uuid()) @db.Uuid
+  resourceId        String    @map("resource_id") @db.Uuid
+  distributedTo     String    @map("distributed_to")
+  distributionType  String    @map("distribution_type")
+  distributedBy     String?   @map("distributed_by") @db.Uuid
+  distributedAt     DateTime  @map("distributed_at")
+  accessedAt        DateTime? @map("accessed_at")
+  downloadedAt      DateTime? @map("downloaded_at")
+  expiresAt         DateTime? @map("expires_at")
+  
+  // Relations
+  resource Resource @relation(fields: [resourceId], references: [id])
+
+  @@map("resource_distributions")
+  @@schema("resources")
+}
+
+model ResourceReview {
+  id         String   @id @default(uuid()) @db.Uuid
+  resourceId String   @map("resource_id") @db.Uuid
+  reviewerId String   @map("reviewer_id")
+  rating     Int
+  comment    String?
+  isPublic   Boolean  @default(true) @map("is_public")
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+  
+  // Relations
+  resource Resource @relation(fields: [resourceId], references: [id])
+
+  @@map("resource_reviews")
+  @@schema("resources")
+}
+
+model ResourceAnalytics {
+  id         String   @id @default(uuid()) @db.Uuid
+  resourceId String   @map("resource_id") @db.Uuid
+  event      String
+  userId     String?  @map("user_id")
+  sessionId  String?  @map("session_id")
+  metadata   Json?
+  recordedAt DateTime @map("recorded_at")
+  
+  // Relations
+  resource Resource @relation(fields: [resourceId], references: [id])
+
+  @@map("resource_analytics")
+  @@schema("resources")
+}
+
+model ResourceVersion {
+  id               String   @id @default(uuid()) @db.Uuid
+  resourceId       String   @map("resource_id") @db.Uuid
+  version          String
+  changeLog        String?  @map("change_log")
+  filePath         String?  @map("file_path")
+  isCurrentVersion Boolean  @default(false) @map("is_current_version")
+  createdAt        DateTime @default(now()) @map("created_at")
+  
+  // Relations
+  resource Resource @relation(fields: [resourceId], references: [id])
+
+  @@map("resource_versions")
+  @@schema("resources")
+}
+
+// =============================================================================
+// AUDIT SCHEMA - Compliance and Logging
+// =============================================================================
+
+model AuditLog {
+  id             String   @id @default(uuid()) @db.Uuid
+  tableName      String   @map("table_name")
+  recordId       String   @map("record_id") @db.Uuid
+  operation      String
+  oldValues      Json?    @map("old_values")
+  newValues      Json?    @map("new_values")
+  changedBy      String?  @map("changed_by") @db.Uuid
+  sessionId      String?  @map("session_id")
+  ipAddress      String?  @map("ip_address")
+  userAgent      String?  @map("user_agent")
+  changeReason   String?  @map("change_reason")
+  timestamp      DateTime @default(now())
+
+  @@map("audit_log")
+  @@schema("audit")
+}
+
+model DataAccessLog {
+  id           String   @id @default(uuid()) @db.Uuid
+  userId       String   @map("user_id") @db.Uuid
+  tableName    String   @map("table_name")
+  recordId     String?  @map("record_id") @db.Uuid
+  accessType   String   @map("access_type")
+  purpose      String?
+  dataCategory String   @map("data_category")
+  isAuthorized Boolean  @map("is_authorized")
+  sessionId    String?  @map("session_id")
+  ipAddress    String?  @map("ip_address")
+  userAgent    String?  @map("user_agent")
+  timestamp    DateTime @default(now())
+
+  @@map("data_access_log")
+  @@schema("audit")
+}
+
+model SystemEvent {
+  id        String   @id @default(uuid()) @db.Uuid
+  eventType String   @map("event_type")
+  severity  String
+  message   String
+  details   Json?
+  userId    String?  @map("user_id") @db.Uuid
+  sessionId String?  @map("session_id")
+  ipAddress String?  @map("ip_address")
+  userAgent String?  @map("user_agent")
+  timestamp DateTime @default(now())
+
+  @@map("system_events")
+  @@schema("audit")
+}

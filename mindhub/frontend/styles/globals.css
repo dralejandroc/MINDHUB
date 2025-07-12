@@ -1,0 +1,287 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Custom CSS Variables for Healthcare Theme */
+:root {
+  --color-primary: #0ea5e9;
+  --color-primary-dark: #0369a1;
+  --color-secondary: #64748b;
+  --color-success: #22c55e;
+  --color-warning: #f59e0b;
+  --color-error: #ef4444;
+  --color-clinical: #374151;
+  
+  /* Spacing for healthcare interfaces */
+  --spacing-clinical: 1.5rem;
+  --spacing-tight: 0.75rem;
+  --spacing-loose: 2rem;
+  
+  /* Typography for medical content */
+  --font-size-clinical: 1rem;
+  --line-height-clinical: 1.6;
+  
+  /* Shadows for depth */
+  --shadow-clinical: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  --shadow-card: 0 2px 15px -3px rgba(0, 0, 0, 0.07);
+}
+
+/* Dark mode support for healthcare professionals working night shifts */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --color-primary: #38bdf8;
+    --color-primary-dark: #0284c7;
+    --color-secondary: #94a3b8;
+    --color-clinical: #e2e8f0;
+  }
+}
+
+/* Base styles for better healthcare UX */
+@layer base {
+  html {
+    font-family: 'Inter', system-ui, sans-serif;
+    scroll-behavior: smooth;
+  }
+  
+  body {
+    @apply bg-gray-50 text-gray-900 antialiased;
+    font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
+    line-height: var(--line-height-clinical);
+  }
+  
+  /* Accessibility improvements */
+  *:focus {
+    @apply outline-none ring-2 ring-primary-500 ring-offset-2;
+  }
+  
+  /* Clinical text styles */
+  .text-clinical {
+    color: var(--color-clinical);
+    line-height: var(--line-height-clinical);
+  }
+  
+  /* Medical form inputs */
+  input[type="text"],
+  input[type="email"],
+  input[type="password"],
+  input[type="number"],
+  input[type="tel"],
+  input[type="date"],
+  textarea,
+  select {
+    @apply border-gray-300 rounded-lg shadow-sm focus:border-primary-500 focus:ring-primary-500;
+    font-size: var(--font-size-clinical);
+  }
+  
+  /* Healthcare-specific button styles */
+  .btn-primary {
+    @apply bg-primary-600 hover:bg-primary-700 text-white font-medium py-2 px-4 rounded-lg transition-colors duration-200 focus:ring-2 focus:ring-primary-500 focus:ring-offset-2;
+  }
+  
+  .btn-secondary {
+    @apply bg-gray-200 hover:bg-gray-300 text-gray-900 font-medium py-2 px-4 rounded-lg transition-colors duration-200 focus:ring-2 focus:ring-gray-500 focus:ring-offset-2;
+  }
+  
+  .btn-danger {
+    @apply bg-error-600 hover:bg-error-700 text-white font-medium py-2 px-4 rounded-lg transition-colors duration-200 focus:ring-2 focus:ring-error-500 focus:ring-offset-2;
+  }
+  
+  /* Card styles for patient records and clinical data */
+  .card {
+    @apply bg-white rounded-xl shadow-soft border border-gray-200 p-6;
+  }
+  
+  .card-header {
+    @apply border-b border-gray-200 pb-4 mb-4;
+  }
+  
+  .card-title {
+    @apply text-lg font-semibold text-gray-900;
+  }
+  
+  /* Clinical data tables */
+  .table-clinical {
+    @apply w-full border-collapse;
+  }
+  
+  .table-clinical th {
+    @apply bg-gray-50 px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200;
+  }
+  
+  .table-clinical td {
+    @apply px-6 py-4 whitespace-nowrap text-sm text-gray-900 border-b border-gray-200;
+  }
+  
+  /* Alert styles for clinical notifications */
+  .alert {
+    @apply p-4 rounded-lg border;
+  }
+  
+  .alert-info {
+    @apply bg-blue-50 border-blue-200 text-blue-800;
+  }
+  
+  .alert-success {
+    @apply bg-green-50 border-green-200 text-green-800;
+  }
+  
+  .alert-warning {
+    @apply bg-yellow-50 border-yellow-200 text-yellow-800;
+  }
+  
+  .alert-error {
+    @apply bg-red-50 border-red-200 text-red-800;
+  }
+}
+
+/* Component-specific styles */
+@layer components {
+  /* Navigation styles */
+  .nav-item {
+    @apply flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors duration-150;
+  }
+  
+  .nav-item-active {
+    @apply bg-primary-100 text-primary-700;
+  }
+  
+  .nav-item-inactive {
+    @apply text-gray-600 hover:bg-gray-100 hover:text-gray-900;
+  }
+  
+  /* Hub-specific styles */
+  .hub-clinimetrix {
+    @apply border-l-4 border-clinimetrix-500;
+  }
+  
+  .hub-expedix {
+    @apply border-l-4 border-expedix-500;
+  }
+  
+  .hub-formx {
+    @apply border-l-4 border-formx-500;
+  }
+  
+  .hub-resources {
+    @apply border-l-4 border-resources-500;
+  }
+  
+  /* Clinical assessment styles */
+  .assessment-scale {
+    @apply bg-white rounded-lg border border-gray-200 p-4 hover:shadow-md transition-shadow duration-200;
+  }
+  
+  .assessment-question {
+    @apply mb-4 p-3 bg-gray-50 rounded-lg;
+  }
+  
+  .assessment-options {
+    @apply mt-3 space-y-2;
+  }
+  
+  .assessment-option {
+    @apply flex items-center space-x-3;
+  }
+  
+  /* Patient record styles */
+  .patient-card {
+    @apply bg-white rounded-lg shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow duration-200;
+  }
+  
+  .patient-avatar {
+    @apply w-12 h-12 rounded-full bg-gray-300 flex items-center justify-center text-gray-600 font-medium;
+  }
+  
+  /* Form builder styles */
+  .form-field {
+    @apply border-2 border-dashed border-gray-300 rounded-lg p-4 hover:border-gray-400 transition-colors duration-200;
+  }
+  
+  .form-field-active {
+    @apply border-primary-500 bg-primary-50;
+  }
+  
+  /* Resource library styles */
+  .resource-item {
+    @apply bg-white rounded-lg border border-gray-200 p-4 hover:shadow-md transition-shadow duration-200 cursor-pointer;
+  }
+  
+  .resource-tag {
+    @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800;
+  }
+}
+
+/* Utility classes for healthcare-specific needs */
+@layer utilities {
+  /* Text sizes optimized for clinical reading */
+  .text-clinical-xs { font-size: 0.75rem; line-height: 1.5; }
+  .text-clinical-sm { font-size: 0.875rem; line-height: 1.5; }
+  .text-clinical-base { font-size: 1rem; line-height: 1.6; }
+  .text-clinical-lg { font-size: 1.125rem; line-height: 1.6; }
+  
+  /* Spacing for clinical interfaces */
+  .space-clinical > * + * { margin-top: var(--spacing-clinical); }
+  .space-tight > * + * { margin-top: var(--spacing-tight); }
+  .space-loose > * + * { margin-top: var(--spacing-loose); }
+  
+  /* Print styles for prescriptions and reports */
+  @media print {
+    .print-hidden { display: none; }
+    .print-visible { display: block; }
+    
+    .page-break-before { page-break-before: always; }
+    .page-break-after { page-break-after: always; }
+    .page-break-inside-avoid { page-break-inside: avoid; }
+    
+    /* Prescription styles */
+    .prescription {
+      @apply border border-gray-400 p-6 mb-4;
+    }
+    
+    .prescription-header {
+      @apply border-b border-gray-400 pb-4 mb-4;
+    }
+  }
+  
+  /* High contrast mode for accessibility */
+  @media (prefers-contrast: high) {
+    .card {
+      @apply border-2 border-gray-900;
+    }
+    
+    .btn-primary {
+      @apply bg-black text-white border-2 border-black;
+    }
+    
+    .btn-secondary {
+      @apply bg-white text-black border-2 border-black;
+    }
+  }
+  
+  /* Reduced motion for users with vestibular disorders */
+  @media (prefers-reduced-motion: reduce) {
+    * {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+  
+  /* Focus styles for keyboard navigation */
+  .focus-visible {
+    @apply outline-none ring-2 ring-primary-500 ring-offset-2;
+  }
+  
+  /* Screen reader only content */
+  .sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+  }
+}

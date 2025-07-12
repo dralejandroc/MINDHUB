@@ -1,0 +1,118 @@
+<context>
+# Overview  
+MindHub es un SaaS cloud-native desplegado en Google App Engine, diseñado exclusivamente para profesionales de la salud mental (psiquiatras y psicólogos). Su primera entrega cubre cuatro Hubs esenciales —Clinimetrix, Expedix, Formx y Resources— que automatizan la evaluación, el expediente clínico, la generación de formularios y el acceso a materiales psicoeducativos. Esta fase inicial valida el núcleo funcional antes de incorporar módulos adicionales.
+
+# Core Features  
+Clinimetrix
+
+Qué hace: Sistema base automatizado que estandariza la aplicación de todas las diferentes escalas de la biblioteca, proporcionando una interfaz visual uniforme para más de 50 instrumentos clínimetricos. Cada escala, con objetivos y puntuaciones particulares, se ejecuta de forma autoaplicable o heteroaplicada. Los métodos de aplicación incluyen:
+
+Presencial: en el mismo dispositivo o en uno secundario dentro de la consulta.
+
+En línea: mediante enlaces tokenizados que envían las preguntas al paciente.
+Las respuestas se reciben de forma segura y permanecen ocultas hasta su interpretación por un profesional. Este sistema garantiza la misma experiencia de usuario y flujo de trabajo para todas las escalas, reduciendo errores y acelerando el análisis diagnóstico.
+
+Por qué es importante: Agiliza y estandariza la evaluación diagnóstica, reduce errores manuales y permite seguimiento longitudinal. Además, no existe en el mercado un sistema automatizado que centralice la aplicación de múltiples escalas como herramienta para la consulta diaria de un profesional, consolidando todos los instrumentos en una plataforma única.
+
+Expedix
+
+Qué hace: Expediente clínico digital con historial de consultas y módulo de recetas automaticas con selector de medicamentos por busqueda dropdown, con catalago de medicamentos personalizable, con seguimiento de recetas anteriores, y actualizacion en consulta actual de ultima receta o nueva receta. la receta se puede mandar imprimir con margenes personalizables segun el usuario. ademas genera la receta de manera digital con firma digital medianto codigo QR irrepetible como seguridad. El sistema de categorizacion de pacientes tambien es importante, el paciente es el centro de toda la informacion, es donde llegan las escalas clinimetricas respondidas, donde se puede ver la informacion cronologica del a atencion del paciente, ademas que se puede categorizar por medio de tags, para poder tener una identificacion sencilla del apciente y poder tener informacion visual del paciente. 
+
+Por qué es importante: Centraliza toda la información del paciente, agiliza la consulta y garantiza trazabilidad. ademas que el sistema de recetas hace sencillo poder escribir las recetas y darle seguimiento a la misma receta, hacer cambios con respecto a indicaciones anteriores, y poder enviar recetas de manera digital segura a distancia. 
+
+Cómo funciona: Base de datos Cloud SQL, API REST en GAE, firma digital de recetas y registros de archivos en Cloud Storage.
+
+Formx
+
+Qué hace: Constructor drag-and-drop de formularios médicos pre/post-consulta. con multiples campos personalisables, pudiendo importar formas ya existentes en formatos pdf o algun otro que use Jotform
+
+Por qué es importante: Permite al profesional diseñar y enviar cuestionarios personalizados sin desarrollo adicional, pudiendo obtener informacion relevante de la salud del paciente, motivo de consulta, antecedentes medicos entre otros. 
+
+Cómo funciona: Editor visual en Next.js, plantillas JSON almacenadas en Firestore, exportación a PDF y envío automático por email.
+
+Resources
+
+Qué hace: Biblioteca de materiales psicoeducativos y de seguimiento. catalogo preestablecido pudiendo a;adirse escritos y herramientas en pdf a disposicion del usuario para enviar a distancia a manera de tarea o informacion psicoeducativa. 
+
+Por qué es importante: Facilita la entrega de recursos validados al paciente, mejora adherencia y refuerza intervención.
+
+Cómo funciona: Catálogo categorizado en Firestore, descarga segura vía Auth0, control de versiones y logs de acceso.
+
+# User Experience  
+Personas:
+
+Dr. Ana (Psiquiatra): Necesita aplicar escalas rápidamente y revisar resultados históricos, y dar seguimiento de manera objetiva y profesional a sus pacientes. ademas de poder generar recetas para imprimir o digitales. 
+
+Lic. Juan (Psicólogo): Requiere generar formularios personalizados antes de las sesiones y tener una manera visual de ver la informacion e historia personal de cada paciente que trata.
+
+Dra. María (Directora clínica): Consulta informes, expedientes, asigna roles a su equipo, da accesos y alimenta catalogos de recuross para ser utilizados por los profesionales de su clinica.  
+
+
+
+Key Flows:
+
+Evaluación rápida (Clinimetrix): Login → Selecciona escala → Aplica → Visualiza resultados → Guarda automatica en expediente. o envia a distancia escala y recibe en el expediente del paciente los resultados del instrumento implementado 
+
+Revisión de expediente (Expedix): Login → Busca paciente → Revisa notas, recuross, recetas y escalas. Ve informacion visual del paciente con tags de diferntes tipos para poder reconocer las caracteristicas individuales de cada paciente  → Genera receta si aplica, genera escalas o instrumentos si aplica
+
+Creación de formulario (Formx): Login → Diseña formulario o importa formulario via PDF o formato de Jotform → guarda formulario para multiples usos → genera  enlace publico → Envía al paciente. -> paciente llena formulario --> la informacion se vierte en el expediente del apciente en apartados especificos segun la inforamcion previo a la consulta. Tambien se pueden generar formatos de satisfaccion y seguimiento de clientes. 
+
+Acceso a recursos (Resources): Login → Explora biblioteca → Filtra por categoría, filtra por diferentes tags de cada archivo o elemento → Descarga/enlace directo/manda imprimir --> envia a paciente o entrega personalmente al paciente 
+
+UI/UX considerations: Diseño limpio, botones grandes para tablet, esquemas de color de bajo contraste, accesibilidad WCAG 2.1 AA.
+<PRD>
+# Technical Architecture  
+Infraestructura: Google App Engine Standard (front-end en React/Next.js y microservicios Node.js).
+
+Autenticación: Auth0 (OIDC) con SSO para todos los Hubs.
+
+Almacenamiento: Cloud SQL para Expedix, Firestore para Formx y Resources, Cloud Storage para archivos PDF/imágenes.
+
+Integraciones: API REST interna (Integrix) para conectar resultados Clinimetrix con Expedix y Formx.
+
+CI/CD: GitHub Actions → GAE Deploy, pruebas unitarias y E2E automatizadas.
+
+# Development Roadmap  
+MVP (Fase 1)
+
+Clinimetrix: sistema universal  de escalas, generar tarjetas o , gráficas.
+
+Expedix: historial, recetas digitales, almacenamiento de archivos.
+
+Formx: editor drag-and-drop, integración de escalas, exportación PDF.
+
+Resources: catálogo inicial, descarga segura, control de versiones.
+
+Futuras mejoras
+
+Añadir Schedix, Finance, Frontdesk y demás Hubs.
+
+Versionado avanzado de plantillas Formx.
+
+Analíticas BI (Metrix) y programas de fidelidad (Loyalty).
+
+# Logical Dependency Chain
+Autenticación (Auth0): Base para acceso a todos los Hubs.
+
+Clinimetrix: Núcleo de evaluación; genera datos a integrar.
+
+Expedix: Recibe datos de Clinimetrix, logs, atenciones y todo lo que se ha hecho al paciente. habilita Rx y almacenamiento.
+
+Formx: Permite incrustar escalas existentes.
+
+Resources: Catálogo independiente; dependiente solo de Auth0.
+
+# Risks and Mitigations  
+Cumplimiento NOM-024: Asegurar esquemas HL7/IHE; revisión con auditor externo.
+
+Seguridad de datos: Pen-testing trimestral y cifrado en reposo/tránsito.
+
+Escalabilidad prematura: Comenzar con una instancia F2; monitorizar métricas antes de escalar.
+
+Adopción de usuarios: Capacitación inicial y credenciales temporales para 20–40 profesionales.
+
+# Appendix  
+Research: Benchmarks de performance GAE.
+
+Especificaciones NOM-024-SSA3-2010: Catálogo de datos y metadatos
+</PRD>

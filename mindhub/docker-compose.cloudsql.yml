@@ -1,0 +1,147 @@
+version: '3.8'
+
+services:
+  # MindHub Application
+  mindhub-app:
+    build: .
+    ports:
+      - "8080:8080"
+    environment:
+      # Database Configuration
+      - DB_HOST=cloud-sql-proxy
+      - DB_PORT=3306
+      - DB_USER=${DB_USER}
+      - DB_PASS=${DB_PASS}
+      - DB_NAME=${DB_NAME}
+      - DB_SSL=true
+      
+      # Cloud SQL Configuration
+      - CLOUD_SQL_CONNECTION_NAME=${CLOUD_SQL_CONNECTION_NAME}
+      - GOOGLE_APPLICATION_CREDENTIALS=/app/config/credentials.json
+      
+      # Application Configuration
+      - NODE_ENV=production
+      - PORT=8080
+      
+      # Auth0 Configuration
+      - AUTH0_DOMAIN=${AUTH0_DOMAIN}
+      - AUTH0_CLIENT_ID=${AUTH0_CLIENT_ID}
+      - AUTH0_CLIENT_SECRET=${AUTH0_CLIENT_SECRET}
+      - AUTH0_AUDIENCE=${AUTH0_AUDIENCE}
+      
+      # Security Configuration
+      - JWT_SECRET=${JWT_SECRET}
+      - SESSION_SECRET=${SESSION_SECRET}
+      
+    volumes:
+      # SSL Certificates
+      - ./ssl-certs:/app/ssl-certs:ro
+      # Google Cloud Credentials
+      - ${GOOGLE_APPLICATION_CREDENTIALS}:/app/config/credentials.json:ro
+      # Application Logs
+      - ./logs:/app/logs
+      
+    depends_on:
+      - cloud-sql-proxy
+      - redis-cache
+      
+    networks:
+      - mindhub-network
+      
+    restart: unless-stopped
+    
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Cloud SQL Proxy
+  cloud-sql-proxy:
+    image: gcr.io/cloudsql-docker/gce-proxy:1.35.0
+    command: >
+      /cloud_sql_proxy
+      -instances=${CLOUD_SQL_CONNECTION_NAME}=tcp:0.0.0.0:3306
+      -credential_file=/config/credentials.json
+      -log_debug_stdout=true
+    ports:
+      - "3306:3306"
+    volumes:
+      - ${GOOGLE_APPLICATION_CREDENTIALS}:/config/credentials.json:ro
+    environment:
+      - GOOGLE_APPLICATION_CREDENTIALS=/config/credentials.json
+    networks:
+      - mindhub-network
+    restart: unless-stopped
+    
+    healthcheck:
+      test: ["CMD", "nc", "-z", "localhost", "3306"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Redis Cache for Sessions
+  redis-cache:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    command: redis-server --requirepass ${REDIS_PASSWORD}
+    environment:
+      - REDIS_PASSWORD=${REDIS_PASSWORD}
+    volumes:
+      - redis-data:/data
+      - ./config/redis.conf:/etc/redis/redis.conf:ro
+    networks:
+      - mindhub-network
+    restart: unless-stopped
+    
+    healthcheck:
+      test: ["CMD", "redis-cli", "--raw", "incr", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Nginx Reverse Proxy
+  nginx:
+    image: nginx:alpine
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./config/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./ssl-certs:/etc/nginx/ssl:ro
+      - ./logs/nginx:/var/log/nginx
+    depends_on:
+      - mindhub-app
+    networks:
+      - mindhub-network
+    restart: unless-stopped
+    
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Log Collector (Optional - for centralized logging)
+  fluentd:
+    image: fluent/fluentd:edge-debian
+    volumes:
+      - ./logs:/fluentd/log
+      - ./config/fluentd.conf:/fluentd/etc/fluent.conf:ro
+    depends_on:
+      - mindhub-app
+    networks:
+      - mindhub-network
+    restart: unless-stopped
+
+volumes:
+  redis-data:
+    driver: local
+
+networks:
+  mindhub-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16
