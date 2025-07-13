@@ -1,17 +1,26 @@
 /**
- * Clinimetrix Assessments Routes
+ * Clinical Assessments API Routes for Clinimetrix Hub
  * 
- * Manages clinical assessments and scoring.
- * Handles both self-administered and hetero-administered assessments.
+ * Comprehensive clinical assessment endpoints with psychological scales,
+ * scoring algorithms, and professional validation workflows
  */
 
 const express = require('express');
 const { body, param, query, validationResult } = require('express-validator');
+const middleware = require('../../shared/middleware');
+const AssessmentController = require('../controllers/assessment-controller');
+const ScoringEngine = require('../utils/scoring-engine');
+const AuditLogger = require('../../shared/utils/audit-logger');
 const { executeQuery, executeTransaction } = require('../../shared/config/prisma');
 const { logger } = require('../../shared/config/storage');
 const crypto = require('crypto');
 
 const router = express.Router();
+
+// Initialize controllers and utilities
+const assessmentController = new AssessmentController();
+const scoringEngine = new ScoringEngine();
+const auditLogger = new AuditLogger();
 
 /**
  * Validation middleware for assessment creation
@@ -48,10 +57,66 @@ const validateAssessment = [
 ];
 
 /**
- * GET /api/clinimetrix/assessments/patient/:patientId
- * Get all assessments for a patient
+ * GET /api/v1/clinimetrix/assessments
+ * List clinical assessments with filtering and pagination
  */
-router.get('/patient/:patientId', [
+router.get('/',
+  ...middleware.utils.forHub('clinimetrix'),
+  query('page').optional().isInt({ min: 1, max: 1000 }),
+  query('limit').optional().isInt({ min: 1, max: 100 }),
+  query('patient_id').optional().isUUID(4),
+  query('scale_type').optional().isIn(['depression', 'anxiety', 'cognitive', 'personality', 'substance_use', 'trauma']),
+  query('status').optional().isIn(['draft', 'in_progress', 'completed', 'reviewed', 'cancelled']),
+  query('date_from').optional().isISO8601(),
+  query('date_to').optional().isISO8601(),
+  query('administered_by').optional().isUUID(4),
+  query('severity').optional().isIn(['minimal', 'mild', 'moderate', 'severe', 'very_severe']),
+  async (req, res) => {
+    try {
+      const errors = validationResult(req);
+      if (!errors.isEmpty()) {
+        return res.status(400).json({
+          error: {
+            code: 'VALIDATION_ERROR',
+            message: 'Assessment validation failed',
+            details: errors.array(),
+            timestamp: new Date().toISOString(),
+            requestId: req.headers['x-request-id']
+          }
+        });
+      }
+
+      const result = await assessmentController.listAssessments(req.query, req.user);
+      
+      res.status(200).json({
+        data: result.assessments,
+        meta: {
+          pagination: result.pagination,
+          total: result.total,
+          filters: req.query,
+          summary: result.summary
+        }
+      });
+    } catch (error) {
+      res.status(500).json({
+        error: {
+          code: 'ASSESSMENT_LIST_ERROR',
+          message: 'Failed to retrieve assessments',
+          timestamp: new Date().toISOString(),
+          requestId: req.headers['x-request-id']
+        }
+      });
+    }
+  }
+);
+
+/**
+ * GET /api/v1/clinimetrix/patients/:patient_id/assessments
+ * Get all assessments for a specific patient
+ */
+router.get('/patients/:patient_id/assessments',
+  ...middleware.utils.withPatientAccess(['psychiatrist', 'psychologist', 'nurse', 'admin'], ['read:clinical_assessments']),
+  [
   param('patientId').isUUID().withMessage('Invalid patient ID format'),
   query('page').optional().isInt({ min: 1 }).withMessage('Page must be a positive integer'),
   query('limit').optional().isInt({ min: 1, max: 50 }).withMessage('Limit must be between 1 and 50'),
@@ -157,10 +222,12 @@ router.get('/patient/:patientId', [
 });
 
 /**
- * GET /api/clinimetrix/assessments/:id
- * Get specific assessment with full details
+ * GET /api/v1/clinimetrix/assessments/:id
+ * Get specific assessment details
  */
-router.get('/:id', [
+router.get('/:id',
+  ...middleware.utils.forRoles(['psychiatrist', 'psychologist', 'nurse', 'admin'], ['read:clinical_assessments']),
+  [
   param('id').isUUID().withMessage('Invalid assessment ID format')
 ], async (req, res) => {
   try {
@@ -250,10 +317,13 @@ router.get('/:id', [
 });
 
 /**
- * POST /api/clinimetrix/assessments
- * Create new assessment
+ * POST /api/v1/clinimetrix/assessments
+ * Create a new clinical assessment
  */
-router.post('/', validateAssessment, async (req, res) => {
+router.post('/',
+  ...middleware.utils.forRoles(['psychiatrist', 'psychologist', 'admin'], ['write:clinical_assessments']),
+  validateAssessment,
+  async (req, res) => {
   try {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
@@ -384,10 +454,12 @@ router.post('/', validateAssessment, async (req, res) => {
 });
 
 /**
- * POST /api/clinimetrix/assessments/remote-token
+ * POST /api/v1/clinimetrix/assessments/remote-token
  * Generate token for remote assessment
  */
-router.post('/remote-token', [
+router.post('/remote-token',
+  ...middleware.utils.forRoles(['psychiatrist', 'psychologist', 'admin'], ['write:clinical_assessments']),
+  [
   body('patientId').isUUID().withMessage('Invalid patient ID format'),
   body('scaleId').isUUID().withMessage('Invalid scale ID format'),
   body('expiresIn').optional().isInt({ min: 1, max: 168 }).withMessage('Expires in must be between 1 and 168 hours')
@@ -492,10 +564,12 @@ router.post('/remote-token', [
 });
 
 /**
- * GET /api/clinimetrix/assessments/compare/:patientId/:scaleId
+ * GET /api/v1/clinimetrix/assessments/compare/:patient_id/:scale_id
  * Compare assessment results over time for a patient and scale
  */
-router.get('/compare/:patientId/:scaleId', [
+router.get('/compare/:patient_id/:scale_id',
+  ...middleware.utils.withPatientAccess(['psychiatrist', 'psychologist', 'nurse', 'admin'], ['read:clinical_assessments']),
+  [
   param('patientId').isUUID().withMessage('Invalid patient ID format'),
   param('scaleId').isUUID().withMessage('Invalid scale ID format'),
   query('limit').optional().isInt({ min: 2, max: 20 }).withMessage('Limit must be between 2 and 20')

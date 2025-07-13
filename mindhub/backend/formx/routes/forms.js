@@ -1,22 +1,34 @@
 /**
- * FormX Forms Management Routes
+ * Forms Management API Routes for Formx Hub
  * 
- * CRUD operations for form definitions, templates, and submissions.
- * Supports dynamic form building with conditional logic and validation.
+ * Comprehensive form management endpoints with dynamic form building,
+ * conditional logic, validation, and submission handling
  */
 
 const express = require('express');
 const { body, param, query, validationResult } = require('express-validator');
+const middleware = require('../../shared/middleware');
+const FormController = require('../controllers/form-controller');
+const SubmissionController = require('../controllers/submission-controller');
+const AuditLogger = require('../../shared/utils/audit-logger');
 const { executeQuery, executeTransaction } = require('../../shared/config/prisma');
 const { logger } = require('../../shared/config/storage');
+const { validateForm } = require('../../shared/validation/form-validation');
 
 const router = express.Router();
 
+// Initialize controllers and utilities
+const formController = new FormController();
+const submissionController = new SubmissionController();
+const auditLogger = new AuditLogger();
+
 /**
- * GET /api/formx/forms
- * Get all forms with pagination and filtering
+ * GET /api/v1/formx/forms
+ * List forms with filtering, pagination, and search
  */
-router.get('/', [
+router.get('/',
+  ...middleware.utils.forHub('formx'),
+  [
   query('page').optional().isInt({ min: 1 }).withMessage('Page must be a positive integer'),
   query('limit').optional().isInt({ min: 1, max: 100 }).withMessage('Limit must be between 1 and 100'),
   query('search').optional().trim().escape(),
@@ -100,10 +112,12 @@ router.get('/', [
 });
 
 /**
- * GET /api/formx/forms/:id
- * Get specific form with full configuration
+ * GET /api/v1/formx/forms/:id
+ * Get specific form details with configuration
  */
-router.get('/:id', [
+router.get('/:id',
+  ...middleware.utils.forRoles(['psychiatrist', 'psychologist', 'nurse', 'patient', 'admin'], ['read:forms']),
+  [
   param('id').isUUID().withMessage('Invalid form ID format')
 ], async (req, res) => {
   try {
@@ -170,10 +184,13 @@ router.get('/:id', [
 });
 
 /**
- * POST /api/formx/forms
- * Create new form
+ * POST /api/v1/formx/forms
+ * Create a new form template
  */
-router.post('/', validateForm, async (req, res) => {
+router.post('/',
+  ...middleware.utils.forRoles(['psychiatrist', 'psychologist', 'admin'], ['write:forms']),
+  validateForm,
+  async (req, res) => {
   try {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
@@ -260,10 +277,12 @@ router.post('/', validateForm, async (req, res) => {
 });
 
 /**
- * PUT /api/formx/forms/:id
- * Update existing form
+ * PUT /api/v1/formx/forms/:id
+ * Update complete form template
  */
-router.put('/:id', [
+router.put('/:id',
+  ...middleware.utils.forRoles(['psychiatrist', 'psychologist', 'admin'], ['write:forms']),
+  [
   param('id').isUUID().withMessage('Invalid form ID format'),
   ...validateForm
 ], async (req, res) => {
@@ -366,10 +385,12 @@ router.put('/:id', [
 });
 
 /**
- * DELETE /api/formx/forms/:id
- * Soft delete form (set isActive to false)
+ * DELETE /api/v1/formx/forms/:id
+ * Soft delete form template (archive)
  */
-router.delete('/:id', [
+router.delete('/:id',
+  ...middleware.utils.forRoles(['psychiatrist', 'admin'], ['delete:forms']),
+  [
   param('id').isUUID().withMessage('Invalid form ID format'),
   body('reason').optional().trim().isLength({ max: 500 }).withMessage('Reason must not exceed 500 characters')
 ], async (req, res) => {
@@ -445,10 +466,12 @@ router.delete('/:id', [
 });
 
 /**
- * POST /api/formx/forms/:id/submit
- * Submit form response (public endpoint)
+ * POST /api/v1/formx/forms/:id/submit
+ * Submit form response with validation
  */
-router.post('/:id/submit', [
+router.post('/:id/submit',
+  ...middleware.presets.public,
+  [
   param('id').isUUID().withMessage('Invalid form ID format'),
   body('responses').isObject().withMessage('Responses are required'),
   body('submitterName').optional().trim().isLength({ max: 255 }),
@@ -551,10 +574,12 @@ router.post('/:id/submit', [
 });
 
 /**
- * POST /api/formx/forms/:id/duplicate
+ * POST /api/v1/formx/forms/:id/duplicate
  * Create a copy of an existing form
  */
-router.post('/:id/duplicate', [
+router.post('/:id/duplicate',
+  ...middleware.utils.forRoles(['psychiatrist', 'psychologist', 'admin'], ['write:forms']),
+  [
   param('id').isUUID().withMessage('Invalid form ID format'),
   body('title').optional().trim().isLength({ min: 3, max: 200 }).withMessage('Title must be between 3 and 200 characters')
 ], async (req, res) => {
@@ -653,10 +678,12 @@ router.post('/:id/duplicate', [
 });
 
 /**
- * GET /api/formx/forms/category/:category
+ * GET /api/v1/formx/forms/category/:category
  * Get forms by category
  */
-router.get('/category/:category', [
+router.get('/category/:category',
+  ...middleware.utils.forHub('formx'),
+  [
   param('category').isIn(['intake', 'pre_consultation', 'post_consultation', 'satisfaction', 'follow_up', 'screening', 'assessment'])
 ], async (req, res) => {
   try {

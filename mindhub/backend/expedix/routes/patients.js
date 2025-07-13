@@ -1,16 +1,23 @@
 /**
- * Expedix Patient Management Routes
+ * Patient Management API Routes for Expedix Hub
  * 
- * CRUD operations for patient management with healthcare compliance.
- * Implements NOM-024-SSA3-2010 requirements for medical data handling.
+ * Comprehensive patient data management endpoints with healthcare compliance
+ * and role-based access control implementing NOM-024-SSA3-2010 requirements
  */
 
 const express = require('express');
 const { body, param, query, validationResult } = require('express-validator');
+const middleware = require('../../shared/middleware');
+const PatientController = require('../controllers/patient-controller');
+const AuditLogger = require('../../shared/utils/audit-logger');
 const { getPrismaClient, executeQuery, executeTransaction, schemas } = require('../../shared/config/prisma');
 const { logger } = require('../../shared/config/storage');
 
 const router = express.Router();
+
+// Initialize controllers and utilities
+const patientController = new PatientController();
+const auditLogger = new AuditLogger();
 
 /**
  * Validation middleware for patient data
@@ -64,10 +71,12 @@ const validatePatient = [
 ];
 
 /**
- * GET /api/expedix/patients
- * Get all patients with pagination and filtering
+ * GET /api/v1/expedix/patients
+ * List patients with filtering, pagination, and search
  */
-router.get('/', [
+router.get('/',
+  ...middleware.utils.forHub('expedix'),
+  [
   query('page').optional().isInt({ min: 1 }).withMessage('Page must be a positive integer'),
   query('limit').optional().isInt({ min: 1, max: 100 }).withMessage('Limit must be between 1 and 100'),
   query('search').optional().trim().escape(),
@@ -162,10 +171,12 @@ router.get('/', [
 });
 
 /**
- * GET /api/expedix/patients/:id
- * Get specific patient with full details
+ * GET /api/v1/expedix/patients/:id
+ * Get specific patient details with access control
  */
-router.get('/:id', [
+router.get('/:id',
+  ...middleware.utils.withPatientAccess(['psychiatrist', 'psychologist', 'nurse', 'patient', 'admin'], ['read:patient_data']),
+  [
   param('id').isUUID().withMessage('Invalid patient ID format')
 ], async (req, res) => {
   try {
@@ -265,10 +276,13 @@ router.get('/:id', [
 });
 
 /**
- * POST /api/expedix/patients
- * Create new patient
+ * POST /api/v1/expedix/patients
+ * Create a new patient record
  */
-router.post('/', validatePatient, async (req, res) => {
+router.post('/',
+  ...middleware.utils.forRoles(['psychiatrist', 'psychologist', 'nurse', 'admin'], ['write:patient_data']),
+  validatePatient,
+  async (req, res) => {
   try {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
@@ -331,10 +345,12 @@ router.post('/', validatePatient, async (req, res) => {
 });
 
 /**
- * PUT /api/expedix/patients/:id
- * Update existing patient
+ * PUT /api/v1/expedix/patients/:id
+ * Update complete patient record
  */
-router.put('/:id', [
+router.put('/:id',
+  ...middleware.utils.withPatientAccess(['psychiatrist', 'psychologist', 'nurse', 'admin'], ['write:patient_data']),
+  [
   param('id').isUUID().withMessage('Invalid patient ID format'),
   ...validatePatient
 ], async (req, res) => {
@@ -406,10 +422,12 @@ router.put('/:id', [
 });
 
 /**
- * DELETE /api/expedix/patients/:id
- * Soft delete patient (set isActive to false)
+ * DELETE /api/v1/expedix/patients/:id
+ * Soft delete patient record (archive)
  */
-router.delete('/:id', [
+router.delete('/:id',
+  ...middleware.utils.forRoles(['psychiatrist', 'admin'], ['delete:patient_data']),
+  [
   param('id').isUUID().withMessage('Invalid patient ID format'),
   body('reason').notEmpty().withMessage('Deletion reason is required')
 ], async (req, res) => {
@@ -481,10 +499,12 @@ router.delete('/:id', [
 });
 
 /**
- * GET /api/expedix/patients/:id/summary
- * Get patient summary for quick overview
+ * GET /api/v1/expedix/patients/:id/summary
+ * Get patient summary with key metrics
  */
-router.get('/:id/summary', [
+router.get('/:id/summary',
+  ...middleware.utils.withPatientAccess(['psychiatrist', 'psychologist', 'nurse', 'patient', 'admin'], ['read:patient_data']),
+  [
   param('id').isUUID().withMessage('Invalid patient ID format')
 ], async (req, res) => {
   try {

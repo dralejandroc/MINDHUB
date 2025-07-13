@@ -1,22 +1,33 @@
 /**
- * Resources Library Routes
+ * Educational Resources API Routes for Resources Hub
  * 
- * Manages the psychoeducational resource library.
- * Handles resource browsing, searching, and metadata management.
+ * Comprehensive resource management endpoints for psychoeducational content,
+ * treatment plans, multimedia materials, and content distribution
  */
 
 const express = require('express');
 const { body, param, query, validationResult } = require('express-validator');
+const middleware = require('../../shared/middleware');
+const ResourceController = require('../controllers/resource-controller');
+const ContentController = require('../controllers/content-controller');
+const AuditLogger = require('../../shared/utils/audit-logger');
 const { executeQuery, executeTransaction } = require('../../shared/config/prisma');
 const { logger } = require('../../shared/config/storage');
 
 const router = express.Router();
 
+// Initialize controllers and utilities
+const resourceController = new ResourceController();
+const contentController = new ContentController();
+const auditLogger = new AuditLogger();
+
 /**
- * GET /api/resources/library
- * Get all resources with pagination and filtering
+ * GET /api/v1/resources/content
+ * List educational resources with filtering and search
  */
-router.get('/', [
+router.get('/',
+  ...middleware.utils.forHub('resources'),
+  [
   query('page').optional().isInt({ min: 1 }).withMessage('Page must be a positive integer'),
   query('limit').optional().isInt({ min: 1, max: 100 }).withMessage('Limit must be between 1 and 100'),
   query('category').optional().isIn(['depression', 'anxiety', 'bipolar', 'trauma', 'addiction', 'eating_disorders', 'personality_disorders', 'psychosis', 'relationships', 'parenting', 'grief', 'stress_management']),
@@ -112,10 +123,12 @@ router.get('/', [
 });
 
 /**
- * GET /api/resources/library/:id
- * Get specific resource with full details
+ * GET /api/v1/resources/content/:id
+ * Get specific resource details
  */
-router.get('/:id', [
+router.get('/:id',
+  ...middleware.utils.forRoles(['psychiatrist', 'psychologist', 'nurse', 'patient', 'admin'], ['read:resources']),
+  [
   param('id').isUUID().withMessage('Invalid resource ID format')
 ], async (req, res) => {
   try {
@@ -183,10 +196,12 @@ router.get('/:id', [
 });
 
 /**
- * GET /api/resources/library/category/:category
+ * GET /api/v1/resources/content/category/:category
  * Get resources by category
  */
-router.get('/category/:category', [
+router.get('/category/:category',
+  ...middleware.utils.forHub('resources'),
+  [
   param('category').isIn(['depression', 'anxiety', 'bipolar', 'trauma', 'addiction', 'eating_disorders', 'personality_disorders', 'psychosis', 'relationships', 'parenting', 'grief', 'stress_management'])
 ], async (req, res) => {
   try {
@@ -247,10 +262,12 @@ router.get('/category/:category', [
 });
 
 /**
- * GET /api/resources/library/search
- * Advanced search for resources
+ * POST /api/v1/resources/content/search
+ * Advanced search for educational resources
  */
-router.get('/search', [
+router.post('/search',
+  ...middleware.utils.forHub('resources'),
+  [
   query('q').trim().isLength({ min: 2 }).withMessage('Search query must be at least 2 characters'),
   query('categories').optional(),
   query('types').optional(),
@@ -347,10 +364,12 @@ router.get('/search', [
 });
 
 /**
- * GET /api/resources/library/stats/overview
- * Get resource library statistics
+ * GET /api/v1/resources/analytics/overview
+ * Get resource library analytics and statistics
  */
-router.get('/stats/overview', [
+router.get('/analytics/overview',
+  ...middleware.utils.forRoles(['psychiatrist', 'psychologist', 'admin'], ['read:resources']),
+  [
   query('startDate').optional().isISO8601().withMessage('Invalid start date format'),
   query('endDate').optional().isISO8601().withMessage('Invalid end date format')
 ], async (req, res) => {
