@@ -6,7 +6,7 @@
 'use client';
 
 import React, { createContext, useContext, useReducer, useEffect, ReactNode } from 'react';
-import { useUser } from '@auth0/nextjs-auth0/client';
+import { useAuth } from '../hooks/useAuth';
 import { ClinimetrixApiClient, createClinimetrixApiClient, ApiClientContextType } from '../lib/clinimetrix/api/ClinimetrixApiClient';
 import {
   ClinicalScale,
@@ -263,13 +263,14 @@ export interface ClinimetrixProviderProps {
 
 export function ClinimetrixProvider({ children, apiBaseUrl }: ClinimetrixProviderProps) {
   const [state, dispatch] = useReducer(clinimetrixReducer, initialState);
-  const { user, isLoading: userLoading } = useUser();
+  const { authState } = useAuth();
+  const userLoading = authState.isLoading;
 
   // Initialize API client
   useEffect(() => {
     if (!userLoading && !state.apiClient) {
       const client = createClinimetrixApiClient({
-        baseUrl: apiBaseUrl || process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000'
+        baseUrl: apiBaseUrl || process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'
       });
       
       dispatch({ type: 'SET_API_CLIENT', payload: client });

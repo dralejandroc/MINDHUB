@@ -10,8 +10,7 @@ import {
 } from '@heroicons/react/24/outline';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
-import { ClinimetrixProvider } from '@/contexts/ClinimetrixContext';
-import { ScaleList } from '@/components/clinimetrix/ScaleList';
+import UniversalScalesGrid from '@/components/clinimetrix/UniversalScalesGrid';
 import { AssessmentSession } from '@/components/clinimetrix/AssessmentSession';
 import { AssessmentInterface } from '@/components/clinimetrix/AssessmentInterface';
 import { ClinicalScale, AssessmentSession as AssessmentSessionType } from '@/types/clinimetrix';
@@ -28,16 +27,7 @@ function ClinimetrixPageContent() {
   const renderContent = () => {
     switch (currentView) {
       case 'scales':
-        return (
-          <ScaleList
-            onScaleSelect={(scale) => {
-              setSelectedScale(scale);
-              console.log('Selected scale:', scale);
-            }}
-            showFilters={true}
-            showStats={true}
-          />
-        );
+        return <UniversalScalesGrid />;
       
       case 'sessions':
         return (
@@ -221,9 +211,5 @@ function ClinimetrixPageContent() {
 }
 
 export default function ClinimetrixPage() {
-  return (
-    <ClinimetrixProvider>
-      <ClinimetrixPageContent />
-    </ClinimetrixProvider>
-  );
+  return <ClinimetrixPageContent />;
 }

@@ -7,14 +7,23 @@
 
 const express = require('express');
 const { checkPermissions, requireAuth } = require('../shared/middleware/auth');
-const { logger } = require('../shared/config/storage');
+
+// Simple logger for now
+const logger = {
+  error: (message, meta) => console.error('[ERROR]', message, meta),
+  info: (message, meta) => console.log('[INFO]', message, meta),
+  warn: (message, meta) => console.warn('[WARN]', message, meta)
+};
 
 const router = express.Router();
 
 // Import route modules
-const patientsRoutes = require('./routes/patients-mysql');
-const consultationsRoutes = require('./routes/consultations-mysql');
-// const medicalHistoryRoutes = require('./routes/medical-history');
+const patientsRoutes = require('./routes/patients');
+const consultationsRoutes = require('./routes/consultations');
+const medicalHistoryRoutes = require('./routes/medical-history');
+const emergencyContactsRoutes = require('./routes/emergency-contacts');
+const patientRegistrationIntegrationRoutes = require('./routes/patient-registration-integration');
+const prescriptionsRoutes = require('./routes/prescriptions');
 
 // Hub information endpoint
 router.get('/', (req, res) => {
@@ -26,6 +35,7 @@ router.get('/', (req, res) => {
       'Patient Demographics Management',
       'Medical History Tracking',
       'Clinical Consultations (SOAP Notes)',
+      'Emergency Contacts Management',
       'Prescription Management',
       'Healthcare Compliance (NOM-024)',
       'Audit Logging'
@@ -33,7 +43,8 @@ router.get('/', (req, res) => {
     endpoints: {
       patients: '/api/expedix/patients',
       medicalHistory: '/api/expedix/medical-history',
-      consultations: '/api/expedix/consultations'
+      consultations: '/api/expedix/consultations',
+      emergencyContacts: '/api/expedix/emergency-contacts'
     },
     compliance: {
       standard: 'NOM-024-SSA3-2010',
@@ -77,8 +88,11 @@ router.get('/health', async (req, res) => {
 
 // Mount route modules
 router.use('/patients', patientsRoutes);
+router.use('/patients', patientRegistrationIntegrationRoutes);
 router.use('/consultations', consultationsRoutes);
-// router.use('/medical-history', medicalHistoryRoutes);
+router.use('/medical-history', medicalHistoryRoutes);
+router.use('/emergency-contacts', emergencyContactsRoutes);
+router.use('/prescriptions', prescriptionsRoutes);
 
 // Hub-specific error handler
 router.use((error, req, res, next) => {

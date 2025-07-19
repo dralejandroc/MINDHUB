@@ -1,0 +1,407 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id                   String                @id @default(cuid())
+  auth0Id              String                @unique
+  email                String                @unique
+  name                 String?
+  picture              String?
+  createdAt            DateTime              @default(now())
+  updatedAt            DateTime              @updatedAt
+  lastLoginAt          DateTime?
+  createdTokens        AssessmentToken[]
+  patientConsultations Consultation[]
+  administeredScales   ScaleAdministration[]
+  userRoles            UserRole[]
+
+  @@map("users")
+}
+
+model Role {
+  id              String           @id @default(cuid())
+  name            String           @unique
+  description     String?
+  isActive        Boolean          @default(true)
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+  rolePermissions RolePermission[]
+  userRoles       UserRole[]
+
+  @@map("roles")
+}
+
+model Permission {
+  id              String           @id @default(cuid())
+  name            String           @unique
+  description     String?
+  resource        String
+  action          String
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+  rolePermissions RolePermission[]
+
+  @@map("permissions")
+}
+
+model UserRole {
+  id        String   @id @default(cuid())
+  userId    String
+  roleId    String
+  createdAt DateTime @default(now())
+  role      Role     @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, roleId])
+  @@map("user_roles")
+}
+
+model RolePermission {
+  id           String     @id @default(cuid())
+  roleId       String
+  permissionId String
+  permission   Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+  role         Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+
+  @@unique([roleId, permissionId])
+  @@map("role_permissions")
+}
+
+model Patient {
+  id                   String                @id @default(cuid())
+  medicalRecordNumber  String                @unique
+  firstName            String
+  lastName             String
+  paternalLastName     String?
+  maternalLastName     String?
+  dateOfBirth          DateTime
+  gender               String
+  email                String?
+  phone                String?
+  address              String?
+  emergencyContact     String?
+  createdAt            DateTime              @default(now())
+  updatedAt            DateTime              @updatedAt
+  assessmentTokens     AssessmentToken[]
+  consultations        Consultation[]
+  medicalHistory       MedicalHistory[]
+  prescriptions        Prescription[]
+  scaleAdministrations ScaleAdministration[]
+
+  @@map("patients")
+}
+
+model Consultation {
+  id               String   @id @default(cuid())
+  patientId        String
+  consultantId     String
+  consultationDate DateTime
+  reason           String
+  notes            String?
+  diagnosis        String?
+  treatmentPlan    String?
+  status           String   @default("scheduled")
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+  consultant       User     @relation(fields: [consultantId], references: [id])
+  patient          Patient  @relation(fields: [patientId], references: [id], onDelete: Cascade)
+
+  @@map("consultations")
+}
+
+model MedicalHistory {
+  id          String    @id @default(cuid())
+  patientId   String
+  condition   String
+  diagnosedAt DateTime?
+  status      String    @default("active")
+  notes       String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  patient     Patient   @relation(fields: [patientId], references: [id], onDelete: Cascade)
+
+  @@map("medical_history")
+}
+
+model Prescription {
+  id           String     @id @default(cuid())
+  patientId    String
+  medicationId String
+  dosage       String
+  frequency    String
+  startDate    DateTime
+  endDate      DateTime?
+  status       String     @default("active")
+  prescribedBy String
+  notes        String?
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+  medication   Medication @relation(fields: [medicationId], references: [id])
+  patient      Patient    @relation(fields: [patientId], references: [id], onDelete: Cascade)
+
+  @@map("prescriptions")
+}
+
+model Medication {
+  id            String         @id @default(cuid())
+  name          String
+  genericName   String?
+  category      String
+  dosageForm    String
+  strength      String?
+  manufacturer  String?
+  isActive      Boolean        @default(true)
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  prescriptions Prescription[]
+
+  @@map("medications")
+}
+
+model AssessmentScale {
+  id                       String                @id @default(cuid())
+  name                     String
+  abbreviation             String                @unique
+  version                  String                @default("1.0")
+  description              String?
+  category                 String
+  targetPopulation         String?
+  administrationMode       String
+  estimatedDurationMinutes Int?
+  totalItems               Int
+  isActive                 Boolean               @default(true)
+  hasSubscales             Boolean               @default(false)
+  requiresTraining         Boolean               @default(false)
+  scoringMethod            String?
+  interpretationGuidelines String?
+  tags                     String?
+  language                 String                @default("es")
+  createdAt                DateTime              @default(now())
+  updatedAt                DateTime              @updatedAt
+  assessmentTokens         AssessmentToken[]
+  interpretationRules      InterpretationRule[]
+  scaleAdministrations     ScaleAdministration[]
+  scaleItems               ScaleItem[]
+  scoringRules             ScoringRule[]
+
+  @@map("assessment_scales")
+}
+
+model ScaleItem {
+  id              String          @id @default(cuid())
+  scaleId         String
+  itemNumber      Int
+  itemText        String
+  subscale        String?
+  responseType    String
+  responseOptions String?
+  scoringWeight   Float           @default(1.0)
+  isReverseScored Boolean         @default(false)
+  required        Boolean         @default(true)
+  displayOrder    Int
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+  itemResponses   ItemResponse[]
+  scale           AssessmentScale @relation(fields: [scaleId], references: [id], onDelete: Cascade)
+
+  @@unique([scaleId, itemNumber])
+  @@map("scale_items")
+}
+
+model ScoringRule {
+  id          String          @id @default(cuid())
+  scaleId     String
+  ruleName    String
+  description String?
+  algorithm   String
+  isActive    Boolean         @default(true)
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+  scale       AssessmentScale @relation(fields: [scaleId], references: [id], onDelete: Cascade)
+
+  @@map("scoring_rules")
+}
+
+model InterpretationRule {
+  id              String          @id @default(cuid())
+  scaleId         String
+  minScore        Float
+  maxScore        Float
+  severity        String
+  interpretation  String
+  recommendations String?
+  colorCode       String?
+  isActive        Boolean         @default(true)
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+  scale           AssessmentScale @relation(fields: [scaleId], references: [id], onDelete: Cascade)
+
+  @@map("interpretation_rules")
+}
+
+model ScaleAdministration {
+  id                 String          @id @default(cuid())
+  patientId          String
+  scaleId            String
+  administratorId    String
+  administrationDate DateTime        @default(now())
+  administrationType String
+  status             String          @default("completed")
+  totalScore         Float?
+  rawScore           Float?
+  percentileScore    Float?
+  tScore             Float?
+  zScore             Float?
+  severity           String?
+  interpretation     String?
+  notes              String?
+  completionTime     Int?
+  startedAt          DateTime?
+  completedAt        DateTime?
+  createdAt          DateTime        @default(now())
+  updatedAt          DateTime        @updatedAt
+  responses          ItemResponse[]
+  administrator      User            @relation(fields: [administratorId], references: [id])
+  scale              AssessmentScale @relation(fields: [scaleId], references: [id])
+  patient            Patient         @relation(fields: [patientId], references: [id], onDelete: Cascade)
+
+  @@map("scale_administrations")
+}
+
+model ItemResponse {
+  id               String              @id @default(cuid())
+  administrationId String
+  scaleItemId      String
+  responseValue    String
+  responseText     String?
+  score            Float?
+  wasSkipped       Boolean             @default(false)
+  responseTime     Int?
+  createdAt        DateTime            @default(now())
+  scaleItem        ScaleItem           @relation(fields: [scaleItemId], references: [id])
+  administration   ScaleAdministration @relation(fields: [administrationId], references: [id], onDelete: Cascade)
+
+  @@unique([administrationId, scaleItemId])
+  @@map("item_responses")
+}
+
+model AssessmentToken {
+  id        String          @id @default(cuid())
+  token     String          @unique
+  patientId String
+  scaleId   String
+  createdBy String
+  expiresAt DateTime
+  isUsed    Boolean         @default(false)
+  usedAt    DateTime?
+  createdAt DateTime        @default(now())
+  creator   User            @relation(fields: [createdBy], references: [id])
+  scale     AssessmentScale @relation(fields: [scaleId], references: [id])
+  patient   Patient         @relation(fields: [patientId], references: [id], onDelete: Cascade)
+
+  @@map("assessment_tokens")
+}
+
+model FormTemplate {
+  id            String         @id @default(cuid())
+  name          String
+  slug          String         @unique
+  description   String?
+  schema        String
+  isActive      Boolean        @default(true)
+  version       String         @default("1.0")
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  formInstances FormInstance[]
+
+  @@map("form_templates")
+}
+
+model FormInstance {
+  id          String       @id @default(cuid())
+  templateId  String
+  name        String
+  data        String
+  status      String       @default("draft")
+  submittedAt DateTime?
+  submittedBy String?
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  template    FormTemplate @relation(fields: [templateId], references: [id])
+
+  @@map("form_instances")
+}
+
+model ResourceCategory {
+  id                 String                     @id @default(cuid())
+  name               String
+  slug               String                     @unique
+  description        String?
+  isActive           Boolean                    @default(true)
+  createdAt          DateTime                   @default(now())
+  updatedAt          DateTime                   @updatedAt
+  resourceCategories ResourceCategoryRelation[]
+
+  @@map("resource_categories")
+}
+
+model ResourceTag {
+  id           String                @id @default(cuid())
+  name         String                @unique
+  color        String?
+  isActive     Boolean               @default(true)
+  createdAt    DateTime              @default(now())
+  updatedAt    DateTime              @updatedAt
+  resourceTags ResourceTagRelation[]
+
+  @@map("resource_tags")
+}
+
+model Resource {
+  id                 String                     @id @default(cuid())
+  title              String
+  slug               String                     @unique
+  content            String
+  excerpt            String?
+  type               String                     @default("article")
+  url                String?
+  metadata           String?
+  status             String                     @default("draft")
+  featuredAt         DateTime?
+  publishedAt        DateTime?
+  createdAt          DateTime                   @default(now())
+  updatedAt          DateTime                   @updatedAt
+  resourceCategories ResourceCategoryRelation[]
+  resourceTags       ResourceTagRelation[]
+
+  @@map("resources")
+}
+
+model ResourceCategoryRelation {
+  id         String           @id @default(cuid())
+  resourceId String
+  categoryId String
+  category   ResourceCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  resource   Resource         @relation(fields: [resourceId], references: [id], onDelete: Cascade)
+
+  @@unique([resourceId, categoryId])
+  @@map("resource_category_relations")
+}
+
+model ResourceTagRelation {
+  id         String      @id @default(cuid())
+  resourceId String
+  tagId      String
+  tag        ResourceTag @relation(fields: [tagId], references: [id], onDelete: Cascade)
+  resource   Resource    @relation(fields: [resourceId], references: [id], onDelete: Cascade)
+
+  @@unique([resourceId, tagId])
+  @@map("resource_tag_relations")
+}

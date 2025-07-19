@@ -490,14 +490,72 @@ class AuthenticationMiddleware {
    * Verify patient access for healthcare professionals
    */
   async verifyPatientAccess(userId, patientId, userRole) {
-    // This would typically check a database for patient-provider assignments
-    // For now, returning true for same organization members
-    
     try {
-      // Mock implementation - in real system, this would query the database
-      // to check if the healthcare professional is assigned to the patient
+      // Import database utilities
+      const { getPrismaClient, executeQuery } = require('../config/prisma');
+      const prisma = getPrismaClient();
       
-      return true; // Placeholder - implement actual patient access verification
+      // Check if healthcare professional has access to the patient
+      const patientAccess = await executeQuery(
+        async (prisma) => {
+          // For psychiatrists and psychologists, check if they have any consultation or assessment with the patient
+          if (['psychiatrist', 'psychologist'].includes(userRole)) {
+            const hasConsultation = await prisma.consultation.findFirst({
+              where: {
+                patientId: patientId,
+                createdBy: userId
+              }
+            });
+            
+            if (hasConsultation) return true;
+            
+            // Check if they have any assessment with the patient
+            const hasAssessment = await prisma.scaleAdministration.findFirst({
+              where: {
+                patientId: patientId,
+                administeredBy: userId
+              }
+            });
+            
+            if (hasAssessment) return true;
+          }
+          
+          // For nurses, check if they have care notes or vital signs entries
+          if (userRole === 'nurse') {
+            const hasCareNotes = await prisma.medicalHistory.findFirst({
+              where: {
+                patientId: patientId,
+                createdBy: userId,
+                entryType: 'care_notes'
+              }
+            });
+            
+            if (hasCareNotes) return true;
+          }
+          
+          // Check if they are assigned to the same organization as the patient
+          const userOrganization = await prisma.user.findUnique({
+            where: { id: userId },
+            select: { organizationId: true }
+          });
+          
+          const patientOrganization = await prisma.patient.findUnique({
+            where: { id: patientId },
+            select: { organizationId: true }
+          });
+          
+          if (userOrganization?.organizationId && 
+              patientOrganization?.organizationId &&
+              userOrganization.organizationId === patientOrganization.organizationId) {
+            return true;
+          }
+          
+          return false;
+        },
+        `verifyPatientAccess(${userId}, ${patientId})`
+      );
+      
+      return patientAccess || false;
     } catch (error) {
       console.error('Error verifying patient access:', error);
       return false;
@@ -508,16 +566,60 @@ class AuthenticationMiddleware {
    * Verify active session
    */
   async verifyActiveSession(userId, sessionId) {
-    // Mock implementation - in real system, this would check session store
-    return true;
+    try {
+      // Import database utilities
+      const { getPrismaClient, executeQuery } = require('../config/prisma');
+      
+      // Check if session exists and is active
+      const session = await executeQuery(
+        (prisma) => prisma.userSession.findFirst({
+          where: {
+            id: sessionId,
+            userId: userId,
+            isActive: true,
+            expiresAt: {
+              gt: new Date()
+            }
+          }
+        }),
+        `verifyActiveSession(${userId}, ${sessionId})`
+      );
+      
+      return !!session;
+    } catch (error) {
+      console.error('Error verifying active session:', error);
+      return false;
+    }
   }
 
   /**
    * Update session activity
    */
   async updateSessionActivity(userId, sessionId) {
-    // Mock implementation - in real system, this would update session timestamp
-    return true;
+    try {
+      // Import database utilities
+      const { getPrismaClient, executeQuery } = require('../config/prisma');
+      
+      // Update session last activity timestamp
+      await executeQuery(
+        (prisma) => prisma.userSession.update({
+          where: {
+            id: sessionId,
+            userId: userId
+          },
+          data: {
+            lastActivity: new Date(),
+            updatedAt: new Date()
+          }
+        }),
+        `updateSessionActivity(${userId}, ${sessionId})`
+      );
+      
+      return true;
+    } catch (error) {
+      console.error('Error updating session activity:', error);
+      return false;
+    }
   }
 
   /**

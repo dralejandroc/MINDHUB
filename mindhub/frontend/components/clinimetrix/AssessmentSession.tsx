@@ -22,7 +22,7 @@ import {
 import { Card } from '../ui/Card';
 import { Button } from '../ui/Button';
 import { LoadingSpinner } from '../ui/LoadingSpinner';
-import { useClinimetrix } from '../../contexts/ClinimetrixContext';
+import { useUniversalScales, useCurrentAssessment } from '../../contexts/UniversalScalesContext';
 import {
   AssessmentSession as AssessmentSessionType,
   ScaleAdministration,
@@ -68,7 +68,7 @@ export function AssessmentSession({
   onAdministrationComplete,
   readOnly = false
 }: AssessmentSessionProps) {
-  const { state, startAdministration, completeAdministration } = useClinimetrix();
+  const { startAssessment, completeAssessment } = useUniversalScales();
   const [localSession, setLocalSession] = useState<AssessmentSessionType>(session);
   const [isStarting, setIsStarting] = useState(false);
   const [selectedAdministration, setSelectedAdministration] = useState<ScaleAdministration | null>(null);
@@ -84,13 +84,13 @@ export function AssessmentSession({
 
     try {
       setIsStarting(true);
-      const updatedAdministration = await startAdministration(
-        administration.sessionId,
-        administration.scaleId
+      await startAssessment(
+        administration.scaleId,
+        administration.sessionId // patientId in the universal context
       );
       
-      setSelectedAdministration(updatedAdministration);
-      onAdministrationStart?.(updatedAdministration);
+      setSelectedAdministration(administration);
+      onAdministrationStart?.(administration);
     } catch (error) {
       console.error('Failed to start administration:', error);
     } finally {
@@ -103,7 +103,7 @@ export function AssessmentSession({
     if (readOnly) return;
 
     try {
-      await completeAdministration(administration.id);
+      await completeAssessment();
       onAdministrationComplete?.(administration);
     } catch (error) {
       console.error('Failed to complete administration:', error);

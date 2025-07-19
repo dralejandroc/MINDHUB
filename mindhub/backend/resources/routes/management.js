@@ -6,28 +6,66 @@
  */
 
 const express = require('express');
+const multer = require('multer');
 const { body, param, query, validationResult } = require('express-validator');
+const middleware = require('../../shared/middleware');
+const ResourceController = require('../controllers/ResourceController');
+const ContentController = require('../controllers/ContentController');
+const FileStorageService = require('../services/FileStorageService');
 const { executeQuery, executeTransaction } = require('../../shared/config/prisma');
 const { logger } = require('../../shared/config/storage');
 
 const router = express.Router();
 
+// Initialize services
+const resourceController = new ResourceController();
+const contentController = new ContentController();
+const fileStorageService = new FileStorageService();
+
+// Configure multer for file uploads
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: {
+    fileSize: 100 * 1024 * 1024, // 100MB
+    files: 1
+  },
+  fileFilter: (req, file, cb) => {
+    const allowedTypes = [
+      'application/pdf',
+      'image/jpeg', 'image/png', 'image/gif',
+      'audio/mpeg', 'audio/wav',
+      'video/mp4', 'video/avi',
+      'application/msword',
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      'text/plain', 'text/html'
+    ];
+    
+    if (allowedTypes.includes(file.mimetype)) {
+      cb(null, true);
+    } else {
+      cb(new Error(`File type ${file.mimetype} is not allowed`), false);
+    }
+  }
+});
+
 /**
  * POST /api/resources/management/upload
- * Upload new resource
+ * Upload new resource with file
  */
-router.post('/upload', [
-  body('title').trim().isLength({ min: 3, max: 200 }).withMessage('Title must be between 3 and 200 characters'),
-  body('description').optional().trim().isLength({ max: 1000 }).withMessage('Description must not exceed 1000 characters'),
-  body('category').isIn(['depression', 'anxiety', 'bipolar', 'trauma', 'addiction', 'eating_disorders', 'personality_disorders', 'psychosis', 'relationships', 'parenting', 'grief', 'stress_management']).withMessage('Invalid category'),
-  body('resourceType').isIn(['educational_handouts', 'worksheets', 'audio_materials', 'video_content', 'interactive_tools', 'assessment_guides', 'treatment_protocols', 'self_help_guides']).withMessage('Invalid resource type'),
-  body('language').isIn(['es', 'en']).withMessage('Invalid language'),
-  body('difficulty').optional().isIn(['beginner', 'intermediate', 'advanced']).withMessage('Invalid difficulty level'),
-  body('tags').optional().isArray().withMessage('Tags must be an array'),
-  body('fileUrl').isURL().withMessage('Valid file URL is required'),
-  body('fileSize').optional().isInt({ min: 1 }).withMessage('File size must be a positive integer'),
-  body('mimeType').optional().trim().isLength({ min: 1 }).withMessage('MIME type is required')
-], async (req, res) => {
+router.post('/upload',
+  upload.single('file'),
+  ...middleware.utils.forRoles(['psychiatrist', 'psychologist', 'admin'], ['write:resources']),
+  [
+    body('title').trim().isLength({ min: 3, max: 200 }).withMessage('Title must be between 3 and 200 characters'),
+    body('description').optional().trim().isLength({ max: 1000 }).withMessage('Description must not exceed 1000 characters'),
+    body('category').isIn(['depression', 'anxiety', 'bipolar', 'trauma', 'addiction', 'eating_disorders', 'personality_disorders', 'psychosis', 'relationships', 'parenting', 'grief', 'stress_management']).withMessage('Invalid category'),
+    body('resourceType').isIn(['educational_handouts', 'worksheets', 'audio_materials', 'video_content', 'interactive_tools', 'assessment_guides', 'treatment_protocols', 'self_help_guides']).withMessage('Invalid resource type'),
+    body('language').optional().isIn(['es', 'en']).withMessage('Invalid language'),
+    body('difficulty').optional().isIn(['beginner', 'intermediate', 'advanced']).withMessage('Invalid difficulty level'),
+    body('tags').optional().isArray().withMessage('Tags must be an array'),
+    body('estimatedDuration').optional().isInt({ min: 1, max: 1440 }).withMessage('Duration must be between 1 and 1440 minutes'),
+    body('targetAudience').optional().isString().isLength({ max: 500 }).withMessage('Target audience must not exceed 500 characters')
+  ], async (req, res) => {
   try {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
@@ -37,63 +75,53 @@ router.post('/upload', [
       });
     }
 
-    const resourceData = req.body;
-    const userId = req.user?.id;
-
-    if (!userId) {
-      return res.status(401).json({ error: 'Authentication required' });
+    if (!req.file) {
+      return res.status(400).json({ error: 'File is required' });
     }
 
-    // Create resource
-    const resource = await executeQuery(
-      (prisma) => prisma.resource.create({
-        data: {
-          title: resourceData.title,
-          description: resourceData.description,
-          category: resourceData.category,
-          resourceType: resourceData.resourceType,
-          language: resourceData.language,
-          difficulty: resourceData.difficulty || 'intermediate',
-          tags: resourceData.tags || [],
-          fileUrl: resourceData.fileUrl,
-          fileSize: resourceData.fileSize,
-          mimeType: resourceData.mimeType,
-          isActive: true,
-          createdBy: userId,
-          currentVersion: 1,
-          versions: {
-            create: {
-              versionNumber: 1,
-              fileUrl: resourceData.fileUrl,
-              fileSize: resourceData.fileSize,
-              mimeType: resourceData.mimeType,
-              changeNotes: 'Initial version',
-              createdBy: userId
-            }
-          }
-        },
-        include: {
-          creator: {
-            select: { id: true, name: true, email: true }
-          },
-          versions: {
-            orderBy: { versionNumber: 'desc' }
-          }
-        }
-      }),
-      'createResource'
-    );
+    const {
+      title,
+      description,
+      category,
+      resourceType,
+      language = 'es',
+      difficulty = 'intermediate',
+      tags,
+      estimatedDuration,
+      targetAudience
+    } = req.body;
 
-    // Log creation for compliance
-    logger.info('Resource created', {
-      resourceId: resource.id,
-      resourceTitle: resource.title,
-      category: resource.category,
-      resourceType: resource.resourceType,
-      language: resource.language,
-      createdBy: userId,
-      ipAddress: req.ip
+    const userId = req.user?.id;
+
+    // Upload file to storage
+    const fileMetadata = await fileStorageService.uploadFile(req.file, {
+      resourceType,
+      category,
+      uploadedBy: userId
     });
+
+    // Create resource using controller
+    const resourceData = {
+      title,
+      description,
+      category,
+      type: resourceType,
+      language,
+      difficulty,
+      tags: tags ? (Array.isArray(tags) ? tags : JSON.parse(tags)) : [],
+      estimatedDuration: estimatedDuration ? parseInt(estimatedDuration) : null,
+      targetAudience,
+      fileUrl: fileMetadata.relativePath,
+      fileSize: fileMetadata.fileSize,
+      mimeType: fileMetadata.mimeType,
+      metadata: {
+        originalFileName: fileMetadata.originalName,
+        fileHash: fileMetadata.fileHash,
+        uploadedAt: fileMetadata.uploadedAt
+      }
+    };
+
+    const resource = await resourceController.createResource(resourceData, userId);
 
     res.status(201).json({
       success: true,

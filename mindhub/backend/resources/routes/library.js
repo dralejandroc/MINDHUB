@@ -8,8 +8,8 @@
 const express = require('express');
 const { body, param, query, validationResult } = require('express-validator');
 const middleware = require('../../shared/middleware');
-const ResourceController = require('../controllers/resource-controller');
-const ContentController = require('../controllers/content-controller');
+const ResourceController = require('../controllers/ResourceController');
+const ContentController = require('../controllers/ContentController');
 const AuditLogger = require('../../shared/utils/audit-logger');
 const { executeQuery, executeTransaction } = require('../../shared/config/prisma');
 const { logger } = require('../../shared/config/storage');
@@ -268,12 +268,12 @@ router.get('/category/:category',
 router.post('/search',
   ...middleware.utils.forHub('resources'),
   [
-  query('q').trim().isLength({ min: 2 }).withMessage('Search query must be at least 2 characters'),
-  query('categories').optional(),
-  query('types').optional(),
-  query('languages').optional(),
-  query('difficulty').optional().isIn(['beginner', 'intermediate', 'advanced']),
-  query('limit').optional().isInt({ min: 1, max: 50 }).withMessage('Limit must be between 1 and 50')
+  body('q').trim().isLength({ min: 2 }).withMessage('Search query must be at least 2 characters'),
+  body('categories').optional(),
+  body('types').optional(),
+  body('languages').optional(),
+  body('difficulty').optional().isIn(['beginner', 'intermediate', 'advanced']),
+  body('limit').optional().isInt({ min: 1, max: 50 }).withMessage('Limit must be between 1 and 50')
 ], async (req, res) => {
   try {
     const errors = validationResult(req);
@@ -284,54 +284,22 @@ router.post('/search',
       });
     }
 
-    const { q: searchQuery, categories, types, languages, difficulty, limit = 20 } = req.query;
+    const { q: searchQuery, categories, types, languages, difficulty, limit = 20 } = req.body;
 
-    // Parse array parameters
-    const categoryFilter = categories ? categories.split(',') : [];
-    const typeFilter = types ? types.split(',') : [];
-    const languageFilter = languages ? languages.split(',') : [];
-
-    const where = {
-      isActive: true,
-      OR: [
-        { title: { contains: searchQuery, mode: 'insensitive' } },
-        { description: { contains: searchQuery, mode: 'insensitive' } },
-        { tags: { hasSome: [searchQuery] } },
-        { content: { contains: searchQuery, mode: 'insensitive' } }
-      ],
-      ...(categoryFilter.length > 0 && { category: { in: categoryFilter } }),
-      ...(typeFilter.length > 0 && { resourceType: { in: typeFilter } }),
-      ...(languageFilter.length > 0 && { language: { in: languageFilter } }),
-      ...(difficulty && { difficulty })
-    };
-
-    const results = await executeQuery(
-      (prisma) => prisma.resource.findMany({
-        where,
-        include: {
-          creator: {
-            select: { id: true, name: true }
-          },
-          _count: {
-            select: {
-              distributions: true,
-              downloads: true
-            }
-          }
-        },
-        take: parseInt(limit),
-        orderBy: [
-          { _relevance: { fields: ['title', 'description'], search: searchQuery, sort: 'desc' } },
-          { createdAt: 'desc' }
-        ]
-      }),
-      'searchResources'
-    );
+    // Use ResourceController for search
+    const searchResults = await resourceController.searchResources({
+      query: searchQuery,
+      category: categories ? categories[0] : undefined,
+      type: types ? types[0] : undefined,
+      language: languages ? languages[0] : 'es',
+      difficulty,
+      limit: parseInt(limit)
+    }, req.user?.id);
 
     // Log search for compliance
     logger.info('Resource search performed', {
       searchQuery,
-      resultCount: results.length,
+      resultCount: searchResults.resources.length,
       filters: { categories, types, languages, difficulty },
       userId: req.user?.id,
       ipAddress: req.ip
@@ -339,13 +307,14 @@ router.post('/search',
 
     res.json({
       success: true,
-      data: results,
+      data: searchResults.resources,
       searchQuery,
-      resultCount: results.length,
+      resultCount: searchResults.resources.length,
+      pagination: searchResults.pagination,
       filters: {
-        categories: categoryFilter,
-        types: typeFilter,
-        languages: languageFilter,
+        categories: categories || [],
+        types: types || [],
+        languages: languages || [],
         difficulty
       }
     });
@@ -353,7 +322,7 @@ router.post('/search',
   } catch (error) {
     logger.error('Failed to search resources', { 
       error: error.message,
-      searchQuery: req.query.q,
+      searchQuery: req.body.q,
       userId: req.user?.id 
     });
     res.status(500).json({ 

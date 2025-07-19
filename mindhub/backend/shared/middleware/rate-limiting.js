@@ -1,27 +1,14 @@
 /**
- * Advanced Rate Limiting Middleware for MindHub Healthcare Platform
- * 
- * Comprehensive rate limiting with healthcare-specific configurations,
- * DDoS protection, API quota management, and adaptive throttling
+ * Simplified Rate Limiting Middleware for MindHub Healthcare Platform
+ * Local development version without Redis dependency
  */
 
 const rateLimit = require('express-rate-limit');
-const RedisStore = require('rate-limit-redis');
-const redis = require('redis');
-const AuditLogger = require('../utils/audit-logger');
 
 class RateLimitingMiddleware {
   constructor() {
-    this.auditLogger = new AuditLogger();
-    
-    // Initialize Redis client for distributed rate limiting
-    this.redisClient = redis.createClient({
-      host: process.env.REDIS_HOST || 'localhost',
-      port: process.env.REDIS_PORT || 6379,
-      password: process.env.REDIS_PASSWORD,
-      retryDelayOnFailover: 100,
-      maxRetriesPerRequest: 3
-    });
+    // No Redis client for local development
+    // this.auditLogger = new AuditLogger(); // Commented for local development
 
     // Rate limit configurations for different endpoints
     this.rateLimitConfigs = {
@@ -180,24 +167,18 @@ class RateLimitingMiddleware {
   }
 
   /**
-   * Create rate limiter with Redis store
+   * Create rate limiter with memory store (local development)
    */
   createRateLimiter(config, options = {}) {
-    const store = new RedisStore({
-      client: this.redisClient,
-      prefix: options.prefix || 'rl:',
-      sendCommand: (...args) => this.redisClient.call(...args)
-    });
-
     return rateLimit({
-      store,
       ...config,
       handler: async (req, res, next) => {
         await this.handleRateLimitExceeded(req, res, config, options);
-      },
-      onLimitReached: async (req, res, options) => {
-        await this.logRateLimitReached(req, options);
       }
+      // onLimitReached is deprecated in express-rate-limit v7
+      // onLimitReached: async (req, res, options) => {
+      //   await this.logRateLimitReached(req, options);
+      // }
     });
   }
 
@@ -406,17 +387,18 @@ class RateLimitingMiddleware {
       timestamp: new Date().toISOString()
     };
 
-    // Log security event
-    await this.auditLogger.logSecurityEvent(
-      req.user?.id,
-      'RATE_LIMIT_EXCEEDED',
-      {
-        ...rateLimitInfo,
-        threatLevel: 'MEDIUM',
-        action: 'BLOCKED',
-        result: 'ACCESS_DENIED'
-      }
-    );
+    // Log security event (commented for local development)
+    // await this.auditLogger.logSecurityEvent(
+    //   req.user?.id,
+    //   'RATE_LIMIT_EXCEEDED',
+    //   {
+    //     ...rateLimitInfo,
+    //     threatLevel: 'MEDIUM',
+    //     action: 'BLOCKED',
+    //     result: 'ACCESS_DENIED'
+    //   }
+    // );
+    console.log('Rate limit exceeded:', rateLimitInfo);
 
     // Set security headers
     res.set({
@@ -433,17 +415,18 @@ class RateLimitingMiddleware {
    * Log when rate limit is reached
    */
   async logRateLimitReached(req, options) {
-    await this.auditLogger.logSystemEvent(
-      req.user?.id,
-      'RATE_LIMIT_REACHED',
-      {
-        ip: req.ip,
-        userId: req.user?.id,
-        endpoint: req.originalUrl,
-        method: req.method,
-        level: 'warning'
-      }
-    );
+    // await this.auditLogger.logSystemEvent(
+    //   req.user?.id,
+    //   'RATE_LIMIT_REACHED',
+    //   {
+    //     ip: req.ip,
+    //     userId: req.user?.id,
+    //     endpoint: req.originalUrl,
+    //     method: req.method,
+    //     level: 'warning'
+    //   }
+    // );
+    console.log('Rate limit reached for:', req.originalUrl);
   }
 
   /**
@@ -460,17 +443,18 @@ class RateLimitingMiddleware {
       timestamp: new Date().toISOString()
     };
 
-    // Log security event
-    await this.auditLogger.logSecurityEvent(
-      req.user?.id,
-      'SUSPICIOUS_ACTIVITY_DETECTED',
-      {
-        ...suspiciousActivity,
-        threatLevel: 'HIGH',
-        action: 'MONITORING',
-        result: 'FLAGGED_FOR_REVIEW'
-      }
-    );
+    // Log security event (commented for local development)
+    // await this.auditLogger.logSecurityEvent(
+    //   req.user?.id,
+    //   'SUSPICIOUS_ACTIVITY_DETECTED',
+    //   {
+    //     ...suspiciousActivity,
+    //     threatLevel: 'HIGH',
+    //     action: 'MONITORING',
+    //     result: 'FLAGGED_FOR_REVIEW'
+    //   }
+    // );
+    console.log('Suspicious activity detected:', suspiciousActivity);
 
     // Alert security team for critical cases
     if (activityType === 'rapid_requests') {
@@ -552,19 +536,20 @@ class RateLimitingMiddleware {
       if (emergencyHeader === 'true' && this.validateEmergencyCode(emergencyCode)) {
         req.isEmergencyAccess = true;
         
-        // Log emergency access
-        this.auditLogger.logSecurityEvent(
-          req.user?.id,
-          'EMERGENCY_ACCESS_GRANTED',
-          {
-            ip: req.ip,
-            emergencyCode,
-            endpoint: req.originalUrl,
-            threatLevel: 'HIGH',
-            action: 'EMERGENCY_BYPASS',
-            result: 'ACCESS_GRANTED'
-          }
-        );
+        // Log emergency access (commented for local development)
+        // this.auditLogger.logSecurityEvent(
+        //   req.user?.id,
+        //   'EMERGENCY_ACCESS_GRANTED',
+        //   {
+        //     ip: req.ip,
+        //     emergencyCode,
+        //     endpoint: req.originalUrl,
+        //     threatLevel: 'HIGH',
+        //     action: 'EMERGENCY_BYPASS',
+        //     result: 'ACCESS_GRANTED'
+        //   }
+        // );
+        console.log('Emergency access granted for:', req.originalUrl);
       }
       
       next();
@@ -582,16 +567,45 @@ class RateLimitingMiddleware {
   }
 
   /**
-   * Clean up expired entries
+   * Create healthcare-specific rate limiting
+   */
+  createHealthcareRateLimit(options = {}) {
+    const config = {
+      windowMs: options.windowMs || 15 * 60 * 1000,
+      max: options.max || 1000,
+      message: options.message || {
+        error: {
+          code: 'HEALTHCARE_RATE_LIMIT_EXCEEDED',
+          message: 'Healthcare API rate limit exceeded',
+          type: 'healthcare_rate_limit',
+          retryAfter: options.retryAfter || '15 minutes'
+        }
+      },
+      standardHeaders: true,
+      legacyHeaders: false,
+      keyGenerator: (req) => {
+        // Use IP + user ID for healthcare-specific rate limiting
+        return `healthcare:${req.ip}:${req.user?.id || 'anonymous'}`;
+      }
+    };
+
+    return this.createRateLimiter(config, {
+      prefix: 'healthcare_rl:',
+      type: 'healthcare'
+    });
+  }
+
+  /**
+   * Clean up expired entries (no-op for local development)
    */
   async cleanup() {
-    try {
-      await this.redisClient.flushdb();
-      console.log('Rate limiting cache cleaned up');
-    } catch (error) {
-      console.error('Failed to cleanup rate limiting cache:', error);
-    }
+    console.log('Rate limiting cache cleanup (local development - no-op)');
   }
 }
 
-module.exports = RateLimitingMiddleware;
+// Create singleton instance
+const rateLimitingInstance = new RateLimitingMiddleware();
+
+// Export both the class and instance
+module.exports = rateLimitingInstance;
+module.exports.RateLimitingMiddleware = RateLimitingMiddleware;

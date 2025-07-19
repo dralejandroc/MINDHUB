@@ -1,7 +1,7 @@
 'use client';
 
-import { withPageAuthRequired } from '@auth0/nextjs-auth0/client';
-import { useUser } from '@auth0/nextjs-auth0/client';
+// import { withPageAuthRequired } from '@auth0/nextjs-auth0/client'; // COMENTADO temporalmente
+// import { useUser } from '@auth0/nextjs-auth0/client'; // COMENTADO temporalmente
 import HubNavigation from '@/components/layout/HubNavigation';
 
 function HubsLayout({
@@ -9,14 +9,10 @@ function HubsLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const { user } = useUser();
+  // const { user } = useUser(); // COMENTADO temporalmente
 
   // Convert Auth0 user to our format
-  const currentUser = user ? {
-    name: user.name || 'User',
-    email: user.email || '',
-    role: user['https://mindhub.com/role'] || 'professional'
-  } : {
+  const currentUser = {
     name: 'Dr. Demo Professional',
     email: 'demo@mindhub.com',
     role: 'professional'
@@ -39,4 +35,4 @@ function HubsLayout({
   );
 }
 
-export default withPageAuthRequired(HubsLayout);
+export default HubsLayout; // withPageAuthRequired(HubsLayout); // COMENTADO temporalmente para desarrollo

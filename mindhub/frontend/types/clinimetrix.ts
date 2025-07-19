@@ -1,144 +1,429 @@
 /**
- * Clinimetrix Type Definitions
- * Universal Clinical Scale Interface Architecture
+ * Clinimetrix Universal Type Definitions
+ * Database-First Architecture for Clinical Scales
+ * 
+ * Este archivo define todos los tipos TypeScript necesarios para el sistema
+ * universal de escalas clínicas que funciona con arquitectura database-first.
  */
 
 // =============================================================================
-// CORE CLINICAL SCALE TYPES
+// ENUMS PRINCIPALES
 // =============================================================================
 
+export enum ResponseType {
+  LIKERT = 'likert',
+  YES_NO = 'yes_no',
+  TRUE_FALSE = 'true_false',
+  MULTIPLE_CHOICE = 'multiple_choice',
+  NUMERIC = 'numeric',
+  TEXT = 'text',
+  VISUAL_ANALOG = 'visual_analog',
+  SCALE = 'scale',
+  RATING = 'rating',
+  CHECKBOX = 'checkbox',
+  DROPDOWN = 'dropdown',
+  SLIDER = 'slider',
+  CHECKLIST = 'checklist',
+  CUSTOM = 'custom'
+}
+
+export enum ScoringMethod {
+  SUM = 'sum',
+  WEIGHTED_SUM = 'weighted_sum',
+  AVERAGE = 'average',
+  MEDIAN = 'median',
+  MAX = 'max',
+  MIN = 'min',
+  ALGORITHM = 'algorithm',
+  LOOKUP_TABLE = 'lookup_table',
+  SUBSCALES = 'subscales',
+  COMPLEX = 'complex',
+  PERCENTAGE = 'percentage',
+  STANDARDIZED = 'standardized',
+  MANUAL = 'manual'
+}
+
+export enum AdministrationMode {
+  SELF_ADMINISTERED = 'self_administered',
+  CLINICIAN_ADMINISTERED = 'clinician_administered',
+  COMPUTER_ADMINISTERED = 'computer_administered',
+  BOTH = 'both',
+  IN_PERSON = 'in_person',
+  REMOTE = 'remote',
+  HYBRID = 'hybrid',
+  MIXED = 'mixed'
+}
+
+export enum ScaleCategory {
+  DEPRESSION = 'depression',
+  ANXIETY = 'anxiety',
+  COGNITIVE = 'cognitive',
+  PERSONALITY = 'personality',
+  PSYCHOSIS = 'psychosis',
+  SUBSTANCE_USE = 'substance_use',
+  EATING_DISORDERS = 'eating_disorders',
+  TRAUMA = 'trauma',
+  BIPOLAR = 'bipolar',
+  ADHD = 'adhd',
+  AUTISM = 'autism',
+  MANIA = 'mania',
+  SUBSTANCE = 'substance',
+  GENERAL = 'general'
+}
+
+export enum SeverityLevel {
+  MINIMAL = 'minimal',
+  MILD = 'mild',
+  MODERATE = 'moderate',
+  MODERATELY_SEVERE = 'moderately_severe',
+  SEVERE = 'severe',
+  EXTREME = 'extreme'
+}
+
+export enum ClinicalSignificance {
+  NOT_SIGNIFICANT = 'not_significant',
+  MILD = 'mild',
+  SIGNIFICANT = 'significant',
+  HIGHLY_SIGNIFICANT = 'highly_significant',
+  SEVERE = 'severe',
+  UNKNOWN = 'unknown'
+}
+
+export enum TargetPopulation {
+  ADULTS = 'adults',
+  CHILDREN = 'children',
+  ADOLESCENTS = 'adolescents',
+  ELDERLY = 'elderly',
+  OLDER_ADULTS = 'older_adults',
+  ALL = 'all',
+  SPECIFIC = 'specific'
+}
+
+export enum LicenseType {
+  PUBLIC_DOMAIN = 'public_domain',
+  FREE = 'free',
+  LICENSED = 'licensed',
+  PROPRIETARY = 'proprietary',
+  CREATIVE_COMMONS = 'creative_commons'
+}
+
+export enum DisplayFormat {
+  STANDARD = 'standard',
+  RADIO_BUTTON = 'radio_button',
+  GRID = 'grid',
+  SLIDER = 'slider',
+  VISUAL_ANALOG = 'visual_analog',
+  CARD = 'card'
+}
+
+export enum TrainingLevel {
+  BASIC = 'basic',
+  ADVANCED = 'advanced',
+  SPECIALIST = 'specialist'
+}
+
+export enum ValidationLevel {
+  NONE = 'none',
+  BASIC = 'basic',
+  VALIDATED = 'validated',
+  GOLD_STANDARD = 'gold_standard'
+}
+
+// =============================================================================
+// INTERFACES PRINCIPALES DEL SISTEMA UNIVERSAL
+// =============================================================================
+
+/**
+ * Escala clínica universal - Refleja el esquema de la tabla 'scales'
+ */
 export interface ClinicalScale {
+  // Campos de la tabla 'scales'
   id: string;
   name: string;
   abbreviation: string;
   version?: string;
+  category?: string;
+  subcategory?: string;
   description?: string;
+  author?: string;
+  publication_year?: number;
+  estimated_duration_minutes?: number;
+  administration_mode?: string;
+  target_population?: string;
+  total_items: number;
+  scoring_method?: string;
+  score_range_min?: number;
+  score_range_max?: number;
+  instructions_professional?: string;
+  instructions_patient?: string;
+  is_active?: boolean;
+  created_at?: string;
+  updated_at?: string;
+  
+  // Campos adicionales para compatibilidad
   purpose?: string;
-  targetPopulation: TargetPopulation;
-  
-  // Administration details
-  administrationMode: AdministrationMode;
+  targetPopulation?: TargetPopulation;
+  administrationMode?: AdministrationMode;
   estimatedDurationMinutes?: number;
-  requiresTraining: boolean;
+  requiresTraining?: boolean;
   trainingLevelRequired?: TrainingLevel;
-  
-  // Scoring information
-  scoringMethod: ScoringMethod;
+  scoringMethod?: ScoringMethod;
   scoreRangeMin?: number;
   scoreRangeMax?: number;
-  hasSubscales: boolean;
-  
-  // Psychometric properties
+  hasSubscales?: boolean;
   reliabilityCoefficient?: number;
   validityEvidence?: string;
-  normativeDataAvailable: boolean;
-  
-  // Categories and tags
-  category: ScaleCategory;
-  subcategory?: string;
+  normativeDataAvailable?: boolean;
   tags?: string[];
-  
-  // Language and localization
-  availableLanguages: string[];
-  culturallyAdapted: boolean;
+  availableLanguages?: string[];
+  culturallyAdapted?: boolean;
   adaptationPopulation?: string;
-  
-  // Legal and ethical
   copyrightHolder?: string;
-  licenseType: LicenseType;
-  requiresPermission: boolean;
+  licenseType?: LicenseType;
+  requiresPermission?: boolean;
   costPerUse?: number;
-  
-  // Status
-  isActive: boolean;
-  isValidated: boolean;
-  
-  // References
+  isActive?: boolean;
+  isValidated?: boolean;
   primaryReference?: string;
   additionalReferences?: string[];
-  
-  // Audit fields
-  createdAt: string;
-  updatedAt: string;
-  createdBy: string;
+  createdBy?: string;
   updatedBy?: string;
   
-  // Related data
+  // Relaciones con otras tablas
   items?: ScaleItem[];
-  scoringRules?: ScoringRule[];
+  responseOptions?: ResponseOption[];
   interpretationRules?: InterpretationRule[];
+  subscales?: Subscale[];
   administrationCount?: number;
 }
 
+/**
+ * Item de escala - Refleja el esquema de la tabla 'scale_items'
+ */
 export interface ScaleItem {
+  // Campos de la tabla 'scale_items'
   id: string;
-  scaleId: string;
-  itemNumber: number;
-  itemCode?: string;
+  scale_id: string;
+  item_number: number;
+  item_text: string;
+  item_code?: string;
   subscale?: string;
+  reverse_scored?: boolean;
+  is_active?: boolean;
+  created_at?: string;
   
-  // Item content
-  questionText: string;
+  // Campos adicionales para compatibilidad
+  scaleId?: string;
+  itemNumber?: number;
+  itemCode?: string;
+  questionText?: string;
   questionTextEn?: string;
   instructionText?: string;
-  
-  // Response format
-  responseType: ResponseType;
+  responseType?: ResponseType;
   responseOptions?: ResponseOption[];
-  required: boolean;
-  
-  // Scoring
-  scoringWeight: number;
-  reverseScored: boolean;
+  required?: boolean;
+  scoringWeight?: number;
+  reverseScored?: boolean;
   scoringRules?: Record<string, any>;
-  
-  // Display
-  displayOrder: number;
-  displayFormat: DisplayFormat;
-  
-  // Validation
+  displayOrder?: number;
+  displayFormat?: DisplayFormat;
   minValue?: number;
   maxValue?: number;
   validationPattern?: string;
+  isActive?: boolean;
+  createdAt?: string;
+  updatedAt?: string;
   
-  isActive: boolean;
-  createdAt: string;
-  updatedAt: string;
+  // Validación
+  validation?: ItemValidation;
+  conditionalDisplay?: ConditionalRule;
+  helpText?: string;
+  clinicalNotes?: string;
 }
 
+/**
+ * Opción de respuesta - Refleja el esquema de la tabla 'scale_response_options'
+ */
 export interface ResponseOption {
-  value: string | number;
-  label: string;
+  // Campos de la tabla 'scale_response_options'
+  id: string;
+  scale_id: string;
+  option_value: string;
+  option_label: string;
+  score_value: number;
+  display_order?: number;
+  is_active?: boolean;
+  created_at?: string;
+  
+  // Campos adicionales para compatibilidad
+  value?: string | number;
+  label?: string;
   labelEn?: string;
   score?: number;
   isDefault?: boolean;
+  description?: string;
+  followUpQuestion?: string;
+  triggersAlert?: boolean;
+  color?: string;
+  icon?: string;
 }
 
-export interface ScoringRule {
-  id: string;
-  scaleId: string;
-  ruleType: ScoringRuleType;
-  conditions: Record<string, any>;
-  formula?: string;
-  lookupTable?: Record<string, number>;
-  weightings?: Record<string, number>;
-}
-
+/**
+ * Regla de interpretación - Refleja el esquema de la tabla 'scale_interpretation_rules'
+ */
 export interface InterpretationRule {
+  // Campos de la tabla 'scale_interpretation_rules'
   id: string;
-  scaleId: string;
-  minScore: number;
-  maxScore: number;
-  interpretation: string;
-  severity: SeverityLevel;
-  clinicalSignificance: ClinicalSignificance;
+  scale_id: string;
+  min_score: number;
+  max_score: number;
+  severity_level: string;
+  interpretation_label: string;
+  color_code?: string;
+  description?: string;
   recommendations?: string;
+  is_active?: boolean;
+  created_at?: string;
+  
+  // Campos adicionales para compatibilidad
+  scaleId?: string;
+  minScore?: number;
+  maxScore?: number;
+  interpretation?: string;
+  severity?: SeverityLevel;
+  clinicalSignificance?: ClinicalSignificance;
   colorCode?: string;
   actionRequired?: boolean;
+  subscaleSpecific?: boolean;
+  subscaleId?: string;
+  populationSpecific?: boolean;
+  ageRange?: {
+    min: number;
+    max: number;
+  };
+  gender?: 'male' | 'female' | 'other';
+  alertLevel?: 'low' | 'medium' | 'high' | 'critical';
+}
+
+/**
+ * Subescala - Refleja el esquema de la tabla 'scale_subscales'
+ */
+export interface Subscale {
+  // Campos de la tabla 'scale_subscales'
+  id: string;
+  scale_id: string;
+  subscale_name: string;
+  subscale_code?: string;
+  min_score?: number;
+  max_score?: number;
+  description?: string;
+  is_active?: boolean;
+  created_at?: string;
+  
+  // Campos adicionales para compatibilidad
+  name?: string;
+  items?: string[];
+  scoringMethod?: ScoringMethod;
+  interpretationRules?: InterpretationRule[];
+  weight?: number;
 }
 
 // =============================================================================
-// ASSESSMENT SESSION TYPES
+// TIPOS PARA EVALUACIONES Y SESIONES
+// =============================================================================
+
+/**
+ * Evaluación completa - Refleja el esquema de la tabla 'assessments'
+ */
+export interface Assessment {
+  // Campos de la tabla 'assessments'
+  id: string;
+  scale_id: string;
+  patient_id?: string;
+  patient_name?: string;
+  total_score?: number;
+  completion_percentage?: number;
+  administration_mode?: string;
+  completed_at?: string;
+  created_by?: string;
+  
+  // Campos adicionales para compatibilidad
+  sessionId?: string;
+  scaleId?: string;
+  patientId?: string;
+  patientName?: string;
+  totalScore?: number;
+  completionPercentage?: number;
+  administrationMode?: AdministrationMode;
+  completedAt?: string;
+  createdBy?: string;
+  
+  // Relaciones
+  scale?: ClinicalScale;
+  patient?: Patient;
+  responses?: ItemResponse[];
+  subscaleResults?: SubscaleResult[];
+}
+
+/**
+ * Respuesta a item - Refleja el esquema de la tabla 'assessment_responses'
+ */
+export interface ItemResponse {
+  // Campos de la tabla 'assessment_responses'
+  id: string;
+  assessment_id: string;
+  scale_id: string;
+  item_number: number;
+  response_value: string;
+  response_label: string;
+  score_value: number;
+  created_at?: string;
+  
+  // Campos adicionales para compatibilidad
+  administrationId?: string;
+  itemId?: string;
+  assessmentId?: string;
+  scaleId?: string;
+  itemNumber?: number;
+  responseValue?: string;
+  responseLabel?: string;
+  responseNumeric?: number;
+  scoreValue?: number;
+  responseTimeSeconds?: number;
+  responseDate?: string;
+  wasSkipped?: boolean;
+  skipReason?: SkipReason;
+  responseConfidence?: ResponseConfidence;
+  clarificationNeeded?: boolean;
+  clarificationNotes?: string;
+  createdAt?: string;
+  respondedAt?: string;
+  
+  // Relaciones
+  item?: ScaleItem;
+}
+
+/**
+ * Resultado de subescala - Refleja el esquema de la tabla 'assessment_subscale_results'
+ */
+export interface SubscaleResult {
+  // Campos de la tabla 'assessment_subscale_results'
+  id: string;
+  assessment_id: string;
+  subscale_code: string;
+  subscale_name: string;
+  score: number;
+  created_at?: string;
+  
+  // Campos adicionales para compatibilidad
+  assessmentId?: string;
+  subscaleCode?: string;
+  subscaleName?: string;
+  createdAt?: string;
+}
+
+// =============================================================================
+// TIPOS PARA SESIONES Y ADMINISTRACIÓN
 // =============================================================================
 
 export interface AssessmentSession {
@@ -147,42 +432,28 @@ export interface AssessmentSession {
   sessionName?: string;
   sessionDate: string;
   sessionType: SessionType;
-  
-  // Administration context
   administeredBy: string;
   administrationMode: AdministrationMode;
   location?: string;
-  
-  // Session status
   status: SessionStatus;
-  
-  // Timing
   startedAt?: string;
   completedAt?: string;
   durationMinutes?: number;
-  
-  // Session notes
   preSessionNotes?: string;
   postSessionNotes?: string;
   environmentalFactors?: string;
-  
-  // Quality indicators
   completionRate?: number;
   responseQuality?: ResponseQuality;
   validityConcerns?: string;
-  
-  // Follow-up
   recommendations?: string;
   nextAssessmentRecommended: boolean;
   nextAssessmentTimeframe?: string;
-  
-  // Audit fields
   createdAt: string;
   updatedAt: string;
   createdBy: string;
   updatedBy?: string;
   
-  // Related data
+  // Relaciones
   patient?: Patient;
   administrations?: ScaleAdministration[];
   assessmentToken?: AssessmentToken;
@@ -193,139 +464,36 @@ export interface ScaleAdministration {
   id: string;
   sessionId: string;
   scaleId: string;
-  
-  // Administration details
   orderInSession: number;
   startedAt?: string;
   completedAt?: string;
-  
-  // Completion status
   status: AdministrationStatus;
   itemsCompleted: number;
   totalItems: number;
   completionPercentage: number;
-  
-  // Scoring results
   rawScore?: number;
   scaledScore?: number;
   percentileRank?: number;
   tScore?: number;
   zScore?: number;
   clinicalRange?: ClinicalRange;
-  
-  // Subscale scores
   subscaleScores?: Record<string, number>;
-  
-  // Interpretation
   interpretation?: string;
   clinicalSignificance?: ClinicalSignificance;
   reliabilityEstimate?: number;
-  
-  // Administration notes
   administrationNotes?: string;
   scoringNotes?: string;
-  
-  // Audit fields
   createdAt: string;
   updatedAt: string;
   
-  // Related data
+  // Relaciones
   scale?: ClinicalScale;
   session?: AssessmentSession;
   responses?: ItemResponse[];
 }
 
-export interface ItemResponse {
-  id: string;
-  administrationId: string;
-  itemId: string;
-  
-  // Response data
-  responseValue: string;
-  responseNumeric?: number;
-  responseTimeSeconds?: number;
-  
-  // Response metadata
-  responseDate: string;
-  wasSkipped: boolean;
-  skipReason?: SkipReason;
-  
-  // Quality indicators
-  responseConfidence?: ResponseConfidence;
-  clarificationNeeded: boolean;
-  clarificationNotes?: string;
-  
-  // Related data
-  item?: ScaleItem;
-}
-
-export interface AssessmentToken {
-  id: string;
-  sessionId: string;
-  token: string;
-  
-  // Access control
-  expiresAt: string;
-  maxUses: number;
-  usesCount: number;
-  
-  // Access restrictions
-  allowedIpAddresses?: string[];
-  allowedUserAgents?: string[];
-  
-  // Security settings
-  requiresAuthentication: boolean;
-  patientVerificationRequired: boolean;
-  
-  // Status
-  isActive: boolean;
-  firstAccessedAt?: string;
-  lastAccessedAt?: string;
-  
-  // Audit fields
-  createdAt: string;
-  createdBy: string;
-}
-
-export interface AssessmentReport {
-  id: string;
-  sessionId: string;
-  reportType: ReportType;
-  reportTitle?: string;
-  
-  // Content
-  executiveSummary?: string;
-  detailedFindings?: string;
-  recommendations?: string;
-  clinicalImpressions?: string;
-  
-  // Report metadata
-  generatedBy: string;
-  generatedAt: string;
-  reviewedBy?: string;
-  reviewedAt?: string;
-  
-  // Format and distribution
-  reportFormat: ReportFormat;
-  confidentialityLevel: ConfidentialityLevel;
-  
-  // Status
-  status: ReportStatus;
-  isFinalized: boolean;
-  finalizedAt?: string;
-  
-  // Distribution tracking
-  sentToPatient: boolean;
-  sentToReferringProvider: boolean;
-  distributionLog?: Record<string, any>;
-  
-  // Audit fields
-  createdAt: string;
-  updatedAt: string;
-}
-
 // =============================================================================
-// SUPPORTING TYPES FROM EXPEDIX
+// TIPOS AUXILIARES
 // =============================================================================
 
 export interface Patient {
@@ -336,103 +504,98 @@ export interface Patient {
   gender?: string;
   email?: string;
   phone?: string;
-  // Additional patient fields as needed
+}
+
+export interface AssessmentToken {
+  id: string;
+  sessionId: string;
+  token: string;
+  expiresAt: string;
+  maxUses: number;
+  usesCount: number;
+  allowedIpAddresses?: string[];
+  allowedUserAgents?: string[];
+  requiresAuthentication: boolean;
+  patientVerificationRequired: boolean;
+  isActive: boolean;
+  firstAccessedAt?: string;
+  lastAccessedAt?: string;
+  createdAt: string;
+  createdBy: string;
+}
+
+export interface AssessmentReport {
+  id: string;
+  sessionId: string;
+  reportType: ReportType;
+  reportTitle?: string;
+  executiveSummary?: string;
+  detailedFindings?: string;
+  recommendations?: string;
+  clinicalImpressions?: string;
+  generatedBy: string;
+  generatedAt: string;
+  reviewedBy?: string;
+  reviewedAt?: string;
+  reportFormat: ReportFormat;
+  confidentialityLevel: ConfidentialityLevel;
+  status: ReportStatus;
+  isFinalized: boolean;
+  finalizedAt?: string;
+  sentToPatient: boolean;
+  sentToReferringProvider: boolean;
+  distributionLog?: Record<string, any>;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ConditionalRule {
+  dependsOn: string;
+  condition: 'equals' | 'not_equals' | 'greater' | 'less' | 'greater_equal' | 'less_equal' | 'contains' | 'not_contains' | 'in' | 'not_in';
+  value: any;
+  operator?: 'and' | 'or';
+  additionalRules?: ConditionalRule[];
+}
+
+export interface ItemValidation {
+  required?: boolean;
+  minLength?: number;
+  maxLength?: number;
+  pattern?: string;
+  customValidator?: (value: any) => boolean | string;
+}
+
+export interface ScoringResult {
+  scaleId: string;
+  rawScore: number;
+  scaledScore?: number;
+  percentileRank?: number;
+  tScore?: number;
+  zScore?: number;
+  clinicalRange: ClinicalRange;
+  subscaleScores?: Record<string, number>;
+  interpretation?: string;
+  clinicalSignificance: ClinicalSignificance;
+  reliabilityEstimate?: number;
+  recommendations?: string[];
+  warnings?: string[];
+}
+
+export interface InterpretationResult {
+  score: number;
+  interpretation: string;
+  severity: SeverityLevel;
+  clinicalSignificance: ClinicalSignificance;
+  recommendations?: string[];
+  scale: {
+    name: string;
+    abbreviation: string;
+  };
 }
 
 // =============================================================================
-// ENUM TYPES
+// ENUMS ADICIONALES
 // =============================================================================
-
-export enum TargetPopulation {
-  ADULTS = 'adults',
-  CHILDREN = 'children',
-  ADOLESCENTS = 'adolescents',
-  ELDERLY = 'elderly',
-  ALL = 'all',
-  SPECIFIC = 'specific'
-}
-
-export enum AdministrationMode {
-  SELF_REPORT = 'self_report',
-  CLINICIAN_ADMINISTERED = 'clinician_administered',
-  BOTH = 'both',
-  IN_PERSON = 'in_person',
-  REMOTE = 'remote',
-  SELF_ADMINISTERED = 'self_administered',
-  HYBRID = 'hybrid'
-}
-
-export enum TrainingLevel {
-  BASIC = 'basic',
-  ADVANCED = 'advanced',
-  SPECIALIST = 'specialist'
-}
-
-export enum ScoringMethod {
-  SUM = 'sum',
-  WEIGHTED = 'weighted',
-  ALGORITHM = 'algorithm',
-  MANUAL = 'manual',
-  LOOKUP_TABLE = 'lookup_table'
-}
-
-export enum ScaleCategory {
-  DEPRESSION = 'depression',
-  ANXIETY = 'anxiety',
-  MANIA = 'mania',
-  PSYCHOSIS = 'psychosis',
-  COGNITIVE = 'cognitive',
-  PERSONALITY = 'personality',
-  SUBSTANCE = 'substance'
-}
-
-export enum LicenseType {
-  PUBLIC_DOMAIN = 'public_domain',
-  LICENSED = 'licensed',
-  PROPRIETARY = 'proprietary',
-  CREATIVE_COMMONS = 'creative_commons'
-}
-
-export enum ResponseType {
-  LIKERT = 'likert',
-  YES_NO = 'yes_no',
-  MULTIPLE_CHOICE = 'multiple_choice',
-  TEXT = 'text',
-  NUMERIC = 'numeric',
-  VISUAL_ANALOG = 'visual_analog',
-  CHECKLIST = 'checklist'
-}
-
-export enum DisplayFormat {
-  STANDARD = 'standard',
-  GRID = 'grid',
-  SLIDER = 'slider',
-  VISUAL_ANALOG = 'visual_analog',
-  CARD = 'card'
-}
-
-export enum ScoringRuleType {
-  SIMPLE_SUM = 'simple_sum',
-  WEIGHTED_SUM = 'weighted_sum',
-  CONDITIONAL = 'conditional',
-  LOOKUP = 'lookup',
-  ALGORITHM = 'algorithm'
-}
-
-export enum SeverityLevel {
-  MINIMAL = 'minimal',
-  MILD = 'mild',
-  MODERATE = 'moderate',
-  SEVERE = 'severe',
-  EXTREME = 'extreme'
-}
-
-export enum ClinicalSignificance {
-  NOT_SIGNIFICANT = 'not_significant',
-  SIGNIFICANT = 'significant',
-  HIGHLY_SIGNIFICANT = 'highly_significant',
-  UNKNOWN = 'unknown'
-}
 
 export enum SessionType {
   INITIAL = 'initial',
@@ -519,47 +682,16 @@ export enum ReportStatus {
   CANCELLED = 'cancelled'
 }
 
-// =============================================================================
-// API RESPONSE TYPES
-// =============================================================================
-
-export interface ApiResponse<T> {
-  success: boolean;
-  data: T;
-  error?: string;
-  details?: string;
-}
-
-export interface PaginatedResponse<T> {
-  success: boolean;
-  data: T[];
-  pagination: {
-    page: number;
-    limit: number;
-    total: number;
-    pages: number;
-  };
-}
-
-export interface ScaleUsageStats {
-  totalAdministrations: number;
-  topScales: Array<{
-    scaleId: string;
-    _count: { scaleId: number };
-    scale: {
-      name: string;
-      abbreviation: string;
-      category: string;
-    };
-  }>;
-  categoryBreakdown: Array<{
-    category: string;
-    _count: { scaleId: number };
-  }>;
+export enum ScoringRuleType {
+  SIMPLE_SUM = 'simple_sum',
+  WEIGHTED_SUM = 'weighted_sum',
+  CONDITIONAL = 'conditional',
+  LOOKUP = 'lookup',
+  ALGORITHM = 'algorithm'
 }
 
 // =============================================================================
-// FORM AND UI TYPES
+// TIPOS PARA FORMULARIOS Y UI
 // =============================================================================
 
 export interface ScaleFilters {
@@ -599,96 +731,87 @@ export interface ItemResponseFormData {
 }
 
 // =============================================================================
-// SCORING AND INTERPRETATION TYPES
+// TIPOS PARA API
 // =============================================================================
 
-export interface ScoringResult {
-  scaleId: string;
-  rawScore: number;
-  scaledScore?: number;
-  percentileRank?: number;
-  tScore?: number;
-  zScore?: number;
-  clinicalRange: ClinicalRange;
-  subscaleScores?: Record<string, number>;
-  interpretation?: string;
-  clinicalSignificance: ClinicalSignificance;
-  reliabilityEstimate?: number;
-  recommendations?: string[];
-  warnings?: string[];
+export interface ApiResponse<T> {
+  success: boolean;
+  data: T;
+  error?: string;
+  details?: string;
 }
 
-export interface InterpretationResult {
-  score: number;
-  interpretation: string;
-  severity: SeverityLevel;
-  clinicalSignificance: ClinicalSignificance;
-  recommendations?: string[];
-  scale: {
-    name: string;
-    abbreviation: string;
+export interface PaginatedResponse<T> {
+  success: boolean;
+  data: T[];
+  pagination: {
+    page: number;
+    limit: number;
+    total: number;
+    pages: number;
   };
 }
 
-// =============================================================================
-// COMPONENT PROP TYPES
-// =============================================================================
-
-export interface ScaleListProps {
-  filters?: ScaleFilters;
-  onScaleSelect?: (scale: ClinicalScale) => void;
-  multiSelect?: boolean;
-  selectedScales?: string[];
-  showStats?: boolean;
-}
-
-export interface AssessmentSessionProps {
-  session: AssessmentSession;
-  onSessionUpdate?: (session: AssessmentSession) => void;
-  onAdministrationStart?: (scaleId: string) => void;
-  onAdministrationComplete?: (administration: ScaleAdministration) => void;
-  readOnly?: boolean;
-}
-
-export interface ScaleAdministrationProps {
-  administration: ScaleAdministration;
-  onResponseSubmit?: (response: ItemResponseFormData) => void;
-  onAdministrationComplete?: (administration: ScaleAdministration) => void;
-  autoSave?: boolean;
-  showProgress?: boolean;
-}
-
-export interface ScoringDisplayProps {
-  results: ScoringResult[];
-  showInterpretation?: boolean;
-  showRecommendations?: boolean;
-  format?: 'card' | 'table' | 'chart';
-  onExport?: (format: string) => void;
+export interface ScaleUsageStats {
+  totalAdministrations: number;
+  topScales: Array<{
+    scaleId: string;
+    _count: { scaleId: number };
+    scale: {
+      name: string;
+      abbreviation: string;
+      category: string;
+    };
+  }>;
+  categoryBreakdown: Array<{
+    category: string;
+    _count: { scaleId: number };
+  }>;
 }
 
 // =============================================================================
-// HOOK TYPES
+// CONSTANTES
 // =============================================================================
 
-export interface UseScalesOptions {
-  filters?: ScaleFilters;
-  enabled?: boolean;
-  onSuccess?: (scales: ClinicalScale[]) => void;
-  onError?: (error: Error) => void;
-}
+export const DEFAULT_RESPONSE_OPTIONS = {
+  [ResponseType.YES_NO]: [
+    { value: 'yes', label: 'Sí', score: 1 },
+    { value: 'no', label: 'No', score: 0 }
+  ],
+  [ResponseType.TRUE_FALSE]: [
+    { value: 'true', label: 'Verdadero', score: 1 },
+    { value: 'false', label: 'Falso', score: 0 }
+  ],
+  [ResponseType.LIKERT]: [
+    { value: '0', label: 'Nunca', score: 0 },
+    { value: '1', label: 'Rara vez', score: 1 },
+    { value: '2', label: 'A veces', score: 2 },
+    { value: '3', label: 'Frecuentemente', score: 3 },
+    { value: '4', label: 'Siempre', score: 4 }
+  ]
+};
 
-export interface UseAssessmentSessionOptions {
-  sessionId?: string;
-  enabled?: boolean;
-  onSuccess?: (session: AssessmentSession) => void;
-  onError?: (error: Error) => void;
-}
+export const SEVERITY_COLORS = {
+  minimal: '#4CAF50',
+  mild: '#FFC107',
+  moderate: '#FF9800',
+  moderately_severe: '#F44336',
+  severe: '#9C27B0',
+  extreme: '#c53030'
+};
 
-export interface UseScoreCalculationOptions {
-  administrationId: string;
-  scaleId: string;
-  responses: ItemResponse[];
-  enabled?: boolean;
-  onSuccess?: (results: ScoringResult) => void;
-  onError?: (error: Error) => void;
-}
+export default {
+  ResponseType,
+  ScoringMethod,
+  AdministrationMode,
+  ScaleCategory,
+  ValidationLevel,
+  SeverityLevel,
+  ClinicalSignificance,
+  TargetPopulation,
+  LicenseType,
+  DisplayFormat,
+  TrainingLevel,
+  DEFAULT_RESPONSE_OPTIONS,
+  SEVERITY_COLORS
+};

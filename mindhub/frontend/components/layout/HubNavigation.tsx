@@ -123,7 +123,7 @@ export default function HubNavigation({ currentUser, onLogout }: HubNavigationPr
   };
 
   const isCurrentHub = (hubHref: string) => {
-    return pathname.startsWith(hubHref);
+    return pathname?.startsWith(hubHref) || false;
   };
 
   const toggleHubExpansion = (hubId: string) => {

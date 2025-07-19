@@ -8,13 +8,13 @@ const mysql = require('mysql2/promise');
 const fs = require('fs');
 const path = require('path');
 
-// Configuración de XAMPP por defecto
+// Configuración de XAMPP/MAMP por defecto
 const XAMPP_CONFIG = {
   host: 'localhost',
-  port: 3306,
+  port: process.env.DB_PORT || 8889, // MAMP usa 8889, XAMPP usa 3306
   user: 'root',
-  password: '', // Por defecto XAMPP no tiene contraseña
-  database: 'mindhub_dev'
+  password: process.env.DB_PASSWORD || 'root', // MAMP usa 'root', XAMPP usa ''
+  database: 'mindhub'
 };
 
 /**
@@ -40,7 +40,7 @@ async function createConnection(config = XAMPP_CONFIG) {
 /**
  * Crear base de datos si no existe
  */
-async function createDatabase(connection, dbName = 'mindhub_dev') {
+async function createDatabase(connection, dbName = 'mindhub') {
   try {
     await connection.execute(`CREATE DATABASE IF NOT EXISTS \`${dbName}\` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci`);
     console.log(`✅ Base de datos '${dbName}' creada/verificada`);

@@ -1,686 +1,958 @@
 /**
- * Comprehensive Audit Logger for MindHub Healthcare Platform
+ * Audit Logger for Healthcare Compliance
  * 
- * Advanced logging system with healthcare compliance requirements,
- * structured logging, and audit trail management
+ * Comprehensive audit logging system for healthcare data access and modifications
+ * implementing requirements for NOM-024-SSA3-2010 compliance
  */
 
-const winston = require('winston');
-const crypto = require('crypto');
-const fs = require('fs');
-const path = require('path');
+const { getPrismaClient, executeQuery } = require('../config/prisma');
+const { logger } = require('../config/storage');
 
 class AuditLogger {
   constructor() {
-    this.logDir = path.join(__dirname, '../../../logs');
-    this.ensureLogDirectory();
-    
-    // Create different loggers for different purposes
-    this.auditLogger = this.createAuditLogger();
-    this.securityLogger = this.createSecurityLogger();
-    this.complianceLogger = this.createComplianceLogger();
-    this.systemLogger = this.createSystemLogger();
-    this.performanceLogger = this.createPerformanceLogger();
-    
-    // Log levels
-    this.logLevels = {
-      emergency: 0,   // System is unusable
-      alert: 1,       // Action must be taken immediately
-      critical: 2,    // Critical conditions
-      error: 3,       // Error conditions
-      warning: 4,     // Warning conditions
-      notice: 5,      // Normal but significant condition
-      info: 6,        // Informational messages
-      debug: 7        // Debug-level messages
-    };
-
-    // Healthcare event types for compliance tracking
-    this.healthcareEventTypes = {
+    this.eventTypes = {
+      // Authentication events
+      AUTH_SUCCESS: 'authentication_success',
+      AUTH_FAILURE: 'authentication_failure',
+      LOGIN_SUCCESS: 'login_success',
+      LOGIN_FAILURE: 'login_failure',
+      LOGOUT: 'logout',
+      TOKEN_REFRESH: 'token_refresh',
+      SESSION_EXPIRED: 'session_expired',
+      
+      // Authorization events
+      ACCESS_GRANTED: 'access_granted',
+      ACCESS_DENIED: 'access_denied',
+      PERMISSION_DENIED: 'permission_denied',
+      
+      // Data access events
       PATIENT_DATA_ACCESS: 'patient_data_access',
-      PATIENT_DATA_MODIFICATION: 'patient_data_modification',
-      CLINICAL_ASSESSMENT_ACCESS: 'clinical_assessment_access',
-      CLINICAL_ASSESSMENT_CREATION: 'clinical_assessment_creation',
       MEDICAL_RECORD_ACCESS: 'medical_record_access',
-      MEDICAL_RECORD_MODIFICATION: 'medical_record_modification',
-      PRESCRIPTION_ACCESS: 'prescription_access',
-      PRESCRIPTION_CREATION: 'prescription_creation',
-      FORM_SUBMISSION: 'form_submission',
-      RESOURCE_ACCESS: 'resource_access',
-      EMERGENCY_ACCESS: 'emergency_access',
-      CONSENT_MODIFICATION: 'consent_modification',
-      DATA_EXPORT: 'data_export',
-      DATA_IMPORT: 'data_import',
-      BACKUP_OPERATION: 'backup_operation',
-      SYSTEM_CONFIGURATION_CHANGE: 'system_configuration_change'
+      ASSESSMENT_DATA_ACCESS: 'assessment_data_access',
+      
+      // Data modification events
+      PATIENT_DATA_CREATE: 'patient_data_create',
+      PATIENT_DATA_UPDATE: 'patient_data_update',
+      PATIENT_DATA_DELETE: 'patient_data_delete',
+      MEDICAL_RECORD_CREATE: 'medical_record_create',
+      MEDICAL_RECORD_UPDATE: 'medical_record_update',
+      ASSESSMENT_CREATE: 'assessment_create',
+      ASSESSMENT_UPDATE: 'assessment_update',
+      
+      // System events
+      SYSTEM_ERROR: 'system_error',
+      SECURITY_INCIDENT: 'security_incident',
+      COMPLIANCE_VIOLATION: 'compliance_violation'
     };
   }
 
   /**
-   * Ensure log directory exists
+   * Log authentication events
    */
-  ensureLogDirectory() {
-    if (!fs.existsSync(this.logDir)) {
-      fs.mkdirSync(this.logDir, { recursive: true });
-    }
+  async logAuthenticationEvent(userId, eventType, eventData = {}) {
+    try {
+      const auditEntry = {
+        userId: userId,
+        eventType: this.eventTypes[eventType] || eventType,
+        eventCategory: 'authentication',
+        eventData: eventData,
+        timestamp: new Date(),
+        ipAddress: eventData.clientIP || eventData.ip || 'unknown',
+        userAgent: eventData.userAgent || 'unknown',
+        sessionId: eventData.sessionId || null,
+        success: eventType.includes('SUCCESS') || eventType.includes('GRANTED'),
+        severity: this.getEventSeverity(eventType)
+      };
 
-    // Create subdirectories for different log types
-    const logTypes = ['audit', 'security', 'compliance', 'system', 'performance', 'errors'];
-    logTypes.forEach(type => {
-      const typeDir = path.join(this.logDir, type);
-      if (!fs.existsSync(typeDir)) {
-        fs.mkdirSync(typeDir, { recursive: true });
+      await this.saveAuditEntry(auditEntry);
+      
+      // Log to console for immediate visibility
+      logger.info('Authentication audit event', auditEntry);
+      
+    } catch (error) {
+      logger.error('Failed to log authentication event', {
+        error: error.message,
+        eventType: eventType,
+        userId: userId
+      });
+    }
+  }
+
+  /**
+   * Log data access events
+   */
+  async logDataAccess(userId, resourceType, resourceId, action, eventData = {}) {
+    try {
+      const auditEntry = {
+        userId: userId,
+        eventType: `${resourceType}_${action}`,
+        eventCategory: 'data_access',
+        resourceType: resourceType,
+        resourceId: resourceId,
+        action: action,
+        eventData: eventData,
+        timestamp: new Date(),
+        ipAddress: eventData.clientIP || eventData.ip || 'unknown',
+        userAgent: eventData.userAgent || 'unknown',
+        sessionId: eventData.sessionId || null,
+        success: true,
+        severity: this.getDataAccessSeverity(resourceType, action)
+      };
+
+      await this.saveAuditEntry(auditEntry);
+      
+      // Log to console for immediate visibility
+      logger.info('Data access audit event', auditEntry);
+      
+    } catch (error) {
+      logger.error('Failed to log data access event', {
+        error: error.message,
+        resourceType: resourceType,
+        resourceId: resourceId,
+        userId: userId
+      });
+    }
+  }
+
+  /**
+   * Log data modification events
+   */
+  async logDataModification(userId, eventType, eventData = {}) {
+    try {
+      const auditEntry = {
+        userId: userId,
+        eventType: this.eventTypes[eventType] || eventType,
+        eventCategory: 'data_modification',
+        eventData: eventData,
+        timestamp: new Date(),
+        ipAddress: eventData.clientIP || eventData.ip || 'unknown',
+        userAgent: eventData.userAgent || 'unknown',
+        sessionId: eventData.sessionId || null,
+        success: true,
+        severity: 'medium'
+      };
+
+      await this.saveAuditEntry(auditEntry);
+      
+      // Log to console for immediate visibility
+      logger.info('Data modification audit event', auditEntry);
+      
+    } catch (error) {
+      logger.error('Failed to log data modification event', {
+        error: error.message,
+        eventType: eventType,
+        userId: userId
+      });
+    }
+  }
+
+  /**
+   * Log security incidents
+   */
+  async logSecurityIncident(userId, incidentType, eventData = {}) {
+    try {
+      const auditEntry = {
+        userId: userId,
+        eventType: incidentType,
+        eventCategory: 'security_incident',
+        eventData: eventData,
+        timestamp: new Date(),
+        ipAddress: eventData.clientIP || eventData.ip || 'unknown',
+        userAgent: eventData.userAgent || 'unknown',
+        sessionId: eventData.sessionId || null,
+        success: false,
+        severity: 'high'
+      };
+
+      await this.saveAuditEntry(auditEntry);
+      
+      // Log to console with warning level
+      logger.warn('Security incident audit event', auditEntry);
+      
+    } catch (error) {
+      logger.error('Failed to log security incident', {
+        error: error.message,
+        incidentType: incidentType,
+        userId: userId
+      });
+    }
+  }
+
+  /**
+   * Log system errors
+   */
+  async logSystemError(userId, error, context = {}) {
+    try {
+      const auditEntry = {
+        userId: userId,
+        eventType: 'system_error',
+        eventCategory: 'system',
+        eventData: {
+          error: error.message,
+          stack: error.stack,
+          context: context
+        },
+        timestamp: new Date(),
+        ipAddress: context.clientIP || context.ip || 'unknown',
+        userAgent: context.userAgent || 'unknown',
+        sessionId: context.sessionId || null,
+        success: false,
+        severity: 'high'
+      };
+
+      await this.saveAuditEntry(auditEntry);
+      
+      // Log to console with error level
+      logger.error('System error audit event', auditEntry);
+      
+    } catch (auditError) {
+      logger.error('Failed to log system error', {
+        originalError: error.message,
+        auditError: auditError.message,
+        userId: userId
+      });
+    }
+  }
+
+  /**
+   * Save audit entry to database
+   */
+  async saveAuditEntry(auditEntry) {
+    try {
+      // Save to database audit table
+      await executeQuery(
+        (prisma) => prisma.auditLog.create({
+          data: {
+            userId: auditEntry.userId,
+            eventType: auditEntry.eventType,
+            eventCategory: auditEntry.eventCategory,
+            resourceType: auditEntry.resourceType || null,
+            resourceId: auditEntry.resourceId || null,
+            action: auditEntry.action || null,
+            eventData: auditEntry.eventData || {},
+            timestamp: auditEntry.timestamp,
+            ipAddress: auditEntry.ipAddress,
+            userAgent: auditEntry.userAgent,
+            sessionId: auditEntry.sessionId,
+            success: auditEntry.success,
+            severity: auditEntry.severity
+          }
+        }),
+        'createAuditEntry'
+      );
+      
+      // Also log to file for redundancy
+      const logEntry = {
+        ...auditEntry,
+        timestamp: auditEntry.timestamp.toISOString()
+      };
+      
+      logger.audit('Audit Event', logEntry);
+      
+    } catch (error) {
+      // If database save fails, ensure we at least log to file
+      logger.error('Failed to save audit entry to database', {
+        error: error.message,
+        auditEntry: auditEntry
+      });
+      
+      // Fallback to console logging for compliance
+      console.log('AUDIT_LOG_FALLBACK:', JSON.stringify({
+        ...auditEntry,
+        timestamp: auditEntry.timestamp.toISOString(),
+        dbError: error.message
+      }, null, 2));
+      
+      // Don't throw - we want to continue processing even if audit fails
+    }
+  }
+
+  /**
+   * Get event severity based on event type
+   */
+  getEventSeverity(eventType) {
+    const highSeverityEvents = [
+      'AUTH_FAILURE',
+      'LOGIN_FAILURE',
+      'ACCESS_DENIED',
+      'PERMISSION_DENIED',
+      'SECURITY_INCIDENT',
+      'COMPLIANCE_VIOLATION'
+    ];
+    
+    const mediumSeverityEvents = [
+      'LOGIN_SUCCESS',
+      'LOGOUT',
+      'TOKEN_REFRESH',
+      'SESSION_EXPIRED'
+    ];
+    
+    if (highSeverityEvents.includes(eventType)) {
+      return 'high';
+    } else if (mediumSeverityEvents.includes(eventType)) {
+      return 'medium';
+    } else {
+      return 'low';
+    }
+  }
+
+  /**
+   * Get data access severity based on resource type and action
+   */
+  getDataAccessSeverity(resourceType, action) {
+    const sensitiveResources = [
+      'patient_data',
+      'medical_records',
+      'assessment_data',
+      'prescription_data'
+    ];
+    
+    const highRiskActions = ['delete', 'export', 'bulk_access'];
+    
+    if (sensitiveResources.includes(resourceType) && highRiskActions.includes(action)) {
+      return 'high';
+    } else if (sensitiveResources.includes(resourceType)) {
+      return 'medium';
+    } else {
+      return 'low';
+    }
+  }
+
+  /**
+   * Query audit logs (for compliance reporting)
+   */
+  async queryAuditLogs(filters = {}) {
+    try {
+      const {
+        userId,
+        eventType,
+        eventCategory,
+        resourceType,
+        startDate,
+        endDate,
+        severity,
+        success,
+        page = 1,
+        limit = 100
+      } = filters;
+      
+      const whereClause = {};
+      
+      if (userId) whereClause.userId = userId;
+      if (eventType) whereClause.eventType = eventType;
+      if (eventCategory) whereClause.eventCategory = eventCategory;
+      if (resourceType) whereClause.resourceType = resourceType;
+      if (severity) whereClause.severity = severity;
+      if (success !== undefined) whereClause.success = success;
+      
+      if (startDate || endDate) {
+        whereClause.timestamp = {};
+        if (startDate) whereClause.timestamp.gte = new Date(startDate);
+        if (endDate) whereClause.timestamp.lte = new Date(endDate);
       }
-    });
-  }
-
-  /**
-   * Create audit logger for healthcare data access
-   */
-  createAuditLogger() {
-    return winston.createLogger({
-      levels: this.logLevels,
-      format: winston.format.combine(
-        winston.format.timestamp(),
-        winston.format.errors({ stack: true }),
-        winston.format.json(),
-        winston.format.printf(info => {
-          return JSON.stringify({
-            timestamp: info.timestamp,
-            level: info.level,
-            eventType: info.eventType,
-            userId: info.userId,
-            sessionId: info.sessionId,
-            ip: info.ip,
-            userAgent: info.userAgent,
-            resource: info.resource,
-            action: info.action,
-            details: info.details,
-            patientId: info.patientId,
-            organizationId: info.organizationId,
-            complianceFlags: info.complianceFlags,
-            dataClassification: info.dataClassification,
-            auditId: info.auditId || this.generateAuditId()
-          });
-        })
-      ),
-      transports: [
-        new winston.transports.File({
-          filename: path.join(this.logDir, 'audit', 'healthcare-audit.log'),
-          maxsize: 100 * 1024 * 1024, // 100MB
-          maxFiles: 30, // Keep 30 files
-          tailable: true
-        }),
-        new winston.transports.File({
-          filename: path.join(this.logDir, 'audit', 'healthcare-audit-error.log'),
-          level: 'error',
-          maxsize: 50 * 1024 * 1024, // 50MB
-          maxFiles: 10
-        })
-      ]
-    });
-  }
-
-  /**
-   * Create security logger for security events
-   */
-  createSecurityLogger() {
-    return winston.createLogger({
-      levels: this.logLevels,
-      format: winston.format.combine(
-        winston.format.timestamp(),
-        winston.format.errors({ stack: true }),
-        winston.format.json(),
-        winston.format.printf(info => {
-          return JSON.stringify({
-            timestamp: info.timestamp,
-            level: info.level,
-            securityEventType: info.securityEventType,
-            userId: info.userId,
-            sessionId: info.sessionId,
-            ip: info.ip,
-            userAgent: info.userAgent,
-            threatLevel: info.threatLevel,
-            action: info.action,
-            result: info.result,
-            details: info.details,
-            geolocation: info.geolocation,
-            deviceFingerprint: info.deviceFingerprint,
-            securityId: info.securityId || this.generateSecurityId()
-          });
-        })
-      ),
-      transports: [
-        new winston.transports.File({
-          filename: path.join(this.logDir, 'security', 'security-events.log'),
-          maxsize: 100 * 1024 * 1024,
-          maxFiles: 50,
-          tailable: true
-        }),
-        new winston.transports.File({
-          filename: path.join(this.logDir, 'security', 'security-critical.log'),
-          level: 'critical',
-          maxsize: 50 * 1024 * 1024,
-          maxFiles: 100
-        })
-      ]
-    });
-  }
-
-  /**
-   * Create compliance logger for regulatory compliance
-   */
-  createComplianceLogger() {
-    return winston.createLogger({
-      levels: this.logLevels,
-      format: winston.format.combine(
-        winston.format.timestamp(),
-        winston.format.json(),
-        winston.format.printf(info => {
-          return JSON.stringify({
-            timestamp: info.timestamp,
-            level: info.level,
-            regulation: info.regulation || 'NOM-024-SSA3-2010',
-            complianceEventType: info.complianceEventType,
-            userId: info.userId,
-            userRole: info.userRole,
-            professionalLicense: info.professionalLicense,
-            organizationId: info.organizationId,
-            patientId: info.patientId,
-            dataType: info.dataType,
-            action: info.action,
-            justification: info.justification,
-            consentStatus: info.consentStatus,
-            retentionPolicy: info.retentionPolicy,
-            encryptionStatus: info.encryptionStatus,
-            accessLevel: info.accessLevel,
-            details: info.details,
-            complianceId: info.complianceId || this.generateComplianceId()
-          });
-        })
-      ),
-      transports: [
-        new winston.transports.File({
-          filename: path.join(this.logDir, 'compliance', 'nom-024-compliance.log'),
-          maxsize: 200 * 1024 * 1024, // 200MB
-          maxFiles: 365, // Keep for 1 year
-          tailable: true
-        }),
-        new winston.transports.File({
-          filename: path.join(this.logDir, 'compliance', 'compliance-violations.log'),
-          level: 'warning',
-          maxsize: 100 * 1024 * 1024,
-          maxFiles: 100
-        })
-      ]
-    });
-  }
-
-  /**
-   * Create system logger for system events
-   */
-  createSystemLogger() {
-    return winston.createLogger({
-      levels: this.logLevels,
-      format: winston.format.combine(
-        winston.format.timestamp(),
-        winston.format.errors({ stack: true }),
-        winston.format.json()
-      ),
-      transports: [
-        new winston.transports.File({
-          filename: path.join(this.logDir, 'system', 'system.log'),
-          maxsize: 50 * 1024 * 1024,
-          maxFiles: 20
-        }),
-        new winston.transports.File({
-          filename: path.join(this.logDir, 'system', 'system-error.log'),
-          level: 'error',
-          maxsize: 50 * 1024 * 1024,
-          maxFiles: 20
-        }),
-        new winston.transports.Console({
-          level: process.env.NODE_ENV === 'development' ? 'debug' : 'info',
-          format: winston.format.combine(
-            winston.format.colorize(),
-            winston.format.simple()
-          )
-        })
-      ]
-    });
-  }
-
-  /**
-   * Create performance logger
-   */
-  createPerformanceLogger() {
-    return winston.createLogger({
-      levels: this.logLevels,
-      format: winston.format.combine(
-        winston.format.timestamp(),
-        winston.format.json()
-      ),
-      transports: [
-        new winston.transports.File({
-          filename: path.join(this.logDir, 'performance', 'performance.log'),
-          maxsize: 100 * 1024 * 1024,
-          maxFiles: 30
-        })
-      ]
-    });
-  }
-
-  /**
-   * Log healthcare data access for compliance
-   */
-  async logDataAccess(userId, eventType, details = {}) {
-    const auditEntry = {
-      level: 'info',
-      eventType: this.healthcareEventTypes[eventType] || eventType,
-      userId: userId,
-      sessionId: details.sessionId,
-      ip: details.ip,
-      userAgent: details.userAgent,
-      resource: details.resource,
-      action: details.action || 'READ',
-      patientId: details.patientId,
-      organizationId: details.organizationId,
-      dataClassification: details.dataClassification || 'PHI',
-      complianceFlags: details.complianceFlags || ['NOM-024-SSA3-2010'],
-      details: this.sanitizeDetails(details),
-      auditId: this.generateAuditId()
-    };
-
-    this.auditLogger.info(auditEntry);
-
-    // Also log to compliance logger for regulatory tracking
-    if (this.isComplianceRelevant(eventType)) {
-      await this.logComplianceEvent(userId, eventType, details);
-    }
-  }
-
-  /**
-   * Log clinical events with professional validation
-   */
-  async logClinicalEvent(userId, eventType, details = {}) {
-    const clinicalEntry = {
-      level: details.level || 'info',
-      eventType: eventType,
-      userId: userId,
-      userRole: details.userRole,
-      professionalLicense: details.professionalLicense,
-      sessionId: details.sessionId,
-      ip: details.ip,
-      userAgent: details.userAgent,
-      patientId: details.patientId,
-      assessmentId: details.assessmentId,
-      scaleId: details.scaleId,
-      clinicalAction: details.action,
-      clinicalSeverity: details.severity,
-      intervention: details.intervention,
-      followUpRequired: details.followUpRequired,
-      organizationId: details.organizationId,
-      details: this.sanitizeDetails(details),
-      auditId: this.generateAuditId()
-    };
-
-    this.auditLogger.info(clinicalEntry);
-
-    // Enhanced compliance logging for clinical events
-    await this.logComplianceEvent(userId, 'CLINICAL_EVENT', {
-      ...details,
-      clinicalEventType: eventType,
-      requiresProfessionalValidation: true
-    });
-  }
-
-  /**
-   * Log security events
-   */
-  async logSecurityEvent(userId, eventType, details = {}) {
-    const securityEntry = {
-      level: details.level || this.determineSecurityLevel(eventType),
-      securityEventType: eventType,
-      userId: userId,
-      sessionId: details.sessionId,
-      ip: details.ip,
-      userAgent: details.userAgent,
-      threatLevel: details.threatLevel || this.determineThreatLevel(eventType),
-      action: details.action,
-      result: details.result || 'UNKNOWN',
-      geolocation: details.geolocation,
-      deviceFingerprint: details.deviceFingerprint,
-      authenticationMethod: details.authenticationMethod,
-      failureReason: details.failureReason,
-      suspiciousActivity: details.suspiciousActivity,
-      details: this.sanitizeDetails(details),
-      securityId: this.generateSecurityId()
-    };
-
-    this.securityLogger.log(securityEntry.level, securityEntry);
-
-    // Alert for critical security events
-    if (securityEntry.threatLevel === 'CRITICAL' || securityEntry.level === 'critical') {
-      await this.alertSecurityTeam(securityEntry);
-    }
-  }
-
-  /**
-   * Log compliance events for regulatory tracking
-   */
-  async logComplianceEvent(userId, eventType, details = {}) {
-    const complianceEntry = {
-      level: details.level || 'info',
-      regulation: details.regulation || 'NOM-024-SSA3-2010',
-      complianceEventType: eventType,
-      userId: userId,
-      userRole: details.userRole,
-      professionalLicense: details.professionalLicense,
-      organizationId: details.organizationId,
-      patientId: details.patientId,
-      dataType: details.dataType,
-      action: details.action,
-      justification: details.justification,
-      consentStatus: details.consentStatus,
-      retentionPolicy: details.retentionPolicy,
-      encryptionStatus: details.encryptionStatus,
-      accessLevel: details.accessLevel,
-      legalBasis: details.legalBasis,
-      dataMinimization: details.dataMinimization,
-      purposeLimitation: details.purposeLimitation,
-      details: this.sanitizeDetails(details),
-      complianceId: this.generateComplianceId()
-    };
-
-    this.complianceLogger.info(complianceEntry);
-
-    // Check for compliance violations
-    if (this.isComplianceViolation(complianceEntry)) {
-      await this.handleComplianceViolation(complianceEntry);
-    }
-  }
-
-  /**
-   * Log system events
-   */
-  async logSystemEvent(userId, eventType, details = {}) {
-    const systemEntry = {
-      level: details.level || 'info',
-      systemEventType: eventType,
-      userId: userId || 'system',
-      component: details.component,
-      service: details.service,
-      action: details.action,
-      result: details.result,
-      performance: details.performance,
-      errorDetails: details.error,
-      configuration: details.configuration,
-      details: this.sanitizeDetails(details),
-      systemId: this.generateSystemId()
-    };
-
-    this.systemLogger.log(systemEntry.level, systemEntry);
-  }
-
-  /**
-   * Log performance metrics
-   */
-  async logPerformance(operation, metrics = {}) {
-    const performanceEntry = {
-      level: 'info',
-      operation: operation,
-      duration: metrics.duration,
-      responseTime: metrics.responseTime,
-      throughput: metrics.throughput,
-      errorRate: metrics.errorRate,
-      memoryUsage: metrics.memoryUsage,
-      cpuUsage: metrics.cpuUsage,
-      databaseQueries: metrics.databaseQueries,
-      cacheHitRate: metrics.cacheHitRate,
-      userAgent: metrics.userAgent,
-      endpoint: metrics.endpoint,
-      method: metrics.method,
-      statusCode: metrics.statusCode,
-      details: metrics.details,
-      performanceId: this.generatePerformanceId()
-    };
-
-    this.performanceLogger.info(performanceEntry);
-
-    // Alert for performance issues
-    if (this.isPerformanceIssue(performanceEntry)) {
-      await this.alertPerformanceTeam(performanceEntry);
-    }
-  }
-
-  /**
-   * Performance monitoring middleware
-   */
-  performanceMiddleware() {
-    return async (req, res, next) => {
-      const startTime = Date.now();
-      const startMemory = process.memoryUsage();
-
-      // Capture original methods
-      const originalSend = res.send;
-      const originalJson = res.json;
-
-      // Override response methods to capture metrics
-      res.send = function(data) {
-        res.locals.responseSize = Buffer.byteLength(data || '');
-        return originalSend.call(this, data);
+      
+      const skip = (page - 1) * limit;
+      
+      const [logs, total] = await Promise.all([
+        executeQuery(
+          (prisma) => prisma.auditLog.findMany({
+            where: whereClause,
+            skip,
+            take: limit,
+            orderBy: { timestamp: 'desc' }
+          }),
+          'queryAuditLogs'
+        ),
+        executeQuery(
+          (prisma) => prisma.auditLog.count({
+            where: whereClause
+          }),
+          'countAuditLogs'
+        )
+      ]);
+      
+      logger.info('Audit log query completed', {
+        filters,
+        resultCount: logs.length,
+        totalCount: total
+      });
+      
+      return {
+        logs,
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit),
+        filters
       };
+      
+    } catch (error) {
+      logger.error('Failed to query audit logs', {
+        error: error.message,
+        filters: filters
+      });
+      throw error;
+    }
+  }
 
-      res.json = function(data) {
-        res.locals.responseSize = Buffer.byteLength(JSON.stringify(data || {}));
-        return originalJson.call(this, data);
-      };
-
-      // Log performance when response finishes
-      res.on('finish', async () => {
-        const endTime = Date.now();
-        const endMemory = process.memoryUsage();
-        
-        const metrics = {
-          duration: endTime - startTime,
-          responseTime: endTime - startTime,
-          memoryUsage: {
-            heapUsed: endMemory.heapUsed - startMemory.heapUsed,
-            heapTotal: endMemory.heapTotal,
-            external: endMemory.external
-          },
-          responseSize: res.locals.responseSize || 0,
-          statusCode: res.statusCode,
-          method: req.method,
-          endpoint: req.route?.path || req.path,
-          userAgent: req.headers['user-agent'],
-          ip: req.ip,
-          userId: req.user?.id
+  /**
+   * Generate compliance report
+   */
+  async generateComplianceReport(startDate, endDate, options = {}) {
+    try {
+      const reportId = `compliance_${Date.now()}`;
+      
+      logger.info('Compliance report requested', {
+        reportId,
+        startDate: startDate,
+        endDate: endDate,
+        options: options
+      });
+      
+      const whereClause = {};
+      if (startDate) whereClause.timestamp = { gte: new Date(startDate) };
+      if (endDate) {
+        whereClause.timestamp = { 
+          ...whereClause.timestamp, 
+          lte: new Date(endDate) 
         };
+      }
+      
+      // Get overall metrics
+      const [
+        totalEvents,
+        authenticationEvents,
+        dataAccessEvents,
+        dataModificationEvents,
+        securityIncidents,
+        systemErrors,
+        eventsByCategory,
+        eventsBySeverity,
+        failedEvents,
+        uniqueUsers
+      ] = await Promise.all([
+        executeQuery(
+          (prisma) => prisma.auditLog.count({ where: whereClause }),
+          'countTotalEvents'
+        ),
+        executeQuery(
+          (prisma) => prisma.auditLog.count({ 
+            where: { ...whereClause, eventCategory: 'authentication' } 
+          }),
+          'countAuthEvents'
+        ),
+        executeQuery(
+          (prisma) => prisma.auditLog.count({ 
+            where: { ...whereClause, eventCategory: 'data_access' } 
+          }),
+          'countDataAccess'
+        ),
+        executeQuery(
+          (prisma) => prisma.auditLog.count({ 
+            where: { ...whereClause, eventCategory: 'data_modification' } 
+          }),
+          'countDataModification'
+        ),
+        executeQuery(
+          (prisma) => prisma.auditLog.count({ 
+            where: { ...whereClause, eventCategory: 'security_incident' } 
+          }),
+          'countSecurityIncidents'
+        ),
+        executeQuery(
+          (prisma) => prisma.auditLog.count({ 
+            where: { ...whereClause, eventCategory: 'system' } 
+          }),
+          'countSystemErrors'
+        ),
+        executeQuery(
+          (prisma) => prisma.auditLog.groupBy({
+            by: ['eventCategory'],
+            where: whereClause,
+            _count: { eventCategory: true }
+          }),
+          'groupByCategory'
+        ),
+        executeQuery(
+          (prisma) => prisma.auditLog.groupBy({
+            by: ['severity'],
+            where: whereClause,
+            _count: { severity: true }
+          }),
+          'groupBySeverity'
+        ),
+        executeQuery(
+          (prisma) => prisma.auditLog.count({ 
+            where: { ...whereClause, success: false } 
+          }),
+          'countFailedEvents'
+        ),
+        executeQuery(
+          (prisma) => prisma.auditLog.findMany({
+            where: whereClause,
+            select: { userId: true },
+            distinct: ['userId']
+          }),
+          'getUniqueUsers'
+        )
+      ]);
+      
+      // Calculate compliance metrics
+      const complianceMetrics = {
+        totalEvents,
+        authenticationEvents,
+        dataAccessEvents,
+        dataModificationEvents,
+        securityIncidents,
+        systemErrors,
+        failedEvents,
+        uniqueUsers: uniqueUsers.length,
+        successRate: totalEvents > 0 ? ((totalEvents - failedEvents) / totalEvents * 100).toFixed(2) : 100,
+        eventsByCategory: eventsByCategory.reduce((acc, item) => {
+          acc[item.eventCategory] = item._count.eventCategory;
+          return acc;
+        }, {}),
+        eventsBySeverity: eventsBySeverity.reduce((acc, item) => {
+          acc[item.severity] = item._count.severity;
+          return acc;
+        }, {})
+      };
+      
+      // Generate summary
+      const summary = this.generateComplianceSummary(complianceMetrics);
+      
+      // Get recent critical events
+      const criticalEvents = await executeQuery(
+        (prisma) => prisma.auditLog.findMany({
+          where: { 
+            ...whereClause, 
+            severity: 'high',
+            success: false
+          },
+          take: 10,
+          orderBy: { timestamp: 'desc' }
+        }),
+        'getCriticalEvents'
+      );
+      
+      const report = {
+        reportId,
+        generatedAt: new Date().toISOString(),
+        period: {
+          startDate: startDate,
+          endDate: endDate
+        },
+        metrics: complianceMetrics,
+        summary,
+        criticalEvents,
+        recommendations: this.generateRecommendations(complianceMetrics),
+        complianceStatus: this.assessComplianceStatus(complianceMetrics)
+      };
+      
+      logger.info('Compliance report generated successfully', {
+        reportId,
+        totalEvents,
+        uniqueUsers: uniqueUsers.length,
+        criticalEvents: criticalEvents.length
+      });
+      
+      return report;
+      
+    } catch (error) {
+      logger.error('Failed to generate compliance report', {
+        error: error.message,
+        startDate: startDate,
+        endDate: endDate
+      });
+      throw error;
+    }
+  }
+  
+  /**
+   * Generate compliance summary
+   */
+  generateComplianceSummary(metrics) {
+    const summary = [];
+    
+    if (metrics.totalEvents === 0) {
+      summary.push('No audit events recorded for the specified period.');
+      return summary.join(' ');
+    }
+    
+    summary.push(`A total of ${metrics.totalEvents} audit events were recorded.`);
+    
+    if (metrics.authenticationEvents > 0) {
+      summary.push(`${metrics.authenticationEvents} authentication events were logged.`);
+    }
+    
+    if (metrics.dataAccessEvents > 0) {
+      summary.push(`${metrics.dataAccessEvents} data access events were recorded.`);
+    }
+    
+    if (metrics.securityIncidents > 0) {
+      summary.push(`${metrics.securityIncidents} security incidents were detected.`);
+    }
+    
+    if (metrics.failedEvents > 0) {
+      summary.push(`${metrics.failedEvents} failed events occurred (success rate: ${metrics.successRate}%).`);
+    }
+    
+    summary.push(`${metrics.uniqueUsers} unique users were active during this period.`);
+    
+    return summary.join(' ');
+  }
+  
+  /**
+   * Generate recommendations based on metrics
+   */
+  generateRecommendations(metrics) {
+    const recommendations = [];
+    
+    if (metrics.securityIncidents > 0) {
+      recommendations.push({
+        priority: 'high',
+        type: 'security',
+        message: `${metrics.securityIncidents} security incidents detected. Review security incidents and implement additional safeguards.`
+      });
+    }
+    
+    if (metrics.failedEvents > metrics.totalEvents * 0.05) {
+      recommendations.push({
+        priority: 'medium',
+        type: 'reliability',
+        message: `High failure rate detected (${((metrics.failedEvents / metrics.totalEvents) * 100).toFixed(1)}%). Review system reliability and error handling.`
+      });
+    }
+    
+    if (metrics.dataAccessEvents > metrics.totalEvents * 0.7) {
+      recommendations.push({
+        priority: 'low',
+        type: 'data_governance',
+        message: 'High volume of data access events. Consider implementing additional data governance controls.'
+      });
+    }
+    
+    return recommendations;
+  }
+  
+  /**
+   * Assess overall compliance status
+   */
+  assessComplianceStatus(metrics) {
+    let status = 'compliant';
+    const issues = [];
+    
+    if (metrics.securityIncidents > 0) {
+      status = 'non_compliant';
+      issues.push('Security incidents detected');
+    }
+    
+    if (metrics.failedEvents > metrics.totalEvents * 0.1) {
+      status = 'at_risk';
+      issues.push('High failure rate');
+    }
+    
+    if (metrics.authenticationEvents === 0 && metrics.totalEvents > 0) {
+      status = 'at_risk';
+      issues.push('No authentication events logged');
+    }
+    
+    return {
+      status,
+      issues,
+      lastAssessed: new Date().toISOString()
+    };
+  }
+  
+  /**
+   * Add HTTP request logging methods
+   */
+  async logHttpRequest(userId, method, path, ip, metadata = {}) {
+    try {
+      await this.logDataAccess(userId, 'http_request', path, 'request', {
+        method,
+        ip,
+        ...metadata
+      });
+    } catch (error) {
+      logger.error('Failed to log HTTP request', {
+        error: error.message,
+        userId,
+        method,
+        path
+      });
+    }
+  }
+  
+  async logHttpResponse(userId, method, path, statusCode, duration, metadata = {}) {
+    try {
+      await this.logDataAccess(userId, 'http_response', path, 'response', {
+        method,
+        statusCode,
+        duration,
+        ...metadata
+      });
+    } catch (error) {
+      logger.error('Failed to log HTTP response', {
+        error: error.message,
+        userId,
+        method,
+        path,
+        statusCode
+      });
+    }
+  }
+  
+  async logError(userId, errorName, errorMessage, metadata = {}) {
+    try {
+      await this.logSystemError(userId, new Error(errorMessage), {
+        errorName,
+        ...metadata
+      });
+    } catch (error) {
+      logger.error('Failed to log error', {
+        error: error.message,
+        userId,
+        errorName,
+        errorMessage
+      });
+    }
+  }
 
-        await this.logPerformance(`${req.method} ${req.path}`, metrics);
+  /**
+   * Hub interaction logging methods for inter-hub communication audit
+   */
+  async logHubInteraction(interactionData) {
+    try {
+      const auditEntry = {
+        userId: interactionData.userId,
+        eventType: 'hub_interaction_started',
+        eventCategory: 'inter_hub_communication',
+        resourceType: 'hub_link',
+        resourceId: interactionData.tokenId,
+        action: interactionData.operation,
+        eventData: {
+          sourceHub: interactionData.sourceHub,
+          targetHub: interactionData.targetHub,
+          operation: interactionData.operation,
+          entityId: interactionData.entityId,
+          tokenId: interactionData.tokenId
+        },
+        timestamp: new Date(),
+        ipAddress: interactionData.ipAddress || 'unknown',
+        userAgent: interactionData.userAgent || 'unknown',
+        sessionId: interactionData.tokenId,
+        success: true,
+        severity: 'medium'
+      };
+
+      await this.saveAuditEntry(auditEntry);
+      logger.info('Hub interaction started', auditEntry.eventData);
+
+    } catch (error) {
+      logger.error('Failed to log hub interaction', {
+        error: error.message,
+        interactionData
+      });
+    }
+  }
+
+  async logHubInteractionComplete(completionData) {
+    try {
+      const auditEntry = {
+        userId: completionData.userId,
+        eventType: 'hub_interaction_completed',
+        eventCategory: 'inter_hub_communication',
+        resourceType: 'hub_link',
+        resourceId: completionData.tokenId,
+        action: completionData.operation,
+        eventData: {
+          sourceHub: completionData.sourceHub,
+          targetHub: completionData.targetHub,
+          operation: completionData.operation,
+          entityId: completionData.entityId,
+          method: completionData.method,
+          path: completionData.path,
+          statusCode: completionData.statusCode,
+          duration: completionData.duration,
+          requestSize: completionData.requestSize,
+          responseSize: completionData.responseSize,
+          tokenId: completionData.tokenId
+        },
+        timestamp: new Date(),
+        ipAddress: completionData.ipAddress || 'unknown',
+        userAgent: completionData.userAgent || 'unknown',
+        sessionId: completionData.tokenId,
+        success: completionData.statusCode >= 200 && completionData.statusCode < 400,
+        severity: completionData.statusCode >= 400 ? 'high' : 'low'
+      };
+
+      await this.saveAuditEntry(auditEntry);
+      logger.info('Hub interaction completed', auditEntry.eventData);
+
+    } catch (error) {
+      logger.error('Failed to log hub interaction completion', {
+        error: error.message,
+        completionData
+      });
+    }
+  }
+
+  async logTokenGeneration(tokenData) {
+    try {
+      const auditEntry = {
+        userId: tokenData.userId,
+        eventType: 'hub_token_generated',
+        eventCategory: 'inter_hub_communication',
+        resourceType: 'hub_token',
+        resourceId: tokenData.entityId,
+        action: 'generate_token',
+        eventData: {
+          tokenType: tokenData.tokenType,
+          entityId: tokenData.entityId,
+          sourceHub: tokenData.sourceHub,
+          requestingHub: tokenData.requestingHub
+        },
+        timestamp: new Date(),
+        ipAddress: tokenData.ipAddress || 'unknown',
+        userAgent: 'system',
+        sessionId: null,
+        success: true,
+        severity: 'medium'
+      };
+
+      await this.saveAuditEntry(auditEntry);
+      logger.info('Hub token generated', auditEntry.eventData);
+
+    } catch (error) {
+      logger.error('Failed to log token generation', {
+        error: error.message,
+        tokenData
+      });
+    }
+  }
+
+  async logUnauthorizedAccess(accessData) {
+    try {
+      const auditEntry = {
+        userId: accessData.userId,
+        eventType: 'unauthorized_hub_access',
+        eventCategory: 'security_incident',
+        resourceType: 'hub_link',
+        resourceId: accessData.operation,
+        action: 'access_denied',
+        eventData: {
+          requiredPermission: accessData.requiredPermission,
+          userPermissions: accessData.userPermissions,
+          operation: accessData.operation,
+          attemptedResource: accessData.resource
+        },
+        timestamp: new Date(),
+        ipAddress: accessData.ipAddress || 'unknown',
+        userAgent: 'system',
+        sessionId: null,
+        success: false,
+        severity: 'high'
+      };
+
+      await this.saveAuditEntry(auditEntry);
+      logger.warn('Unauthorized hub access attempt', auditEntry.eventData);
+
+    } catch (error) {
+      logger.error('Failed to log unauthorized access', {
+        error: error.message,
+        accessData
+      });
+    }
+  }
+
+  /**
+   * Query hub interaction logs for monitoring and compliance
+   */
+  async queryHubInteractions(filters = {}) {
+    try {
+      const {
+        userId,
+        sourceHub,
+        targetHub,
+        operation,
+        startDate,
+        endDate,
+        success,
+        page = 1,
+        limit = 50
+      } = filters;
+
+      const whereClause = {
+        eventCategory: 'inter_hub_communication'
+      };
+
+      if (userId) whereClause.userId = userId;
+      if (success !== undefined) whereClause.success = success;
+
+      if (startDate || endDate) {
+        whereClause.timestamp = {};
+        if (startDate) whereClause.timestamp.gte = new Date(startDate);
+        if (endDate) whereClause.timestamp.lte = new Date(endDate);
+      }
+
+      // Additional filtering by eventData JSON fields would require raw SQL
+      // For now, we'll filter in application layer for sourceHub/targetHub/operation
+
+      const skip = (page - 1) * limit;
+
+      const [logs, total] = await Promise.all([
+        executeQuery(
+          (prisma) => prisma.auditLog.findMany({
+            where: whereClause,
+            skip,
+            take: limit,
+            orderBy: { timestamp: 'desc' }
+          }),
+          'queryHubInteractions'
+        ),
+        executeQuery(
+          (prisma) => prisma.auditLog.count({
+            where: whereClause
+          }),
+          'countHubInteractions'
+        )
+      ]);
+
+      // Filter in application layer for JSON fields
+      let filteredLogs = logs;
+      if (sourceHub || targetHub || operation) {
+        filteredLogs = logs.filter(log => {
+          const eventData = log.eventData || {};
+          if (sourceHub && eventData.sourceHub !== sourceHub) return false;
+          if (targetHub && eventData.targetHub !== targetHub) return false;
+          if (operation && eventData.operation !== operation) return false;
+          return true;
+        });
+      }
+
+      logger.info('Hub interaction query completed', {
+        filters,
+        resultCount: filteredLogs.length,
+        totalCount: total
       });
 
-      next();
-    };
-  }
+      return {
+        logs: filteredLogs,
+        total: filteredLogs.length,
+        page,
+        limit,
+        totalPages: Math.ceil(filteredLogs.length / limit),
+        filters
+      };
 
-  /**
-   * Generate unique audit ID
-   */
-  generateAuditId() {
-    return `AUD_${Date.now()}_${crypto.randomBytes(8).toString('hex')}`;
-  }
-
-  /**
-   * Generate unique security ID
-   */
-  generateSecurityId() {
-    return `SEC_${Date.now()}_${crypto.randomBytes(8).toString('hex')}`;
-  }
-
-  /**
-   * Generate unique compliance ID
-   */
-  generateComplianceId() {
-    return `CMP_${Date.now()}_${crypto.randomBytes(8).toString('hex')}`;
-  }
-
-  /**
-   * Generate unique system ID
-   */
-  generateSystemId() {
-    return `SYS_${Date.now()}_${crypto.randomBytes(8).toString('hex')}`;
-  }
-
-  /**
-   * Generate unique performance ID
-   */
-  generatePerformanceId() {
-    return `PRF_${Date.now()}_${crypto.randomBytes(8).toString('hex')}`;
-  }
-
-  /**
-   * Sanitize details to remove sensitive information
-   */
-  sanitizeDetails(details) {
-    if (!details || typeof details !== 'object') return details;
-
-    const sanitized = { ...details };
-    const sensitiveKeys = [
-      'password', 'token', 'secret', 'key', 'authorization',
-      'ssn', 'curp', 'medical_record_number', 'credit_card'
-    ];
-
-    function sanitizeObject(obj) {
-      if (!obj || typeof obj !== 'object') return obj;
-      
-      for (const key in obj) {
-        if (sensitiveKeys.some(sensitive => key.toLowerCase().includes(sensitive))) {
-          obj[key] = '[REDACTED]';
-        } else if (typeof obj[key] === 'object') {
-          sanitizeObject(obj[key]);
-        }
-      }
+    } catch (error) {
+      logger.error('Failed to query hub interactions', {
+        error: error.message,
+        filters
+      });
+      throw error;
     }
-
-    sanitizeObject(sanitized);
-    return sanitized;
-  }
-
-  /**
-   * Determine security level based on event type
-   */
-  determineSecurityLevel(eventType) {
-    const criticalEvents = [
-      'UNAUTHORIZED_ACCESS_ATTEMPT',
-      'PRIVILEGE_ESCALATION',
-      'DATA_BREACH_DETECTED',
-      'MALICIOUS_ACTIVITY_DETECTED'
-    ];
-
-    const warningEvents = [
-      'FAILED_LOGIN_ATTEMPT',
-      'SUSPICIOUS_ACTIVITY',
-      'RATE_LIMIT_EXCEEDED'
-    ];
-
-    if (criticalEvents.includes(eventType)) return 'critical';
-    if (warningEvents.includes(eventType)) return 'warning';
-    return 'info';
-  }
-
-  /**
-   * Determine threat level
-   */
-  determineThreatLevel(eventType) {
-    const criticalThreats = [
-      'DATA_BREACH_DETECTED',
-      'MALICIOUS_ACTIVITY_DETECTED',
-      'PRIVILEGE_ESCALATION'
-    ];
-
-    const highThreats = [
-      'UNAUTHORIZED_ACCESS_ATTEMPT',
-      'SUSPICIOUS_ACTIVITY'
-    ];
-
-    const mediumThreats = [
-      'FAILED_LOGIN_ATTEMPT',
-      'RATE_LIMIT_EXCEEDED'
-    ];
-
-    if (criticalThreats.includes(eventType)) return 'CRITICAL';
-    if (highThreats.includes(eventType)) return 'HIGH';
-    if (mediumThreats.includes(eventType)) return 'MEDIUM';
-    return 'LOW';
-  }
-
-  /**
-   * Check if event is compliance relevant
-   */
-  isComplianceRelevant(eventType) {
-    const complianceEvents = [
-      'PATIENT_DATA_ACCESS',
-      'PATIENT_DATA_MODIFICATION',
-      'CLINICAL_ASSESSMENT_ACCESS',
-      'MEDICAL_RECORD_ACCESS',
-      'PRESCRIPTION_ACCESS',
-      'EMERGENCY_ACCESS',
-      'DATA_EXPORT'
-    ];
-
-    return complianceEvents.includes(eventType);
-  }
-
-  /**
-   * Check for compliance violations
-   */
-  isComplianceViolation(complianceEntry) {
-    // Check for various compliance violation patterns
-    if (complianceEntry.accessLevel === 'UNAUTHORIZED') return true;
-    if (complianceEntry.consentStatus === 'REVOKED') return true;
-    if (complianceEntry.encryptionStatus === 'UNENCRYPTED' && complianceEntry.dataType === 'PHI') return true;
-    if (complianceEntry.justification === 'NONE' && complianceEntry.dataType === 'SENSITIVE') return true;
-    
-    return false;
-  }
-
-  /**
-   * Check for performance issues
-   */
-  isPerformanceIssue(performanceEntry) {
-    return performanceEntry.duration > 5000 || // 5 seconds
-           performanceEntry.errorRate > 0.1 ||  // 10% error rate
-           (performanceEntry.memoryUsage?.heapUsed > 100 * 1024 * 1024); // 100MB memory increase
-  }
-
-  /**
-   * Handle compliance violation
-   */
-  async handleComplianceViolation(complianceEntry) {
-    // Log as critical
-    this.complianceLogger.critical('COMPLIANCE_VIOLATION_DETECTED', complianceEntry);
-    
-    // Alert compliance team
-    console.error('COMPLIANCE VIOLATION DETECTED:', complianceEntry);
-    
-    // In production, this would trigger alerts to compliance officers
-  }
-
-  /**
-   * Alert security team for critical events
-   */
-  async alertSecurityTeam(securityEntry) {
-    console.error('CRITICAL SECURITY EVENT:', securityEntry);
-    // In production, this would send alerts via email, Slack, PagerDuty, etc.
-  }
-
-  /**
-   * Alert performance team for issues
-   */
-  async alertPerformanceTeam(performanceEntry) {
-    console.warn('PERFORMANCE ISSUE DETECTED:', performanceEntry);
-    // In production, this would send performance alerts
   }
 }
 

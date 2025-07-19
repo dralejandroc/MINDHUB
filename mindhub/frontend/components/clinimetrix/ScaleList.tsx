@@ -1,6 +1,6 @@
 /**
- * Scale List Component
- * Display and manage available clinical scales
+ * Scale List Component - Universal System
+ * Display and manage available clinical scales using database-first architecture
  */
 
 'use client';
@@ -16,26 +16,28 @@ import {
 import { Card } from '../ui/Card';
 import { Button } from '../ui/Button';
 import { LoadingSpinner } from '../ui/LoadingSpinner';
-import { useClinimetrix } from '../../contexts/ClinimetrixContext';
-import {
-  ClinicalScale,
-  ScaleCategory,
-  AdministrationMode,
-  TargetPopulation,
-  ScaleFilters
-} from '../../types/clinimetrix';
+import { useUniversalScales, useScales, UniversalScale } from '../../contexts/UniversalScalesContext';
 
 // =============================================================================
 // TYPES
 // =============================================================================
 
 interface ScaleListProps {
-  onScaleSelect?: (scale: ClinicalScale) => void;
+  onScaleSelect?: (scale: UniversalScale) => void;
   multiSelect?: boolean;
   selectedScales?: string[];
   showFilters?: boolean;
   showStats?: boolean;
   compact?: boolean;
+}
+
+interface ScaleFilters {
+  category?: string;
+  administrationMode?: string;
+  targetPopulation?: string;
+  isActive?: boolean;
+  requiresTraining?: boolean;
+  search?: string;
 }
 
 interface FilterPanelProps {
@@ -56,35 +58,48 @@ export function ScaleList({
   showStats = true,
   compact = false
 }: ScaleListProps) {
-  const { state, loadScales, selectScale } = useClinimetrix();
+  const { scales, loading, error, refetch } = useScales();
   const [searchQuery, setSearchQuery] = useState('');
   const [filters, setFilters] = useState<ScaleFilters>({});
   const [showFilterPanel, setShowFilterPanel] = useState(false);
   const [sortBy, setSortBy] = useState<'name' | 'category' | 'usage'>('name');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
 
-  // Load scales when component mounts or filters change
-  useEffect(() => {
-    const searchFilters = {
-      ...filters,
-      search: searchQuery || undefined
-    };
-    loadScales(searchFilters);
-  }, [filters, searchQuery]);
-
   // Filter and sort scales
-  const filteredScales = state.scales
+  const filteredScales = scales
     .filter(scale => {
-      // Additional client-side filtering if needed
+      // Search filter
       if (searchQuery) {
         const query = searchQuery.toLowerCase();
-        return (
+        const matchesSearch = (
           scale.name.toLowerCase().includes(query) ||
           scale.abbreviation.toLowerCase().includes(query) ||
           scale.description?.toLowerCase().includes(query) ||
           scale.category.toLowerCase().includes(query)
         );
+        if (!matchesSearch) return false;
       }
+      
+      // Category filter
+      if (filters.category && filters.category !== 'all') {
+        if (scale.category !== filters.category) return false;
+      }
+      
+      // Administration mode filter
+      if (filters.administrationMode && filters.administrationMode !== 'all') {
+        if (scale.administrationMode !== filters.administrationMode) return false;
+      }
+      
+      // Target population filter
+      if (filters.targetPopulation && filters.targetPopulation !== 'all') {
+        if (scale.targetPopulation !== filters.targetPopulation) return false;
+      }
+      
+      // Active filter
+      if (filters.isActive === true) {
+        if (!scale.isActive) return false;
+      }
+      
       return true;
     })
     .sort((a, b) => {
@@ -98,15 +113,15 @@ export function ScaleList({
           comparison = a.category.localeCompare(b.category);
           break;
         case 'usage':
-          comparison = (a.administrationCount || 0) - (b.administrationCount || 0);
+          // TODO: Implement usage sorting when administration count is available
+          comparison = 0;
           break;
       }
       
       return sortOrder === 'asc' ? comparison : -comparison;
     });
 
-  const handleScaleSelect = (scale: ClinicalScale) => {
-    selectScale(scale);
+  const handleScaleSelect = (scale: UniversalScale) => {
     onScaleSelect?.(scale);
   };
 
@@ -116,6 +131,11 @@ export function ScaleList({
   };
 
   const isSelected = (scaleId: string) => selectedScales.includes(scaleId);
+
+  // Get unique categories for filter dropdown
+  const uniqueCategories = Array.from(new Set(scales.map(s => s.category))).sort();
+  const uniqueAdministrationModes = Array.from(new Set(scales.map(s => s.administrationMode))).sort();
+  const uniqueTargetPopulations = Array.from(new Set(scales.map(s => s.targetPopulation))).sort();
 
   return (
     <div className="space-y-4">
@@ -177,6 +197,15 @@ export function ScaleList({
             <span>Filters</span>
           </Button>
         )}
+        
+        <Button
+          variant="outline"
+          onClick={refetch}
+          disabled={loading}
+          className="flex items-center space-x-2"
+        >
+          <span>Refresh</span>
+        </Button>
       </div>
 
       {/* Filter Panel */}
@@ -185,28 +214,31 @@ export function ScaleList({
           filters={filters}
           onFiltersChange={handleFiltersChange}
           onClose={() => setShowFilterPanel(false)}
+          uniqueCategories={uniqueCategories}
+          uniqueAdministrationModes={uniqueAdministrationModes}
+          uniqueTargetPopulations={uniqueTargetPopulations}
         />
       )}
 
       {/* Loading State */}
-      {state.scalesLoading && (
+      {loading && (
         <div className="flex items-center justify-center py-8">
           <LoadingSpinner size="lg" />
         </div>
       )}
 
       {/* Error State */}
-      {state.lastError && (
+      {error && (
         <Card className="p-4 border-red-200 bg-red-50">
           <div className="flex items-center space-x-2 text-red-700">
             <InformationCircleIcon className="w-5 h-5" />
-            <span>Error loading scales: {state.lastError.message}</span>
+            <span>Error loading scales: {error}</span>
           </div>
         </Card>
       )}
 
       {/* Scales Grid */}
-      {!state.scalesLoading && filteredScales.length > 0 && (
+      {!loading && filteredScales.length > 0 && (
         <div className={`grid gap-4 ${compact ? 'grid-cols-1' : 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3'}`}>
           {filteredScales.map((scale) => (
             <ScaleCard
@@ -221,7 +253,7 @@ export function ScaleList({
       )}
 
       {/* Empty State */}
-      {!state.scalesLoading && filteredScales.length === 0 && (
+      {!loading && filteredScales.length === 0 && (
         <Card className="p-8 text-center">
           <ClipboardDocumentListIcon className="w-12 h-12 text-gray-400 mx-auto mb-4" />
           <h3 className="text-lg font-medium text-gray-900 mb-2">No scales found</h3>
@@ -241,36 +273,50 @@ export function ScaleList({
 // =============================================================================
 
 interface ScaleCardProps {
-  scale: ClinicalScale;
+  scale: UniversalScale;
   isSelected: boolean;
   onSelect: () => void;
   compact?: boolean;
 }
 
 function ScaleCard({ scale, isSelected, onSelect, compact }: ScaleCardProps) {
-  const getCategoryColor = (category: ScaleCategory) => {
-    const colors = {
-      [ScaleCategory.DEPRESSION]: 'bg-blue-100 text-blue-800',
-      [ScaleCategory.ANXIETY]: 'bg-yellow-100 text-yellow-800',
-      [ScaleCategory.MANIA]: 'bg-red-100 text-red-800',
-      [ScaleCategory.PSYCHOSIS]: 'bg-purple-100 text-purple-800',
-      [ScaleCategory.COGNITIVE]: 'bg-green-100 text-green-800',
-      [ScaleCategory.PERSONALITY]: 'bg-indigo-100 text-indigo-800',
-      [ScaleCategory.SUBSTANCE]: 'bg-orange-100 text-orange-800'
+  const getCategoryColor = (category: string) => {
+    const colors: Record<string, string> = {
+      'depression': 'bg-blue-100 text-blue-800',
+      'anxiety': 'bg-yellow-100 text-yellow-800',
+      'cognitive': 'bg-green-100 text-green-800',
+      'personality': 'bg-indigo-100 text-indigo-800',
+      'psychosis': 'bg-purple-100 text-purple-800',
+      'substance_use': 'bg-orange-100 text-orange-800',
+      'autism': 'bg-pink-100 text-pink-800',
+      'general': 'bg-gray-100 text-gray-800'
     };
     return colors[category] || 'bg-gray-100 text-gray-800';
   };
 
-  const getAdministrationModeIcon = (mode: AdministrationMode) => {
+  const getAdministrationModeIcon = (mode: string) => {
     switch (mode) {
-      case AdministrationMode.SELF_REPORT:
+      case 'self_administered':
         return '👤';
-      case AdministrationMode.CLINICIAN_ADMINISTERED:
+      case 'clinician_administered':
         return '👨‍⚕️';
-      case AdministrationMode.BOTH:
+      case 'hybrid':
         return '👥';
       default:
         return '📋';
+    }
+  };
+
+  const getAdministrationModeLabel = (mode: string) => {
+    switch (mode) {
+      case 'self_administered':
+        return 'Self-administered';
+      case 'clinician_administered':
+        return 'Clinician-administered';
+      case 'hybrid':
+        return 'Hybrid';
+      default:
+        return mode;
     }
   };
 
@@ -317,7 +363,7 @@ function ScaleCard({ scale, isSelected, onSelect, compact }: ScaleCardProps) {
           <div className="flex items-center space-x-4">
             <div className="flex items-center space-x-1">
               <span>{getAdministrationModeIcon(scale.administrationMode)}</span>
-              <span>{scale.administrationMode.replace('_', ' ')}</span>
+              <span>{getAdministrationModeLabel(scale.administrationMode)}</span>
             </div>
             
             {scale.estimatedDurationMinutes && (
@@ -327,37 +373,14 @@ function ScaleCard({ scale, isSelected, onSelect, compact }: ScaleCardProps) {
               </div>
             )}
           </div>
-          
-          {scale.administrationCount !== undefined && (
-            <div className="flex items-center space-x-1">
-              <ChartBarIcon className="w-3 h-3" />
-              <span>{scale.administrationCount}</span>
-            </div>
-          )}
         </div>
-
-        {/* Tags */}
-        {!compact && scale.tags && scale.tags.length > 0 && (
-          <div className="flex flex-wrap gap-1">
-            {scale.tags.slice(0, 3).map((tag, index) => (
-              <span key={index} className="text-xs px-2 py-1 bg-gray-100 text-gray-600 rounded">
-                {tag}
-              </span>
-            ))}
-            {scale.tags.length > 3 && (
-              <span className="text-xs px-2 py-1 bg-gray-100 text-gray-600 rounded">
-                +{scale.tags.length - 3}
-              </span>
-            )}
-          </div>
-        )}
 
         {/* Footer */}
         <div className="flex items-center justify-between pt-2 border-t border-gray-100">
           <div className="flex items-center space-x-2 text-xs text-gray-500">
             <span>{scale.targetPopulation}</span>
-            {scale.hasSubscales && <span>• Has subscales</span>}
-            {scale.requiresTraining && <span>• Training required</span>}
+            <span>• {scale.totalItems} items</span>
+            {scale.subscales && scale.subscales.length > 0 && <span>• Has subscales</span>}
           </div>
           
           <Button
@@ -380,7 +403,23 @@ function ScaleCard({ scale, isSelected, onSelect, compact }: ScaleCardProps) {
 // FILTER PANEL COMPONENT
 // =============================================================================
 
-function FilterPanel({ filters, onFiltersChange, onClose }: FilterPanelProps) {
+interface FilterPanelProps {
+  filters: ScaleFilters;
+  onFiltersChange: (filters: ScaleFilters) => void;
+  onClose: () => void;
+  uniqueCategories: string[];
+  uniqueAdministrationModes: string[];
+  uniqueTargetPopulations: string[];
+}
+
+function FilterPanel({ 
+  filters, 
+  onFiltersChange, 
+  onClose, 
+  uniqueCategories,
+  uniqueAdministrationModes,
+  uniqueTargetPopulations
+}: FilterPanelProps) {
   const [localFilters, setLocalFilters] = useState<ScaleFilters>(filters);
 
   const handleApplyFilters = () => {
@@ -411,34 +450,34 @@ function FilterPanel({ filters, onFiltersChange, onClose }: FilterPanelProps) {
             value={localFilters.category || ''}
             onChange={(e) => setLocalFilters({
               ...localFilters,
-              category: e.target.value as ScaleCategory || undefined
+              category: e.target.value || undefined
             })}
             className="w-full text-sm border-gray-300 rounded-md"
           >
             <option value="">All Categories</option>
-            {Object.values(ScaleCategory).map(category => (
+            {uniqueCategories.map(category => (
               <option key={category} value={category}>
-                {category.charAt(0).toUpperCase() + category.slice(1)}
+                {category.charAt(0).toUpperCase() + category.slice(1).replace('_', ' ')}
               </option>
             ))}
           </select>
         </div>
 
-        {/* Administration Type Filter */}
+        {/* Administration Mode Filter */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">
-            Administration Type
+            Administration Mode
           </label>
           <select
-            value={localFilters.administrationType || ''}
+            value={localFilters.administrationMode || ''}
             onChange={(e) => setLocalFilters({
               ...localFilters,
-              administrationType: e.target.value as AdministrationMode || undefined
+              administrationMode: e.target.value || undefined
             })}
             className="w-full text-sm border-gray-300 rounded-md"
           >
-            <option value="">All Types</option>
-            {Object.values(AdministrationMode).map(mode => (
+            <option value="">All Modes</option>
+            {uniqueAdministrationModes.map(mode => (
               <option key={mode} value={mode}>
                 {mode.replace('_', ' ')}
               </option>
@@ -455,12 +494,12 @@ function FilterPanel({ filters, onFiltersChange, onClose }: FilterPanelProps) {
             value={localFilters.targetPopulation || ''}
             onChange={(e) => setLocalFilters({
               ...localFilters,
-              targetPopulation: e.target.value as TargetPopulation || undefined
+              targetPopulation: e.target.value || undefined
             })}
             className="w-full text-sm border-gray-300 rounded-md"
           >
             <option value="">All Populations</option>
-            {Object.values(TargetPopulation).map(population => (
+            {uniqueTargetPopulations.map(population => (
               <option key={population} value={population}>
                 {population.charAt(0).toUpperCase() + population.slice(1)}
               </option>
@@ -471,19 +510,6 @@ function FilterPanel({ filters, onFiltersChange, onClose }: FilterPanelProps) {
 
       {/* Checkboxes */}
       <div className="mt-4 space-y-2">
-        <label className="flex items-center">
-          <input
-            type="checkbox"
-            checked={localFilters.requiresTraining || false}
-            onChange={(e) => setLocalFilters({
-              ...localFilters,
-              requiresTraining: e.target.checked || undefined
-            })}
-            className="rounded border-gray-300 text-clinimetrix-600 focus:ring-clinimetrix-500"
-          />
-          <span className="ml-2 text-sm text-gray-700">Requires training</span>
-        </label>
-        
         <label className="flex items-center">
           <input
             type="checkbox"

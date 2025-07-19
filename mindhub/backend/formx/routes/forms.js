@@ -8,26 +8,33 @@
 const express = require('express');
 const { body, param, query, validationResult } = require('express-validator');
 const middleware = require('../../shared/middleware');
-const FormController = require('../controllers/form-controller');
-const SubmissionController = require('../controllers/submission-controller');
 const AuditLogger = require('../../shared/utils/audit-logger');
 const { executeQuery, executeTransaction } = require('../../shared/config/prisma');
 const { logger } = require('../../shared/config/storage');
-const { validateForm } = require('../../shared/validation/form-validation');
 
 const router = express.Router();
 
-// Initialize controllers and utilities
-const formController = new FormController();
-const submissionController = new SubmissionController();
+// Initialize utilities
 const auditLogger = new AuditLogger();
+
+// Validation middleware for forms
+const validateForm = [
+  body('title').isString().isLength({ min: 3, max: 200 }).withMessage('Title must be between 3 and 200 characters'),
+  body('description').optional().isString().isLength({ max: 1000 }).withMessage('Description must not exceed 1000 characters'),
+  body('category').isString().isIn(['intake', 'pre_consultation', 'post_consultation', 'satisfaction', 'follow_up', 'screening', 'assessment']).withMessage('Invalid category'),
+  body('fields').isArray().withMessage('Fields must be an array'),
+  body('fields.*.type').isString().withMessage('Field type is required'),
+  body('fields.*.label').isString().withMessage('Field label is required'),
+  body('settings').optional().isObject().withMessage('Settings must be an object'),
+  body('isActive').optional().isBoolean()
+];
 
 /**
  * GET /api/v1/formx/forms
  * List forms with filtering, pagination, and search
  */
 router.get('/',
-  ...middleware.utils.forHub('formx'),
+  ...middleware.utils.forRoles(['psychiatrist', 'psychologist', 'nurse', 'admin'], ['read:forms']),
   [
   query('page').optional().isInt({ min: 1 }).withMessage('Page must be a positive integer'),
   query('limit').optional().isInt({ min: 1, max: 100 }).withMessage('Limit must be between 1 and 100'),
@@ -47,66 +54,66 @@ router.get('/',
     const { 
       page = 1, 
       limit = 20, 
-      search, 
+      search,
       category,
-      isActive = true 
+      isActive = true
     } = req.query;
 
-    const skip = (parseInt(page) - 1) * parseInt(limit);
-    
-    // Build where clause
-    const where = {
-      isActive: isActive === 'true',
-      ...(category && { category })
-    };
+    // Simple implementation for now
+    const forms = [
+      {
+        id: '1',
+        name: 'Patient Intake Form',
+        description: 'Initial patient information collection form',
+        category: 'intake',
+        isActive: true,
+        createdAt: new Date().toISOString(),
+        estimatedDuration: 15
+      },
+      {
+        id: '2',
+        name: 'Pre-consultation Questionnaire',
+        description: 'Questions to complete before consultation',
+        category: 'pre-consultation',
+        isActive: true,
+        createdAt: new Date().toISOString(),
+        estimatedDuration: 10
+      }
+    ];
 
-    // Add search functionality
+    // Apply basic filtering
+    let filteredForms = forms;
     if (search) {
-      where.OR = [
-        { title: { contains: search, mode: 'insensitive' } },
-        { description: { contains: search, mode: 'insensitive' } }
-      ];
+      filteredForms = forms.filter(form => 
+        form.name.toLowerCase().includes(search.toLowerCase()) ||
+        form.description.toLowerCase().includes(search.toLowerCase())
+      );
     }
 
-    const [forms, totalCount] = await executeTransaction([
-      (prisma) => prisma.form.findMany({
-        where,
-        include: {
-          creator: {
-            select: { id: true, name: true, email: true }
-          },
-          _count: {
-            select: {
-              submissions: true
-            }
-          }
-        },
-        skip,
-        take: parseInt(limit),
-        orderBy: { createdAt: 'desc' }
-      }),
-      (prisma) => prisma.form.count({ where })
-    ], 'getForms');
+    if (category) {
+      filteredForms = filteredForms.filter(form => form.category === category);
+    }
 
     res.json({
       success: true,
-      data: forms,
+      data: filteredForms,
       pagination: {
         page: parseInt(page),
         limit: parseInt(limit),
-        total: totalCount,
-        pages: Math.ceil(totalCount / parseInt(limit))
+        total: filteredForms.length,
+        pages: Math.ceil(filteredForms.length / limit)
       }
     });
 
   } catch (error) {
-    logger.error('Failed to get forms', { 
+    logger.error('Failed to get forms', {
       error: error.message,
-      userId: req.user?.id 
+      userId: req.user?.id
     });
-    res.status(500).json({ 
-      error: 'Failed to retrieve forms', 
-      details: error.message 
+
+    res.status(500).json({
+      error: 'Forms retrieval failed',
+      message: 'An error occurred while retrieving forms'
     });
   }
 });

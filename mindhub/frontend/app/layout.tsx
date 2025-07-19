@@ -1,10 +1,10 @@
 import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
-import { UserProvider } from '@auth0/nextjs-auth0/client';
 import { Toaster } from 'react-hot-toast';
 import './globals.css';
-import { AuthProvider } from '@/contexts/AuthContext';
+// import { UserProvider } from '@auth0/nextjs-auth0/client'; // COMENTADO temporalmente para desarrollo
 import { QueryProvider } from '@/contexts/QueryContext';
+import { UniversalScalesProvider } from '@/contexts/UniversalScalesContext';
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-inter' });
 
@@ -78,8 +78,8 @@ export default function RootLayout({
       <head>
         {/* Security headers */}
         <meta httpEquiv="X-Content-Type-Options" content="nosniff" />
-        <meta httpEquiv="X-Frame-Options" content="DENY" />
-        <meta httpEquiv="X-XSS-Protection" content="1; mode=block" />
+        {/* X-Frame-Options should be set via HTTP header, not meta tag */}
+        {/* XSS Protection should be set via HTTP header */}
         <meta name="referrer" content="strict-origin-when-cross-origin" />
         
         {/* Healthcare compliance */}
@@ -98,14 +98,15 @@ export default function RootLayout({
         <link rel="dns-prefetch" href={`https://${process.env.AUTH0_DOMAIN}`} />
       </head>
       <body className="bg-gray-50 antialiased">
-        <UserProvider>
-          <AuthProvider>
-            <QueryProvider>
+        {/* <UserProvider> */}
+          <QueryProvider>
+            <UniversalScalesProvider>
               <div id="root" className="min-h-screen">
                 {children}
               </div>
+            </UniversalScalesProvider>
               
-              {/* Toast notifications */}
+              {/* Toast notifications */}}
               <Toaster
                 position="top-right"
                 toastOptions={{
@@ -147,9 +148,8 @@ export default function RootLayout({
                 aria-atomic="true"
                 className="sr-only"
               />
-            </QueryProvider>
-          </AuthProvider>
-        </UserProvider>
+          </QueryProvider>
+        {/* </UserProvider> */}
       </body>
     </html>
   );

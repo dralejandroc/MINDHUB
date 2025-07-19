@@ -492,7 +492,13 @@ class SessionManager {
     };
 
     // In production, this would write to a secure audit log system
-    console.log('SESSION_MANAGER_EVENT:', JSON.stringify(logEntry));
+    try {
+      console.log('SESSION_MANAGER_EVENT:', JSON.stringify(logEntry, null, 2));
+    } catch (error) {
+      // Handle circular reference by using util.inspect
+      const util = require('util');
+      console.log('SESSION_MANAGER_EVENT:', util.inspect(logEntry, { depth: 2, colors: false }));
+    }
   }
 }
 

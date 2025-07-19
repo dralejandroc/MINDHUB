@@ -5,7 +5,8 @@ import { UserGroupIcon } from '@heroicons/react/24/outline';
 import PatientManagement from '@/components/expedix/PatientManagement';
 import ConsultationForm from '@/components/expedix/ConsultationForm';
 import NewPatientForm from '@/components/expedix/NewPatientForm';
-import PHQ9Scale from '@/components/clinimetrix/PHQ9Scale';
+import { UniversalScalesProvider } from '@/contexts/UniversalScalesContext';
+import { UniversalScaleAssessment } from '@/components/clinimetrix/UniversalScaleAssessment';
 
 interface Patient {
   id: string;
@@ -141,7 +142,14 @@ export default function ExpedixPage() {
               </h1>
             </div>
             <ConsultationForm
-              patient={selectedPatient}
+              patient={{
+                ...selectedPatient,
+                firstName: selectedPatient.first_name,
+                paternalLastName: selectedPatient.paternal_last_name,
+                maternalLastName: selectedPatient.maternal_last_name,
+                birthDate: selectedPatient.birth_date,
+                cellPhone: selectedPatient.cell_phone
+              }}
               onSaveConsultation={handleSaveConsultation}
               onCancel={() => setCurrentView('dashboard')}
             />
@@ -150,11 +158,25 @@ export default function ExpedixPage() {
 
       case 'clinical-assessment':
         return selectedPatient ? (
-          <PHQ9Scale
-            patient={selectedPatient}
-            onComplete={handleSaveAssessment}
-            onCancel={() => setCurrentView('dashboard')}
-          />
+          <UniversalScalesProvider>
+            <div className="space-y-6">
+              <div className="flex items-center mb-6">
+                <button
+                  onClick={() => setCurrentView('dashboard')}
+                  className="mr-4 text-gray-600 hover:text-gray-800 transition-colors"
+                >
+                  ← Volver al Dashboard
+                </button>
+                <h1 className="text-2xl font-bold text-gray-900">
+                  Evaluación Clínica - {selectedPatient.first_name} {selectedPatient.paternal_last_name}
+                </h1>
+              </div>
+              <UniversalScaleAssessment
+                onBack={() => setCurrentView('dashboard')}
+                onComplete={handleSaveAssessment}
+              />
+            </div>
+          </UniversalScalesProvider>
         ) : null;
 
       case 'new-patient':
@@ -194,7 +216,7 @@ export default function ExpedixPage() {
                   onClick={() => handleClinicalAssessment(selectedPatient)}
                   className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
                 >
-                  📋 Evaluación PHQ-9
+                  📋 Evaluación Clínica
                 </button>
               </div>
             </div>
