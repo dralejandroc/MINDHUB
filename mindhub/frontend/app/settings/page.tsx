@@ -12,8 +12,10 @@ import {
   CogIcon, 
   UserIcon,
   ChartBarIcon,
-  WrenchScrewdriverIcon
+  WrenchScrewdriverIcon,
+  ComputerDesktopIcon
 } from '@heroicons/react/24/outline';
+import { DashboardSettings } from '@/components/settings/DashboardSettings';
 
 interface ClinicConfiguration {
   clinicInfo: {
@@ -202,6 +204,7 @@ export default function GeneralSettingsPage() {
   };
 
   const tabs = [
+    { id: 'dashboard', name: 'Dashboard', icon: ComputerDesktopIcon },
     { id: 'general', name: 'General', icon: CogIcon },
     { id: 'expedix', name: 'Expedix', icon: HeartIcon },
     { id: 'clinimetrix', name: 'Clinimetrix', icon: ChartBarIcon },
@@ -267,6 +270,11 @@ export default function GeneralSettingsPage() {
 
         {/* Tab Content */}
         <div className="mt-6">
+          {/* Dashboard Tab */}
+          {activeTab === 'dashboard' && (
+            <DashboardSettings />
+          )}
+
           {/* General Tab */}
           {activeTab === 'general' && (
             <div className="bg-white border border-gray-200 rounded-lg shadow-sm p-6">

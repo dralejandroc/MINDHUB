@@ -12,11 +12,13 @@ import NewPatientForm from '@/components/expedix/NewPatientForm';
 import { UniversalScalesProvider } from '@/contexts/UniversalScalesContext';
 import { UniversalScaleAssessment } from '@/components/clinimetrix/UniversalScaleAssessment';
 import { expedixApi, type Patient } from '@/lib/api/expedix-client';
+import { useUserMetrics } from '@/contexts/UserMetricsContext';
 import SettingsPage from './settings/page';
 
 type PageView = 'dashboard' | 'features' | 'new-patient' | 'patient-detail' | 'consultation' | 'clinical-assessment' | 'clinical-dashboard' | 'settings';
 
 export default function ExpedixPage() {
+  const { recordPatientAdded, recordScaleApplied } = useUserMetrics();
   const [currentView, setCurrentView] = useState<PageView>('dashboard');
   const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null);
   const [consultations, setConsultations] = useState<any[]>([]);
@@ -56,6 +58,7 @@ export default function ExpedixPage() {
 
   const handleSaveAssessment = (assessmentData: any) => {
     setAssessments(prev => [...prev, assessmentData]);
+    recordScaleApplied(assessmentData.scaleId || 'unknown');
     setCurrentView('dashboard');
     setSelectedPatient(null);
   };
@@ -64,6 +67,9 @@ export default function ExpedixPage() {
     try {
       const result = await expedixApi.createPatient(patientData);
       console.log('Paciente creado exitosamente:', result);
+      
+      // Record metrics
+      recordPatientAdded();
       
       // Mostrar información del paciente creado
       const patientName = `${result.data.first_name} ${result.data.paternal_last_name}`;
