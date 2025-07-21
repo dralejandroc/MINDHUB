@@ -1,28 +1,20 @@
 'use client';
 
 import { useState } from 'react';
-import { UserGroupIcon } from '@heroicons/react/24/outline';
+import { UserGroupIcon, PlusIcon } from '@heroicons/react/24/outline';
+import { PageHeader } from '@/components/layout/PageHeader';
+import { Button } from '@/components/ui/Button';
 import PatientManagement from '@/components/expedix/PatientManagement';
+import PatientDashboard from '@/components/expedix/PatientDashboard';
+import ExpedixFeatures from '@/components/expedix/ExpedixFeatures';
 import ConsultationForm from '@/components/expedix/ConsultationForm';
 import NewPatientForm from '@/components/expedix/NewPatientForm';
 import { UniversalScalesProvider } from '@/contexts/UniversalScalesContext';
 import { UniversalScaleAssessment } from '@/components/clinimetrix/UniversalScaleAssessment';
+import { expedixApi, type Patient } from '@/lib/api/expedix-client';
+import SettingsPage from './settings/page';
 
-interface Patient {
-  id: string;
-  first_name: string;
-  paternal_last_name: string;
-  maternal_last_name: string;
-  birth_date: string;
-  age: number;
-  gender: 'masculine' | 'feminine';
-  email: string;
-  cell_phone: string;
-  created_at: string;
-  updated_at: string;
-}
-
-type PageView = 'dashboard' | 'new-patient' | 'patient-detail' | 'consultation' | 'clinical-assessment' | 'clinical-dashboard';
+type PageView = 'dashboard' | 'features' | 'new-patient' | 'patient-detail' | 'consultation' | 'clinical-assessment' | 'clinical-dashboard' | 'settings';
 
 export default function ExpedixPage() {
   const [currentView, setCurrentView] = useState<PageView>('dashboard');
@@ -70,20 +62,7 @@ export default function ExpedixPage() {
 
   const handleSaveNewPatient = async (patientData: any) => {
     try {
-      const response = await fetch('http://localhost:8080/api/expedix/patients', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(patientData),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.details || 'Error al crear el paciente');
-      }
-
-      const result = await response.json();
+      const result = await expedixApi.createPatient(patientData);
       console.log('Paciente creado exitosamente:', result);
       
       // Mostrar información del paciente creado
@@ -104,25 +83,51 @@ export default function ExpedixPage() {
     switch (currentView) {
       case 'dashboard':
         return (
-          <div className="space-y-6">
-            {/* Header */}
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-3">
-                <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
-                  <UserGroupIcon className="h-6 w-6 text-blue-600" />
-                </div>
-                <div>
-                  <h1 className="text-2xl font-bold text-gray-900">Expedi+Recetix</h1>
-                  <p className="text-gray-600">Sistema Integral de Expedientes y Recetas Digitales</p>
-                </div>
-              </div>
-            </div>
-
+          <>
+            <PageHeader
+              title="Expedix - Gestión de Pacientes"
+              description="Sistema integral de expedientes médicos y gestión de pacientes"
+              icon={UserGroupIcon}
+              iconColor="text-primary-600"
+              actions={
+                <Button 
+                  onClick={handleNewPatient}
+                  className="bg-primary-600 hover:bg-primary-700"
+                >
+                  <PlusIcon className="h-4 w-4 mr-2" />
+                  Nuevo Paciente
+                </Button>
+              }
+            />
             <PatientManagement
               onSelectPatient={handleSelectPatient}
               onNewPatient={handleNewPatient}
               onNewConsultation={handleNewConsultation}
               onClinicalAssessment={handleClinicalAssessment}
+              onSettings={() => setCurrentView('settings')}
+            />
+          </>
+        );
+
+      case 'features':
+        return (
+          <div className="space-y-6">
+            <div className="flex items-center mb-6">
+              <button
+                onClick={() => setCurrentView('dashboard')}
+                className="mr-4 text-gray-600 hover:text-gray-800 transition-colors"
+              >
+                ← Volver al Dashboard
+              </button>
+              <h1 className="text-2xl font-bold text-gray-900">
+                Funcionalidades de Expedix
+              </h1>
+            </div>
+            <ExpedixFeatures 
+              onFeatureClick={(feature) => {
+                console.log('Feature clicked:', feature);
+                // Aquí se pueden agregar navegaciones específicas por funcionalidad
+              }}
             />
           </div>
         );
@@ -189,6 +194,25 @@ export default function ExpedixPage() {
 
       case 'patient-detail':
         return selectedPatient ? (
+          <PatientDashboard
+            patient={{
+              id: selectedPatient.id,
+              firstName: selectedPatient.first_name,
+              lastName: `${selectedPatient.paternal_last_name} ${selectedPatient.maternal_last_name}`,
+              medicalRecordNumber: `MR-${selectedPatient.id.slice(-6)}`,
+              email: selectedPatient.email,
+              cellPhone: selectedPatient.cell_phone,
+              dateOfBirth: selectedPatient.birth_date,
+              age: selectedPatient.age
+            }}
+            onClose={() => setCurrentView('dashboard')}
+            onNewConsultation={() => handleNewConsultation(selectedPatient)}
+            onClinicalAssessment={() => handleClinicalAssessment(selectedPatient)}
+          />
+        ) : null;
+
+      case 'settings':
+        return (
           <div className="space-y-6">
             <div className="flex items-center mb-6">
               <button
@@ -197,31 +221,10 @@ export default function ExpedixPage() {
               >
                 ← Volver al Dashboard
               </button>
-              <h1 className="text-2xl font-bold text-gray-900">
-                Expediente: {selectedPatient.first_name} {selectedPatient.paternal_last_name}
-              </h1>
             </div>
-            <div className="bg-white p-8 rounded-lg shadow-sm border">
-              <p className="text-gray-600 text-center mb-4">
-                Vista detallada del expediente del paciente (próximamente)
-              </p>
-              <div className="flex justify-center space-x-4">
-                <button
-                  onClick={() => handleNewConsultation(selectedPatient)}
-                  className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
-                >
-                  🩺 Nueva Consulta
-                </button>
-                <button
-                  onClick={() => handleClinicalAssessment(selectedPatient)}
-                  className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
-                >
-                  📋 Evaluación Clínica
-                </button>
-              </div>
-            </div>
+            <SettingsPage />
           </div>
-        ) : null;
+        );
 
       default:
         return null;

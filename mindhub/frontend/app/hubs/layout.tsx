@@ -1,38 +1,21 @@
 'use client';
 
-// import { withPageAuthRequired } from '@auth0/nextjs-auth0/client'; // COMENTADO temporalmente
-// import { useUser } from '@auth0/nextjs-auth0/client'; // COMENTADO temporalmente
-import HubNavigation from '@/components/layout/HubNavigation';
+import { UnifiedSidebar } from '@/components/layout/UnifiedSidebar';
 
-function HubsLayout({
+export default function HubsLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  // const { user } = useUser(); // COMENTADO temporalmente
-
-  // Convert Auth0 user to our format
   const currentUser = {
-    name: 'Dr. Demo Professional',
-    email: 'demo@mindhub.com',
+    name: 'Administrador',
+    email: 'admin@mindhub.com',
     role: 'professional'
   };
 
-  const handleLogout = () => {
-    window.location.href = '/api/auth/logout';
-  };
-
   return (
-    <div className="min-h-screen bg-gray-50">
-      <HubNavigation 
-        currentUser={currentUser}
-        onLogout={handleLogout}
-      />
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {children}
-      </main>
-    </div>
+    <UnifiedSidebar currentUser={currentUser}>
+      {children}
+    </UnifiedSidebar>
   );
 }
-
-export default HubsLayout; // withPageAuthRequired(HubsLayout); // COMENTADO temporalmente para desarrollo

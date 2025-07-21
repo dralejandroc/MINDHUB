@@ -1,12 +1,6 @@
-'use client';
-
-import MainApp from '@/components/app/MainApp';
-import { AuthProvider } from '@/hooks/useAuth';
+import { redirect } from 'next/navigation';
 
 export default function Home() {
-  return (
-    <AuthProvider>
-      <MainApp />
-    </AuthProvider>
-  );
+  // Redirect root to hubs automatically
+  redirect('/hubs');
 }

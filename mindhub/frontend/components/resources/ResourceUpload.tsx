@@ -1,376 +1,497 @@
-'use client';
+'use client'
 
-import { useState } from 'react';
+import React, { useState, useCallback } from 'react'
+import { motion } from 'framer-motion'
 import { 
-  CloudArrowUpIcon,
-  DocumentIcon,
-  XMarkIcon,
-  CheckCircleIcon
-} from '@heroicons/react/24/outline';
-import { Card } from '@/components/ui/Card';
-import { Button } from '@/components/ui/Button';
+  FiUpload, 
+  FiX, 
+  FiFile, 
+  FiImage, 
+  FiFileText,
+  FiCheck,
+  FiAlertCircle,
+  FiTrash
+} from 'react-icons/fi'
 
 interface ResourceUploadProps {
-  onCancel: () => void;
-  onSave: (resourceData: any) => void;
+  isOpen: boolean
+  onClose: () => void
+  onSuccess?: (resourceId: string) => void
 }
 
 interface UploadFile {
-  file: File;
-  id: string;
-  status: 'uploading' | 'success' | 'error';
-  progress: number;
+  file: File
+  id: string
+  status: 'pending' | 'uploading' | 'success' | 'error'
+  progress: number
+  error?: string
+  resourceData?: {
+    title: string
+    description: string
+    category: string
+    tags: string[]
+  }
 }
 
-const CATEGORIES = [
-  'Trastornos de Ansiedad',
-  'Trastornos del Estado de Ánimo',
-  'Instrumentos de Evaluación',
-  'Técnicas Terapéuticas',
-  'Psicoeducación',
-  'Hojas de Trabajo',
-  'Apoyo Familiar'
-];
+const ResourceUpload: React.FC<ResourceUploadProps> = ({ 
+  isOpen, 
+  onClose, 
+  onSuccess 
+}) => {
+  const [uploadFiles, setUploadFiles] = useState<UploadFile[]>([])
+  const [dragOver, setDragOver] = useState(false)
+  const [isUploading, setIsUploading] = useState(false)
 
-export default function ResourceUpload({ onCancel, onSave }: ResourceUploadProps) {
-  const [uploadFiles, setUploadFiles] = useState<UploadFile[]>([]);
-  const [resourceData, setResourceData] = useState({
-    title: '',
-    description: '',
-    category: '',
-    tags: '',
-    accessLevel: 'public',
-    expirationDate: ''
-  });
-  const [dragActive, setDragActive] = useState(false);
+  const categories = [
+    { id: 'terapia-individual', name: 'Terapia Individual' },
+    { id: 'psicoeducacion', name: 'Psicoeducación' },
+    { id: 'evaluacion', name: 'Evaluación' },
+    { id: 'terapia-familiar', name: 'Terapia Familiar' },
+    { id: 'terapia-grupal', name: 'Terapia Grupal' },
+    { id: 'administrativo', name: 'Administrativo' }
+  ]
 
-  const handleDrag = (e: React.DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    if (e.type === "dragenter" || e.type === "dragover") {
-      setDragActive(true);
-    } else if (e.type === "dragleave") {
-      setDragActive(false);
-    }
-  };
+  const handleDragOver = useCallback((e: React.DragEvent) => {
+    e.preventDefault()
+    setDragOver(true)
+  }, [])
 
-  const handleDrop = (e: React.DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setDragActive(false);
+  const handleDragLeave = useCallback((e: React.DragEvent) => {
+    e.preventDefault()
+    setDragOver(false)
+  }, [])
+
+  const handleDrop = useCallback((e: React.DragEvent) => {
+    e.preventDefault()
+    setDragOver(false)
     
-    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-      handleFiles(e.dataTransfer.files);
-    }
-  };
+    const files = Array.from(e.dataTransfer.files)
+    handleFiles(files)
+  }, [])
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files) {
-      handleFiles(e.target.files);
-    }
-  };
+    const files = Array.from(e.target.files || [])
+    handleFiles(files)
+  }
 
-  const handleFiles = (files: FileList) => {
-    const newFiles: UploadFile[] = Array.from(files).map(file => ({
-      file,
-      id: `${Date.now()}_${file.name}`,
-      status: 'uploading' as const,
-      progress: 0
-    }));
+  const handleFiles = (files: File[]) => {
+    const allowedTypes = [
+      'application/pdf',
+      'image/jpeg',
+      'image/png',
+      'image/gif',
+      'text/plain',
+      'application/msword',
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+    ]
 
-    setUploadFiles(prev => [...prev, ...newFiles]);
+    const maxSize = 50 * 1024 * 1024 // 50MB
 
-    // Simulate upload progress
-    newFiles.forEach(uploadFile => {
-      simulateUpload(uploadFile.id);
-    });
-  };
+    const newFiles: UploadFile[] = files
+      .filter(file => {
+        if (!allowedTypes.includes(file.type)) {
+          console.warn(`Tipo de archivo no permitido: ${file.type}`)
+          return false
+        }
+        if (file.size > maxSize) {
+          console.warn(`Archivo muy grande: ${file.name}`)
+          return false
+        }
+        return true
+      })
+      .map(file => ({
+        file,
+        id: Math.random().toString(36).substr(2, 9),
+        status: 'pending' as const,
+        progress: 0,
+        resourceData: {
+          title: file.name.replace(/\.[^/.]+$/, ''), // Remove extension
+          description: '',
+          category: '',
+          tags: []
+        }
+      }))
 
-  const simulateUpload = (fileId: string) => {
-    let progress = 0;
-    const interval = setInterval(() => {
-      progress += Math.random() * 30;
-      if (progress >= 100) {
-        progress = 100;
-        setUploadFiles(prev => prev.map(f => 
-          f.id === fileId ? { ...f, status: 'success', progress: 100 } : f
-        ));
-        clearInterval(interval);
-      } else {
-        setUploadFiles(prev => prev.map(f => 
-          f.id === fileId ? { ...f, progress } : f
-        ));
-      }
-    }, 200);
-  };
+    setUploadFiles(prev => [...prev, ...newFiles])
+  }
 
   const removeFile = (fileId: string) => {
-    setUploadFiles(prev => prev.filter(f => f.id !== fileId));
-  };
+    setUploadFiles(prev => prev.filter(f => f.id !== fileId))
+  }
 
-  const getFileSize = (bytes: number) => {
-    if (bytes === 0) return '0 Bytes';
-    const k = 1024;
-    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-    const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
-  };
+  const updateFileData = (fileId: string, field: keyof UploadFile['resourceData'], value: any) => {
+    setUploadFiles(prev => prev.map(f => 
+      f.id === fileId 
+        ? {
+            ...f,
+            resourceData: {
+              ...f.resourceData!,
+              [field]: value
+            }
+          }
+        : f
+    ))
+  }
 
-  const getFileType = (fileName: string) => {
-    const extension = fileName.split('.').pop()?.toLowerCase();
-    switch (extension) {
-      case 'pdf':
-        return { type: 'PDF', color: 'text-red-500' };
-      case 'mp4':
-      case 'avi':
-      case 'mov':
-        return { type: 'Video', color: 'text-blue-500' };
-      case 'mp3':
-      case 'wav':
-        return { type: 'Audio', color: 'text-green-500' };
-      case 'jpg':
-      case 'jpeg':
-      case 'png':
-        return { type: 'Imagen', color: 'text-purple-500' };
-      default:
-        return { type: 'Archivo', color: 'text-gray-500' };
-    }
-  };
+  const uploadFile = async (uploadFile: UploadFile): Promise<void> => {
+    return new Promise((resolve, reject) => {
+      const formData = new FormData()
+      formData.append('file', uploadFile.file)
+      formData.append('title', uploadFile.resourceData!.title)
+      formData.append('description', uploadFile.resourceData!.description)
+      formData.append('category', uploadFile.resourceData!.category)
+      formData.append('tags', JSON.stringify(uploadFile.resourceData!.tags))
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
+      // Simular upload con XMLHttpRequest para mostrar progreso
+      const xhr = new XMLHttpRequest()
+
+      xhr.upload.addEventListener('progress', (e) => {
+        if (e.lengthComputable) {
+          const progress = Math.round((e.loaded / e.total) * 100)
+          setUploadFiles(prev => prev.map(f => 
+            f.id === uploadFile.id 
+              ? { ...f, progress, status: 'uploading' }
+              : f
+          ))
+        }
+      })
+
+      xhr.addEventListener('load', () => {
+        if (xhr.status === 200) {
+          setUploadFiles(prev => prev.map(f => 
+            f.id === uploadFile.id 
+              ? { ...f, status: 'success', progress: 100 }
+              : f
+          ))
+          resolve()
+        } else {
+          setUploadFiles(prev => prev.map(f => 
+            f.id === uploadFile.id 
+              ? { ...f, status: 'error', error: 'Error al subir archivo' }
+              : f
+          ))
+          reject(new Error('Upload failed'))
+        }
+      })
+
+      xhr.addEventListener('error', () => {
+        setUploadFiles(prev => prev.map(f => 
+          f.id === uploadFile.id 
+            ? { ...f, status: 'error', error: 'Error de conexión' }
+            : f
+        ))
+        reject(new Error('Network error'))
+      })
+
+      // En desarrollo, simular upload exitoso
+      if (process.env.NODE_ENV === 'development') {
+        setTimeout(() => {
+          setUploadFiles(prev => prev.map(f => 
+            f.id === uploadFile.id 
+              ? { ...f, status: 'success', progress: 100 }
+              : f
+          ))
+          resolve()
+        }, 2000)
+        return
+      }
+
+      xhr.open('POST', '/api/resources/upload')
+      xhr.send(formData)
+    })
+  }
+
+  const handleUploadAll = async () => {
+    const filesToUpload = uploadFiles.filter(f => f.status === 'pending')
     
-    if (uploadFiles.length === 0) {
-      alert('Por favor selecciona al menos un archivo');
-      return;
+    if (filesToUpload.length === 0) return
+
+    // Validar que todos los archivos tengan datos completos
+    const invalidFiles = filesToUpload.filter(f => 
+      !f.resourceData?.title || !f.resourceData?.category
+    )
+
+    if (invalidFiles.length > 0) {
+      alert('Por favor completa el título y categoría de todos los archivos')
+      return
     }
 
-    if (!resourceData.title || !resourceData.category) {
-      alert('Por favor completa los campos obligatorios');
-      return;
+    setIsUploading(true)
+
+    try {
+      // Subir archivos en paralelo (máximo 3 a la vez)
+      const chunkSize = 3
+      for (let i = 0; i < filesToUpload.length; i += chunkSize) {
+        const chunk = filesToUpload.slice(i, i + chunkSize)
+        await Promise.allSettled(chunk.map(uploadFile))
+      }
+
+      // Verificar si todos fueron exitosos
+      const successCount = uploadFiles.filter(f => f.status === 'success').length
+      const errorCount = uploadFiles.filter(f => f.status === 'error').length
+
+      if (errorCount === 0) {
+        setTimeout(() => {
+          onClose()
+          if (onSuccess) {
+            onSuccess('uploaded-resources')
+          }
+        }, 1000)
+      }
+    } catch (error) {
+      console.error('Error uploading files:', error)
+    } finally {
+      setIsUploading(false)
     }
+  }
 
-    const newResource = {
-      ...resourceData,
-      files: uploadFiles.map(f => ({
-        name: f.file.name,
-        size: getFileSize(f.file.size),
-        type: getFileType(f.file.name).type.toLowerCase()
-      })),
-      id: `resource_${Date.now()}`,
-      uploadDate: new Date().toISOString(),
-      downloadCount: 0
-    };
+  const getFileIcon = (file: File) => {
+    const type = file.type
+    if (type.startsWith('image/')) return <FiImage className="w-8 h-8 text-blue-600" />
+    if (type === 'application/pdf') return <FiFileText className="w-8 h-8 text-red-600" />
+    return <FiFile className="w-8 h-8 text-gray-600" />
+  }
 
-    onSave(newResource);
-  };
+  const getStatusIcon = (status: UploadFile['status']) => {
+    switch (status) {
+      case 'success':
+        return <FiCheck className="w-5 h-5 text-green-600" />
+      case 'error':
+        return <FiAlertCircle className="w-5 h-5 text-red-600" />
+      case 'uploading':
+        return <div className="w-5 h-5 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" />
+      default:
+        return null
+    }
+  }
+
+  if (!isOpen) return null
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Subir Nuevo Recurso</h1>
-          <p className="text-gray-600">Agregar material psicoeducativo a la biblioteca</p>
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+      <motion.div
+        initial={{ opacity: 0, scale: 0.95 }}
+        animate={{ opacity: 1, scale: 1 }}
+        exit={{ opacity: 0, scale: 0.95 }}
+        className="bg-white rounded-xl shadow-xl w-full max-w-4xl max-h-[90vh] overflow-hidden"
+      >
+        {/* Header */}
+        <div className="flex items-center justify-between p-6 border-b border-gray-200">
+          <div>
+            <h2 className="text-2xl font-bold text-gray-900">Subir Recursos</h2>
+            <p className="text-gray-600 mt-1">
+              Sube archivos PDF, imágenes o documentos para crear recursos
+            </p>
+          </div>
+          <button
+            onClick={onClose}
+            className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+          >
+            <FiX className="w-6 h-6 text-gray-500" />
+          </button>
         </div>
-        <Button onClick={onCancel} variant="outline">
-          <XMarkIcon className="h-5 w-5 mr-2" />
-          Cancelar
-        </Button>
-      </div>
 
-      <form onSubmit={handleSubmit} className="space-y-6">
-        {/* File Upload Area */}
-        <Card className="p-6">
-          <h3 className="text-lg font-medium text-gray-900 mb-4">Archivos</h3>
-          
+        {/* Content */}
+        <div className="flex-1 overflow-y-auto p-6" style={{ maxHeight: 'calc(90vh - 200px)' }}>
+          {/* Drop Zone */}
           <div
-            className={`relative border-2 border-dashed rounded-lg p-8 text-center transition-colors ${
-              dragActive 
-                ? 'border-indigo-500 bg-indigo-50' 
+            onDragOver={handleDragOver}
+            onDragLeave={handleDragLeave}
+            onDrop={handleDrop}
+            className={`border-2 border-dashed rounded-xl p-8 text-center transition-colors ${
+              dragOver 
+                ? 'border-blue-500 bg-blue-50' 
                 : 'border-gray-300 hover:border-gray-400'
             }`}
-            onDragEnter={handleDrag}
-            onDragLeave={handleDrag}
-            onDragOver={handleDrag}
-            onDrop={handleDrop}
           >
-            <CloudArrowUpIcon className="mx-auto h-16 w-16 text-gray-400 mb-4" />
-            <h4 className="text-lg font-medium text-gray-900 mb-2">
+            <FiUpload className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+            <h3 className="text-lg font-medium text-gray-900 mb-2">
               Arrastra archivos aquí o haz clic para seleccionar
-            </h4>
-            <p className="text-gray-600 mb-4">
-              Soporta PDF, videos, audios e imágenes. Máximo 50MB por archivo.
+            </h3>
+            <p className="text-gray-500 mb-4">
+              Tipos permitidos: PDF, Imágenes (JPG, PNG, GIF), Documentos de texto
+            </p>
+            <p className="text-sm text-gray-400 mb-4">
+              Tamaño máximo: 50MB por archivo
             </p>
             <input
               type="file"
               multiple
+              accept=".pdf,.jpg,.jpeg,.png,.gif,.txt,.doc,.docx"
               onChange={handleFileSelect}
-              className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-              accept=".pdf,.mp4,.avi,.mov,.mp3,.wav,.jpg,.jpeg,.png"
+              className="hidden"
+              id="file-upload"
             />
-            <Button type="button" variant="outline">
-              Seleccionar Archivos
-            </Button>
+            <label
+              htmlFor="file-upload"
+              className="inline-flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 cursor-pointer transition-colors"
+            >
+              <FiUpload className="w-4 h-4" />
+              <span>Seleccionar Archivos</span>
+            </label>
           </div>
 
-          {/* Uploaded Files List */}
+          {/* Files List */}
           {uploadFiles.length > 0 && (
-            <div className="mt-6 space-y-3">
-              <h4 className="font-medium text-gray-900">Archivos seleccionados:</h4>
-              {uploadFiles.map((uploadFile) => {
-                const fileTypeInfo = getFileType(uploadFile.file.name);
-                return (
-                  <div key={uploadFile.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                    <div className="flex items-center space-x-3">
-                      <DocumentIcon className={`h-8 w-8 ${fileTypeInfo.color}`} />
-                      <div>
-                        <p className="font-medium text-gray-900">{uploadFile.file.name}</p>
-                        <p className="text-sm text-gray-500">
-                          {getFileSize(uploadFile.file.size)} • {fileTypeInfo.type}
-                        </p>
+            <div className="mt-8">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">
+                Archivos a Subir ({uploadFiles.length})
+              </h3>
+              <div className="space-y-4">
+                {uploadFiles.map(uploadFile => (
+                  <div
+                    key={uploadFile.id}
+                    className="bg-gray-50 border border-gray-200 rounded-lg p-4"
+                  >
+                    <div className="flex items-start space-x-4">
+                      {/* File Icon */}
+                      <div className="flex-shrink-0">
+                        {getFileIcon(uploadFile.file)}
+                      </div>
+
+                      {/* File Info */}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center justify-between mb-3">
+                          <div>
+                            <p className="font-medium text-gray-900 truncate">
+                              {uploadFile.file.name}
+                            </p>
+                            <p className="text-sm text-gray-500">
+                              {(uploadFile.file.size / 1024 / 1024).toFixed(2)} MB
+                            </p>
+                          </div>
+                          <div className="flex items-center space-x-2">
+                            {getStatusIcon(uploadFile.status)}
+                            {uploadFile.status === 'pending' && (
+                              <button
+                                onClick={() => removeFile(uploadFile.id)}
+                                className="p-1 text-gray-400 hover:text-red-600 transition-colors"
+                              >
+                                <FiTrash className="w-4 h-4" />
+                              </button>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Progress Bar */}
+                        {uploadFile.status === 'uploading' && (
+                          <div className="mb-3">
+                            <div className="bg-gray-200 rounded-full h-2">
+                              <div
+                                className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+                                style={{ width: `${uploadFile.progress}%` }}
+                              />
+                            </div>
+                            <p className="text-sm text-gray-500 mt-1">
+                              Subiendo... {uploadFile.progress}%
+                            </p>
+                          </div>
+                        )}
+
+                        {/* Error Message */}
+                        {uploadFile.status === 'error' && uploadFile.error && (
+                          <div className="mb-3 p-2 bg-red-50 border border-red-200 rounded text-sm text-red-700">
+                            {uploadFile.error}
+                          </div>
+                        )}
+
+                        {/* File Metadata Form */}
+                        {uploadFile.status === 'pending' && (
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-1">
+                                Título del Recurso *
+                              </label>
+                              <input
+                                type="text"
+                                value={uploadFile.resourceData?.title || ''}
+                                onChange={(e) => updateFileData(uploadFile.id, 'title', e.target.value)}
+                                className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+                                placeholder="Nombre del recurso"
+                              />
+                            </div>
+
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-1">
+                                Categoría *
+                              </label>
+                              <select
+                                value={uploadFile.resourceData?.category || ''}
+                                onChange={(e) => updateFileData(uploadFile.id, 'category', e.target.value)}
+                                className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 text-sm"
+                              >
+                                <option value="">Seleccionar categoría</option>
+                                {categories.map(category => (
+                                  <option key={category.id} value={category.id}>
+                                    {category.name}
+                                  </option>
+                                ))}
+                              </select>
+                            </div>
+
+                            <div className="md:col-span-2">
+                              <label className="block text-sm font-medium text-gray-700 mb-1">
+                                Descripción
+                              </label>
+                              <textarea
+                                value={uploadFile.resourceData?.description || ''}
+                                onChange={(e) => updateFileData(uploadFile.id, 'description', e.target.value)}
+                                rows={2}
+                                className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+                                placeholder="Descripción del recurso (opcional)"
+                              />
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Success Message */}
+                        {uploadFile.status === 'success' && (
+                          <div className="p-2 bg-green-50 border border-green-200 rounded text-sm text-green-700">
+                            ✅ Archivo subido exitosamente
+                          </div>
+                        )}
                       </div>
                     </div>
-                    
-                    <div className="flex items-center space-x-3">
-                      {uploadFile.status === 'uploading' && (
-                        <div className="w-32">
-                          <div className="bg-gray-200 rounded-full h-2">
-                            <div 
-                              className="bg-indigo-600 h-2 rounded-full transition-all duration-300"
-                              style={{ width: `${uploadFile.progress}%` }}
-                            ></div>
-                          </div>
-                          <p className="text-xs text-gray-500 mt-1">
-                            {Math.round(uploadFile.progress)}%
-                          </p>
-                        </div>
-                      )}
-                      
-                      {uploadFile.status === 'success' && (
-                        <CheckCircleIcon className="h-6 w-6 text-green-500" />
-                      )}
-                      
-                      <button
-                        type="button"
-                        onClick={() => removeFile(uploadFile.id)}
-                        className="text-red-500 hover:text-red-700"
-                      >
-                        <XMarkIcon className="h-5 w-5" />
-                      </button>
-                    </div>
                   </div>
-                );
-              })}
+                ))}
+              </div>
             </div>
           )}
-        </Card>
-
-        {/* Resource Information */}
-        <Card className="p-6">
-          <h3 className="text-lg font-medium text-gray-900 mb-4">Información del Recurso</h3>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="md:col-span-2">
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Título *
-              </label>
-              <input
-                type="text"
-                value={resourceData.title}
-                onChange={(e) => setResourceData(prev => ({ ...prev, title: e.target.value }))}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                placeholder="Nombre descriptivo del recurso"
-                required
-              />
-            </div>
-
-            <div className="md:col-span-2">
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Descripción
-              </label>
-              <textarea
-                value={resourceData.description}
-                onChange={(e) => setResourceData(prev => ({ ...prev, description: e.target.value }))}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                rows={4}
-                placeholder="Descripción detallada del contenido y uso del recurso"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Categoría *
-              </label>
-              <select
-                value={resourceData.category}
-                onChange={(e) => setResourceData(prev => ({ ...prev, category: e.target.value }))}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                required
-              >
-                <option value="">Seleccionar categoría</option>
-                {CATEGORIES.map(category => (
-                  <option key={category} value={category}>{category}</option>
-                ))}
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Etiquetas
-              </label>
-              <input
-                type="text"
-                value={resourceData.tags}
-                onChange={(e) => setResourceData(prev => ({ ...prev, tags: e.target.value }))}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                placeholder="Etiquetas separadas por comas (ej: ansiedad, CBT, manual)"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Nivel de Acceso
-              </label>
-              <select
-                value={resourceData.accessLevel}
-                onChange={(e) => setResourceData(prev => ({ ...prev, accessLevel: e.target.value }))}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
-              >
-                <option value="public">Público</option>
-                <option value="professional">Solo Profesionales</option>
-                <option value="restricted">Acceso Restringido</option>
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Fecha de Expiración (Opcional)
-              </label>
-              <input
-                type="date"
-                value={resourceData.expirationDate}
-                onChange={(e) => setResourceData(prev => ({ ...prev, expirationDate: e.target.value }))}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
-              />
-            </div>
-          </div>
-        </Card>
-
-        {/* Submit Button */}
-        <div className="flex justify-end space-x-4">
-          <Button type="button" onClick={onCancel} variant="outline">
-            Cancelar
-          </Button>
-          <Button 
-            type="submit" 
-            className="bg-indigo-600 hover:bg-indigo-700"
-            disabled={uploadFiles.length === 0 || uploadFiles.some(f => f.status === 'uploading')}
-          >
-            📚 Guardar Recurso
-          </Button>
         </div>
-      </form>
+
+        {/* Footer */}
+        <div className="flex items-center justify-between p-6 border-t border-gray-200 bg-gray-50">
+          <div className="text-sm text-gray-500">
+            {uploadFiles.length > 0 && (
+              <>
+                {uploadFiles.filter(f => f.status === 'success').length} subidos, {' '}
+                {uploadFiles.filter(f => f.status === 'error').length} errores, {' '}
+                {uploadFiles.filter(f => f.status === 'pending').length} pendientes
+              </>
+            )}
+          </div>
+          <div className="flex space-x-3">
+            <button
+              onClick={onClose}
+              className="px-4 py-2 text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+            >
+              {uploadFiles.filter(f => f.status === 'success').length > 0 ? 'Cerrar' : 'Cancelar'}
+            </button>
+            {uploadFiles.filter(f => f.status === 'pending').length > 0 && (
+              <button
+                onClick={handleUploadAll}
+                disabled={isUploading}
+                className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              >
+                <FiUpload className="w-4 h-4" />
+                <span>{isUploading ? 'Subiendo...' : 'Subir Todos'}</span>
+              </button>
+            )}
+          </div>
+        </div>
+      </motion.div>
     </div>
-  );
+  )
 }
+
+export default ResourceUpload

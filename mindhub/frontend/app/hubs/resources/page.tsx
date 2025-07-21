@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { BookOpenIcon } from '@heroicons/react/24/outline';
+import { PageHeader } from '@/components/layout/PageHeader';
 import ResourceCatalog from '@/components/resources/ResourceCatalog';
 import ResourceUpload from '@/components/resources/ResourceUpload';
 
@@ -29,22 +30,15 @@ export default function ResourcesPage() {
     switch (currentView) {
       case 'catalog':
         return (
-          <div className="space-y-6">
-            {/* Header */}
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-3">
-                <div className="w-10 h-10 bg-orange-100 rounded-lg flex items-center justify-center">
-                  <BookOpenIcon className="h-6 w-6 text-orange-600" />
-                </div>
-                <div>
-                  <h1 className="text-2xl font-bold text-gray-900">Resources Hub</h1>
-                  <p className="text-gray-600">Biblioteca de Materiales Psicoeducativos</p>
-                </div>
-              </div>
-            </div>
-
+          <>
+            <PageHeader
+              title="Hub de Recursos"
+              description="Biblioteca de Materiales Psicoeducativos"
+              icon={BookOpenIcon}
+              iconColor="text-orange-600"
+            />
             <ResourceCatalog onUploadResource={handleUploadResource} />
-          </div>
+          </>
         );
 
       case 'upload':

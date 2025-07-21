@@ -1,8 +1,9 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
+import { expedixApi } from '@/lib/api/expedix-client';
 
 interface Patient {
   id: string;
@@ -118,6 +119,9 @@ export default function ConsultationForm({ patient, onSaveConsultation, onCancel
     nextAppointment: { time: '', date: '' }
   });
 
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
   const [currentMedication, setCurrentMedication] = useState({
     name: '',
     presentation: '',
@@ -131,6 +135,31 @@ export default function ConsultationForm({ patient, onSaveConsultation, onCancel
   const [filteredMedications, setFilteredMedications] = useState<typeof MEDICATIONS_DATABASE>([]);
   const [filteredPrescriptions, setFilteredPrescriptions] = useState<string[]>([]);
   const [filteredDiagnoses, setFilteredDiagnoses] = useState<typeof CIE10_CODES>([]);
+
+  // Load last prescription on component mount
+  useEffect(() => {
+    const loadLastPrescription = async () => {
+      try {
+        const lastPrescription = await expedixApi.getLastPrescription(patient.id);
+        if (lastPrescription.data) {
+          // Pre-fill medications from last prescription for editing
+          setConsultationData(prev => ({
+            ...prev,
+            medications: lastPrescription.data.medications.map((med: any, index: number) => ({
+              ...med,
+              id: Date.now() + index
+            })),
+            diagnosis: lastPrescription.data.diagnosis || '',
+            additionalInstructions: lastPrescription.data.notes || ''
+          }));
+        }
+      } catch (error) {
+        console.log('No previous prescription found or error loading:', error);
+      }
+    };
+
+    loadLastPrescription();
+  }, [patient.id]);
 
   const handleMedicationSearch = (value: string) => {
     setMedicationSearch(value);
@@ -220,19 +249,121 @@ export default function ConsultationForm({ patient, onSaveConsultation, onCancel
     }));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    onSaveConsultation(consultationData);
+    setLoading(true);
+    setError(null);
+
+    try {
+      // Save prescription to backend if there are medications
+      if (consultationData.medications.length > 0) {
+        const prescriptionData = {
+          patient_id: patient.id,
+          practitioner_name: 'Dr. Usuario', // This should come from auth context
+          practitioner_license: 'LIC-12345', // This should come from user profile
+          medications: consultationData.medications.map(med => ({
+            name: med.name,
+            dosage: med.presentation,
+            frequency: med.prescription,
+            duration: 'Según indicación médica',
+            instructions: med.prescription
+          })),
+          diagnosis: consultationData.diagnosis,
+          notes: consultationData.additionalInstructions,
+          print_config: {
+            marginLeft: 2,
+            marginTop: 4.2,
+            marginRight: 2,
+            marginBottom: 2
+          }
+        };
+
+        await expedixApi.createPrescription(prescriptionData);
+      }
+
+      // Save consultation (this would typically go to another endpoint)
+      onSaveConsultation(consultationData);
+    } catch (error) {
+      console.error('Error saving consultation:', error);
+      setError(error instanceof Error ? error.message : 'Error al guardar la consulta');
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handlePrintPrescription = () => {
-    // Simulate prescription printing
-    console.log('Printing prescription for:', patient.firstName, patient.paternalLastName);
-    console.log('Medications:', consultationData.medications);
+  const handlePrintPrescription = async () => {
+    try {
+      setLoading(true);
+      
+      // First save the prescription if not already saved
+      if (consultationData.medications.length > 0) {
+        const prescriptionData = {
+          patient_id: patient.id,
+          practitioner_name: 'Dr. Usuario',
+          practitioner_license: 'LIC-12345',
+          medications: consultationData.medications.map(med => ({
+            name: med.name,
+            dosage: med.presentation,
+            frequency: med.prescription,
+            duration: 'Según indicación médica',
+            instructions: med.prescription
+          })),
+          diagnosis: consultationData.diagnosis,
+          notes: consultationData.additionalInstructions,
+          print_config: {
+            marginLeft: 2,
+            marginTop: 4.2,
+            marginRight: 2,
+            marginBottom: 2
+          }
+        };
+
+        const result = await expedixApi.createPrescription(prescriptionData);
+        
+        // Generate and download PDF
+        const pdfBlob = await expedixApi.generatePrescriptionPDF(result.data.id);
+        
+        // Create download link
+        const url = window.URL.createObjectURL(pdfBlob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `receta_${patient.firstName}_${patient.paternalLastName}_${new Date().toISOString().split('T')[0]}.pdf`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        window.URL.revokeObjectURL(url);
+      }
+    } catch (error) {
+      console.error('Error generating prescription PDF:', error);
+      setError('Error al generar el PDF de la receta');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
     <div className="space-y-6">
+      {/* Error Display */}
+      {error && (
+        <div className="bg-red-50 border border-red-200 rounded-md p-4">
+          <div className="flex">
+            <div className="text-red-600 text-sm">
+              ❌ {error}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Loading overlay */}
+      {loading && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+            <p className="text-gray-700">Procesando...</p>
+          </div>
+        </div>
+      )}
+
       {/* Patient Header */}
       <Card className="p-4">
         <div className="flex items-center justify-between">
@@ -497,7 +628,7 @@ export default function ConsultationForm({ patient, onSaveConsultation, onCancel
               type="button"
               onClick={handlePrintPrescription}
               className="bg-gray-100 text-gray-700 hover:bg-gray-200"
-              disabled={consultationData.medications.length === 0}
+              disabled={consultationData.medications.length === 0 || loading}
             >
               🖨️ Imprimir Receta
             </Button>
@@ -666,8 +797,9 @@ export default function ConsultationForm({ patient, onSaveConsultation, onCancel
           <Button
             type="submit"
             className="bg-blue-600 hover:bg-blue-700"
+            disabled={loading}
           >
-            💾 Guardar Consulta
+            {loading ? '⏳ Guardando...' : '💾 Guardar Consulta'}
           </Button>
         </div>
       </form>

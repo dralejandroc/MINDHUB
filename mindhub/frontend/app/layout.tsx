@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
 import { Toaster } from 'react-hot-toast';
 import './globals.css';
-// import { UserProvider } from '@auth0/nextjs-auth0/client'; // COMENTADO temporalmente para desarrollo
+// import { UserProvider } from '@auth0/nextjs-auth0/client';
 import { QueryProvider } from '@/contexts/QueryContext';
 import { UniversalScalesProvider } from '@/contexts/UniversalScalesContext';
 
@@ -106,7 +106,7 @@ export default function RootLayout({
               </div>
             </UniversalScalesProvider>
               
-              {/* Toast notifications */}}
+              {/* Toast notifications */}
               <Toaster
                 position="top-right"
                 toastOptions={{

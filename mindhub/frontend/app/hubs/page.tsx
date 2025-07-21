@@ -1,6 +1,6 @@
 'use client';
 
-import { useUser } from '@auth0/nextjs-auth0/client';
+// import { useUser } from '@auth0/nextjs-auth0/client';
 import Link from 'next/link';
 import { 
   ClipboardDocumentListIcon,
@@ -16,22 +16,23 @@ import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 
 export default function HubsPage() {
-  const { user } = useUser();
+  // const { user } = useUser();
+  const user = { name: 'Usuario de Desarrollo' }; // Temporal para desarrollo
 
   const hubs = [
     {
       id: 'clinimetrix',
       name: 'Clinimetrix',
-      description: 'Clinical Assessment System',
-      longDescription: 'Automated clinical assessment system with 50+ standardized scales for comprehensive patient evaluation.',
+      description: 'Sistema de Evaluación Clínica',
+      longDescription: 'Sistema automatizado de evaluación clínica con más de 50 escalas estandarizadas para evaluación integral de pacientes.',
       icon: ClipboardDocumentListIcon,
       color: 'clinimetrix',
       href: '/hubs/clinimetrix',
       features: [
-        '50+ validated assessment scales',
-        'Remote and in-person administration',
-        'Automated scoring and reporting',
-        'Progress tracking over time'
+        'Más de 50 escalas de evaluación validadas',
+        'Administración remota y presencial',
+        'Puntuación e informes automatizados',
+        'Seguimiento del progreso en el tiempo'
       ],
       stats: {
         assessments: 0,
@@ -42,16 +43,16 @@ export default function HubsPage() {
     {
       id: 'expedix',
       name: 'Expedix',
-      description: 'Patient Management System',
-      longDescription: 'Comprehensive digital patient records with automated prescription management and clinical documentation.',
+      description: 'Sistema de Gestión de Pacientes',
+      longDescription: 'Expedientes digitales integrales de pacientes con gestión automatizada de prescripciones y documentación clínica.',
       icon: UserGroupIcon,
       color: 'expedix',
       href: '/hubs/expedix',
       features: [
-        'Digital patient records',
-        'Prescription management with QR codes',
-        'Consultation history tracking',
-        'Patient categorization system'
+        'Expedientes digitales de pacientes',
+        'Gestión de prescripciones con códigos QR',
+        'Seguimiento del historial de consultas',
+        'Sistema de categorización de pacientes'
       ],
       stats: {
         patients: 0,
@@ -62,16 +63,16 @@ export default function HubsPage() {
     {
       id: 'formx',
       name: 'Formx',
-      description: 'Form Builder System',
-      longDescription: 'Drag-and-drop form constructor for creating custom intake forms, surveys, and questionnaires.',
+      description: 'Sistema Constructor de Formularios',
+      longDescription: 'Constructor de formularios de arrastrar y soltar para crear formularios personalizados, encuestas y cuestionarios.',
       icon: SparklesIcon,
       color: 'formx',
       href: '/hubs/formx',
       features: [
-        'Drag-and-drop form builder',
-        'PDF and JotForm import',
-        'Custom field types',
-        'Automated distribution'
+        'Constructor de arrastrar y soltar',
+        'Importación de PDF y JotForm',
+        'Tipos de campo personalizados',
+        'Distribución automatizada'
       ],
       stats: {
         forms: 0,
@@ -82,16 +83,16 @@ export default function HubsPage() {
     {
       id: 'resources',
       name: 'Resources',
-      description: 'Psychoeducational Library',
-      longDescription: 'Curated library of psychoeducational materials with secure distribution and version control.',
+      description: 'Biblioteca Psicoeducativa',
+      longDescription: 'Biblioteca curada de materiales psicoeducativos con distribución segura y control de versiones.',
       icon: BookOpenIcon,
       color: 'resources',
       href: '/hubs/resources',
       features: [
-        'Categorized resource library',
-        'Secure digital distribution',
-        'Version control system',
-        'Usage tracking and analytics'
+        'Biblioteca de recursos categorizada',
+        'Distribución digital segura',
+        'Sistema de control de versiones',
+        'Seguimiento de uso y analíticas'
       ],
       stats: {
         resources: 0,
@@ -127,22 +128,26 @@ export default function HubsPage() {
       <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between">
         <div>
           <h1 className="text-3xl font-bold text-gray-900">
-            Welcome back, {user?.name?.split(' ')[0] || 'Doctor'}
+            Bienvenido de vuelta, {user?.name?.split(' ')[0] || 'Doctor'}
           </h1>
           <p className="mt-2 text-lg text-gray-600">
-            Access your clinical tools and manage patient care across all MindHub platforms.
+            Accede a tus herramientas clínicas y gestiona el cuidado de pacientes en todas las plataformas de MindHub.
           </p>
         </div>
         
         <div className="mt-6 lg:mt-0 flex flex-col sm:flex-row gap-3">
-          <Button variant="outline" size="sm">
-            <CalendarIcon className="h-4 w-4 mr-2" />
-            Today's Schedule
-          </Button>
-          <Button variant="outline" size="sm">
-            <ChartBarIcon className="h-4 w-4 mr-2" />
-            Analytics
-          </Button>
+          <Link href="/hubs/agenda">
+            <Button variant="outline" size="sm">
+              <CalendarIcon className="h-4 w-4 mr-2" />
+              Agenda de Hoy
+            </Button>
+          </Link>
+          <Link href="/reports">
+            <Button variant="outline" size="sm">
+              <ChartBarIcon className="h-4 w-4 mr-2" />
+              Analíticas
+            </Button>
+          </Link>
         </div>
       </div>
 
@@ -154,7 +159,7 @@ export default function HubsPage() {
               <UserGroupIcon className="h-8 w-8 text-primary-600" />
             </div>
             <div className="ml-4">
-              <p className="text-sm font-medium text-gray-500">Total Patients</p>
+              <p className="text-sm font-medium text-gray-500">Total de Pacientes</p>
               <p className="text-2xl font-bold text-gray-900">0</p>
             </div>
           </div>
@@ -166,7 +171,7 @@ export default function HubsPage() {
               <ClipboardDocumentListIcon className="h-8 w-8 text-clinimetrix-600" />
             </div>
             <div className="ml-4">
-              <p className="text-sm font-medium text-gray-500">Assessments</p>
+              <p className="text-sm font-medium text-gray-500">Evaluaciones</p>
               <p className="text-2xl font-bold text-gray-900">0</p>
             </div>
           </div>
@@ -178,7 +183,7 @@ export default function HubsPage() {
               <DocumentTextIcon className="h-8 w-8 text-formx-600" />
             </div>
             <div className="ml-4">
-              <p className="text-sm font-medium text-gray-500">Forms Created</p>
+              <p className="text-sm font-medium text-gray-500">Formularios Creados</p>
               <p className="text-2xl font-bold text-gray-900">0</p>
             </div>
           </div>
@@ -190,7 +195,7 @@ export default function HubsPage() {
               <BookOpenIcon className="h-8 w-8 text-resources-600" />
             </div>
             <div className="ml-4">
-              <p className="text-sm font-medium text-gray-500">Resources Shared</p>
+              <p className="text-sm font-medium text-gray-500">Recursos Compartidos</p>
               <p className="text-2xl font-bold text-gray-900">0</p>
             </div>
           </div>
@@ -223,7 +228,7 @@ export default function HubsPage() {
               <p className="text-gray-700 mb-6">{hub.longDescription}</p>
 
               <div className="mb-6">
-                <h4 className="text-sm font-semibold text-gray-900 mb-3">Key Features:</h4>
+                <h4 className="text-sm font-semibold text-gray-900 mb-3">Características Principales:</h4>
                 <ul className="space-y-2">
                   {hub.features.map((feature, index) => (
                     <li key={index} className="flex items-center text-sm text-gray-600">
@@ -236,7 +241,7 @@ export default function HubsPage() {
 
               <div className="flex items-center justify-between">
                 <div className="text-sm text-gray-500">
-                  Get started with {hub.name}
+                  Comenzar con {hub.name}
                 </div>
                 <Link href={hub.href}>
                   <Button
@@ -244,7 +249,7 @@ export default function HubsPage() {
                     size="sm"
                     className="group"
                   >
-                    Open Hub
+                    Abrir Hub
                     <ArrowRightIcon className="h-4 w-4 ml-2 group-hover:translate-x-1 transition-transform" />
                   </Button>
                 </Link>
@@ -258,11 +263,11 @@ export default function HubsPage() {
       <Card className="p-8">
         <div className="text-center">
           <h2 className="text-2xl font-bold text-gray-900 mb-4">
-            Getting Started with MindHub
+            Comenzando con MindHub
           </h2>
           <p className="text-gray-600 mb-8 max-w-2xl mx-auto">
-            New to MindHub? Follow these steps to set up your practice and start using 
-            our comprehensive healthcare tools.
+            ¿Nuevo en MindHub? Sigue estos pasos para configurar tu consulta y comenzar a usar 
+            nuestras herramientas integrales de atención médica.
           </p>
           
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -270,9 +275,9 @@ export default function HubsPage() {
               <div className="w-12 h-12 bg-primary-100 rounded-full flex items-center justify-center mx-auto mb-4">
                 <span className="text-primary-600 font-bold">1</span>
               </div>
-              <h3 className="font-semibold text-gray-900 mb-2">Set Up Your Profile</h3>
+              <h3 className="font-semibold text-gray-900 mb-2">Configura tu Perfil</h3>
               <p className="text-sm text-gray-600">
-                Complete your professional profile and clinic information
+                Completa tu perfil profesional e información de la clínica
               </p>
             </div>
             
@@ -280,9 +285,9 @@ export default function HubsPage() {
               <div className="w-12 h-12 bg-primary-100 rounded-full flex items-center justify-center mx-auto mb-4">
                 <span className="text-primary-600 font-bold">2</span>
               </div>
-              <h3 className="font-semibold text-gray-900 mb-2">Import Your Data</h3>
+              <h3 className="font-semibold text-gray-900 mb-2">Importa tus Datos</h3>
               <p className="text-sm text-gray-600">
-                Upload existing patient records and assessment data
+                Sube expedientes de pacientes existentes y datos de evaluación
               </p>
             </div>
             
@@ -290,9 +295,9 @@ export default function HubsPage() {
               <div className="w-12 h-12 bg-primary-100 rounded-full flex items-center justify-center mx-auto mb-4">
                 <span className="text-primary-600 font-bold">3</span>
               </div>
-              <h3 className="font-semibold text-gray-900 mb-2">Start Using Hubs</h3>
+              <h3 className="font-semibold text-gray-900 mb-2">Comienza a Usar los Hubs</h3>
               <p className="text-sm text-gray-600">
-                Begin with clinical assessments and patient management
+                Comienza con evaluaciones clínicas y gestión de pacientes
               </p>
             </div>
           </div>
