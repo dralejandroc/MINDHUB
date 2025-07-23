@@ -10,14 +10,18 @@ const winston = require('winston');
 
 // Configure logger
 const logger = winston.createLogger({
-  level: process.env.LOG_LEVEL || 'info',
+  level: process.env.LOG_LEVEL || 'error', // Changed to error level
   format: winston.format.combine(
     winston.format.timestamp(),
     winston.format.errors({ stack: true }),
     winston.format.json()
   ),
   transports: [
-    new winston.transports.File({ filename: 'logs/database.log' }),
+    new winston.transports.File({ 
+      filename: 'logs/database.log',
+      maxsize: 5242880, // 5MB
+      maxFiles: 2
+    }),
     new winston.transports.Console({
       format: winston.format.simple()
     })
@@ -27,18 +31,18 @@ const logger = winston.createLogger({
 // Prisma Client Configuration
 const prismaConfig = {
   log: [
-    {
-      emit: 'event',
-      level: 'query',
-    },
+    // {
+    //   emit: 'event',
+    //   level: 'query',
+    // },
     {
       emit: 'event',
       level: 'error',
     },
-    {
-      emit: 'event',
-      level: 'info',
-    },
+    // {
+    //   emit: 'event',
+    //   level: 'info',
+    // },
     {
       emit: 'event',
       level: 'warn',
@@ -59,14 +63,14 @@ function getPrismaClient() {
     prisma = new PrismaClient(prismaConfig);
 
     // Setup event listeners for logging
-    prisma.$on('query', (e) => {
-      logger.debug('Database Query', {
-        query: e.query,
-        params: e.params,
-        duration: e.duration,
-        target: e.target
-      });
-    });
+    // prisma.$on('query', (e) => {
+    //   logger.debug('Database Query', {
+    //     query: e.query,
+    //     params: e.params,
+    //     duration: e.duration,
+    //     target: e.target
+    //   });
+    // });
 
     prisma.$on('error', (e) => {
       logger.error('Database Error', {
@@ -75,12 +79,12 @@ function getPrismaClient() {
       });
     });
 
-    prisma.$on('info', (e) => {
-      logger.info('Database Info', {
-        message: e.message,
-        target: e.target
-      });
-    });
+    // prisma.$on('info', (e) => {
+    //   logger.info('Database Info', {
+    //     message: e.message,
+    //     target: e.target
+    //   });
+    // });
 
     prisma.$on('warn', (e) => {
       logger.warn('Database Warning', {

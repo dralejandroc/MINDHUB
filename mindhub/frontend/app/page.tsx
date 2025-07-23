@@ -1,6 +1,23 @@
-import { redirect } from 'next/navigation';
+'use client';
+
+import { UnifiedSidebar } from '@/components/layout/UnifiedSidebar';
+import { DashboardSwitcher } from '@/components/dashboard/DashboardSwitcher';
+import { StartPageHandler } from '@/components/layout/StartPageHandler';
+import { UserMetricsProvider } from '@/contexts/UserMetricsContext';
 
 export default function Home() {
-  // Redirect root to hubs automatically
-  redirect('/hubs');
+  const currentUser = {
+    name: 'Administrador',
+    email: 'admin@mindhub.com',
+    role: 'professional'
+  };
+
+  return (
+    <UserMetricsProvider>
+      <UnifiedSidebar currentUser={currentUser}>
+        <DashboardSwitcher />
+        <StartPageHandler />
+      </UnifiedSidebar>
+    </UserMetricsProvider>
+  );
 }

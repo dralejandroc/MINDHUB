@@ -1,6 +1,17 @@
 'use client';
 
-import { ChevronRightIcon } from '@heroicons/react/24/outline';
+import { useState, useEffect } from 'react';
+import { 
+  ChevronRightIcon,
+  CalendarIcon,
+  UserGroupIcon,
+  ClipboardDocumentListIcon,
+  ChartBarIcon,
+  ExclamationTriangleIcon,
+  CheckCircleIcon,
+  ClockIcon,
+  BellIcon
+} from '@heroicons/react/24/outline';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import Link from 'next/link';
@@ -10,154 +21,219 @@ interface BeginnerDashboardProps {
 }
 
 export function BeginnerDashboard({ onNavigate }: BeginnerDashboardProps) {
-  const hubs = [
-    {
-      id: 'expedix',
-      name: 'Expedix',
-      description: 'Sistema integral de expedientes médicos',
-      longDescription: 'Gestiona pacientes, consultas médicas, recetas digitales y seguimiento clínico de manera integral.',
-      features: ['Expedientes digitales', 'Consultas médicas', 'Recetas digitales', 'Seguimiento de pacientes'],
-      color: 'bg-blue-50 border-blue-200',
-      iconColor: 'text-blue-600',
-      buttonColor: 'bg-blue-600 hover:bg-blue-700',
-      path: '/hubs/expedix'
-    },
-    {
-      id: 'clinimetrix',
-      name: 'Clinimetrix', 
-      description: 'Sistema de evaluación clínica especializado',
-      longDescription: 'Aplica escalas clínicas estandarizadas, realiza evaluaciones psicológicas y genera reportes automáticos.',
-      features: ['50+ escalas clínicas', 'Evaluaciones automatizadas', 'Reportes detallados', 'Seguimiento temporal'],
-      color: 'bg-purple-50 border-purple-200',
-      iconColor: 'text-purple-600',
-      buttonColor: 'bg-purple-600 hover:bg-purple-700',
-      path: '/hubs/clinimetrix'
-    },
-    {
-      id: 'formx',
-      name: 'FormX',
-      description: 'Constructor de formularios y cuestionarios',
-      longDescription: 'Crea formularios personalizados, cuestionarios de admisión y documentos digitales adaptativos.',
-      features: ['Constructor visual', 'Formularios adaptativos', 'Integración PDF', 'Respuestas en tiempo real'],
-      color: 'bg-emerald-50 border-emerald-200',
-      iconColor: 'text-emerald-600',
-      buttonColor: 'bg-emerald-600 hover:bg-emerald-700',
-      path: '/hubs/formx'
-    },
-    {
-      id: 'resources',
-      name: 'Hub de Recursos',
-      description: 'Biblioteca de materiales psicoeducativos',
-      longDescription: 'Gestiona recursos educativos, materiales terapéuticos y contenido multimedia para pacientes.',
-      features: ['Biblioteca digital', 'Recursos categorizados', 'Envío automatizado', 'Materiales personalizados'],
-      color: 'bg-orange-50 border-orange-200',
-      iconColor: 'text-orange-600',
-      buttonColor: 'bg-orange-600 hover:bg-orange-700',
-      path: '/hubs/resources'
+  const [currentWeek, setCurrentWeek] = useState(new Date());
+  const [weeklyStats, setWeeklyStats] = useState({
+    totalPatients: 47,
+    totalAppointments: 23,
+    completedAssessments: 12,
+    pendingAlerts: 3
+  });
+
+  // Generate week days starting from Monday
+  const getWeekDays = () => {
+    const week = [];
+    const start = new Date(currentWeek);
+    const day = start.getDay();
+    const diff = start.getDate() - day + (day === 0 ? -6 : 1); // Adjust for Monday start
+    start.setDate(diff);
+
+    for (let i = 0; i < 7; i++) {
+      const date = new Date(start);
+      date.setDate(start.getDate() + i);
+      week.push({
+        date: date,
+        dayName: date.toLocaleDateString('es-ES', { weekday: 'short' }),
+        dayNum: date.getDate(),
+        appointments: Math.floor(Math.random() * 8) + 1, // Mock data
+        isToday: date.toDateString() === new Date().toDateString()
+      });
     }
+    return week;
+  };
+
+  const weekDays = getWeekDays();
+
+  const favoriteScales = [
+    { name: 'PHQ-9', description: 'Depresión', uses: 24, color: 'bg-purple-100 text-purple-700' },
+    { name: 'GAD-7', description: 'Ansiedad', uses: 18, color: 'bg-emerald-100 text-emerald-700' },
+    { name: 'BDI-21', description: 'Beck Depresión', uses: 15, color: 'bg-orange-100 text-orange-700' },
+    { name: 'MADRS', description: 'Montgomery', uses: 12, color: 'bg-primary-100 text-primary-700' }
   ];
 
   const quickActions = [
-    { name: 'Nuevo Paciente', path: '/hubs/expedix?action=new-patient', icon: '👤' },
-    { name: 'Ver Agenda', path: '/hubs/agenda', icon: '📅' },
-    { name: 'Nueva Evaluación', path: '/hubs/clinimetrix', icon: '📋' },
-    { name: 'Crear Formulario', path: '/hubs/formx?action=new-form', icon: '📝' }
+    { name: 'Nuevo Paciente', path: '/hubs/expedix?action=new-patient' },
+    { name: 'Ver Agenda', path: '/hubs/agenda' },
+    { name: 'Nueva Evaluación', path: '/hubs/clinimetrix' },
+    { name: 'Crear Formulario', path: '/hubs/formx?action=new-form' },
+    { name: 'Biblioteca', path: '/hubs/resources' }
+  ];
+
+  const recentAlerts = [
+    { id: 1, patient: 'Ana López', message: 'PHQ-9 indica severidad alta', severity: 'high', time: '2h' },
+    { id: 2, patient: 'Carlos Ruiz', message: 'Cita pendiente de confirmar', severity: 'medium', time: '4h' },
+    { id: 3, patient: 'María García', message: 'Evaluación completada', severity: 'low', time: '1d' }
   ];
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6">
       {/* Welcome Header */}
-      <div className="text-center py-8">
-        <h1 className="text-3xl font-bold text-gray-900 mb-4">
-          Bienvenido a MindHub
+      <div className="text-center py-4">
+        <h1 className="text-2xl font-bold text-gray-900 mb-2">
+          Dashboard Clínico
         </h1>
-        <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-          Tu plataforma integral para la gestión de salud mental. 
-          Explora cada hub para descubrir todas las herramientas disponibles.
+        <p className="text-sm text-gray-600 max-w-2xl mx-auto">
+          Resumen ejecutivo de tu práctica clínica con métricas clave y agenda semanal
         </p>
       </div>
 
-      {/* Quick Actions */}
-      <Card className="p-6">
-        <h2 className="text-xl font-semibold text-gray-900 mb-4">Acciones Rápidas</h2>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          {quickActions.map((action) => (
-            <Link key={action.name} href={action.path}>
-              <div className="flex flex-col items-center p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors cursor-pointer">
-                <span className="text-2xl mb-2">{action.icon}</span>
-                <span className="text-sm font-medium text-gray-900 text-center">{action.name}</span>
-              </div>
-            </Link>
-          ))}
-        </div>
-      </Card>
-
-      {/* Hubs Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {hubs.map((hub) => (
-          <Card key={hub.id} className={`p-6 ${hub.color} transition-all duration-200 hover:shadow-lg`}>
-            <div className="flex items-start justify-between mb-4">
-              <div>
-                <h3 className={`text-xl font-bold ${hub.iconColor} mb-2`}>
-                  {hub.name}
-                </h3>
-                <p className="text-gray-700 text-sm mb-3">
-                  {hub.description}
-                </p>
-                <p className="text-gray-600 text-sm mb-4">
-                  {hub.longDescription}
-                </p>
-              </div>
+      {/* Quick Stats */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+        <Card className="p-3 bg-primary-50 border-primary-200 hover-lift">
+          <div className="flex items-center">
+            <div className="w-8 h-8 gradient-primary rounded-lg flex items-center justify-center">
+              <UserGroupIcon className="h-4 w-4 text-white" />
             </div>
-
-            {/* Features */}
-            <div className="mb-6">
-              <h4 className="text-sm font-semibold text-gray-800 mb-2">Características principales:</h4>
-              <ul className="space-y-1">
-                {hub.features.map((feature, index) => (
-                  <li key={index} className="flex items-center text-sm text-gray-700">
-                    <div className={`w-1.5 h-1.5 rounded-full ${hub.iconColor.replace('text-', 'bg-')} mr-2`} />
-                    {feature}
-                  </li>
-                ))}
-              </ul>
+            <div className="ml-3">
+              <p className="text-xs font-medium text-gray-600">Total Pacientes</p>
+              <p className="text-lg font-bold text-primary-600">{weeklyStats.totalPatients}</p>
             </div>
+          </div>
+        </Card>
 
-            {/* Action Button */}
-            <Link href={hub.path}>
-              <Button 
-                className={`w-full ${hub.buttonColor} text-white flex items-center justify-center space-x-2`}
-              >
-                <span>Explorar {hub.name}</span>
-                <ChevronRightIcon className="h-4 w-4" />
-              </Button>
-            </Link>
-          </Card>
-        ))}
+        <Card className="p-3 bg-orange-50 border-orange-200 hover-lift">
+          <div className="flex items-center">
+            <div className="w-8 h-8 gradient-orange rounded-lg flex items-center justify-center">
+              <CalendarIcon className="h-4 w-4 text-white" />
+            </div>
+            <div className="ml-3">
+              <p className="text-xs font-medium text-gray-600">Citas Esta Semana</p>
+              <p className="text-lg font-bold text-orange-600">{weeklyStats.totalAppointments}</p>
+            </div>
+          </div>
+        </Card>
+
+        <Card className="p-3 bg-purple-50 border-purple-200 hover-lift">
+          <div className="flex items-center">
+            <div className="w-8 h-8 gradient-purple rounded-lg flex items-center justify-center">
+              <ClipboardDocumentListIcon className="h-4 w-4 text-white" />
+            </div>
+            <div className="ml-3">
+              <p className="text-xs font-medium text-gray-600">Evaluaciones</p>
+              <p className="text-lg font-bold text-purple-600">{weeklyStats.completedAssessments}</p>
+            </div>
+          </div>
+        </Card>
+
+        <Card className="p-3 bg-secondary-50 border-secondary-200 hover-lift">
+          <div className="flex items-center">
+            <div className="w-8 h-8 gradient-secondary rounded-lg flex items-center justify-center">
+              <BellIcon className="h-4 w-4 text-white" />
+            </div>
+            <div className="ml-3">
+              <p className="text-xs font-medium text-gray-600">Alertas</p>
+              <p className="text-lg font-bold text-secondary-600">{weeklyStats.pendingAlerts}</p>
+            </div>
+          </div>
+        </Card>
       </div>
 
-      {/* Getting Started Tips */}
-      <Card className="p-6 bg-blue-50 border-blue-200">
-        <h2 className="text-lg font-semibold text-blue-900 mb-3">💡 Consejos para empezar</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-blue-800">
-          <div>
-            <h3 className="font-semibold mb-1">1. Configura tu primera clínica</h3>
-            <p>Comienza en Expedix registrando tu información básica y tus primeros pacientes.</p>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        {/* Weekly Agenda */}
+        <Card className="lg:col-span-2 p-4 hover-lift relative before:absolute before:top-0 before:left-0 before:right-0 before:h-1 before:border-gradient">
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-sm font-semibold text-dark-green">Agenda Semanal</h3>
+            <Link href="/hubs/agenda">
+              <Button variant="outline" size="sm" className="text-xs">
+                Ver Completa
+              </Button>
+            </Link>
           </div>
-          <div>
-            <h3 className="font-semibold mb-1">2. Explora las escalas</h3>
-            <p>En Clinimetrix encontrarás más de 50 escalas clínicas para evaluaciones.</p>
+          <div className="grid grid-cols-7 gap-2">
+            {weekDays.map((day, index) => (
+              <div 
+                key={index} 
+                className={`text-center p-2 rounded-lg border transition-all duration-200 ${
+                  day.isToday 
+                    ? 'bg-primary-100 border-primary-300 text-primary-700' 
+                    : 'bg-gray-50 border-gray-200 hover:bg-gray-100'
+                }`}
+              >
+                <div className="text-xs font-medium">{day.dayName}</div>
+                <div className="text-lg font-bold">{day.dayNum}</div>
+                <div className={`text-xs ${day.isToday ? 'text-primary-600' : 'text-gray-600'}`}>
+                  {day.appointments} citas
+                </div>
+              </div>
+            ))}
           </div>
-          <div>
-            <h3 className="font-semibold mb-1">3. Crea formularios personalizados</h3>
-            <p>FormX te permite crear cuestionarios adaptados a tu práctica clínica.</p>
+        </Card>
+
+        {/* Favorite Scales */}
+        <Card className="p-4 hover-lift relative before:absolute before:top-0 before:left-0 before:right-0 before:h-1 before:border-gradient-purple">
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-sm font-semibold text-dark-green">Escalas Favoritas</h3>
+            <Link href="/hubs/clinimetrix">
+              <Button variant="outline" size="sm" className="text-xs">
+                Ver Todas
+              </Button>
+            </Link>
           </div>
-          <div>
-            <h3 className="font-semibold mb-1">4. Gestiona recursos</h3>
-            <p>Organiza materiales psicoeducativos en el Hub de Recursos.</p>
+          <div className="space-y-2">
+            {favoriteScales.map((scale, index) => (
+              <div key={index} className="flex items-center justify-between p-2 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors duration-200">
+                <div>
+                  <div className="text-xs font-semibold text-gray-900">{scale.name}</div>
+                  <div className="text-xs text-gray-600">{scale.description}</div>
+                </div>
+                <span className={`px-2 py-1 rounded-full text-xs font-medium ${scale.color}`}>
+                  {scale.uses}
+                </span>
+              </div>
+            ))}
           </div>
-        </div>
-      </Card>
+        </Card>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        {/* Quick Actions */}
+        <Card className="p-4 hover-lift relative before:absolute before:top-0 before:left-0 before:right-0 before:h-1 before:border-gradient-secondary">
+          <h3 className="text-sm font-semibold text-dark-green mb-3">Acciones Rápidas</h3>
+          <div className="grid grid-cols-2 gap-2">
+            {quickActions.map((action) => (
+              <Link key={action.name} href={action.path}>
+                <div className="p-3 bg-primary-50 rounded-lg hover:bg-primary-100 transition-all duration-200 cursor-pointer hover-lift border border-primary-200 text-center">
+                  <span className="text-xs font-medium text-primary-700">{action.name}</span>
+                </div>
+              </Link>
+            ))}
+          </div>
+        </Card>
+
+        {/* Recent Alerts */}
+        <Card className="p-4 hover-lift relative before:absolute before:top-0 before:left-0 before:right-0 before:h-1 before:border-gradient-orange">
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-sm font-semibold text-dark-green">Alertas Recientes</h3>
+            <span className="px-2 py-1 bg-orange-100 text-orange-800 text-xs rounded-full font-medium">
+              {recentAlerts.length}
+            </span>
+          </div>
+          <div className="space-y-2">
+            {recentAlerts.map((alert) => (
+              <div key={alert.id} className="flex items-start p-2 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors duration-200">
+                <div className={`w-2 h-2 rounded-full mt-2 mr-2 ${
+                  alert.severity === 'high' ? 'bg-red-500' : 
+                  alert.severity === 'medium' ? 'bg-orange-500' : 'bg-green-500'
+                }`} />
+                <div className="flex-1">
+                  <div className="text-xs font-medium text-gray-900">{alert.patient}</div>
+                  <div className="text-xs text-gray-600">{alert.message}</div>
+                </div>
+                <span className="text-xs text-gray-500">{alert.time}</span>
+              </div>
+            ))}
+          </div>
+        </Card>
+      </div>
     </div>
   );
 }

@@ -47,6 +47,7 @@ export const UniversalCardBasedAssessment: React.FC<UniversalCardBasedAssessment
   const [currentCard, setCurrentCard] = useState(0);
   const [selectedPatient, setSelectedPatient] = useState(patientId || '');
   const [administrationMode, setAdministrationMode] = useState<'presencial-mismo' | 'presencial-otro' | 'distancia'>('presencial-mismo');
+  const [selectedAdminMode, setSelectedAdminMode] = useState<'clinician' | 'patient'>('clinician'); // Nuevo: modo de administración elegido
   const [showHelp, setShowHelp] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [cardResponses, setCardResponses] = useState<Record<number, string>>({});
@@ -92,21 +93,33 @@ export const UniversalCardBasedAssessment: React.FC<UniversalCardBasedAssessment
       return;
     }
 
+    console.log('🔍 Buscando pacientes con query:', query);
     setIsSearchingPatients(true);
     try {
-      const response = await fetch(`http://localhost:8080/api/v1/expedix/patients?search=${encodeURIComponent(query)}&limit=10`);
+      const url = `http://localhost:8080/api/v1/expedix/patients?search=${encodeURIComponent(query)}&limit=10`;
+      console.log('📡 URL de búsqueda:', url);
+      
+      const response = await fetch(url);
+      console.log('📡 Response status:', response.status);
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
       const data = await response.json();
+      console.log('📡 Response data:', data);
       
       if (data.success) {
         setPatientSearchResults(data.data || []);
         setShowPatientResults(true);
+        console.log('✅ Pacientes encontrados:', data.data?.length || 0);
       } else {
-        console.error('Error searching patients:', data.error);
+        console.error('❌ Error searching patients:', data.error);
         setPatientSearchResults([]);
         setShowPatientResults(false);
       }
     } catch (error) {
-      console.error('Failed to search patients:', error);
+      console.error('❌ Failed to search patients:', error);
       setPatientSearchResults([]);
       setShowPatientResults(false);
     } finally {
@@ -126,8 +139,10 @@ export const UniversalCardBasedAssessment: React.FC<UniversalCardBasedAssessment
   // Función para seleccionar un paciente
   const handleSelectPatient = (patient: any) => {
     setSelectedPatientData(patient);
-    setSelectedPatient(`${patient.firstName} ${patient.lastName}`);
-    setPatientSearchQuery(`${patient.firstName} ${patient.lastName}`);
+    // Use the correct field names from the API response
+    const fullName = `${patient.first_name || ''} ${patient.paternal_last_name || patient.last_name || ''}`.trim();
+    setSelectedPatient(fullName);
+    setPatientSearchQuery(fullName);
     setShowPatientResults(false);
   };
 
@@ -152,10 +167,44 @@ export const UniversalCardBasedAssessment: React.FC<UniversalCardBasedAssessment
   // Card 1, 2, 3...N: Items (N = scale.totalItems) - Solo estos cuentan para progreso
   // Card X: Escala completada - card (scale.totalItems + 1)
   // Card R: Resultados - card (scale.totalItems + 2)
-  const hasPatientCard = scale?.administrationMode === 'self_administered';
+  // Determinar el tipo de aplicación de la escala desde la base de datos
+  // Mapear valores de administration_mode del seed a applicationType
+  const rawApplicationType = scale?.applicationType || scale?.administrationMode || scale?.administration_mode || 'both';
+  let applicationType;
+  
+  if (rawApplicationType === 'clinician_administered') {
+    applicationType = 'heteroaplicada';
+  } else if (rawApplicationType === 'self_administered') {
+    applicationType = 'autoaplicada';  
+  } else if (rawApplicationType === 'both') {
+    applicationType = 'flexible';
+  } else {
+    // Valores directos del nuevo esquema
+    applicationType = rawApplicationType === 'heteroaplicada' ? 'heteroaplicada' :
+                     rawApplicationType === 'autoaplicada' ? 'autoaplicada' :
+                     'flexible';
+  }
+  
+  const isFlexibleScale = applicationType === 'flexible';
+  const isAutoApplicada = applicationType === 'autoaplicada';
+  const isHeteroApplicada = applicationType === 'heteroaplicada';
+  
+  // Determinar si mostrar card00 basado en el tipo de aplicación y la elección del clínico
+  const hasPatientCard = isFlexibleScale 
+    ? selectedAdminMode === 'patient' // Basado en la elección del clínico
+    : isAutoApplicada; // Solo escalas autoaplicadas tienen card de paciente automáticamente
   const totalCards = scale ? scale.totalItems + 3 : 0; // Card 0, Cards 1-N, Card X, Card R
   const cardX = scale ? scale.totalItems + 1 : 0; // Card "Escala completada"
   const cardR = scale ? scale.totalItems + 2 : 0; // Card "Resultados"
+  
+  // Debug logging (can be removed in production)
+  console.log('🔍 Scale applicationType:', applicationType);
+  console.log('🔍 Is flexible scale:', isFlexibleScale);
+  console.log('🔍 Is autoaplicada:', isAutoApplicada);
+  console.log('🔍 Is heteroaplicada:', isHeteroApplicada);
+  console.log('🔍 Selected admin mode:', selectedAdminMode);
+  console.log('🔍 hasPatientCard:', hasPatientCard);
+  console.log('🔍 Current card:', currentCard);
 
 
   // Debug: Monitor currentCard changes
@@ -223,14 +272,18 @@ export const UniversalCardBasedAssessment: React.FC<UniversalCardBasedAssessment
     if (currentCard > 0) {
       if (currentCard === 0.5) {
         // Desde Card 00 (instrucciones paciente) regresar a Card 0 (settings)
+        console.log('🔄 Going back from card00 to card0');
         setCurrentCard(0);
       } else if (currentCard === 1) {
         // Desde Card 1 (primer item) regresar a Card 00 si existe, o Card 0
         if (hasPatientCard) {
+          console.log('🔄 Going back from card1 to card00');
           setCurrentCard(0.5); // Card 00
         } else {
+          console.log('🔄 Going back from card1 to card0 (clinician-administered)');
           setCurrentCard(0); // Card 0
         }
+        previousItem(); // Regresar al estado anterior
       } else if (currentCard > 1) {
         // Navegación normal entre items
         setCurrentCard(currentCard - 1);
@@ -242,6 +295,36 @@ export const UniversalCardBasedAssessment: React.FC<UniversalCardBasedAssessment
     }
   };
 
+  const goToNextCard = () => {
+    if (currentCard < cardR) {
+      if (currentCard === 0) {
+        // Desde Card 0 (settings) ir a Card 00 (instrucciones paciente) si existe, o Card 1
+        if (hasPatientCard) {
+          console.log('🔄 Going to card00 (patient will respond by themselves)');
+          setCurrentCard(0.5); // Card 00
+        } else {
+          console.log('🔄 Skipping card00, going directly to card1 (clinician will administer)');
+          setCurrentCard(1); // Card 1
+          nextItem(); // Inicializar el primer item
+        }
+      } else if (currentCard === 0.5) {
+        // Desde Card 00 (instrucciones paciente) ir a Card 1 (primer item)
+        console.log('🔄 Going from card00 to card1');
+        setCurrentCard(1);
+        nextItem(); // Inicializar el primer item
+      } else if (currentCard >= 1 && currentCard < scale?.totalItems) {
+        // Navegación normal entre items
+        setCurrentCard(currentCard + 1);
+        nextItem();
+      } else if (currentCard === scale?.totalItems) {
+        // Desde el último item ir a Card X (completada)
+        setCurrentCard(cardX);
+      } else if (currentCard === cardX) {
+        // Desde Card X ir a Card R (resultados)
+        setCurrentCard(cardR);
+      }
+    }
+  };
 
   // Completar assessment usando directamente el backend
   const handleComplete = async () => {
@@ -482,14 +565,14 @@ export const UniversalCardBasedAssessment: React.FC<UniversalCardBasedAssessment
                     }}
                   >
                     <div style={{ fontWeight: '600', color: '#112F33' }}>
-                      {patient.firstName} {patient.lastName}
+                      {patient.first_name} {patient.paternal_last_name || patient.last_name}
                     </div>
                     <div style={{ fontSize: '0.75rem', color: '#64748b' }}>
-                      Expediente: {patient.medicalRecordNumber}
+                      Expediente: {patient.medical_record_number}
                     </div>
-                    {patient.dateOfBirth && (
+                    {patient.birth_date && (
                       <div style={{ fontSize: '0.75rem', color: '#64748b' }}>
-                        Fecha nac.: {new Date(patient.dateOfBirth).toLocaleDateString('es-MX')}
+                        Fecha nac.: {new Date(patient.birth_date).toLocaleDateString('es-MX')}
                       </div>
                     )}
                   </div>
@@ -507,10 +590,10 @@ export const UniversalCardBasedAssessment: React.FC<UniversalCardBasedAssessment
                 borderRadius: '8px'
               }}>
                 <div style={{ fontWeight: '600', color: '#0c4a6e' }}>
-                  ✓ Paciente seleccionado: {selectedPatientData.firstName} {selectedPatientData.lastName}
+                  ✓ Paciente seleccionado: {selectedPatientData.first_name} {selectedPatientData.paternal_last_name || selectedPatientData.last_name}
                 </div>
                 <div style={{ fontSize: '0.75rem', color: '#0369a1' }}>
-                  Expediente: {selectedPatientData.medicalRecordNumber}
+                  Expediente: {selectedPatientData.medical_record_number}
                 </div>
               </div>
             )}
@@ -661,6 +744,122 @@ export const UniversalCardBasedAssessment: React.FC<UniversalCardBasedAssessment
             </div>
           </div>
 
+          {/* Selector de quién administra la escala - solo para escalas flexibles */}
+          {isFlexibleScale && (
+            <div style={{ marginBottom: '2rem' }}>
+              <h3 style={{ fontWeight: '600', color: '#112F33', marginBottom: '1rem' }}>
+                ¿Quién va a responder la escala?
+              </h3>
+              <p style={{ fontSize: '0.875rem', color: '#666', marginBottom: '1rem' }}>
+                Esta escala puede ser administrada por el clínico o autoaplicada por el paciente.
+              </p>
+            
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px' }}>
+              <button
+                onClick={() => setSelectedAdminMode('clinician')}
+                style={{
+                  background: selectedAdminMode === 'clinician' 
+                    ? 'linear-gradient(135deg, #3b82f6, #1e40af)' 
+                    : 'rgba(255, 255, 255, 0.8)',
+                  color: selectedAdminMode === 'clinician' ? 'white' : '#112F33',
+                  border: `2px solid ${selectedAdminMode === 'clinician' ? '#3b82f6' : '#e2e8f0'}`,
+                  borderRadius: '12px',
+                  padding: '15px 20px',
+                  cursor: 'pointer',
+                  transition: 'all 0.3s ease',
+                  textAlign: 'center',
+                  fontSize: '1rem',
+                  lineHeight: '1.4'
+                }}
+                onMouseEnter={(e) => {
+                  if (selectedAdminMode !== 'clinician') {
+                    e.currentTarget.style.borderColor = '#3b82f6';
+                    e.currentTarget.style.background = 'rgba(59, 130, 246, 0.1)';
+                    e.currentTarget.style.transform = 'translateY(-2px)';
+                    e.currentTarget.style.boxShadow = '0 4px 12px rgba(59, 130, 246, 0.2)';
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (selectedAdminMode !== 'clinician') {
+                    e.currentTarget.style.borderColor = '#e2e8f0';
+                    e.currentTarget.style.background = 'rgba(255, 255, 255, 0.8)';
+                    e.currentTarget.style.transform = 'translateY(0)';
+                    e.currentTarget.style.boxShadow = 'none';
+                  }
+                }}
+              >
+                <div>🩺 <strong>Clínico</strong></div>
+                <p style={{ margin: '0.5rem 0 0 0', fontSize: '0.75rem', opacity: 0.8 }}>
+                  El profesional lee las preguntas y registra las respuestas
+                </p>
+              </button>
+
+              <button
+                onClick={() => setSelectedAdminMode('patient')}
+                style={{
+                  background: selectedAdminMode === 'patient' 
+                    ? 'linear-gradient(135deg, #10b981, #047857)' 
+                    : 'rgba(255, 255, 255, 0.8)',
+                  color: selectedAdminMode === 'patient' ? 'white' : '#112F33',
+                  border: `2px solid ${selectedAdminMode === 'patient' ? '#10b981' : '#e2e8f0'}`,
+                  borderRadius: '12px',
+                  padding: '15px 20px',
+                  cursor: 'pointer',
+                  transition: 'all 0.3s ease',
+                  textAlign: 'center',
+                  fontSize: '1rem',
+                  lineHeight: '1.4'
+                }}
+                onMouseEnter={(e) => {
+                  if (selectedAdminMode !== 'patient') {
+                    e.currentTarget.style.borderColor = '#10b981';
+                    e.currentTarget.style.background = 'rgba(16, 185, 129, 0.1)';
+                    e.currentTarget.style.transform = 'translateY(-2px)';
+                    e.currentTarget.style.boxShadow = '0 4px 12px rgba(16, 185, 129, 0.2)';
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (selectedAdminMode !== 'patient') {
+                    e.currentTarget.style.borderColor = '#e2e8f0';
+                    e.currentTarget.style.background = 'rgba(255, 255, 255, 0.8)';
+                    e.currentTarget.style.transform = 'translateY(0)';
+                    e.currentTarget.style.boxShadow = 'none';
+                  }
+                }}
+              >
+                <div>🙋‍♀️ <strong>Paciente</strong></div>
+                <p style={{ margin: '0.5rem 0 0 0', fontSize: '0.75rem', opacity: 0.8 }}>
+                  El paciente lee y responde por sí mismo
+                </p>
+              </button>
+            </div>
+          </div>
+          )}
+
+          {/* Información para escalas con tipo fijo de aplicación */}
+          {!isFlexibleScale && (
+            <div style={{ marginBottom: '2rem' }}>
+              <div style={{ 
+                background: 'rgba(59, 130, 246, 0.1)', 
+                borderLeft: '4px solid #3b82f6', 
+                padding: '15px', 
+                borderRadius: '8px' 
+              }}>
+                <h4 style={{ color: '#1e40af', marginBottom: '10px', fontSize: '1rem' }}>
+                  ℹ️ Tipo de Aplicación de la Escala
+                </h4>
+                <p style={{ color: '#1e40af', margin: 0, fontSize: '0.875rem' }}>
+                  {isAutoApplicada && 
+                    'Esta escala está configurada como autoaplicada. El paciente responderá por sí mismo.'
+                  }
+                  {isHeteroApplicada && 
+                    'Esta escala está configurada como heteroaplicada. El clínico debe leer las preguntas y registrar las respuestas del paciente.'
+                  }
+                </p>
+              </div>
+            </div>
+          )}
+
           <button
             onClick={() => {
               if (hasPatientCard) {
@@ -692,7 +891,16 @@ export const UniversalCardBasedAssessment: React.FC<UniversalCardBasedAssessment
               e.currentTarget.style.boxShadow = 'none';
             }}
           >
-            {hasPatientCard ? 'Continuar a Instrucciones' : 'Iniciar Evaluación'}
+{(() => {
+              if (isFlexibleScale) {
+                return selectedAdminMode === 'patient' ? 'Continuar a Instrucciones del Paciente' : 'Iniciar Evaluación con Clínico';
+              } else if (isAutoApplicada) {
+                return 'Continuar a Instrucciones del Paciente';
+              } else if (isHeteroApplicada) {
+                return 'Iniciar Evaluación Heteroaplicada';
+              }
+              return 'Iniciar Evaluación';
+            })()}
           </button>
         </div>
       );

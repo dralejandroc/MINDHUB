@@ -1,417 +1,325 @@
-# Task Master AI - Claude Code Integration Guide
+# MindHub - Healthcare Management Platform
 
-## Essential Commands
+## Project Overview
 
-### Core Workflow Commands
+MindHub es una plataforma integral de gestión sanitaria que integra múltiples módulos especializados para clínicas y profesionales de la salud.
 
+### Arquitectura del Sistema
+
+```
+MindHub/
+├── frontend/          # Next.js 14.2.30 con App Router + React 18 + TypeScript + Tailwind CSS
+├── backend/           # Node.js + Express + Prisma ORM
+└── mindhub/           # Proyecto principal con todos los módulos
+    ├── frontend/      # Aplicación web principal
+    ├── backend/       # API central y microservicios
+    └── MVP_SIMPLE.html # Prototipo inicial
+```
+
+## Módulos Principales
+
+### 1. **Expedix** - Gestión de Pacientes y Expedientes Médicos
+- **URL**: `/hubs/expedix`
+- **Puerto API**: `http://localhost:8080`
+- **Funcionalidades**:
+  - Gestión completa de pacientes (CRUD)
+  - Expedientes médicos digitales
+  - Sistema de consultas médicas
+  - Generación de recetas digitales
+  - Historial médico completo
+  - Portal de pacientes
+  - Documentos médicos encriptados
+
+### 2. **Clinimetrix** - Escalas y Evaluaciones Clínicas
+- **URL**: `/hubs/clinimetrix`
+- **Puerto API**: `http://localhost:8081`
+- **Funcionalidades**:
+  - Evaluaciones psicológicas y clínicas
+  - Escalas estandarizadas (GDS-30, PHQ-9, GAD-7, etc.)
+  - Sistema de preguntas adaptativo
+  - Reportes automáticos de resultados
+  - Integración con expedientes de pacientes
+
+### 3. **FormX** - Generador de Formularios
+- **URL**: `/hubs/formx`
+- **Puerto API**: `http://localhost:8083`
+- **Funcionalidades**:
+  - Creación de formularios personalizados
+  - Templates médicos preconfigurrados
+  - Formularios de registro de pacientes
+  - Validación automática de datos
+
+### 4. **Agenda** - Sistema de Citas y Programación
+- **URL**: `/hubs/agenda`
+- **Funcionalidades**:
+  - Programación de citas médicas
+  - Gestión de horarios
+  - Notificaciones automáticas
+  - Lista de espera
+  - Confirmación de citas
+
+## Stack Tecnológico
+
+### Frontend
+- **Framework**: Next.js 14.2.30 con App Router
+- **UI Library**: React 18 con TypeScript
+- **Styling**: Tailwind CSS + CSS Variables personalizadas
+- **Componentes**: Sistema de componentes unificado
+- **Estado**: Context API + useState/useEffect
+- **Autenticación**: Auth0 (configurado pero opcional)
+
+### Backend
+- **Runtime**: Node.js con Express
+- **Base de Datos**: Prisma ORM con SQLite/MySQL (MAMP)
+- **API**: RESTful APIs por módulo
+- **Archivos**: Sistema de archivos local + encriptación
+
+### Infraestructura de Desarrollo
+- **Desarrollo**: http://localhost:3000 (Frontend) + http://localhost:8080-8084 (APIs)
+- **Base de Datos**: MAMP (MySQL/PHP/Apache)
+- **Hot Reload**: Next.js development server
+- **Build**: `npm run build`
+
+## Configuración del Proyecto
+
+### Variables de Entorno (.env.local)
 ```bash
-# Project Setup
-task-master init                                    # Initialize Task Master in current project
-task-master parse-prd .taskmaster/docs/prd.txt      # Generate tasks from PRD document
-task-master models --setup                        # Configure AI models interactively
+# Aplicación
+NEXT_PUBLIC_APP_URL=http://localhost:3000
+NEXT_PUBLIC_API_URL=http://localhost:8080
 
-# Daily Development Workflow
-task-master list                                   # Show all tasks with status
-task-master next                                   # Get next available task to work on
-task-master show <id>                             # View detailed task information (e.g., task-master show 1.2)
-task-master set-status --id=<id> --status=done    # Mark task complete
+# APIs de Módulos
+NEXT_PUBLIC_EXPEDIX_API=http://localhost:8080
+NEXT_PUBLIC_CLINIMETRIX_API=http://localhost:8081
+NEXT_PUBLIC_FORMX_API=http://localhost:8083
+NEXT_PUBLIC_RESOURCES_API=http://localhost:8084
 
-# Task Management
-task-master add-task --prompt="description" --research        # Add new task with AI assistance
-task-master expand --id=<id> --research --force              # Break task into subtasks
-task-master update-task --id=<id> --prompt="changes"         # Update specific task
-task-master update --from=<id> --prompt="changes"            # Update multiple tasks from ID onwards
-task-master update-subtask --id=<id> --prompt="notes"        # Add implementation notes to subtask
-
-# Analysis & Planning
-task-master analyze-complexity --research          # Analyze task complexity
-task-master complexity-report                      # View complexity analysis
-task-master expand --all --research               # Expand all eligible tasks
-
-# Dependencies & Organization
-task-master add-dependency --id=<id> --depends-on=<id>       # Add task dependency
-task-master move --from=<id> --to=<id>                       # Reorganize task hierarchy
-task-master validate-dependencies                            # Check for dependency issues
-task-master generate                                         # Update task markdown files (usually auto-called)
+# Auth0 (Opcional)
+AUTH0_SECRET='bd199bdccabaa8310c5ba2ddbbd916df9fe68fe8412d6ca8308d586c3f9aef88'
+AUTH0_BASE_URL=http://localhost:3000
+AUTH0_ISSUER_BASE_URL=https://dev-ffj4w4zikq3uwmwv.us.auth0.com
 ```
 
-## Key Files & Project Structure
-
-### Core Files
-
-- `.taskmaster/tasks/tasks.json` - Main task data file (auto-managed)
-- `.taskmaster/config.json` - AI model configuration (use `task-master models` to modify)
-- `.taskmaster/docs/prd.txt` - Product Requirements Document for parsing
-- `.taskmaster/tasks/*.txt` - Individual task files (auto-generated from tasks.json)
-- `.env` - API keys for CLI usage
-
-### Claude Code Integration Files
-
-- `CLAUDE.md` - Auto-loaded context for Claude Code (this file)
-- `.claude/settings.json` - Claude Code tool allowlist and preferences
-- `.claude/commands/` - Custom slash commands for repeated workflows
-- `.mcp.json` - MCP server configuration (project-specific)
-
-### Directory Structure
-
-```
-project/
-├── .taskmaster/
-│   ├── tasks/              # Task files directory
-│   │   ├── tasks.json      # Main task database
-│   │   ├── task-1.md      # Individual task files
-│   │   └── task-2.md
-│   ├── docs/              # Documentation directory
-│   │   ├── prd.txt        # Product requirements
-│   ├── reports/           # Analysis reports directory
-│   │   └── task-complexity-report.json
-│   ├── templates/         # Template files
-│   │   └── example_prd.txt  # Example PRD template
-│   └── config.json        # AI models & settings
-├── .claude/
-│   ├── settings.json      # Claude Code configuration
-│   └── commands/         # Custom slash commands
-├── .env                  # API keys
-├── .mcp.json            # MCP configuration
-└── CLAUDE.md            # This file - auto-loaded by Claude Code
-```
-
-## MCP Integration
-
-Task Master provides an MCP server that Claude Code can connect to. Configure in `.mcp.json`:
-
-```json
-{
-  "mcpServers": {
-    "task-master-ai": {
-      "command": "npx",
-      "args": ["-y", "--package=task-master-ai", "task-master-ai"],
-      "env": {
-        "ANTHROPIC_API_KEY": "your_key_here",
-        "PERPLEXITY_API_KEY": "your_key_here",
-        "OPENAI_API_KEY": "OPENAI_API_KEY_HERE",
-        "GOOGLE_API_KEY": "GOOGLE_API_KEY_HERE",
-        "XAI_API_KEY": "XAI_API_KEY_HERE",
-        "OPENROUTER_API_KEY": "OPENROUTER_API_KEY_HERE",
-        "MISTRAL_API_KEY": "MISTRAL_API_KEY_HERE",
-        "AZURE_OPENAI_API_KEY": "AZURE_OPENAI_API_KEY_HERE",
-        "OLLAMA_API_KEY": "OLLAMA_API_KEY_HERE"
-      }
-    }
-  }
-}
-```
-
-### Essential MCP Tools
-
-```javascript
-help; // = shows available taskmaster commands
-// Project setup
-initialize_project; // = task-master init
-parse_prd; // = task-master parse-prd
-
-// Daily workflow
-get_tasks; // = task-master list
-next_task; // = task-master next
-get_task; // = task-master show <id>
-set_task_status; // = task-master set-status
-
-// Task management
-add_task; // = task-master add-task
-expand_task; // = task-master expand
-update_task; // = task-master update-task
-update_subtask; // = task-master update-subtask
-update; // = task-master update
-
-// Analysis
-analyze_project_complexity; // = task-master analyze-complexity
-complexity_report; // = task-master complexity-report
-```
-
-## Claude Code Workflow Integration
-
-### Standard Development Workflow
-
-#### 1. Project Initialization
-
+### Comandos Principales
 ```bash
-# Initialize Task Master
-task-master init
+# Desarrollo
+npm run dev          # Inicia servidor de desarrollo en puerto 3000
+npm run build        # Construye aplicación para producción
+npm run start        # Inicia servidor de producción
+npm run lint         # Ejecuta linting
+npm run typecheck    # Verificación de tipos TypeScript
 
-# Create or obtain PRD, then parse it
-task-master parse-prd .taskmaster/docs/prd.txt
-
-# Analyze complexity and expand tasks
-task-master analyze-complexity --research
-task-master expand --all --research
+# Base de datos (desde /backend)
+npm run dev          # Inicia APIs en puertos 8080-8084
+npx prisma studio    # Interface visual de base de datos
+npx prisma generate  # Regenera cliente Prisma
 ```
 
-If tasks already exist, another PRD can be parsed (with new information only!) using parse-prd with --append flag. This will add the generated tasks to the existing list of tasks..
+## Arquitectura de Componentes
 
-#### 2. Daily Development Loop
+### Sistema de Diseño Unificado
 
+#### Layout Components
+- `UnifiedSidebar` - Sidebar responsivo y colapsible para todos los hubs
+- `PageHeader` - Header estandarizado con título, descripción e íconos
+- `MainApp` - Componente principal con navegación
+
+#### UI Components (/components/ui/)
+- `Button` - Botones con variantes (primary, outline, ghost)
+- `Card` - Contenedores con sombras y bordes
+- `Input` - Inputs con validación y estados
+- `LoadingSpinner` - Indicadores de carga
+- `Modal` - Modales responsivos
+
+#### Componentes Específicos por Hub
+- `/expedix/` - PatientManagement, ConsultationForm, PatientDashboard
+- `/clinimetrix/` - UniversalScaleAssessment, question types
+- `/formx/` - FormBuilder, TemplateManager
+- `/agenda/` - CalendarView, AppointmentModal
+
+### Context API
+- `UserMetricsContext` - Seguimiento de métricas de usuario y dashboard adaptativo
+- `UniversalScalesContext` - Gestión de escalas clínicas
+
+## Funcionalidades Implementadas
+
+### ✅ Completadas Recientemente
+
+1. **Sistema de Sidebar Unificado**
+   - Sidebar colapsible por defecto
+   - Navegación consistente entre hubs
+   - Diseño responsivo
+
+2. **Standardización de Headers**
+   - PageHeader componente unificado
+   - Íconos y colores consistentes por hub
+
+3. **Dashboard Adaptativo**
+   - Dashboard de principiante vs avanzado
+   - Cambio automático basado en métricas de uso
+   - Controles de administrador
+
+4. **Integración Real de Base de Datos**
+   - Eliminación completa de datos mock
+   - APIs conectadas a MAMP/MySQL
+   - PatientManagement con datos reales
+
+5. **Sistema de Escalas Clínicas**
+   - Componentes de preguntas (Likert, Dichotomous, etc.)
+   - Evaluaciones universales
+   - Integración con expedientes
+
+6. **Fixes de UI/UX**
+   - Eliminación de opciones duplicadas en escalas
+   - Corrección de nombres de pacientes
+   - Consistencia visual en todas las páginas
+
+### 🚧 En Desarrollo
+
+1. **Módulo de Agenda**
+   - Sistema de citas completo
+   - Integración con Google Calendar
+   - Notificaciones automáticas
+
+2. **Sistema de Reportes**
+   - Generación automática de PDFs
+   - Reportes de evaluaciones clínicas
+   - Dashboard de métricas
+
+### 📋 Próximas Funcionalidades
+
+1. **Portal de Pacientes**
+   - Acceso autónomo para pacientes
+   - Confirmación de citas online
+   - Descarga de documentos
+
+2. **Sistema de Recursos**
+   - Biblioteca de recursos médicos
+   - Envío automatizado a pacientes
+   - Templates personalizables
+
+## Principios de Desarrollo
+
+### 🎨 Diseño
+- **Colores Primarios**: `--primary-500` (azul), `--secondary-500` (verde)
+- **Tipografía**: Inter font family
+- **Espaciado**: Sistema de 8px base
+- **Sombras**: `var(--shadow)` para consistencia
+
+### 📱 Responsividad
+- Mobile-first approach
+- Breakpoints: sm (640px), md (768px), lg (1024px), xl (1280px)
+- Touch-optimized para tablets
+
+### 🔒 Seguridad
+- Encriptación de documentos médicos
+- Validación de datos en frontend y backend
+- HIPAA compliance preparedness
+
+### 🧪 Testing
+- Jest para unit tests
+- Cypress para integration tests
+- Storybook para componentes UI
+
+## Estructura de Archivos Clave
+
+```
+mindhub/frontend/
+├── app/
+│   ├── hubs/
+│   │   ├── expedix/page.tsx          # Hub principal de Expedix
+│   │   ├── clinimetrix/page.tsx      # Hub principal de Clinimetrix
+│   │   ├── agenda/page.tsx           # Hub principal de Agenda
+│   │   └── layout.tsx                # Layout compartido de hubs
+│   ├── layout.tsx                    # Layout raíz
+│   └── page.tsx                      # Dashboard principal
+├── components/
+│   ├── layout/
+│   │   ├── UnifiedSidebar.tsx        # Sidebar unificado
+│   │   └── PageHeader.tsx            # Header estandarizado
+│   ├── ui/                           # Componentes base
+│   ├── expedix/                      # Componentes de Expedix
+│   ├── clinimetrix/                  # Componentes de Clinimetrix
+│   └── agenda/                       # Componentes de Agenda
+├── lib/
+│   ├── api/                          # Clientes API por módulo
+│   ├── utils/                        # Utilidades compartidas
+│   └── design-system.ts              # Sistema de diseño
+├── contexts/                         # Context API providers
+├── styles/
+│   └── globals.css                   # Estilos globales y CSS variables
+└── middleware.ts                     # Middleware de Next.js
+```
+
+## Debugging y Troubleshooting
+
+### Problemas Comunes
+
+1. **Error 500 en APIs**
+   - Verificar que MAMP esté ejecutándose
+   - Revisar conexión a base de datos
+   - Comprobar sintaxis de queries Prisma
+
+2. **Datos Mock Apareciendo**
+   - Limpiar cache del navegador (Ctrl+Shift+R)
+   - Verificar que se esté usando el componente correcto
+   - Revisar console.log para debugging
+
+3. **Problemas de Build**
+   - Ejecutar `npm run typecheck`
+   - Verificar imports/exports
+   - Revisar variables de entorno
+
+### Herramientas de Debug
 ```bash
-# Start each session
-task-master next                           # Find next available task
-task-master show <id>                     # Review task details
+# Logging detallado
+console.log('🔄 Fetching...', data)
+console.log('📊 Response:', response)
+console.log('❌ Error:', error)
 
-# During implementation, check in code context into the tasks and subtasks
-task-master update-subtask --id=<id> --prompt="implementation notes..."
+# Network debugging
+curl -s http://localhost:8080/api/v1/expedix/patients | jq '.'
 
-# Complete tasks
-task-master set-status --id=<id> --status=done
+# Database debugging
+npx prisma studio  # Visual database explorer
 ```
 
-#### 3. Multi-Claude Workflows
-
-For complex projects, use multiple Claude Code sessions:
-
-```bash
-# Terminal 1: Main implementation
-cd project && claude
-
-# Terminal 2: Testing and validation
-cd project-test-worktree && claude
-
-# Terminal 3: Documentation updates
-cd project-docs-worktree && claude
-```
-
-### Custom Slash Commands
-
-Create `.claude/commands/taskmaster-next.md`:
-
-```markdown
-Find the next available Task Master task and show its details.
-
-Steps:
-
-1. Run `task-master next` to get the next task
-2. If a task is available, run `task-master show <id>` for full details
-3. Provide a summary of what needs to be implemented
-4. Suggest the first implementation step
-```
-
-Create `.claude/commands/taskmaster-complete.md`:
-
-```markdown
-Complete a Task Master task: $ARGUMENTS
-
-Steps:
-
-1. Review the current task with `task-master show $ARGUMENTS`
-2. Verify all implementation is complete
-3. Run any tests related to this task
-4. Mark as complete: `task-master set-status --id=$ARGUMENTS --status=done`
-5. Show the next available task with `task-master next`
-```
-
-## Tool Allowlist Recommendations
-
-Add to `.claude/settings.json`:
-
-```json
-{
-  "allowedTools": [
-    "Edit",
-    "Bash(task-master *)",
-    "Bash(git commit:*)",
-    "Bash(git add:*)",
-    "Bash(npm run *)",
-    "mcp__task_master_ai__*"
-  ]
-}
-```
-
-## Configuration & Setup
-
-### API Keys Required
-
-At least **one** of these API keys must be configured:
-
-- `ANTHROPIC_API_KEY` (Claude models) - **Recommended**
-- `PERPLEXITY_API_KEY` (Research features) - **Highly recommended**
-- `OPENAI_API_KEY` (GPT models)
-- `GOOGLE_API_KEY` (Gemini models)
-- `MISTRAL_API_KEY` (Mistral models)
-- `OPENROUTER_API_KEY` (Multiple models)
-- `XAI_API_KEY` (Grok models)
-
-An API key is required for any provider used across any of the 3 roles defined in the `models` command.
-
-### Model Configuration
-
-```bash
-# Interactive setup (recommended)
-task-master models --setup
-
-# Set specific models
-task-master models --set-main claude-3-5-sonnet-20241022
-task-master models --set-research perplexity-llama-3.1-sonar-large-128k-online
-task-master models --set-fallback gpt-4o-mini
-```
-
-## Task Structure & IDs
-
-### Task ID Format
-
-- Main tasks: `1`, `2`, `3`, etc.
-- Subtasks: `1.1`, `1.2`, `2.1`, etc.
-- Sub-subtasks: `1.1.1`, `1.1.2`, etc.
-
-### Task Status Values
-
-- `pending` - Ready to work on
-- `in-progress` - Currently being worked on
-- `done` - Completed and verified
-- `deferred` - Postponed
-- `cancelled` - No longer needed
-- `blocked` - Waiting on external factors
-
-### Task Fields
-
-```json
-{
-  "id": "1.2",
-  "title": "Implement user authentication",
-  "description": "Set up JWT-based auth system",
-  "status": "pending",
-  "priority": "high",
-  "dependencies": ["1.1"],
-  "details": "Use bcrypt for hashing, JWT for tokens...",
-  "testStrategy": "Unit tests for auth functions, integration tests for login flow",
-  "subtasks": []
-}
-```
-
-## Claude Code Best Practices with Task Master
-
-### Context Management
-
-- Use `/clear` between different tasks to maintain focus
-- This CLAUDE.md file is automatically loaded for context
-- Use `task-master show <id>` to pull specific task context when needed
-
-### Iterative Implementation
-
-1. `task-master show <subtask-id>` - Understand requirements
-2. Explore codebase and plan implementation
-3. `task-master update-subtask --id=<id> --prompt="detailed plan"` - Log plan
-4. `task-master set-status --id=<id> --status=in-progress` - Start work
-5. Implement code following logged plan
-6. `task-master update-subtask --id=<id> --prompt="what worked/didn't work"` - Log progress
-7. `task-master set-status --id=<id> --status=done` - Complete task
-
-### Complex Workflows with Checklists
-
-For large migrations or multi-step processes:
-
-1. Create a markdown PRD file describing the new changes: `touch task-migration-checklist.md` (prds can be .txt or .md)
-2. Use Taskmaster to parse the new prd with `task-master parse-prd --append` (also available in MCP)
-3. Use Taskmaster to expand the newly generated tasks into subtasks. Consdier using `analyze-complexity` with the correct --to and --from IDs (the new ids) to identify the ideal subtask amounts for each task. Then expand them.
-4. Work through items systematically, checking them off as completed
-5. Use `task-master update-subtask` to log progress on each task/subtask and/or updating/researching them before/during implementation if getting stuck
-
-### Git Integration
-
-Task Master works well with `gh` CLI:
-
-```bash
-# Create PR for completed task
-gh pr create --title "Complete task 1.2: User authentication" --body "Implements JWT auth system as specified in task 1.2"
-
-# Reference task in commits
-git commit -m "feat: implement JWT auth (task 1.2)"
-```
-
-### Parallel Development with Git Worktrees
-
-```bash
-# Create worktrees for parallel task development
-git worktree add ../project-auth feature/auth-system
-git worktree add ../project-api feature/api-refactor
-
-# Run Claude Code in each worktree
-cd ../project-auth && claude    # Terminal 1: Auth work
-cd ../project-api && claude     # Terminal 2: API work
-```
-
-## Troubleshooting
-
-### AI Commands Failing
-
-```bash
-# Check API keys are configured
-cat .env                           # For CLI usage
-
-# Verify model configuration
-task-master models
-
-# Test with different model
-task-master models --set-fallback gpt-4o-mini
-```
-
-### MCP Connection Issues
-
-- Check `.mcp.json` configuration
-- Verify Node.js installation
-- Use `--mcp-debug` flag when starting Claude Code
-- Use CLI as fallback if MCP unavailable
-
-### Task File Sync Issues
-
-```bash
-# Regenerate task files from tasks.json
-task-master generate
-
-# Fix dependency issues
-task-master fix-dependencies
-```
-
-DO NOT RE-INITIALIZE. That will not do anything beyond re-adding the same Taskmaster core files.
-
-## Important Notes
-
-### AI-Powered Operations
-
-These commands make AI calls and may take up to a minute:
-
-- `parse_prd` / `task-master parse-prd`
-- `analyze_project_complexity` / `task-master analyze-complexity`
-- `expand_task` / `task-master expand`
-- `expand_all` / `task-master expand --all`
-- `add_task` / `task-master add-task`
-- `update` / `task-master update`
-- `update_task` / `task-master update-task`
-- `update_subtask` / `task-master update-subtask`
-
-### File Management
-
-- Never manually edit `tasks.json` - use commands instead
-- Never manually edit `.taskmaster/config.json` - use `task-master models`
-- Task markdown files in `tasks/` are auto-generated
-- Run `task-master generate` after manual changes to tasks.json
-
-### Claude Code Session Management
-
-- Use `/clear` frequently to maintain focused context
-- Create custom slash commands for repeated Task Master workflows
-- Configure tool allowlist to streamline permissions
-- Use headless mode for automation: `claude -p "task-master next"`
-
-### Multi-Task Updates
-
-- Use `update --from=<id>` to update multiple future tasks
-- Use `update-task --id=<id>` for single task updates
-- Use `update-subtask --id=<id>` for implementation logging
-
-### Research Mode
-
-- Add `--research` flag for research-based AI enhancement
-- Requires a research model API key like Perplexity (`PERPLEXITY_API_KEY`) in environment
-- Provides more informed task creation and updates
-- Recommended for complex technical tasks
+## Estado Actual del Desarrollo
+
+### ✅ Módulos Funcionales
+- **Expedix**: 95% completo - CRUD pacientes, consultas, recetas
+- **Clinimetrix**: 90% completo - Evaluaciones, escalas, reportes
+- **FormX**: 80% completo - Generador básico de formularios
+- **Agenda**: 60% completo - Estructura básica, falta integración
+
+### 🎯 Objetivos Inmediatos
+1. Completar módulo de Agenda
+2. Implementar sistema de reportes PDF
+3. Desarrollar portal de pacientes
+4. Optimizar rendimiento general
+
+### 💡 Innovaciones Técnicas
+- Dashboard adaptativo basado en métricas de uso
+- Sistema de componentes completamente unificado
+- Integración real sin datos mock
+- Arquitectura modular escalable
 
 ---
 
-_This guide ensures Claude Code has immediate access to Task Master's essential functionality for agentic development workflows._
+## Task Master Integration (Opcional)
+
+Si necesitas usar Task Master para gestión de tareas:
+
+### Comandos Básicos
+```bash
+task-master list                    # Ver tareas
+task-master next                    # Siguiente tarea
+task-master set-status --id=X --status=done  # Marcar completada
+```
+
+### MCP Integration
+Configurado en `.mcp.json` si se necesita integración con Claude Code.
+
+---
+
+*Este documento se actualiza continuamente para reflejar el estado actual del proyecto MindHub.*

@@ -5,6 +5,7 @@ import './globals.css';
 // import { UserProvider } from '@auth0/nextjs-auth0/client';
 import { QueryProvider } from '@/contexts/QueryContext';
 import { UniversalScalesProvider } from '@/contexts/UniversalScalesContext';
+import { UserMetricsProvider } from '@/contexts/UserMetricsContext';
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-inter' });
 
@@ -100,11 +101,13 @@ export default function RootLayout({
       <body className="bg-gray-50 antialiased">
         {/* <UserProvider> */}
           <QueryProvider>
-            <UniversalScalesProvider>
-              <div id="root" className="min-h-screen">
-                {children}
-              </div>
-            </UniversalScalesProvider>
+            <UserMetricsProvider>
+              <UniversalScalesProvider>
+                <div id="root" className="min-h-screen">
+                  {children}
+                </div>
+              </UniversalScalesProvider>
+            </UserMetricsProvider>
               
               {/* Toast notifications */}
               <Toaster

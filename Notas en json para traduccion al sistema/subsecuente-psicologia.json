@@ -1,0 +1,458 @@
+{
+ "noteTemplates": {
+   "subsecuente-psicologia": {
+     "metadata": {
+       "name": "Consulta Subsecuente - Psicología",
+       "id": "subsecuente-psicologia",
+       "description": "Seguimiento psicológico enfocado en progreso del plan de tratamiento",
+       "icon": "📈",
+       "specialty": ["psicologia", "psicologia-clinica"],
+       "estimatedDuration": 50,
+       "version": "1.0",
+       "customizable": true
+     },
+     "autoSelection": {
+       "conditions": [
+         "patient.specialty === 'psicologia'",
+         "patient.visits > 0",
+         "appointment.type === 'seguimiento'"
+       ],
+       "reason": "Consulta de seguimiento psicológico"
+     },
+     "categories": [
+       {
+         "id": "resumen-previo",
+         "name": "Resumen de Consulta Anterior",
+         "required": false,
+         "order": 1,
+         "fields": ["ultima-consulta", "objetivos-previos", "tareas-asignadas"]
+       },
+       {
+         "id": "estado-actual",
+         "name": "Estado Actual",
+         "required": true,
+         "order": 2,
+         "fields": ["estado-general", "sintomas-actuales", "eventos-significativos", "adherencia-tratamiento"]
+       },
+       {
+         "id": "progreso-objetivos",
+         "name": "Progreso en Objetivos",
+         "required": true,
+         "order": 3,
+         "fields": ["revision-objetivos", "logros-sesion", "dificultades-encontradas"]
+       },
+       {
+         "id": "intervencion-sesion",
+         "name": "Intervención de la Sesión",
+         "required": true,
+         "order": 4,
+         "fields": ["tecnicas-utilizadas", "contenido-sesion", "insights-paciente"]
+       },
+       {
+         "id": "evaluaciones-recursos",
+         "name": "Evaluaciones y Recursos",
+         "required": false,
+         "order": 5,
+         "fields": ["clinimetrix-seguimiento", "resources-entregados-hoy", "resources-programados-hoy"]
+       },
+       {
+         "id": "plan-seguimiento",
+         "name": "Plan de Seguimiento",
+         "required": true,
+         "order": 6,
+         "fields": ["tareas-casa", "objetivos-proxima", "ajustes-plan", "proxima-cita-psico"]
+       }
+     ],
+     "fields": {
+       "ultima-consulta": {
+         "type": "calculated",
+         "label": "Última Consulta",
+         "category": "resumen-previo",
+         "order": 1,
+         "calculation": "patient.lastPsychologyNote.date_and_summary",
+         "displayFormat": "summary_card",
+         "readonly": true,
+         "saveToHistory": {
+           "section": "session_continuity",
+           "field": "previous_session_reference"
+         }
+       },
+       "objetivos-previos": {
+         "type": "calculated",
+         "label": "Objetivos del Plan de Tratamiento",
+         "category": "resumen-previo",
+         "order": 2,
+         "calculation": "patient.treatmentPlan.objectives",
+         "displayFormat": "objective_list",
+         "readonly": true,
+         "saveToHistory": {
+           "section": "treatment_continuity",
+           "field": "current_objectives"
+         }
+       },
+       "tareas-asignadas": {
+         "type": "calculated",
+         "label": "Tareas Asignadas Anteriormente",
+         "category": "resumen-previo",
+         "order": 3,
+         "calculation": "patient.lastPsychologyNote.homework_assigned",
+         "displayFormat": "task_list",
+         "readonly": true,
+         "saveToHistory": {
+           "section": "homework_continuity",
+           "field": "previous_homework"
+         }
+       },
+       "estado-general": {
+         "type": "object",
+         "label": "Estado General del Paciente",
+         "required": true,
+         "category": "estado-actual",
+         "order": 1,
+         "properties": {
+           "estado_animo": {
+             "type": "select",
+             "options": ["Mejor", "Igual", "Peor", "Fluctuante"]
+           },
+           "nivel_funcionamiento": {
+             "type": "select",
+             "options": ["Mejorado", "Estable", "Deteriorado", "Variable"]
+           },
+           "motivacion_terapia": {
+             "type": "select",
+             "options": ["Alta", "Moderada", "Baja", "Ambivalente"]
+           },
+           "autoevaluacion_progreso": {
+             "type": "range",
+             "min": 1,
+             "max": 10,
+             "step": 1,
+             "label": "Autoevaluación de progreso (1-10)"
+           }
+         },
+         "saveToHistory": {
+           "section": "current_status",
+           "field": "general_state"
+         }
+       },
+       "sintomas-actuales": {
+         "type": "object",
+         "label": "Síntomas Actuales",
+         "required": true,
+         "category": "estado-actual",
+         "order": 2,
+         "properties": {
+           "intensidad_actual": {
+             "type": "range",
+             "min": 0,
+             "max": 10,
+             "step": 1,
+             "label": "Intensidad de síntomas (0-10)"
+           },
+           "frecuencia": {
+             "type": "select",
+             "options": ["Diaria", "Varias veces por semana", "Semanal", "Ocasional", "Rara vez"]
+           },
+           "cambios_sintomas": {
+             "type": "checkbox",
+             "options": ["Disminución de intensidad", "Aumento de intensidad", "Nuevos síntomas", "Desaparición de síntomas", "Sin cambios", "Síntomas más manejables"]
+           },
+           "descripcion_cambios": {
+             "type": "textarea",
+             "placeholder": "Describir cambios específicos en la sintomatología",
+             "rows": 2,
+             "optional": true
+           }
+         },
+         "saveToHistory": {
+           "section": "symptom_tracking",
+           "field": "current_symptoms"
+         }
+       },
+       "eventos-significativos": {
+         "type": "textarea",
+         "label": "Eventos Significativos desde la Última Sesión",
+         "required": false,
+         "category": "estado-actual",
+         "order": 3,
+         "placeholder": "Eventos importantes que hayan ocurrido y puedan afectar el proceso terapéutico",
+         "rows": 3,
+         "saveToHistory": {
+           "section": "significant_events",
+           "field": "recent_events"
+         }
+       },
+       "adherencia-tratamiento": {
+         "type": "object",
+         "label": "Adherencia al Tratamiento",
+         "required": true,
+         "category": "estado-actual",
+         "order": 4,
+         "properties": {
+           "cumplimiento_tareas": {
+             "type": "select",
+             "options": ["Completo", "Parcial", "Mínimo", "No realizó"]
+           },
+           "practica_tecnicas": {
+             "type": "select",
+             "options": ["Diariamente", "Varias veces por semana", "Ocasionalmente", "No practicó"]
+           },
+           "dificultades_adherencia": {
+             "type": "checkbox",
+             "options": ["Falta de tiempo", "Olvido", "Falta de motivación", "Dificultad técnica", "Resistencia", "Eventos externos", "Ninguna dificultad"],
+             "optional": true
+           }
+         },
+         "saveToHistory": {
+           "section": "treatment_adherence",
+           "field": "adherence_assessment"
+         }
+       },
+       "revision-objetivos": {
+         "type": "array",
+         "label": "Revisión de Objetivos Terapéuticos",
+         "required": true,
+         "category": "progreso-objetivos",
+         "order": 1,
+         "itemType": "object",
+         "sourceData": "patient.treatmentPlan.objectives",
+         "itemProperties": {
+           "objetivo": {
+             "type": "text",
+             "readonly": true,
+             "sourceField": "objetivo"
+           },
+           "progreso": {
+             "type": "select",
+             "options": ["Logrado", "En progreso", "Estancado", "Retroceso", "No trabajado"]
+           },
+           "porcentaje_avance": {
+             "type": "range",
+             "min": 0,
+             "max": 100,
+             "step": 10,
+             "label": "% de avance"
+           },
+           "observaciones": {
+             "type": "text",
+             "placeholder": "Observaciones sobre el progreso",
+             "optional": true
+           }
+         },
+         "saveToHistory": {
+           "section": "objective_progress",
+           "field": "progress_review"
+         }
+       },
+       "logros-sesion": {
+         "type": "textarea",
+         "label": "Logros de la Sesión",
+         "required": true,
+         "category": "progreso-objetivos",
+         "order": 2,
+         "placeholder": "Principales logros, insights o avances conseguidos durante la sesión",
+         "rows": 3,
+         "saveToHistory": {
+           "section": "session_outcomes",
+           "field": "achievements"
+         }
+       },
+       "dificultades-encontradas": {
+         "type": "object",
+         "label": "Dificultades Encontradas",
+         "required": false,
+         "category": "progreso-objetivos",
+         "order": 3,
+         "properties": {
+           "tipo_dificultades": {
+             "type": "checkbox",
+             "options": ["Resistencia al cambio", "Dificultades cognitivas", "Problemas externos", "Falta de recursos", "Comorbilidad", "Dinámicas familiares", "Laborales/académicas"]
+           },
+           "descripcion": {
+             "type": "textarea",
+             "placeholder": "Descripción específica de las dificultades y cómo se abordaron",
+             "rows": 2,
+             "optional": true
+           }
+         },
+         "saveToHistory": {
+           "section": "treatment_barriers",
+           "field": "difficulties"
+         }
+       },
+       "tecnicas-utilizadas": {
+         "type": "checkbox",
+         "label": "Técnicas Utilizadas en la Sesión",
+         "required": true,
+         "category": "intervencion-sesion",
+         "order": 1,
+         "options": [
+           "Reestructuración cognitiva",
+           "Técnicas de exposición",
+           "Relajación/Respiración",
+           "Mindfulness",
+           "Activación conductual",
+           "Psicoeducación",
+           "Role playing",
+           "Técnicas narrativas",
+           "Trabajo con emociones",
+           "Resolución de problemas",
+           "Técnicas de aceptación",
+           "Entrenamiento en habilidades"
+         ],
+         "saveToHistory": {
+           "section": "session_interventions",
+           "field": "techniques_used"
+         }
+       },
+       "contenido-sesion": {
+         "type": "textarea",
+         "label": "Contenido Principal de la Sesión",
+         "required": true,
+         "category": "intervencion-sesion",
+         "order": 2,
+         "placeholder": "Descripción del contenido principal trabajado durante la sesión",
+         "rows": 4,
+         "saveToHistory": {
+           "section": "session_content",
+           "field": "main_content"
+         }
+       },
+       "insights-paciente": {
+         "type": "textarea",
+         "label": "Insights del Paciente",
+         "required": false,
+         "category": "intervencion-sesion",
+         "order": 3,
+         "placeholder": "Principales insights, conexiones o comprensiones del paciente durante la sesión",
+         "rows": 2,
+         "saveToHistory": {
+           "section": "patient_insights",
+           "field": "session_insights"
+         }
+       },
+       "clinimetrix-seguimiento": {
+         "type": "calculated",
+         "label": "Evaluaciones de Seguimiento",
+         "category": "evaluaciones-recursos",
+         "order": 1,
+         "calculation": "integrations.clinimetrix.followUpAssessments || 'No hay evaluaciones de seguimiento'",
+         "displayFormat": "assessment_comparison",
+         "showTrend": true,
+         "compareWith": "previous_sessions",
+         "saveToHistory": {
+           "section": "assessments",
+           "field": "follow_up_assessments"
+         }
+       },
+       "resources-entregados-hoy": {
+         "type": "calculated",
+         "label": "Recursos Entregados Hoy",
+         "category": "evaluaciones-recursos",
+         "order": 2,
+         "calculation": "integrations.resources.todayDelivered",
+         "displayFormat": "resource_list",
+         "saveToHistory": {
+           "section": "resources",
+           "field": "delivered_today"
+         }
+       },
+       "resources-programados-hoy": {
+         "type": "lookup",
+         "label": "Recursos para Entregar",
+         "category": "evaluaciones-recursos",
+         "order": 3,
+         "source": "resources.psychoeducational_materials",
+         "filterBy": "treatment.current_phase,session.techniques_used",
+         "multiple": true,
+         "optional": true,
+         "saveToHistory": {
+           "section": "resources",
+           "field": "scheduled_today"
+         }
+       },
+       "tareas-casa": {
+         "type": "array",
+         "label": "Tareas para Casa",
+         "required": true,
+         "category": "plan-seguimiento",
+         "order": 1,
+         "itemType": "object",
+         "itemProperties": {
+           "tarea": {
+             "type": "text",
+             "placeholder": "Descripción de la tarea"
+           },
+           "frecuencia": {
+             "type": "select",
+             "options": ["Diaria", "Día por medio", "3 veces por semana", "Semanal", "Cuando sea necesario"]
+           },
+           "objetivo": {
+             "type": "text",
+             "placeholder": "Objetivo de la tarea"
+           },
+           "recordatorio": {
+             "type": "checkbox",
+             "options": ["Enviar recordatorio"],
+             "optional": true
+           }
+         },
+         "minItems": 1,
+         "maxItems": 5,
+         "saveToHistory": {
+           "section": "homework",
+           "field": "current_assignments"
+         }
+       },
+       "objetivos-proxima": {
+         "type": "textarea",
+         "label": "Objetivos para Próxima Sesión",
+         "required": true,
+         "category": "plan-seguimiento",
+         "order": 2,
+         "placeholder": "Objetivos específicos a trabajar en la siguiente sesión",
+         "rows": 2,
+         "saveToHistory": {
+           "section": "session_planning",
+           "field": "next_session_goals"
+         }
+       },
+       "ajustes-plan": {
+         "type": "object",
+         "label": "Ajustes al Plan de Tratamiento",
+         "required": false,
+         "category": "plan-seguimiento",
+         "order": 3,
+         "properties": {
+           "requiere_ajustes": {
+             "type": "radio",
+             "options": ["Sí", "No"]
+           },
+           "tipo_ajuste": {
+             "type": "checkbox",
+             "options": ["Cambio de técnicas", "Nuevos objetivos", "Modificar frecuencia", "Incluir otros profesionales", "Cambio de enfoque"],
+             "conditional": "requiere_ajustes === 'Sí'"
+           },
+           "descripcion_ajustes": {
+             "type": "textarea",
+             "placeholder": "Describir los ajustes necesarios al plan de tratamiento",
+             "rows": 2,
+             "conditional": "requiere_ajustes === 'Sí'"
+           }
+         },
+         "saveToHistory": {
+           "section": "treatment_plan",
+           "field": "plan_adjustments"
+         }
+       },
+       "proxima-cita-psico": {
+         "type": "object",
+         "label": "Próxima Cita",
+         "required": true,
+         "category": "plan-seguimiento",
+         "order": 4,
+         "properties": {
+           "tiempo_seguimiento": {
+             "type": "select",
+             "options": ["1 semana", "2 semanas", "3 semanas", "4 semanas", "Según necesidad"]
+           },

@@ -15,6 +15,7 @@ CREATE TABLE IF NOT EXISTS scales (
     publication_year INT,
     estimated_duration_minutes INT,
     administration_mode VARCHAR(50),
+    application_type VARCHAR(50) DEFAULT 'flexible',
     target_population VARCHAR(255),
     total_items INT NOT NULL,
     scoring_method VARCHAR(50) DEFAULT 'sum',
@@ -55,6 +56,22 @@ CREATE TABLE IF NOT EXISTS scale_response_options (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     FOREIGN KEY (scale_id) REFERENCES scales(id) ON DELETE CASCADE
+);
+
+-- Tabla de relaciones item-opción (para opciones específicas por item)
+CREATE TABLE IF NOT EXISTS scale_item_response_options (
+    id VARCHAR(100) PRIMARY KEY,
+    scale_id VARCHAR(50) NOT NULL,
+    item_id VARCHAR(100) NOT NULL,
+    response_option_id VARCHAR(100) NOT NULL,
+    display_order INT DEFAULT 0,
+    is_active BOOLEAN DEFAULT TRUE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (scale_id) REFERENCES scales(id) ON DELETE CASCADE,
+    FOREIGN KEY (item_id) REFERENCES scale_items(id) ON DELETE CASCADE,
+    FOREIGN KEY (response_option_id) REFERENCES scale_response_options(id) ON DELETE CASCADE,
+    UNIQUE KEY unique_item_option (item_id, response_option_id)
 );
 
 -- Tabla de reglas de interpretación (compatible con seeds)

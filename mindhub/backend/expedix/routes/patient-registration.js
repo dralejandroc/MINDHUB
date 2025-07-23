@@ -2,7 +2,7 @@
  * Enhanced Patient Registration API Routes for Expedix Hub
  * 
  * Comprehensive patient registration with medical history forms,
- * CURP validation, and healthcare compliance based on EXPEDIENTE ELEONOR analysis
+ * CURP validation, and healthcare compliance following Mexican healthcare standards
  */
 
 const express = require('express');

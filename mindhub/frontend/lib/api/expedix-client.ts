@@ -110,25 +110,42 @@ class ExpedixApiClient {
   // Patient Management
   async getPatients(searchTerm?: string): Promise<{ data: Patient[]; total: number }> {
     const params = searchTerm ? `?search=${encodeURIComponent(searchTerm)}` : '';
-    return this.makeRequest<{ data: Patient[]; total: number }>(`/api/v1/expedix/patients${params}`);
+    const response = await this.makeRequest<{ success: boolean; data: Patient[]; pagination: { total: number } }>(`/api/v1/expedix/patients${params}`);
+    
+    return {
+      data: response.data || [],
+      total: response.pagination?.total || 0
+    };
   }
 
   async getPatient(id: string): Promise<{ data: Patient }> {
-    return this.makeRequest<{ data: Patient }>(`/api/v1/expedix/patients/${id}`);
+    const response = await this.makeRequest<{ success: boolean; data: Patient }>(`/api/v1/expedix/patients/${id}`);
+    
+    return {
+      data: response.data
+    };
   }
 
   async createPatient(patientData: Partial<Patient>): Promise<{ data: Patient }> {
-    return this.makeRequest<{ data: Patient }>('/api/v1/expedix/patients', {
+    const response = await this.makeRequest<{ success: boolean; data: Patient }>('/api/v1/expedix/patients', {
       method: 'POST',
       body: JSON.stringify(patientData),
     });
+    
+    return {
+      data: response.data
+    };
   }
 
   async updatePatient(id: string, patientData: Partial<Patient>): Promise<{ data: Patient }> {
-    return this.makeRequest<{ data: Patient }>(`/api/v1/expedix/patients/${id}`, {
+    const response = await this.makeRequest<{ success: boolean; data: Patient }>(`/api/v1/expedix/patients/${id}`, {
       method: 'PUT',
       body: JSON.stringify(patientData),
     });
+    
+    return {
+      data: response.data
+    };
   }
 
   async deletePatient(id: string): Promise<{ success: boolean }> {
@@ -157,8 +174,8 @@ class ExpedixApiClient {
     return response.blob();
   }
 
-  async getLastPrescription(patientId: string): Promise<{ data: Prescription | null }> {
-    return this.makeRequest<{ data: Prescription | null }>(`/api/v1/expedix/prescriptions/last/${patientId}`);
+  async getPatientPrescriptions(patientId: string): Promise<{ data: Prescription[] }> {
+    return this.makeRequest<{ data: Prescription[] }>(`/api/v1/expedix/prescriptions/patient/${patientId}`);
   }
 
   // Appointment Management
@@ -253,6 +270,43 @@ class ExpedixApiClient {
       method: 'POST',
       body: JSON.stringify({ medications }),
     });
+  }
+
+  // Consultation Forms
+  async getConsultationTemplates(): Promise<{ data: any[], total: number }> {
+    return this.makeRequest<{ success: boolean; data: any[]; total: number }>('/api/v1/expedix/forms/templates');
+  }
+
+  async getConsultationTemplate(templateId: string): Promise<{ data: any }> {
+    return this.makeRequest<{ success: boolean; data: any }>(`/api/v1/expedix/forms/templates/${templateId}`);
+  }
+
+  async createConsultationForm(formData: { templateId: string; patientId: string; title?: string; consultationId?: string }): Promise<{ success: boolean; data: any }> {
+    return this.makeRequest<{ success: boolean; data: any }>('/api/v1/expedix/forms/forms', {
+      method: 'POST',
+      body: JSON.stringify(formData),
+    });
+  }
+
+  async getConsultationForm(formId: string): Promise<{ success: boolean; data: any }> {
+    return this.makeRequest<{ success: boolean; data: any }>(`/api/v1/expedix/forms/forms/${formId}`);
+  }
+
+  async updateConsultationForm(formId: string, fieldId: string, value: any): Promise<{ success: boolean; data: any }> {
+    return this.makeRequest<{ success: boolean; data: any }>(`/api/v1/expedix/forms/forms/${formId}`, {
+      method: 'PUT',
+      body: JSON.stringify({ fieldId, value }),
+    });
+  }
+
+  async completeConsultationForm(formId: string): Promise<{ success: boolean; data: any }> {
+    return this.makeRequest<{ success: boolean; data: any }>(`/api/v1/expedix/forms/forms/${formId}/complete`, {
+      method: 'POST',
+    });
+  }
+
+  async getPatientConsultationForms(patientId: string): Promise<{ success: boolean; data: any[] }> {
+    return this.makeRequest<{ success: boolean; data: any[] }>(`/api/v1/expedix/forms/forms/patient/${patientId}`);
   }
 }
 

@@ -4,7 +4,7 @@
 
 /* Variables del sistema de diseño MindHub */
 :root {
-  /* Colores principales */
+  /* Azul Teal Vibrante - Color principal */
   --primary-50: #f0fdfa;
   --primary-100: #ccfbf1;
   --primary-200: #99f6e4;
@@ -16,30 +16,76 @@
   --primary-800: #164e63;
   --primary-900: #134e4a;
 
+  /* Verde Turquesa - Color secundario */
   --secondary-50: #f0fdfa;
   --secondary-100: #ccfbf1;
   --secondary-200: #99f6e4;
   --secondary-300: #5eead4;
   --secondary-400: #2dd4bf;
-  --secondary-500: #29A98C;
+  --secondary-500: #29a98c;
   --secondary-600: #0d9488;
   --secondary-700: #0f766e;
   --secondary-800: #115e59;
   --secondary-900: #134e4a;
 
+  /* Coral Vibrante - Color de acento */
   --accent-50: #fef2f2;
   --accent-100: #fee2e2;
   --accent-200: #fecaca;
   --accent-300: #fca5a5;
   --accent-400: #f87171;
-  --accent-500: #EC7367;
+  --accent-500: #ec7367;
   --accent-600: #dc2626;
   --accent-700: #b91c1c;
   --accent-800: #991b1b;
   --accent-900: #7f1d1d;
 
-  --dark-green: #112F33;
-  --warm-50: #FFF8EE;
+  /* Verde Oscuro para contraste */
+  --dark-green: #112f33;
+  --dark-green-light: #1a4a50;
+
+  /* Beige Cálido */
+  --warm-50: #fff8ee;
+  --warm-100: #fef7ee;
+  --warm-200: #fed7aa;
+  --warm-300: #fdba74;
+
+  /* Colores de Hub - Elementos complementarios */
+  /* Morado Vibrante - Para Hub Clinimetrix */
+  --purple-50: #faf5ff;
+  --purple-100: #f3e8ff;
+  --purple-200: #e9d5ff;
+  --purple-300: #d8b4fe;
+  --purple-400: #c084fc;
+  --purple-500: #a855f7;
+  --purple-600: #9333ea;
+  --purple-700: #7c3aed;
+  --purple-800: #6b21a8;
+  --purple-900: #581c87;
+
+  /* Verde Esmeralda - Para Hub Resources */
+  --emerald-50: #ecfdf5;
+  --emerald-100: #d1fae5;
+  --emerald-200: #a7f3d0;
+  --emerald-300: #6ee7b7;
+  --emerald-400: #34d399;
+  --emerald-500: #10b981;
+  --emerald-600: #059669;
+  --emerald-700: #047857;
+  --emerald-800: #065f46;
+  --emerald-900: #064e3b;
+
+  /* Naranja Vibrante - Para Hub Agenda */
+  --orange-50: #fff7ed;
+  --orange-100: #ffedd5;
+  --orange-200: #fed7aa;
+  --orange-300: #fdba74;
+  --orange-400: #fb923c;
+  --orange-500: #f97316;
+  --orange-600: #ea580c;
+  --orange-700: #c2410c;
+  --orange-800: #9a3412;
+  --orange-900: #7c2d12;
 
   /* Colores neutrales */
   --neutral-50: #fafafa;
@@ -53,10 +99,29 @@
   --neutral-800: #262626;
   --neutral-900: #171717;
 
-  /* Espaciado */
+  /* Sombras coloridas */
+  --shadow-primary: 0 10px 25px -5px rgba(8, 145, 178, 0.2);
+  --shadow-secondary: 0 10px 25px -5px rgba(41, 169, 140, 0.2);
+  --shadow-accent: 0 10px 25px -5px rgba(236, 115, 103, 0.2);
+  --shadow-primary-hover: 0 15px 30px -5px rgba(8, 145, 178, 0.3);
+  --shadow-secondary-hover: 0 15px 30px -5px rgba(41, 169, 140, 0.3);
+  --shadow-accent-hover: 0 15px 30px -5px rgba(236, 115, 103, 0.3);
+
+  /* Sombras coloridas para Hubs */
+  --shadow-purple: 0 10px 25px -5px rgba(168, 85, 247, 0.2);
+  --shadow-emerald: 0 10px 25px -5px rgba(16, 185, 129, 0.2);
+  --shadow-orange: 0 10px 25px -5px rgba(249, 115, 22, 0.2);
+  --shadow-purple-hover: 0 15px 30px -5px rgba(168, 85, 247, 0.3);
+  --shadow-emerald-hover: 0 15px 30px -5px rgba(16, 185, 129, 0.3);
+  --shadow-orange-hover: 0 15px 30px -5px rgba(249, 115, 22, 0.3);
+
+  /* Espaciado compacto por defecto */
   --space-1: 0.25rem;
+  --space-1-5: 0.375rem;
   --space-2: 0.5rem;
+  --space-2-5: 0.625rem;
   --space-3: 0.75rem;
+  --space-3-5: 0.875rem;
   --space-4: 1rem;
   --space-5: 1.25rem;
   --space-6: 1.5rem;
@@ -69,11 +134,6 @@
   --radius-lg: 1rem;
   --radius-xl: 1.5rem;
   --radius-full: 9999px;
-
-  /* Sombras */
-  --shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
-  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
-  --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
 
   /* Tipografía */
   --font-heading: 'Poppins', 'Inter', sans-serif;
@@ -208,6 +268,148 @@
   .alert-error {
     @apply bg-red-50 border-red-200 text-red-800;
   }
+}
+
+/* Clases de utilidad personalizadas */
+@layer utilities {
+  .gradient-primary {
+    background: linear-gradient(135deg, var(--primary-600), var(--primary-700));
+  }
+
+  .gradient-secondary {
+    background: linear-gradient(
+      135deg,
+      var(--secondary-500),
+      var(--secondary-600)
+    );
+  }
+
+  .gradient-accent {
+    background: linear-gradient(135deg, var(--accent-500), var(--accent-600));
+  }
+
+  .gradient-background {
+    background: linear-gradient(135deg, var(--warm-50), var(--primary-50));
+  }
+
+  .border-gradient {
+    background: linear-gradient(
+      90deg,
+      var(--primary-500),
+      var(--secondary-500),
+      var(--accent-500)
+    );
+  }
+
+  /* Gradientes para Hubs */
+  .gradient-purple {
+    background: linear-gradient(135deg, var(--purple-500), var(--purple-600));
+  }
+
+  .gradient-emerald {
+    background: linear-gradient(135deg, var(--emerald-500), var(--emerald-600));
+  }
+
+  .gradient-orange {
+    background: linear-gradient(135deg, var(--orange-500), var(--orange-600));
+  }
+
+  /* Border gradients para Hubs */
+  .border-gradient-purple {
+    background: linear-gradient(90deg, var(--purple-500), var(--primary-500));
+  }
+
+  .border-gradient-emerald {
+    background: linear-gradient(
+      90deg,
+      var(--emerald-500),
+      var(--secondary-500)
+    );
+  }
+
+  .border-gradient-orange {
+    background: linear-gradient(90deg, var(--orange-500), var(--accent-500));
+  }
+
+  .shadow-primary {
+    box-shadow: var(--shadow-primary);
+  }
+
+  .shadow-secondary {
+    box-shadow: var(--shadow-secondary);
+  }
+
+  .shadow-accent {
+    box-shadow: var(--shadow-accent);
+  }
+
+  /* Sombras para Hubs */
+  .shadow-purple {
+    box-shadow: var(--shadow-purple);
+  }
+
+  .shadow-emerald {
+    box-shadow: var(--shadow-emerald);
+  }
+
+  .shadow-orange {
+    box-shadow: var(--shadow-orange);
+  }
+
+  .hover-lift {
+    transition:
+      transform 0.3s ease,
+      box-shadow 0.3s ease;
+  }
+
+  .hover-lift:hover {
+    transform: translateY(-2px);
+  }
+}
+
+/* Animaciones */
+@keyframes shimmer {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes pulse-custom {
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.05);
+    opacity: 0.8;
+  }
+}
+
+.animate-shimmer {
+  animation: shimmer 2s infinite;
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.6s ease-out;
+}
+
+.animate-pulse-custom {
+  animation: pulse-custom 2s ease-in-out infinite;
 }
 
 /* Component-specific styles */

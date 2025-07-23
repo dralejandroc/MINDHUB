@@ -29,3 +29,5 @@ export const MultipleChoiceQuestion: React.FC<MultipleChoiceQuestionProps> = (pr
   // Reutilizamos el componente Likert con configuración específica
   return <LikertQuestion {...props} />;
 };
+
+export default MultipleChoiceQuestion;

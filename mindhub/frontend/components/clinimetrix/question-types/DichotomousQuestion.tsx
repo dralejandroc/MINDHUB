@@ -238,3 +238,5 @@ export const DichotomousQuestion: React.FC<DichotomousQuestionProps> = ({
     </div>
   );
 };
+
+export default DichotomousQuestion;

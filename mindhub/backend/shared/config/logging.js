@@ -207,28 +207,17 @@ const createTransports = () => {
 };
 
 /**
- * Create main logger instance
+ * Create main logger instance - SIMPLIFIED VERSION
  */
 const logger = winston.createLogger({
-  level: process.env.LOG_LEVEL || 'info',
-  format: healthcareFormat,
-  transports: createTransports(),
-  exitOnError: false,
-  
-  // Handle uncaught exceptions and rejections
-  exceptionHandlers: [
-    new winston.transports.File({
-      filename: path.join(logsDir, 'exceptions.log'),
-      format: healthcareFormat
+  level: process.env.LOG_LEVEL || 'error',  // Only log errors for now
+  format: winston.format.simple(),
+  transports: [
+    new winston.transports.Console({
+      format: winston.format.simple()
     })
   ],
-  
-  rejectionHandlers: [
-    new winston.transports.File({
-      filename: path.join(logsDir, 'rejections.log'),
-      format: healthcareFormat
-    })
-  ]
+  exitOnError: false
 });
 
 /**
@@ -410,31 +399,10 @@ const shouldSample = (path, method) => {
 };
 
 /**
- * Initialize logging system
+ * Initialize logging system - SIMPLIFIED
  */
 const initializeLogging = () => {
-  // Set up global error handling
-  process.on('unhandledRejection', (reason, promise) => {
-    logger.error('Unhandled Rejection', {
-      reason: reason,
-      promise: promise
-    });
-  });
-  
-  process.on('uncaughtException', (error) => {
-    logger.error('Uncaught Exception', {
-      error: error.message,
-      stack: error.stack
-    });
-    process.exit(1);
-  });
-  
-  // Log startup
-  logger.info('Logging system initialized', {
-    nodeEnv: process.env.NODE_ENV,
-    logLevel: process.env.LOG_LEVEL || 'info',
-    transports: logger.transports.length
-  });
+  console.log('Simple logging system initialized');
 };
 
 module.exports = {

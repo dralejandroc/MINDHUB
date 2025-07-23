@@ -1,0 +1,845 @@
+{
+ "noteTemplates": {
+   "primera-vez-psicologia": {
+     "metadata": {
+       "name": "Primera Vez - Psicología",
+       "id": "primera-vez-psicologia",
+       "description": "Evaluación inicial completa para primera consulta psicológica con enfoque cognitivo-conductual",
+       "icon": "🧠",
+       "specialty": ["psicologia", "psicologia-clinica"],
+       "estimatedDuration": 90,
+       "version": "1.0",
+       "customizable": true
+     },
+     "autoSelection": {
+       "conditions": [
+         "patient.specialty === 'psicologia'",
+         "patient.visits === 0",
+         "appointment.type === 'primera-vez'"
+       ],
+       "reason": "Primera consulta psicológica"
+     },
+     "categories": [
+       {
+         "id": "motivo-consulta",
+         "name": "Motivo de Consulta",
+         "required": true,
+         "order": 1,
+         "fields": ["problema-principal", "inicio-sintomas", "factores-precipitantes", "intentos-solucion"]
+       },
+       {
+         "id": "historia-vital",
+         "name": "Historia Vital",
+         "required": true,
+         "order": 2,
+         "fields": ["desarrollo-temprano", "historia-familiar", "historia-educativa", "historia-laboral", "relaciones-interpersonales", "eventos-traumaticos"]
+       },
+       {
+         "id": "antecedentes",
+         "name": "Antecedentes",
+         "required": true,
+         "order": 3,
+         "fields": ["antecedentes-psicologicos", "antecedentes-psiquiatricos", "medicacion-actual", "antecedentes-medicos", "antecedentes-familiares-mh"]
+       },
+       {
+         "id": "evaluacion-esferas",
+         "name": "Evaluación por Esferas",
+         "required": true,
+         "order": 4,
+         "fields": ["esfera-cognitiva", "esfera-emocional", "esfera-conductual", "esfera-social", "esfera-familiar", "esfera-laboral-academica"]
+       },
+       {
+         "id": "clinimetrix-section",
+         "name": "Evaluaciones Clinimétricas",
+         "required": false,
+         "order": 5,
+         "fields": ["clinimetrix-realizadas", "clinimetrix-pendientes"]
+       },
+       {
+         "id": "resources-section",
+         "name": "Recursos Psicoeducativos",
+         "required": false,
+         "order": 6,
+         "fields": ["resources-entregados", "resources-programados"]
+       },
+       {
+         "id": "impresion-diagnostica",
+         "name": "Impresión Diagnóstica",
+         "required": true,
+         "order": 7,
+         "fields": ["hipotesis-diagnosticas", "factores-mantenimiento", "fortalezas-paciente", "factores-riesgo"]
+       },
+       {
+         "id": "plan-tratamiento",
+         "name": "Plan de Tratamiento",
+         "required": true,
+         "order": 8,
+         "fields": ["objetivos-terapeuticos", "estrategias-intervencion", "frecuencia-sesiones", "duracion-estimada", "otros-profesionales", "dificultades-previstas"]
+       }
+     ],
+     "fields": {
+       "problema-principal": {
+         "type": "textarea",
+         "label": "Problema Principal",
+         "required": true,
+         "category": "motivo-consulta",
+         "order": 1,
+         "placeholder": "Descripción del motivo principal de consulta según el paciente",
+         "saveToHistory": {
+           "section": "chief_complaint",
+           "field": "main_problem"
+         }
+       },
+       "inicio-sintomas": {
+         "type": "object",
+         "label": "Inicio y Evolución",
+         "required": true,
+         "category": "motivo-consulta",
+         "order": 2,
+         "properties": {
+           "fecha_inicio": {
+             "type": "select",
+             "options": ["Menos de 1 mes", "1-3 meses", "3-6 meses", "6 meses - 1 año", "1-2 años", "Más de 2 años"]
+           },
+           "evolucion": {
+             "type": "select",
+             "options": ["Progresivo", "Estable", "Fluctuante", "Episódico", "En remisión"]
+           },
+           "intensidad_actual": {
+             "type": "range",
+             "min": 1,
+             "max": 10,
+             "step": 1
+           }
+         },
+         "saveToHistory": {
+           "section": "symptom_history",
+           "field": "onset_evolution"
+         }
+       },
+       "factores-precipitantes": {
+         "type": "checkbox",
+         "label": "Factores Precipitantes",
+         "required": false,
+         "category": "motivo-consulta",
+         "order": 3,
+         "options": [
+           "Pérdida/duelo",
+           "Problemas laborales",
+           "Problemas familiares",
+           "Problemas de pareja",
+           "Problemas económicos",
+           "Problemas de salud",
+           "Cambios vitales importantes",
+           "Trauma/accidente",
+           "Abuso de sustancias",
+           "Otros"
+         ],
+         "saveToHistory": {
+           "section": "precipitating_factors",
+           "field": "triggers"
+         }
+       },
+       "intentos-solucion": {
+         "type": "textarea",
+         "label": "Intentos de Solución Previos",
+         "required": false,
+         "category": "motivo-consulta",
+         "order": 4,
+         "placeholder": "¿Qué ha intentado hacer para resolver el problema?",
+         "saveToHistory": {
+           "section": "previous_attempts",
+           "field": "solutions_tried"
+         }
+       },
+       "desarrollo-temprano": {
+         "type": "select",
+         "label": "Desarrollo Temprano",
+         "required": true,
+         "category": "historia-vital",
+         "order": 1,
+         "options": ["Normal", "Retrasos menores", "Retrasos significativos", "Información insuficiente"],
+         "saveToHistory": {
+           "section": "developmental_history",
+           "field": "early_development"
+         }
+       },
+       "historia-familiar": {
+         "type": "object",
+         "label": "Historia Familiar",
+         "required": true,
+         "category": "historia-vital",
+         "order": 2,
+         "properties": {
+           "estructura_familiar": {
+             "type": "select",
+             "options": ["Nuclear", "Monoparental", "Extensa", "Reconstituida", "Adoptiva", "Otros"]
+           },
+           "dinamica_familiar": {
+             "type": "select",
+             "options": ["Funcional", "Disfuncional leve", "Disfuncional moderada", "Disfuncional severa"]
+           },
+           "antecedentes_mh_familia": {
+             "type": "checkbox",
+             "options": ["Depresión", "Ansiedad", "Trastorno bipolar", "Esquizofrenia", "Abuso de sustancias", "Suicidio", "Otros", "Ninguno conocido"]
+           }
+         },
+         "saveToHistory": {
+           "section": "family_history",
+           "field": "family_dynamics"
+         }
+       },
+       "historia-educativa": {
+         "type": "object",
+         "label": "Historia Educativa",
+         "required": true,
+         "category": "historia-vital",
+         "order": 3,
+         "properties": {
+           "nivel_educativo": {
+             "type": "select",
+             "options": ["Primaria", "Secundaria", "Preparatoria", "Universidad", "Posgrado"]
+           },
+           "rendimiento_academico": {
+             "type": "select",
+             "options": ["Excelente", "Bueno", "Regular", "Deficiente"]
+           },
+           "dificultades_aprendizaje": {
+             "type": "checkbox",
+             "options": ["Dislexia", "TDAH", "Problemas de concentración", "Ansiedad escolar", "Bullying", "Ninguna"]
+           }
+         },
+         "saveToHistory": {
+           "section": "educational_history",
+           "field": "academic_background"
+         }
+       },
+       "historia-laboral": {
+         "type": "object",
+         "label": "Historia Laboral",
+         "required": true,
+         "category": "historia-vital",
+         "order": 4,
+         "properties": {
+           "situacion_actual": {
+             "type": "select",
+             "options": ["Empleado", "Desempleado", "Estudiante", "Jubilado", "Hogar", "Incapacidad"]
+           },
+           "satisfaccion_laboral": {
+             "type": "select",
+             "options": ["Muy satisfecho", "Satisfecho", "Regular", "Insatisfecho", "No aplica"]
+           },
+           "problemas_laborales": {
+             "type": "checkbox",
+             "options": ["Estrés laboral", "Conflictos interpersonales", "Burnout", "Mobbing", "Inestabilidad", "Ninguno"]
+           }
+         },
+         "saveToHistory": {
+           "section": "occupational_history",
+           "field": "work_background"
+         }
+       },
+       "relaciones-interpersonales": {
+         "type": "object",
+         "label": "Relaciones Interpersonales",
+         "required": true,
+         "category": "historia-vital",
+         "order": 5,
+         "properties": {
+           "estado_civil": {
+             "type": "select",
+             "options": ["Soltero", "Casado", "Unión libre", "Divorciado", "Viudo", "Separado"]
+           },
+           "calidad_relaciones": {
+             "type": "select",
+             "options": ["Excelentes", "Buenas", "Regulares", "Deficientes", "Aislamiento social"]
+           },
+           "apoyo_social": {
+             "type": "select",
+             "options": ["Fuerte", "Moderado", "Limitado", "Ausente"]
+           }
+         },
+         "saveToHistory": {
+           "section": "social_history",
+           "field": "relationships"
+         }
+       },
+       "eventos-traumaticos": {
+         "type": "checkbox",
+         "label": "Eventos Traumáticos",
+         "required": true,
+         "category": "historia-vital",
+         "order": 6,
+         "options": [
+           "Abuso físico",
+           "Abuso sexual",
+           "Abuso emocional",
+           "Negligencia",
+           "Violencia doméstica",
+           "Accidentes graves",
+           "Desastres naturales",
+           "Muerte de ser querido",
+           "Otros",
+           "Ninguno reportado"
+         ],
+         "saveToHistory": {
+           "section": "trauma_history",
+           "field": "traumatic_events"
+         }
+       },
+       "antecedentes-psicologicos": {
+         "type": "object",
+         "label": "Antecedentes Psicológicos",
+         "required": true,
+         "category": "antecedentes",
+         "order": 1,
+         "properties": {
+           "terapia_previa": {
+             "type": "radio",
+             "options": ["Sí", "No"]
+           },
+           "tipo_terapia": {
+             "type": "text",
+             "conditional": "terapia_previa === 'Sí'"
+           },
+           "duracion_terapia": {
+             "type": "text",
+             "conditional": "terapia_previa === 'Sí'"
+           },
+           "resultado_terapia": {
+             "type": "select",
+             "options": ["Muy útil", "Útil", "Poco útil", "No útil"],
+             "conditional": "terapia_previa === 'Sí'"
+           }
+         },
+         "saveToHistory": {
+           "section": "psychological_history",
+           "field": "previous_therapy"
+         }
+       },
+       "antecedentes-psiquiatricos": {
+         "type": "object",
+         "label": "Antecedentes Psiquiátricos",
+         "required": true,
+         "category": "antecedentes",
+         "order": 2,
+         "properties": {
+           "atencion_psiquiatrica": {
+             "type": "radio",
+             "options": ["Sí", "No"]
+           },
+           "diagnosticos_previos": {
+             "type": "textarea",
+             "conditional": "atencion_psiquiatrica === 'Sí'"
+           },
+           "hospitalizaciones": {
+             "type": "radio",
+             "options": ["Sí", "No"]
+           }
+         },
+         "saveToHistory": {
+           "section": "psychiatric_history",
+           "field": "previous_treatment"
+         }
+       },
+       "medicacion-actual": {
+         "type": "textarea",
+         "label": "Medicación Actual",
+         "required": false,
+         "category": "antecedentes",
+         "order": 3,
+         "placeholder": "Medicamentos psiquiátricos actuales (nombre, dosis, tiempo de uso)",
+         "saveToHistory": {
+           "section": "medications",
+           "field": "current_psychiatric"
+         }
+       },
+       "antecedentes-medicos": {
+         "type": "textarea",
+         "label": "Antecedentes Médicos Relevantes",
+         "required": false,
+         "category": "antecedentes",
+         "order": 4,
+         "placeholder": "Enfermedades médicas que puedan afectar el estado mental",
+         "saveToHistory": {
+           "section": "medical_history",
+           "field": "relevant_conditions"
+         }
+       },
+       "antecedentes-familiares-mh": {
+         "type": "checkbox",
+         "label": "Antecedentes Familiares de Salud Mental",
+         "required": true,
+         "category": "antecedentes",
+         "order": 5,
+         "options": [
+           "Depresión",
+           "Ansiedad",
+           "Trastorno bipolar",
+           "Esquizofrenia",
+           "Trastornos de personalidad",
+           "Abuso de sustancias",
+           "Suicidio",
+           "Otros",
+           "Ninguno conocido"
+         ],
+         "saveToHistory": {
+           "section": "family_history",
+           "field": "mental_health"
+         }
+       },
+       "esfera-cognitiva": {
+         "type": "object",
+         "label": "Esfera Cognitiva",
+         "required": true,
+         "category": "evaluacion-esferas",
+         "order": 1,
+         "properties": {
+           "atencion_concentracion": {
+             "type": "select",
+             "options": ["Normal", "Levemente alterada", "Moderadamente alterada", "Severamente alterada"]
+           },
+           "memoria": {
+             "type": "select",
+             "options": ["Normal", "Quejas subjetivas", "Alteraciones leves", "Alteraciones significativas"]
+           },
+           "pensamientos_automaticos": {
+             "type": "checkbox",
+             "options": ["Catastrofización", "Pensamiento dicotómico", "Personalización", "Filtro mental", "Descalificación", "Lectura mental", "Ninguno identificado"]
+           },
+           "distorsiones_cognitivas": {
+             "type": "textarea",
+             "placeholder": "Describir principales distorsiones identificadas"
+           }
+         },
+         "saveToHistory": {
+           "section": "cognitive_assessment",
+           "field": "cognitive_sphere"
+         }
+       },
+       "esfera-emocional": {
+         "type": "object",
+         "label": "Esfera Emocional",
+         "required": true,
+         "category": "evaluacion-esferas",
+         "order": 2,
+         "properties": {
+           "estado_animo": {
+             "type": "select",
+             "options": ["Eutímico", "Deprimido", "Ansioso", "Irritable", "Eufórico", "Lábil"]
+           },
+           "ansiedad_nivel": {
+             "type": "range",
+             "min": 0,
+             "max": 10,
+             "step": 1,
+             "label": "Nivel de ansiedad (0-10)"
+           },
+           "depresion_nivel": {
+             "type": "range",
+             "min": 0,
+             "max": 10,
+             "step": 1,
+             "label": "Nivel de depresión (0-10)"
+           },
+           "regulacion_emocional": {
+             "type": "select",
+             "options": ["Adecuada", "Levemente alterada", "Moderadamente alterada", "Severamente alterada"]
+           },
+           "expresion_emocional": {
+             "type": "select",
+             "options": ["Apropiada", "Restringida", "Exagerada", "Inapropiada"]
+           }
+         },
+         "saveToHistory": {
+           "section": "emotional_assessment",
+           "field": "emotional_sphere"
+         }
+       },
+       "esfera-conductual": {
+         "type": "object",
+         "label": "Esfera Conductual",
+         "required": true,
+         "category": "evaluacion-esferas",
+         "order": 3,
+         "properties": {
+           "conductas_problema": {
+             "type": "checkbox",
+             "options": ["Evitación", "Aislamiento", "Agresividad", "Autolesión", "Impulsividad", "Compulsiones", "Rituales", "Ninguna identificada"]
+           },
+           "habitos_sueno": {
+             "type": "select",
+             "options": ["Normales", "Insomnio", "Hipersomnia", "Despertar frecuente", "Pesadillas"]
+           },
+           "apetito": {
+             "type": "select",
+             "options": ["Normal", "Aumentado", "Disminuido", "Fluctuante"]
+           },
+           "actividad_fisica": {
+             "type": "select",
+             "options": ["Regular", "Ocasional", "Sedentario", "Excesiva"]
+           },
+           "uso_sustancias": {
+             "type": "checkbox",
+             "options": ["Alcohol", "Tabaco", "Marihuana", "Medicamentos", "Otras drogas", "Ninguna"]
+           }
+         },
+         "saveToHistory": {
+           "section": "behavioral_assessment",
+           "field": "behavioral_sphere"
+         }
+       },
+       "esfera-social": {
+         "type": "object",
+         "label": "Esfera Social",
+         "required": true,
+         "category": "evaluacion-esferas",
+         "order": 4,
+         "properties": {
+           "habilidades_sociales": {
+             "type": "select",
+             "options": ["Adecuadas", "Levemente alteradas", "Moderadamente alteradas", "Severamente alteradas"]
+           },
+           "red_apoyo": {
+             "type": "select",
+             "options": ["Fuerte", "Moderada", "Limitada", "Ausente"]
+           },
+           "funcionamiento_social": {
+             "type": "select",
+             "options": ["Normal", "Levemente alterado", "Moderadamente alterado", "Severamente alterado"]
+           },
+           "actividades_recreativas": {
+             "type": "select",
+             "options": ["Frecuentes", "Ocasionales", "Raras", "Ausentes"]
+           }
+         },
+         "saveToHistory": {
+           "section": "social_assessment",
+           "field": "social_sphere"
+         }
+       },
+       "esfera-familiar": {
+         "type": "object",
+         "label": "Esfera Familiar",
+         "required": true,
+         "category": "evaluacion-esferas",
+         "order": 5,
+         "properties": {
+           "dinamica_familiar_actual": {
+             "type": "select",
+             "options": ["Funcional", "Disfuncional leve", "Disfuncional moderada", "Disfuncional severa"]
+           },
+           "comunicacion_familiar": {
+             "type": "select",
+             "options": ["Abierta", "Limitada", "Conflictiva", "Ausente"]
+           },
+           "roles_familiares": {
+             "type": "select",
+             "options": ["Claros", "Confusos", "Rígidos", "Caóticos"]
+           },
+           "conflictos_familiares": {
+             "type": "radio",
+             "options": ["Sí", "No"]
+           }
+         },
+         "saveToHistory": {
+           "section": "family_assessment",
+           "field": "family_sphere"
+         }
+       },
+       "esfera-laboral-academica": {
+         "type": "object",
+         "label": "Esfera Laboral/Académica",
+         "required": true,
+         "category": "evaluacion-esferas",
+         "order": 6,
+         "properties": {
+           "funcionamiento_laboral": {
+             "type": "select",
+             "options": ["Óptimo", "Bueno", "Regular", "Deficiente", "No aplica"]
+           },
+           "ausentismo": {
+             "type": "select",
+             "options": ["Ninguno", "Ocasional", "Frecuente", "Constante", "No aplica"]
+           },
+           "relaciones_trabajo": {
+             "type": "select",
+             "options": ["Excelentes", "Buenas", "Regulares", "Conflictivas", "No aplica"]
+           },
+           "productividad": {
+             "type": "select",
+             "options": ["Alta", "Normal", "Reducida", "Muy reducida", "No aplica"]
+           }
+         },
+         "saveToHistory": {
+           "section": "occupational_assessment",
+           "field": "work_academic_sphere"
+         }
+       },
+       "clinimetrix-realizadas": {
+         "type": "calculated",
+         "label": "Evaluaciones Realizadas Hoy",
+         "category": "clinimetrix-section",
+         "order": 1,
+         "calculation": "integrations.clinimetrix.todayAssessments",
+         "displayFormat": "list",
+         "saveToHistory": {
+           "section": "assessments",
+           "field": "completed_today"
+         }
+       },
+       "clinimetrix-pendientes": {
+         "type": "lookup",
+         "label": "Evaluaciones Recomendadas",
+         "category": "clinimetrix-section",
+         "order": 2,
+         "source": "clinimetrix.recommended_assessments",
+         "filterBy": "patient.diagnosis,patient.age,patient.specialty",
+         "multiple": true,
+         "saveToHistory": {
+           "section": "assessments",
+           "field": "recommended"
+         }
+       },
+       "resources-entregados": {
+         "type": "calculated",
+         "label": "Recursos Entregados Hoy",
+         "category": "resources-section",
+         "order": 1,
+         "calculation": "integrations.resources.todayDelivered",
+         "displayFormat": "list",
+         "saveToHistory": {
+           "section": "resources",
+           "field": "delivered_today"
+         }
+       },
+       "resources-programados": {
+         "type": "lookup",
+         "label": "Recursos a Entregar",
+         "category": "resources-section",
+         "order": 2,
+         "source": "resources.psychoeducational_materials",
+         "filterBy": "patient.diagnosis,treatment.phase",
+         "multiple": true,
+         "saveToHistory": {
+           "section": "resources",
+           "field": "scheduled"
+         }
+       },
+       "hipotesis-diagnosticas": {
+         "type": "lookup",
+         "label": "Hipótesis Diagnósticas",
+         "required": true,
+         "category": "impresion-diagnostica",
+         "order": 1,
+         "source": "cie10.mental_health",
+         "multiple": true,
+         "searchable": true,
+         "saveToHistory": {
+           "section": "diagnosis",
+           "field": "hypothesis"
+         }
+       },
+       "factores-mantenimiento": {
+         "type": "textarea",
+         "label": "Factores de Mantenimiento",
+         "required": true,
+         "category": "impresion-diagnostica",
+         "order": 2,
+         "placeholder": "Factores cognitivos, conductuales, emocionales y ambientales que mantienen el problema",
+         "saveToHistory": {
+           "section": "formulation",
+           "field": "maintaining_factors"
+         }
+       },
+       "fortalezas-paciente": {
+         "type": "checkbox",
+         "label": "Fortalezas del Paciente",
+         "required": true,
+         "category": "impresion-diagnostica",
+         "order": 3,
+         "options": [
+           "Motivación al cambio",
+           "Buena alianza terapéutica",
+           "Insight adecuado",
+           "Red de apoyo sólida",
+           "Recursos económicos",
+           "Habilidades de afrontamiento",
+           "Inteligencia emocional",
+           "Flexibilidad cognitiva",
+           "Adherencia al tratamiento",
+           "Estabilidad laboral"
+         ],
+         "saveToHistory": {
+           "section": "formulation",
+           "field": "patient_strengths"
+         }
+       },
+       "factores-riesgo": {
+         "type": "checkbox",
+         "label": "Factores de Riesgo",
+         "required": true,
+         "category": "impresion-diagnostica",
+         "order": 4,
+         "options": [
+           "Ideación suicida",
+           "Ideación homicida",
+           "Autolesión",
+           "Abuso de sustancias",
+           "Impulsividad",
+           "Aislamiento social",
+           "Falta de apoyo",
+           "Inestabilidad económica",
+           "Comorbilidad médica",
+           "Antecedentes de trauma"
+         ],
+         "saveToHistory": {
+           "section": "risk_assessment",
+           "field": "risk_factors"
+         }
+       },
+       "objetivos-terapeuticos": {
+         "type": "array",
+         "label": "Objetivos Terapéuticos",
+         "required": true,
+         "category": "plan-tratamiento",
+         "order": 1,
+         "itemType": "object",
+         "itemProperties": {
+           "objetivo": {
+             "type": "text",
+             "placeholder": "Describir objetivo específico"
+           },
+           "plazo": {
+             "type": "select",
+             "options": ["Corto plazo (1-3 meses)", "Mediano plazo (3-6 meses)", "Largo plazo (6+ meses)"]
+           },
+           "prioridad": {
+             "type": "select",
+             "options": ["Alta", "Media", "Baja"]
+           }
+         },
+         "minItems": 1,
+         "maxItems": 5,
+         "saveToHistory": {
+           "section": "treatment_plan",
+           "field": "objectives"
+         }
+       },
+       "estrategias-intervencion": {
+         "type": "checkbox",
+         "label": "Estrategias de Intervención",
+         "required": true,
+         "category": "plan-tratamiento",
+         "order": 2,
+         "options": [
+           "Reestructuración cognitiva",
+           "Exposición gradual",
+           "Técnicas de relajación",
+           "Mindfulness",
+           "Activación conductual",
+           "Entrenamiento en habilidades sociales",
+           "Psicoeducación",
+           "Terapia familiar",
+           "Prevención de recaídas",
+           "Terapia de aceptación y compromiso"
+         ],
+         "saveToHistory": {
+           "section": "treatment_plan",
+           "field": "interventions"
+         }
+       },
+       "frecuencia-sesiones": {
+         "type": "select",
+         "label": "Frecuencia de Sesiones",
+         "required": true,
+         "category": "plan-tratamiento",
+         "order": 3,
+         "options": [
+           "Semanal",
+           "Quincenal", 
+           "Mensual",
+           "Según necesidad",
+           "Intensiva (2+ por semana)"
+         ],
+         "saveToHistory": {
+           "section": "treatment_plan",
+           "field": "session_frequency"
+         }
+       },
+       "duracion-estimada": {
+         "type": "object",
+         "label": "Duración Estimada del Tratamiento",
+         "required": true,
+         "category": "plan-tratamiento",
+         "order": 4,
+         "properties": {
+           "tiempo_estimado": {
+             "type": "select",
+             "options": ["1-3 meses", "3-6 meses", "6-12 meses", "1-2 años", "Más de 2 años", "Indefinido"]
+           },
+           "numero_sesiones": {
+             "type": "number",
+             "min": 1,
+             "max": 100,
+             "placeholder": "Número aproximado de sesiones"
+           },
+           "justificacion": {
+             "type": "textarea",
+             "placeholder": "Justificación de la duración estimada"
+           }
+         },
+         "saveToHistory": {
+           "section": "treatment_plan",
+           "field": "estimated_duration"
+         }
+       },
+       "otros-profesionales": {
+         "type": "checkbox",
+         "label": "Interconsulta/Referencia a Otros Profesionales",
+         "required": false,
+         "category": "plan-tratamiento",
+         "order": 5,
+         "options": [
+           "Psiquiatra",
+           "Médico general",
+           "Neurólogo",
+           "Trabajador social",
+           "Nutriólogo",
+           "Psicopedagogo",
+           "Terapeuta familiar",
+           "Terapeuta ocupacional",
+           "No requerida"
+         ],
+         "saveToHistory": {
+           "section": "treatment_plan",
+           "field": "referrals"
+         }
+       },
+       "dificultades-previstas": {
+         "type": "checkbox",
+         "label": "Dificultades Previstas en el Tratamiento",
+         "required": true,
+         "category": "plan-tratamiento",
+         "order": 6,
+         "options": [
+           "Baja motivación",
+           "Resistencia al cambio",
+           "Problemas de adherencia",
+           "Limitaciones económicas",
+           "Falta de apoyo familiar",
+           "Comorbilidad médica",
+           "Abuso de sustancias",
+           "Personalidad borderline",
+           "Crisis recurrentes",
+           "Ninguna prevista"
+         ],
+         "saveToHistory": {
+           "section": "treatment_plan",
+           "field": "anticipated_difficulties"
+         }
+       }
+     }
+   }
+ }
+}

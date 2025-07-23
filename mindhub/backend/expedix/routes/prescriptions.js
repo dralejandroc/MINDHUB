@@ -3,7 +3,7 @@
  * 
  * Comprehensive prescription management with customizable printing,
  * medication history tracking, and mental health treatment continuity
- * based on EXPEDIENTE ELEONOR analysis
+ * optimized for professional medical practice
  */
 
 const express = require('express');
@@ -20,7 +20,7 @@ const router = express.Router();
 const auditLogger = new AuditLogger();
 
 /**
- * Default print configuration based on EXPEDIENTE ELEONOR analysis
+ * Default print configuration optimized for professional prescription printing
  */
 const DEFAULT_PRINT_CONFIG = {
   marginLeft: 2,

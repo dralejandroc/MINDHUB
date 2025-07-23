@@ -279,3 +279,5 @@ export const VASQuestion: React.FC<VASQuestionProps> = ({
     </div>
   );
 };
+
+export default VASQuestion;

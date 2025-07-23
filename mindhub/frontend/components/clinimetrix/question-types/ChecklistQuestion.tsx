@@ -319,3 +319,5 @@ export const ChecklistQuestion: React.FC<ChecklistQuestionProps> = ({
     </div>
   );
 };
+
+export default ChecklistQuestion;

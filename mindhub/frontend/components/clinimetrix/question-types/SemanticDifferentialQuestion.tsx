@@ -208,3 +208,5 @@ export const SemanticDifferentialQuestion: React.FC<SemanticDifferentialQuestion
     </div>
   );
 };
+
+export default SemanticDifferentialQuestion;

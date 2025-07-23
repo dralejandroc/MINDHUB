@@ -1,10 +1,21 @@
+// Import all components first
+import { LikertQuestion } from './LikertQuestion';
+import { DichotomousQuestion } from './DichotomousQuestion';
+import { VASQuestion } from './VASQuestion';
+import { TextQuestion } from './TextQuestion';
+import { ChecklistQuestion } from './ChecklistQuestion';
+import { NumericQuestion } from './NumericQuestion';
+import { MultipleChoiceQuestion } from './MultipleChoiceQuestion';
+import { RankingQuestion } from './RankingQuestion';
+import { SemanticDifferentialQuestion } from './SemanticDifferentialQuestion';
+import { FrequencyQuestion } from './FrequencyQuestion';
+
+// Re-export all components
 export { LikertQuestion } from './LikertQuestion';
 export { DichotomousQuestion } from './DichotomousQuestion';
 export { VASQuestion } from './VASQuestion';
 export { TextQuestion } from './TextQuestion';
 export { ChecklistQuestion } from './ChecklistQuestion';
-
-// Tipos adicionales que se pueden implementar después
 export { NumericQuestion } from './NumericQuestion';
 export { MultipleChoiceQuestion } from './MultipleChoiceQuestion';
 export { RankingQuestion } from './RankingQuestion';

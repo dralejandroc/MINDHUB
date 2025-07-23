@@ -28,15 +28,24 @@ interface AppointmentData {
 
 interface NewAppointmentModalProps {
   selectedDate: Date;
+  selectedTime?: string;
   onClose: () => void;
   onSave: (appointment: AppointmentData) => void;
 }
 
-export default function NewAppointmentModal({ selectedDate, onClose, onSave }: NewAppointmentModalProps) {
+export default function NewAppointmentModal({ selectedDate, selectedTime, onClose, onSave }: NewAppointmentModalProps) {
+  // Safe date conversion
+  const getDateString = (date: any): string => {
+    if (!date) return new Date().toISOString().split('T')[0];
+    if (typeof date === 'string') return date;
+    if (date instanceof Date) return date.toISOString().split('T')[0];
+    return new Date().toISOString().split('T')[0];
+  };
+
   const [formData, setFormData] = useState<AppointmentData>({
     patientId: '',
-    date: selectedDate.toISOString().split('T')[0],
-    time: '',
+    date: getDateString(selectedDate),
+    time: selectedTime || '',
     duration: 60,
     type: '',
     notes: ''
@@ -48,18 +57,27 @@ export default function NewAppointmentModal({ selectedDate, onClose, onSave }: N
   const [showPatientSearch, setShowPatientSearch] = useState(false);
   const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null);
 
-  // Datos de ejemplo de pacientes
+  // Cargar pacientes reales desde API
   useEffect(() => {
-    const mockPatients: Patient[] = [
-      { id: 'p1', name: 'María González Pérez', phone: '+52 55 1234-5678', email: 'maria@email.com' },
-      { id: 'p2', name: 'Carlos Rodríguez Silva', phone: '+52 55 9876-5432', email: 'carlos@email.com' },
-      { id: 'p3', name: 'Ana Martínez López', phone: '+52 55 5555-0123', email: 'ana@email.com' },
-      { id: 'p4', name: 'Pedro López García', phone: '+52 55 7777-8888', email: 'pedro@email.com' },
-      { id: 'p5', name: 'Sofía García Morales', phone: '+52 55 3333-4444', email: 'sofia@email.com' },
-      { id: 'p6', name: 'Roberto Fernández Ruiz', phone: '+52 55 2222-1111', email: 'roberto@email.com' }
-    ];
-    setPatients(mockPatients);
-    setFilteredPatients(mockPatients);
+    const loadPatients = async () => {
+      try {
+        const response = await fetch(`${process.env.NEXT_PUBLIC_EXPEDIX_API}/api/v1/expedix/patients`);
+        if (response.ok) {
+          const data = await response.json();
+          const patientsData = data.patients?.map((p: any) => ({
+            id: p.id,
+            name: `${p.first_name} ${p.paternal_last_name} ${p.maternal_last_name}`,
+            phone: p.cell_phone || p.phone || 'Sin teléfono',
+            email: p.email || 'Sin email'
+          })) || [];
+          setPatients(patientsData);
+          setFilteredPatients(patientsData);
+        }
+      } catch (error) {
+        console.error('Error loading patients:', error);
+      }
+    };
+    loadPatients();
   }, []);
 
   // Filtrar pacientes

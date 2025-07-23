@@ -18,15 +18,17 @@ import {
   ChevronRightIcon,
   HeartIcon,
   UserCircleIcon,
-  CalendarIcon
+  CalendarIcon,
+  ClipboardDocumentListIcon,
+  BanknotesIcon
 } from '@heroicons/react/24/outline';
 import { cn } from '@/lib/utils';
 
 const NAVIGATION_ITEMS = [
   {
     id: 'dashboard',
-    name: 'Dashboard',
-    href: '/hubs',
+    name: 'Home',
+    href: '/',
     icon: HomeIcon,
     status: 'active'
   },
@@ -55,7 +57,7 @@ const NAVIGATION_ITEMS = [
     id: 'formx',
     name: 'FormX',
     href: '/hubs/formx',
-    icon: DocumentTextIcon,
+    icon: ClipboardDocumentListIcon,
     status: 'active'
   },
   {
@@ -66,17 +68,24 @@ const NAVIGATION_ITEMS = [
     status: 'active'
   },
   {
+    id: 'finance',
+    name: 'Finance',
+    href: '/hubs/finance',
+    icon: BanknotesIcon,
+    status: 'active'
+  },
+  {
+    id: 'frontdesk',
+    name: 'FrontDesk',
+    href: '/frontdesk',
+    icon: ClipboardDocumentListIcon,
+    status: 'active'
+  },
+  {
     id: 'reports',
     name: 'Reportes',
     href: '/reports',
     icon: ChartBarIcon,
-    status: 'active'
-  },
-  {
-    id: 'settings',
-    name: 'Configuración',
-    href: '/settings',
-    icon: CogIcon,
     status: 'active'
   }
 ];
@@ -95,6 +104,12 @@ export function UnifiedSidebar({ children, currentUser }: UnifiedSidebarProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [isCollapsed, setIsCollapsed] = useState(true); // Default to collapsed
 
+  // Keep sidebar collapsed when navigating between pages
+  useEffect(() => {
+    setIsCollapsed(true);
+    setSidebarOpen(false); // Also close mobile sidebar when navigating
+  }, [pathname]);
+
   // Default user if not provided
   const user = currentUser || {
     name: 'Administrador',
@@ -103,13 +118,24 @@ export function UnifiedSidebar({ children, currentUser }: UnifiedSidebarProps) {
   };
 
   const handleLogout = () => {
-    window.location.href = '/api/auth/logout';
+    if (confirm('¿Estás seguro que deseas cerrar sesión?')) {
+      window.location.href = '/api/auth/logout';
+    }
   };
 
   const isCurrentPage = (href: string) => {
-    if (href === '/hubs') {
-      return pathname === '/hubs' || pathname === '/';
+    if (href === '/') {
+      return pathname === '/';
     }
+    
+    // Handle specific cases for Expedix vs Pacientes
+    if (href === '/hubs/expedix/pacientes') {
+      return pathname === '/hubs/expedix/pacientes';
+    }
+    if (href === '/hubs/expedix') {
+      return pathname === '/hubs/expedix' || (pathname?.startsWith('/hubs/expedix') && !pathname?.includes('pacientes'));
+    }
+    
     return pathname?.startsWith(href) || false;
   };
 
@@ -135,28 +161,28 @@ export function UnifiedSidebar({ children, currentUser }: UnifiedSidebarProps) {
           href={isDisabled ? '#' : item.href}
           onClick={isDisabled ? (e) => e.preventDefault() : undefined}
           className={cn(
-            'group flex items-center text-sm font-medium rounded-md transition-all duration-200',
+            'group flex items-center text-xs font-medium rounded-xl transition-all duration-300 hover-lift',
             isCurrent
-              ? 'bg-primary-100 text-primary-900 border-r-2 border-primary-600'
+              ? 'gradient-primary text-white shadow-primary'
               : isDisabled
                 ? 'text-gray-400 cursor-not-allowed'
-                : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900',
-            isCollapsed ? 'justify-center px-2 py-2' : 'justify-start px-3 py-2'
+                : 'text-gray-700 hover:bg-primary-50 hover:text-primary-700',
+            isCollapsed ? 'justify-center px-2 py-1.5' : 'justify-start px-3 py-1.5'
           )}
           title={isCollapsed ? item.name : undefined}
         >
           <IconComponent 
             className={cn(
-              'h-5 w-5 flex-shrink-0',
-              isCurrent ? 'text-primary-600' : 'text-gray-400 group-hover:text-gray-500',
-              isCollapsed ? 'mr-0' : 'mr-3'
+              'h-4 w-4 flex-shrink-0',
+              isCurrent ? 'text-white' : 'text-gray-400 group-hover:text-primary-600',
+              isCollapsed ? 'mr-0' : 'mr-2'
             )}
           />
           {!isCollapsed && (
             <>
               <span className="flex-1">{item.name}</span>
               {item.status === 'coming-soon' && (
-                <span className="ml-auto text-xs bg-gray-200 text-gray-600 px-2 py-1 rounded-full">
+                <span className="ml-auto text-xs bg-accent-100 text-accent-700 px-1.5 py-0.5 rounded-full font-medium">
                   Próximo
                 </span>
               )}
@@ -183,7 +209,7 @@ export function UnifiedSidebar({ children, currentUser }: UnifiedSidebarProps) {
       {/* Desktop Sidebar */}
       <aside 
         className={cn(
-          'hidden sm:flex sm:flex-col sm:fixed sm:inset-y-0 sm:left-0 sm:z-40 bg-white border-r border-gray-200 transition-all duration-300',
+          'hidden sm:flex sm:flex-col sm:fixed sm:inset-y-0 sm:left-0 sm:z-40 bg-white border-r border-primary-200 transition-all duration-300 shadow-primary relative before:absolute before:top-0 before:right-0 before:bottom-0 before:w-1 before:border-gradient',
           sidebarWidthLg
         )}
       >
@@ -196,18 +222,22 @@ export function UnifiedSidebar({ children, currentUser }: UnifiedSidebarProps) {
     <>
       {/* Header */}
       <div className={cn(
-        'flex items-center justify-between py-4 border-b border-gray-200',
+        'flex items-center justify-between py-3 gradient-background border-b border-primary-200',
         isCollapsed ? 'px-2' : 'px-3'
       )}>
         {!isCollapsed && (
           <div className="flex items-center">
-            <HeartIcon className="h-8 w-8 text-primary-600" />
-            <span className="ml-2 text-xl font-bold text-gray-900">MindHub</span>
+            <div className="w-7 h-7 gradient-primary rounded-lg flex items-center justify-center">
+              <HeartIcon className="h-4 w-4 text-white" />
+            </div>
+            <span className="ml-2 text-lg font-bold text-dark-green font-heading">✨ MindHub</span>
           </div>
         )}
         {isCollapsed && (
           <div className="flex justify-center w-full">
-            <HeartIcon className="h-8 w-8 text-primary-600" />
+            <div className="w-7 h-7 gradient-primary rounded-lg flex items-center justify-center">
+              <HeartIcon className="h-4 w-4 text-white" />
+            </div>
           </div>
         )}
         
@@ -221,20 +251,20 @@ export function UnifiedSidebar({ children, currentUser }: UnifiedSidebarProps) {
       </div>
 
       {/* Collapse/Expand button for desktop - above navigation */}
-      <div className="hidden sm:block border-b border-gray-200">
+      <div className="hidden sm:block border-b border-primary-100">
         <button
           onClick={toggleCollapse}
           className={cn(
-            'w-full flex items-center justify-center py-2 text-xs text-gray-500 hover:text-gray-700 hover:bg-gray-50',
+            'w-full flex items-center justify-center py-1.5 text-xs text-primary-600 hover:text-primary-700 hover:bg-primary-50 transition-all duration-200',
             isCollapsed ? 'px-2' : 'px-3'
           )}
         >
           {isCollapsed ? (
-            <ChevronRightIcon className="h-4 w-4" />
+            <ChevronRightIcon className="h-3 w-3" />
           ) : (
             <>
-              <ChevronLeftIcon className="h-4 w-4 mr-1" />
-              <span>Contraer</span>
+              <ChevronLeftIcon className="h-3 w-3 mr-1" />
+              <span className="font-medium">Contraer</span>
             </>
           )}
         </button>
@@ -252,39 +282,61 @@ export function UnifiedSidebar({ children, currentUser }: UnifiedSidebarProps) {
 
       {/* User section - only show when not collapsed */}
       {!isCollapsed && (
-        <div className="border-t border-gray-200 p-3">
-          <div className="flex items-center mb-3">
-            <UserCircleIcon className="h-8 w-8 text-gray-400" />
-            <div className="ml-3">
-              <p className="text-sm font-medium text-gray-700">{user.name}</p>
-              <p className="text-xs text-gray-500">{user.email}</p>
+        <div className="border-t border-primary-200 gradient-background p-3">
+          <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center">
+              <div className="h-7 w-7 gradient-secondary rounded-full flex items-center justify-center">
+                <span className="text-xs font-bold text-white">
+                  {user.name?.charAt(0).toUpperCase() || 'U'}
+                </span>
+              </div>
+              <div className="ml-2">
+                <p className="text-xs font-medium text-dark-green">{user.name}</p>
+                <p className="text-xs text-gray-600">{user.email}</p>
+              </div>
+            </div>
+            <div className="flex items-center space-x-1">
+              <Link
+                href="/settings"
+                className="p-1 text-gray-500 hover:text-primary-700 hover:bg-primary-100 rounded-lg transition-all duration-200"
+                title="Configuración"
+              >
+                <CogIcon className="h-3 w-3" />
+              </Link>
+              <button
+                onClick={handleLogout}
+                className="p-1 text-accent-600 hover:bg-accent-50 rounded-lg transition-all duration-200"
+                title="Cerrar Sesión"
+              >
+                <ArrowLeftOnRectangleIcon className="h-3 w-3" />
+              </button>
             </div>
           </div>
-          <button
-            onClick={handleLogout}
-            className="w-full flex items-center justify-center px-3 py-2 text-sm font-medium text-white bg-red-600 rounded-md hover:bg-red-700 transition-colors duration-200"
-          >
-            <ArrowLeftOnRectangleIcon className="h-4 w-4 mr-2" />
-            Cerrar Sesión
-          </button>
         </div>
       )}
 
       {/* Collapsed user section */}
       {isCollapsed && (
-        <div className="border-t border-gray-200 p-2">
-          <div className="flex flex-col items-center space-y-2">
-            <div className="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center">
-              <span className="text-xs font-medium text-gray-600">
+        <div className="border-t border-primary-200 gradient-background p-2">
+          <div className="flex flex-col items-center space-y-1.5">
+            <div className="w-7 h-7 gradient-secondary rounded-full flex items-center justify-center">
+              <span className="text-xs font-bold text-white">
                 {user.name?.charAt(0).toUpperCase() || 'U'}
               </span>
             </div>
+            <Link
+              href="/settings"
+              className="w-7 h-7 flex items-center justify-center text-gray-500 hover:bg-primary-100 hover:text-primary-700 rounded-lg transition-all duration-200"
+              title="Configuración"
+            >
+              <CogIcon className="h-3 w-3" />
+            </Link>
             <button
               onClick={handleLogout}
-              className="w-8 h-8 flex items-center justify-center text-red-600 hover:bg-red-50 rounded-md transition-colors duration-200"
+              className="w-7 h-7 flex items-center justify-center text-accent-600 hover:bg-accent-50 rounded-lg transition-all duration-200"
               title="Cerrar Sesión"
             >
-              <ArrowLeftOnRectangleIcon className="h-4 w-4" />
+              <ArrowLeftOnRectangleIcon className="h-3 w-3" />
             </button>
           </div>
         </div>
@@ -293,7 +345,7 @@ export function UnifiedSidebar({ children, currentUser }: UnifiedSidebarProps) {
   );
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen gradient-background">
       {renderSidebar()}
       
       {/* Mobile menu button - only on very small screens */}

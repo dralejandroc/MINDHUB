@@ -24,6 +24,28 @@ const medicalHistoryRoutes = require('./routes/medical-history');
 const emergencyContactsRoutes = require('./routes/emergency-contacts');
 const patientRegistrationIntegrationRoutes = require('./routes/patient-registration-integration');
 const prescriptionsRoutes = require('./routes/prescriptions');
+const appointmentsRoutes = require('./routes/appointments');
+const patientTagsRoutes = require('./routes/patient-tags');
+const scheduleConfigurationRoutes = require('./routes/schedule-configuration');
+const clinicalReportsRoutes = require('./routes/clinical-reports');
+const patientDocumentsRoutes = require('./routes/patient-documents');
+const patientPortalRoutes = require('./routes/patient-portal');
+const hubIntegrationRoutes = require('./routes/hub-integration');
+const analyticsRoutes = require('./routes/analytics');
+const clinicConfigurationRoutes = require('./routes/clinic-configuration');
+const agendaSystemRoutes = require('./routes/agenda-system');
+const consultationFormsRoutes = require('./routes/consultation-forms');
+const exportRoutes = require('./routes/export');
+const importRoutes = require('./routes/import');
+const patientTimelineRoutes = require('./routes/patient-timeline');
+
+// Simple test endpoint without any middleware
+router.get('/test', (req, res) => {
+  res.json({ 
+    message: 'Test endpoint working without authentication',
+    timestamp: new Date().toISOString()
+  });
+});
 
 // Hub information endpoint
 router.get('/', (req, res) => {
@@ -37,14 +59,28 @@ router.get('/', (req, res) => {
       'Clinical Consultations (SOAP Notes)',
       'Emergency Contacts Management',
       'Prescription Management',
+      'Secure Document Management',
+      'Patient Portal Integration',
+      'Cross-Hub Integration (Clinimetrix & FormX)',
       'Healthcare Compliance (NOM-024)',
       'Audit Logging'
     ],
     endpoints: {
-      patients: '/api/expedix/patients',
-      medicalHistory: '/api/expedix/medical-history',
-      consultations: '/api/expedix/consultations',
-      emergencyContacts: '/api/expedix/emergency-contacts'
+      patients: '/api/v1/expedix/patients',
+      medicalHistory: '/api/v1/expedix/medical-history',
+      consultations: '/api/v1/expedix/consultations',
+      emergencyContacts: '/api/v1/expedix/emergency-contacts',
+      prescriptions: '/api/v1/expedix/prescriptions',
+      appointments: '/api/v1/expedix/appointments',
+      patientDocuments: '/api/v1/expedix/patient-documents',
+      clinicalReports: '/api/v1/expedix/clinical-reports',
+      patientPortal: '/api/v1/expedix/patient-portal',
+      hubIntegration: '/api/v1/expedix/hub-integration',
+      analytics: '/api/v1/expedix/analytics',
+      clinicConfiguration: '/api/v1/expedix/clinic-configuration',
+      agendaSystem: '/api/v1/expedix/agenda',
+      consultationForms: '/api/v1/expedix/forms',
+      patientTimeline: '/api/v1/expedix/patient-timeline'
     },
     compliance: {
       standard: 'NOM-024-SSA3-2010',
@@ -93,6 +129,20 @@ router.use('/consultations', consultationsRoutes);
 router.use('/medical-history', medicalHistoryRoutes);
 router.use('/emergency-contacts', emergencyContactsRoutes);
 router.use('/prescriptions', prescriptionsRoutes);
+router.use('/appointments', appointmentsRoutes);
+router.use('/patient-tags', patientTagsRoutes);
+router.use('/schedule-config', scheduleConfigurationRoutes);
+router.use('/clinical-reports', clinicalReportsRoutes);
+router.use('/patient-documents', patientDocumentsRoutes);
+router.use('/patient-portal', patientPortalRoutes);
+router.use('/hub-integration', hubIntegrationRoutes);
+router.use('/analytics', analyticsRoutes);
+router.use('/clinic-configuration', clinicConfigurationRoutes);
+router.use('/agenda', agendaSystemRoutes);
+router.use('/forms', consultationFormsRoutes);
+router.use('/export', exportRoutes);
+router.use('/import', importRoutes);
+router.use('/patient-timeline', patientTimelineRoutes);
 
 // Hub-specific error handler
 router.use((error, req, res, next) => {

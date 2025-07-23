@@ -172,3 +172,5 @@ export const RankingQuestion: React.FC<RankingQuestionProps> = ({
     </div>
   );
 };
+
+export default RankingQuestion;

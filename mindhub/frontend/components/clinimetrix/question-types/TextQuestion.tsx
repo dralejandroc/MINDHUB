@@ -224,3 +224,5 @@ export const TextQuestion: React.FC<TextQuestionProps> = ({
     </div>
   );
 };
+
+export default TextQuestion;

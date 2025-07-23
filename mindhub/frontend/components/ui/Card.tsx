@@ -2,21 +2,25 @@ import { forwardRef } from 'react';
 import { clsx } from 'clsx';
 
 export interface CardProps extends React.HTMLAttributes<HTMLDivElement> {
-  variant?: 'default' | 'outlined' | 'elevated';
+  hoverable?: boolean;
 }
 
 const Card = forwardRef<HTMLDivElement, CardProps>(
-  ({ className, variant = 'default', ...props }, ref) => {
-    const variants = {
-      default: 'bg-white border border-gray-200 rounded-lg shadow-sm',
-      outlined: 'bg-white border-2 border-gray-200 rounded-lg',
-      elevated: 'bg-white border border-gray-200 rounded-lg shadow-lg'
-    };
-
+  ({ className, hoverable = true, ...props }, ref) => {
     return (
       <div
         ref={ref}
-        className={clsx(variants[variant], className)}
+        className={clsx(
+          `
+          bg-white rounded-2xl shadow-lg border border-primary-100
+          overflow-hidden transition-all duration-300 ease-in-out
+          relative
+          before:absolute before:top-0 before:left-0 before:right-0 before:h-1
+          before:border-gradient
+          `,
+          hoverable && 'hover-lift hover:shadow-xl hover:shadow-primary-200/50',
+          className
+        )}
         {...props}
       />
     );
@@ -28,7 +32,10 @@ const CardHeader = forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElemen
   ({ className, ...props }, ref) => (
     <div
       ref={ref}
-      className={clsx('flex flex-col space-y-1.5 p-6', className)}
+      className={clsx(
+        'px-4 py-3 gradient-background border-b border-primary-100 font-medium text-dark-green text-sm',
+        className
+      )}
       {...props}
     />
   )
@@ -59,20 +66,30 @@ CardDescription.displayName = 'CardDescription';
 
 const CardContent = forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement>>(
   ({ className, ...props }, ref) => (
-    <div ref={ref} className={clsx('p-6 pt-0', className)} {...props} />
+    <div ref={ref} className={clsx('px-4 py-3', className)} {...props} />
   )
 );
 CardContent.displayName = 'CardContent';
+
+const CardBody = forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement>>(
+  ({ className, ...props }, ref) => (
+    <div className={clsx('px-4 py-3', className)} {...props} ref={ref} />
+  )
+);
+CardBody.displayName = 'CardBody';
 
 const CardFooter = forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement>>(
   ({ className, ...props }, ref) => (
     <div
       ref={ref}
-      className={clsx('flex items-center p-6 pt-0', className)}
+      className={clsx(
+        'px-4 py-3 gradient-background border-t border-primary-100',
+        className
+      )}
       {...props}
     />
   )
 );
 CardFooter.displayName = 'CardFooter';
 
-export { Card, CardHeader, CardFooter, CardTitle, CardDescription, CardContent };
+export { Card, CardHeader, CardFooter, CardTitle, CardDescription, CardContent, CardBody };

@@ -6,11 +6,13 @@ import {
   UserIcon,
   ShieldCheckIcon,
   EyeIcon,
-  PencilSquareIcon
+  PencilSquareIcon,
+  HomeIcon
 } from '@heroicons/react/24/outline';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { useUserMetrics } from '@/contexts/UserMetricsContext';
+import { StartPageSettings } from './StartPageSettings';
 
 export function DashboardSettings() {
   const { 
@@ -23,6 +25,7 @@ export function DashboardSettings() {
   
   const [showAdminPanel, setShowAdminPanel] = useState(false);
   const [adminSettings, setAdminSettings] = useState(getAdminSettings());
+  const [activeSection, setActiveSection] = useState<'dashboard' | 'startpage'>('dashboard');
 
   const handleModeChange = (mode: 'beginner' | 'advanced') => {
     updateDashboardConfig({ mode });
@@ -57,8 +60,40 @@ export function DashboardSettings() {
 
   return (
     <div className="space-y-6">
-      {/* User Dashboard Settings */}
-      <Card className="p-6">
+      {/* Navigation Tabs */}
+      <Card className="p-1">
+        <div className="flex space-x-1">
+          <button
+            onClick={() => setActiveSection('dashboard')}
+            className={`flex-1 flex items-center justify-center space-x-2 px-4 py-2 text-sm font-medium rounded-lg transition-all ${
+              activeSection === 'dashboard'
+                ? 'bg-blue-100 text-blue-700'
+                : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+            }`}
+          >
+            <Cog6ToothIcon className="h-4 w-4" />
+            <span>Dashboard</span>
+          </button>
+          <button
+            onClick={() => setActiveSection('startpage')}
+            className={`flex-1 flex items-center justify-center space-x-2 px-4 py-2 text-sm font-medium rounded-lg transition-all ${
+              activeSection === 'startpage'
+                ? 'bg-blue-100 text-blue-700'
+                : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+            }`}
+          >
+            <HomeIcon className="h-4 w-4" />
+            <span>Página de Inicio</span>
+          </button>
+        </div>
+      </Card>
+
+      {activeSection === 'startpage' ? (
+        <StartPageSettings />
+      ) : (
+        <>
+          {/* User Dashboard Settings */}
+          <Card className="p-6">
         <div className="flex items-center space-x-3 mb-6">
           <UserIcon className="h-6 w-6 text-blue-600" />
           <h2 className="text-xl font-semibold text-gray-900">Configuración del Dashboard</h2>
@@ -313,6 +348,8 @@ export function DashboardSettings() {
             </div>
           )}
         </Card>
+        )}
+      </>
       )}
     </div>
   );

@@ -1,12 +1,13 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { UserGroupIcon, PlusIcon, MagnifyingGlassIcon, CalendarIcon, ClipboardDocumentListIcon, DocumentTextIcon, CogIcon, BookOpenIcon } from '@heroicons/react/24/outline';
+import { UserGroupIcon, PlusIcon, MagnifyingGlassIcon, CalendarIcon, ClipboardDocumentListIcon, DocumentTextIcon, CogIcon, BookOpenIcon, DocumentArrowDownIcon } from '@heroicons/react/24/outline';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { expedixApi, type Patient } from '@/lib/api/expedix-client';
 import ResourcesIntegration from './ResourcesIntegration';
+import ExportDropdown from './ExportDropdown';
 
 interface PatientManagementProps {
   onSelectPatient: (patient: Patient) => void;
@@ -40,13 +41,16 @@ export default function PatientManagement({
   const fetchPatients = async () => {
     try {
       setLoading(true);
+      console.log('🔄 Fetching patients from API...');
       const response = await expedixApi.getPatients(searchTerm || undefined);
+      console.log('📊 API Response:', response);
+      console.log('👥 Patients received:', response.data);
       setPatients(response.data || []);
       setStats(prev => ({ ...prev, totalPatients: response.total || response.data.length }));
       setError(null);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load patients');
-      console.error('Error fetching patients:', err);
+      console.error('❌ Error fetching patients:', err);
     } finally {
       setLoading(false);
     }
@@ -63,9 +67,9 @@ export default function PatientManagement({
 
       setStats(prev => ({
         ...prev,
-        todayAppointments: todayAppointments.data.length,
-        pendingAssessments: pendingAssessments.data.length,
-        todayPrescriptions: todayPrescriptions.data.length
+        todayAppointments: todayAppointments?.data?.length || 0,
+        pendingAssessments: pendingAssessments?.data?.length || 0,
+        todayPrescriptions: todayPrescriptions?.data?.length || 0
       }));
     } catch (err) {
       console.error('Error fetching stats:', err);
@@ -97,6 +101,7 @@ export default function PatientManagement({
     setShowResourcesModal(false);
     setSelectedPatientForResources(null);
   };
+
 
   const handleResourceSent = (resourceId: string, method: string) => {
     console.log(`Resource ${resourceId} sent via ${method} to patient ${selectedPatientForResources?.id}`);
@@ -168,6 +173,13 @@ export default function PatientManagement({
                 />
               </div>
             )}
+            
+            {/* Export Table Dropdown */}
+            <ExportDropdown
+              showPatientOptions={false}
+              showConsultationOptions={false}
+              showTableOption={true}
+            />
           </div>
         </div>
 
@@ -215,7 +227,7 @@ export default function PatientManagement({
 
               {/* Table Body */}
               <div className="divide-y divide-gray-200">
-                {patients.map((patient) => (
+                {console.log('🎨 Rendering patients in table:', patients) || patients.map((patient) => (
                   <div key={patient.id} className="px-6 py-4 hover:bg-gray-50 transition-colors duration-150">
                     <div className="grid grid-cols-12 gap-4 items-center">
                       {/* Patient Info */}
@@ -224,7 +236,7 @@ export default function PatientManagement({
                           className="w-10 h-10 rounded-full flex items-center justify-center text-white text-sm font-semibold mr-3"
                           style={{ background: 'linear-gradient(135deg, var(--primary-500), var(--primary-600))' }}
                         >
-                          {patient.first_name.charAt(0)}{patient.paternal_last_name.charAt(0)}
+                          {patient.first_name?.charAt(0) || 'P'}{patient.paternal_last_name?.charAt(0) || 'P'}
                         </div>
                         <div>
                           <div 
@@ -234,7 +246,7 @@ export default function PatientManagement({
                               fontFamily: 'var(--font-primary)'
                             }}
                           >
-                            {patient.first_name} {patient.paternal_last_name} {patient.maternal_last_name}
+                            {patient.first_name || 'N/A'} {patient.paternal_last_name || ''} {patient.maternal_last_name || ''}
                           </div>
                           <div 
                             className="text-xs"
@@ -247,14 +259,14 @@ export default function PatientManagement({
 
                       {/* Age */}
                       <div className="col-span-2">
-                        <div className="text-sm text-gray-900">{patient.age} años</div>
-                        <div className="text-xs text-gray-500 capitalize">{patient.gender === 'masculine' ? 'Masculino' : 'Femenino'}</div>
+                        <div className="text-sm text-gray-900">{patient.age || 'N/A'} años</div>
+                        <div className="text-xs text-gray-500 capitalize">{patient.gender === 'masculine' ? 'Masculino' : patient.gender === 'feminine' ? 'Femenino' : 'N/A'}</div>
                       </div>
 
                       {/* Contact */}
                       <div className="col-span-3">
-                        <div className="text-sm text-gray-900">{patient.cell_phone}</div>
-                        <div className="text-xs text-gray-500 truncate">{patient.email}</div>
+                        <div className="text-sm text-gray-900">{patient.cell_phone || 'N/A'}</div>
+                        <div className="text-xs text-gray-500 truncate">{patient.email || 'N/A'}</div>
                       </div>
 
                       {/* Actions */}
@@ -286,6 +298,13 @@ export default function PatientManagement({
                         >
                           Evaluación
                         </button>
+                        <ExportDropdown
+                          patientId={patient.id}
+                          showPatientOptions={true}
+                          showConsultationOptions={false}
+                          showTableOption={false}
+                          className="scale-90 origin-left"
+                        />
                       </div>
                     </div>
                   </div>
@@ -460,6 +479,7 @@ export default function PatientManagement({
           onResourceSent={handleResourceSent}
         />
       )}
+
     </div>
   );
 }

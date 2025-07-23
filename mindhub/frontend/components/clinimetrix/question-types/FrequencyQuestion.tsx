@@ -37,3 +37,5 @@ export const FrequencyQuestion: React.FC<FrequencyQuestionProps> = (props) => {
 
   return <LikertQuestion {...props} item={enhancedItem} />;
 };
+
+export default FrequencyQuestion;

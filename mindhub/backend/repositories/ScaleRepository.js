@@ -1,6 +1,6 @@
 /**
  * REPOSITORIO UNIVERSAL DE ESCALAS
- * Maneja todas las operaciones de base de datos relacionadas con escalas
+ * Maneja todas las operaciones de base de datos relacionadas con escalas usando Prisma
  */
 
 const { PrismaClient } = require('../generated/prisma');
@@ -9,15 +9,19 @@ const prisma = new PrismaClient();
 class ScaleRepository {
   
   /**
-   * Obtiene todas las escalas activas (solo de seeds)
+   * Obtiene todas las escalas activas (usando Prisma)
    */
   async getAllActiveScales() {
     try {
-      const scales = await prisma.$queryRaw`
-        SELECT * FROM scales 
-        WHERE is_active = 1 
-        ORDER BY category ASC, name ASC
-      `;
+      const scales = await prisma.scale.findMany({
+        where: {
+          isActive: true
+        },
+        orderBy: [
+          { category: 'asc' },
+          { name: 'asc' }
+        ]
+      });
       
       return scales.map(scale => ({
         id: scale.id,
@@ -25,20 +29,21 @@ class ScaleRepository {
         abbreviation: scale.abbreviation,
         version: scale.version,
         category: scale.category,
-        subcategory: scale.subcategory,
+        subcategory: null, // No existe en assessment_scales
         description: scale.description,
-        author: scale.author,
-        publicationYear: scale.publication_year,
-        estimatedDurationMinutes: scale.estimated_duration_minutes,
-        administrationMode: scale.administration_mode,
-        targetPopulation: scale.target_population,
-        totalItems: scale.total_items,
-        scoringMethod: scale.scoring_method,
-        scoreRangeMin: scale.score_range_min,
-        scoreRangeMax: scale.score_range_max,
-        instructionsProfessional: scale.instructions_professional,
-        instructionsPatient: scale.instructions_patient,
-        isActive: scale.is_active
+        author: null, // No existe en assessment_scales
+        publicationYear: null, // No existe en assessment_scales
+        estimatedDurationMinutes: scale.estimatedDurationMinutes,
+        administrationMode: scale.administrationMode,
+        applicationType: this.mapApplicationType(scale.administrationMode), // Mapear desde administrationMode
+        targetPopulation: scale.targetPopulation,
+        totalItems: scale.totalItems,
+        scoringMethod: scale.scoringMethod,
+        scoreRangeMin: null, // No existe en assessment_scales
+        scoreRangeMax: null, // No existe en assessment_scales
+        instructionsProfessional: scale.interpretationGuidelines,
+        instructionsPatient: scale.interpretationGuidelines,
+        isActive: scale.isActive
       }));
       
     } catch (error) {
@@ -52,10 +57,24 @@ class ScaleRepository {
    */
   async getScaleById(scaleId) {
     try {
-      const scale = await prisma.assessmentScale.findFirst({
+      const scale = await prisma.scale.findFirst({
         where: {
           id: scaleId,
           isActive: true
+        },
+        include: {
+          items: {
+            where: { isActive: true },
+            orderBy: { itemNumber: 'asc' }
+          },
+          responseOptions: {
+            where: { isActive: true },
+            orderBy: { displayOrder: 'asc' }
+          },
+          interpretationRules: {
+            where: { isActive: true },
+            orderBy: { minScore: 'asc' }
+          }
         }
       });
       
@@ -63,23 +82,49 @@ class ScaleRepository {
         return null;
       }
       
-      // Cargar componentes reales desde las tablas de seeds
-      const items = await this.getScaleItemsFromSeeds(scaleId);
-      const responseOptions = await this.getScaleResponseOptionsFromSeeds(scaleId);
-      const interpretationRules = await this.getScaleInterpretationRulesFromSeeds(scaleId);
-      const subscales = await this.getScaleSubscalesFromSeeds(scaleId);
-      const instructions = await this.getScaleInstructionsFromSeeds(scaleId);
+      // Crear respuestas estándar según el tipo de escala
+      const responseOptions = this.getStandardResponseOptions(scale);
       
-      // Retornar escala con componentes reales
+      // Retornar escala con componentes usando Prisma
       return {
-        ...scale,
-        items,
-        responseOptions,
-        interpretationRules,
-        instructions,
-        subscales,
-        scoringMethod: scale.scoringMethod || 'sum',
-        scoreRange: { min: scale.scoreRangeMin || 0, max: scale.scoreRangeMax || 100 }
+        id: scale.id,
+        name: scale.name,
+        abbreviation: scale.abbreviation,
+        version: scale.version,
+        category: scale.category,
+        description: scale.description,
+        estimatedDurationMinutes: scale.estimatedDurationMinutes,
+        administrationMode: scale.administrationMode,
+        applicationType: this.mapApplicationType(scale.administrationMode), // Mapear desde administrationMode
+        targetPopulation: scale.targetPopulation,
+        totalItems: scale.totalItems,
+        scoringMethod: scale.scoringMethod,
+        isActive: scale.isActive,
+        items: scale.items.length > 0 ? scale.items.map(item => ({
+          id: item.id,
+          number: item.itemNumber,
+          text: item.itemText,
+          subscale: item.subscale,
+          questionType: 'likert',
+          required: true,
+          metadata: {}
+        })) : this.generateBasicItems(scale),
+        responseOptions: scale.responseOptions.length > 0 ? scale.responseOptions.map(option => ({
+          value: option.optionValue,
+          label: option.optionLabel,
+          score: option.scoreValue
+        })) : this.getStandardResponseOptions(scale),
+        interpretationRules: scale.interpretationRules.map(rule => ({
+          minScore: rule.minScore,
+          maxScore: rule.maxScore,
+          severity: rule.severityLevel,
+          label: rule.interpretationLabel,
+          recommendations: rule.recommendations ? rule.recommendations.split(',') : []
+        })),
+        instructions: {
+          professional: scale.interpretationGuidelines || `Instrucciones para aplicar ${scale.name}`,
+          patient: scale.interpretationGuidelines || `Instrucciones para responder ${scale.name}`
+        }
       };
       
     } catch (error) {
@@ -89,141 +134,58 @@ class ScaleRepository {
   }
 
   /**
-   * Obtiene los items reales de una escala desde la tabla scale_items
+   * Genera opciones de respuesta estándar según el tipo de escala
    */
-  async getScaleItemsFromSeeds(scaleId) {
-    try {
-      const items = await prisma.$queryRaw`
-        SELECT * FROM scale_items 
-        WHERE scale_id = ${scaleId} AND is_active = 1 
-        ORDER BY item_number
-      `;
-      
-      return items.map(item => ({
-        id: item.id,
-        number: item.item_number,
-        text: item.item_text,
-        code: item.item_code,
-        subscale: item.subscale,
-        alertTrigger: false,
-        alertCondition: null,
-        reverseScored: item.reverse_scored || false
-      }));
-      
-    } catch (error) {
-      console.error(`Error obteniendo items de escala ${scaleId}:`, error);
-      return [];
-    }
+  getStandardResponseOptions(scale) {
+    // Opciones Likert estándar 0-3
+    return [
+      { value: '0', label: 'Nunca', score: 0 },
+      { value: '1', label: 'Varios días', score: 1 },
+      { value: '2', label: 'Más de la mitad de los días', score: 2 },
+      { value: '3', label: 'Casi todos los días', score: 3 }
+    ];
   }
 
   /**
-   * Obtiene las opciones de respuesta reales desde la tabla scale_response_options
+   * Genera ítems básicos para escalas sin ítems definidos
    */
-  async getScaleResponseOptionsFromSeeds(scaleId) {
-    try {
-      const options = await prisma.$queryRaw`
-        SELECT * FROM scale_response_options 
-        WHERE scale_id = ${scaleId} AND is_active = 1 
-        ORDER BY display_order
-      `;
-      
-      return options.map(option => ({
-        value: option.option_value,
-        label: option.option_label,
-        score: option.score_value
-      }));
-      
-    } catch (error) {
-      console.error(`Error obteniendo opciones de respuesta de escala ${scaleId}:`, error);
-      return [];
+  generateBasicItems(scale) {
+    const items = [];
+    for (let i = 1; i <= scale.totalItems; i++) {
+      items.push({
+        id: `${scale.id}-item-${i}`,
+        number: i,
+        text: `Ítem ${i} de ${scale.name}`,
+        subscale: null,
+        questionType: 'likert',
+        required: true,
+        metadata: {}
+      });
     }
+    return items;
   }
 
   /**
-   * Obtiene las reglas de interpretación reales desde la tabla scale_interpretation_rules
+   * Busca escalas por término
    */
-  async getScaleInterpretationRulesFromSeeds(scaleId) {
+  async searchScales(searchTerm) {
     try {
-      const rules = await prisma.$queryRaw`
-        SELECT * FROM scale_interpretation_rules 
-        WHERE scale_id = ${scaleId} AND is_active = 1 
-        ORDER BY min_score
-      `;
-      
-      return rules.map(rule => ({
-        minScore: rule.min_score,
-        maxScore: rule.max_score,
-        severity: rule.severity_level,
-        label: rule.interpretation_label,
-        color: rule.color_code,
-        description: rule.description,
-        recommendations: rule.recommendations ? rule.recommendations.split('\n').filter(r => r.trim()) : []
-      }));
-      
-    } catch (error) {
-      console.error(`Error obteniendo reglas de interpretación de escala ${scaleId}:`, error);
-      return [];
-    }
-  }
+      const scales = await prisma.scale.findMany({
+        where: {
+          isActive: true,
+          OR: [
+            { name: { contains: searchTerm } },
+            { abbreviation: { contains: searchTerm } },
+            { description: { contains: searchTerm } }
+          ]
+        },
+        orderBy: { name: 'asc' }
+      });
 
-  /**
-   * Obtiene las subescalas reales desde la tabla scale_subscales
-   */
-  async getScaleSubscalesFromSeeds(scaleId) {
-    try {
-      const subscales = await prisma.$queryRaw`
-        SELECT * FROM scale_subscales 
-        WHERE scale_id = ${scaleId} AND is_active = 1 
-        ORDER BY subscale_name
-      `;
-      
-      return subscales.map(subscale => ({
-        id: subscale.id,
-        name: subscale.subscale_name,
-        code: subscale.subscale_code,
-        minScore: subscale.min_score,
-        maxScore: subscale.max_score,
-        description: subscale.description,
-        items: [] // Se puede llenar con los números de items si es necesario
-      }));
-      
+      return scales.map(scale => this.transformScale(scale));
     } catch (error) {
-      console.error(`Error obteniendo subescalas de escala ${scaleId}:`, error);
-      return [];
-    }
-  }
-
-  /**
-   * Obtiene las instrucciones desde la escala principal
-   */
-  async getScaleInstructionsFromSeeds(scaleId) {
-    try {
-      const scaleInfo = await prisma.$queryRaw`
-        SELECT instructions_professional, instructions_patient 
-        FROM scales 
-        WHERE id = ${scaleId} AND is_active = 1
-      `;
-      
-      if (scaleInfo && scaleInfo.length > 0) {
-        const info = scaleInfo[0];
-        const instructions = [];
-        
-        if (info.instructions_professional) {
-          instructions.push(`Profesional: ${info.instructions_professional}`);
-        }
-        
-        if (info.instructions_patient) {
-          instructions.push(`Paciente: ${info.instructions_patient}`);
-        }
-        
-        return instructions;
-      }
-      
-      return [];
-      
-    } catch (error) {
-      console.error(`Error obteniendo instrucciones de escala ${scaleId}:`, error);
-      return [];
+      console.error(`Error buscando escalas con término ${searchTerm}:`, error);
+      throw error;
     }
   }
 
@@ -232,15 +194,15 @@ class ScaleRepository {
    */
   async getScalesByCategory(category) {
     try {
-      const query = `
-        SELECT * FROM scales 
-        WHERE category = ? AND is_active = 1 
-        ORDER BY name
-      `;
-      
-      const rows = await dbConnection.query(query, [category]);
-      return rows.map(row => Scale.fromDatabase(row));
-      
+      const scales = await prisma.scale.findMany({
+        where: {
+          category: category,
+          isActive: true
+        },
+        orderBy: { name: 'asc' }
+      });
+
+      return scales.map(scale => this.transformScale(scale));
     } catch (error) {
       console.error(`Error obteniendo escalas por categoría ${category}:`, error);
       throw error;
@@ -248,284 +210,40 @@ class ScaleRepository {
   }
 
   /**
-   * Busca escalas por término de búsqueda
+   * Mapea administrationMode a applicationType
    */
-  async searchScales(searchTerm) {
-    try {
-      const query = `
-        SELECT * FROM scales 
-        WHERE (name LIKE ? OR abbreviation LIKE ? OR description LIKE ?) 
-        AND is_active = 1 
-        ORDER BY name
-      `;
-      
-      const searchPattern = `%${searchTerm}%`;
-      const rows = await dbConnection.query(query, [searchPattern, searchPattern, searchPattern]);
-      return rows.map(row => Scale.fromDatabase(row));
-      
-    } catch (error) {
-      console.error(`Error buscando escalas con término ${searchTerm}:`, error);
-      throw error;
+  mapApplicationType(administrationMode) {
+    switch (administrationMode) {
+      case 'clinician_administered':
+        return 'heteroaplicada';
+      case 'self_administered':
+        return 'autoaplicada';
+      case 'both':
+        return 'flexible';
+      default:
+        return 'flexible';
     }
   }
 
   /**
-   * Carga todos los componentes relacionados de una escala
+   * Transforma un modelo de Prisma al formato esperado
    */
-  async loadScaleComponents(scale) {
-    try {
-      // Cargar items
-      const items = await this.getScaleItems(scale.id);
-      items.forEach(item => scale.addItem(item));
-
-      // Cargar opciones de respuesta
-      const responseOptions = await this.getScaleResponseOptions(scale.id);
-      responseOptions.forEach(option => scale.addResponseOption(option));
-
-      // Cargar reglas de interpretación
-      const interpretationRules = await this.getScaleInterpretationRules(scale.id);
-      interpretationRules.forEach(rule => scale.addInterpretationRule(rule));
-
-      // Cargar subescalas
-      const subscales = await this.getScaleSubscales(scale.id);
-      subscales.forEach(subscale => scale.addSubscale(subscale));
-
-    } catch (error) {
-      console.error(`Error cargando componentes de escala ${scale.id}:`, error);
-      throw error;
-    }
-  }
-
-  /**
-   * Obtiene los items de una escala
-   */
-  async getScaleItems(scaleId) {
-    try {
-      const query = `
-        SELECT * FROM scale_items 
-        WHERE scale_id = ? AND is_active = 1 
-        ORDER BY item_number
-      `;
-      
-      const rows = await dbConnection.query(query, [scaleId]);
-      return rows.map(row => ScaleItem.fromDatabase(row));
-      
-    } catch (error) {
-      console.error(`Error obteniendo items de escala ${scaleId}:`, error);
-      throw error;
-    }
-  }
-
-  /**
-   * Obtiene las opciones de respuesta de una escala
-   */
-  async getScaleResponseOptions(scaleId) {
-    try {
-      const query = `
-        SELECT * FROM scale_response_options 
-        WHERE scale_id = ? AND is_active = 1 
-        ORDER BY display_order
-      `;
-      
-      const rows = await dbConnection.query(query, [scaleId]);
-      return rows.map(row => ScaleResponseOption.fromDatabase(row));
-      
-    } catch (error) {
-      console.error(`Error obteniendo opciones de respuesta de escala ${scaleId}:`, error);
-      throw error;
-    }
-  }
-
-  /**
-   * Obtiene las reglas de interpretación de una escala
-   */
-  async getScaleInterpretationRules(scaleId) {
-    try {
-      const query = `
-        SELECT * FROM scale_interpretation_rules 
-        WHERE scale_id = ? AND is_active = 1 
-        ORDER BY min_score
-      `;
-      
-      const rows = await dbConnection.query(query, [scaleId]);
-      return rows;
-      
-    } catch (error) {
-      console.error(`Error obteniendo reglas de interpretación de escala ${scaleId}:`, error);
-      throw error;
-    }
-  }
-
-  /**
-   * Obtiene las subescalas de una escala
-   */
-  async getScaleSubscales(scaleId) {
-    try {
-      const query = `
-        SELECT * FROM scale_subscales 
-        WHERE scale_id = ? AND is_active = 1 
-        ORDER BY subscale_name
-      `;
-      
-      const rows = await dbConnection.query(query, [scaleId]);
-      return rows;
-      
-    } catch (error) {
-      console.error(`Error obteniendo subescalas de escala ${scaleId}:`, error);
-      throw error;
-    }
-  }
-
-  /**
-   * Crea una nueva escala completa
-   */
-  async createScale(scaleData) {
-    try {
-      const scale = Scale.fromAPI(scaleData);
-      const validation = scale.validate();
-      
-      if (!validation.isValid) {
-        throw new Error(`Datos de escala inválidos: ${validation.errors.join(', ')}`);
-      }
-
-      // Insertar escala básica
-      const insertScaleQuery = `
-        INSERT INTO scales (
-          id, name, abbreviation, version, category, subcategory, description, 
-          author, publication_year, estimated_duration_minutes, administration_mode,
-          target_population, total_items, scoring_method, score_range_min, 
-          score_range_max, instructions_professional, instructions_patient, is_active
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-      `;
-
-      await dbConnection.run(insertScaleQuery, [
-        scale.id, scale.name, scale.abbreviation, scale.version,
-        scale.category, scale.subcategory, scale.description,
-        scale.author, scale.publicationYear, scale.estimatedDurationMinutes,
-        scale.administrationMode, scale.targetPopulation, scale.totalItems,
-        scale.scoringMethod, scale.scoreRangeMin, scale.scoreRangeMax,
-        scale.instructionsProfessional, scale.instructionsPatient, scale.isActive
-      ]);
-
-      return scale;
-      
-    } catch (error) {
-      console.error('Error creando escala:', error);
-      throw error;
-    }
-  }
-
-  /**
-   * Actualiza una escala existente
-   */
-  async updateScale(scaleId, scaleData) {
-    try {
-      const updateQuery = `
-        UPDATE scales SET 
-          name = ?, abbreviation = ?, version = ?, category = ?, subcategory = ?,
-          description = ?, author = ?, publication_year = ?, 
-          estimated_duration_minutes = ?, administration_mode = ?,
-          target_population = ?, total_items = ?, scoring_method = ?,
-          score_range_min = ?, score_range_max = ?, 
-          instructions_professional = ?, instructions_patient = ?,
-          updated_at = CURRENT_TIMESTAMP
-        WHERE id = ?
-      `;
-
-      await dbConnection.run(updateQuery, [
-        scaleData.name, scaleData.abbreviation, scaleData.version,
-        scaleData.category, scaleData.subcategory, scaleData.description,
-        scaleData.author, scaleData.publicationYear, scaleData.estimatedDurationMinutes,
-        scaleData.administrationMode, scaleData.targetPopulation, scaleData.totalItems,
-        scaleData.scoringMethod, scaleData.scoreRangeMin, scaleData.scoreRangeMax,
-        scaleData.instructionsProfessional, scaleData.instructionsPatient,
-        scaleId
-      ]);
-
-      return await this.getScaleById(scaleId);
-      
-    } catch (error) {
-      console.error(`Error actualizando escala ${scaleId}:`, error);
-      throw error;
-    }
-  }
-
-  /**
-   * Desactiva una escala (soft delete)
-   */
-  async deactivateScale(scaleId) {
-    try {
-      const query = `UPDATE scales SET is_active = 0, updated_at = CURRENT_TIMESTAMP WHERE id = ?`;
-      await dbConnection.run(query, [scaleId]);
-      
-    } catch (error) {
-      console.error(`Error desactivando escala ${scaleId}:`, error);
-      throw error;
-    }
-  }
-
-  /**
-   * Obtiene estadísticas de uso de escalas
-   */
-  async getScaleStats() {
-    try {
-      const query = `
-        SELECT 
-          s.id,
-          s.name,
-          s.abbreviation,
-          COUNT(a.id) as assessment_count,
-          MAX(a.completed_at) as last_used
-        FROM scales s
-        LEFT JOIN assessments a ON s.id = a.scale_id
-        WHERE s.is_active = 1
-        GROUP BY s.id, s.name, s.abbreviation
-        ORDER BY assessment_count DESC, s.name
-      `;
-      
-      const rows = await dbConnection.query(query);
-      return rows;
-      
-    } catch (error) {
-      console.error('Error obteniendo estadísticas de escalas:', error);
-      throw error;
-    }
-  }
-
-  /**
-   * Verifica si una escala existe
-   */
-  async scaleExists(scaleId) {
-    try {
-      const query = `SELECT COUNT(*) as count FROM scales WHERE id = ?`;
-      const rows = await dbConnection.query(query, [scaleId]);
-      return rows[0].count > 0;
-      
-    } catch (error) {
-      console.error(`Error verificando existencia de escala ${scaleId}:`, error);
-      throw error;
-    }
-  }
-
-  /**
-   * Obtiene todas las categorías disponibles
-   */
-  async getCategories() {
-    try {
-      const query = `
-        SELECT DISTINCT category 
-        FROM scales 
-        WHERE category IS NOT NULL AND is_active = 1 
-        ORDER BY category
-      `;
-      
-      const rows = await dbConnection.query(query);
-      return rows.map(row => row.category);
-      
-    } catch (error) {
-      console.error('Error obteniendo categorías:', error);
-      throw error;
-    }
+  transformScale(scale) {
+    return {
+      id: scale.id,
+      name: scale.name,
+      abbreviation: scale.abbreviation,
+      version: scale.version,
+      category: scale.category,
+      description: scale.description,
+      estimatedDurationMinutes: scale.estimatedDurationMinutes,
+      administrationMode: scale.administrationMode,
+      applicationType: scale.applicationType,
+      targetPopulation: scale.targetPopulation,
+      totalItems: scale.totalItems,
+      scoringMethod: scale.scoringMethod,
+      isActive: scale.isActive
+    };
   }
 }
 

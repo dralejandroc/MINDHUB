@@ -1,0 +1,432 @@
+{
+ "noteTemplates": {
+   "primera-vez-psiquiatria": {
+     "metadata": {
+       "name": "Primera Vez - Psiquiatría",
+       "id": "primera-vez-psiquiatria",
+       "description": "Evaluación psiquiátrica inicial completa con examen mental detallado",
+       "icon": "🧬",
+       "specialty": ["psiquiatria", "psiquiatria-clinica"],
+       "estimatedDuration": 60,
+       "version": "1.0",
+       "customizable": true
+     },
+     "autoSelection": {
+       "conditions": [
+         "patient.specialty === 'psiquiatria'",
+         "patient.visits === 0",
+         "appointment.type === 'primera-vez'"
+       ],
+       "reason": "Primera consulta psiquiátrica"
+     },
+     "categories": [
+       {
+         "id": "subjetivo",
+         "name": "SUBJETIVO",
+         "required": true,
+         "order": 1,
+         "fields": ["motivo-consulta", "personalidad-premorbida", "subjetivo-general", "sintomas", "tiempo-evolucion"]
+       },
+       {
+         "id": "objetivo",
+         "name": "OBJETIVO",
+         "required": true,
+         "order": 2,
+         "fields": ["inspeccion-general", "signos-vitales", "examen-mental", "tratamientos-previos", "factores-riesgo", "fortalezas", "clinimetrix-resultados"]
+       },
+       {
+         "id": "plan",
+         "name": "PLAN",
+         "required": true,
+         "order": 3,
+         "fields": ["conclusiones", "tags-diagnosticos", "diagnosticos", "receta", "proxima-cita"]
+       }
+     ],
+     "fields": {
+       "motivo-consulta": {
+         "type": "textarea",
+         "label": "Motivo de Consulta",
+         "required": true,
+         "category": "subjetivo",
+         "order": 1,
+         "placeholder": "Descripción detallada del motivo de consulta según el paciente y/o familiares",
+         "rows": 4,
+         "saveToHistory": {
+           "section": "chief_complaint",
+           "field": "psychiatric_chief_complaint"
+         }
+       },
+       "personalidad-premorbida": {
+         "type": "textarea",
+         "label": "Personalidad Premórbida/Antecedentes de Relevancia",
+         "required": true,
+         "category": "subjetivo",
+         "order": 2,
+         "placeholder": "Personalidad previa, antecedentes familiares, personales, desarrollo psicomotor, historia médica relevante",
+         "rows": 5,
+         "saveToHistory": {
+           "section": "psychiatric_history",
+           "field": "premorbid_personality"
+         }
+       },
+       "subjetivo-general": {
+         "type": "textarea",
+         "label": "Subjetivo",
+         "required": true,
+         "category": "subjetivo",
+         "order": 3,
+         "placeholder": "Información subjetiva adicional, evolución del cuadro, factores precipitantes y desencadenantes",
+         "rows": 4,
+         "saveToHistory": {
+           "section": "subjective_assessment",
+           "field": "general_subjective"
+         }
+       },
+       "sintomas": {
+         "type": "textarea",
+         "label": "Síntomas",
+         "required": true,
+         "category": "subjetivo",
+         "order": 4,
+         "placeholder": "Descripción detallada de la sintomatología actual",
+         "rows": 4,
+         "saveToHistory": {
+           "section": "symptoms",
+           "field": "current_symptoms"
+         }
+       },
+       "tiempo-evolucion": {
+         "type": "object",
+         "label": "Tiempo de Evolución de Síntomas",
+         "required": true,
+         "category": "subjetivo",
+         "order": 5,
+         "properties": {
+           "cantidad": {
+             "type": "number",
+             "min": 1,
+             "max": 99,
+             "placeholder": "Número"
+           },
+           "unidad": {
+             "type": "select",
+             "options": ["Días", "Semanas", "Meses", "Años"]
+           }
+         },
+         "saveToHistory": {
+           "section": "symptoms",
+           "field": "symptom_duration"
+         }
+       },
+       "inspeccion-general": {
+         "type": "textarea",
+         "label": "Descripción de la Inspección",
+         "required": true,
+         "category": "objetivo",
+         "order": 1,
+         "placeholder": "Descripción general del paciente, aspecto físico, vestimenta, comportamiento observado",
+         "rows": 3,
+         "saveToHistory": {
+           "section": "physical_exam",
+           "field": "general_inspection"
+         }
+       },
+       "signos-vitales": {
+         "type": "object",
+         "label": "Signos Vitales",
+         "required": true,
+         "category": "objetivo",
+         "order": 2,
+         "properties": {
+           "talla": {
+             "type": "number",
+             "placeholder": "cm",
+             "min": 50,
+             "max": 250,
+             "step": 0.1
+           },
+           "peso": {
+             "type": "number",
+             "placeholder": "kg",
+             "min": 10,
+             "max": 300,
+             "step": 0.1
+           },
+           "fc": {
+             "type": "number",
+             "placeholder": "lpm",
+             "min": 30,
+             "max": 200
+           },
+           "fr": {
+             "type": "number",
+             "placeholder": "rpm",
+             "min": 8,
+             "max": 40
+           },
+           "ta_sistolica": {
+             "type": "number",
+             "placeholder": "mmHg",
+             "min": 60,
+             "max": 250
+           },
+           "ta_diastolica": {
+             "type": "number",
+             "placeholder": "mmHg",
+             "min": 40,
+             "max": 150
+           }
+         },
+         "saveToHistory": {
+           "section": "vital_signs",
+           "field": "psychiatric_vitals"
+         }
+       },
+       "examen-mental": {
+         "type": "object",
+         "label": "Examen Mental",
+         "required": true,
+         "category": "objetivo",
+         "order": 3,
+         "properties": {
+           "apariencia": {
+             "type": "select",
+             "options": ["Adecuada", "Desaliñada", "Extraña", "Poca higiene", "Otro"],
+             "allowOther": true
+           },
+           "actitud": {
+             "type": "select",
+             "options": ["Adecuada", "Negativa", "Indiferente", "Irritable", "Iracundo", "Deprimida", "Exaltada"]
+           },
+           "conciencia": {
+             "type": "select",
+             "options": ["Adecuada", "Somnoliento", "Letargo", "Sopor", "Obnubilación", "Estupor", "Alteración cualitativa (P.e. Disociación)"]
+           },
+           "orientacion": {
+             "type": "select",
+             "options": ["Bien orientado en 3 esferas", "Desorientado en 1 esfera (especificar)", "Desorientado en 2 esferas (especificar)", "Desorientado en 3 esferas"],
+             "allowSpecification": true
+           },
+           "atencion": {
+             "type": "select",
+             "options": ["Adecuada", "Distraída", "Desinteresada", "Aprosexia", "Hipoprosexia"]
+           },
+           "lenguaje": {
+             "type": "select",
+             "options": ["Adecuado", "Incoherente", "Incongruente", "Afasia", "Disartria", "Taquilalia", "Verborrea", "Mutismo", "Jergafasia", "Dislalia", "Disfemia", "Bradilalia", "Neologismos", "Ecolalia"]
+           },
+           "pensamiento": {
+             "type": "checkbox",
+             "options": ["Adecuado/Sin alteraciones", "Asociaciones laxas", "Descarrilamientos", "Incoherencias", "Tangencialidad", "Circunstancialidad", "Esquizofasia", "Ideas deliroides", "Ideas sobrevaloradas", "Ideas delirantes", "Ideas obsesivas", "Ideas fóbicas", "Fuga de ideas", "Bloqueo del pensamiento", "Bradipsiquia", "Pobreza del contenido", "Perseveración"]
+           },
+           "afecto": {
+             "type": "select",
+             "options": ["Eutimia", "Tristeza", "Hipotimia", "Depresivo", "Euforia", "Disforia", "Hipomanía", "Aplanamiento afectivo", "Disonancia ideo-afectiva", "Labilidad afectiva", "Abulia"]
+           },
+           "sensopercepcion": {
+             "type": "select",
+             "options": ["Sin alteraciones sensoperceptivas", "Pseudoalucinaciones", "Ilusiones", "Alucinaciones"]
+           },
+           "memoria": {
+             "type": "select",
+             "options": ["Adecuada", "Amnesia retrógrada", "Amnesia anterógrada", "Amnesia global transitoria", "Confabulaciones", "Deja vu", "Jamais Vu", "Hipomnesia"]
+           },
+           "juicio": {
+             "type": "select",
+             "options": ["Adecuado", "Autocrítico", "Heterocrítico", "Fuera del marco de la realidad", "Fallas adaptativas", "Debilitado", "Insuficiente"]
+           },
+           "inteligencia": {
+             "type": "select",
+             "options": ["Suficiente", "Adecuada para el estrato sociocultural", "Deteriorada", "Deficiente", "Muy deficiente", "Muy limitada", "Retraso evidente"]
+           }
+         },
+         "saveToHistory": {
+           "section": "mental_status_exam",
+           "field": "complete_mse"
+         }
+       },
+       "tratamientos-previos": {
+         "type": "textarea",
+         "label": "Tratamientos o Abordajes Previos",
+         "required": false,
+         "category": "objetivo",
+         "order": 4,
+         "placeholder": "Descripción de tratamientos psiquiátricos, psicológicos, farmacológicos previos y su efectividad",
+         "rows": 3,
+         "saveToHistory": {
+           "section": "treatment_history",
+           "field": "previous_treatments"
+         }
+       },
+       "factores-riesgo": {
+         "type": "object",
+         "label": "Factores de Riesgo",
+         "required": true,
+         "category": "objetivo",
+         "order": 5,
+         "properties": {
+           "descripcion": {
+             "type": "textarea",
+             "placeholder": "Descripción detallada de factores de riesgo identificados",
+             "rows": 3
+           },
+           "tags": {
+             "type": "checkbox",
+             "options": ["Ideación suicida", "Ideación homicida", "Autolesión", "Heteroagresión", "Impulsividad", "Abuso de sustancias", "Falta de insight", "Aislamiento social", "Incumplimiento terapéutico"],
+             "optional": true
+           }
+         },
+         "saveToHistory": {
+           "section": "risk_assessment",
+           "field": "psychiatric_risk_factors"
+         }
+       },
+       "fortalezas": {
+         "type": "textarea",
+         "label": "Fortalezas",
+         "required": true,
+         "category": "objetivo",
+         "order": 6,
+         "placeholder": "Recursos personales, familiares, sociales y factores protectores identificados",
+         "rows": 3,
+         "saveToHistory": {
+           "section": "strengths",
+           "field": "patient_strengths"
+         }
+       },
+       "clinimetrix-resultados": {
+         "type": "calculated",
+         "label": "Clinimetrix",
+         "category": "objetivo",
+         "order": 7,
+         "calculation": "integrations.clinimetrix.todayResults || 'No hay aplicaciones'",
+         "displayFormat": "structured_list",
+         "defaultValue": "No hay aplicaciones",
+         "saveToHistory": {
+           "section": "assessments",
+           "field": "clinimetrix_results"
+         }
+       },
+       "conclusiones": {
+         "type": "textarea",
+         "label": "Conclusiones",
+         "required": true,
+         "category": "plan",
+         "order": 1,
+         "placeholder": "Síntesis diagnóstica, impresión clínica y plan de tratamiento",
+         "rows": 4,
+         "saveToHistory": {
+           "section": "assessment_plan",
+           "field": "clinical_conclusions"
+         }
+       },
+       "tags-diagnosticos": {
+         "type": "array",
+         "label": "Tags",
+         "required": false,
+         "category": "plan",
+         "order": 2,
+         "itemType": "text",
+         "allowNew": true,
+         "source": "user_tags.diagnostic_tags",
+         "placeholder": "Añadir tag diagnóstico o descriptivo",
+         "saveToHistory": {
+           "section": "tags",
+           "field": "diagnostic_tags"
+         },
+         "saveTags": {
+           "destination": "user_tags.diagnostic_tags",
+           "persistent": true
+         }
+       },
+       "diagnosticos": {
+         "type": "object",
+         "label": "IDX (Diagnósticos)",
+         "required": true,
+         "category": "plan",
+         "order": 3,
+         "properties": {
+           "tipo_clasificacion": {
+             "type": "radio",
+             "options": ["CIE-10", "DSM-5", "Ingreso manual"]
+           },
+           "diagnostico_principal": {
+             "type": "lookup",
+             "source": "classification.cie10|classification.dsm5",
+             "conditional": "tipo_clasificacion !== 'Ingreso manual'",
+             "searchable": true,
+             "required": true
+           },
+           "diagnostico_manual": {
+             "type": "text",
+             "conditional": "tipo_clasificacion === 'Ingreso manual'",
+             "placeholder": "Escribir diagnóstico manualmente",
+             "required": true
+           },
+           "diagnosticos_secundarios": {
+             "type": "array",
+             "itemType": "lookup",
+             "source": "classification.cie10|classification.dsm5",
+             "conditional": "tipo_clasificacion !== 'Ingreso manual'",
+             "maxItems": 5
+           },
+           "diagnosticos_secundarios_manual": {
+             "type": "array",
+             "itemType": "text",
+             "conditional": "tipo_clasificacion === 'Ingreso manual'",
+             "placeholder": "Diagnóstico secundario",
+             "maxItems": 5
+           }
+         },
+         "saveToHistory": {
+           "section": "diagnosis",
+           "field": "psychiatric_diagnosis"
+         }
+       },
+       "receta": {
+         "type": "calculated",
+         "label": "Receta",
+         "category": "plan",
+         "order": 4,
+         "calculation": "integrations.recetix.generatePrescription",
+         "displayFormat": "prescription_widget",
+         "actionButton": {
+           "text": "Generar Receta",
+           "action": "openRecetix"
+         },
+         "saveToHistory": {
+           "section": "prescriptions",
+           "field": "current_prescription"
+         }
+       },
+       "proxima-cita": {
+         "type": "object",
+         "label": "Próxima Cita",
+         "required": true,
+         "category": "plan",
+         "order": 5,
+         "properties": {
+           "tiempo_seguimiento": {
+             "type": "select",
+             "options": ["1 semana", "2 semanas", "3 semanas", "4 semanas", "5 semanas", "6 semanas", "7 semanas", "8 semanas", "9 semanas", "10 semanas", "3 meses", "4 meses", "5 meses", "6 meses", "7 meses", "8 meses", "9 meses", "10 meses", "11 meses", "12 meses"]
+           },
+           "fecha_tentativa": {
+             "type": "calculated",
+             "calculation": "calculateAppointmentDate(tiempo_seguimiento, ±7days)",
+             "displayFormat": "date_with_variance"
+           },
+           "notas_cita": {
+             "type": "text",
+             "placeholder": "Notas adicionales para la próxima cita",
+             "optional": true
+           }
+         },
+         "saveToHistory": {
+           "section": "follow_up",
+           "field": "next_appointment"
+         }
+       }
+     }
+   }
+ }
+}

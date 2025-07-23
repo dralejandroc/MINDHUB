@@ -154,3 +154,5 @@ export const NumericQuestion: React.FC<NumericQuestionProps> = ({
     </div>
   );
 };
+
+export default NumericQuestion;

@@ -1,0 +1,609 @@
+{
+ "noteTemplates": {
+   "subsecuente-psiquiatria": {
+     "metadata": {
+       "name": "Consulta Subsecuente - Psiquiatría",
+       "id": "subsecuente-psiquiatria",
+       "description": "Seguimiento psiquiátrico con evaluación de respuesta al tratamiento y examen mental",
+       "icon": "🔄",
+       "specialty": ["psiquiatria", "psiquiatria-clinica"],
+       "estimatedDuration": 30,
+       "version": "1.0",
+       "customizable": true
+     },
+     "autoSelection": {
+       "conditions": [
+         "patient.specialty === 'psiquiatria'",
+         "patient.visits > 0",
+         "appointment.type === 'seguimiento'"
+       ],
+       "reason": "Consulta de seguimiento psiquiátrico"
+     },
+     "categories": [
+       {
+         "id": "resumen-previo",
+         "name": "Resumen de Consulta Anterior",
+         "required": false,
+         "order": 1,
+         "fields": ["ultima-consulta-psiq", "medicacion-previa", "objetivos-previos"]
+       },
+       {
+         "id": "subjetivo-seguimiento",
+         "name": "SUBJETIVO",
+         "required": true,
+         "order": 2,
+         "fields": ["evolucion-sintomas", "adherencia-medicacion", "efectos-secundarios", "eventos-intercurrentes"]
+       },
+       {
+         "id": "objetivo-seguimiento",
+         "name": "OBJETIVO",
+         "required": true,
+         "order": 3,
+         "fields": ["inspeccion-seguimiento", "signos-vitales-seguimiento", "examen-mental-seguimiento", "clinimetrix-seguimiento-psiq"]
+       },
+       {
+         "id": "evaluacion-respuesta",
+         "name": "Evaluación de Respuesta al Tratamiento",
+         "required": true,
+         "order": 4,
+         "fields": ["respuesta-tratamiento", "funcionamiento-actual", "comparacion-basal"]
+       },
+       {
+         "id": "plan-seguimiento-psiq",
+         "name": "PLAN",
+         "required": true,
+         "order": 5,
+         "fields": ["impresion-clinica", "ajustes-medicacion", "nuevas-prescripciones", "recursos-medicamentos", "monitorizacion", "proxima-cita-psiq-seg"]
+       }
+     ],
+     "fields": {
+       "ultima-consulta-psiq": {
+         "type": "calculated",
+         "label": "Última Consulta Psiquiátrica",
+         "category": "resumen-previo",
+         "order": 1,
+         "calculation": "patient.lastPsychiatryNote.summary",
+         "displayFormat": "psychiatric_summary_card",
+         "readonly": true,
+         "saveToHistory": {
+           "section": "session_continuity",
+           "field": "previous_psychiatric_session"
+         }
+       },
+       "medicacion-previa": {
+         "type": "calculated",
+         "label": "Medicación Prescrita Previamente",
+         "category": "resumen-previo",
+         "order": 2,
+         "calculation": "integrations.recetix.lastPrescription",
+         "displayFormat": "medication_summary",
+         "readonly": true,
+         "saveToHistory": {
+           "section": "medication_continuity",
+           "field": "previous_medications"
+         }
+       },
+       "objetivos-previos": {
+         "type": "calculated",
+         "label": "Objetivos de Tratamiento Previos",
+         "category": "resumen-previo",
+         "order": 3,
+         "calculation": "patient.lastPsychiatryNote.treatment_goals",
+         "displayFormat": "goals_summary",
+         "readonly": true,
+         "saveToHistory": {
+           "section": "treatment_continuity",
+           "field": "previous_goals"
+         }
+       },
+       "evolucion-sintomas": {
+         "type": "object",
+         "label": "Evolución de Síntomas",
+         "required": true,
+         "category": "subjetivo-seguimiento",
+         "order": 1,
+         "properties": {
+           "estado_general": {
+             "type": "select",
+             "options": ["Mucho mejor", "Mejor", "Igual", "Peor", "Mucho peor"]
+           },
+           "porcentaje_mejoria": {
+             "type": "range",
+             "min": 0,
+             "max": 100,
+             "step": 10,
+             "label": "% de mejoría global (0-100)"
+           },
+           "sintomas_residuales": {
+             "type": "textarea",
+             "placeholder": "Descripción de síntomas que persisten",
+             "rows": 2,
+             "optional": true
+           },
+           "nuevos_sintomas": {
+             "type": "textarea",
+             "placeholder": "Nuevos síntomas aparecidos desde la última consulta",
+             "rows": 2,
+             "optional": true
+           },
+           "tiempo_mejoria": {
+             "type": "select",
+             "options": ["Inmediata (días)", "Temprana (1-2 semanas)", "Gradual (2-4 semanas)", "Tardía (>4 semanas)", "Sin mejoría"]
+           }
+         },
+         "saveToHistory": {
+           "section": "symptom_evolution",
+           "field": "symptom_progress"
+         }
+       },
+       "adherencia-medicacion": {
+         "type": "object",
+         "label": "Adherencia a la Medicación",
+         "required": true,
+         "category": "subjetivo-seguimiento",
+         "order": 2,
+         "properties": {
+           "cumplimiento": {
+             "type": "select",
+             "options": ["100% (todas las dosis)", "75-99% (mayoría de dosis)", "50-74% (la mitad)", "25-49% (menos de la mitad)", "0-24% (muy pocas dosis)"]
+           },
+           "olvidos_frecuencia": {
+             "type": "select",
+             "options": ["Nunca", "Raramente", "Ocasionalmente", "Frecuentemente", "Muy frecuentemente"]
+           },
+           "razones_incumplimiento": {
+             "type": "checkbox",
+             "options": ["Olvidos", "Efectos secundarios", "Mejoría percibida", "Falta de eficacia", "Costo", "Estigma", "Complejidad del régimen", "Ninguna"],
+             "conditional": "cumplimiento !== '100% (todas las dosis)'"
+           },
+           "horarios_modificados": {
+             "type": "radio",
+             "options": ["Sí", "No"]
+           },
+           "descripcion_modificaciones": {
+             "type": "text",
+             "conditional": "horarios_modificados === 'Sí'",
+             "placeholder": "Describir modificaciones realizadas"
+           }
+         },
+         "saveToHistory": {
+           "section": "medication_adherence",
+           "field": "adherence_assessment"
+         }
+       },
+       "efectos-secundarios": {
+         "type": "object",
+         "label": "Efectos Secundarios",
+         "required": true,
+         "category": "subjetivo-seguimiento",
+         "order": 3,
+         "properties": {
+           "presenta_efectos": {
+             "type": "radio",
+             "options": ["Sí", "No"]
+           },
+           "efectos_presentes": {
+             "type": "checkbox",
+             "options": [
+               "Somnolencia/Sedación",
+               "Insomnio",
+               "Mareos",
+               "Cefalea",
+               "Náuseas/Vómitos",
+               "Cambios de peso",
+               "Sequedad de boca",
+               "Estreñimiento",
+               "Diarrea",
+               "Temblor",
+               "Rigidez muscular",
+               "Inquietud/Acatisia",
+               "Cambios en libido",
+               "Disfunción sexual",
+               "Visión borrosa",
+               "Otros"
+             ],
+             "conditional": "presenta_efectos === 'Sí'"
+           },
+           "severidad_efectos": {
+             "type": "select",
+             "options": ["Leves", "Moderados", "Severos", "Intolerables"],
+             "conditional": "presenta_efectos === 'Sí'"
+           },
+           "impacto_funcionamiento": {
+             "type": "select",
+             "options": ["Sin impacto", "Impacto mínimo", "Impacto moderado", "Impacto significativo"],
+             "conditional": "presenta_efectos === 'Sí'"
+           },
+           "descripcion_efectos": {
+             "type": "textarea",
+             "placeholder": "Descripción detallada de efectos secundarios",
+             "rows": 2,
+             "conditional": "presenta_efectos === 'Sí'"
+           }
+         },
+         "saveToHistory": {
+           "section": "side_effects",
+           "field": "current_side_effects"
+         }
+       },
+       "eventos-intercurrentes": {
+         "type": "textarea",
+         "label": "Eventos Intercurrentes",
+         "required": false,
+         "category": "subjetivo-seguimiento",
+         "order": 4,
+         "placeholder": "Eventos médicos, psicológicos o sociales relevantes ocurridos desde la última consulta",
+         "rows": 3,
+         "saveToHistory": {
+           "section": "intercurrent_events",
+           "field": "recent_events"
+         }
+       },
+       "inspeccion-seguimiento": {
+         "type": "textarea",
+         "label": "Inspección General",
+         "required": true,
+         "category": "objetivo-seguimiento",
+         "order": 1,
+         "placeholder": "Aspecto general, vestimenta, higiene, comportamiento observado en esta consulta",
+         "rows": 2,
+         "saveToHistory": {
+           "section": "physical_exam",
+           "field": "follow_up_inspection"
+         }
+       },
+       "signos-vitales-seguimiento": {
+         "type": "object",
+         "label": "Signos Vitales",
+         "required": true,
+         "category": "objetivo-seguimiento",
+         "order": 2,
+         "properties": {
+           "peso": {
+             "type": "number",
+             "placeholder": "kg",
+             "min": 10,
+             "max": 300,
+             "step": 0.1
+           },
+           "fc": {
+             "type": "number",
+             "placeholder": "lpm",
+             "min": 30,
+             "max": 200
+           },
+           "ta_sistolica": {
+             "type": "number",
+             "placeholder": "mmHg",
+             "min": 60,
+             "max": 250
+           },
+           "ta_diastolica": {
+             "type": "number",
+             "placeholder": "mmHg",
+             "min": 40,
+             "max": 150
+           },
+           "cambios_peso": {
+             "type": "calculated",
+             "calculation": "current_weight - patient.lastVisit.weight",
+             "displayFormat": "weight_change"
+           }
+         },
+         "saveToHistory": {
+           "section": "vital_signs",
+           "field": "follow_up_vitals"
+         }
+       },
+       "examen-mental-seguimiento": {
+         "type": "object",
+         "label": "Examen Mental",
+         "required": true,
+         "category": "objetivo-seguimiento",
+         "order": 3,
+         "properties": {
+           "apariencia": {
+             "type": "select",
+             "options": ["Adecuada", "Desaliñada", "Extraña", "Poca higiene", "Otro"],
+             "allowOther": true
+           },
+           "actitud": {
+             "type": "select",
+             "options": ["Adecuada", "Negativa", "Indiferente", "Irritable", "Iracundo", "Deprimida", "Exaltada"]
+           },
+           "conciencia": {
+             "type": "select",
+             "options": ["Adecuada", "Somnoliento", "Letargo", "Sopor", "Obnubilación", "Estupor", "Alteración cualitativa"]
+           },
+           "orientacion": {
+             "type": "select",
+             "options": ["Bien orientado en 3 esferas", "Desorientado en 1 esfera", "Desorientado en 2 esferas", "Desorientado en 3 esferas"]
+           },
+           "atencion": {
+             "type": "select",
+             "options": ["Adecuada", "Distraída", "Desinteresada", "Aprosexia", "Hipoprosexia"]
+           },
+           "lenguaje": {
+             "type": "select",
+             "options": ["Adecuado", "Incoherente", "Incongruente", "Afasia", "Disartria", "Taquilalia", "Verborrea", "Mutismo", "Bradilalia"]
+           },
+           "pensamiento": {
+             "type": "checkbox",
+             "options": ["Adecuado/Sin alteraciones", "Asociaciones laxas", "Descarrilamientos", "Ideas delirantes", "Ideas obsesivas", "Ideas fóbicas", "Fuga de ideas", "Bloqueo del pensamiento", "Bradipsiquia"]
+           },
+           "afecto": {
+             "type": "select",
+             "options": ["Eutimia", "Tristeza", "Hipotimia", "Depresivo", "Euforia", "Disforia", "Hipomanía", "Aplanamiento afectivo", "Labilidad afectiva"]
+           },
+           "sensopercepcion": {
+             "type": "select",
+             "options": ["Sin alteraciones", "Pseudoalucinaciones", "Ilusiones", "Alucinaciones"]
+           },
+           "memoria": {
+             "type": "select",
+             "options": ["Adecuada", "Amnesia retrógrada", "Amnesia anterógrada", "Hipomnesia", "Confabulaciones"]
+           },
+           "juicio": {
+             "type": "select",
+             "options": ["Adecuado", "Autocrítico", "Heterocrítico", "Fuera de realidad", "Debilitado", "Insuficiente"]
+           },
+           "insight": {
+             "type": "select",
+             "options": ["Completo", "Parcial", "Limitado", "Ausente"]
+           },
+           "cambios_examen": {
+             "type": "textarea",
+             "placeholder": "Cambios significativos respecto al examen mental previo",
+             "rows": 2,
+             "optional": true
+           }
+         },
+         "saveToHistory": {
+           "section": "mental_status_exam",
+           "field": "follow_up_mse"
+         }
+       },
+       "clinimetrix-seguimiento-psiq": {
+         "type": "calculated",
+         "label": "Evaluaciones Clinimetrix",
+         "category": "objetivo-seguimiento",
+         "order": 4,
+         "calculation": "integrations.clinimetrix.followUpResults || 'No hay evaluaciones realizadas'",
+         "displayFormat": "assessment_comparison_psychiatric",
+         "showTrend": true,
+         "compareWith": "baseline_and_previous",
+         "saveToHistory": {
+           "section": "assessments",
+           "field": "psychiatric_follow_up_assessments"
+         }
+       },
+       "respuesta-tratamiento": {
+         "type": "object",
+         "label": "Respuesta al Tratamiento",
+         "required": true,
+         "category": "evaluacion-respuesta",
+         "order": 1,
+         "properties": {
+           "tipo_respuesta": {
+             "type": "select",
+             "options": ["Remisión completa", "Respuesta parcial", "Respuesta mínima", "Sin respuesta", "Empeoramiento"]
+           },
+           "tiempo_respuesta": {
+             "type": "select",
+             "options": ["1-2 semanas", "2-4 semanas", "4-6 semanas", "6-8 semanas", ">8 semanas", "Sin respuesta aún"]
+           },
+           "criterios_respuesta": {
+             "type": "checkbox",
+             "options": ["Reducción de síntomas >50%", "Mejoría funcional", "Mejor calidad de vida", "Reducción de crisis", "Mejor adherencia", "Insight mejorado"]
+           },
+           "areas_mejoria": {
+             "type": "checkbox",
+             "options": ["Estado de ánimo", "Ansiedad", "Psicosis", "Sueño", "Apetito", "Energía", "Concentración", "Relaciones sociales", "Funcionamiento laboral"]
+           }
+         },
+         "saveToHistory": {
+           "section": "treatment_response",
+           "field": "response_assessment"
+         }
+       },
+       "funcionamiento-actual": {
+         "type": "object",
+         "label": "Funcionamiento Actual",
+         "required": true,
+         "category": "evaluacion-respuesta",
+         "order": 2,
+         "properties": {
+           "gaf_actual": {
+             "type": "range",
+             "min": 1,
+             "max": 100,
+             "step": 5,
+             "label": "GAF actual (1-100)"
+           },
+           "funcionamiento_laboral": {
+             "type": "select",
+             "options": ["Normal", "Levemente alterado", "Moderadamente alterado", "Severamente alterado", "No aplica"]
+           },
+           "funcionamiento_social": {
+             "type": "select",
+             "options": ["Normal", "Levemente alterado", "Moderadamente alterado", "Severamente alterado"]
+           },
+           "autocuidado": {
+             "type": "select",
+             "options": ["Independiente", "Asistencia mínima", "Asistencia moderada", "Asistencia total"]
+           },
+           "actividades_vida_diaria": {
+             "type": "select",
+             "options": ["Sin limitaciones", "Limitaciones leves", "Limitaciones moderadas", "Limitaciones severas"]
+           }
+         },
+         "saveToHistory": {
+           "section": "functional_assessment",
+           "field": "current_functioning"
+         }
+       },
+       "comparacion-basal": {
+         "type": "calculated",
+         "label": "Comparación con Estado Basal",
+         "category": "evaluacion-respuesta",
+         "order": 3,
+         "calculation": "patient.progressComparison",
+         "displayFormat": "progress_chart",
+         "properties": {
+           "mejoria_porcentual": "percentage_improvement",
+           "areas_mejoria": "improvement_areas", 
+           "areas_estancadas": "stagnant_areas",
+           "graficas_evolucion": "progress_graphs"
+         },
+         "readonly": true,
+         "saveToHistory": {
+           "section": "progress_tracking",
+           "field": "baseline_comparison"
+         }
+       },
+       "impresion-clinica": {
+         "type": "textarea",
+         "label": "Impresión Clínica Actual",
+         "required": true,
+         "category": "plan-seguimiento-psiq",
+         "order": 1,
+         "placeholder": "Evaluación del estado actual, respuesta al tratamiento y pronóstico",
+         "rows": 3,
+         "saveToHistory": {
+           "section": "clinical_impression",
+           "field": "current_assessment"
+         }
+       },
+       "ajustes-medicacion": {
+         "type": "object",
+         "label": "Ajustes a la Medicación",
+         "required": true,
+         "category": "plan-seguimiento-psiq",
+         "order": 2,
+         "properties": {
+           "requiere_ajustes": {
+             "type": "radio",
+             "options": ["Sí", "No"]
+           },
+           "tipo_ajuste": {
+             "type": "checkbox",
+             "options": ["Aumento de dosis", "Disminución de dosis", "Cambio de medicamento", "Adición de medicamento", "Suspensión de medicamento", "Cambio de horario"],
+             "conditional": "requiere_ajustes === 'Sí'"
+           },
+           "razon_ajuste": {
+             "type": "select",
+             "options": ["Falta de eficacia", "Efectos secundarios", "Mejoría clínica", "Optimización", "Simplificación", "Costo"],
+             "conditional": "requiere_ajustes === 'Sí'"
+           },
+           "descripcion_ajustes": {
+             "type": "textarea",
+             "placeholder": "Describir específicamente los ajustes realizados",
+             "rows": 2,
+             "conditional": "requiere_ajustes === 'Sí'"
+           }
+         },
+         "saveToHistory": {
+           "section": "medication_changes",
+           "field": "current_adjustments"
+         }
+       },
+       "nuevas-prescripciones": {
+         "type": "calculated",
+         "label": "Nueva Prescripción",
+         "category": "plan-seguimiento-psiq",
+         "order": 3,
+         "calculation": "integrations.recetix.generateFollowUpPrescription",
+         "displayFormat": "prescription_widget",
+         "actionButton": {
+           "text": "Generar Nueva Receta",
+           "action": "openRecetix"
+         },
+         "saveToHistory": {
+           "section": "prescriptions",
+           "field": "follow_up_prescription"
+         }
+       },
+       "recursos-medicamentos": {
+         "type": "lookup",
+         "label": "Recursos Informativos sobre Medicamentos",
+         "category": "plan-seguimiento-psiq",
+         "order": 4,
+         "source": "resources.medication_information",
+         "filterBy": "current_medications,new_medications,patient_concerns",
+         "multiple": true,
+         "properties": {
+           "recursos_sugeridos": "suggested_resources",
+           "personalizacion": "customization_notes"
+         },
+         "description": "Materiales educativos sobre los medicamentos prescritos, efectos secundarios y adherencia",
+         "saveToHistory": {
+           "section": "medication_education",
+           "field": "provided_resources"
+         }
+       },
+       "monitorizacion": {
+         "type": "object",
+         "label": "Plan de Monitorización",
+         "required": true,
+         "category": "plan-seguimiento-psiq",
+         "order": 5,
+         "properties": {
+           "parametros_monitorear": {
+             "type": "checkbox",
+             "options": ["Efectividad clínica", "Efectos secundarios", "Adherencia", "Niveles séricos", "Función hepática", "Función renal", "Peso", "Presión arterial", "Hemograma"]
+           },
+           "frecuencia_monitoreo": {
+             "type": "select",
+             "options": ["Semanal", "Quincenal", "Mensual", "Bimensual", "Trimestral", "Según necesidad"]
+           },
+           "escalas_seguimiento": {
+             "type": "lookup",
+             "source": "clinimetrix.follow_up_scales",
+             "multiple": true,
+             "optional": true
+           },
+           "laboratorios_requeridos": {
+             "type": "checkbox",
+             "options": ["Hemograma completo", "Química sanguínea", "Perfil hepático", "Perfil tiroideo", "Niveles de medicamento", "Ninguno"],
+             "optional": true
+           }
+         },
+         "saveToHistory": {
+           "section": "monitoring_plan",
+           "field": "follow_up_monitoring"
+         }
+       },
+       "proxima-cita-psiq-seg": {
+         "type": "object",
+         "label": "Próxima Cita",
+         "required": true,
+         "category": "plan-seguimiento-psiq",
+         "order": 6,
+         "properties": {
+           "tiempo_seguimiento": {
+             "type": "select",
+             "options": ["1 semana", "2 semanas", "3 semanas", "4 semanas", "6 semanas", "8 semanas", "3 meses", "6 meses", "Según necesidad"]
+           },
+           "tipo_cita": {
+             "type": "select",
+             "options": ["Seguimiento rutinario", "Evaluación de respuesta", "Monitoreo de efectos secundarios", "Ajuste de medicación", "Urgente"]
+           },
+           "objetivos_proxima": {
+             "type": "checkbox",
+             "options": ["Evaluar respuesta", "Monitorear efectos secundarios", "Revisar adherencia", "Ajustar dosis", "Evaluar funcionamiento", "Resultados de laboratorio"]
+           },
+           "notas_especiales": {
+             "type": "text",
+             "placeholder": "Notas especiales para la próxima consulta",
+             "optional": true
+           }
+         },
+         "saveToHistory": {
+           "section": "follow_up",
+           "field": "next_psychiatric_appointment"
+         }
+       }
+     }
+   }
+ }
+}

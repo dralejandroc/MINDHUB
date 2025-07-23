@@ -1,7 +1,6 @@
 'use client';
 
 import { UnifiedSidebar } from '@/components/layout/UnifiedSidebar';
-import { UserMetricsProvider } from '@/contexts/UserMetricsContext';
 
 export default function HubsLayout({
   children,
@@ -15,10 +14,8 @@ export default function HubsLayout({
   };
 
   return (
-    <UserMetricsProvider>
-      <UnifiedSidebar currentUser={currentUser}>
-        {children}
-      </UnifiedSidebar>
-    </UserMetricsProvider>
+    <UnifiedSidebar currentUser={currentUser}>
+      {children}
+    </UnifiedSidebar>
   );
 }

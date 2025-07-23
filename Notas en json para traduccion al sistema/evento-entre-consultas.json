@@ -1,0 +1,204 @@
+{
+ "noteTemplates": {
+   "evento-entre-consultas": {
+     "metadata": {
+       "name": "Evento Entre Consultas",
+       "id": "evento-entre-consultas",
+       "description": "Registro rápido de incidentes o eventos reportados por el paciente entre consultas programadas",
+       "icon": "⚡",
+       "specialty": ["psicologia", "psiquiatria", "medicina-general", "todas"],
+       "estimatedDuration": 10,
+       "version": "1.0",
+       "customizable": true
+     },
+     "autoSelection": {
+       "conditions": [
+         "appointment.type === 'evento'",
+         "appointment.type === 'incidente'",
+         "appointment.urgent === true",
+         "contact.type === 'between_sessions'"
+       ],
+       "reason": "Evento o incidente entre consultas"
+     },
+     "categories": [
+       {
+         "id": "evento-info",
+         "name": "Información del Evento",
+         "required": true,
+         "order": 1,
+         "fields": ["tipo-contacto", "fecha-evento", "descripcion-evento", "gravedad-evento"]
+       },
+       {
+         "id": "respuesta-inmediata",
+         "name": "Respuesta Inmediata",
+         "required": true,
+         "order": 2,
+         "fields": ["accion-tomada", "orientacion-dada", "seguimiento-requerido"]
+       }
+     ],
+     "fields": {
+       "tipo-contacto": {
+         "type": "select",
+         "label": "Tipo de Contacto",
+         "required": true,
+         "category": "evento-info",
+         "order": 1,
+         "options": [
+           "Llamada telefónica",
+           "Mensaje/WhatsApp",
+           "Correo electrónico",
+           "Visita presencial urgente",
+           "Familiar/Acompañante reporta",
+           "Otro profesional reporta"
+         ],
+         "saveToHistory": {
+           "section": "event_contact",
+           "field": "contact_type"
+         }
+       },
+       "fecha-evento": {
+         "type": "object",
+         "label": "Fecha y Hora del Evento",
+         "required": true,
+         "category": "evento-info",
+         "order": 2,
+         "properties": {
+           "fecha": {
+             "type": "date",
+             "defaultValue": "today"
+           },
+           "hora_aproximada": {
+             "type": "time",
+             "optional": true
+           },
+           "momento_dia": {
+             "type": "select",
+             "options": ["Madrugada", "Mañana", "Tarde", "Noche", "No especificado"],
+             "conditional": "!hora_aproximada"
+           }
+         },
+         "saveToHistory": {
+           "section": "event_timing",
+           "field": "event_datetime"
+         }
+       },
+       "descripcion-evento": {
+         "type": "textarea",
+         "label": "Descripción del Evento/Incidente",
+         "required": true,
+         "category": "evento-info",
+         "order": 3,
+         "placeholder": "Descripción detallada del evento, síntomas, situación o incidente reportado por el paciente",
+         "rows": 4,
+         "saveToHistory": {
+           "section": "event_description",
+           "field": "incident_details"
+         }
+       },
+       "gravedad-evento": {
+         "type": "object",
+         "label": "Evaluación de Gravedad",
+         "required": true,
+         "category": "evento-info",
+         "order": 4,
+         "properties": {
+           "nivel_urgencia": {
+             "type": "select",
+             "options": ["Baja", "Moderada", "Alta", "Crítica"]
+           },
+           "riesgo_inmediato": {
+             "type": "radio",
+             "options": ["Sí", "No"]
+           },
+           "tipo_riesgo": {
+             "type": "checkbox",
+             "options": ["Autolesión", "Suicidio", "Heteroagresión", "Descompensación", "Crisis de pánico", "Síntomas psicóticos", "Abuso de sustancias", "Otro"],
+             "conditional": "riesgo_inmediato === 'Sí'"
+           },
+           "requiere_atencion_inmediata": {
+             "type": "radio",
+             "options": ["Sí", "No"]
+           }
+         },
+         "saveToHistory": {
+           "section": "risk_assessment",
+           "field": "event_severity"
+         }
+       },
+       "accion-tomada": {
+         "type": "checkbox",
+         "label": "Acción Tomada",
+         "required": true,
+         "category": "respuesta-inmediata",
+         "order": 1,
+         "options": [
+           "Contención telefónica",
+           "Orientación psicológica",
+           "Técnicas de relajación",
+           "Activación de red de apoyo",
+           "Cita de urgencia programada",
+           "Referencia a urgencias",
+           "Contacto con familiar",
+           "Ajuste de medicación (solo psiquiatría)",
+           "Seguimiento telefónico programado",
+           "Recursos psicoeducativos enviados"
+         ],
+         "saveToHistory": {
+           "section": "immediate_response",
+           "field": "actions_taken"
+         }
+       },
+       "orientacion-dada": {
+         "type": "textarea",
+         "label": "Orientación/Instrucciones Dadas",
+         "required": true,
+         "category": "respuesta-inmediata",
+         "order": 2,
+         "placeholder": "Orientaciones específicas, técnicas enseñadas, instrucciones o recomendaciones dadas al paciente",
+         "rows": 3,
+         "saveToHistory": {
+           "section": "intervention",
+           "field": "guidance_provided"
+         }
+       },
+       "seguimiento-requerido": {
+         "type": "object",
+         "label": "Seguimiento Requerido",
+         "required": true,
+         "category": "respuesta-inmediata",
+         "order": 3,
+         "properties": {
+           "requiere_seguimiento": {
+             "type": "radio",
+             "options": ["Sí", "No"]
+           },
+           "tipo_seguimiento": {
+             "type": "checkbox",
+             "options": ["Llamada en 24h", "Llamada en 48h", "Adelantar próxima cita", "Cita de urgencia", "Monitoreo diario", "Involucrar familia", "Interconsulta", "Hospitalización"],
+             "conditional": "requiere_seguimiento === 'Sí'"
+           },
+           "fecha_seguimiento": {
+             "type": "date",
+             "conditional": "requiere_seguimiento === 'Sí'"
+           },
+           "notas_seguimiento": {
+             "type": "text",
+             "placeholder": "Notas adicionales sobre el seguimiento",
+             "conditional": "requiere_seguimiento === 'Sí'",
+             "optional": true
+           },
+           "alertas": {
+             "type": "checkbox",
+             "options": ["Notificar en próxima consulta", "Alerta en expediente", "Informar a otros profesionales"],
+             "optional": true
+           }
+         },
+         "saveToHistory": {
+           "section": "follow_up_plan",
+           "field": "follow_up_requirements"
+         }
+       }
+     }
+   }
+ }
+}

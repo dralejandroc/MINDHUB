@@ -34,7 +34,7 @@ export const LikertQuestion: React.FC<LikertQuestionProps> = ({
 }) => {
   const {
     layout = 'vertical',
-    show_numbers = true,
+    show_numbers = false, // Cambiado a false por defecto para evitar mostrar valores en inglés
     show_labels = true,
     randomize_options = false
   } = metadata;
@@ -100,7 +100,7 @@ export const LikertQuestion: React.FC<LikertQuestionProps> = ({
           
           return (
             <button
-              key={option.id}
+              key={`${option.id}-${index}`}
               onClick={() => onValueChange(option.value, option.label, option.score)}
               style={{
                 background: isSelected 
@@ -159,3 +159,5 @@ export const LikertQuestion: React.FC<LikertQuestionProps> = ({
     </div>
   );
 };
+
+export default LikertQuestion;

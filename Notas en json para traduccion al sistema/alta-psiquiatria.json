@@ -1,0 +1,535 @@
+{
+ "noteTemplates": {
+   "alta-psiquiatria": {
+     "metadata": {
+       "name": "Alta Psiquiátrica",
+       "id": "alta-psiquiatria",
+       "description": "Nota de alta psiquiátrica con resumen completo del tratamiento y recomendaciones",
+       "icon": "🎯",
+       "specialty": ["psiquiatria"],
+       "estimatedDuration": 30,
+       "version": "1.0",
+       "customizable": true
+     },
+     "autoSelection": {
+       "conditions": [
+         "patient.specialty === 'psiquiatria'",
+         "appointment.type === 'alta'",
+         "treatment.status === 'discharge'"
+       ],
+       "reason": "Alta psiquiátrica"
+     },
+     "categories": [
+       {
+         "id": "resumen-tratamiento",
+         "name": "Resumen del Tratamiento",
+         "required": true,
+         "order": 1,
+         "fields": ["tiempo-seguimiento", "diagnosticos-tratados", "medicamentos-utilizados", "modificaciones-farmacologicas"]
+       },
+       {
+         "id": "evolucion-clinica",
+         "name": "Evolución Clínica",
+         "required": true,
+         "order": 2,
+         "fields": ["tiempo-remision", "escalas-clinimetrix", "progreso-clinico", "tags-evolucion"]
+       },
+       {
+         "id": "recursos-utilizados",
+         "name": "Recursos y Apoyo",
+         "required": true,
+         "order": 3,
+         "fields": ["resources-utilizados", "apoyo-psicoterapeutico", "red-apoyo"]
+       },
+       {
+         "id": "motivo-alta",
+         "name": "Motivo y Condiciones de Alta",
+         "required": true,
+         "order": 4,
+         "fields": ["motivo-alta", "criterios-cumplidos", "estado-alta"]
+       },
+       {
+         "id": "plan-mantenimiento",
+         "name": "Plan de Mantenimiento y Prevención",
+         "required": true,
+         "order": 5,
+         "fields": ["medicacion-mantenimiento", "seguimiento-recomendado", "senales-alarma", "plan-contingencia"]
+       },
+       {
+         "id": "resources-alta",
+         "name": "Recursos de Alta",
+         "required": false,
+         "order": 6,
+         "fields": ["nota-alta-sugerida", "recursos-prevencion"]
+       }
+     ],
+     "fields": {
+       "tiempo-seguimiento": {
+         "type": "calculated",
+         "label": "Tiempo Total de Seguimiento",
+         "category": "resumen-tratamiento",
+         "order": 1,
+         "calculation": "patient.treatmentHistory.totalDuration",
+         "displayFormat": "duration_summary",
+         "properties": {
+           "fecha_inicio": "patient.firstVisit.date",
+           "fecha_alta": "today",
+           "numero_consultas": "patient.visitCount",
+           "frecuencia_promedio": "calculated"
+         },
+         "readonly": true,
+         "saveToHistory": {
+           "section": "treatment_summary",
+           "field": "total_follow_up_time"
+         }
+       },
+       "diagnosticos-tratados": {
+         "type": "calculated",
+         "label": "Diagnósticos Tratados",
+         "category": "resumen-tratamiento",
+         "order": 2,
+         "calculation": "patient.diagnosisHistory.allDiagnoses",
+         "displayFormat": "diagnosis_timeline",
+         "properties": {
+           "diagnostico_inicial": "patient.firstVisit.diagnosis",
+           "diagnosticos_evolucion": "patient.diagnosisHistory.changes",
+           "diagnostico_final": "patient.currentDiagnosis"
+         },
+         "readonly": true,
+         "saveToHistory": {
+           "section": "diagnosis_summary",
+           "field": "treated_diagnoses"
+         }
+       },
+       "medicamentos-utilizados": {
+         "type": "calculated",
+         "label": "Medicamentos Utilizados Durante el Tratamiento",
+         "category": "resumen-tratamiento",
+         "order": 3,
+         "calculation": "integrations.recetix.medicationHistory",
+         "displayFormat": "medication_timeline",
+         "properties": {
+           "medicamentos_actuales": "current_medications",
+           "medicamentos_previos": "discontinued_medications",
+           "dosis_maximas": "peak_doses",
+           "duracion_tratamientos": "treatment_durations"
+         },
+         "readonly": true,
+         "saveToHistory": {
+           "section": "medication_summary",
+           "field": "medication_history"
+         }
+       },
+       "modificaciones-farmacologicas": {
+         "type": "calculated",
+         "label": "Modificaciones Farmacológicas Realizadas",
+         "category": "resumen-tratamiento",
+         "order": 4,
+         "calculation": "integrations.recetix.medicationChanges",
+         "displayFormat": "change_log",
+         "properties": {
+           "ajustes_dosis": "dose_adjustments",
+           "cambios_medicamento": "medication_switches",
+           "adiciones": "medication_additions",
+           "suspensiones": "medication_discontinuations",
+           "razones_cambios": "change_reasons"
+         },
+         "readonly": true,
+         "saveToHistory": {
+           "section": "medication_summary",
+           "field": "pharmacological_modifications"
+         }
+       },
+       "tiempo-remision": {
+         "type": "object",
+         "label": "Tiempo en Remisión",
+         "required": true,
+         "category": "evolucion-clinica",
+         "order": 1,
+         "properties": {
+           "inicio_remision": {
+             "type": "date",
+             "label": "Fecha de inicio de remisión"
+           },
+           "duracion_remision": {
+             "type": "calculated",
+             "calculation": "today - inicio_remision",
+             "displayFormat": "duration"
+           },
+           "tipo_remision": {
+             "type": "select",
+             "options": ["Remisión completa", "Remisión parcial", "Respuesta clínica", "Estabilización"]
+           },
+           "criterios_remision": {
+             "type": "checkbox",
+             "options": ["Ausencia de síntomas", "Funcionamiento normal", "Escalas en rango normal", "Medicación estable", "Sin crisis"]
+           }
+         },
+         "saveToHistory": {
+           "section": "clinical_evolution",
+           "field": "remission_period"
+         }
+       },
+       "escalas-clinimetrix": {
+         "type": "calculated",
+         "label": "Escalas Utilizadas en Clinimetrix",
+         "category": "evolucion-clinica",
+         "order": 2,
+         "calculation": "integrations.clinimetrix.completeTreatmentSummary",
+         "displayFormat": "assessment_progression",
+         "properties": {
+           "escalas_aplicadas": "all_scales_used",
+           "resultados_iniciales": "baseline_scores",
+           "resultados_finales": "discharge_scores",
+           "mejoria_porcentual": "percentage_improvement",
+           "graficas_evolucion": "progress_charts"
+         },
+         "readonly": true,
+         "saveToHistory": {
+           "section": "assessment_summary",
+           "field": "clinimetrix_progression"
+         }
+       },
+       "progreso-clinico": {
+         "type": "textarea",
+         "label": "Progreso Clínico Observado",
+         "required": true,
+         "category": "evolucion-clinica",
+         "order": 3,
+         "placeholder": "Resumen del progreso clínico, mejorías observadas, cambios en funcionamiento",
+         "rows": 4,
+         "saveToHistory": {
+           "section": "clinical_evolution",
+           "field": "clinical_progress"
+         }
+       },
+       "tags-evolucion": {
+         "type": "calculated",
+         "label": "Tags Asignados Durante el Tratamiento",
+         "category": "evolucion-clinica",
+         "order": 4,
+         "calculation": "patient.treatmentTags.chronological",
+         "displayFormat": "tag_timeline",
+         "properties": {
+           "tags_iniciales": "initial_tags",
+           "tags_agregados": "added_tags",
+           "tags_removidos": "removed_tags",
+           "tags_finales": "final_tags"
+         },
+         "readonly": true,
+         "saveToHistory": {
+           "section": "treatment_tags",
+           "field": "tag_evolution"
+         }
+       },
+       "resources-utilizados": {
+         "type": "calculated",
+         "label": "Recursos Utilizados",
+         "category": "recursos-utilizados",
+         "order": 1,
+         "calculation": "integrations.resources.treatmentSummary",
+         "displayFormat": "resource_summary",
+         "properties": {
+           "recursos_entregados": "delivered_resources",
+           "frecuencia_uso": "usage_frequency",
+           "efectividad_percibida": "perceived_effectiveness",
+           "recursos_mas_utiles": "most_helpful_resources"
+         },
+         "readonly": true,
+         "saveToHistory": {
+           "section": "resource_summary",
+           "field": "resources_used"
+         }
+       },
+       "apoyo-psicoterapeutico": {
+         "type": "object",
+         "label": "Apoyo Psicoterapéutico",
+         "required": false,
+         "category": "recursos-utilizados",
+         "order": 2,
+         "properties": {
+           "recibio_psicoterapia": {
+             "type": "radio",
+             "options": ["Sí", "No"]
+           },
+           "tipo_psicoterapia": {
+             "type": "text",
+             "conditional": "recibio_psicoterapia === 'Sí'",
+             "placeholder": "Tipo de psicoterapia recibida"
+           },
+           "duracion_psicoterapia": {
+             "type": "text",
+             "conditional": "recibio_psicoterapia === 'Sí'",
+             "placeholder": "Duración del proceso psicoterapéutico"
+           },
+           "coordinacion_tratamiento": {
+             "type": "select",
+             "options": ["Excelente", "Buena", "Regular", "Limitada", "No aplica"],
+             "conditional": "recibio_psicoterapia === 'Sí'"
+           }
+         },
+         "saveToHistory": {
+           "section": "psychotherapy_support",
+           "field": "therapy_coordination"
+         }
+       },
+       "red-apoyo": {
+         "type": "object",
+         "label": "Red de Apoyo",
+         "required": true,
+         "category": "recursos-utilizados",
+         "order": 3,
+         "properties": {
+           "fortaleza_red_apoyo": {
+             "type": "select",
+             "options": ["Muy fuerte", "Fuerte", "Moderada", "Débil", "Ausente"]
+           },
+           "participacion_familia": {
+             "type": "select",
+             "options": ["Muy activa", "Activa", "Moderada", "Limitada", "Ausente"]
+           },
+           "adherencia_tratamiento": {
+             "type": "select",
+             "options": ["Excelente", "Buena", "Regular", "Deficiente"]
+           }
+         },
+         "saveToHistory": {
+           "section": "support_network",
+           "field": "family_support"
+         }
+       },
+       "motivo-alta": {
+         "type": "select",
+         "label": "Motivo del Alta",
+         "required": true,
+         "category": "motivo-alta",
+         "order": 1,
+         "options": [
+           "Remisión completa de síntomas",
+           "Remisión parcial con funcionamiento adecuado",
+           "Estabilización clínica",
+           "Transferencia a otro nivel de atención",
+           "Solicitud del paciente",
+           "Falta de adherencia al tratamiento",
+           "Cambio de residencia",
+           "Otro"
+         ],
+         "allowOther": true,
+         "saveToHistory": {
+           "section": "discharge_info",
+           "field": "discharge_reason"
+         }
+       },
+       "criterios-cumplidos": {
+         "type": "checkbox",
+         "label": "Criterios de Alta Cumplidos",
+         "required": true,
+         "category": "motivo-alta",
+         "order": 2,
+         "options": [
+           "Ausencia o control de síntomas psiquiátricos",
+           "Funcionamiento psicosocial adecuado",
+           "Medicación estable y bien tolerada",
+           "Insight y adherencia al tratamiento",
+           "Red de apoyo funcional",
+           "Plan de contingencia establecido",
+           "Seguimiento programado",
+           "Recursos de apoyo disponibles"
+         ],
+         "saveToHistory": {
+           "section": "discharge_criteria",
+           "field": "criteria_met"
+         }
+       },
+       "estado-alta": {
+         "type": "object",
+         "label": "Estado al Momento del Alta",
+         "required": true,
+         "category": "motivo-alta",
+         "order": 3,
+         "properties": {
+           "estado_mental": {
+             "type": "select",
+             "options": ["Eutímico", "Estable", "Mejoría significativa", "Mejoría parcial", "Sin cambios"]
+           },
+           "funcionamiento_global": {
+             "type": "range",
+             "min": 1,
+             "max": 100,
+             "step": 5,
+             "label": "GAF (1-100)"
+           },
+           "riesgo_actual": {
+             "type": "select",
+             "options": ["Sin riesgo", "Riesgo bajo", "Riesgo moderado", "Riesgo alto"]
+           },
+           "capacidad_autocuidado": {
+             "type": "select",
+             "options": ["Independiente", "Mínimo apoyo", "Apoyo moderado", "Apoyo significativo"]
+           }
+         },
+         "saveToHistory": {
+           "section": "discharge_status",
+           "field": "mental_state_at_discharge"
+         }
+       },
+       "medicacion-mantenimiento": {
+         "type": "object",
+         "label": "Medicación de Mantenimiento",
+         "required": true,
+         "category": "plan-mantenimiento",
+         "order": 1,
+         "properties": {
+           "requiere_medicacion": {
+             "type": "radio",
+             "options": ["Sí", "No"]
+           },
+           "medicamentos_mantenimiento": {
+             "type": "calculated",
+             "calculation": "integrations.recetix.currentMedications",
+             "conditional": "requiere_medicacion === 'Sí'",
+             "displayFormat": "maintenance_prescription"
+           },
+           "duracion_recomendada": {
+             "type": "select",
+             "options": ["3 meses", "6 meses", "1 año", "2 años", "Indefinido", "A evaluar"],
+             "conditional": "requiere_medicacion === 'Sí'"
+           },
+           "monitorizacion_requerida": {
+             "type": "checkbox",
+             "options": ["Niveles séricos", "Función hepática", "Función renal", "Hemograma", "Peso", "Presión arterial"],
+             "conditional": "requiere_medicacion === 'Sí'"
+           }
+         },
+         "saveToHistory": {
+           "section": "maintenance_plan",
+           "field": "medication_maintenance"
+         }
+       },
+       "seguimiento-recomendado": {
+         "type": "object",
+         "label": "Seguimiento Recomendado",
+         "required": true,
+         "category": "plan-mantenimiento",
+         "order": 2,
+         "properties": {
+           "frecuencia_inicial": {
+             "type": "select",
+             "options": ["1 mes", "2 meses", "3 meses", "6 meses", "SOS", "No requiere"]
+           },
+           "tipo_seguimiento": {
+             "type": "checkbox",
+             "options": ["Psiquiatría", "Psicología", "Medicina familiar", "Trabajo social", "Otro especialista"]
+           },
+           "objetivos_seguimiento": {
+             "type": "checkbox",
+             "options": ["Monitoreo de síntomas", "Adherencia a medicación", "Efectos secundarios", "Funcionamiento", "Prevención de recaídas"]
+           },
+           "escalas_seguimiento": {
+             "type": "lookup",
+             "source": "clinimetrix.recommended_follow_up",
+             "multiple": true,
+             "optional": true
+           }
+         },
+         "saveToHistory": {
+           "section": "follow_up_plan",
+           "field": "recommended_follow_up"
+         }
+       },
+       "senales-alarma": {
+         "type": "checkbox",
+         "label": "Señales de Alarma para el Paciente y Familia",
+         "required": true,
+         "category": "plan-mantenimiento",
+         "order": 3,
+         "options": [
+           "Reaparición de síntomas previos",
+           "Cambios en el estado de ánimo",
+           "Alteraciones del sueño",
+           "Aislamiento social",
+           "Descuido del autocuidado",
+           "Ideas de muerte o suicidio",
+           "Consumo de alcohol o drogas",
+           "Conflictos familiares o laborales",
+           "Abandono de medicación",
+           "Pérdida de insight"
+         ],
+         "saveToHistory": {
+           "section": "warning_signs",
+           "field": "alarm_signals"
+         }
+       },
+       "plan-contingencia": {
+         "type": "object",
+         "label": "Plan de Contingencia",
+         "required": true,
+         "category": "plan-mantenimiento",
+         "order": 4,
+         "properties": {
+           "contacto_emergencia": {
+             "type": "text",
+             "placeholder": "Contacto en caso de emergencia"
+           },
+           "que_hacer_crisis": {
+             "type": "textarea",
+             "placeholder": "Instrucciones específicas para manejo de crisis",
+             "rows": 3
+           },
+           "cuando_buscar_ayuda": {
+             "type": "textarea",
+             "placeholder": "Cuándo buscar ayuda profesional inmediata",
+             "rows": 2
+           },
+           "recursos_disponibles": {
+             "type": "text",
+             "placeholder": "Recursos comunitarios y de emergencia disponibles"
+           }
+         },
+         "saveToHistory": {
+           "section": "contingency_plan",
+           "field": "crisis_management"
+         }
+       },
+       "nota-alta-sugerida": {
+         "type": "calculated",
+         "label": "Nota de Alta Sugerida por IA",
+         "category": "resources-alta",
+         "order": 1,
+         "calculation": "integrations.resources.generateDischargeNote",
+         "inputData": {
+           "patient_summary": "patient.completeTreatmentSummary",
+           "diagnosis": "patient.finalDiagnosis",
+           "treatment_response": "patient.treatmentResponse",
+           "strengths": "patient.identifiedStrengths",
+           "achievements": "patient.treatmentAchievements"
+         },
+         "displayFormat": "ai_generated_note",
+         "editable": true,
+         "placeholder": "Resumen personalizado del tratamiento, logros del paciente, y mensaje de empoderamiento generado automáticamente",
+         "saveToHistory": {
+           "section": "discharge_resources",
+           "field": "ai_discharge_note"
+         }
+       },
+       "recursos-prevencion": {
+         "type": "lookup",
+         "label": "Recursos para Prevención de Recaídas",
+         "category": "resources-alta",
+         "order": 2,
+         "source": "resources.relapse_prevention",
+         "filterBy": "patient.diagnosis,patient.risk_factors,patient.strengths",
+         "multiple": true,
+         "properties": {
+           "recursos_seleccionados": "selected_resources",
+           "personalizacion": "customization_notes"
+         },
+         "saveToHistory": {
+           "section": "discharge_resources",
+           "field": "relapse_prevention_resources"
+         }
+       }
+     }
+   }
+ }
+}

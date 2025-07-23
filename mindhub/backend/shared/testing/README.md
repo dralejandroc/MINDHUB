@@ -1,500 +1,215 @@
-# MindHub Healthcare Platform - Testing Framework
+# MindHub Healthcare Platform - Integration Testing Suite
 
-## 🧪 Overview
+Este directorio contiene la suite completa de pruebas de integración y validación para la plataforma de salud MindHub, diseñada específicamente para cumplir con los estándares de atención médica y normativas de México.
 
-Comprehensive testing framework for the MindHub Healthcare Platform, including API testing, integration testing, compliance validation, and performance benchmarking. All tests are designed with healthcare compliance requirements in mind.
+## 📋 Descripción General
 
-## 🏗️ Test Architecture
+La suite de pruebas incluye:
 
-### Test Suites
+- **Pruebas de Integración Completa**: Validación de flujos de trabajo de atención médica
+- **Validación de Contratos API**: Verificación de consistencia de endpoints
+- **Pruebas de Rendimiento y Carga**: Evaluación bajo condiciones realistas
+- **Pruebas de Seguridad y Cumplimiento**: Validación de estándares de seguridad en salud
+- **Reportes Comprehensivos**: Documentación detallada de resultados
 
-1. **API Test Suite** (`api-test-suite.js`)
-   - Unit and integration tests for all API endpoints
-   - Security testing (XSS, SQL injection, authentication)
-   - Input validation and sanitization testing
-   - Rate limiting and DDoS protection testing
-   - Healthcare compliance validation
+## 🗂️ Estructura de Archivos
 
-2. **Integration Tests** (`integration-tests.js`)
-   - End-to-end workflow testing
-   - Cross-service communication testing
-   - Healthcare-specific scenarios
-   - Emergency access procedures
-   - PHI access control validation
+```
+shared/testing/
+├── README.md                          # Este archivo
+├── comprehensive-test-runner.js        # Runner principal para todas las pruebas
+├── api-test-suite.js                   # Suite base de pruebas de API
+├── integration-tests.js                # Pruebas de integración de flujos de trabajo
+├── integrix-integration-tests.js       # Pruebas específicas de Integrix (gateway)
+├── api-contract-validation.js          # Validación de contratos de API
+├── performance-load-tests.js           # Pruebas de rendimiento y carga
+├── security-compliance-tests.js        # Pruebas de seguridad y cumplimiento
+└── test-runner.js                      # Runner base heredado
+```
 
-3. **Test Runner** (`test-runner.js`)
-   - Orchestrates all test execution
-   - Generates comprehensive reports
-   - CI/CD integration support
-   - Multiple output formats (JSON, HTML, JUnit, CSV)
+## 🚀 Inicio Rápido
 
-## 🚀 Quick Start
-
-### Prerequisites
+### Requisitos Previos
 
 ```bash
-# Install dependencies
-npm install
-
-# Set up test environment variables
-cp .env.example .env
+npm install supertest joi jsonwebtoken bcryptjs uuid
 ```
 
-### Running Tests
-
-```bash
-# Run all tests
-npm run test:all
-
-# Run specific test suites
-npm run test:api
-npm run test:integration
-npm run test:compliance
-npm run test:performance
-
-# Run tests for CI/CD
-npm run test:ci
-```
-
-### Manual Test Execution
-
-```bash
-# Run with custom options
-node shared/testing/test-runner.js --verbose --filter api,compliance --format json,html
-
-# Run only security tests
-node shared/testing/test-runner.js --filter api --verbose --stop-on-failure
-
-# Run performance benchmarks
-node shared/testing/test-runner.js --filter performance --format json
-```
-
-## 🔧 Test Configuration
-
-### Environment Variables
-
-```bash
-# Test Configuration
-TEST_TIMEOUT=300000                    # Test timeout in milliseconds
-TEST_VERBOSE=true                      # Enable verbose logging
-TEST_STOP_ON_FAILURE=false            # Stop on first failure
-TEST_PARALLEL=false                    # Run tests in parallel
-
-# API Configuration
-API_BASE_URL=http://localhost:3000/api/v1
-JWT_SECRET=your-test-jwt-secret
-
-# Database Configuration (for integration tests)
-DATABASE_URL=postgresql://user:pass@localhost:5432/test_db
-REDIS_URL=redis://localhost:6379
-
-# Healthcare Compliance
-ENABLE_COMPLIANCE_TESTS=true
-NOM024_VALIDATION=true
-COFEPRIS_VALIDATION=true
-```
-
-### Test Data Configuration
-
-The testing framework uses predefined test data that complies with healthcare standards:
+### Uso Básico
 
 ```javascript
-// Test users with different roles
-const testUsers = {
-  admin: { role: 'admin', permissions: [...] },
-  psychiatrist: { role: 'psychiatrist', permissions: [...] },
-  psychologist: { role: 'psychologist', permissions: [...] },
-  nurse: { role: 'nurse', permissions: [...] },
-  patient: { role: 'patient', permissions: [...] }
-};
+const express = require('express');
+const ComprehensiveTestRunner = require('./shared/testing/comprehensive-test-runner');
 
-// Test data for various entities
-const testData = {
-  validPatient: { /* Valid patient data */ },
-  invalidPatient: { /* Invalid data for validation testing */ },
-  validAssessment: { /* Valid assessment data */ },
-  validForm: { /* Valid form data */ },
-  maliciousPayloads: [ /* XSS, SQL injection, etc. */ ]
-};
-```
+// Tu aplicación Express
+const app = express();
 
-## 🧪 Test Categories
-
-### 1. API Tests
-
-#### Authentication & Authorization
-- JWT token validation
-- Role-based access control
-- Session management
-- Emergency access procedures
-
-#### Security Tests
-- XSS prevention
-- SQL injection prevention
-- Input validation and sanitization
-- Rate limiting
-- DDoS protection
-
-#### Data Validation
-- Patient data validation
-- Clinical assessment validation
-- Form submission validation
-- Healthcare-specific field validation
-
-#### Compliance Tests
-- PHI access logging
-- Audit trail completeness
-- Data encryption verification
-- Access control validation
-
-### 2. Integration Tests
-
-#### Healthcare Workflows
-- **Patient Registration Workflow**
-  - Create patient record
-  - Validate patient data
-  - Assign medical record number
-  - Create initial assessment
-  - Log PHI access
-  - Send notifications
-
-- **Clinical Assessment Workflow**
-  - Authenticate healthcare professional
-  - Access patient record
-  - Create assessment session
-  - Submit responses
-  - Calculate scores
-  - Generate interpretation
-  - Store with audit trail
-
-- **Emergency Access Workflow**
-  - Emergency authentication
-  - Override access controls
-  - Access critical data
-  - Log emergency access
-  - Generate incident report
-
-#### Cross-Service Communication
-- Expedix ↔ Clinimetrix integration
-- Clinimetrix ↔ Formx integration
-- Formx ↔ Resources integration
-- Integrix orchestration
-
-### 3. Compliance Tests
-
-#### NOM-024-SSA3-2010 Compliance
-- ✅ PHI Access Controls
-- ✅ Audit Trail Completeness
-- ✅ Data Encryption
-- ✅ Emergency Access Procedures
-
-#### COFEPRIS Compliance
-- ✅ Medical Software Certification
-- ✅ Clinical Data Integrity
-- ✅ Healthcare Professional Authentication
-
-#### Data Protection
-- ✅ Data Minimization
-- ✅ Consent Management
-- ✅ Data Retention Policies
-
-### 4. Performance Tests
-
-#### Load Testing
-- API response times
-- Concurrent user handling
-- Database performance
-- Memory usage monitoring
-
-#### Stress Testing
-- Connection pool limits
-- Resource exhaustion scenarios
-- Recovery testing
-
-## 📊 Test Reports
-
-### Report Formats
-
-1. **JSON Report** (`test-report-TIMESTAMP.json`)
-   - Complete test results
-   - Machine-readable format
-   - CI/CD integration
-
-2. **HTML Report** (`test-report-TIMESTAMP.html`)
-   - Interactive web report
-   - Visual charts and metrics
-   - Detailed compliance status
-
-3. **JUnit XML** (`junit-report-TIMESTAMP.xml`)
-   - CI/CD integration
-   - Standard test result format
-
-4. **CSV Report** (`test-report-TIMESTAMP.csv`)
-   - Spreadsheet analysis
-   - Test metrics export
-
-### Report Contents
-
-```json
-{
-  "summary": {
-    "timestamp": "2024-01-15T10:30:00Z",
-    "totalTests": 150,
-    "passedTests": 142,
-    "failedTests": 8,
-    "complianceScore": 95,
-    "securityScore": 98,
-    "performanceScore": 90
-  },
-  "compliance": {
-    "nom024Status": "COMPLIANT",
-    "cofeprisStatus": "COMPLIANT",
-    "overallStatus": "COMPLIANT"
-  },
-  "details": {
-    "api": { /* API test results */ },
-    "integration": { /* Integration test results */ },
-    "security": { /* Security test results */ },
-    "performance": { /* Performance metrics */ }
-  },
-  "recommendations": [
-    "Address failed security tests",
-    "Improve API response times",
-    "Review compliance gaps"
-  ]
-}
-```
-
-## 🔍 Healthcare-Specific Testing
-
-### PHI (Protected Health Information) Testing
-
-```javascript
-// Test PHI access controls
-await testPHIAccessControl({
-  patient: testPatient,
-  accessor: testUser,
-  expectedAccess: 'ALLOWED' | 'DENIED',
-  auditRequired: true
+// Configurar y ejecutar pruebas
+const runner = new ComprehensiveTestRunner(app, {
+  baseURL: '/api/v1',
+  outputDir: './test-reports',
+  verbose: true
 });
 
-// Test data minimization
-await testDataMinimization({
-  endpoint: '/expedix/patients/summary',
-  userRole: 'nurse',
-  expectedFields: ['firstName', 'lastName', 'basicContactInfo'],
-  restrictedFields: ['email', 'fullAddress', 'emergencyContact']
-});
-```
-
-### Clinical Workflow Testing
-
-```javascript
-// Test complete clinical assessment workflow
-const workflow = await testClinicalWorkflow({
-  patient: testPatient,
-  assessor: testPsychologist,
-  assessment: 'Beck Depression Inventory',
-  expectedOutcome: {
-    scoreCalculated: true,
-    interpretationGenerated: true,
-    auditLogged: true
-  }
-});
-```
-
-### Emergency Access Testing
-
-```javascript
-// Test emergency override procedures
-const emergencyAccess = await testEmergencyAccess({
-  patient: testPatient,
-  emergencyUser: testNurse,
-  justification: 'Patient unconscious, need medical history',
-  expectedBehavior: {
-    accessGranted: true,
-    auditLogged: true,
-    incidentReportGenerated: true,
-    managerNotified: true
-  }
-});
-```
-
-## 🛠️ Custom Test Development
-
-### Creating New Test Suites
-
-```javascript
-const { APITestSuite } = require('./shared/testing');
-
-class CustomTestSuite extends APITestSuite {
-  async testCustomWorkflow() {
-    // Implement custom test logic
-    const result = await this.authenticatedRequest('post', '/custom/endpoint', this.testUsers.admin)
-      .send(customData);
-    
-    return {
-      passed: result.status === 200,
-      details: result.body
-    };
+async function runTests() {
+  try {
+    const results = await runner.runComprehensiveTests();
+    console.log('Resultados:', results.summary);
+  } catch (error) {
+    console.error('Error en pruebas:', error);
   }
 }
+
+runTests();
 ```
 
-### Adding Compliance Checks
+## 🧪 Suites de Pruebas Disponibles
+
+### 1. Comprehensive Test Runner (`comprehensive-test-runner.js`)
+Runner maestro que ejecuta todas las suites de pruebas y genera reportes completos.
+
+### 2. API Test Suite (`api-test-suite.js`)
+Pruebas fundamentales de la API incluyendo autenticación, validación y cumplimiento normativo.
+
+### 3. Integration Tests (`integration-tests.js`)
+Pruebas de flujos de trabajo completos de atención médica y comunicación entre servicios.
+
+### 4. Integrix Integration Tests (`integrix-integration-tests.js`)
+Pruebas específicas del gateway interno Integrix para descubrimiento de servicios y enrutamiento.
+
+### 5. API Contract Validation (`api-contract-validation.js`)
+Validación de contratos usando esquemas Joi para garantizar consistencia de API.
+
+### 6. Performance Load Tests (`performance-load-tests.js`)
+Pruebas de rendimiento bajo diferentes condiciones de carga y estrés.
+
+### 7. Security Compliance Tests (`security-compliance-tests.js`)
+Pruebas de seguridad y cumplimiento con estándares de salud como HIPAA y NOM-024.
+
+## ⚙️ Configuración
+
+### Ejemplo de Configuración Completa
 
 ```javascript
-async validateCustomCompliance() {
-  const checks = [
-    {
-      name: 'Custom Healthcare Standard',
-      test: async () => {
-        // Implement compliance check
-        return { passed: true, details: 'Compliance verified' };
-      }
-    }
-  ];
+const config = {
+  baseURL: '/api/v1',
+  outputDir: './test-reports',
+  verbose: true,
   
-  // Execute checks and return results
-}
+  // Suites a ejecutar
+  suites: {
+    api: true,
+    integration: true,
+    integrix: true,
+    contracts: true,
+    performance: true,
+    security: true
+  },
+  
+  // Configuración de rendimiento
+  performance: {
+    loadTest: { users: 25, duration: 30000 },
+    stressTest: { maxUsers: 100, stepSize: 20 }
+  },
+  
+  // Configuración de seguridad
+  security: {
+    complianceStandards: ['hipaa', 'nom024', 'gdpr']
+  }
+};
 ```
 
-## 🔄 CI/CD Integration
+## 📊 Reportes Generados
 
-### GitHub Actions Example
+1. **Reporte JSON Completo**: Resultados detallados en formato JSON
+2. **Reporte HTML Interactivo**: Dashboard visual con métricas
+3. **Resumen Ejecutivo**: Documento markdown de alto nivel
+4. **Reporte de Cumplimiento**: Estado de cumplimiento normativo
+
+## 🏥 Cumplimiento de Estándares de Salud
+
+### HIPAA (Estados Unidos)
+- Controles de acceso a PHI (Protected Health Information)
+- Auditoría de accesos y registros
+- Cifrado de datos en tránsito y reposo
+
+### NOM-024-SSA3-2010 (México)
+- Autenticación de profesionales de salud
+- Cifrado de datos de pacientes
+- Integridad de registros médicos
+
+### COFEPRIS (México)
+- Certificación de software médico
+- Validación de datos clínicos
+- Sistema de gestión de calidad
+
+## 🔧 Ejecución
+
+### Ejecutar Suite Completa
+
+```javascript
+const runner = new ComprehensiveTestRunner(app);
+const results = await runner.runComprehensiveTests();
+```
+
+### Ejecutar Suites Específicas
+
+```javascript
+// Solo pruebas de API
+const apiSuite = new APITestSuite(app);
+const apiResults = await apiSuite.runAllTests();
+
+// Solo pruebas de seguridad
+const securityTests = new SecurityComplianceTests(app);
+const securityResults = await securityTests.runSecurityComplianceTestSuite();
+```
+
+## 📈 Métricas de Cumplimiento
+
+### Estados Posibles
+- **COMPLIANT**: Cumple todos los requisitos
+- **NON_COMPLIANT**: Violaciones detectadas
+- **UNKNOWN**: Estado indeterminado
+
+### Criterios de Evaluación
+- Tiempo de respuesta (P50, P95, P99)
+- Tasa de error < 1%
+- Disponibilidad > 99.9%
+- Cumplimiento de seguridad > 95%
+
+## 🚨 Resolución de Problemas
+
+### Problemas Comunes
+
+1. **Timeouts en pruebas de rendimiento**: Aumentar timeout o reducir carga
+2. **Fallas de autenticación**: Verificar configuración JWT
+3. **Problemas de memoria**: Usar flags de Node.js para memoria extendida
+
+### Debugging
+
+```javascript
+const runner = new ComprehensiveTestRunner(app, {
+  verbose: true,
+  suites: { api: true } // Solo una suite para debugging
+});
+```
+
+## 🤝 Uso en CI/CD
 
 ```yaml
-name: Healthcare Platform Tests
+# GitHub Actions example
+- name: Run Integration Tests
+  run: node shared/testing/comprehensive-test-runner.js
 
-on: [push, pull_request]
-
-jobs:
-  test:
-    runs-on: ubuntu-latest
-    
-    steps:
-    - uses: actions/checkout@v3
-    
-    - name: Setup Node.js
-      uses: actions/setup-node@v3
-      with:
-        node-version: '18'
-        
-    - name: Install dependencies
-      run: npm ci
-      
-    - name: Run tests
-      run: npm run test:ci
-      
-    - name: Upload test results
-      uses: actions/upload-artifact@v3
-      with:
-        name: test-reports
-        path: test-reports/
-        
-    - name: Check compliance
-      run: |
-        if grep -q "NON_COMPLIANT" test-reports/*.json; then
-          echo "❌ Healthcare compliance tests failed"
-          exit 1
-        else
-          echo "✅ Healthcare compliance tests passed"
-        fi
+- name: Upload Reports
+  uses: actions/upload-artifact@v2
+  with:
+    name: test-reports
+    path: test-reports/
 ```
-
-### Docker Integration
-
-```dockerfile
-# Test container
-FROM node:18-alpine
-
-WORKDIR /app
-COPY package*.json ./
-RUN npm ci
-
-COPY . .
-
-# Run tests
-CMD ["npm", "run", "test:ci"]
-```
-
-## 🚨 Troubleshooting
-
-### Common Issues
-
-1. **Test Timeouts**
-   ```bash
-   # Increase timeout for slow tests
-   TEST_TIMEOUT=600000 npm run test:all
-   ```
-
-2. **Database Connection Issues**
-   ```bash
-   # Check database connectivity
-   npm run db:test-connection
-   ```
-
-3. **Authentication Failures**
-   ```bash
-   # Verify JWT secret configuration
-   echo $JWT_SECRET
-   ```
-
-4. **Compliance Test Failures**
-   ```bash
-   # Run compliance tests in isolation
-   npm run test:compliance -- --verbose
-   ```
-
-### Debug Mode
-
-```bash
-# Enable debug logging
-DEBUG=test:* npm run test:all
-
-# Run single test with debug output
-NODE_ENV=test DEBUG=* node shared/testing/test-runner.js --filter api --verbose
-```
-
-## 📝 Best Practices
-
-### Test Data Management
-- Use realistic but anonymized healthcare data
-- Implement data cleanup after tests
-- Maintain HIPAA-compliant test datasets
-
-### Security Testing
-- Regularly update malicious payload databases
-- Test against OWASP Top 10 vulnerabilities
-- Validate all input sanitization
-
-### Compliance Testing
-- Stay updated with healthcare regulations
-- Document compliance test rationale
-- Regular compliance audit reviews
-
-### Performance Testing
-- Set realistic performance benchmarks
-- Monitor resource usage trends
-- Test under various load conditions
 
 ---
 
-## 📄 License
-
-This testing framework is part of the MindHub Healthcare Platform and is subject to the same licensing terms.
-
-## 🤝 Contributing
-
-When contributing new tests:
-
-1. Follow healthcare data privacy guidelines
-2. Include compliance documentation
-3. Add performance benchmarks
-4. Update test documentation
-
----
-
-*Generated on: January 15, 2024*  
-*Testing Framework Version: 1.0.0*  
-*Healthcare Compliance: NOM-024-SSA3-2010, COFEPRIS*
+**Versión**: 1.0.0  
+**Autor**: Equipo de Desarrollo MindHub  
+**Fecha**: Julio 2025

@@ -2,7 +2,7 @@
  * Customizable Templates System for FormX Hub
  * 
  * Creates customizable patient record templates that are predefined but editable
- * based on EXPEDIENTE ELEONOR analysis and user preferences
+ * with flexible configuration based on medical best practices and user preferences
  */
 
 const express = require('express');
@@ -18,7 +18,7 @@ const auditLogger = new AuditLogger();
 
 /**
  * Base template configurations for different medical specialties
- * Based on EXPEDIENTE ELEONOR analysis
+ * Based on medical best practices and specialty requirements
  */
 const BASE_TEMPLATE_CONFIGS = {
   mentalHealth: {

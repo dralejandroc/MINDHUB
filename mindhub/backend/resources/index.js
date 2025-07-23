@@ -21,6 +21,8 @@ const router = express.Router();
 const libraryRoutes = require('./routes/library');
 const distributionRoutes = require('./routes/distribution');
 const managementRoutes = require('./routes/management');
+const documentProcessingRoutes = require('./routes/document-processing');
+const storageManagementRoutes = require('./routes/storage-management');
 
 // Hub information endpoint
 router.get('/', (req, res) => {
@@ -89,6 +91,8 @@ router.get('/health', async (req, res) => {
 router.use('/library', libraryRoutes);
 router.use('/distribution', distributionRoutes);
 router.use('/management', managementRoutes);
+router.use('/documents', documentProcessingRoutes);
+router.use('/storage', storageManagementRoutes);
 
 // Hub-specific error handler
 router.use((error, req, res, next) => {

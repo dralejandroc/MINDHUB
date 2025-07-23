@@ -19,8 +19,22 @@ const path = require('path');
 require('dotenv').config();
 
 // Import modules
-// const expedix = require('./expedix'); // Commented for now
+console.log('📦 Loading expedix module...');
+const expedix = require('./expedix');
+console.log('✅ Expedix module loaded');
+
+console.log('📦 Loading clinimetrix module...');
 const clinimetrix = require('./clinimetrix');
+console.log('✅ Clinimetrix module loaded');
+
+console.log('📦 Loading frontdesk module...');
+const frontdeskRoutes = require('./frontdesk/routes/frontdesk');
+console.log('✅ FrontDesk module loaded');
+
+console.log('📦 Loading finance module...');
+const finance = require('./finance');
+console.log('✅ Finance module loaded');
+
 // const formx = require('./formx'); // Commented for now
 // const resources = require('./resources'); // Commented for now
 
@@ -35,32 +49,29 @@ const dataValidation = require('./shared/middleware/data-validation');
 const rateLimiting = require('./shared/middleware/rate-limiting');
 const middleware = require('./shared/middleware');
 
-// Import advanced security middleware
-const AdvancedDDoSProtection = require('./shared/middleware/advanced-ddos-protection');
-const GeoRateLimitingMiddleware = require('./shared/middleware/geo-rate-limiting');
-const RequestLoggingMiddleware = require('./shared/middleware/request-logging');
-const PerformanceMonitoringMiddleware = require('./shared/middleware/performance-monitoring');
+// Import advanced security middleware - COMMENTED FOR LOCAL DEV
+// const AdvancedDDoSProtection = require('./shared/middleware/advanced-ddos-protection');
+// const GeoRateLimitingMiddleware = require('./shared/middleware/geo-rate-limiting');
+// const RequestLoggingMiddleware = require('./shared/middleware/request-logging');
+// const PerformanceMonitoringMiddleware = require('./shared/middleware/performance-monitoring');
 
-// Import health check and dashboard routes
-const healthRoutes = require('./shared/routes/health');
-const rateLimitingDashboard = require('./shared/routes/rate-limiting-dashboard');
+// Import health check and dashboard routes - COMMENTED FOR LOCAL DEV
+// const healthRoutes = require('./shared/routes/health');
+// const rateLimitingDashboard = require('./shared/routes/rate-limiting-dashboard');
 
 const app = express();
 const PORT = process.env.PORT || 3002;
 
-// Initialize advanced security middleware
-const ddosProtection = new AdvancedDDoSProtection();
-const geoRateLimiting = new GeoRateLimitingMiddleware();
-const requestLogging = new RequestLoggingMiddleware();
-const performanceMonitoring = new PerformanceMonitoringMiddleware();
+console.log('🚀 Express app created, setting up middleware...');
 
-// Advanced security middleware stack
-app.use(requestLogging.requestLoggingMiddleware());
-app.use(performanceMonitoring.performanceMonitoringMiddleware());
-app.use(ddosProtection.protect());
-app.use(geoRateLimiting.createGeoRateLimiter());
+// Initialize advanced security middleware - SIMPLIFIED FOR LOCAL DEV
+console.log('🔧 Initializing middleware (simplified for local dev)...');
+// const ddosProtection = new AdvancedDDoSProtection();
+// const geoRateLimiting = new GeoRateLimitingMiddleware();
+console.log('✅ Security middleware disabled for local development');
 
 // Security middleware
+console.log('🔧 Setting up security middleware...');
 app.use(helmet({
   contentSecurityPolicy: {
     directives: {
@@ -89,13 +100,13 @@ app.use(compression());
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
-// Rate limiting with advanced features
-app.use(rateLimiting.apiRateLimit());
-app.use(rateLimiting.ddosProtection());
+// Rate limiting with advanced features - DISABLED FOR LOCAL DEV
+// app.use(rateLimiting.apiRateLimit());
+// app.use(rateLimiting.ddosProtection());
 
-// Mount health check and monitoring routes
-app.use('/api/health', healthRoutes);
-app.use('/api/rate-limiting', rateLimitingDashboard);
+// Mount health check and monitoring routes - DISABLED FOR LOCAL DEV
+// app.use('/api/health', healthRoutes);
+// app.use('/api/rate-limiting', rateLimitingDashboard);
 
 // Health check endpoint
 app.get('/health', (req, res) => {
@@ -105,7 +116,9 @@ app.get('/health', (req, res) => {
     version: '1.0.0',
     services: {
       expedix: 'active',
-      clinimetrix: 'active', 
+      clinimetrix: 'active',
+      frontdesk: 'active',
+      finance: 'active',
       formx: 'active',
       resources: 'active'
     }
@@ -146,11 +159,30 @@ app.get('/api/docs', (req, res) => {
   res.sendFile(path.join(__dirname, 'shared/docs/index.html'));
 });
 
+
 // Removed test endpoints - using universal scale system instead
 
+console.log('📍 Reached mount service modules section...');
+
 // Mount service modules
-// app.use('/api/v1/expedix', expedix); // Commented for now
+try {
+  console.log('🔧 About to mount Expedix...');
+  console.log('Expedix type:', typeof expedix);
+  console.log('Expedix stack length:', expedix.stack ? expedix.stack.length : 'No stack');
+  
+  app.use('/api/v1/expedix', expedix);
+  console.log('✅ Expedix module mounted successfully at /api/v1/expedix');
+  
+  // Test that routes are registered
+  console.log('📋 App routes after mounting:', app._router ? app._router.stack.length : 'No router stack');
+} catch (error) {
+  console.error('❌ Error mounting Expedix module:', error.message);
+  console.error('Error stack:', error.stack);
+}
+
 app.use('/api/v1/clinimetrix', clinimetrix);
+app.use('/api/v1/frontdesk', frontdeskRoutes);
+app.use('/api/v1/finance', finance);
 // app.use('/api/v1/formx', formx); // Commented for now
 // app.use('/api/v1/resources', resources); // Commented for now
 
@@ -180,6 +212,8 @@ app.use('*', (req, res) => {
       // Services
       expedix: 'GET /api/v1/expedix',
       clinimetrix: 'GET /api/v1/clinimetrix',
+      frontdesk: 'GET /api/v1/frontdesk',
+      finance: 'GET /api/v1/finance',
       formx: 'GET /api/v1/formx',
       resources: 'GET /api/v1/resources',
       

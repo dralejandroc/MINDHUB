@@ -7,6 +7,8 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { DragDropContext, Droppable, Draggable, DropResult } from 'react-beautiful-dnd';
+import { PageHeader } from '@/components/layout/PageHeader';
+import { ChartBarIcon, ArrowPathIcon } from '@heroicons/react/24/outline';
 
 // Interfaces
 interface WidgetData {
@@ -350,68 +352,66 @@ export const ReportsManager: React.FC = () => {
   }, []);
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
-      {/* Header */}
-      <div className="mb-8">
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900">Reportes y Análisis</h1>
-            <p className="text-gray-600 mt-2">
-              Dashboard completo de estadísticas y métricas del sistema MindHub
-            </p>
-          </div>
+    <div className="space-y-6">
+      <PageHeader
+        title="Reportes y Análisis"
+        description="Dashboard completo de estadísticas y métricas del sistema MindHub"
+        icon={ChartBarIcon}
+        iconColor="text-blue-600"
+        actions={[
+          <select
+            key="period"
+            value={period}
+            onChange={(e) => setPeriod(e.target.value)}
+            className="px-4 py-2 border border-gray-300 rounded-lg text-sm"
+          >
+            <option value="week">Esta semana</option>
+            <option value="month">Este mes</option>
+            <option value="quarter">Este trimestre</option>
+            <option value="year">Este año</option>
+          </select>,
           
-          <div className="flex flex-wrap gap-3 mt-4 md:mt-0">
-            <select
-              value={period}
-              onChange={(e) => setPeriod(e.target.value)}
-              className="px-4 py-2 border border-gray-300 rounded-lg text-sm"
-            >
-              <option value="week">Esta semana</option>
-              <option value="month">Este mes</option>
-              <option value="quarter">Este trimestre</option>
-              <option value="year">Este año</option>
-            </select>
-            
-            <button
-              onClick={toggleArrangeMode}
-              className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                isArrangeMode 
-                  ? 'bg-green-600 text-white hover:bg-green-700' 
-                  : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-              }`}
-            >
-              {isArrangeMode ? (
-                <>
-                  <i className="fas fa-save mr-2"></i>
-                  Guardar Acomodo
-                </>
-              ) : (
-                <>
-                  <i className="fas fa-arrows-alt mr-2"></i>
-                  Acomodar Widgets
-                </>
-              )}
-            </button>
-            
-            <button
-              onClick={resetLayout}
-              className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-300 transition-colors"
-            >
-              <i className="fas fa-undo mr-2"></i>
-              Restablecer
-            </button>
-            
-            <button
-              onClick={exportReport}
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors"
-            >
-              <i className="fas fa-download mr-2"></i>
-              Exportar
-            </button>
-          </div>
-        </div>
-      </div>
+          <button
+            key="arrange"
+            onClick={toggleArrangeMode}
+            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+              isArrangeMode 
+                ? 'bg-green-600 text-white hover:bg-green-700' 
+                : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+            }`}
+          >
+            {isArrangeMode ? (
+              <>
+                <i className="fas fa-save mr-2"></i>
+                Guardar Acomodo
+              </>
+            ) : (
+              <>
+                <i className="fas fa-arrows-alt mr-2"></i>
+                Acomodar Widgets
+              </>
+            )}
+          </button>,
+          
+          <button
+            key="reset"
+            onClick={resetLayout}
+            className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-300 transition-colors"
+          >
+            <ArrowPathIcon className="h-4 w-4 mr-2" />
+            Restablecer
+          </button>,
+          
+          <button
+            key="export"
+            onClick={exportReport}
+            className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors"
+          >
+            <i className="fas fa-download mr-2"></i>
+            Exportar
+          </button>
+        ]}
+      />
 
       {/* Widgets Container */}
       {isArrangeMode ? (

@@ -2,7 +2,7 @@
  * Patient Registration Integration for Expedix Hub
  * 
  * Receives and processes patient registration data from FormX hub
- * and creates comprehensive patient records based on EXPEDIENTE ELEONOR analysis
+ * and creates comprehensive patient records following medical standards
  */
 
 const express = require('express');

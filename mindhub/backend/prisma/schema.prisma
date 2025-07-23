@@ -21,6 +21,22 @@ model User {
   patientConsultations Consultation[]
   administeredScales   ScaleAdministration[]
   userRoles            UserRole[]
+  createdPatients      Patient[]
+  createdResources     Resource[]            @relation("UserResources")
+  storageQuota         UserStorageQuota?
+  sentDistributions    ResourcePatientDistribution[] @relation("SentByUser")
+  uploadedDocuments    PatientDocument[]     @relation("UploadedDocuments")
+  professionalIncomes  Income[]              @relation("ProfessionalIncomes")
+  createdExpenses      Expense[]             @relation("UserExpenses")
+  financialGoals       FinancialGoal[]       @relation("UserGoals")
+  financeConfigs       FinanceConfiguration[] @relation("UserFinanceConfigs")
+  contracts           ProfessionalContract[] @relation("ProfessionalContracts")
+  createdCashCuts     CashRegisterCut[]     @relation("CreatedCashCuts")
+  closedCashCuts      CashRegisterCut[]     @relation("ClosedCashCuts")
+  cashBreakdowns      CashCutProfessionalBreakdown[] @relation("ProfessionalCashBreakdowns")
+  createdPatientTags  PatientTag[]                   @relation("CreatedPatientTags")
+  assignedPatientTags PatientTagAssignment[]         @relation("AssignedPatientTags")
+  removedPatientTags  PatientTagAssignment[]         @relation("RemovedPatientTags")
 
   @@map("users")
 }
@@ -75,25 +91,45 @@ model RolePermission {
 }
 
 model Patient {
-  id                   String                @id @default(cuid())
-  medicalRecordNumber  String                @unique
-  firstName            String
-  lastName             String
-  paternalLastName     String?
-  maternalLastName     String?
-  dateOfBirth          DateTime
-  gender               String
-  email                String?
-  phone                String?
-  address              String?
-  emergencyContact     String?
-  createdAt            DateTime              @default(now())
-  updatedAt            DateTime              @updatedAt
-  assessmentTokens     AssessmentToken[]
-  consultations        Consultation[]
-  medicalHistory       MedicalHistory[]
-  prescriptions        Prescription[]
-  scaleAdministrations ScaleAdministration[]
+  id                      String                         @id @default(cuid())
+  medicalRecordNumber     String                         @unique
+  firstName               String
+  lastName                String
+  paternalLastName        String?
+  maternalLastName        String?
+  dateOfBirth             DateTime
+  gender                  String
+  email                   String?
+  phone                   String?
+  address                 String?
+  city                    String?
+  state                   String?
+  postalCode              String?
+  curp                    String?                        @unique
+  rfc                     String?
+  bloodType               String?
+  allergies               String?
+  emergencyContact        String?
+  emergencyContactName    String?
+  emergencyContactPhone   String?
+  consentToTreatment      Boolean                        @default(true)
+  consentToDataProcessing Boolean                        @default(true)
+  isActive                Boolean                        @default(true)
+  createdBy               String?
+  createdAt               DateTime                       @default(now())
+  updatedAt               DateTime                       @updatedAt
+  assessmentTokens        AssessmentToken[]
+  consultations           Consultation[]
+  medicalHistory          MedicalHistory[]
+  prescriptions           Prescription[]
+  scaleAdministrations    ScaleAdministration[]
+  resourceDistributions   ResourcePatientDistribution[]
+  documents               PatientDocument[]
+  incomes                 Income[]
+  patientServices         PatientService[]
+  patientDiscounts        PatientDiscount[]
+  tagAssignments          PatientTagAssignment[]         @relation("PatientTagAssignments")
+  creator                 User?                          @relation(fields: [createdBy], references: [id])
 
   @@map("patients")
 }
@@ -112,6 +148,7 @@ model Consultation {
   updatedAt        DateTime @updatedAt
   consultant       User     @relation(fields: [consultantId], references: [id])
   patient          Patient  @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  incomes          Income[]
 
   @@map("consultations")
 }
@@ -165,86 +202,122 @@ model Medication {
   @@map("medications")
 }
 
-model AssessmentScale {
-  id                       String                @id @default(cuid())
+// Mapear a la tabla 'scales' de los seeds SQL
+model Scale {
+  id                       String                @id
   name                     String
   abbreviation             String                @unique
-  version                  String                @default("1.0")
-  description              String?
+  version                  String?               @default("1.0")
   category                 String
-  targetPopulation         String?
-  administrationMode       String
-  estimatedDurationMinutes Int?
-  totalItems               Int
-  isActive                 Boolean               @default(true)
-  hasSubscales             Boolean               @default(false)
-  requiresTraining         Boolean               @default(false)
-  scoringMethod            String?
-  interpretationGuidelines String?
-  tags                     String?
-  language                 String                @default("es")
-  createdAt                DateTime              @default(now())
-  updatedAt                DateTime              @updatedAt
-  assessmentTokens         AssessmentToken[]
-  interpretationRules      InterpretationRule[]
-  scaleAdministrations     ScaleAdministration[]
-  scaleItems               ScaleItem[]
-  scoringRules             ScoringRule[]
+  subcategory              String?
+  description              String?
+  author                   String?
+  publicationYear          Int?                  @map("publication_year")
+  estimatedDurationMinutes Int?                  @map("estimated_duration_minutes")
+  administrationMode       String?               @map("administration_mode")
+  targetPopulation         String?               @map("target_population")
+  totalItems               Int                   @map("total_items")
+  scoringMethod            String?               @map("scoring_method")
+  scoreRangeMin            Int?                  @map("score_range_min")
+  scoreRangeMax            Int?                  @map("score_range_max")
+  instructionsProfessional String?               @map("instructions_professional")
+  instructionsPatient      String?               @map("instructions_patient")
+  isActive                 Boolean               @default(true) @map("is_active")
+  createdAt                DateTime              @default(now()) @map("created_at")
+  updatedAt                DateTime              @updatedAt @map("updated_at")
+  
+  // Relaciones con tablas de seeds
+  items                    ScaleItem[]
+  responseOptions          ScaleResponseOption[]
+  interpretationRules      ScaleInterpretationRule[]
+  subscales                ScaleSubscale[]
+  
+  // Relaciones con sistema de evaluaciones
+  assessmentTokens         AssessmentToken[]     @relation("ScaleTokens")
+  scaleAdministrations     ScaleAdministration[] @relation("ScaleAdministrations")
 
-  @@map("assessment_scales")
+  @@map("scales")
 }
 
+// Mapear a la tabla 'scale_items' de los seeds SQL
 model ScaleItem {
-  id              String          @id @default(cuid())
-  scaleId         String
-  itemNumber      Int
-  itemText        String
+  id              String          @id
+  scaleId         String          @map("scale_id")
+  itemNumber      Int             @map("item_number")
+  itemText        String          @map("item_text")
+  itemCode        String?         @map("item_code")
   subscale        String?
-  responseType    String
-  responseOptions String?
-  scoringWeight   Float           @default(1.0)
-  isReverseScored Boolean         @default(false)
-  required        Boolean         @default(true)
-  displayOrder    Int
-  createdAt       DateTime        @default(now())
-  updatedAt       DateTime        @updatedAt
+  reverseScored   Boolean         @default(false) @map("reverse_scored")
+  isActive        Boolean         @default(true) @map("is_active")
+  createdAt       DateTime        @default(now()) @map("created_at")
+  updatedAt       DateTime        @updatedAt @map("updated_at")
+  
+  // Relaciones
+  scale           Scale           @relation(fields: [scaleId], references: [id], onDelete: Cascade)
   itemResponses   ItemResponse[]
-  scale           AssessmentScale @relation(fields: [scaleId], references: [id], onDelete: Cascade)
 
   @@unique([scaleId, itemNumber])
   @@map("scale_items")
 }
 
-model ScoringRule {
-  id          String          @id @default(cuid())
-  scaleId     String
-  ruleName    String
-  description String?
-  algorithm   String
-  isActive    Boolean         @default(true)
-  createdAt   DateTime        @default(now())
-  updatedAt   DateTime        @updatedAt
-  scale       AssessmentScale @relation(fields: [scaleId], references: [id], onDelete: Cascade)
+// Mapear a la tabla 'scale_response_options' de los seeds SQL
+model ScaleResponseOption {
+  id           String    @id
+  scaleId      String    @map("scale_id")
+  optionValue  String    @map("option_value")
+  optionLabel  String    @map("option_label")
+  scoreValue   Int       @map("score_value")
+  displayOrder Int       @default(0) @map("display_order")
+  isActive     Boolean   @default(true) @map("is_active")
+  createdAt    DateTime  @default(now()) @map("created_at")
+  updatedAt    DateTime  @updatedAt @map("updated_at")
+  
+  // Relaciones
+  scale        Scale     @relation(fields: [scaleId], references: [id], onDelete: Cascade)
 
-  @@map("scoring_rules")
+  @@map("scale_response_options")
 }
 
-model InterpretationRule {
-  id              String          @id @default(cuid())
-  scaleId         String
-  minScore        Float
-  maxScore        Float
-  severity        String
-  interpretation  String
-  recommendations String?
-  colorCode       String?
-  isActive        Boolean         @default(true)
-  createdAt       DateTime        @default(now())
-  updatedAt       DateTime        @updatedAt
-  scale           AssessmentScale @relation(fields: [scaleId], references: [id], onDelete: Cascade)
+// Mapear a la tabla 'scale_interpretation_rules' de los seeds SQL  
+model ScaleInterpretationRule {
+  id                   String    @id
+  scaleId              String    @map("scale_id")
+  minScore             Int       @map("min_score")
+  maxScore             Int       @map("max_score")
+  severityLevel        String    @map("severity_level")
+  interpretationLabel  String    @map("interpretation_label")
+  colorCode            String?   @map("color_code")
+  description          String?
+  recommendations      String?
+  isActive             Boolean   @default(true) @map("is_active")
+  createdAt            DateTime  @default(now()) @map("created_at")
+  updatedAt            DateTime  @updatedAt @map("updated_at")
+  
+  // Relaciones
+  scale                Scale     @relation(fields: [scaleId], references: [id], onDelete: Cascade)
 
-  @@map("interpretation_rules")
+  @@map("scale_interpretation_rules")
 }
+
+// Mapear a la tabla 'scale_subscales' de los seeds SQL
+model ScaleSubscale {
+  id            String    @id
+  scaleId       String    @map("scale_id")
+  subscaleName  String    @map("subscale_name")
+  subscaleCode  String?   @map("subscale_code")
+  minScore      Int       @default(0) @map("min_score")
+  maxScore      Int?      @map("max_score")
+  description   String?
+  isActive      Boolean   @default(true) @map("is_active")
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
+  
+  // Relaciones
+  scale         Scale     @relation(fields: [scaleId], references: [id], onDelete: Cascade)
+
+  @@map("scale_subscales")
+}
+
 
 model ScaleAdministration {
   id                 String          @id @default(cuid())
@@ -269,7 +342,7 @@ model ScaleAdministration {
   updatedAt          DateTime        @updatedAt
   responses          ItemResponse[]
   administrator      User            @relation(fields: [administratorId], references: [id])
-  scale              AssessmentScale @relation(fields: [scaleId], references: [id])
+  scale              Scale           @relation("ScaleAdministrations", fields: [scaleId], references: [id])
   patient            Patient         @relation(fields: [patientId], references: [id], onDelete: Cascade)
 
   @@map("scale_administrations")
@@ -303,7 +376,7 @@ model AssessmentToken {
   usedAt    DateTime?
   createdAt DateTime        @default(now())
   creator   User            @relation(fields: [createdBy], references: [id])
-  scale     AssessmentScale @relation(fields: [scaleId], references: [id])
+  scale     Scale           @relation("ScaleTokens", fields: [scaleId], references: [id])
   patient   Patient         @relation(fields: [patientId], references: [id], onDelete: Cascade)
 
   @@map("assessment_tokens")
@@ -365,21 +438,29 @@ model ResourceTag {
 }
 
 model Resource {
-  id                 String                     @id @default(cuid())
+  id                 String                         @id @default(cuid())
   title              String
-  slug               String                     @unique
-  content            String
+  slug               String?                        @unique
+  content            String?
   excerpt            String?
-  type               String                     @default("article")
+  type               String                         @default("article")
   url                String?
-  metadata           String?
-  status             String                     @default("draft")
+  filePath           String?
+  fileName           String?
+  fileSize           Int?
+  mimeType           String?
+  metadata           Json?
+  status             String                         @default("draft")
   featuredAt         DateTime?
   publishedAt        DateTime?
-  createdAt          DateTime                   @default(now())
-  updatedAt          DateTime                   @updatedAt
+  lastAccessedAt     DateTime?
+  createdById        String?
+  createdAt          DateTime                       @default(now())
+  updatedAt          DateTime                       @updatedAt
+  creator            User?                          @relation("UserResources", fields: [createdById], references: [id])
   resourceCategories ResourceCategoryRelation[]
   resourceTags       ResourceTagRelation[]
+  distributions      ResourcePatientDistribution[]
 
   @@map("resources")
 }
@@ -404,4 +485,384 @@ model ResourceTagRelation {
 
   @@unique([resourceId, tagId])
   @@map("resource_tag_relations")
+}
+
+model ClinicConfiguration {
+  id            String   @id @default(cuid())
+  configuration Json
+  createdBy     String?
+  updatedBy     String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@map("clinic_configurations")
+}
+
+// Storage Quota Management
+model UserStorageQuota {
+  id               String   @id @default(cuid())
+  userId           String   @unique
+  planType         String   @default("basic")
+  maxStorageBytes  BigInt
+  usedStorageBytes BigInt   @default(0)
+  lastCleanupDate  DateTime @default(now())
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+  user             User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("user_storage_quota")
+}
+
+// Finance Management Models
+model Income {
+  id                    String       @id @default(cuid())
+  amount                Decimal      @db.Decimal(10, 2)
+  source                String       // 'consultation', 'advance', 'therapy', 'evaluation', 'other'
+  paymentMethod         String       // 'cash', 'credit_card', 'debit_card', 'transfer', 'payment_gateway', 'check'
+  currency              String       @default("MXN")
+  patientId             String?
+  consultationId        String?
+  professionalId        String?
+  serviceId             String?      // Related service from configuration
+  originalAmount        Decimal?     @db.Decimal(10, 2) // Amount before discounts
+  discountAmount        Decimal?     @db.Decimal(10, 2) // Discount applied
+  discountPercentage    Decimal?     @db.Decimal(5, 2) // Percentage of discount applied
+  isCourtesy           Boolean      @default(false) // True if 100% discount (courtesy)
+  professionalAmount   Decimal?     @db.Decimal(10, 2) // Amount for professional (after commission calculation)
+  clinicAmount         Decimal?     @db.Decimal(10, 2) // Amount for clinic
+  commissionRate       Decimal?     @db.Decimal(5, 2) // Commission rate applied
+  description          String?
+  concept              String?      // More detailed than source
+  notes                String?
+  reference            String?      // Payment reference/receipt number  
+  status               String       @default("confirmed") // 'pending', 'confirmed', 'cancelled'
+  receivedDate         DateTime     @default(now())
+  dueDate              DateTime?
+  createdAt            DateTime     @default(now())
+  updatedAt            DateTime     @updatedAt
+  
+  // Relations
+  patient              Patient?     @relation(fields: [patientId], references: [id])
+  consultation         Consultation? @relation(fields: [consultationId], references: [id])
+  professional         User?        @relation("ProfessionalIncomes", fields: [professionalId], references: [id])
+  service              Service?     @relation("ServiceIncomes", fields: [serviceId], references: [id])
+
+  @@map("incomes")
+}
+
+model Expense {
+  id              String    @id @default(cuid())
+  amount          Decimal   @db.Decimal(10, 2)
+  category        String    // 'rent', 'supplies', 'equipment', 'marketing', 'utilities', 'other'
+  paymentMethod   String    // 'cash', 'card', 'transfer', 'check'
+  currency        String    @default("MXN")
+  vendor          String?
+  description     String
+  notes           String?
+  reference       String?   // Receipt/invoice number
+  status          String    @default("confirmed")
+  expenseDate     DateTime  @default(now())
+  dueDate         DateTime?
+  createdBy       String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  
+  // Relations
+  creator         User?     @relation("UserExpenses", fields: [createdBy], references: [id])
+
+  @@map("expenses")
+}
+
+model FinancialGoal {
+  id              String    @id @default(cuid())
+  title           String
+  description     String?
+  targetAmount    Decimal   @db.Decimal(10, 2)
+  currentAmount   Decimal   @default(0) @db.Decimal(10, 2)
+  currency        String    @default("MXN")
+  category        String    // 'monthly_income', 'quarterly_income', 'annual_income', 'expense_reduction'
+  targetDate      DateTime?
+  status          String    @default("active") // 'active', 'achieved', 'cancelled'
+  createdBy       String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  
+  // Relations  
+  creator         User?     @relation("UserGoals", fields: [createdBy], references: [id])
+
+  @@map("financial_goals")
+}
+
+// Finance Configuration Models
+model FinanceConfiguration {
+  id              String    @id @default(cuid())
+  clinicId        String?   // For multi-clinic support
+  isAutomatic     Boolean   @default(false) // Manual vs automatic billing
+  defaultCurrency String    @default("MXN")
+  taxRate         Decimal?  @db.Decimal(5, 2) // Tax percentage
+  invoicePrefix   String?   // Invoice numbering prefix
+  invoiceCounter  Int       @default(1)
+  paymentTerms    String?   // Payment terms text
+  notes           String?   // Additional configuration notes
+  isActive        Boolean   @default(true)
+  createdBy       String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  
+  // Relations
+  creator         User?     @relation("UserFinanceConfigs", fields: [createdBy], references: [id])
+  services        Service[]
+  discountPlans   DiscountPlan[]
+
+  @@map("finance_configurations")
+}
+
+model Service {
+  id              String              @id @default(cuid())
+  configId        String
+  name            String              // "Consulta General", "Terapia", "Evaluación"
+  description     String?
+  code            String?             // Service code for billing
+  basePrice       Decimal             @db.Decimal(10, 2)
+  currency        String              @default("MXN")
+  duration        Int?                // Duration in minutes
+  category        String              // 'consultation', 'therapy', 'evaluation', 'other'
+  isActive        Boolean             @default(true)
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime            @updatedAt
+  
+  // Relations
+  configuration   FinanceConfiguration @relation(fields: [configId], references: [id], onDelete: Cascade)
+  patientServices PatientService[]
+  incomes         Income[]            @relation("ServiceIncomes")
+
+  @@map("services")
+}
+
+model DiscountPlan {
+  id              String              @id @default(cuid())
+  configId        String
+  name            String              // "Descuento Estudiante", "Seguro Popular"
+  description     String?
+  discountType    String              // 'percentage', 'fixed_amount', 'custom_price'
+  discountValue   Decimal             @db.Decimal(10, 2) // 20 (for 20%) or 100 (for $100 off)
+  currency        String              @default("MXN")
+  isActive        Boolean             @default(true)
+  validUntil      DateTime?
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime            @updatedAt
+  
+  // Relations
+  configuration   FinanceConfiguration @relation(fields: [configId], references: [id], onDelete: Cascade)
+  patientDiscounts PatientDiscount[]
+
+  @@map("discount_plans")
+}
+
+model PatientService {
+  id              String    @id @default(cuid())
+  patientId       String
+  serviceId       String
+  customPrice     Decimal?  @db.Decimal(10, 2) // Override service base price
+  notes           String?
+  isActive        Boolean   @default(true)
+  assignedAt      DateTime  @default(now())
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  
+  // Relations
+  patient         Patient   @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  service         Service   @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+
+  @@unique([patientId, serviceId])
+  @@map("patient_services")
+}
+
+model PatientDiscount {
+  id              String       @id @default(cuid())
+  patientId       String
+  discountPlanId  String
+  customValue     Decimal?     @db.Decimal(10, 2) // Override discount plan value
+  notes           String?
+  isActive        Boolean      @default(true)
+  assignedAt      DateTime     @default(now())
+  validUntil      DateTime?
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+  
+  // Relations
+  patient         Patient      @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  discountPlan    DiscountPlan @relation(fields: [discountPlanId], references: [id], onDelete: Cascade)
+
+  @@unique([patientId, discountPlanId])
+  @@map("patient_discounts")
+}
+
+// Professional Contract and Commission Models
+model ProfessionalContract {
+  id                  String    @id @default(cuid())
+  professionalId      String
+  clinicId           String?   // For multi-clinic support
+  contractType       String    // 'percentage', 'fixed_amount', 'hourly', 'salary'
+  commissionRate     Decimal?  @db.Decimal(5, 2) // Percentage for professional (e.g., 60.00 = 60%)
+  fixedAmount        Decimal?  @db.Decimal(10, 2) // Fixed amount per service
+  hourlyRate         Decimal?  @db.Decimal(10, 2) // Hourly rate
+  monthlyRate        Decimal?  @db.Decimal(10, 2) // Monthly salary
+  isActive          Boolean   @default(true)
+  startDate         DateTime  @default(now())
+  endDate           DateTime?
+  notes             String?   // Contract notes/terms
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  
+  // Relations
+  professional      User      @relation("ProfessionalContracts", fields: [professionalId], references: [id])
+  
+  @@map("professional_contracts")
+}
+
+// Cash Register Cut Models
+model CashRegisterCut {
+  id                String              @id @default(cuid())
+  cutNumber        Int                 // Sequential number for cuts
+  cutType          String              // 'daily', 'shift', 'manual'
+  startDate        DateTime
+  endDate          DateTime
+  totalIncome      Decimal             @db.Decimal(10, 2)
+  totalDiscounts   Decimal             @default(0) @db.Decimal(10, 2)
+  totalCourtesies  Decimal             @default(0) @db.Decimal(10, 2)
+  netIncome        Decimal             @db.Decimal(10, 2)
+  status           String              @default("open") // 'open', 'closed', 'reconciled'
+  notes            String?
+  createdBy        String
+  closedBy         String?
+  closedAt         DateTime?
+  createdAt        DateTime            @default(now())
+  updatedAt        DateTime            @updatedAt
+  
+  // Relations
+  creator          User                @relation("CreatedCashCuts", fields: [createdBy], references: [id])
+  closer           User?               @relation("ClosedCashCuts", fields: [closedBy], references: [id])
+  paymentBreakdown CashCutPaymentBreakdown[]
+  professionalBreakdown CashCutProfessionalBreakdown[]
+  
+  @@map("cash_register_cuts")
+}
+
+model CashCutPaymentBreakdown {
+  id              String           @id @default(cuid())
+  cashCutId       String
+  paymentMethod   String           // 'cash', 'credit_card', 'debit_card', etc.
+  amount          Decimal          @db.Decimal(10, 2)
+  transactionCount Int            @default(0)
+  
+  // Relations
+  cashCut         CashRegisterCut  @relation(fields: [cashCutId], references: [id], onDelete: Cascade)
+  
+  @@unique([cashCutId, paymentMethod])
+  @@map("cash_cut_payment_breakdown")
+}
+
+model CashCutProfessionalBreakdown {
+  id                String           @id @default(cuid())
+  cashCutId         String
+  professionalId    String
+  totalIncome       Decimal          @db.Decimal(10, 2)
+  professionalAmount Decimal         @db.Decimal(10, 2)
+  clinicAmount      Decimal          @db.Decimal(10, 2)
+  commissionRate    Decimal          @db.Decimal(5, 2)
+  serviceCount      Int              @default(0)
+  
+  // Relations
+  cashCut           CashRegisterCut  @relation(fields: [cashCutId], references: [id], onDelete: Cascade)
+  professional      User             @relation("ProfessionalCashBreakdowns", fields: [professionalId], references: [id])
+  
+  @@unique([cashCutId, professionalId])
+  @@map("cash_cut_professional_breakdown")
+}
+
+// Resource Patient Distribution Tracking
+model ResourcePatientDistribution {
+  id         String    @id @default(cuid())
+  resourceId String
+  patientId  String
+  sentVia    String    @default("expedix") // 'expedix', 'email', 'portal'
+  sentDate   DateTime  @default(now())
+  viewedDate DateTime?
+  message    String?
+  sentById   String
+  resource   Resource  @relation(fields: [resourceId], references: [id], onDelete: Cascade)
+  patient    Patient   @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  sentBy     User      @relation("SentByUser", fields: [sentById], references: [id])
+
+  @@map("resource_patient_distribution")
+}
+
+// Patient Documents for Expedix Integration
+model PatientDocument {
+  id           String    @id @default(cuid())
+  patientId    String
+  title        String
+  type         String    @default("resource")
+  filePath     String
+  fileName     String?
+  fileSize     Int?
+  mimeType     String?
+  metadata     Json?
+  isEncrypted  Boolean   @default(false)
+  uploadedById String
+  viewedAt     DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  patient      Patient   @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  uploadedBy   User      @relation("UploadedDocuments", fields: [uploadedById], references: [id])
+
+  @@map("patient_documents")
+}
+
+// Patient Tags System
+model PatientTag {
+  id                    String                     @id @default(cuid())
+  name                  String
+  color                 String
+  textColor             String?
+  category              String
+  icon                  String?
+  description           String?
+  isSystemTag           Boolean                    @default(false)
+  isCustom              Boolean                    @default(true)
+  isActive              Boolean                    @default(true)
+  createdBy             String?
+  createdAt             DateTime                   @default(now())
+  updatedAt             DateTime                   @updatedAt
+  
+  // Relations
+  creator               User?                      @relation("CreatedPatientTags", fields: [createdBy], references: [id])
+  patientTagAssignments PatientTagAssignment[]
+  
+  @@unique([name, category])
+  @@map("patient_tags")
+}
+
+// Patient Tag Assignments
+model PatientTagAssignment {
+  id            String      @id @default(cuid())
+  patientId     String
+  tagId         String
+  assignedBy    String?
+  assignedAt    DateTime    @default(now())
+  isActive      Boolean     @default(true)
+  reason        String?
+  removedBy     String?
+  removedAt     DateTime?
+  removalReason String?
+  
+  // Relations
+  patient       Patient     @relation("PatientTagAssignments", fields: [patientId], references: [id], onDelete: Cascade)
+  tag           PatientTag  @relation(fields: [tagId], references: [id], onDelete: Cascade)
+  assignedByUser User?      @relation("AssignedPatientTags", fields: [assignedBy], references: [id])
+  removedByUser  User?      @relation("RemovedPatientTags", fields: [removedBy], references: [id])
+  
+  @@unique([patientId, tagId])
+  @@map("patient_tag_assignments")
 }

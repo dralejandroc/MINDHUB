@@ -1,245 +1,311 @@
 'use client';
 
-import { useState } from 'react';
-import { UserGroupIcon, PlusIcon } from '@heroicons/react/24/outline';
+import { useState, useEffect } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { PageHeader } from '@/components/layout/PageHeader';
-import { Button } from '@/components/ui/Button';
-import PatientManagement from '@/components/expedix/PatientManagement';
+import ExpedientsGrid from '@/components/expedix/ExpedientsGrid';
 import PatientDashboard from '@/components/expedix/PatientDashboard';
-import ExpedixFeatures from '@/components/expedix/ExpedixFeatures';
-import ConsultationForm from '@/components/expedix/ConsultationForm';
-import NewPatientForm from '@/components/expedix/NewPatientForm';
-import { UniversalScalesProvider } from '@/contexts/UniversalScalesContext';
-import { UniversalScaleAssessment } from '@/components/clinimetrix/UniversalScaleAssessment';
-import { expedixApi, type Patient } from '@/lib/api/expedix-client';
-import { useUserMetrics } from '@/contexts/UserMetricsContext';
-import SettingsPage from './settings/page';
+import ConsultationNotes from '@/components/expedix/ConsultationNotes';
+import PatientManagementAdvanced from '@/components/expedix/PatientManagementAdvanced';
+import PatientTimeline from '@/components/expedix/PatientTimeline';
+import NewPatientModal from '@/components/expedix/NewPatientModal';
+import { 
+  DocumentTextIcon, 
+  UserIcon,
+  UserGroupIcon,
+  TableCellsIcon,
+  Squares2X2Icon,
+  FolderOpenIcon,
+  PlusIcon,
+  ClockIcon
+} from '@heroicons/react/24/outline';
+import { expedixApi } from '@/lib/api/expedix-client';
+import type { Patient } from '@/lib/api/expedix-client';
+import { Button } from '@/components/ui/Button';
 
-type PageView = 'dashboard' | 'features' | 'new-patient' | 'patient-detail' | 'consultation' | 'clinical-assessment' | 'clinical-dashboard' | 'settings';
+type ViewMode = 'list' | 'cards' | 'timeline' | 'expedient';
+type DetailView = 'dashboard' | 'consultation' | 'assessment';
 
 export default function ExpedixPage() {
-  const { recordPatientAdded, recordScaleApplied } = useUserMetrics();
-  const [currentView, setCurrentView] = useState<PageView>('dashboard');
+  const searchParams = useSearchParams();
+  const [viewMode, setViewMode] = useState<ViewMode>('cards');
+  const [detailView, setDetailView] = useState<DetailView>('dashboard');
   const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null);
-  const [consultations, setConsultations] = useState<any[]>([]);
-  const [assessments, setAssessments] = useState<any[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [showNewPatientModal, setShowNewPatientModal] = useState(false);
+
+  // Load patient from URL parameters
+  useEffect(() => {
+    const patientId = searchParams?.get('patient');
+    const action = searchParams?.get('action');
+    
+    if (patientId) {
+      loadPatient(patientId, action);
+    }
+  }, [searchParams]);
+
+  const loadPatient = async (patientId: string, action: string | null = null) => {
+    try {
+      setLoading(true);
+      const response = await expedixApi.getPatient(patientId);
+      if (response.data) {
+        setSelectedPatient(response.data);
+        
+        // Set view based on action parameter
+        setViewMode('expedient');
+        if (action === 'consultation') {
+          setDetailView('consultation');
+        } else if (action === 'assessment') {
+          setDetailView('assessment');
+        } else {
+          setDetailView('dashboard');
+        }
+      } else {
+        // Patient not found, redirect back to expedients view
+        handleBackToList();
+      }
+    } catch (error) {
+      console.error('Error loading patient:', error);
+      // On error, redirect back to expedients view and clear URL params
+      handleBackToExpedients();
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleSelectPatient = (patient: Patient) => {
     setSelectedPatient(patient);
-    setCurrentView('patient-detail');
-  };
-
-  const handleNewPatient = () => {
-    setSelectedPatient(null);
-    setCurrentView('new-patient');
+    setViewMode('expedient');
+    setDetailView('dashboard');
   };
 
   const handleNewConsultation = (patient: Patient) => {
     setSelectedPatient(patient);
-    setCurrentView('consultation');
+    setViewMode('expedient');
+    setDetailView('consultation');
   };
 
   const handleClinicalAssessment = (patient: Patient) => {
     setSelectedPatient(patient);
-    setCurrentView('clinical-assessment');
+    setViewMode('expedient');
+    setDetailView('assessment');
   };
 
-  const handleSaveConsultation = (consultationData: any) => {
-    const newConsultation = {
-      ...consultationData,
-      id: `consultation_${Date.now()}`,
-      patientId: selectedPatient?.id,
-      createdAt: new Date().toISOString()
-    };
-    setConsultations(prev => [...prev, newConsultation]);
-    setCurrentView('dashboard');
+  const handleBackToList = () => {
     setSelectedPatient(null);
+    // Update URL to remove patient parameter
+    window.history.pushState({}, '', '/hubs/expedix');
   };
 
-  const handleSaveAssessment = (assessmentData: any) => {
-    setAssessments(prev => [...prev, assessmentData]);
-    recordScaleApplied(assessmentData.scaleId || 'unknown');
-    setCurrentView('dashboard');
-    setSelectedPatient(null);
+  const handleBackToPatientDashboard = () => {
+    setDetailView('dashboard');
+  };
+  
+  const handleNewPatient = () => {
+    setShowNewPatientModal(true);
+  };
+  
+  const handlePatientCreated = (newPatient: Patient) => {
+    console.log('Paciente creado:', newPatient);
+    window.location.reload();
+  };
+  
+  const handleSettings = () => {
+    console.log('Settings');
   };
 
-  const handleSaveNewPatient = async (patientData: any) => {
-    try {
-      const result = await expedixApi.createPatient(patientData);
-      console.log('Paciente creado exitosamente:', result);
-      
-      // Record metrics
-      recordPatientAdded();
-      
-      // Mostrar información del paciente creado
-      const patientName = `${result.data.first_name} ${result.data.paternal_last_name}`;
-      
-      // Volver al dashboard después de crear el paciente
-      setTimeout(() => {
-        setCurrentView('dashboard');
-      }, 2000); // Dar tiempo para que el usuario vea el mensaje de éxito
-      
-    } catch (error) {
-      console.error('Error al guardar paciente:', error);
-      throw error; // Re-throw para que el formulario maneje el estado de loading
+
+  // Get page header info based on current view and patient
+  const getPageHeaderInfo = () => {
+    if (viewMode === 'expedient' && selectedPatient) {
+      switch (detailView) {
+        case 'dashboard':
+          return {
+            title: `Expediente - ${selectedPatient.first_name} ${selectedPatient.paternal_last_name}`,
+            description: 'Historial clínico completo y timeline del paciente',
+            icon: FolderOpenIcon,
+            iconColor: 'text-primary-600'
+          };
+        case 'consultation':
+          return {
+            title: `${selectedPatient.first_name} ${selectedPatient.paternal_last_name}`,
+            description: `Expediente médico • ${selectedPatient.age} años`,
+            icon: UserIcon,
+            iconColor: 'text-primary-600'
+          };
+        case 'assessment':
+          return {
+            title: `Evaluación - ${selectedPatient.first_name} ${selectedPatient.paternal_last_name}`,
+            description: 'Escalas psicológicas y evaluaciones clínicas',
+            icon: DocumentTextIcon,
+            iconColor: 'text-purple-600'
+          };
+      }
     }
+    
+    return {
+      title: 'Expedix - Sistema de Expedientes',
+      description: 'Gestión completa de pacientes y expedientes médicos',
+      icon: UserGroupIcon,
+      iconColor: 'text-primary-600'
+    };
   };
 
-  const renderCurrentView = () => {
-    switch (currentView) {
-      case 'dashboard':
-        return (
-          <>
-            <PageHeader
-              title="Expedix - Gestión de Pacientes"
-              description="Sistema integral de expedientes médicos y gestión de pacientes"
-              icon={UserGroupIcon}
-              iconColor="text-primary-600"
-              actions={
-                <Button 
-                  onClick={handleNewPatient}
-                  className="bg-primary-600 hover:bg-primary-700"
-                >
-                  <PlusIcon className="h-4 w-4 mr-2" />
-                  Nuevo Paciente
-                </Button>
-              }
-            />
-            <PatientManagement
-              onSelectPatient={handleSelectPatient}
-              onNewPatient={handleNewPatient}
-              onNewConsultation={handleNewConsultation}
-              onClinicalAssessment={handleClinicalAssessment}
-              onSettings={() => setCurrentView('settings')}
-            />
-          </>
-        );
+  const headerInfo = getPageHeaderInfo();
 
-      case 'features':
-        return (
-          <div className="space-y-6">
-            <div className="flex items-center mb-6">
-              <button
-                onClick={() => setCurrentView('dashboard')}
-                className="mr-4 text-gray-600 hover:text-gray-800 transition-colors"
-              >
-                ← Volver al Dashboard
-              </button>
-              <h1 className="text-2xl font-bold text-gray-900">
-                Funcionalidades de Expedix
-              </h1>
-            </div>
-            <ExpedixFeatures 
-              onFeatureClick={(feature) => {
-                console.log('Feature clicked:', feature);
-                // Aquí se pueden agregar navegaciones específicas por funcionalidad
-              }}
-            />
+  return (
+    <div className="space-y-6">
+      {loading && (
+        <div className="flex items-center justify-center py-8">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+          <span className="ml-3 text-gray-600">Cargando paciente...</span>
+        </div>
+      )}
+
+      <PageHeader
+        title={headerInfo.title}
+        description={headerInfo.description}
+        icon={headerInfo.icon}
+        iconColor={headerInfo.iconColor}
+      />
+      
+      {/* View Mode Selector - Only show when not in expedient detail */}
+      {viewMode !== 'expedient' && (
+        <div className="flex items-center justify-between bg-white p-3 rounded-xl shadow-lg border border-primary-100 relative before:absolute before:top-0 before:left-0 before:right-0 before:h-1 before:border-gradient">
+          <div className="flex items-center space-x-0.5 bg-primary-50 p-0.5 rounded-lg border border-primary-200">
+            <button
+              onClick={() => setViewMode('list')}
+              className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all duration-200 ${
+                viewMode === 'list' 
+                  ? 'gradient-primary text-white shadow-primary' 
+                  : 'text-primary-600 hover:bg-primary-100'
+              }`}
+            >
+              <TableCellsIcon className="h-3 w-3 inline mr-1" />
+              Lista
+            </button>
+            <button
+              onClick={() => setViewMode('cards')}
+              className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all duration-200 ${
+                viewMode === 'cards' 
+                  ? 'gradient-primary text-white shadow-primary' 
+                  : 'text-primary-600 hover:bg-primary-100'
+              }`}
+            >
+              <Squares2X2Icon className="h-3 w-3 inline mr-1" />
+              Tarjetas
+            </button>
+            <button
+              onClick={() => setViewMode('timeline')}
+              className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all duration-200 ${
+                viewMode === 'timeline' 
+                  ? 'gradient-primary text-white shadow-primary' 
+                  : 'text-primary-600 hover:bg-primary-100'
+              }`}
+            >
+              <ClockIcon className="h-3 w-3 inline mr-1" />
+              Timeline
+            </button>
           </div>
-        );
-
-      case 'consultation':
-        return selectedPatient ? (
-          <div className="space-y-6">
-            <div className="flex items-center mb-6">
-              <button
-                onClick={() => setCurrentView('dashboard')}
-                className="mr-4 text-gray-600 hover:text-gray-800 transition-colors"
-              >
-                ← Volver al Dashboard
-              </button>
-              <h1 className="text-2xl font-bold text-gray-900">
-                Nueva Consulta + Receta Digital 💊
-              </h1>
-            </div>
-            <ConsultationForm
+          
+          <Button
+            onClick={handleNewPatient}
+            variant="primary"
+            size="sm"
+          >
+            <PlusIcon className="h-3 w-3 mr-1" />
+            Nuevo Paciente
+          </Button>
+        </div>
+      )}
+      
+      {/* List View */}
+      {viewMode === 'list' && (
+        <PatientManagementAdvanced
+          onSelectPatient={handleSelectPatient}
+          onNewPatient={handleNewPatient}
+          onNewConsultation={handleNewConsultation}
+          onClinicalAssessment={handleClinicalAssessment}
+          onSettings={handleSettings}
+        />
+      )}
+      
+      {/* Cards View */}
+      {viewMode === 'cards' && (
+        <ExpedientsGrid
+          onSelectPatient={handleSelectPatient}
+        />
+      )}
+      
+      {/* Timeline View */}
+      {viewMode === 'timeline' && (
+        <PatientTimeline
+          onSelectPatient={handleSelectPatient}
+        />
+      )}
+      
+      {/* Expedient Detail Views */}
+      {viewMode === 'expedient' && selectedPatient && (
+        <>
+          {detailView === 'dashboard' && (
+            <PatientDashboard
               patient={{
-                ...selectedPatient,
+                id: selectedPatient.id,
+                firstName: selectedPatient.first_name,
+                lastName: `${selectedPatient.paternal_last_name} ${selectedPatient.maternal_last_name}`,
+                medicalRecordNumber: selectedPatient.id.slice(-8).toUpperCase(),
+                email: selectedPatient.email,
+                cellPhone: selectedPatient.cell_phone,
+                dateOfBirth: selectedPatient.birth_date,
+                age: selectedPatient.age
+              }}
+              onClose={handleBackToList}
+              onNewConsultation={() => handleNewConsultation(selectedPatient)}
+              onClinicalAssessment={() => handleClinicalAssessment(selectedPatient)}
+            />
+          )}
+
+          {detailView === 'consultation' && (
+            <ConsultationNotes
+              patient={{
+                id: selectedPatient.id,
                 firstName: selectedPatient.first_name,
                 paternalLastName: selectedPatient.paternal_last_name,
                 maternalLastName: selectedPatient.maternal_last_name,
                 birthDate: selectedPatient.birth_date,
+                age: selectedPatient.age,
+                gender: selectedPatient.gender as 'masculine' | 'feminine',
+                email: selectedPatient.email,
                 cellPhone: selectedPatient.cell_phone
               }}
-              onSaveConsultation={handleSaveConsultation}
-              onCancel={() => setCurrentView('dashboard')}
+              onSaveConsultation={(data) => {
+                console.log('Consulta guardada:', data);
+                handleBackToPatientDashboard();
+              }}
+              onCancel={handleBackToPatientDashboard}
             />
-          </div>
-        ) : null;
+          )}
 
-      case 'clinical-assessment':
-        return selectedPatient ? (
-          <UniversalScalesProvider>
-            <div className="space-y-6">
-              <div className="flex items-center mb-6">
-                <button
-                  onClick={() => setCurrentView('dashboard')}
-                  className="mr-4 text-gray-600 hover:text-gray-800 transition-colors"
-                >
-                  ← Volver al Dashboard
-                </button>
-                <h1 className="text-2xl font-bold text-gray-900">
-                  Evaluación Clínica - {selectedPatient.first_name} {selectedPatient.paternal_last_name}
-                </h1>
-              </div>
-              <UniversalScaleAssessment
-                onBack={() => setCurrentView('dashboard')}
-                onComplete={handleSaveAssessment}
-              />
+          {detailView === 'assessment' && (
+            <div className="bg-white rounded-2xl shadow-lg border border-primary-100 p-4 hover-lift relative before:absolute before:top-0 before:left-0 before:right-0 before:h-1 before:border-gradient">
+              <h2 className="text-sm font-semibold text-dark-green mb-3">
+                Evaluación Clínica - {selectedPatient.first_name} {selectedPatient.paternal_last_name}
+              </h2>
+              <p className="text-xs text-gray-600 mb-3">Funcionalidad de evaluación en desarrollo...</p>
+              <Button onClick={handleBackToList} size="sm" variant="outline">
+                Volver
+              </Button>
             </div>
-          </UniversalScalesProvider>
-        ) : null;
-
-      case 'new-patient':
-        return (
-          <NewPatientForm
-            onSave={handleSaveNewPatient}
-            onCancel={() => setCurrentView('dashboard')}
-          />
-        );
-
-      case 'patient-detail':
-        return selectedPatient ? (
-          <PatientDashboard
-            patient={{
-              id: selectedPatient.id,
-              firstName: selectedPatient.first_name,
-              lastName: `${selectedPatient.paternal_last_name} ${selectedPatient.maternal_last_name}`,
-              medicalRecordNumber: `MR-${selectedPatient.id.slice(-6)}`,
-              email: selectedPatient.email,
-              cellPhone: selectedPatient.cell_phone,
-              dateOfBirth: selectedPatient.birth_date,
-              age: selectedPatient.age
-            }}
-            onClose={() => setCurrentView('dashboard')}
-            onNewConsultation={() => handleNewConsultation(selectedPatient)}
-            onClinicalAssessment={() => handleClinicalAssessment(selectedPatient)}
-          />
-        ) : null;
-
-      case 'settings':
-        return (
-          <div className="space-y-6">
-            <div className="flex items-center mb-6">
-              <button
-                onClick={() => setCurrentView('dashboard')}
-                className="mr-4 text-gray-600 hover:text-gray-800 transition-colors"
-              >
-                ← Volver al Dashboard
-              </button>
-            </div>
-            <SettingsPage />
-          </div>
-        );
-
-      default:
-        return null;
-    }
-  };
-
-  return (
-    <div className="space-y-6">
-      {renderCurrentView()}
+          )}
+        </>
+      )}
+      
+      {/* New Patient Modal */}
+      <NewPatientModal
+        isOpen={showNewPatientModal}
+        onClose={() => setShowNewPatientModal(false)}
+        onSuccess={handlePatientCreated}
+      />
     </div>
   );
 }

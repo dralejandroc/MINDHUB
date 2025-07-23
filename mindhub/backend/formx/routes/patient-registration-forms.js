@@ -1,7 +1,7 @@
 /**
  * Patient Registration Forms for FormX Hub
  * 
- * Comprehensive patient registration forms based on EXPEDIENTE ELEONOR analysis
+ * Comprehensive patient registration forms following healthcare standards
  * with full integration to Expedix for data storage and management
  */
 
@@ -19,7 +19,7 @@ const auditLogger = new AuditLogger();
 
 /**
  * Patient Registration Form Templates
- * Based on EXPEDIENTE ELEONOR analysis
+ * Designed for comprehensive healthcare data collection
  */
 const PATIENT_FORM_TEMPLATES = {
   basicRegistration: {

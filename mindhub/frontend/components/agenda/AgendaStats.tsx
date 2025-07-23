@@ -8,8 +8,8 @@ import {
   CheckCircleIcon,
   XCircleIcon,
   ChartBarIcon,
-  TrendingUpIcon,
-  TrendingDownIcon
+  ArrowUpIcon,
+  ArrowDownIcon
 } from '@heroicons/react/24/outline';
 
 interface StatsData {
@@ -328,9 +328,9 @@ export default function AgendaStats() {
                       {trend !== 0 && (
                         <div className="flex items-center">
                           {trend > 0 ? (
-                            <TrendingUpIcon className="h-3 w-3 text-green-500" />
+                            <ArrowUpIcon className="h-3 w-3 text-green-500" />
                           ) : (
-                            <TrendingDownIcon className="h-3 w-3 text-red-500" />
+                            <ArrowDownIcon className="h-3 w-3 text-red-500" />
                           )}
                           <span 
                             className={`text-xs ml-1 ${
