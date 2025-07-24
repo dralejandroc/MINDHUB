@@ -4,6 +4,10 @@
  */
 
 import { apiRequest } from './api-config';
+import { mockClinimetrixApi } from './clinimetrix-mock';
+
+// Temporal flag para usar mock data mientras se implementa el backend
+const USE_MOCK_DATA = true;
 
 // Types
 export interface Scale {
@@ -19,6 +23,8 @@ export interface Scale {
   administration_mode: 'self_administered' | 'clinician_administered' | 'both';
   target_population: string;
   scoring_method: string;
+  tags?: string[]; // JSON array of tags
+  is_favorite?: boolean; // Para el usuario actual
   created_at: string;
   updated_at: string;
 }
@@ -121,6 +127,8 @@ export interface FilterOptions {
   administration_mode?: string;
   target_population?: string;
   search?: string;
+  tags?: string[];
+  favorites_only?: boolean;
   limit?: number;
   offset?: number;
 }
@@ -137,12 +145,20 @@ class ClinimetrixApiClient {
    * Obtener todas las escalas con filtros opcionales
    */
   async getScales(filters: FilterOptions = {}): Promise<Scale[]> {
+    if (USE_MOCK_DATA) {
+      return await mockClinimetrixApi.getScales(filters);
+    }
+
     const params = new URLSearchParams();
     
     if (filters.category) params.append('category', filters.category);
     if (filters.administration_mode) params.append('administrationMode', filters.administration_mode);
     if (filters.target_population) params.append('targetPopulation', filters.target_population);
     if (filters.search) params.append('search', filters.search);
+    if (filters.tags && filters.tags.length > 0) {
+      filters.tags.forEach(tag => params.append('tags', tag));
+    }
+    if (filters.favorites_only) params.append('favoritesOnly', 'true');
     if (filters.limit) params.append('limit', filters.limit.toString());
     if (filters.offset) params.append('offset', filters.offset.toString());
 
@@ -189,7 +205,56 @@ class ClinimetrixApiClient {
    * Obtener categorías disponibles
    */
   async getScaleCategories(): Promise<string[]> {
+    if (USE_MOCK_DATA) {
+      return await mockClinimetrixApi.getScaleCategories();
+    }
     return await apiRequest(`${this.baseUrl}/scales/categories`);
+  }
+
+  /**
+   * Obtener todos los tags disponibles
+   */
+  async getScaleTags(): Promise<string[]> {
+    if (USE_MOCK_DATA) {
+      return await mockClinimetrixApi.getScaleTags();
+    }
+    return await apiRequest(`${this.baseUrl}/scales/tags`);
+  }
+
+  /**
+   * Obtener escalas favoritas del usuario
+   */
+  async getFavoriteScales(userId: string = 'current'): Promise<Scale[]> {
+    if (USE_MOCK_DATA) {
+      return await mockClinimetrixApi.getFavoriteScales();
+    }
+    return await apiRequest(`${this.baseUrl}/scales/favorites?userId=${userId}`);
+  }
+
+  /**
+   * Agregar escala a favoritos
+   */
+  async addScaleToFavorites(scaleId: string, userId: string = 'current'): Promise<void> {
+    if (USE_MOCK_DATA) {
+      return await mockClinimetrixApi.addScaleToFavorites(scaleId);
+    }
+    return await apiRequest(`${this.baseUrl}/scales/${scaleId}/favorite`, {
+      method: 'POST',
+      body: JSON.stringify({ userId })
+    });
+  }
+
+  /**
+   * Remover escala de favoritos
+   */
+  async removeScaleFromFavorites(scaleId: string, userId: string = 'current'): Promise<void> {
+    if (USE_MOCK_DATA) {
+      return await mockClinimetrixApi.removeScaleFromFavorites(scaleId);
+    }
+    return await apiRequest(`${this.baseUrl}/scales/${scaleId}/favorite`, {
+      method: 'DELETE',
+      body: JSON.stringify({ userId })
+    });
   }
 
   /**
@@ -300,6 +365,9 @@ class ClinimetrixApiClient {
    * Obtener estadísticas generales de escalas
    */
   async getScaleStats(): Promise<ScaleStats> {
+    if (USE_MOCK_DATA) {
+      return await mockClinimetrixApi.getScaleStats();
+    }
     return await apiRequest(`http://localhost:3002/api/clinimetrix/scales/stats/usage`);
   }
 

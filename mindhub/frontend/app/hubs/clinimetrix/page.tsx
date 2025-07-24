@@ -1,31 +1,81 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { UniversalCardBasedAssessment } from '@/components/clinimetrix/UniversalCardBasedAssessment';
-import { DocumentChartBarIcon, BeakerIcon } from '@heroicons/react/24/outline';
+import { ScalesCatalog } from '@/components/clinimetrix/ScalesCatalog';
+import { DocumentChartBarIcon, BeakerIcon, RectangleStackIcon } from '@heroicons/react/24/outline';
 import { Button } from '@/components/ui/Button';
+import { clinimetrixApi, Scale } from '@/lib/api/clinimetrix-client';
 
 export default function ClinimetrixPage() {
-  const [showAssessment, setShowAssessment] = useState(false);
+  const [currentView, setCurrentView] = useState<'catalog' | 'assessment'>('catalog');
+  const [selectedScale, setSelectedScale] = useState<Scale | null>(null);
+  const [stats, setStats] = useState<{
+    totalScales: number;
+    todayAssessments: number;
+    totalReports: number;
+    totalPatients: number;
+  }>({
+    totalScales: 0,
+    todayAssessments: 0,
+    totalReports: 0,
+    totalPatients: 0
+  });
+  const [loading, setLoading] = useState(true);
 
-  const handleStartAssessment = () => {
-    setShowAssessment(true);
+  useEffect(() => {
+    loadStats();
+  }, []);
+
+  const loadStats = async () => {
+    try {
+      const [scales, scaleStats] = await Promise.all([
+        clinimetrixApi.getScales(),
+        clinimetrixApi.getScaleStats().catch(() => ({
+          total_scales: 0,
+          total_assessments: 0,
+          total_reports: 0,
+          most_used_scales: []
+        }))
+      ]);
+
+      setStats({
+        totalScales: scales.length,
+        todayAssessments: 0, // TODO: Implementar estadísticas de hoy
+        totalReports: scaleStats.total_reports || 0,
+        totalPatients: 0 // TODO: Implementar conteo de pacientes evaluados
+      });
+    } catch (error) {
+      console.error('Error loading stats:', error);
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleBackToHome = () => {
-    setShowAssessment(false);
+  const handleSelectScale = (scale: Scale) => {
+    setSelectedScale(scale);
+    setCurrentView('assessment');
+  };
+
+  const handleBackToCatalog = () => {
+    setCurrentView('catalog');
+    setSelectedScale(null);
   };
 
   const handleCompleteAssessment = (results: any) => {
     console.log('Assessment completed:', results);
-    setShowAssessment(false);
+    setCurrentView('catalog');
+    setSelectedScale(null);
+    // Reload stats
+    loadStats();
   };
 
-  if (showAssessment) {
+  if (currentView === 'assessment' && selectedScale) {
     return (
       <UniversalCardBasedAssessment
-        onBack={handleBackToHome}
+        selectedScale={selectedScale}
+        onBack={handleBackToCatalog}
         onComplete={handleCompleteAssessment}
         fullscreen={true}
       />
@@ -36,100 +86,56 @@ export default function ClinimetrixPage() {
     <div className="space-y-6">
       <PageHeader
         title="Clinimetrix - Evaluaciones Clínicas"
-        description="Escalas psicológicas y evaluaciones clínicas estandarizadas"
+        description="Catálogo de escalas psicológicas y evaluaciones clínicas estandarizadas"
         icon={DocumentChartBarIcon}
         iconColor="text-purple-600"
         actions={[
           <Button
-            key="start-assessment"
-            onClick={handleStartAssessment}
+            key="view-catalog"
+            onClick={() => setCurrentView('catalog')}
             variant="purple"
             size="sm"
           >
-            <BeakerIcon className="h-3 w-3 mr-1" />
-            Nueva Evaluación
+            <RectangleStackIcon className="h-4 w-4 mr-1" />
+            Catálogo de Escalas
           </Button>
         ]}
       />
-      
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        <div className="bg-white rounded-2xl shadow-lg border border-purple-100 p-4 hover-lift transition-all duration-300 relative before:absolute before:top-0 before:left-0 before:right-0 before:h-1 before:border-gradient-purple">
-          <div className="flex items-center justify-between mb-3">
-            <h3 className="text-sm font-semibold text-dark-green">Escalas Disponibles</h3>
-            <BeakerIcon className="h-5 w-5 text-purple-600" />
-          </div>
-          <p className="text-gray-600 text-xs mb-3">
-            PHQ-9, GAD-7, GDS-30, BDI-21, MADRS, HAM-A, STAI, RADS-2, y más escalas clínicas estandarizadas.
-          </p>
-          <Button 
-            onClick={handleStartAssessment}
-            variant="outline" 
-            size="sm"
-            className="w-full border-purple-200 text-purple-600 hover:bg-purple-50"
-          >
-            Ver Escalas
-          </Button>
-        </div>
-
-        <div className="bg-white rounded-2xl shadow-lg border border-purple-100 p-4 hover-lift transition-all duration-300 relative before:absolute before:top-0 before:left-0 before:right-0 before:h-1 before:border-gradient-purple">
-          <div className="flex items-center justify-between mb-3">
-            <h3 className="text-sm font-semibold text-dark-green">Evaluaciones Activas</h3>
-            <div className="flex items-center">
-              <div className="w-2 h-2 bg-emerald-500 rounded-full mr-1.5"></div>
-              <span className="text-xs text-gray-500">En línea</span>
-            </div>
-          </div>
-          <p className="text-gray-600 text-xs mb-3">
-            Administra evaluaciones en curso y revisa el progreso de los pacientes en tiempo real.
-          </p>
-          <Button 
-            variant="outline" 
-            size="sm"
-            className="w-full border-emerald-200 text-emerald-600 hover:bg-emerald-50"
-          >
-            Ver Evaluaciones
-          </Button>
-        </div>
-
-        <div className="bg-white rounded-2xl shadow-lg border border-purple-100 p-4 hover-lift transition-all duration-300 relative before:absolute before:top-0 before:left-0 before:right-0 before:h-1 before:border-gradient-purple">
-          <div className="flex items-center justify-between mb-3">
-            <h3 className="text-sm font-semibold text-dark-green">Reportes y Resultados</h3>
-            <DocumentChartBarIcon className="h-5 w-5 text-purple-600" />
-          </div>
-          <p className="text-gray-600 text-xs mb-3">
-            Genera reportes automáticos con interpretaciones clínicas y recomendaciones basadas en evidencia.
-          </p>
-          <Button 
-            variant="outline" 
-            size="sm"
-            className="w-full border-primary-200 text-primary-600 hover:bg-primary-50"
-          >
-            Ver Reportes
-          </Button>
-        </div>
-      </div>
 
       {/* Quick Stats */}
       <div className="bg-white rounded-2xl shadow-lg border border-purple-100 p-4 hover-lift relative before:absolute before:top-0 before:left-0 before:right-0 before:h-1 before:border-gradient-purple">
         <h3 className="text-sm font-semibold text-dark-green mb-3">Resumen de Actividad</h3>
         <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
           <div className="text-center">
-            <div className="text-lg font-bold text-purple-600">12</div>
+            <div className="text-lg font-bold text-purple-600">
+              {loading ? '...' : stats.totalScales}
+            </div>
             <div className="text-xs text-gray-500">Escalas Disponibles</div>
           </div>
           <div className="text-center">
-            <div className="text-lg font-bold text-emerald-600">0</div>
+            <div className="text-lg font-bold text-emerald-600">
+              {loading ? '...' : stats.todayAssessments}
+            </div>
             <div className="text-xs text-gray-500">Evaluaciones Hoy</div>
           </div>
           <div className="text-center">
-            <div className="text-lg font-bold text-primary-600">0</div>
+            <div className="text-lg font-bold text-primary-600">
+              {loading ? '...' : stats.totalReports}
+            </div>
             <div className="text-xs text-gray-500">Reportes Generados</div>
           </div>
           <div className="text-center">
-            <div className="text-lg font-bold text-secondary-600">0</div>
+            <div className="text-lg font-bold text-secondary-600">
+              {loading ? '...' : stats.totalPatients}
+            </div>
             <div className="text-xs text-gray-500">Pacientes Evaluados</div>
           </div>
         </div>
+      </div>
+
+      {/* Scales Catalog */}
+      <div className="bg-white rounded-2xl shadow-lg border border-purple-100 p-6 relative before:absolute before:top-0 before:left-0 before:right-0 before:h-1 before:border-gradient-purple">
+        <ScalesCatalog onSelectScale={handleSelectScale} />
       </div>
     </div>
   );
