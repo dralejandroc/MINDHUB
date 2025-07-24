@@ -13,9 +13,11 @@ import {
   UserIcon,
   ChartBarIcon,
   WrenchScrewdriverIcon,
-  ComputerDesktopIcon
+  ComputerDesktopIcon,
+  CalendarIcon
 } from '@heroicons/react/24/outline';
 import { DashboardSettings } from '@/components/settings/DashboardSettings';
+import { AgendaConfigurationSettings } from '@/components/settings/AgendaConfigurationSettings';
 
 interface ClinicConfiguration {
   clinicInfo: {
@@ -207,6 +209,7 @@ export default function GeneralSettingsPage() {
     { id: 'dashboard', name: 'Dashboard', icon: ComputerDesktopIcon },
     { id: 'general', name: 'General', icon: CogIcon },
     { id: 'expedix', name: 'Expedix', icon: HeartIcon },
+    { id: 'agenda', name: 'Agenda', icon: CalendarIcon },
     { id: 'clinimetrix', name: 'Clinimetrix', icon: ChartBarIcon },
     { id: 'formx', name: 'FormX', icon: DocumentTextIcon },
     { id: 'preferences', name: 'Preferencias', icon: UserIcon },
@@ -391,6 +394,11 @@ export default function GeneralSettingsPage() {
                 </div>
               </div>
             </div>
+          )}
+
+          {/* Agenda Configuration Tab */}
+          {activeTab === 'agenda' && (
+            <AgendaConfigurationSettings />
           )}
 
           {/* Expedix Configuration Tab */}

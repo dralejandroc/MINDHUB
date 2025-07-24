@@ -22,7 +22,9 @@ import {
   DocumentArrowDownIcon,
   ChatBubbleLeftEllipsisIcon,
   NewspaperIcon,
-  CogIcon
+  CogIcon,
+  ClipboardDocumentListIcon,
+  FolderOpenIcon
 } from '@heroicons/react/24/outline';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
@@ -378,7 +380,6 @@ export default function PatientManagementAdvanced({
         color: tag.textColor || '#FFFFFF'
       }}
     >
-      {tag.icon && <span className="mr-1">{tag.icon}</span>}
       {tag.name}
     </span>
   );
@@ -404,51 +405,7 @@ export default function PatientManagementAdvanced({
   }
 
   return (
-    <div className="space-y-6">
-      {/* Header with Search and Controls */}
-      <div className="bg-white rounded-xl p-6 border shadow-sm">
-        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between space-y-4 lg:space-y-0">
-          {/* Search and Filters */}
-          <div className="flex-1 flex items-center space-x-4">
-            {/* Search */}
-            <div className="flex-1 relative max-w-md">
-              <MagnifyingGlassIcon className="h-5 w-5 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
-              <input
-                type="text"
-                placeholder="Buscar pacientes..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              />
-            </div>
-            
-            {/* Status Filter */}
-            <select
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value as PatientStatus | 'all')}
-              className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            >
-              <option value="all">Todos</option>
-              <option value="active">Activos</option>
-              <option value="inactive">Inactivos</option>
-            </select>
-          </div>
-          
-          {/* Actions only - view toggle handled by parent */}
-          <div className="flex items-center space-x-3">
-            <Button onClick={onNewPatient} className="bg-blue-600 hover:bg-blue-700 text-white">
-              <PlusIcon className="w-4 h-4 mr-2" />
-              Nuevo Paciente
-            </Button>
-          </div>
-        </div>
-        
-        {/* Results Count */}
-        <div className="mt-4 text-sm text-gray-500">
-          {filteredPatients.length} paciente{filteredPatients.length !== 1 ? 's' : ''} encontrado{filteredPatients.length !== 1 ? 's' : ''}
-        </div>
-      </div>
-
+    <div className="space-y-4">
       {/* Patient List/Cards */}
       {filteredPatients.length === 0 ? (
         <div className="text-center py-12">
@@ -471,105 +428,100 @@ export default function PatientManagementAdvanced({
         /* List View */
         <div className="bg-white rounded-xl border shadow-sm overflow-hidden">
           {/* Table Header */}
-          <div className="bg-gray-50 px-6 py-3 border-b border-gray-200">
-            <div className="grid grid-cols-12 gap-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-              <div className="col-span-3">Paciente</div>
-              <div className="col-span-2">Info Básica</div>
-              <div className="col-span-2">Tags</div>
-              <div className="col-span-2">Estadísticas</div>
-              <div className="col-span-2">Seguimiento</div>
-              <div className="col-span-1">Acciones</div>
+          <div className="bg-gray-50 px-4 py-2 border-b border-gray-200">
+            <div className="grid grid-cols-12 gap-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <div className="col-span-4">Paciente</div>
+              <div className="col-span-3">Tags</div>
+              <div className="col-span-3">Estadísticas</div>
+              <div className="col-span-2">Acciones</div>
             </div>
           </div>
 
           {/* Table Body */}
           <div className="divide-y divide-gray-200">
             {filteredPatients.map((patient) => (
-              <div key={patient.id} className="px-6 py-4 hover:bg-gray-50 transition-colors duration-150">
-                <div className="grid grid-cols-12 gap-4 items-center">
-                  {/* Patient Info */}
-                  <div className="col-span-3">
+              <div key={patient.id} className="px-4 py-3 hover:bg-gray-50 transition-colors duration-150">
+                <div className="grid grid-cols-12 gap-3 items-center">
+                  {/* Patient Info - Optimized to use more space */}
+                  <div className="col-span-4">
                     <div className="flex items-center">
                       <div 
-                        className="w-10 h-10 rounded-full flex items-center justify-center text-white text-sm font-semibold mr-3"
+                        className="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-semibold mr-3 flex-shrink-0"
                         style={{ background: 'linear-gradient(135deg, var(--primary-500), var(--primary-600))' }}
                       >
                         {patient.first_name.charAt(0)}{patient.paternal_last_name.charAt(0)}
                       </div>
-                      <div>
+                      <div className="flex-1 min-w-0">
                         <button
                           onClick={() => onSelectPatient(patient)}
-                          className="text-sm font-medium text-gray-900 hover:text-blue-600 transition-colors"
+                          className="text-sm font-medium text-gray-900 hover:text-blue-600 transition-colors block truncate"
                         >
                           {patient.first_name} {patient.paternal_last_name} {patient.maternal_last_name}
                         </button>
-                        <div className="text-xs text-gray-500">
-                          ID: {patient.id.slice(-8).toUpperCase()}
+                        <div className="flex flex-wrap items-center gap-x-2 text-xs text-gray-500 mt-0.5">
+                          <span className="whitespace-nowrap">{patient.age} años</span>
+                          <span className="hidden sm:inline">•</span>
+                          <span className="hidden sm:inline">{patient.gender === 'masculine' ? 'M' : 'F'}</span>
+                          <span className="hidden md:inline">•</span>
+                          <span className="truncate hidden md:inline">{patient.cell_phone || 'Sin teléfono'}</span>
                         </div>
                       </div>
                     </div>
                   </div>
 
-                  {/* Basic Info */}
-                  <div className="col-span-2">
-                    <div className="text-sm text-gray-900">{patient.age} años</div>
-                    <div className="text-xs text-gray-500 capitalize">
-                      {patient.gender === 'masculine' ? 'Masculino' : 'Femenino'}
-                    </div>
-                    <div className="text-xs text-gray-500 flex items-center mt-1">
-                      <PhoneIcon className="w-3 h-3 mr-1" />
-                      {patient.cell_phone}
-                    </div>
-                  </div>
-
-                  {/* Tags */}
-                  <div className="col-span-2">
+                  {/* Tags - More space for tags */}
+                  <div className="col-span-3">
                     <div className="flex flex-wrap gap-1">
-                      {patient.tags.slice(0, 2).map((tag) => (
+                      {patient.tags.slice(0, 4).map((tag) => (
                         <TagComponent key={tag.id} tag={tag} />
                       ))}
-                      {patient.tags.length > 2 && (
+                      {patient.tags.length > 4 && (
                         <span className="inline-flex items-center px-2 py-1 text-xs font-medium bg-gray-100 text-gray-600 rounded-full">
-                          +{patient.tags.length - 2}
+                          +{patient.tags.length - 4}
                         </span>
                       )}
                     </div>
                   </div>
 
-                  {/* Statistics */}
-                  <div className="col-span-2">
-                    <div className="text-xs space-y-1">
+                  {/* Statistics - Compact */}
+                  <div className="col-span-3">
+                    <div className="flex items-center space-x-4 text-xs">
                       <div className="flex items-center">
-                        <CalendarIcon className="w-3 h-3 mr-1 text-blue-500" />
+                        <div className="w-2 h-2 bg-blue-500 rounded-full mr-1" />
                         <span>{patient.consultationsCount} consultas</span>
                       </div>
                       <div className="flex items-center">
-                        <DocumentTextIcon className="w-3 h-3 mr-1 text-green-500" />
+                        <div className="w-2 h-2 bg-green-500 rounded-full mr-1" />
                         <span>{patient.prescriptionsCount} recetas</span>
                       </div>
                     </div>
                   </div>
 
-                  {/* Follow-up */}
+                  {/* Actions - Tag style buttons */}
                   <div className="col-span-2">
-                    <div className="text-xs space-y-1">
-                      <div className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
-                        patient.followUpStatus === 'active' 
-                          ? 'bg-green-100 text-green-800' 
-                          : 'bg-gray-100 text-gray-800'
-                      }`}>
-                        {patient.followUpStatus === 'active' ? '🟢 Activo' : '⚫ Inactivo'}
-                      </div>
-                      <div className="text-gray-500">
-                        <ClockIcon className="w-3 h-3 inline mr-1" />
-                        {patient.followUpDuration}
-                      </div>
+                    <div className="flex items-center space-x-1 flex-wrap">
+                      <button
+                        onClick={() => onSelectPatient(patient)}
+                        className="inline-flex items-center px-2 py-1 text-xs font-medium text-white bg-primary-500 hover:bg-primary-600 rounded-full transition-colors duration-200"
+                      >
+                        <FolderOpenIcon className="h-3 w-3 sm:mr-0.5" />
+                        <span className="hidden sm:inline">Ver</span>
+                      </button>
+                      <button
+                        onClick={() => onNewConsultation(patient)}
+                        className="inline-flex items-center px-2 py-1 text-xs font-medium text-white bg-green-500 hover:bg-green-600 rounded-full transition-colors duration-200"
+                      >
+                        <DocumentTextIcon className="h-3 w-3 sm:mr-0.5" />
+                        <span className="hidden sm:inline">Nueva</span>
+                      </button>
+                      <button
+                        onClick={() => onClinicalAssessment(patient)}
+                        className="inline-flex items-center px-2 py-1 text-xs font-medium text-white bg-purple-500 hover:bg-purple-600 rounded-full transition-colors duration-200"
+                      >
+                        <DocumentChartBarIcon className="h-3 w-3 sm:mr-0.5" />
+                        <span className="hidden sm:inline">Eval</span>
+                      </button>
                     </div>
-                  </div>
-
-                  {/* Actions */}
-                  <div className="col-span-1">
-                    <PatientActionsDropdown patient={patient} />
                   </div>
                 </div>
               </div>
@@ -599,7 +551,7 @@ export default function PatientManagementAdvanced({
                         {patient.first_name} {patient.paternal_last_name}
                       </button>
                       <div className="text-sm text-gray-500">
-                        {patient.age} años • {patient.gender === 'masculine' ? 'Masculino' : 'Femenino'}
+                        {patient.age} • {patient.gender === 'masculine' ? 'M' : 'F'}
                       </div>
                     </div>
                   </div>
@@ -621,60 +573,74 @@ export default function PatientManagementAdvanced({
               </div>
 
               {/* Patient Details */}
-              <div className="px-6 py-4 bg-gray-50 space-y-3">
-                {/* Follow-up Status */}
-                <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium text-gray-600">Seguimiento:</span>
+              <div className="px-6 py-3 bg-gray-50 space-y-2">
+                {/* Statistics - Compact */}
+                <div className="flex items-center justify-between text-sm">
+                  <div className="flex items-center space-x-3">
+                    <div className="flex items-center">
+                      <div className="w-2 h-2 bg-blue-500 rounded-full mr-1" />
+                      <span>{patient.consultationsCount}</span>
+                    </div>
+                    <div className="flex items-center">
+                      <div className="w-2 h-2 bg-green-500 rounded-full mr-1" />
+                      <span>{patient.prescriptionsCount}</span>
+                    </div>
+                  </div>
                   <div className="flex items-center">
                     <div className={`w-2 h-2 rounded-full mr-2 ${
                       patient.followUpStatus === 'active' ? 'bg-green-500' : 'bg-gray-400'
                     }`} />
-                    <span className="text-sm text-gray-900">
+                    <span className="text-xs text-gray-600">
                       {patient.followUpDuration}
                     </span>
                   </div>
                 </div>
 
-                {/* Statistics */}
-                <div className="grid grid-cols-2 gap-4 text-sm">
-                  <div className="flex items-center">
-                    <CalendarIcon className="w-4 h-4 text-blue-500 mr-2" />
-                    <span>{patient.consultationsCount} consultas</span>
-                  </div>
-                  <div className="flex items-center">
-                    <DocumentTextIcon className="w-4 h-4 text-green-500 mr-2" />
-                    <span>{patient.prescriptionsCount} recetas</span>
-                  </div>
-                </div>
-
-                {/* Current Medications */}
-                {patient.currentMedications.length > 0 && (
-                  <div>
-                    <div className="text-sm font-medium text-gray-600 mb-1">Medicamentos:</div>
-                    <div className="text-sm text-gray-900">
-                      {patient.currentMedications.slice(0, 2).join(', ')}
-                      {patient.currentMedications.length > 2 && ` +${patient.currentMedications.length - 2} más`}
-                    </div>
-                  </div>
-                )}
-
-                {/* Contact */}
-                <div className="pt-2 border-t border-gray-200">
-                  <div className="flex items-center text-sm text-gray-600">
-                    <PhoneIcon className="w-4 h-4 mr-2" />
-                    {patient.cell_phone}
+                {/* Contact and Medications - Compact */}
+                <div className="pt-2 border-t border-gray-200 space-y-1">
+                  <div className="flex items-center text-xs text-gray-600">
+                    <PhoneIcon className="w-3 h-3 mr-1" />
+                    <span className="truncate">{patient.cell_phone}</span>
                   </div>
                   {patient.email && (
-                    <div className="text-sm text-gray-600 truncate mt-1">
+                    <div className="text-xs text-gray-600 truncate">
                       {patient.email}
+                    </div>
+                  )}
+                  {patient.currentMedications.length > 0 && (
+                    <div className="text-xs text-gray-600">
+                      💊 {patient.currentMedications.slice(0, 1).join(', ')}
+                      {patient.currentMedications.length > 1 && ` +${patient.currentMedications.length - 1}`}
                     </div>
                   )}
                 </div>
               </div>
 
-              {/* Card Actions */}
-              <div className="px-6 py-4 border-t border-gray-200">
-                <PatientActionsDropdown patient={patient} />
+              {/* Card Actions - Compact */}
+              <div className="px-6 py-3 border-t border-gray-200">
+                <div className="flex items-center space-x-1">
+                  <button
+                    onClick={() => onSelectPatient(patient)}
+                    className="inline-flex items-center px-2 py-1 text-xs font-medium text-white bg-primary-500 hover:bg-primary-600 rounded-full transition-colors duration-200"
+                  >
+                    <FolderOpenIcon className="h-3 w-3 mr-0.5" />
+                    Ver
+                  </button>
+                  <button
+                    onClick={() => onNewConsultation(patient)}
+                    className="inline-flex items-center px-2 py-1 text-xs font-medium text-white bg-green-500 hover:bg-green-600 rounded-full transition-colors duration-200"
+                  >
+                    <DocumentTextIcon className="h-3 w-3 mr-0.5" />
+                    Nueva
+                  </button>
+                  <button
+                    onClick={() => onClinicalAssessment(patient)}
+                    className="inline-flex items-center px-2 py-1 text-xs font-medium text-white bg-purple-500 hover:bg-purple-600 rounded-full transition-colors duration-200"
+                  >
+                    <DocumentChartBarIcon className="h-3 w-3 mr-0.5" />
+                    Eval
+                  </button>
+                </div>
               </div>
             </Card>
           ))}

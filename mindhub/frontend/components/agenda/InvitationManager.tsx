@@ -62,8 +62,27 @@ export default function InvitationManager({ onInvitationUpdate, onSlotAssigned }
   const [statusFilter, setStatusFilter] = useState<string>('active');
   const [timeFilter, setTimeFilter] = useState<string>('all');
 
-  // Datos de ejemplo
+  // TODO: Replace with real API data
   useEffect(() => {
+    // Load invitations from API
+    const loadInvitations = async () => {
+      try {
+        console.log('🔄 Loading invitations...');
+        // TODO: Implement invitation API endpoint
+        // const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/expedix/agenda/invitations`);
+        
+        // For now, set empty array
+        setInvitations([]);
+        return;
+      } catch (error) {
+        console.error('❌ Error loading invitations:', error);
+        setInvitations([]);
+      }
+    };
+    
+    loadInvitations();
+    return; // Skip mock data
+    
     const mockInvitations: AppointmentInvitation[] = [
       {
         id: 'inv_1',

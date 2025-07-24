@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { PageHeader } from '@/components/layout/PageHeader';
 import AgendaCalendar from '@/components/agenda/AgendaCalendar';
 import AppointmentList from '@/components/agenda/AppointmentList';
@@ -8,6 +8,7 @@ import NewAppointmentModal from '@/components/agenda/NewAppointmentModal';
 import BlockTimeModal from '@/components/agenda/BlockTimeModal';
 import WaitingListModal from '@/components/agenda/WaitingListModal';
 import AppointmentDetailsModal from '@/components/agenda/AppointmentDetailsModal';
+import AddToWaitingListModal from '@/components/agenda/AddToWaitingListModal';
 import { 
   CalendarIcon, 
   PlusIcon, 
@@ -24,6 +25,7 @@ import {
   ShieldExclamationIcon
 } from '@heroicons/react/24/outline';
 import { Button } from '@/components/ui/Button';
+import toast from 'react-hot-toast';
 
 type ViewType = 'calendar' | 'list';
 
@@ -40,6 +42,23 @@ export default function AgendaPage() {
   const [appointmentTime, setAppointmentTime] = useState<string>('');
   const [showAppointmentDetails, setShowAppointmentDetails] = useState(false);
   const [selectedAppointment, setSelectedAppointment] = useState<any>(null);
+  const [showNewPatientModal, setShowNewPatientModal] = useState(false);
+  const [editingAppointment, setEditingAppointment] = useState<any>(null);
+  const [showAddToWaitingList, setShowAddToWaitingList] = useState(false);
+
+  // Listen for new patient modal events
+  useEffect(() => {
+    const handleOpenNewPatientModal = (event: CustomEvent) => {
+      if (event.detail?.fromAgenda) {
+        setShowNewPatientModal(true);
+      }
+    };
+
+    window.addEventListener('openNewPatientModal', handleOpenNewPatientModal as any);
+    return () => {
+      window.removeEventListener('openNewPatientModal', handleOpenNewPatientModal as any);
+    };
+  }, []);
 
   const handleNewAppointment = (date?: Date, time?: string) => {
     if (date) setAppointmentDate(date);
@@ -57,6 +76,21 @@ export default function AgendaPage() {
     setShowAppointmentDetails(true);
   };
 
+  const handleEditAppointment = (appointment: any) => {
+    setEditingAppointment(appointment);
+    setShowAppointmentDetails(false);
+    setShowNewAppointment(true);
+  };
+
+  const handleNewPatientSaved = (patient: any) => {
+    setShowNewPatientModal(false);
+    // Reload patients in appointment modal if it's open
+    if (showNewAppointment) {
+      // Trigger reload
+      window.location.reload();
+    }
+  };
+
   const handleDateSelect = (date: Date) => {
     setSelectedDate(date);
   };
@@ -71,18 +105,119 @@ export default function AgendaPage() {
 
   const handleSaveAppointment = async (appointmentData: any) => {
     try {
+      console.log('🔄 Saving appointment:', appointmentData);
+      console.log('🌐 API URL:', `${process.env.NEXT_PUBLIC_API_URL}/api/v1/expedix/agenda/appointments`);
+      
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/expedix/agenda/appointments`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(appointmentData)
       });
       
+      console.log('📡 Response status:', response.status);
+      console.log('📡 Response ok:', response.ok);
+      
       if (response.ok) {
+        const result = await response.json();
+        console.log('✅ Appointment saved successfully:', result);
+        setShowNewAppointment(false);
+        setAppointmentTime('');
         // Recargar calendario
         window.location.reload();
+      } else {
+        const errorData = await response.text();
+        console.error('❌ Error response:', errorData);
+        alert(`Error al agendar cita: ${response.status} - ${errorData}`);
       }
     } catch (error) {
-      console.error('Error saving appointment:', error);
+      console.error('❌ Network error saving appointment:', error);
+      alert('Error de conexión al agendar cita. Revisa que el backend esté corriendo.');
+    }
+  };
+
+  const handleDeleteAppointment = async (appointmentId: string) => {
+    if (!confirm('¿Estás seguro de que deseas cancelar esta cita?')) {
+      return;
+    }
+
+    try {
+      console.log('🗑️ Deleting appointment:', appointmentId);
+      
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/expedix/agenda/appointments/${appointmentId}`, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' }
+      });
+      
+      if (response.ok) {
+        const result = await response.json();
+        console.log('✅ Appointment deleted successfully');
+        toast.success('Cita cancelada y espacio liberado');
+        
+        // Mostrar sugerencias de lista de espera si existen
+        if (result.waitingListSuggestions && result.waitingListSuggestions.length > 0) {
+          const suggestions = result.waitingListSuggestions;
+          const topSuggestion = suggestions[0];
+          
+          const message = `🎯 SUGERENCIA DE LISTA DE ESPERA\n\n` +
+            `Paciente disponible: ${topSuggestion.patientName}\n` +
+            `Prioridad: ${topSuggestion.priority.toUpperCase()}\n` +
+            `Tipo: ${topSuggestion.appointmentType}\n` +
+            `Esperando desde: ${topSuggestion.waitingSince} días\n\n` +
+            `¿Deseas contactar al paciente para este horario disponible?`;
+          
+          if (confirm(message)) {
+            // Redirigir a la lista de espera o abrir modal de contacto
+            window.open(`tel:${topSuggestion.patientPhone}`, '_blank');
+          }
+          
+          console.log(`🎯 Waiting list suggestions:`, suggestions);
+        }
+        
+        setShowAppointmentDetails(false);
+        setSelectedAppointment(null);
+        // Recargar calendario
+        window.location.reload();
+      } else {
+        const errorData = await response.text();
+        console.error('❌ Error deleting appointment:', errorData);
+        toast.error(`Error al cancelar cita: ${response.status}`);
+      }
+    } catch (error) {
+      console.error('❌ Network error deleting appointment:', error);
+      toast.error('Error de conexión al cancelar cita');
+    }
+  };
+
+  const handleStatusChange = async (appointmentId: string, newStatus: string) => {
+    try {
+      console.log('🔄 Changing appointment status:', appointmentId, newStatus);
+      
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/expedix/agenda/appointments/${appointmentId}/status`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: newStatus })
+      });
+      
+      if (response.ok) {
+        console.log('✅ Status changed successfully');
+        toast.success('Estado actualizado exitosamente');
+        // Actualizar la cita en el estado local
+        if (selectedAppointment) {
+          setSelectedAppointment({
+            ...selectedAppointment,
+            status: newStatus
+          });
+        }
+        // Recargar calendario para reflejar cambios
+        window.location.reload();
+      } else {
+        const errorData = await response.text();
+        console.error('❌ Error changing status:', errorData);
+        toast.error(`Error al cambiar estado: ${response.status}`);
+      }
+    } catch (error) {
+      console.error('❌ Network error changing status:', error);
+      toast.error('Error de conexión al cambiar estado');
     }
   };
 
@@ -106,7 +241,7 @@ export default function AgendaPage() {
   };
 
   const handleWaitingList = () => {
-    setShowWaitingList(true);
+    setShowAddToWaitingList(true);
   };
 
   const handleSaveBlockedTime = async (blockData: any) => {
@@ -119,7 +254,7 @@ export default function AgendaPage() {
       // });
       
       console.log('Blocked time data:', blockData);
-      // Temporary mock success - simulate successful response
+      // TODO: Implement blocked-times endpoint in backend
       // if (response.ok) {
         // Recargar calendario
         // window.location.reload();
@@ -137,68 +272,157 @@ export default function AgendaPage() {
     setShowNewAppointment(true);
   };
 
-  const handleSettings = () => {
-    const setting = prompt(
-      'Configuración de horarios:\n1. Horario de atención\n2. Duración de citas por defecto\n3. Días laborables\n4. Horario de comida\n5. Tipos de consulta',
-      '1'
-    );
-    
-    if (setting === '1') {
-      const schedule = prompt('Horario de atención (ej: 08:00-20:00):', '08:00-20:00');
-      if (schedule) alert(`Horario actualizado: ${schedule}`);
-    } else if (setting === '2') {
-      const duration = prompt('Duración por defecto (minutos):', '60');
-      if (duration) alert(`Duración actualizada: ${duration} minutos`);
-    } else if (setting === '3') {
-      const days = prompt('Días laborables (L,M,X,J,V,S):', 'L,M,X,J,V,S');
-      if (days) alert(`Días laborables actualizados: ${days}`);
+  const handleSaveToWaitingList = async (waitingListData: any) => {
+    try {
+      console.log('💾 Saving to waiting list:', waitingListData);
+      
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/expedix/agenda/waiting-list`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(waitingListData)
+      });
+      
+      if (response.ok) {
+        const result = await response.json();
+        console.log('✅ Patient added to waiting list successfully:', result);
+        toast.success('Paciente agregado a la lista de espera exitosamente');
+        setShowAddToWaitingList(false);
+      } else {
+        const errorData = await response.text();
+        console.error('❌ Error adding to waiting list:', errorData);
+        toast.error(`Error al agregar a lista de espera: ${response.status}`)
+      }
+    } catch (error) {
+      console.error('❌ Network error adding to waiting list:', error);
+      toast.error('Error de conexión al agregar a lista de espera');
     }
   };
 
-  // Mock data for daily stats
-  const dailyStats = {
-    expectedIncome: 12500,
-    advancePayments: 3200,
-    actualIncome: 7800,
-    firstTimeConsultations: 3,
-    followUpConsultations: 8,
-    videoConsultations: 2,
-    blockedSlots: 2,
-    blockedReasons: [
-      { type: 'personal', count: 1, label: 'Espacio Personal' },
-      { type: 'holiday', count: 1, label: 'Día Feriado' }
-    ]
+  const handleSettings = () => {
+    // Navigate to professional settings page
+    window.location.href = '/hubs/agenda/settings';
   };
+
+  // Daily stats state
+  const [dailyStats, setDailyStats] = useState({
+    expectedIncome: 0,
+    advancePayments: 0,
+    actualIncome: 0,
+    firstTimeConsultations: 0,
+    followUpConsultations: 0,
+    videoConsultations: 0,
+    blockedSlots: 0,
+    blockedReasons: []
+  });
+
+  // Load daily stats
+  useEffect(() => {
+    const loadDailyStats = async () => {
+      try {
+        console.log('🔄 Loading daily stats...');
+        const today = selectedDate.toISOString().split('T')[0];
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/expedix/agenda/daily-stats?date=${today}`);
+        
+        if (response.ok) {
+          const data = await response.json();
+          if (data.success && data.data) {
+            setDailyStats(data.data);
+            return;
+          }
+        }
+        
+        // Calculate from appointments if no dedicated endpoint
+        const appointmentsResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/expedix/agenda/appointments`);
+        if (appointmentsResponse.ok) {
+          const appointmentsData = await appointmentsResponse.json();
+          if (appointmentsData.success && appointmentsData.data) {
+            const todayAppointments = appointmentsData.data.filter((apt: any) => apt.date === today);
+            
+            // Calculate stats from today's appointments
+            const firstTimeConsultations = todayAppointments.filter((apt: any) => 
+              apt.type.toLowerCase().includes('primera') || apt.type.toLowerCase().includes('inicial')
+            ).length;
+            
+            const followUpConsultations = todayAppointments.filter((apt: any) => 
+              apt.type.toLowerCase().includes('seguimiento') || apt.type.toLowerCase().includes('control')
+            ).length;
+            
+            const videoConsultations = todayAppointments.filter((apt: any) => 
+              apt.type.toLowerCase().includes('video') || apt.type.toLowerCase().includes('virtual')
+            ).length;
+            
+            // Calculate income based on appointments
+            const expectedIncome = todayAppointments.reduce((sum: number, apt: any) => sum + (apt.cost || 800), 0);
+            const actualIncome = todayAppointments
+              .filter((apt: any) => apt.status === 'completed' || apt.status === 'confirmed')
+              .reduce((sum: number, apt: any) => sum + (apt.cost || 800), 0);
+            
+            const advancePayments = todayAppointments
+              .filter((apt: any) => apt.paymentStatus === 'paid')
+              .reduce((sum: number, apt: any) => sum + (apt.cost || 800), 0);
+            
+            setDailyStats({
+              expectedIncome,
+              advancePayments,
+              actualIncome,
+              firstTimeConsultations,
+              followUpConsultations,
+              videoConsultations,
+              blockedSlots: 0, // TODO: Calculate blocked time slots
+              blockedReasons: [] // TODO: Get blocked reasons
+            });
+          }
+        }
+      } catch (error) {
+        console.error('❌ Error loading daily stats:', error);
+      }
+    };
+
+    loadDailyStats();
+  }, [selectedDate]);
 
   return (
     <div className="space-y-6">
-      <PageHeader
-        title="Agenda - Sistema de Citas"
-        description="Gestiona citas médicas y programación de consultas"
-        icon={CalendarIcon}
-        iconColor="text-orange-600"
-        actions={[
-          <Button
-            key="settings"
-            onClick={handleSettings}
-            variant="outline"
-            size="sm"
-            className="mr-1"
-          >
-            <Cog6ToothIcon className="h-3 w-3 mr-1" />
-            Configurar
-          </Button>,
-          <Button
-            key="new-appointment"
-            onClick={handleNewAppointment}
-            variant="orange"
-            size="sm"
-          >
-            <PlusIcon className="h-3 w-3 mr-1" />
-            Nueva Cita
-          </Button>
-        ]}
-      />
+      <div className="bg-white rounded-lg shadow-sm border border-primary-100 p-3 mb-4">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center space-x-2">
+            <CalendarIcon className="h-5 w-5 text-orange-600" />
+            <div>
+              <h1 className="text-lg font-bold text-dark-green">Agenda - Sistema de Citas</h1>
+              <p className="text-xs text-gray-600">Gestiona citas médicas y programación de consultas</p>
+            </div>
+          </div>
+          <div className="flex items-center space-x-2">
+            <Button
+              onClick={handleSettings}
+              variant="outline"
+              size="sm"
+              className="h-8 px-2 text-xs"
+            >
+              <Cog6ToothIcon className="h-3 w-3 mr-1" />
+              Config
+            </Button>
+            <Button
+              onClick={handleWaitingList}
+              variant="outline"
+              size="sm"
+              className="h-8 px-2 text-xs border-primary-200 text-primary-600 hover:bg-primary-50"
+            >
+              <UserGroupIcon className="h-3 w-3 mr-1" />
+              +Lista Espera
+            </Button>
+            <Button
+              onClick={handleNewAppointment}
+              variant="orange"
+              size="sm"  
+              className="h-8 px-2 text-xs"
+            >
+              <PlusIcon className="h-3 w-3 mr-1" />
+              Nueva Cita
+            </Button>
+          </div>
+        </div>
+      </div>
       
       {/* View Toggle and Calendar Controls */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
@@ -271,136 +495,173 @@ export default function AgendaPage() {
             <div className="bg-white rounded-xl shadow-lg border border-orange-100 overflow-hidden hover-lift relative before:absolute before:top-0 before:left-0 before:right-0 before:h-1 before:border-gradient-orange">
               <AppointmentList
                 selectedDate={selectedDate}
-                onNewAppointment={handleNewAppointment}
+                onNewAppointment={(date, time) => handleNewAppointment(date, time)}
               />
             </div>
           )}
         </div>
 
         {/* Right Sidebar - Daily Stats */}
-        <div className="lg:col-span-1 space-y-3">
+        <div className="lg:col-span-1 space-y-2">
           {/* Daily Financial Summary */}
-          <div className="bg-white rounded-xl shadow-lg border border-primary-100 p-3 hover-lift relative before:absolute before:top-0 before:left-0 before:right-0 before:h-1 before:border-gradient">
-            <h3 className="text-sm font-semibold text-dark-green mb-3 flex items-center">
-              <CurrencyDollarIcon className="h-4 w-4 mr-1.5 text-emerald-600" />
+          <div className="bg-white rounded-lg shadow-sm border border-primary-100 p-2 hover:shadow-md transition-shadow">
+            <h3 className="text-xs font-semibold text-dark-green mb-1.5 flex items-center">
+              <CurrencyDollarIcon className="h-3 w-3 mr-1 text-emerald-600" />
               Resumen del Día
             </h3>
             
-            <div className="space-y-2">
+            <div className="space-y-1">
               <div className="flex justify-between items-center">
-                <span className="text-xs text-gray-600">Estimado Esperado</span>
-                <span className="font-medium text-gray-900 text-xs">${dailyStats.expectedIncome.toLocaleString()}</span>
+                <span className="text-[10px] text-gray-600">Esperado</span>
+                <span className="font-medium text-gray-900 text-[10px]">${dailyStats.expectedIncome.toLocaleString()}</span>
               </div>
               
               <div className="flex justify-between items-center">
-                <span className="text-xs text-gray-600">Anticipos Pagados</span>
-                <span className="font-medium text-primary-600 text-xs">${dailyStats.advancePayments.toLocaleString()}</span>
+                <span className="text-[10px] text-gray-600">Anticipos</span>
+                <span className="font-medium text-primary-600 text-[10px]">${dailyStats.advancePayments.toLocaleString()}</span>
               </div>
               
               <div className="flex justify-between items-center">
-                <span className="text-xs text-gray-600">Ingresos Reales</span>
-                <span className="font-medium text-emerald-600 text-xs">${dailyStats.actualIncome.toLocaleString()}</span>
+                <span className="text-[10px] text-gray-600">Real</span>
+                <span className="font-medium text-emerald-600 text-[10px]">${dailyStats.actualIncome.toLocaleString()}</span>
               </div>
               
-              <hr className="my-1.5 border-primary-100" />
-              
-              <div className="text-xs text-gray-500">
-                Progreso: {Math.round((dailyStats.actualIncome / dailyStats.expectedIncome) * 100)}% del día
+              <div className="pt-1 border-t border-primary-100">
+                <div className="text-[10px] text-gray-500 text-center">
+                  {Math.round((dailyStats.actualIncome / dailyStats.expectedIncome) * 100)}% completado
+                </div>
               </div>
             </div>
           </div>
 
           {/* Consultation Types */}
-          <div className="bg-white rounded-xl shadow-lg border border-primary-100 p-3 hover-lift relative before:absolute before:top-0 before:left-0 before:right-0 before:h-1 before:border-gradient">
-            <h3 className="text-sm font-semibold text-dark-green mb-3 flex items-center">
-              <UserGroupIcon className="h-4 w-4 mr-1.5 text-primary-600" />
+          <div className="bg-white rounded-lg shadow-sm border border-primary-100 p-2 hover:shadow-md transition-shadow">
+            <h3 className="text-xs font-semibold text-dark-green mb-1.5 flex items-center">
+              <UserGroupIcon className="h-3 w-3 mr-1 text-primary-600" />
               Tipos de Consulta
             </h3>
             
-            <div className="space-y-2">
+            <div className="space-y-0.5">
               <div className="flex justify-between items-center">
                 <div className="flex items-center">
-                  <div className="w-2 h-2 bg-primary-500 rounded-full mr-1.5"></div>
-                  <span className="text-xs text-gray-600">Primera Vez</span>
+                  <div className="w-1.5 h-1.5 bg-primary-500 rounded-full mr-1"></div>
+                  <span className="text-[10px] text-gray-600">Primera Vez</span>
                 </div>
-                <span className="font-medium text-gray-900 text-xs">{dailyStats.firstTimeConsultations}</span>
+                <span className="font-medium text-gray-900 text-[10px]">{dailyStats.firstTimeConsultations}</span>
               </div>
               
               <div className="flex justify-between items-center">
                 <div className="flex items-center">
-                  <div className="w-2 h-2 bg-emerald-500 rounded-full mr-1.5"></div>
-                  <span className="text-xs text-gray-600">Subsecuente</span>
+                  <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full mr-1"></div>
+                  <span className="text-[10px] text-gray-600">Subsecuente</span>
                 </div>
-                <span className="font-medium text-gray-900 text-xs">{dailyStats.followUpConsultations}</span>
+                <span className="font-medium text-gray-900 text-[10px]">{dailyStats.followUpConsultations}</span>
               </div>
               
               <div className="flex justify-between items-center">
                 <div className="flex items-center">
-                  <VideoCameraIcon className="h-3 w-3 text-purple-500 mr-1.5" />
-                  <span className="text-xs text-gray-600">Video Consulta</span>
+                  <VideoCameraIcon className="h-2.5 w-2.5 text-purple-500 mr-1" />
+                  <span className="text-[10px] text-gray-600">Video</span>
                 </div>
-                <span className="font-medium text-gray-900 text-xs">{dailyStats.videoConsultations}</span>
+                <span className="font-medium text-gray-900 text-[10px]">{dailyStats.videoConsultations}</span>
               </div>
             </div>
           </div>
 
           {/* Blocked Slots */}
-          <div className="bg-white rounded-xl shadow-lg border border-primary-100 p-3 hover-lift relative before:absolute before:top-0 before:left-0 before:right-0 before:h-1 before:border-gradient">
-            <h3 className="text-sm font-semibold text-dark-green mb-3 flex items-center">
-              <ExclamationTriangleIcon className="h-4 w-4 mr-1.5 text-orange-600" />
-              Espacios Bloqueados
+          <div className="bg-white rounded-lg shadow-sm border border-primary-100 p-2 hover:shadow-md transition-shadow">
+            <h3 className="text-xs font-semibold text-dark-green mb-1.5 flex items-center">
+              <ExclamationTriangleIcon className="h-3 w-3 mr-1 text-orange-600" />
+              Bloqueados
             </h3>
             
-            <div className="space-y-2">
-              {dailyStats.blockedReasons.map((reason, index) => (
-                <div key={index} className="flex justify-between items-center">
-                  <div className="flex items-center">
-                    <div className="w-2 h-2 bg-orange-500 rounded-full mr-1.5"></div>
-                    <span className="text-xs text-gray-600">{reason.label}</span>
+            <div className="space-y-0.5">
+              {dailyStats.blockedReasons.length > 0 ? (
+                dailyStats.blockedReasons.map((reason: any, index: number) => (
+                  <div key={index} className="flex justify-between items-center">
+                    <div className="flex items-center">
+                      <div className="w-1.5 h-1.5 bg-orange-500 rounded-full mr-1"></div>
+                      <span className="text-[10px] text-gray-600">{reason.label}</span>
+                    </div>
+                    <span className="font-medium text-gray-900 text-[10px]">{reason.count}</span>
                   </div>
-                  <span className="font-medium text-gray-900 text-xs">{reason.count}</span>
+                ))
+              ) : (
+                <div className="text-[10px] text-gray-500 text-center py-1">
+                  Sin horarios bloqueados
                 </div>
-              ))}
+              )}
               
-              <hr className="my-1.5 border-primary-100" />
-              
-              <div className="flex justify-between items-center">
-                <span className="text-xs font-medium text-gray-700">Total Bloqueados</span>
-                <span className="font-bold text-orange-600 text-xs">{dailyStats.blockedSlots}</span>
+              <div className="pt-1 border-t border-primary-100">
+                <div className="flex justify-between items-center">
+                  <span className="text-[10px] font-medium text-gray-700">Total</span>
+                  <span className="font-bold text-orange-600 text-[10px]">{dailyStats.blockedSlots}</span>
+                </div>
               </div>
             </div>
           </div>
 
-          {/* Quick Actions */}
-          <div className="bg-white rounded-xl shadow-lg border border-primary-100 p-3 hover-lift relative before:absolute before:top-0 before:left-0 before:right-0 before:h-1 before:border-gradient">
-            <h3 className="text-sm font-semibold text-dark-green mb-3">Acciones Rápidas</h3>
-            <div className="space-y-1.5">
+          {/* Estados de Citas - Now in a compact grid */}
+          <div className="bg-white rounded-lg shadow-sm border border-primary-100 p-2 hover:shadow-md transition-shadow">
+            <h3 className="text-xs font-semibold text-dark-green mb-1.5">Estados</h3>
+            <div className="grid grid-cols-2 gap-x-2 gap-y-0.5">
+              <div className="flex items-center space-x-1">
+                <div className="w-2 h-2 bg-yellow-400 rounded-full"></div>
+                <span className="text-[9px] text-gray-600">Agendada</span>
+              </div>
+              <div className="flex items-center space-x-1">
+                <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                <span className="text-[9px] text-gray-600">Confirmada+$</span>
+              </div>
+              <div className="flex items-center space-x-1">
+                <div className="w-2 h-2 bg-orange-500 rounded-full"></div>
+                <span className="text-[9px] text-gray-600">Confirmada</span>
+              </div>
+              <div className="flex items-center space-x-1">
+                <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                <span className="text-[9px] text-gray-600">Completada</span>
+              </div>
+              <div className="flex items-center space-x-1">
+                <div className="w-2 h-2 bg-red-500 rounded-full"></div>
+                <span className="text-[9px] text-gray-600">Inasistencia</span>
+              </div>
+              <div className="flex items-center space-x-1">
+                <div className="w-2 h-2 bg-gray-400 rounded-full"></div>
+                <span className="text-[9px] text-gray-600">Cancelada</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Quick Actions - Más compacto */}
+          <div className="bg-white rounded-lg shadow-sm border border-primary-100 p-2 hover:shadow-md transition-shadow">
+            <h3 className="text-xs font-semibold text-dark-green mb-1.5">Acciones</h3>
+            <div className="space-y-1">
               <Button 
                 onClick={handleBlockTime}
                 variant="outline" 
-                className="w-full justify-start text-left border-orange-200 text-orange-600 hover:bg-orange-50"
+                className="w-full justify-start text-left border-orange-200 text-orange-600 hover:bg-orange-50 h-7 text-[10px] px-2"
                 size="sm"
               >
-                <ClockIcon className="h-3 w-3 mr-1.5" />
+                <ClockIcon className="h-2.5 w-2.5 mr-1" />
                 Bloquear Horario
               </Button>
               <Button 
                 onClick={handleWaitingList}
                 variant="outline" 
-                className="w-full justify-start text-left border-primary-200 text-primary-600 hover:bg-primary-50"
+                className="w-full justify-start text-left border-primary-200 text-primary-600 hover:bg-primary-50 h-7 text-[10px] px-2"
                 size="sm"
               >
-                <UserGroupIcon className="h-3 w-3 mr-1.5" />
+                <UserGroupIcon className="h-2.5 w-2.5 mr-1" />
                 Lista de Espera
               </Button>
               <Button 
                 onClick={handleExportAgenda}
                 variant="outline" 
-                className="w-full justify-start text-left border-emerald-200 text-emerald-600 hover:bg-emerald-50"
+                className="w-full justify-start text-left border-emerald-200 text-emerald-600 hover:bg-emerald-50 h-7 text-[10px] px-2"
                 size="sm"
               >
-                <CalendarDaysIcon className="h-3 w-3 mr-1.5" />
-                Exportar Agenda
+                <CalendarDaysIcon className="h-2.5 w-2.5 mr-1" />
+                Exportar
               </Button>
             </div>
           </div>
@@ -414,9 +675,11 @@ export default function AgendaPage() {
           onClose={() => {
             setShowNewAppointment(false);
             setAppointmentTime('');
+            setEditingAppointment(null);
           }}
           onSave={handleSaveAppointment}
           selectedTime={appointmentTime}
+          editingAppointment={editingAppointment}
         />
       )}
 
@@ -443,18 +706,24 @@ export default function AgendaPage() {
             setShowAppointmentDetails(false);
             setSelectedAppointment(null);
           }}
-          onEdit={(appointment) => {
-            // Opcional: implementar edición de cita
-            console.log('Edit appointment:', appointment);
-          }}
-          onDelete={(appointmentId) => {
-            // Opcional: implementar eliminación de cita
-            console.log('Delete appointment:', appointmentId);
-          }}
-          onStatusChange={(appointmentId, status) => {
-            // Opcional: implementar cambio de estado
-            console.log('Status change:', appointmentId, status);
-          }}
+          onEdit={handleEditAppointment}
+          onDelete={handleDeleteAppointment}
+          onStatusChange={handleStatusChange}
+        />
+      )}
+
+      {showNewPatientModal && (
+        <NewPatientQuickModal
+          onClose={() => setShowNewPatientModal(false)}
+          onSave={handleNewPatientSaved}
+        />
+      )}
+
+      {/* Modal para Agregar a Lista de Espera */}
+      {showAddToWaitingList && (
+        <AddToWaitingListModal
+          onClose={() => setShowAddToWaitingList(false)}
+          onSave={handleSaveToWaitingList}
         />
       )}
     </div>

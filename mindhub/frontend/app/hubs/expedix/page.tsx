@@ -17,7 +17,8 @@ import {
   Squares2X2Icon,
   FolderOpenIcon,
   PlusIcon,
-  ClockIcon
+  ClockIcon,
+  MagnifyingGlassIcon
 } from '@heroicons/react/24/outline';
 import { expedixApi } from '@/lib/api/expedix-client';
 import type { Patient } from '@/lib/api/expedix-client';
@@ -33,6 +34,7 @@ export default function ExpedixPage() {
   const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null);
   const [loading, setLoading] = useState(false);
   const [showNewPatientModal, setShowNewPatientModal] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
 
   // Load patient from URL parameters
   useEffect(() => {
@@ -93,6 +95,8 @@ export default function ExpedixPage() {
 
   const handleBackToList = () => {
     setSelectedPatient(null);
+    setViewMode('cards'); // Reset to default view
+    setDetailView('dashboard');
     // Update URL to remove patient parameter
     window.history.pushState({}, '', '/hubs/expedix');
   };
@@ -162,60 +166,90 @@ export default function ExpedixPage() {
         </div>
       )}
 
-      <PageHeader
-        title={headerInfo.title}
-        description={headerInfo.description}
-        icon={headerInfo.icon}
-        iconColor={headerInfo.iconColor}
-      />
-      
-      {/* View Mode Selector - Only show when not in expedient detail */}
-      {viewMode !== 'expedient' && (
-        <div className="flex items-center justify-between bg-white p-3 rounded-xl shadow-lg border border-primary-100 relative before:absolute before:top-0 before:left-0 before:right-0 before:h-1 before:border-gradient">
-          <div className="flex items-center space-x-0.5 bg-primary-50 p-0.5 rounded-lg border border-primary-200">
-            <button
-              onClick={() => setViewMode('list')}
-              className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all duration-200 ${
-                viewMode === 'list' 
-                  ? 'gradient-primary text-white shadow-primary' 
-                  : 'text-primary-600 hover:bg-primary-100'
-              }`}
-            >
-              <TableCellsIcon className="h-3 w-3 inline mr-1" />
-              Lista
-            </button>
-            <button
-              onClick={() => setViewMode('cards')}
-              className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all duration-200 ${
-                viewMode === 'cards' 
-                  ? 'gradient-primary text-white shadow-primary' 
-                  : 'text-primary-600 hover:bg-primary-100'
-              }`}
-            >
-              <Squares2X2Icon className="h-3 w-3 inline mr-1" />
-              Tarjetas
-            </button>
-            <button
-              onClick={() => setViewMode('timeline')}
-              className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all duration-200 ${
-                viewMode === 'timeline' 
-                  ? 'gradient-primary text-white shadow-primary' 
-                  : 'text-primary-600 hover:bg-primary-100'
-              }`}
-            >
-              <ClockIcon className="h-3 w-3 inline mr-1" />
-              Timeline
-            </button>
+      {/* Compact Header - Agenda Style */}
+      <div className="bg-white rounded-lg shadow-sm border border-primary-100 p-3 mb-4">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center space-x-2">
+            {viewMode === 'expedient' && selectedPatient && (
+              <Button onClick={handleBackToList} variant="outline" size="sm" className="h-8 px-2 text-xs mr-2">
+                ← Volver
+              </Button>
+            )}
+            <UserGroupIcon className="h-5 w-5 text-primary-600" />
+            <h1 className="text-lg font-bold text-dark-green">
+              {viewMode === 'expedient' && selectedPatient 
+                ? `${selectedPatient.first_name} ${selectedPatient.paternal_last_name}` 
+                : 'Expedix - Sistema de Expedientes'}
+            </h1>
           </div>
-          
-          <Button
-            onClick={handleNewPatient}
-            variant="primary"
-            size="sm"
-          >
-            <PlusIcon className="h-3 w-3 mr-1" />
-            Nuevo Paciente
-          </Button>
+          <div className="flex items-center space-x-2">
+            <Button onClick={handleSettings} variant="outline" size="sm" className="h-8 px-2 text-xs">
+              <UserIcon className="h-3 w-3 mr-1" />
+              Config
+            </Button>
+            <Button onClick={handleNewPatient} variant="primary" size="sm" className="h-8 px-2 text-xs">
+              <PlusIcon className="h-3 w-3 mr-1" />
+              Nuevo Paciente
+            </Button>
+          </div>
+        </div>
+      </div>
+      
+      {/* View Mode Selector with Search - Only show when not in expedient detail */}
+      {viewMode !== 'expedient' && (
+        <div className="bg-white p-3 rounded-xl shadow-lg border border-primary-100">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
+            {/* View Mode Buttons */}
+            <div className="flex items-center space-x-0.5 bg-primary-50 p-0.5 rounded-lg border border-primary-200">
+              <button
+                onClick={() => setViewMode('list')}
+                className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all duration-200 ${
+                  viewMode === 'list' 
+                    ? 'gradient-primary text-white shadow-primary' 
+                    : 'text-primary-600 hover:bg-primary-100'
+                }`}
+              >
+                <TableCellsIcon className="h-3 w-3 inline mr-1" />
+                Lista
+              </button>
+              <button
+                onClick={() => setViewMode('cards')}
+                className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all duration-200 ${
+                  viewMode === 'cards' 
+                    ? 'gradient-primary text-white shadow-primary' 
+                    : 'text-primary-600 hover:bg-primary-100'
+                }`}
+              >
+                <Squares2X2Icon className="h-3 w-3 inline mr-1" />
+                Tarjetas
+              </button>
+              <button
+                onClick={() => setViewMode('timeline')}
+                className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all duration-200 ${
+                  viewMode === 'timeline' 
+                    ? 'gradient-primary text-white shadow-primary' 
+                    : 'text-primary-600 hover:bg-primary-100'
+                }`}
+              >
+                <ClockIcon className="h-3 w-3 inline mr-1" />
+                Timeline
+              </button>
+            </div>
+            
+            {/* Search Bar */}
+            <div className="flex-1 w-full sm:w-auto">
+              <div className="relative">
+                <MagnifyingGlassIcon className="h-4 w-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+                <input
+                  type="text"
+                  placeholder="Buscar pacientes..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="w-full pl-9 pr-4 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                />
+              </div>
+            </div>
+          </div>
         </div>
       )}
       

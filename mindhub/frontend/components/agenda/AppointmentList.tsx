@@ -34,7 +34,7 @@ interface Appointment {
 
 interface AppointmentListProps {
   selectedDate: Date;
-  onNewAppointment: () => void;
+  onNewAppointment: (date?: Date, time?: string) => void;
 }
 
 export default function AppointmentList({ selectedDate, onNewAppointment }: AppointmentListProps) {
@@ -44,7 +44,54 @@ export default function AppointmentList({ selectedDate, onNewAppointment }: Appo
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [dateRange, setDateRange] = useState<'today' | 'week' | 'month' | 'all'>('week');
 
-  // Datos de ejemplo
+  // Cargar citas reales de la base de datos
+  useEffect(() => {
+    const loadAppointments = async () => {
+      try {
+        console.log('🔄 Loading appointments for list view...');
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/expedix/agenda/appointments`);
+        
+        if (response.ok) {
+          const data = await response.json();
+          console.log('✅ Appointments loaded:', data);
+          
+          if (data.success && data.data) {
+            // Transform appointments to match our interface
+            const transformedAppointments: Appointment[] = data.data.map((apt: any) => ({
+              id: apt.id,
+              patient: {
+                id: apt.patientId,
+                name: apt.patient?.name || 'Paciente desconocido',
+                phone: apt.patient?.phone || 'Sin teléfono',
+                email: apt.patient?.email || 'Sin email'
+              },
+              date: apt.date,
+              time: apt.time,
+              duration: apt.duration || 60,
+              type: apt.type,
+              notes: apt.notes || '',
+              status: apt.status as any,
+              createdAt: apt.createdAt || new Date().toISOString()
+            }));
+            
+            setAppointments(transformedAppointments);
+          }
+        } else {
+          console.error('❌ Error fetching appointments:', response.status);
+          // Fallback to empty array
+          setAppointments([]);
+        }
+      } catch (error) {
+        console.error('❌ Network error fetching appointments:', error);
+        setAppointments([]);
+      }
+    };
+
+    loadAppointments();
+  }, []);
+
+  // Backup mock data for development (commented out)
+  /*
   useEffect(() => {
     const mockAppointments: Appointment[] = [
       {
@@ -142,6 +189,7 @@ export default function AppointmentList({ selectedDate, onNewAppointment }: Appo
     ];
     setAppointments(mockAppointments);
   }, []);
+  */
 
   // Filtrar citas
   useEffect(() => {
@@ -331,35 +379,20 @@ export default function AppointmentList({ selectedDate, onNewAppointment }: Appo
             {filteredAppointments.map((appointment) => {
               const statusInfo = getStatusColor(appointment.status);
               return (
-                <div key={appointment.id} className="p-6 hover:bg-gray-50 transition-colors duration-150">
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      {/* Header de la cita */}
-                      <div className="flex items-center space-x-4 mb-3">
-                        <div className="flex items-center space-x-2">
-                          <CalendarIcon className="h-4 w-4" style={{ color: 'var(--primary-500)' }} />
-                          <span 
-                            className="font-medium text-sm"
-                            style={{ color: 'var(--dark-green)' }}
-                          >
-                            {new Date(appointment.date).toLocaleDateString('es-ES', {
-                              weekday: 'long',
-                              day: 'numeric',
-                              month: 'long'
-                            })}
-                          </span>
+                <div key={appointment.id} className="p-4 hover:bg-gray-50 transition-colors duration-150">
+                  <div className="flex items-center justify-between gap-4">
+                    {/* Información compacta de la cita */}
+                    <div className="flex items-center gap-4 flex-1 min-w-0">
+                      {/* Tiempo y estado */}
+                      <div className="flex flex-col items-center min-w-0">
+                        <div className="text-lg font-bold text-gray-900">
+                          {appointment.time}
                         </div>
-                        <div className="flex items-center space-x-2">
-                          <ClockIcon className="h-4 w-4" style={{ color: 'var(--secondary-500)' }} />
-                          <span 
-                            className="font-medium text-sm"
-                            style={{ color: 'var(--dark-green)' }}
-                          >
-                            {appointment.time} ({appointment.duration} min)
-                          </span>
+                        <div className="text-xs text-gray-500">
+                          {appointment.duration}min
                         </div>
                         <span 
-                          className="text-xs px-2 py-1 rounded-full font-medium"
+                          className="text-xs px-2 py-0.5 rounded-full font-medium mt-1"
                           style={{
                             backgroundColor: statusInfo.bg,
                             color: statusInfo.text
@@ -370,80 +403,61 @@ export default function AppointmentList({ selectedDate, onNewAppointment }: Appo
                       </div>
 
                       {/* Información del paciente */}
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-3">
-                        <div>
-                          <div className="flex items-center space-x-2 mb-1">
-                            <UserIcon className="h-4 w-4" style={{ color: 'var(--neutral-500)' }} />
-                            <span 
-                              className="font-medium"
-                              style={{ color: 'var(--dark-green)' }}
-                            >
-                              {appointment.patient.name}
-                            </span>
-                          </div>
-                          <div className="flex items-center space-x-2">
-                            <PhoneIcon className="h-4 w-4" style={{ color: 'var(--neutral-500)' }} />
-                            <span 
-                              className="text-sm"
-                              style={{ color: 'var(--neutral-600)' }}
-                            >
-                              {appointment.patient.phone}
-                            </span>
-                          </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="font-semibold text-gray-900 truncate">
+                          {appointment.patient.name}
                         </div>
-                        <div>
-                          <div 
-                            className="text-sm font-medium mb-1"
-                            style={{ color: 'var(--dark-green)' }}
-                          >
-                            {appointment.type}
-                          </div>
-                          {appointment.notes && (
-                            <p 
-                              className="text-sm"
-                              style={{ color: 'var(--neutral-600)' }}
-                            >
-                              {appointment.notes}
-                            </p>
-                          )}
+                        <div className="text-sm text-gray-600 truncate">
+                          {appointment.type}
                         </div>
+                        <div className="text-xs text-gray-500 truncate">
+                          {appointment.patient.phone}
+                        </div>
+                        {appointment.notes && (
+                          <div className="text-xs text-gray-500 truncate mt-1">
+                            📝 {appointment.notes}
+                          </div>
+                        )}
                       </div>
                     </div>
 
-                    {/* Acciones */}
-                    <div className="flex items-center space-x-2 ml-4">
+                    {/* Botones de acción más evidentes */}
+                    <div className="flex items-center gap-2 flex-shrink-0">
                       {appointment.status === 'scheduled' && (
                         <>
                           <button
                             onClick={() => updateAppointmentStatus(appointment.id, 'confirmed')}
-                            className="p-2 rounded-lg transition-all duration-200 hover:bg-green-100"
-                            title="Confirmar cita"
+                            className="px-3 py-1.5 text-xs font-medium text-white bg-green-500 hover:bg-green-600 rounded-full transition-colors duration-200"
                           >
-                            <CheckCircleIcon className="h-4 w-4 text-green-600" />
+                            ✓ Confirmar
                           </button>
                           <button
                             onClick={() => updateAppointmentStatus(appointment.id, 'cancelled')}
-                            className="p-2 rounded-lg transition-all duration-200 hover:bg-red-100"
-                            title="Cancelar cita"
+                            className="px-3 py-1.5 text-xs font-medium text-white bg-red-500 hover:bg-red-600 rounded-full transition-colors duration-200"
                           >
-                            <XCircleIcon className="h-4 w-4 text-red-600" />
+                            ✕ Cancelar
                           </button>
                         </>
                       )}
                       {appointment.status === 'confirmed' && (
                         <button
                           onClick={() => updateAppointmentStatus(appointment.id, 'completed')}
-                          className="p-2 rounded-lg transition-all duration-200 hover:bg-blue-100"
-                          title="Marcar como completada"
+                          className="px-3 py-1.5 text-xs font-medium text-white bg-blue-500 hover:bg-blue-600 rounded-full transition-colors duration-200"
                         >
-                          <CheckCircleIcon className="h-4 w-4 text-blue-600" />
+                          ✓ Completar
                         </button>
                       )}
                       <button
-                        className="p-2 rounded-lg transition-all duration-200 hover:bg-gray-100"
-                        title="Editar cita"
+                        className="px-3 py-1.5 text-xs font-medium text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-full transition-colors duration-200"
+                        title="Cambiar horario"
                       >
-                        <PencilIcon className="h-4 w-4" style={{ color: 'var(--neutral-600)' }} />
+                        🕒 Cambiar
+                      </button>
+                      <button
+                        className="px-3 py-1.5 text-xs font-medium text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-full transition-colors duration-200"
+                        title="Agregar nota"
+                      >
+                        📝 Nota
                       </button>
                     </div>
                   </div>
@@ -473,7 +487,7 @@ export default function AppointmentList({ selectedDate, onNewAppointment }: Appo
               }
             </p>
             <button
-              onClick={onNewAppointment}
+              onClick={() => onNewAppointment(selectedDate)}
               className="inline-flex items-center px-4 py-2 text-white text-sm font-medium rounded-lg transition-all duration-200 hover:-translate-y-1"
               style={{ 
                 background: 'linear-gradient(135deg, var(--secondary-500), var(--secondary-600))',

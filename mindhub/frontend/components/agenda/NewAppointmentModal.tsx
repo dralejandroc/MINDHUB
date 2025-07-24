@@ -29,11 +29,12 @@ interface AppointmentData {
 interface NewAppointmentModalProps {
   selectedDate: Date;
   selectedTime?: string;
+  editingAppointment?: any;
   onClose: () => void;
   onSave: (appointment: AppointmentData) => void;
 }
 
-export default function NewAppointmentModal({ selectedDate, selectedTime, onClose, onSave }: NewAppointmentModalProps) {
+export default function NewAppointmentModal({ selectedDate, selectedTime, editingAppointment, onClose, onSave }: NewAppointmentModalProps) {
   // Safe date conversion
   const getDateString = (date: any): string => {
     if (!date) return new Date().toISOString().split('T')[0];
@@ -43,12 +44,12 @@ export default function NewAppointmentModal({ selectedDate, selectedTime, onClos
   };
 
   const [formData, setFormData] = useState<AppointmentData>({
-    patientId: '',
-    date: getDateString(selectedDate),
-    time: selectedTime || '',
-    duration: 60,
-    type: '',
-    notes: ''
+    patientId: editingAppointment?.patientId || '',
+    date: editingAppointment?.date || getDateString(selectedDate),
+    time: editingAppointment?.time || selectedTime || '',
+    duration: editingAppointment?.duration || 60,
+    type: editingAppointment?.type || '',
+    notes: editingAppointment?.notes || ''
   });
 
   const [patients, setPatients] = useState<Patient[]>([]);
@@ -56,29 +57,58 @@ export default function NewAppointmentModal({ selectedDate, selectedTime, onClos
   const [searchTerm, setSearchTerm] = useState('');
   const [showPatientSearch, setShowPatientSearch] = useState(false);
   const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null);
+  const [consultationTypes, setConsultationTypes] = useState<Array<{id: string, name: string, duration: number, price: number, color: string}>>([]);
 
-  // Cargar pacientes reales desde API
+  // Cargar pacientes y configuración desde API
   useEffect(() => {
-    const loadPatients = async () => {
+    const loadData = async () => {
       try {
-        const response = await fetch(`${process.env.NEXT_PUBLIC_EXPEDIX_API}/api/v1/expedix/patients`);
-        if (response.ok) {
-          const data = await response.json();
-          const patientsData = data.patients?.map((p: any) => ({
+        // Get current user to filter patients
+        const savedUser = localStorage.getItem('currentUser');
+        let userId = '';
+        if (savedUser) {
+          const user = JSON.parse(savedUser);
+          userId = user.id || '';
+        }
+
+        // Load patients
+        const patientsResponse = await fetch(`${process.env.NEXT_PUBLIC_EXPEDIX_API}/api/v1/expedix/patients`);
+        if (patientsResponse.ok) {
+          const data = await patientsResponse.json();
+          const patientsData = data.data?.map((p: any) => ({
             id: p.id,
-            name: `${p.first_name} ${p.paternal_last_name} ${p.maternal_last_name}`,
-            phone: p.cell_phone || p.phone || 'Sin teléfono',
+            name: `${p.first_name || ''} ${p.last_name || p.paternal_last_name || ''}`.trim(),
+            phone: p.cell_phone || 'Sin teléfono',
             email: p.email || 'Sin email'
           })) || [];
           setPatients(patientsData);
           setFilteredPatients(patientsData);
+
+          // If editing, find and set the selected patient
+          if (editingAppointment?.patientId) {
+            const patient = patientsData.find(p => p.id === editingAppointment.patientId);
+            if (patient) {
+              setSelectedPatient(patient);
+              console.log('🔄 Loaded patient for editing:', patient);
+            }
+          }
+        }
+
+        // Load consultation types from schedule config
+        const configResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/expedix/schedule-config`);
+        if (configResponse.ok) {
+          const configData = await configResponse.json();
+          if (configData.success && configData.data?.consultationTypes) {
+            setConsultationTypes(configData.data.consultationTypes);
+            console.log('🔄 Loaded consultation types:', configData.data.consultationTypes);
+          }
         }
       } catch (error) {
-        console.error('Error loading patients:', error);
+        console.error('Error loading data:', error);
       }
     };
-    loadPatients();
-  }, []);
+    loadData();
+  }, [editingAppointment]);
 
   // Filtrar pacientes
   useEffect(() => {
@@ -93,17 +123,6 @@ export default function NewAppointmentModal({ selectedDate, selectedTime, onClos
       setFilteredPatients(patients);
     }
   }, [searchTerm, patients]);
-
-  const appointmentTypes = [
-    'Consulta inicial',
-    'Seguimiento',
-    'Evaluación psicológica',
-    'Terapia individual',
-    'Terapia de pareja',
-    'Terapia familiar',
-    'Control',
-    'Revisión de medicación'
-  ];
 
   const timeSlots = [
     '08:00', '08:30', '09:00', '09:30', '10:00', '10:30',
@@ -127,12 +146,31 @@ export default function NewAppointmentModal({ selectedDate, selectedTime, onClos
     setSearchTerm('');
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.patientId || !formData.date || !formData.time || !formData.type) {
       return;
     }
-    onSave(formData);
+
+    try {
+      // Get current user for logging
+      const savedUser = localStorage.getItem('currentUser');
+      const currentUser = savedUser ? JSON.parse(savedUser) : null;
+
+      // Create appointment with logging
+      const appointmentData = {
+        ...formData,
+        createdBy: currentUser?.id || 'unknown',
+        createdByName: currentUser?.name || 'Usuario desconocido'
+      };
+
+      // Save appointment and create log
+      await onSave(appointmentData);
+
+    } catch (error) {
+      console.error('Error creating appointment:', error);
+      alert('Error al crear la cita. Por favor intenta de nuevo.');
+    }
   };
 
   const isFormValid = formData.patientId && formData.date && formData.time && formData.type;
@@ -155,7 +193,7 @@ export default function NewAppointmentModal({ selectedDate, selectedTime, onClos
               fontFamily: 'var(--font-heading)'
             }}
           >
-            Nueva Cita
+{editingAppointment ? 'Editar Cita' : 'Nueva Cita'}
           </h2>
           <button
             onClick={onClose}
@@ -222,22 +260,29 @@ export default function NewAppointmentModal({ selectedDate, selectedTime, onClos
               </div>
             ) : (
               <div className="relative">
-                <button
-                  type="button"
-                  onClick={() => setShowPatientSearch(!showPatientSearch)}
-                  className="w-full p-4 border-2 border-dashed rounded-lg text-left transition-all duration-200 hover:bg-gray-50"
-                  style={{ 
-                    borderColor: 'var(--neutral-300)',
-                    color: 'var(--neutral-600)'
-                  }}
-                >
-                  <div className="flex items-center space-x-2">
-                    <UserIcon className="h-5 w-5" />
-                    <span>Seleccionar paciente</span>
-                  </div>
-                </button>
+                <div className="relative">
+                  <MagnifyingGlassIcon 
+                    className="h-4 w-4 absolute left-3 top-1/2 transform -translate-y-1/2"
+                    style={{ color: 'var(--neutral-400)' }}
+                  />
+                  <input
+                    type="text"
+                    placeholder="Buscar paciente por nombre, teléfono o email..."
+                    value={searchTerm}
+                    onChange={(e) => {
+                      setSearchTerm(e.target.value);
+                      setShowPatientSearch(true);
+                    }}
+                    onFocus={() => setShowPatientSearch(true)}
+                    className="w-full pl-9 pr-4 py-3 text-sm border rounded-lg focus:outline-none"
+                    style={{ 
+                      border: '2px solid var(--neutral-300)',
+                      fontFamily: 'var(--font-primary)'
+                    }}
+                  />
+                </div>
 
-                {showPatientSearch && (
+                {showPatientSearch && (searchTerm || filteredPatients.length > 0) && (
                   <div 
                     className="absolute top-full left-0 right-0 mt-2 bg-white border rounded-lg shadow-lg z-10"
                     style={{ 
@@ -245,26 +290,7 @@ export default function NewAppointmentModal({ selectedDate, selectedTime, onClos
                       boxShadow: 'var(--shadow-lg)'
                     }}
                   >
-                    <div className="p-4 border-b" style={{ borderColor: 'var(--neutral-200)' }}>
-                      <div className="relative">
-                        <MagnifyingGlassIcon 
-                          className="h-4 w-4 absolute left-3 top-1/2 transform -translate-y-1/2"
-                          style={{ color: 'var(--neutral-400)' }}
-                        />
-                        <input
-                          type="text"
-                          placeholder="Buscar paciente..."
-                          value={searchTerm}
-                          onChange={(e) => setSearchTerm(e.target.value)}
-                          className="w-full pl-9 pr-4 py-2 text-sm border rounded-lg focus:outline-none"
-                          style={{ 
-                            border: '1px solid var(--neutral-300)',
-                            fontFamily: 'var(--font-primary)'
-                          }}
-                        />
-                      </div>
-                    </div>
-                    <div className="max-h-48 overflow-y-auto">
+                    <div className="max-h-64 overflow-y-auto">
                       {filteredPatients.map((patient) => (
                         <button
                           key={patient.id}
@@ -297,6 +323,14 @@ export default function NewAppointmentModal({ selectedDate, selectedTime, onClos
                           </p>
                           <button
                             type="button"
+                            onClick={() => {
+                              setShowPatientSearch(false);
+                              // Open new patient modal
+                              const event = new CustomEvent('openNewPatientModal', { 
+                                detail: { fromAgenda: true }
+                              });
+                              window.dispatchEvent(event);
+                            }}
                             className="mt-2 text-sm px-3 py-1 rounded-lg transition-colors duration-200"
                             style={{ 
                               backgroundColor: 'var(--primary-100)',
@@ -308,6 +342,27 @@ export default function NewAppointmentModal({ selectedDate, selectedTime, onClos
                           </button>
                         </div>
                       )}
+                    </div>
+                    <div className="p-3 border-t" style={{ borderColor: 'var(--neutral-200)' }}>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setShowPatientSearch(false);
+                          // Open new patient modal
+                          const event = new CustomEvent('openNewPatientModal', { 
+                            detail: { fromAgenda: true }
+                          });
+                          window.dispatchEvent(event);
+                        }}
+                        className="w-full text-sm px-3 py-2 rounded-lg transition-colors duration-200 flex items-center justify-center"
+                        style={{ 
+                          backgroundColor: 'var(--primary-500)',
+                          color: 'white'
+                        }}
+                      >
+                        <PlusIcon className="h-4 w-4 mr-1" />
+                        Nuevo Paciente
+                      </button>
                     </div>
                   </div>
                 )}
@@ -387,7 +442,14 @@ export default function NewAppointmentModal({ selectedDate, selectedTime, onClos
               </label>
               <select
                 value={formData.type}
-                onChange={(e) => setFormData(prev => ({ ...prev, type: e.target.value }))}
+                onChange={(e) => {
+                  const selectedType = consultationTypes.find(t => t.name === e.target.value);
+                  setFormData(prev => ({ 
+                    ...prev, 
+                    type: e.target.value,
+                    duration: selectedType ? selectedType.duration : prev.duration
+                  }));
+                }}
                 className="w-full px-4 py-3 text-sm rounded-lg focus:outline-none appearance-none"
                 style={{ 
                   border: '2px solid var(--neutral-200)',
@@ -397,8 +459,8 @@ export default function NewAppointmentModal({ selectedDate, selectedTime, onClos
                 required
               >
                 <option value="">Seleccionar tipo</option>
-                {appointmentTypes.map((type) => (
-                  <option key={type} value={type}>{type}</option>
+                {consultationTypes.map((type) => (
+                  <option key={type.id} value={type.name}>{type.name}</option>
                 ))}
               </select>
             </div>

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { UserGroupIcon, PlusIcon, MagnifyingGlassIcon, CalendarIcon, ClipboardDocumentListIcon, DocumentTextIcon, CogIcon, BookOpenIcon, DocumentArrowDownIcon } from '@heroicons/react/24/outline';
+import { UserGroupIcon, PlusIcon, MagnifyingGlassIcon, CalendarIcon, ClipboardDocumentListIcon, DocumentTextIcon, CogIcon, BookOpenIcon, DocumentArrowDownIcon, DocumentChartBarIcon } from '@heroicons/react/24/outline';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
@@ -197,12 +197,12 @@ export default function PatientManagement({
                 <UserGroupIcon className="h-8 w-8 text-gray-400" />
               </div>
               <h3 className="text-lg font-medium text-gray-900 mb-2">
-                {searchTerm ? 'Sin resultados' : 'Sin pacientes registrados'}
+                {searchTerm ? 'Sin resultados' : 'Sistema de expedientes médicos'}
               </h3>
               <p className="text-gray-600 mb-6">
                 {searchTerm 
                   ? 'No se encontraron pacientes que coincidan con tu búsqueda.' 
-                  : 'Comienza agregando tu primer paciente al sistema.'
+                  : 'Gestión completa de pacientes y expedientes médicos. Comienza agregando tu primer paciente al sistema.'
                 }
               </p>
               <button
@@ -216,10 +216,10 @@ export default function PatientManagement({
           ) : (
             <div>
               {/* Table Header */}
-              <div className="bg-gray-50 px-6 py-3 border-b border-gray-200">
-                <div className="grid grid-cols-12 gap-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <div className="bg-gray-50 px-4 py-2 border-b border-gray-200">
+                <div className="grid grid-cols-12 gap-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   <div className="col-span-4">Paciente</div>
-                  <div className="col-span-2">Edad</div>
+                  <div className="col-span-2">Info</div>
                   <div className="col-span-3">Contacto</div>
                   <div className="col-span-3">Acciones</div>
                 </div>
@@ -228,12 +228,12 @@ export default function PatientManagement({
               {/* Table Body */}
               <div className="divide-y divide-gray-200">
                 {console.log('🎨 Rendering patients in table:', patients) || patients.map((patient) => (
-                  <div key={patient.id} className="px-6 py-4 hover:bg-gray-50 transition-colors duration-150">
-                    <div className="grid grid-cols-12 gap-4 items-center">
+                  <div key={patient.id} className="px-4 py-3 hover:bg-gray-50 transition-colors duration-150">
+                    <div className="grid grid-cols-12 gap-3 items-center">
                       {/* Patient Info */}
                       <div className="col-span-4 flex items-center">
                         <div 
-                          className="w-10 h-10 rounded-full flex items-center justify-center text-white text-sm font-semibold mr-3"
+                          className="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-semibold mr-3"
                           style={{ background: 'linear-gradient(135deg, var(--primary-500), var(--primary-600))' }}
                         >
                           {patient.first_name?.charAt(0) || 'P'}{patient.paternal_last_name?.charAt(0) || 'P'}
@@ -252,59 +252,53 @@ export default function PatientManagement({
                             className="text-xs"
                             style={{ color: 'var(--neutral-500)' }}
                           >
-                            ID: {patient.id.slice(-8).toUpperCase()}
+                            {patient.id.slice(-8).toUpperCase()}
                           </div>
                         </div>
                       </div>
 
-                      {/* Age */}
+                      {/* Age & Gender - More compact */}
                       <div className="col-span-2">
-                        <div className="text-sm text-gray-900">{patient.age || 'N/A'} años</div>
-                        <div className="text-xs text-gray-500 capitalize">{patient.gender === 'masculine' ? 'Masculino' : patient.gender === 'feminine' ? 'Femenino' : 'N/A'}</div>
+                        <div className="text-sm text-gray-900">{patient.age || 'N/A'}</div>
+                        <div className="text-xs text-gray-500">{patient.gender === 'masculine' ? 'M' : patient.gender === 'feminine' ? 'F' : '-'}</div>
                       </div>
 
                       {/* Contact */}
                       <div className="col-span-3">
-                        <div className="text-sm text-gray-900">{patient.cell_phone || 'N/A'}</div>
+                        <div className="text-sm text-gray-900 truncate">{patient.cell_phone || 'N/A'}</div>
                         <div className="text-xs text-gray-500 truncate">{patient.email || 'N/A'}</div>
                       </div>
 
-                      {/* Actions */}
+                      {/* Actions - More compact tag-style buttons */}
                       <div className="col-span-3 flex items-center space-x-1">
                         <button
                           onClick={() => onSelectPatient(patient)}
-                          className="inline-flex items-center px-2 py-1.5 border border-gray-300 text-xs font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 transition-colors duration-200"
+                          className="inline-flex items-center px-2 py-1 text-xs font-medium text-white bg-primary-500 hover:bg-primary-600 rounded-full transition-colors duration-200"
                         >
-                          <ClipboardDocumentListIcon className="h-3 w-3 mr-1" />
-                          Expediente
+                          <ClipboardDocumentListIcon className="h-3 w-3 mr-0.5" />
+                          Ver
                         </button>
                         <button
                           onClick={() => onNewConsultation(patient)}
-                          className="inline-flex items-center px-2 py-1.5 border border-green-300 text-xs font-medium rounded-md text-green-700 bg-green-50 hover:bg-green-100 transition-colors duration-200"
+                          className="inline-flex items-center px-2 py-1 text-xs font-medium text-white bg-green-500 hover:bg-green-600 rounded-full transition-colors duration-200"
                         >
-                          <DocumentTextIcon className="h-3 w-3 mr-1" />
+                          <DocumentTextIcon className="h-3 w-3 mr-0.5" />
                           Consulta
                         </button>
                         <button
                           onClick={() => handleOpenResources(patient)}
-                          className="inline-flex items-center px-2 py-1.5 border border-blue-300 text-xs font-medium rounded-md text-blue-700 bg-blue-50 hover:bg-blue-100 transition-colors duration-200"
+                          className="inline-flex items-center px-2 py-1 text-xs font-medium text-white bg-blue-500 hover:bg-blue-600 rounded-full transition-colors duration-200"
                         >
-                          <BookOpenIcon className="h-3 w-3 mr-1" />
+                          <BookOpenIcon className="h-3 w-3 mr-0.5" />
                           Recursos
                         </button>
                         <button
                           onClick={() => onClinicalAssessment(patient)}
-                          className="inline-flex items-center px-2 py-1.5 border border-purple-300 text-xs font-medium rounded-md text-purple-700 bg-purple-50 hover:bg-purple-100 transition-colors duration-200"
+                          className="inline-flex items-center px-2 py-1 text-xs font-medium text-white bg-purple-500 hover:bg-purple-600 rounded-full transition-colors duration-200"
                         >
-                          Evaluación
+                          <DocumentChartBarIcon className="h-3 w-3 mr-0.5" />
+                          Eval
                         </button>
-                        <ExportDropdown
-                          patientId={patient.id}
-                          showPatientOptions={true}
-                          showConsultationOptions={false}
-                          showTableOption={false}
-                          className="scale-90 origin-left"
-                        />
                       </div>
                     </div>
                   </div>
@@ -314,160 +308,29 @@ export default function PatientManagement({
           )}
         </div>
 
-        {/* Tarjetas de estadísticas con diseño MindHub */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mt-6">
-          <div 
-            className="bg-white rounded-xl p-6 border transition-all duration-200 hover:-translate-y-1"
-            style={{ 
-              border: '1px solid rgba(8, 145, 178, 0.1)',
-              boxShadow: 'var(--shadow)',
-              borderLeft: '4px solid var(--primary-500)'
-            }}
-          >
-            <div className="flex items-center">
-              <div 
-                className="w-12 h-12 rounded-lg flex items-center justify-center"
-                style={{ 
-                  background: 'linear-gradient(135deg, var(--primary-100), var(--primary-200))',
-                  color: 'var(--primary-600)'
-                }}
-              >
-                <UserGroupIcon className="h-6 w-6" />
+        {/* Compact legends - only show when patients exist */}
+        {patients.length > 0 && (
+          <div className="bg-white rounded-lg p-3 border-t border-gray-100">
+            <div className="flex flex-wrap items-center justify-between gap-4 text-xs text-gray-600">
+              <div className="flex items-center gap-1">
+                <div className="w-2 h-2 bg-primary-500 rounded-full"></div>
+                <span>{stats.totalPatients} pacientes</span>
               </div>
-              <div className="ml-4">
-                <div 
-                  className="text-2xl font-bold"
-                  style={{ 
-                    color: 'var(--dark-green)',
-                    fontFamily: 'var(--font-heading)'
-                  }}
-                >
-                  {stats.totalPatients}
-                </div>
-                <div 
-                  className="text-sm font-medium"
-                  style={{ color: 'var(--neutral-600)' }}
-                >
-                  Pacientes Totales
-                </div>
+              <div className="flex items-center gap-1">
+                <div className="w-2 h-2 bg-secondary-500 rounded-full"></div>
+                <span>{stats.todayAppointments} consultas hoy</span>
+              </div>
+              <div className="flex items-center gap-1">
+                <div className="w-2 h-2 bg-purple-500 rounded-full"></div>
+                <span>{stats.pendingAssessments} evaluaciones</span>
+              </div>
+              <div className="flex items-center gap-1">
+                <div className="w-2 h-2 bg-orange-500 rounded-full"></div>
+                <span>{stats.todayPrescriptions} recetas hoy</span>
               </div>
             </div>
           </div>
-
-          <div 
-            className="bg-white rounded-xl p-6 border transition-all duration-200 hover:-translate-y-1"
-            style={{ 
-              border: '1px solid rgba(8, 145, 178, 0.1)',
-              boxShadow: 'var(--shadow)',
-              borderLeft: '4px solid var(--secondary-500)'
-            }}
-          >
-            <div className="flex items-center">
-              <div 
-                className="w-12 h-12 rounded-lg flex items-center justify-center"
-                style={{ 
-                  background: 'linear-gradient(135deg, var(--secondary-100), var(--secondary-200))',
-                  color: 'var(--secondary-600)'
-                }}
-              >
-                <CalendarIcon className="h-6 w-6" />
-              </div>
-              <div className="ml-4">
-                <div 
-                  className="text-2xl font-bold"
-                  style={{ 
-                    color: 'var(--dark-green)',
-                    fontFamily: 'var(--font-heading)'
-                  }}
-                >
-                  {stats.todayAppointments}
-                </div>
-                <div 
-                  className="text-sm font-medium"
-                  style={{ color: 'var(--neutral-600)' }}
-                >
-                  Consultas Hoy
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div 
-            className="bg-white rounded-xl p-6 border transition-all duration-200 hover:-translate-y-1"
-            style={{ 
-              border: '1px solid rgba(8, 145, 178, 0.1)',
-              boxShadow: 'var(--shadow)',
-              borderLeft: '4px solid var(--accent-500)'
-            }}
-          >
-            <div className="flex items-center">
-              <div 
-                className="w-12 h-12 rounded-lg flex items-center justify-center"
-                style={{ 
-                  background: 'linear-gradient(135deg, var(--accent-100), var(--accent-200))',
-                  color: 'var(--accent-600)'
-                }}
-              >
-                <ClipboardDocumentListIcon className="h-6 w-6" />
-              </div>
-              <div className="ml-4">
-                <div 
-                  className="text-2xl font-bold"
-                  style={{ 
-                    color: 'var(--dark-green)',
-                    fontFamily: 'var(--font-heading)'
-                  }}
-                >
-                  {stats.pendingAssessments}
-                </div>
-                <div 
-                  className="text-sm font-medium"
-                  style={{ color: 'var(--neutral-600)' }}
-                >
-                  Evaluaciones
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div 
-            className="bg-white rounded-xl p-6 border transition-all duration-200 hover:-translate-y-1"
-            style={{ 
-              border: '1px solid rgba(8, 145, 178, 0.1)',
-              boxShadow: 'var(--shadow)',
-              borderLeft: '4px solid #f59e0b'
-            }}
-          >
-            <div className="flex items-center">
-              <div 
-                className="w-12 h-12 rounded-lg flex items-center justify-center"
-                style={{ 
-                  background: 'linear-gradient(135deg, #fef3c7, #fde68a)',
-                  color: '#d97706'
-                }}
-              >
-                <DocumentTextIcon className="h-6 w-6" />
-              </div>
-              <div className="ml-4">
-                <div 
-                  className="text-2xl font-bold"
-                  style={{ 
-                    color: 'var(--dark-green)',
-                    fontFamily: 'var(--font-heading)'
-                  }}
-                >
-                  {stats.todayPrescriptions}
-                </div>
-                <div 
-                  className="text-sm font-medium"
-                  style={{ color: 'var(--neutral-600)' }}
-                >
-                  Recetas Hoy
-                </div>
-              </div>
-            </div>
-          </div>
-      </div>
+        )}
 
       {/* Resources Integration Modal */}
       {showResourcesModal && selectedPatientForResources && (

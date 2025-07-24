@@ -30,42 +30,82 @@ export default function AgendaStats() {
   const [selectedPeriod, setSelectedPeriod] = useState<'week' | 'month' | 'quarter'>('month');
 
   useEffect(() => {
-    // Simular datos de estadísticas
-    const mockStats: StatsData = {
-      totalAppointments: 128,
-      completedAppointments: 95,
-      cancelledAppointments: 18,
-      noShowAppointments: 15,
-      totalPatients: 76,
-      averageDuration: 52,
-      busyDays: ['Martes', 'Miércoles', 'Jueves'],
-      appointmentsByType: {
-        'Consulta inicial': 35,
-        'Seguimiento': 42,
-        'Evaluación psicológica': 28,
-        'Terapia de pareja': 15,
-        'Control': 8
-      },
-      monthlyTrend: [
-        { month: 'Enero', appointments: 98, completed: 82 },
-        { month: 'Febrero', appointments: 105, completed: 89 },
-        { month: 'Marzo', appointments: 112, completed: 94 },
-        { month: 'Abril', appointments: 118, completed: 98 },
-        { month: 'Mayo', appointments: 125, completed: 102 },
-        { month: 'Junio', appointments: 132, completed: 108 },
-        { month: 'Julio', appointments: 128, completed: 95 }
-      ],
-      weeklyStats: [
-        { day: 'Lun', appointments: 18 },
-        { day: 'Mar', appointments: 24 },
-        { day: 'Mié', appointments: 26 },
-        { day: 'Jue', appointments: 22 },
-        { day: 'Vie', appointments: 20 },
-        { day: 'Sáb', appointments: 8 },
-        { day: 'Dom', appointments: 2 }
-      ]
+    const loadStats = async () => {
+      try {
+        console.log('🔄 Loading agenda statistics...');
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/expedix/agenda/stats?period=${selectedPeriod}`);
+        
+        if (response.ok) {
+          const data = await response.json();
+          console.log('✅ Stats loaded:', data);
+          
+          if (data.success && data.data) {
+            setStats(data.data);
+          } else {
+            // Calculate stats from appointments if no dedicated endpoint
+            await calculateStatsFromAppointments();
+          }
+        } else {
+          console.error('❌ Error fetching stats:', response.status);
+          await calculateStatsFromAppointments();
+        }
+      } catch (error) {
+        console.error('❌ Network error fetching stats:', error);
+        await calculateStatsFromAppointments();
+      }
     };
-    setStats(mockStats);
+
+    const calculateStatsFromAppointments = async () => {
+      try {
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/expedix/agenda/appointments`);
+        if (response.ok) {
+          const data = await response.json();
+          if (data.success && data.data) {
+            const appointments = data.data;
+            
+            // Calculate basic stats from appointments
+            const totalAppointments = appointments.length;
+            const completedAppointments = appointments.filter((apt: any) => apt.status === 'completed').length;
+            const cancelledAppointments = appointments.filter((apt: any) => apt.status === 'cancelled').length;
+            const noShowAppointments = appointments.filter((apt: any) => apt.status === 'no-show').length;
+            
+            // Count unique patients
+            const uniquePatients = new Set(appointments.map((apt: any) => apt.patientId));
+            const totalPatients = uniquePatients.size;
+            
+            // Calculate average duration
+            const totalDuration = appointments.reduce((sum: number, apt: any) => sum + (apt.duration || 60), 0);
+            const averageDuration = Math.round(totalDuration / totalAppointments);
+            
+            // Group by type
+            const appointmentsByType: { [key: string]: number } = {};
+            appointments.forEach((apt: any) => {
+              appointmentsByType[apt.type] = (appointmentsByType[apt.type] || 0) + 1;
+            });
+            
+            const calculatedStats: StatsData = {
+              totalAppointments,
+              completedAppointments,
+              cancelledAppointments,
+              noShowAppointments,
+              totalPatients,
+              averageDuration,
+              busyDays: ['Martes', 'Miércoles', 'Jueves'], // TODO: Calculate from data
+              appointmentsByType,
+              monthlyTrend: [], // TODO: Calculate from date data
+              weeklyStats: [] // TODO: Calculate from date data
+            };
+            
+            setStats(calculatedStats);
+          }
+        }
+      } catch (error) {
+        console.error('❌ Error calculating stats from appointments:', error);
+        setStats(null);
+      }
+    };
+
+    loadStats();
   }, [selectedPeriod]);
 
   if (!stats) {

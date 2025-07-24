@@ -7,8 +7,8 @@ import {
   CalendarIcon,
   ArrowDownTrayIcon,
   PrinterIcon,
-  ArrowArrowTrendingUpIcon,
-  ArrowArrowTrendingDownIcon,
+  ArrowTrendingUpIcon,
+  ArrowTrendingDownIcon,
   BanknotesIcon,
   CreditCardIcon
 } from '@heroicons/react/24/outline';

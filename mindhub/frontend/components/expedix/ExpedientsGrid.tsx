@@ -138,62 +138,21 @@ export default function ExpedientsGrid({ onSelectPatient }: ExpedientsGridProps)
   }
 
   return (
-    <div className="space-y-6">
-      {/* Header Info */}
-      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-        <div className="flex items-start space-x-3">
-          <DocumentTextIcon className="h-6 w-6 text-blue-600 mt-0.5" />
-          <div>
-            <h3 className="font-medium text-blue-900">
-              Sistema de Expedientes Médicos
-            </h3>
-            <p className="text-sm text-blue-700 mt-1">
-              Aquí estarán todas las fichas e historia de tus pacientes. Selecciona un expediente para ver el historial completo, timeline de consultas y datos clínicos.
-            </p>
+    <div className="space-y-4">
+      {/* Compact legend bar - like agenda */}
+      <div className="bg-white rounded-lg p-3 border-t border-gray-100">
+        <div className="flex flex-wrap items-center justify-between gap-4 text-xs text-gray-600">
+          <div className="flex items-center gap-1">
+            <div className="w-2 h-2 bg-primary-500 rounded-full"></div>
+            <span>{patients.length} expedientes</span>
           </div>
-        </div>
-      </div>
-
-      {/* Stats Summary */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-        <div className="bg-white p-4 rounded-lg border shadow-sm">
-          <div className="flex items-center">
-            <DocumentTextIcon className="h-8 w-8 text-blue-600" />
-            <div className="ml-3">
-              <p className="text-sm font-medium text-gray-500">Total Expedientes</p>
-              <p className="text-2xl font-bold text-gray-900">{patients.length}</p>
-            </div>
+          <div className="flex items-center gap-1">
+            <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+            <span>{patients.filter(p => !p.status || p.status === 'active').length} activos</span>
           </div>
-        </div>
-        <div className="bg-white p-4 rounded-lg border shadow-sm">
-          <div className="flex items-center">
-            <UserIcon className="h-8 w-8 text-green-600" />
-            <div className="ml-3">
-              <p className="text-sm font-medium text-gray-500">Pacientes Activos</p>
-              <p className="text-2xl font-bold text-gray-900">
-                {patients.filter(p => !p.status || p.status === 'active').length}
-              </p>
-            </div>
-          </div>
-        </div>
-        <div className="bg-white p-4 rounded-lg border shadow-sm">
-          <div className="flex items-center">
-            <CalendarIcon className="h-8 w-8 text-purple-600" />
-            <div className="ml-3">
-              <p className="text-sm font-medium text-gray-500">Con Consultas</p>
-              <p className="text-2xl font-bold text-gray-900">
-                {patients.filter(p => p.updated_at !== p.created_at).length}
-              </p>
-            </div>
-          </div>
-        </div>
-        <div className="bg-white p-4 rounded-lg border shadow-sm">
-          <div className="flex items-center">
-            <BeakerIcon className="h-8 w-8 text-orange-600" />
-            <div className="ml-3">
-              <p className="text-sm font-medium text-gray-500">Evaluaciones</p>
-              <p className="text-2xl font-bold text-gray-900">0</p>
-            </div>
+          <div className="flex items-center gap-1">
+            <div className="w-2 h-2 bg-purple-500 rounded-full"></div>
+            <span>{patients.filter(p => p.updated_at !== p.created_at).length} con consultas</span>
           </div>
         </div>
       </div>
@@ -238,26 +197,16 @@ export default function ExpedientsGrid({ onSelectPatient }: ExpedientsGridProps)
 
             {/* Content */}
             <div className="p-6 space-y-4">
-              {/* Patient Info */}
-              <div className="grid grid-cols-2 gap-3 text-sm">
-                <div>
-                  <span className="text-gray-500">Edad:</span>
-                  <p className="font-medium text-gray-900">{patient.age || 'N/A'} años</p>
-                </div>
-                <div>
-                  <span className="text-gray-500">Género:</span>
-                  <p className="font-medium text-gray-900">
-                    {patient.gender === 'masculine' ? 'Masculino' : patient.gender === 'feminine' ? 'Femenino' : 'N/A'}
-                  </p>
-                </div>
-                <div>
-                  <span className="text-gray-500">Teléfono:</span>
-                  <p className="font-medium text-gray-900">{patient.cell_phone || 'N/A'}</p>
-                </div>
-                <div>
-                  <span className="text-gray-500">Última visita:</span>
-                  <p className="font-medium text-gray-900">{formatLastVisit(patient.updated_at)}</p>
-                </div>
+              {/* Patient Info - Compact without labels */}
+              <div className="flex items-center space-x-3 text-sm text-gray-600">
+                <span>{patient.age || 'N/A'}</span>
+                <span>•</span>
+                <span>{patient.gender === 'masculine' ? 'M' : patient.gender === 'feminine' ? 'F' : '-'}</span>
+                <span>•</span>
+                <span className="truncate">{patient.cell_phone || 'Sin teléfono'}</span>
+              </div>
+              <div className="text-xs text-gray-500">
+                Última visita: {formatLastVisit(patient.updated_at)}
               </div>
 
               {/* Tags and Diagnoses */}

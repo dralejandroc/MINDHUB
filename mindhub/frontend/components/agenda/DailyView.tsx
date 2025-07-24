@@ -47,52 +47,60 @@ export default function DailyView({
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [showMenu, setShowMenu] = useState<string | null>(null);
 
-  // Mock data - en producción vendría de la API
+  // Cargar citas reales de la API
   useEffect(() => {
-    const mockAppointments: Appointment[] = [
-      {
-        id: '1',
-        patientName: 'María González',
-        patientId: '001',
-        startTime: '09:00',
-        endTime: '10:00',
-        duration: 60,
-        type: 'Consulta inicial',
-        cost: 800,
-        paymentMethod: 'efectivo',
-        paymentStatus: 'paid',
-        status: 'confirmed',
-        notes: 'Primera consulta, evaluar ansiedad'
-      },
-      {
-        id: '2',
-        patientName: 'Carlos Rodríguez',
-        patientId: '002',
-        startTime: '10:30',
-        endTime: '11:15',
-        duration: 45,
-        type: 'Seguimiento',
-        cost: 600,
-        paymentStatus: 'pending',
-        status: 'scheduled',
-        notes: 'Seguimiento de tratamiento para depresión'
-      },
-      {
-        id: '3',
-        patientName: 'Ana Martínez',
-        patientId: '003',
-        startTime: '15:00',
-        endTime: '16:30',
-        duration: 90,
-        type: 'Evaluación psicológica',
-        cost: 1200,
-        paymentMethod: 'tarjeta',
-        paymentStatus: 'paid',
-        status: 'confirmed',
-        notes: 'Evaluación completa con pruebas'
+    const loadAppointments = async () => {
+      try {
+        console.log('🔄 Loading appointments for daily view...', selectedDate.toISOString().split('T')[0]);
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/expedix/agenda/appointments`);
+        
+        if (response.ok) {
+          const data = await response.json();
+          console.log('✅ Daily appointments loaded:', data);
+          
+          if (data.success && data.data) {
+            // Filter appointments for selected date and transform data
+            const selectedDateStr = selectedDate.toISOString().split('T')[0];
+            const dayAppointments = data.data
+              .filter((apt: any) => apt.date === selectedDateStr)
+              .map((apt: any) => {
+                // Calculate end time
+                const [hours, minutes] = apt.time.split(':').map(Number);
+                const startMinutes = hours * 60 + minutes;
+                const endMinutes = startMinutes + (apt.duration || 60);
+                const endHours = Math.floor(endMinutes / 60);
+                const endMins = endMinutes % 60;
+                const endTime = `${endHours.toString().padStart(2, '0')}:${endMins.toString().padStart(2, '0')}`;
+                
+                return {
+                  id: apt.id,
+                  patientName: apt.patient?.name || 'Paciente desconocido',
+                  patientId: apt.patientId,
+                  startTime: apt.time,
+                  endTime: endTime,
+                  duration: apt.duration || 60,
+                  type: apt.type,
+                  cost: apt.cost || 0,
+                  paymentMethod: apt.paymentMethod || '',
+                  paymentStatus: apt.paymentStatus || 'pending',
+                  status: apt.status as any,
+                  notes: apt.notes || ''
+                };
+              });
+            
+            setAppointments(dayAppointments);
+          }
+        } else {
+          console.error('❌ Error fetching daily appointments:', response.status);
+          setAppointments([]);
+        }
+      } catch (error) {
+        console.error('❌ Network error fetching daily appointments:', error);
+        setAppointments([]);
       }
-    ];
-    setAppointments(mockAppointments);
+    };
+
+    loadAppointments();
   }, [selectedDate]);
 
   const navigateDay = (direction: 'prev' | 'next') => {

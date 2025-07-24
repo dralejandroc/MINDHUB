@@ -110,16 +110,26 @@ export function UnifiedSidebar({ children, currentUser }: UnifiedSidebarProps) {
     setSidebarOpen(false); // Also close mobile sidebar when navigating
   }, [pathname]);
 
-  // Default user if not provided
-  const user = currentUser || {
-    name: 'Administrador',
-    email: 'admin@mindhub.com',
-    role: 'professional'
-  };
+  // Default user if not provided - read from localStorage first
+  const user = currentUser || (() => {
+    if (typeof window !== 'undefined') {
+      const savedUser = localStorage.getItem('currentUser');
+      if (savedUser) {
+        return JSON.parse(savedUser);
+      }
+    }
+    return {
+      id: 'user-dr-alejandro',
+      name: 'Dr. Alejandro Contreras',
+      email: 'alejandro@mindhub.com',
+      role: 'professional'
+    };
+  })();
 
   const handleLogout = () => {
-    if (confirm('¿Estás seguro que deseas cerrar sesión?')) {
-      window.location.href = '/api/auth/logout';
+    if (confirm('¿Estás seguro que deseas cambiar de usuario?')) {
+      localStorage.removeItem('currentUser');
+      window.location.href = '/login';
     }
   };
 

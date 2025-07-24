@@ -48,19 +48,36 @@ export default function AddToWaitingListModal({ onClose, onSave }: AddToWaitingL
   const [showPatientSearch, setShowPatientSearch] = useState(false);
   const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null);
 
-  // Datos de ejemplo de pacientes
+  // Cargar pacientes reales de la base de datos
   useEffect(() => {
-    const mockPatients: Patient[] = [
-      { id: 'p1', name: 'María González Pérez', phone: '+52 55 1234-5678', email: 'maria@email.com' },
-      { id: 'p2', name: 'Carlos Rodríguez Silva', phone: '+52 55 9876-5432', email: 'carlos@email.com' },
-      { id: 'p3', name: 'Ana Martínez López', phone: '+52 55 5555-0123', email: 'ana@email.com' },
-      { id: 'p4', name: 'Pedro López García', phone: '+52 55 7777-8888', email: 'pedro@email.com' },
-      { id: 'p5', name: 'Sofía García Morales', phone: '+52 55 3333-4444', email: 'sofia@email.com' },
-      { id: 'p11', name: 'Luis Fernando Castro', phone: '+52 55 4444-5555', email: 'luis@email.com' },
-      { id: 'p12', name: 'Patricia Mendoza Ruiz', phone: '+52 55 6666-7777', email: 'patricia@email.com' }
-    ];
-    setPatients(mockPatients);
-    setFilteredPatients(mockPatients);
+    const fetchPatients = async () => {
+      try {
+        console.log('🔄 Fetching patients for waiting list...');
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/expedix/patients`);
+        
+        if (response.ok) {
+          const data = await response.json();
+          console.log('✅ Patients loaded:', data.patients?.length || 0);
+          
+          // Transform patient data to match our interface
+          const transformedPatients: Patient[] = (data.patients || []).map((patient: any) => ({
+            id: patient.id,
+            name: `${patient.firstName} ${patient.lastName}`,
+            phone: patient.phone || 'Sin teléfono',
+            email: patient.email || 'Sin email'
+          }));
+          
+          setPatients(transformedPatients);
+          setFilteredPatients(transformedPatients);
+        } else {
+          console.error('❌ Error fetching patients:', response.status);
+        }
+      } catch (error) {
+        console.error('❌ Network error fetching patients:', error);
+      }
+    };
+
+    fetchPatients();
   }, []);
 
   // Filtrar pacientes
