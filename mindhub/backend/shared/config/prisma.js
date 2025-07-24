@@ -93,21 +93,28 @@ function getPrismaClient() {
       });
     });
 
-    // Handle process termination
-    process.on('beforeExit', async () => {
-      await prisma.$disconnect();
-      logger.info('Database connection closed');
-    });
+    // Handle process termination gracefully
+    let disconnectHandled = false;
+    
+    const gracefulDisconnect = async (signal) => {
+      if (disconnectHandled) return;
+      disconnectHandled = true;
+      
+      try {
+        await prisma.$disconnect();
+        logger.info(`Database connection closed (${signal})`);
+      } catch (error) {
+        logger.error('Error disconnecting from database', { error: error.message });
+      }
+    };
 
     process.on('SIGINT', async () => {
-      await prisma.$disconnect();
-      logger.info('Database connection closed (SIGINT)');
+      await gracefulDisconnect('SIGINT');
       process.exit(0);
     });
 
     process.on('SIGTERM', async () => {
-      await prisma.$disconnect();
-      logger.info('Database connection closed (SIGTERM)');
+      await gracefulDisconnect('SIGTERM');
       process.exit(0);
     });
 

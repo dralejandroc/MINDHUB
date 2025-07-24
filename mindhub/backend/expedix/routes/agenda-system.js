@@ -2,6 +2,11 @@ const express = require('express');
 const router = express.Router();
 const { getDeadlineMonitor } = require('../services/deadlineMonitor');
 const { getPaymentProcessor } = require('../services/paymentProcessor');
+const { PrismaClient } = require('../../generated/prisma');
+const AppointmentLogService = require('../services/AppointmentLogService');
+const { v4: uuidv4 } = require('uuid');
+
+const prisma = new PrismaClient();
 
 // Simulación de base de datos en memoria (reemplazar con DB real)
 let appointments = new Map();
@@ -84,34 +89,138 @@ initSampleData();
 // ==================== APPOINTMENTS ====================
 
 // Obtener todas las citas
-router.get('/appointments', (req, res) => {
+router.get('/appointments', async (req, res) => {
   try {
     const { date, status, patientId } = req.query;
-    let result = Array.from(appointments.values());
-
-    // Agregar información del paciente
-    result = result.map(appointment => ({
-      ...appointment,
-      patient: patients.get(appointment.patientId)
-    }));
-
-    // Filtros
-    if (date) {
-      result = result.filter(apt => apt.date === date);
-    }
-    if (status) {
-      result = result.filter(apt => apt.status === status);
-    }
+    
+    console.log('🔄 Loading appointments from database with filters:', { date, status, patientId });
+    
+    // Construir filtros para la consulta
+    let whereClause = {};
+    
     if (patientId) {
-      result = result.filter(apt => apt.patientId === patientId);
+      whereClause.patientId = patientId;
+    }
+    
+    if (status) {
+      whereClause.status = status;
+    }
+    
+    // Si se especifica fecha, filtrar por día específico
+    if (date) {
+      const startOfDay = new Date(date);
+      startOfDay.setHours(0, 0, 0, 0);
+      
+      const endOfDay = new Date(date);
+      endOfDay.setHours(23, 59, 59, 999);
+      
+      whereClause.consultationDate = {
+        gte: startOfDay,
+        lte: endOfDay
+      };
     }
 
-    // Ordenar por fecha y hora
-    result.sort((a, b) => {
-      const dateTimeA = new Date(`${a.date}T${a.time}`);
-      const dateTimeB = new Date(`${b.date}T${b.time}`);
-      return dateTimeA.getTime() - dateTimeB.getTime();
+    // Cargar citas reales desde la base de datos
+    const consultations = await prisma.consultation.findMany({
+      where: whereClause,
+      include: {
+        patient: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            paternalLastName: true,
+            email: true,
+            phone: true
+          }
+        }
+      },
+      orderBy: {
+        consultationDate: 'asc'
+      }
     });
+
+    // Cargar configuración del usuario para obtener colores y duraciones
+    let userConfig = null;
+    try {
+      const scheduleConfig = await prisma.scheduleConfiguration.findUnique({
+        where: { userId: 'user-dr-alejandro' } // Por ahora usar usuario por defecto
+      });
+      if (scheduleConfig) {
+        userConfig = scheduleConfig;
+      }
+    } catch (configError) {
+      console.log('Could not load user config for colors:', configError.message);
+    }
+
+    // Transformar datos al formato esperado por el frontend
+    const result = consultations.map(consultation => {
+      // Crear fecha en zona horaria local
+      const consultationDate = new Date(consultation.consultationDate);
+      
+      // Buscar el tipo de consulta en la configuración del usuario
+      let typeColor = '#6B7280'; // Color por defecto (gris)
+      let typeDuration = 60; // Duración por defecto
+      
+      const consultationReason = consultation.reason || '';
+      
+      // Buscar en la configuración real del usuario
+      if (userConfig && userConfig.consultationTypes) {
+        const consultationType = userConfig.consultationTypes.find(type => 
+          type.name === consultationReason
+        );
+        if (consultationType) {
+          // Convertir color de Tailwind a hex si es necesario
+          const colorMapping = {
+            'bg-blue-500': '#3B82F6',
+            'bg-green-500': '#10B981',
+            'bg-purple-500': '#8B5CF6',
+            'bg-orange-500': '#F97316',
+            'bg-red-500': '#EF4444',
+            'bg-yellow-500': '#EAB308',
+            'bg-pink-500': '#EC4899',
+            'bg-indigo-500': '#6366F1',
+            'bg-teal-500': '#14B8A6',
+            'bg-cyan-500': '#06B6D4',
+            'bg-gray-500': '#6B7280'
+          };
+          
+          typeColor = colorMapping[consultationType.color] || consultationType.color || typeColor;
+          typeDuration = consultationType.duration || typeDuration;
+          
+          console.log(`🎨 Found color for "${consultationReason}": ${typeColor} (${consultationType.color})`);
+        } else {
+          console.log(`⚠️ No color config found for consultation type: "${consultationReason}"`);
+        }
+      } else {
+        console.log('⚠️ No user configuration loaded for consultation types');
+      }
+      
+      return {
+        id: consultation.id,
+        patientId: consultation.patientId,
+        date: consultationDate.toISOString().split('T')[0],
+        time: consultationDate.toLocaleTimeString('es-MX', { 
+          hour: '2-digit', 
+          minute: '2-digit', 
+          hour12: false 
+        }),
+        duration: typeDuration, // Usar duración real del tipo de consulta
+        type: consultation.reason,
+        status: consultation.status,
+        notes: consultation.notes || '',
+        typeColor: typeColor, // Agregar color del tipo de consulta
+        createdAt: consultation.createdAt.toISOString(),
+        patient: consultation.patient ? {
+          id: consultation.patient.id,
+          name: `${consultation.patient.firstName || ''} ${consultation.patient.lastName || consultation.patient.paternalLastName || ''}`.trim(),
+          email: consultation.patient.email || '',
+          phone: consultation.patient.phone || ''
+        } : null
+      };
+    });
+
+    console.log(`📊 Found ${result.length} appointments in database`);
 
     res.json({
       success: true,
@@ -119,60 +228,131 @@ router.get('/appointments', (req, res) => {
       total: result.length
     });
   } catch (error) {
+    console.error('❌ Error loading appointments from database:', error);
     res.status(500).json({
       success: false,
-      message: 'Error obteniendo citas',
+      message: 'Error obteniendo citas desde la base de datos',
       error: error.message
     });
   }
 });
 
 // Crear nueva cita
-router.post('/appointments', (req, res) => {
+router.post('/appointments', async (req, res) => {
   try {
-    const { patientId, date, time, duration, type, notes } = req.body;
+    const { patientId, date, time, duration, type, notes, createdBy, createdByName } = req.body;
 
-    // Validar paciente existe
-    if (!patients.has(patientId)) {
+    console.log('Received appointment data:', req.body);
+
+    // Validar datos requeridos
+    if (!patientId || !date || !time || !type) {
+      return res.status(400).json({
+        success: false,
+        message: 'Faltan datos requeridos: patientId, date, time, type'
+      });
+    }
+
+    // Verificar que el paciente existe
+    const patient = await prisma.patient.findUnique({
+      where: { id: patientId }
+    });
+
+    if (!patient) {
       return res.status(400).json({
         success: false,
         message: 'Paciente no encontrado'
       });
     }
 
-    // Verificar disponibilidad
-    const conflictingAppointment = Array.from(appointments.values()).find(apt => 
-      apt.date === date && apt.time === time && apt.status !== 'cancelled'
-    );
+    // Combinar fecha y hora para crear appointmentDate (horario local México)
+    const appointmentDateTime = new Date(`${date}T${time}:00.000`);
 
-    if (conflictingAppointment) {
+    // Verificar disponibilidad (opcional)
+    const existingAppointment = await prisma.consultation.findFirst({
+      where: {
+        consultationDate: appointmentDateTime,
+        NOT: {
+          status: 'cancelled'
+        }
+      }
+    });
+
+    if (existingAppointment) {
       return res.status(400).json({
         success: false,
         message: 'Ya existe una cita en esa fecha y hora'
       });
     }
 
-    const appointmentId = `apt_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-    const newAppointment = {
-      id: appointmentId,
-      patientId,
-      date,
-      time,
-      duration: duration || 60,
-      type,
-      status: 'confirmed',
-      notes: notes || '',
-      createdAt: new Date().toISOString()
-    };
+    // Crear la cita en la base de datos
+    const appointmentId = uuidv4();
+    const newAppointment = await prisma.consultation.create({
+      data: {
+        id: appointmentId,
+        patientId: patientId,
+        consultantId: createdBy || 'user-dr-alejandro',
+        consultationDate: appointmentDateTime,
+        reason: type,
+        status: 'scheduled',
+        notes: notes || ''
+      },
+      include: {
+        patient: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            paternalLastName: true,
+            email: true,
+            phone: true
+          }
+        }
+      }
+    });
 
-    appointments.set(appointmentId, newAppointment);
+    // Log the appointment creation
+    try {
+      await AppointmentLogService.logAppointmentAction({
+        appointmentId: appointmentId,
+        patientId: patientId,
+        userId: createdBy || 'user-dr-alejandro',
+        userName: createdByName || 'Dr. Alejandro Contreras',
+        action: 'created',
+        previousData: null,
+        newData: {
+          date: date,
+          time: time,
+          type: type,
+          status: 'scheduled',
+          duration: duration || 60
+        },
+        reason: `Cita creada: ${type}`
+      });
+    } catch (logError) {
+      console.error('Error logging appointment:', logError);
+      // Don't fail the request if logging fails
+    }
 
+    // Return the created appointment with patient data
     res.status(201).json({
       success: true,
       message: 'Cita creada exitosamente',
       data: {
-        ...newAppointment,
-        patient: patients.get(patientId)
+        id: appointmentId,
+        patientId: newAppointment.patientId,
+        date: date,
+        time: time,
+        duration: duration || 60,
+        type: type,
+        status: 'scheduled',
+        notes: notes || '',
+        createdAt: new Date().toISOString(),
+        patient: newAppointment.patient ? {
+          id: newAppointment.patient.id,
+          name: `${newAppointment.patient.firstName || ''} ${newAppointment.patient.lastName || newAppointment.patient.paternalLastName || ''}`.trim(),
+          email: newAppointment.patient.email || '',
+          phone: newAppointment.patient.phone || ''
+        } : null
       }
     });
   } catch (error) {
@@ -219,37 +399,74 @@ router.put('/appointments/:id', (req, res) => {
 });
 
 // Cancelar cita
-router.delete('/appointments/:id', (req, res) => {
+router.delete('/appointments/:id', async (req, res) => {
   try {
     const appointmentId = req.params.id;
 
-    if (!appointments.has(appointmentId)) {
+    // Buscar la cita en la base de datos
+    const appointment = await prisma.consultation.findUnique({
+      where: { id: appointmentId },
+      include: {
+        patient: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            paternalLastName: true
+          }
+        }
+      }
+    });
+    
+    if (!appointment) {
       return res.status(404).json({
         success: false,
         message: 'Cita no encontrada'
       });
     }
 
-    const appointment = appointments.get(appointmentId);
-    appointment.status = 'cancelled';
-    appointment.cancelledAt = new Date().toISOString();
-    appointments.set(appointmentId, appointment);
+    // Eliminar físicamente la cita para liberar el espacio
+    const deletedAppointment = await prisma.consultation.delete({
+      where: { id: appointmentId }
+    });
 
-    // Crear slot disponible para lista de espera
+    // Log the cancellation
+    try {
+      await AppointmentLogService.logAppointmentAction({
+        appointmentId: appointmentId,
+        patientId: appointment.patientId,
+        userId: req.user?.id || 'user-dr-alejandro',
+        userName: req.user?.name || 'Dr. Alejandro Contreras',
+        action: 'cancelled',
+        previousData: appointment,
+        newData: { status: 'cancelled' },
+        changes: { status: { from: appointment.status, to: 'cancelled' } }
+      });
+    } catch (logError) {
+      console.error('Error logging appointment cancellation:', logError);
+    }
+
+    // Create available slot for waiting list processing
     const availableSlot = {
-      date: appointment.date,
-      time: appointment.time,
-      duration: appointment.duration,
+      date: appointment.consultationDate.toISOString().split('T')[0],
+      time: appointment.consultationDate.toTimeString().slice(0, 5),
+      duration: 60, // Default duration, could be calculated from consultation type
       reason: 'cancellation'
     };
 
-    // Procesar lista de espera automáticamente
-    processWaitingListForSlot(availableSlot);
+    // Process waiting list automatically and get suggestions
+    const waitingListSuggestions = await processWaitingListForSlot(availableSlot);
 
     res.json({
       success: true,
-      message: 'Cita cancelada exitosamente',
-      data: appointment
+      message: 'Cita cancelada y espacio liberado exitosamente',
+      data: { 
+        id: appointmentId,
+        status: 'cancelled',
+        deletedAt: new Date(),
+        originalData: appointment
+      },
+      waitingListSuggestions: waitingListSuggestions || []
     });
   } catch (error) {
     res.status(500).json({
@@ -260,42 +477,158 @@ router.delete('/appointments/:id', (req, res) => {
   }
 });
 
+// Cambiar estado de cita
+router.patch('/appointments/:id/status', async (req, res) => {
+  try {
+    const appointmentId = req.params.id;
+    const { status } = req.body;
+
+    // Validar estado
+    const validStatuses = ['scheduled', 'confirmed', 'confirmed-no-deposit', 'completed', 'cancelled', 'no-show', 'modified'];
+    if (!status || !validStatuses.includes(status)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Estado inválido',
+        validStatuses
+      });
+    }
+
+    // Buscar la cita en la base de datos
+    const appointment = await prisma.consultation.findUnique({
+      where: { id: appointmentId }
+    });
+    
+    if (!appointment) {
+      return res.status(404).json({
+        success: false,
+        message: 'Cita no encontrada'
+      });
+    }
+
+    // Actualizar el estado
+    const updatedAppointment = await prisma.consultation.update({
+      where: { id: appointmentId },
+      data: {
+        status: status,
+        updatedAt: new Date()
+      },
+      include: {
+        patient: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            paternalLastName: true
+          }
+        }
+      }
+    });
+
+    // Log the status change
+    try {
+      await AppointmentLogService.logAppointmentAction({
+        appointmentId: appointmentId,
+        patientId: appointment.patientId,
+        userId: req.user?.id || 'user-dr-alejandro',
+        userName: req.user?.name || 'Dr. Alejandro Contreras',
+        action: 'status_changed',
+        previousData: { status: appointment.status },
+        newData: { status: status },
+        changes: { status: { from: appointment.status, to: status } }
+      });
+    } catch (logError) {
+      console.error('Error logging status change:', logError);
+    }
+
+    res.json({
+      success: true,
+      message: 'Estado actualizado exitosamente',
+      data: updatedAppointment
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Error actualizando estado',
+      error: error.message
+    });
+  }
+});
+
 // ==================== WAITING LIST ====================
 
 // Obtener lista de espera
-router.get('/waiting-list', (req, res) => {
+router.get('/waiting-list', async (req, res) => {
   try {
     const { priority, status } = req.query;
-    let result = Array.from(waitingList.values());
-
-    // Agregar información del paciente
-    result = result.map(entry => ({
-      ...entry,
-      patient: patients.get(entry.patientId)
-    }));
-
-    // Filtros
+    
+    // Construir filtros dinámicos
+    const whereClause = {};
+    
     if (priority && priority !== 'all') {
-      result = result.filter(entry => entry.priority === priority);
+      whereClause.priority = priority;
     }
+    
     if (status && status !== 'all') {
-      result = result.filter(entry => entry.status === status);
+      whereClause.status = status;
     }
 
-    // Ordenar por prioridad y fecha
-    result.sort((a, b) => {
-      const priorityOrder = { 'alta': 3, 'media': 2, 'baja': 1 };
-      const priorityDiff = priorityOrder[b.priority] - priorityOrder[a.priority];
-      if (priorityDiff !== 0) return priorityDiff;
-      return new Date(a.addedDate).getTime() - new Date(b.addedDate).getTime();
+    // Obtener lista de espera con información del paciente
+    const waitingListEntries = await prisma.waitingList.findMany({
+      where: whereClause,
+      include: {
+        patient: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            paternalLastName: true,
+            phone: true,
+            email: true,
+            dateOfBirth: true
+          }
+        }
+      },
+      orderBy: [
+        {
+          // Ordenar por prioridad (alta > media > baja)
+          priority: 'desc'
+        },
+        {
+          // Luego por fecha de creación (más antiguos primero)
+          createdAt: 'asc'
+        }
+      ]
     });
+
+    // Procesar resultados para el frontend
+    const result = waitingListEntries.map(entry => ({
+      id: entry.id,
+      patientId: entry.patientId,
+      patientName: `${entry.patient.firstName} ${entry.patient.lastName} ${entry.patient.paternalLastName || ''}`.trim(),
+      patientPhone: entry.patient.phone,
+      patientEmail: entry.patient.email,
+      patientAge: entry.patient.dateOfBirth ? Math.floor((new Date() - new Date(entry.patient.dateOfBirth)) / (365.25 * 24 * 60 * 60 * 1000)) : null,
+      appointmentType: entry.appointmentType,
+      preferredDates: entry.preferredDates,
+      preferredTimes: entry.preferredTimes,
+      priority: entry.priority,
+      notes: entry.notes,
+      status: entry.status,
+      contactAttempts: entry.contactAttempts,
+      lastContactDate: entry.lastContactDate,
+      waitingSince: Math.floor((new Date() - new Date(entry.createdAt)) / (1000 * 60 * 60 * 24)), // días esperando
+      createdAt: entry.createdAt,
+      updatedAt: entry.updatedAt
+    }));
 
     res.json({
       success: true,
       data: result,
-      total: result.length
+      total: result.length,
+      filters: { priority, status }
     });
   } catch (error) {
+    console.error('Error obteniendo lista de espera:', error);
     res.status(500).json({
       success: false,
       message: 'Error obteniendo lista de espera',
@@ -305,12 +638,25 @@ router.get('/waiting-list', (req, res) => {
 });
 
 // Agregar a lista de espera
-router.post('/waiting-list', (req, res) => {
+router.post('/waiting-list', async (req, res) => {
   try {
     const { patientId, appointmentType, preferredDates, preferredTimes, priority, notes } = req.body;
+    const currentUser = req.user || { id: 'user-dr-alejandro' };
 
-    // Validar paciente existe
-    if (!patients.has(patientId)) {
+    // Validar que el paciente existe
+    const patient = await prisma.patient.findUnique({
+      where: { id: patientId },
+      select: {
+        id: true,
+        firstName: true,
+        lastName: true,
+        paternalLastName: true,
+        phone: true,
+        email: true
+      }
+    });
+
+    if (!patient) {
       return res.status(400).json({
         success: false,
         message: 'Paciente no encontrado'
@@ -318,9 +664,12 @@ router.post('/waiting-list', (req, res) => {
     }
 
     // Verificar si ya está en lista de espera
-    const existingEntry = Array.from(waitingList.values()).find(entry => 
-      entry.patientId === patientId && entry.status === 'waiting'
-    );
+    const existingEntry = await prisma.waitingList.findFirst({
+      where: {
+        patientId: patientId,
+        status: 'waiting'
+      }
+    });
 
     if (existingEntry) {
       return res.status(400).json({
@@ -329,30 +678,63 @@ router.post('/waiting-list', (req, res) => {
       });
     }
 
-    const entryId = `w_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-    const newEntry = {
-      id: entryId,
-      patientId,
-      appointmentType,
-      preferredDates,
-      preferredTimes,
-      priority: priority || 'media',
-      notes: notes || '',
-      addedDate: new Date().toISOString(),
-      status: 'waiting'
-    };
+    // Validar datos requeridos
+    if (!appointmentType) {
+      return res.status(400).json({
+        success: false,
+        message: 'Tipo de consulta es requerido'
+      });
+    }
 
-    waitingList.set(entryId, newEntry);
+    // Crear nueva entrada en lista de espera
+    const newEntry = await prisma.waitingList.create({
+      data: {
+        patientId: patientId,
+        appointmentType: appointmentType,
+        preferredDates: preferredDates || [],
+        preferredTimes: preferredTimes || [],
+        priority: priority || 'media',
+        notes: notes || '',
+        status: 'waiting',
+        createdBy: currentUser.id
+      },
+      include: {
+        patient: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            paternalLastName: true,
+            phone: true,
+            email: true
+          }
+        }
+      }
+    });
+
+    console.log(`✅ Patient added to waiting list: ${patient.firstName} ${patient.lastName} (Priority: ${newEntry.priority})`);
 
     res.status(201).json({
       success: true,
-      message: 'Paciente agregado a lista de espera',
+      message: 'Paciente agregado a lista de espera exitosamente',
       data: {
-        ...newEntry,
-        patient: patients.get(patientId)
+        id: newEntry.id,
+        patientId: newEntry.patientId,
+        patientName: `${newEntry.patient.firstName} ${newEntry.patient.lastName} ${newEntry.patient.paternalLastName || ''}`.trim(),
+        patientPhone: newEntry.patient.phone,
+        patientEmail: newEntry.patient.email,
+        appointmentType: newEntry.appointmentType,
+        preferredDates: newEntry.preferredDates,
+        preferredTimes: newEntry.preferredTimes,
+        priority: newEntry.priority,
+        notes: newEntry.notes,
+        status: newEntry.status,
+        contactAttempts: newEntry.contactAttempts,
+        createdAt: newEntry.createdAt
       }
     });
   } catch (error) {
+    console.error('Error agregando a lista de espera:', error);
     res.status(500).json({
       success: false,
       message: 'Error agregando a lista de espera',
@@ -939,54 +1321,103 @@ function generateAvailableSlots(startDate, endDate) {
   return slots;
 }
 
-function processWaitingListForSlot(availableSlot) {
-  // Buscar candidatos en lista de espera que coincidan con el slot
-  const candidates = Array.from(waitingList.values())
-    .filter(entry => 
-      entry.status === 'waiting' &&
-      entry.preferredDates.includes(availableSlot.date) &&
-      entry.preferredTimes.includes(availableSlot.time)
-    )
-    .sort((a, b) => {
-      const priorityOrder = { 'alta': 3, 'media': 2, 'baja': 1 };
-      const priorityDiff = priorityOrder[b.priority] - priorityOrder[a.priority];
-      if (priorityDiff !== 0) return priorityDiff;
-      return new Date(a.addedDate).getTime() - new Date(b.addedDate).getTime();
+async function processWaitingListForSlot(availableSlot) {
+  try {
+    console.log(`🔍 Processing waiting list for slot: ${availableSlot.date} ${availableSlot.time}`);
+    
+    // Buscar candidatos en lista de espera que coincidan con el slot disponible
+    const candidates = await prisma.waitingList.findMany({
+      where: {
+        status: 'waiting',
+        OR: [
+          {
+            // Buscar por fechas preferidas que incluyan esta fecha (usando JSON_CONTAINS para MySQL)
+            preferredDates: {
+              path: '$',
+              array_contains: availableSlot.date
+            }
+          },
+          {
+            // O buscar aquellos que no tienen restricciones específicas de fecha (lista vacía)
+            preferredDates: {
+              equals: []
+            }
+          }
+        ]
+      },
+      include: {
+        patient: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            paternalLastName: true,
+            phone: true,
+            email: true
+          }
+        }
+      },
+      orderBy: [
+        {
+          // Ordenar por prioridad usando CASE para custom order
+          priority: 'desc'
+        },
+        {
+          // Luego por fecha de creación (primero en entrar, primero en salir)
+          createdAt: 'asc'
+        }
+      ],
+      take: 5 // Top 5 candidatos
     });
 
-  if (candidates.length > 0) {
-    // Crear invitación automática para el primer candidato
-    const topCandidate = candidates[0];
-    const invitationId = `inv_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-    const now = new Date();
-    const expirationDate = new Date(now.getTime() + 48 * 60 * 60 * 1000);
-    const confirmationDeadline = new Date(now.getTime() + 24 * 60 * 60 * 1000);
+    if (candidates.length === 0) {
+      console.log(`📭 No waiting list candidates found for slot ${availableSlot.date} ${availableSlot.time}`);
+      return [];
+    }
 
-    const invitation = {
-      id: invitationId,
-      waitingListEntry: {
-        ...topCandidate,
-        patient: patients.get(topCandidate.patientId)
-      },
-      availableSlot,
-      invitationSentDate: now.toISOString(),
-      expirationDate: expirationDate.toISOString(),
-      status: 'sent',
-      paymentRequired: 500, // Monto por defecto
-      confirmationDeadline: confirmationDeadline.toISOString()
-    };
+    // Procesar los candidatos y crear sugerencias estructuradas
+    const suggestions = candidates.map(candidate => ({
+      waitingListId: candidate.id,
+      patientId: candidate.patientId,
+      patientName: `${candidate.patient.firstName} ${candidate.patient.lastName} ${candidate.patient.paternalLastName || ''}`.trim(),
+      patientPhone: candidate.patient.phone,
+      patientEmail: candidate.patient.email,
+      appointmentType: candidate.appointmentType,
+      priority: candidate.priority,
+      notes: candidate.notes,
+      preferredDates: candidate.preferredDates,
+      preferredTimes: candidate.preferredTimes,
+      createdAt: candidate.createdAt,
+      waitingSince: Math.floor((new Date() - new Date(candidate.createdAt)) / (1000 * 60 * 60 * 24)), // días esperando
+      matchReason: `Slot disponible por ${availableSlot.reason} - ${availableSlot.date} ${availableSlot.time}`,
+      availableSlot: availableSlot,
+      contactAttempts: candidate.contactAttempts,
+      lastContactDate: candidate.lastContactDate
+    }));
 
-    invitations.set(invitationId, invitation);
+    // Crear invitación automática para el primer candidato si existe
+    if (suggestions.length > 0) {
+      const topCandidate = suggestions[0];
+      
+      // Actualizar contador de intentos de contacto
+      await prisma.waitingList.update({
+        where: { id: topCandidate.waitingListId },
+        data: {
+          status: 'contacted',
+          contactAttempts: { increment: 1 },
+          lastContactDate: new Date()
+        }
+      });
 
-    // Agregar al monitoreo
-    const monitor = getDeadlineMonitor();
-    monitor.addInvitation(invitation);
+      console.log(`🎯 Auto-suggested waiting list patient: ${topCandidate.patientName} (Priority: ${topCandidate.priority}) for slot ${availableSlot.date} ${availableSlot.time}`);
+    }
 
-    // Actualizar estado en lista de espera
-    topCandidate.status = 'contacted';
-    waitingList.set(topCandidate.id, topCandidate);
-
-    console.log(`🎯 Invitación automática creada para ${topCandidate.patientId} - Slot: ${availableSlot.date} ${availableSlot.time}`);
+    console.log(`✅ Found ${suggestions.length} waiting list suggestions for slot ${availableSlot.date} ${availableSlot.time}`);
+    return suggestions;
+    
+  } catch (error) {
+    console.error('❌ Error processing waiting list for slot:', error);
+    return [];
   }
 }
 

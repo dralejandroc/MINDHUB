@@ -125,6 +125,242 @@ const APPOINTMENT_TYPES = {
 };
 
 /**
+ * GET /api/v1/expedix/schedule-config
+ * Get current user's schedule configuration
+ */
+router.get('/',
+  async (req, res) => {
+    try {
+      const currentUser = req.user || { id: 'user-dr-alejandro' };
+      
+      // Try to get saved configuration from database
+      let savedConfig = null;
+      try {
+        const scheduleConfig = await executeQuery(
+          (prisma) => prisma.scheduleConfiguration.findUnique({
+            where: { userId: currentUser.id }
+          }),
+          `getScheduleConfiguration(${currentUser.id})`
+        );
+        
+        if (scheduleConfig) {
+          savedConfig = {
+            workingHours: {
+              start: scheduleConfig.workingHoursStart,
+              end: scheduleConfig.workingHoursEnd
+            },
+            lunchBreak: {
+              enabled: scheduleConfig.lunchBreakEnabled,
+              start: scheduleConfig.lunchBreakStart,
+              end: scheduleConfig.lunchBreakEnd
+            },
+            workingDays: scheduleConfig.workingDays,
+            defaultAppointmentDuration: scheduleConfig.defaultAppointmentDuration,
+            consultationTypes: scheduleConfig.consultationTypes,
+            blockedDates: scheduleConfig.blockedDates,
+            maxDailyAppointments: scheduleConfig.maxDailyAppointments,
+            bufferTime: scheduleConfig.bufferTime,
+            reminders: scheduleConfig.reminders,
+            savedAt: scheduleConfig.updatedAt.toISOString(),
+            userId: scheduleConfig.userId
+          };
+          logger.info('Loaded saved schedule configuration from database', { userId: currentUser.id });
+        }
+      } catch (dbError) {
+        logger.info('No saved configuration found in database, using defaults', { userId: currentUser.id, error: dbError.message });
+      }
+      
+      const defaultConfig = {
+        workingHours: {
+          start: '08:00',
+          end: '20:00'
+        },
+        lunchBreak: {
+          enabled: true,
+          start: '14:00',
+          end: '15:00'
+        },
+        workingDays: ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'],
+        defaultAppointmentDuration: 60,
+        consultationTypes: [
+          { id: '1', name: 'Consulta inicial', duration: 90, price: 1500, color: 'bg-blue-500' },
+          { id: '2', name: 'Seguimiento', duration: 60, price: 1200, color: 'bg-green-500' },
+          { id: '3', name: 'Evaluación psicológica', duration: 120, price: 2000, color: 'bg-purple-500' },
+          { id: '4', name: 'Terapia individual', duration: 60, price: 1000, color: 'bg-orange-500' },
+          { id: '5', name: 'Control de medicación', duration: 30, price: 800, color: 'bg-red-500' }
+        ],
+        blockedDates: [],
+        maxDailyAppointments: 20,
+        bufferTime: 15,
+        reminders: {
+          whatsapp: {
+            enabled: true,
+            template: "Hola {PATIENT_NAME}, te recordamos tu cita con {PROFESSIONAL_NAME} el {DATE} a las {TIME} en {CLINIC_NAME}. Ubicado en {CLINIC_ADDRESS}. Si necesitas reprogramar, contacta al {CLINIC_PHONE}.",
+            hoursBeforeAppointment: 24
+          },
+          email: {
+            enabled: true,
+            template: "Estimado/a {PATIENT_NAME},\\n\\nEste es un recordatorio de su cita médica:\\n\\nFecha: {DATE}\\nHora: {TIME}\\nProfesional: {PROFESSIONAL_NAME}\\nTipo de consulta: {APPOINTMENT_TYPE}\\n\\nDirección: {CLINIC_NAME}\\n{CLINIC_ADDRESS}\\nTeléfono: {CLINIC_PHONE}\\n\\nPor favor llegue 15 minutos antes de su cita.\\n\\nSi necesita reprogramar o cancelar, contacte con nosotros al menos 24 horas antes.\\n\\nSaludos cordiales,\\nEquipo de {CLINIC_NAME}",
+            hoursBeforeAppointment: 24
+          }
+        }
+      };
+      
+      res.json({
+        success: true,
+        data: savedConfig || defaultConfig,
+        message: 'Schedule configuration retrieved successfully'
+      });
+
+    } catch (error) {
+      logger.error('Failed to get schedule configuration', {
+        error: error.message,
+        userId: req.user?.id
+      });
+
+      res.status(500).json({
+        success: false,
+        error: 'Failed to retrieve configuration',
+        message: 'An error occurred while retrieving schedule configuration'
+      });
+    }
+  }
+);
+
+/**
+ * POST /api/v1/expedix/schedule-config
+ * Save current user's schedule configuration
+ */
+router.post('/',
+  [
+    body('workingHours').isObject().withMessage('Working hours must be an object'),
+    body('consultationTypes').isArray().withMessage('Consultation types must be an array'),
+    body('workingDays').isArray().withMessage('Working days must be an array'),
+    body('maxDailyAppointments').isInt({ min: 1, max: 100 }).withMessage('Max daily appointments must be between 1 and 100'),
+    body('bufferTime').isInt({ min: 0, max: 60 }).withMessage('Buffer time must be between 0 and 60 minutes')
+  ],
+  async (req, res) => {
+    try {
+      const errors = validationResult(req);
+      if (!errors.isEmpty()) {
+        return res.status(400).json({
+          success: false,
+          error: 'Validation failed',
+          details: errors.array()
+        });
+      }
+
+      const currentUser = req.user || { id: 'user-dr-alejandro' };
+      const {
+        workingHours,
+        lunchBreak,
+        workingDays,
+        defaultAppointmentDuration,
+        consultationTypes,
+        blockedDates,
+        maxDailyAppointments,
+        bufferTime,
+        reminders
+      } = req.body;
+
+      // Log the configuration save attempt
+      logger.info('Schedule configuration save attempt', {
+        userId: currentUser.id,
+        workingDays: workingDays.length,
+        consultationTypes: consultationTypes.length,
+        maxDailyAppointments,
+        bufferTime
+      });
+
+      // Save configuration to database
+      const configToSave = {
+        userId: currentUser.id,
+        workingHoursStart: workingHours.start,
+        workingHoursEnd: workingHours.end,
+        lunchBreakEnabled: lunchBreak?.enabled || false,
+        lunchBreakStart: lunchBreak?.start || null,
+        lunchBreakEnd: lunchBreak?.end || null,
+        workingDays: workingDays,
+        defaultAppointmentDuration: defaultAppointmentDuration,
+        consultationTypes: consultationTypes,
+        blockedDates: blockedDates || [],
+        maxDailyAppointments: maxDailyAppointments,
+        bufferTime: bufferTime,
+        reminders: reminders || {
+          whatsapp: { enabled: false, template: "", hoursBeforeAppointment: 24 },
+          email: { enabled: false, template: "", hoursBeforeAppointment: 24 }
+        }
+      };
+
+      try {
+        // Upsert configuration to database
+        const savedConfig = await executeQuery(
+          (prisma) => prisma.scheduleConfiguration.upsert({
+            where: { userId: currentUser.id },
+            update: {
+              workingHoursStart: configToSave.workingHoursStart,
+              workingHoursEnd: configToSave.workingHoursEnd,
+              lunchBreakEnabled: configToSave.lunchBreakEnabled,
+              lunchBreakStart: configToSave.lunchBreakStart,
+              lunchBreakEnd: configToSave.lunchBreakEnd,
+              workingDays: configToSave.workingDays,
+              defaultAppointmentDuration: configToSave.defaultAppointmentDuration,
+              consultationTypes: configToSave.consultationTypes,
+              blockedDates: configToSave.blockedDates,
+              maxDailyAppointments: configToSave.maxDailyAppointments,
+              bufferTime: configToSave.bufferTime,
+              reminders: configToSave.reminders,
+              updatedAt: new Date()
+            },
+            create: {
+              id: uuidv4(),
+              ...configToSave,
+              createdAt: new Date(),
+              updatedAt: new Date()
+            }
+          }),
+          `upsertScheduleConfiguration(${currentUser.id})`
+        );
+        
+        logger.info('Schedule configuration saved successfully to database', {
+          userId: currentUser.id,
+          configId: savedConfig.id
+        });
+      } catch (dbError) {
+        logger.error('Failed to save configuration to database', {
+          error: dbError.message,
+          userId: currentUser.id
+        });
+        throw new Error('Failed to persist configuration');
+      }
+      
+      res.json({
+        success: true,
+        message: 'Schedule configuration saved successfully',
+        data: {
+          savedAt: configToSave.savedAt,
+          userId: currentUser.id,
+          configuration: configToSave
+        }
+      });
+
+    } catch (error) {
+      logger.error('Failed to save schedule configuration', {
+        error: error.message,
+        stack: error.stack,
+        userId: req.user?.id
+      });
+
+      res.status(500).json({
+        success: false,
+        error: 'Failed to save configuration',
+        message: 'An error occurred while saving the schedule configuration'
+      });
+    }
+  }
+);
+
+/**
  * GET /api/v1/expedix/schedule-config/default
  * Get default schedule configuration
  */

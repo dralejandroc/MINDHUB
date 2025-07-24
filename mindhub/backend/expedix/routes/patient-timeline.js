@@ -63,8 +63,7 @@ router.get('/:patientId',
             firstName: true,
             lastName: true,
             paternalLastName: true,
-            maternalLastName: true,
-            medicalRecordNumber: true
+            maternalLastName: true
           }
         }),
         `verifyPatient(${patientId})`
@@ -284,7 +283,6 @@ router.get('/:patientId',
       // Log timeline access
       logger.info('Patient timeline accessed', {
         patientId: patientId,
-        medicalRecordNumber: patient.medicalRecordNumber,
         userId: userId,
         eventCount: timelineEvents.length,
         eventTypes: requestedEventTypes
@@ -296,7 +294,6 @@ router.get('/:patientId',
           patient: {
             id: patient.id,
             name: `${patient.firstName} ${patient.paternalLastName} ${patient.maternalLastName}`.trim(),
-            medicalRecordNumber: patient.medicalRecordNumber
           },
           timeline: timelineEvents,
           summary: summary,
@@ -361,7 +358,6 @@ router.post('/:patientId/note',
             id: true,
             firstName: true,
             paternalLastName: true,
-            medicalRecordNumber: true
           }
         }),
         `verifyPatient(${patientId})`
@@ -391,7 +387,6 @@ router.post('/:patientId/note',
       // Log the note creation
       logger.info('Clinical note added to timeline', {
         patientId: patientId,
-        medicalRecordNumber: patient.medicalRecordNumber,
         noteId: noteData.id,
         title: title,
         priority: priority,
@@ -458,7 +453,7 @@ router.get('/:patientId/alerts',
       const patient = await executeQuery(
         (prisma) => prisma.patient.findUnique({
           where: { id: patientId },
-          select: { id: true, medicalRecordNumber: true }
+          select: { id: true }
         }),
         `verifyPatient(${patientId})`
       );

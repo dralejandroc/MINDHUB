@@ -24,12 +24,30 @@ const isValidCuid = (value) => {
 };
 
 /**
- * Validates if a value is either a valid UUID or cuid
+ * Validates if a value is a valid readable patient ID
+ * Formats: 
+ * - Individual: AAR19800315-2507[A-Z]?
+ * - Clinic: CLI001-AAR19800315-2507[A-Z]?
  * @param {string} value - The value to validate
- * @returns {boolean} - True if valid UUID or cuid
+ * @returns {boolean} - True if valid readable patient ID
+ */
+const isValidReadablePatientId = (value) => {
+  // Formato individual: AAR19800315-2507[A-Z]?
+  const individualPattern = /^[A-Z]{2}[A-Z][0-9]{8}-[0-9]{4}[A-Z]?$/;
+  
+  // Formato con clínica: CLI001-AAR19800315-2507[A-Z]?
+  const clinicPattern = /^CLI\d{3}-[A-Z]{2}[A-Z][0-9]{8}-[0-9]{4}[A-Z]?$/;
+  
+  return individualPattern.test(value) || clinicPattern.test(value);
+};
+
+/**
+ * Validates if a value is either a valid UUID, cuid, or readable patient ID
+ * @param {string} value - The value to validate
+ * @returns {boolean} - True if valid UUID, cuid, or readable patient ID
  */
 const isValidId = (value) => {
-  return isValidUUID(value) || isValidCuid(value);
+  return isValidUUID(value) || isValidCuid(value) || isValidReadablePatientId(value);
 };
 
 /**
@@ -57,6 +75,7 @@ const validateEntityId = (value) => {
 module.exports = {
   isValidUUID,
   isValidCuid,
+  isValidReadablePatientId,
   isValidId,
   validatePatientId,
   validateEntityId

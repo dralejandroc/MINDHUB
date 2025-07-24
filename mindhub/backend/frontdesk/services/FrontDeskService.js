@@ -4,6 +4,8 @@
  */
 
 const { PrismaClient } = require('../../generated/prisma');
+const { v4: uuidv4 } = require('uuid');
+const BehavioralService = require('./BehavioralService');
 const prisma = new PrismaClient();
 
 class FrontDeskService {
@@ -17,6 +19,7 @@ class FrontDeskService {
         { start: '15:00', end: '15:30' }  // Coffee break
       ]
     };
+    this.behavioralService = new BehavioralService();
   }
 
   // ============ ESTADÍSTICAS ============
@@ -984,6 +987,43 @@ class FrontDeskService {
       console.error('Error generating payments report:', error);
       throw new Error('Error al generar reporte de pagos');
     }
+  }
+
+  // ============ BEHAVIORAL TRACKING ============
+
+  /**
+   * Record a behavioral event for a patient
+   */
+  async recordBehavioralEvent(eventData) {
+    return await this.behavioralService.recordBehavioralEvent(eventData);
+  }
+
+  /**
+   * Get behavioral history for a patient
+   */
+  async getPatientBehavioralHistory(patientId, options = {}) {
+    return await this.behavioralService.getPatientBehavioralHistory(patientId, options);
+  }
+
+  /**
+   * Log a communication event
+   */
+  async logCommunication(communicationData) {
+    return await this.behavioralService.logCommunication(communicationData);
+  }
+
+  /**
+   * Record appointment change (reschedule/cancellation)
+   */
+  async recordAppointmentChange(changeData) {
+    return await this.behavioralService.recordAppointmentChange(changeData);
+  }
+
+  /**
+   * Get behavioral summary for a patient
+   */
+  async getPatientBehavioralSummary(patientId) {
+    return await this.behavioralService.getPatientBehavioralSummary(patientId);
   }
 }
 

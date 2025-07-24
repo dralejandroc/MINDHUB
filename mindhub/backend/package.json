@@ -38,18 +38,23 @@
     "universal:backup": "node scripts/dev-tools.js backup-db",
     "universal:clean": "node scripts/dev-tools.js clean",
     "universal:bulk-add": "node scripts/bulk-add-scales.js",
-    "universal:bulk-add-auto": "node scripts/bulk-add-scales.js --auto-migrate"
+    "universal:bulk-add-auto": "node scripts/bulk-add-scales.js --auto-migrate",
+    "data:check": "node check-database-status.js",
+    "data:create-minimal": "node create-minimal-test-data.js",
+    "data:create-full": "node create-test-data.js"
   },
   "dependencies": {
     "@prisma/client": "^5.6.0",
     "archiver": "^6.0.1",
     "axios": "^1.10.0",
+    "bcrypt": "^6.0.0",
     "bcryptjs": "^2.4.3",
     "bull": "^4.11.5",
     "compression": "^1.7.4",
     "connect-redis": "^7.1.0",
     "cors": "^2.8.5",
     "crypto": "^1.0.1",
+    "csv-parser": "^3.2.0",
     "dotenv": "^16.3.1",
     "exceljs": "^4.4.0",
     "express": "^4.18.2",
@@ -83,7 +88,8 @@
     "uuid": "^9.0.1",
     "validator": "^13.11.0",
     "winston": "^3.11.0",
-    "winston-daily-rotate-file": "^4.7.1"
+    "winston-daily-rotate-file": "^4.7.1",
+    "xlsx": "^0.18.5"
   },
   "devDependencies": {
     "@types/express": "^4.17.21",

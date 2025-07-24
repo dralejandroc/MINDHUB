@@ -37,7 +37,10 @@ const agendaSystemRoutes = require('./routes/agenda-system');
 const consultationFormsRoutes = require('./routes/consultation-forms');
 const exportRoutes = require('./routes/export');
 const importRoutes = require('./routes/import');
+const patientImportRoutes = require('./routes/patient-import');
 const patientTimelineRoutes = require('./routes/patient-timeline');
+const authRoutes = require('./routes/auth');
+const appointmentLogsRoutes = require('./routes/appointment-logs');
 
 // Simple test endpoint without any middleware
 router.get('/test', (req, res) => {
@@ -80,6 +83,7 @@ router.get('/', (req, res) => {
       clinicConfiguration: '/api/v1/expedix/clinic-configuration',
       agendaSystem: '/api/v1/expedix/agenda',
       consultationForms: '/api/v1/expedix/forms',
+      patientImport: '/api/v1/expedix/patient-import',
       patientTimeline: '/api/v1/expedix/patient-timeline'
     },
     compliance: {
@@ -142,7 +146,10 @@ router.use('/agenda', agendaSystemRoutes);
 router.use('/forms', consultationFormsRoutes);
 router.use('/export', exportRoutes);
 router.use('/import', importRoutes);
+router.use('/patient-import', patientImportRoutes);
 router.use('/patient-timeline', patientTimelineRoutes);
+router.use('/auth', authRoutes);
+router.use('/appointment-logs', appointmentLogsRoutes);
 
 // Hub-specific error handler
 router.use((error, req, res, next) => {

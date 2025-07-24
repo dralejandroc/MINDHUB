@@ -300,6 +300,154 @@ router.put('/appointments/:id/status', authenticate, async (req, res) => {
   }
 });
 
+// ============ BEHAVIORAL TRACKING ============
+
+/**
+ * POST /api/v1/frontdesk/appointments/:id/behavioral-event
+ * Registrar evento conductual del paciente (retraso, no-show, etc.)
+ */
+router.post('/appointments/:id/behavioral-event', authenticate, [
+  require('express-validator').param('id')
+    .notEmpty()
+    .withMessage('Appointment ID is required'),
+  require('express-validator').body('eventType')
+    .isIn(['late_arrival', 'no_show', 'cancelled_last_minute', 'early_arrival', 'communication_issue', 'payment_delay'])
+    .withMessage('Invalid event type'),
+  require('express-validator').body('description')
+    .optional()
+    .isString()
+    .withMessage('Description must be a string'),
+  require('express-validator').body('delayMinutes')
+    .optional()
+    .isInt({ min: 0 })
+    .withMessage('Delay minutes must be a positive integer')
+], async (req, res) => {
+  try {
+    const errors = require('express-validator').validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({
+        success: false,
+        message: 'Validation errors',
+        errors: errors.array()
+      });
+    }
+
+    const { id } = req.params;
+    const { eventType, description, delayMinutes } = req.body;
+    const userId = req.user.id;
+
+    const behavioralEvent = await frontDeskService.recordBehavioralEvent({
+      appointmentId: id,
+      eventType,
+      description,
+      delayMinutes,
+      recordedBy: userId
+    });
+
+    res.json({
+      success: true,
+      data: behavioralEvent,
+      message: 'Evento conductual registrado'
+    });
+  } catch (error) {
+    console.error('Error recording behavioral event:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error al registrar evento conductual',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
+  }
+});
+
+/**
+ * GET /api/v1/frontdesk/patients/:patientId/behavioral-history
+ * Obtener historial conductual de un paciente
+ */
+router.get('/patients/:patientId/behavioral-history', authenticate, async (req, res) => {
+  try {
+    const { patientId } = req.params;
+    const { limit = 50 } = req.query;
+    const userId = req.user.id;
+
+    const behavioralHistory = await frontDeskService.getPatientBehavioralHistory(patientId, {
+      limit: parseInt(limit),
+      requestedBy: userId
+    });
+
+    res.json({
+      success: true,
+      data: behavioralHistory
+    });
+  } catch (error) {
+    console.error('Error getting patient behavioral history:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error al obtener historial conductual',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
+  }
+});
+
+/**
+ * POST /api/v1/frontdesk/communications/log
+ * Registrar comunicación entre sesiones (llamadas, WhatsApp, etc.)
+ */
+router.post('/communications/log', authenticate, [
+  require('express-validator').body('patientId')
+    .notEmpty()
+    .withMessage('Patient ID is required'),
+  require('express-validator').body('communicationType')
+    .isIn(['phone_call', 'whatsapp', 'email', 'in_person'])
+    .withMessage('Invalid communication type'),
+  require('express-validator').body('direction')
+    .isIn(['incoming', 'outgoing'])
+    .withMessage('Direction must be incoming or outgoing'),
+  require('express-validator').body('content')
+    .optional()
+    .isString()
+    .withMessage('Content must be a string'),
+  require('express-validator').body('duration')
+    .optional()
+    .isInt({ min: 0 })
+    .withMessage('Duration must be a positive integer (seconds)')
+], async (req, res) => {
+  try {
+    const errors = require('express-validator').validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({
+        success: false,
+        message: 'Validation errors',
+        errors: errors.array()
+      });
+    }
+
+    const { patientId, communicationType, direction, content, duration } = req.body;
+    const userId = req.user.id;
+
+    const communication = await frontDeskService.logCommunication({
+      patientId,
+      communicationType,
+      direction,
+      content,
+      duration,
+      recordedBy: userId
+    });
+
+    res.json({
+      success: true,
+      data: communication,
+      message: 'Comunicación registrada'
+    });
+  } catch (error) {
+    console.error('Error logging communication:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error al registrar comunicación',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
+  }
+});
+
 // ============ RECURSOS ============
 
 /**

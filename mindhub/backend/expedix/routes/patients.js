@@ -11,6 +11,7 @@ const middleware = require('../../shared/middleware');
 const PatientController = require('../controllers/patient-controller');
 const AuditLogger = require('../../shared/utils/audit-logger');
 const { validatePatientId } = require('../../shared/utils/id-validators');
+const { generateReadablePatientId } = require('../../shared/utils/patient-id-generator');
 const { getPrismaClient, executeQuery, executeTransaction, schemas } = require('../../shared/config/prisma');
 const { logger } = require('../../shared/config/storage');
 
@@ -31,7 +32,6 @@ const transformPatientToFrontend = (patient) => {
   
   return {
     id: patient.id,
-    medical_record_number: patient.medicalRecordNumber,
     first_name: patient.firstName || '',
     last_name: patient.lastName || '',
     paternal_last_name: patient.paternalLastName || '',
@@ -101,7 +101,8 @@ const transformFieldNames = (req, res, next) => {
     emergencyContactName: req.body.emergency_contact_name || req.body.emergencyContactName,
     emergencyContactPhone: req.body.emergency_contact_phone || req.body.emergencyContactPhone,
     consentToTreatment: req.body.consentToTreatment,
-    consentToDataProcessing: req.body.consentToDataProcessing
+    consentToDataProcessing: req.body.consentToDataProcessing,
+    clinicId: req.body.clinic_id || req.body.clinicId // Support clinic association
   };
   
   // Remove undefined values
@@ -206,6 +207,15 @@ router.get('/',
       ...(category && { patientCategory: category })
     };
 
+    // Filter by clinic if user belongs to one (temporarily disabled for development)
+    // if (req.user?.clinicId) {
+    //   where.clinicId = req.user.clinicId;
+    // } else if (req.user?.clinicId === null) {
+    //   // User is individual, show only individual patients
+    //   where.clinicId = null;
+    // }
+    // If no user info, show all patients (development mode)
+
     // Add search functionality
     if (search) {
       where.OR = [
@@ -213,25 +223,14 @@ router.get('/',
         { lastName: { contains: search } },
         { paternalLastName: { contains: search } },
         { maternalLastName: { contains: search } },
-        { medicalRecordNumber: { contains: search } }
+        { id: { contains: search } }
       ];
     }
 
     const [patients, totalCount] = await executeTransaction([
       (prisma) => prisma.patient.findMany({
         where,
-        include: {
-          creator: {
-            select: { id: true, name: true, email: true }
-          },
-          _count: {
-            select: {
-              consultations: true,
-              prescriptions: true,
-              medicalHistory: true
-            }
-          }
-        },
+        // Simplified for development - removed includes that may cause DB issues
         skip,
         take: parseInt(limit),
         orderBy: { createdAt: 'desc' }
@@ -426,12 +425,18 @@ router.post('/',
       return res.status(400).json({
         error: 'Duplicate patient',
         message: 'A patient with the same name and birth date already exists',
-        details: `Existing patient: ${existingPatient.medicalRecordNumber}`
+        details: `Existing patient: ${existingPatient.id}`
       });
     }
 
-    // Generate unique medical record number
-    const medicalRecordNumber = await generateMedicalRecordNumber();
+    // Generate readable patient ID (with clinic support)
+    const readablePatientId = await generateReadablePatientId({
+      firstName: patientData.firstName,
+      paternalLastName: patientData.paternalLastName,
+      dateOfBirth: patientData.dateOfBirth,
+      clinicId: patientData.clinicId // Include clinic ID if provided
+    });
+
     
     // Generate incomplete CURP
     const generatedCURP = generateIncompleteCURP(
@@ -445,8 +450,8 @@ router.post('/',
     const patient = await executeQuery(
       (prisma) => prisma.patient.create({
         data: {
+          id: readablePatientId,
           ...patientData,
-          medicalRecordNumber,
           curp: generatedCURP,
           ...(userId && { createdBy: userId }) // Only include createdBy if userId exists
         },
@@ -467,7 +472,6 @@ router.post('/',
     // Log creation for compliance
     logger.info('Patient created', {
       patientId: patient.id,
-      medicalRecordNumber: patient.medicalRecordNumber,
       createdBy: userId,
       ipAddress: req.ip
     });
@@ -517,7 +521,7 @@ router.put('/:id',
     const existingPatient = await executeQuery(
       (prisma) => prisma.patient.findUnique({
         where: { id },
-        select: { id: true, medicalRecordNumber: true }
+        select: { id: true }
       }),
       `checkPatient(${id})`
     );
@@ -542,7 +546,6 @@ router.put('/:id',
     // Log update for compliance
     logger.info('Patient updated', {
       patientId: id,
-      medicalRecordNumber: existingPatient.medicalRecordNumber,
       updatedBy: userId,
       changes: Object.keys(updateData),
       ipAddress: req.ip
@@ -594,7 +597,7 @@ router.delete('/:id',
     const existingPatient = await executeQuery(
       (prisma) => prisma.patient.findUnique({
         where: { id },
-        select: { id: true, medicalRecordNumber: true }
+        select: { id: true }
       }),
       `checkPatient(${id})`
     );
@@ -618,7 +621,6 @@ router.delete('/:id',
     // Log deletion for compliance
     logger.warn('Patient deactivated', {
       patientId: id,
-      medicalRecordNumber: existingPatient.medicalRecordNumber,
       deactivatedBy: userId,
       reason,
       ipAddress: req.ip,
@@ -660,7 +662,6 @@ router.get('/:id/summary',
         where: { id },
         select: {
           id: true,
-          medicalRecordNumber: true,
           firstName: true,
           lastName: true,
           dateOfBirth: true,

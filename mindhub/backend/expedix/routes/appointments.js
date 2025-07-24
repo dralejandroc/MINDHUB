@@ -12,6 +12,7 @@ const middleware = require('../../shared/middleware');
 const { getPrismaClient, executeQuery, executeTransaction } = require('../../shared/config/prisma');
 const { logger } = require('../../shared/config/logging');
 const AuditLogger = require('../../shared/utils/audit-logger');
+const AppointmentLogService = require('../services/AppointmentLogService');
 
 const router = express.Router();
 const auditLogger = new AuditLogger();
