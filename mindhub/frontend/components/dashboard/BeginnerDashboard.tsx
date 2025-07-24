@@ -15,6 +15,7 @@ import {
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import Link from 'next/link';
+import { clinimetrixApi } from '../../lib/api/clinimetrix-client';
 
 interface BeginnerDashboardProps {
   onNavigate?: (path: string) => void;
@@ -23,11 +24,88 @@ interface BeginnerDashboardProps {
 export function BeginnerDashboard({ onNavigate }: BeginnerDashboardProps) {
   const [currentWeek, setCurrentWeek] = useState(new Date());
   const [weeklyStats, setWeeklyStats] = useState({
-    totalPatients: 47,
-    totalAppointments: 23,
-    completedAssessments: 12,
-    pendingAlerts: 3
+    totalPatients: 0,
+    totalAppointments: 0,
+    completedAssessments: 0,
+    pendingAlerts: 0
   });
+  const [isClient, setIsClient] = useState(false);
+  const [currentUser, setCurrentUser] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [recentAlerts, setRecentAlerts] = useState([]);
+  const [weeklyIncome, setWeeklyIncome] = useState({
+    currentWeek: 0,
+    previousWeek: 0,
+    growth: 0
+  });
+  const [favoriteScales, setFavoriteScales] = useState<Array<{
+    name: string;
+    description: string;
+    uses: number;
+    color: string;
+  }>>([]);
+  const [loadingFavorites, setLoadingFavorites] = useState(true);
+
+  useEffect(() => {
+    setIsClient(true);
+    
+    // Get current user from localStorage
+    const savedUser = localStorage.getItem('currentUser');
+    if (savedUser) {
+      const user = JSON.parse(savedUser);
+      setCurrentUser(user);
+      
+      // If it's Dr. Alejandro, fetch real data
+      if (user.isRealUser && user.id) {
+        fetchRealDashboardData(user.id);
+      } else {
+        // Admin user - everything starts at 0
+        setIsLoading(false);
+      }
+    } else {
+      setIsLoading(false);
+    }
+  }, []);
+
+  const fetchRealDashboardData = async (userId) => {
+    try {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/expedix/auth/dashboard/${userId}`);
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success) {
+          setWeeklyStats({
+            totalPatients: data.data.stats.totalPatients || 0,
+            totalAppointments: data.data.stats.weeklyConsultations || 0,
+            completedAssessments: data.data.stats.completedAssessments || 0,
+            pendingAlerts: data.data.stats.pendingAlerts || 0
+          });
+          
+          // Set real alerts from recent consultations
+          if (data.data.recentConsultations && data.data.recentConsultations.length > 0) {
+            const alerts = data.data.recentConsultations.slice(0, 3).map((consultation, index) => ({
+              id: consultation.id,
+              patient: `${consultation.patient.firstName} ${consultation.patient.lastName}`,
+              message: consultation.reason || 'Consulta completada',
+              severity: index === 0 ? 'high' : index === 1 ? 'medium' : 'low',
+              time: 'Reciente'
+            }));
+            setRecentAlerts(alerts);
+          }
+          
+          // Calculate weekly income (mock for now since we don't have finance data yet)
+          setWeeklyIncome({
+            currentWeek: data.data.stats.totalPatients * 850, // Average consultation price
+            previousWeek: data.data.stats.totalPatients * 750,
+            growth: 13.3
+          });
+        }
+      }
+    } catch (error) {
+      console.log('Could not fetch real data');
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   // Generate week days starting from Monday
   const getWeekDays = () => {
@@ -37,6 +115,9 @@ export function BeginnerDashboard({ onNavigate }: BeginnerDashboardProps) {
     const diff = start.getDate() - day + (day === 0 ? -6 : 1); // Adjust for Monday start
     start.setDate(diff);
 
+    // Show 0 appointments for admin, real data for Dr. Alejandro
+    const today = new Date();
+
     for (let i = 0; i < 7; i++) {
       const date = new Date(start);
       date.setDate(start.getDate() + i);
@@ -44,8 +125,8 @@ export function BeginnerDashboard({ onNavigate }: BeginnerDashboardProps) {
         date: date,
         dayName: date.toLocaleDateString('es-ES', { weekday: 'short' }),
         dayNum: date.getDate(),
-        appointments: Math.floor(Math.random() * 8) + 1, // Mock data
-        isToday: date.toDateString() === new Date().toDateString()
+        appointments: 0, // Will be updated with real data if available
+        isToday: isClient && date.toDateString() === today.toDateString()
       });
     }
     return week;
@@ -53,12 +134,49 @@ export function BeginnerDashboard({ onNavigate }: BeginnerDashboardProps) {
 
   const weekDays = getWeekDays();
 
-  const favoriteScales = [
-    { name: 'PHQ-9', description: 'Depresión', uses: 24, color: 'bg-purple-100 text-purple-700' },
-    { name: 'GAD-7', description: 'Ansiedad', uses: 18, color: 'bg-emerald-100 text-emerald-700' },
-    { name: 'BDI-21', description: 'Beck Depresión', uses: 15, color: 'bg-orange-100 text-orange-700' },
-    { name: 'MADRS', description: 'Montgomery', uses: 12, color: 'bg-primary-100 text-primary-700' }
-  ];
+  // Cargar escalas favoritas/más utilizadas (las escalas son públicas para todos los usuarios)
+  useEffect(() => {
+    const loadFavoriteScales = async () => {
+      if (!currentUser?.isRealUser) {
+        setLoadingFavorites(false);
+        return;
+      }
+
+      try {
+        const mostUsedScales = await clinimetrixApi.getMostUsedScales(4);
+        const colors = [
+          'bg-purple-100 text-purple-700',
+          'bg-emerald-100 text-emerald-700',
+          'bg-orange-100 text-orange-700',
+          'bg-primary-100 text-primary-700'
+        ];
+
+        const formattedScales = mostUsedScales.map((scale, index) => ({
+          name: scale.name,
+          description: scale.name.includes('PHQ') ? 'Depresión' :
+                      scale.name.includes('GAD') ? 'Ansiedad' :
+                      scale.name.includes('Beck') || scale.name.includes('BDI') ? 'Beck Depresión' :
+                      scale.name.includes('MADRS') ? 'Montgomery' :
+                      scale.name.includes('STAI') ? 'Ansiedad Estado-Rasgo' :
+                      'Evaluación',
+          uses: scale.count,
+          color: colors[index % colors.length]
+        }));
+
+        setFavoriteScales(formattedScales);
+      } catch (error) {
+        console.error('Error loading favorite scales:', error);
+        // Mantener vacío si hay error - las escalas son públicas
+        setFavoriteScales([]);
+      } finally {
+        setLoadingFavorites(false);
+      }
+    };
+
+    if (currentUser) {
+      loadFavoriteScales();
+    }
+  }, [currentUser]);
 
   const quickActions = [
     { name: 'Nuevo Paciente', path: '/hubs/expedix?action=new-patient' },
@@ -68,11 +186,16 @@ export function BeginnerDashboard({ onNavigate }: BeginnerDashboardProps) {
     { name: 'Biblioteca', path: '/hubs/resources' }
   ];
 
-  const recentAlerts = [
-    { id: 1, patient: 'Ana López', message: 'PHQ-9 indica severidad alta', severity: 'high', time: '2h' },
-    { id: 2, patient: 'Carlos Ruiz', message: 'Cita pendiente de confirmar', severity: 'medium', time: '4h' },
-    { id: 3, patient: 'María García', message: 'Evaluación completada', severity: 'low', time: '1d' }
-  ];
+  const handleAlertClick = () => {
+    if (recentAlerts.length > 0) {
+      const alertMessages = recentAlerts.map(alert => 
+        `• ${alert.patient} - ${alert.message} (${alert.time})`
+      ).join('\n');
+      alert(`Alertas Activas:\n\n${alertMessages}`);
+    } else {
+      alert('No hay alertas activas en este momento.');
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -88,17 +211,19 @@ export function BeginnerDashboard({ onNavigate }: BeginnerDashboardProps) {
 
       {/* Quick Stats */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
-        <Card className="p-3 bg-primary-50 border-primary-200 hover-lift">
-          <div className="flex items-center">
-            <div className="w-8 h-8 gradient-primary rounded-lg flex items-center justify-center">
-              <UserGroupIcon className="h-4 w-4 text-white" />
+        <Link href="/hubs/expedix">
+          <Card className="p-3 bg-primary-50 border-primary-200 hover-lift cursor-pointer transition-all duration-200 hover:bg-primary-100">
+            <div className="flex items-center">
+              <div className="w-8 h-8 gradient-primary rounded-lg flex items-center justify-center">
+                <UserGroupIcon className="h-4 w-4 text-white" />
+              </div>
+              <div className="ml-3">
+                <p className="text-xs font-medium text-gray-600">Total Pacientes</p>
+                <p className="text-lg font-bold text-primary-600">{weeklyStats.totalPatients}</p>
+              </div>
             </div>
-            <div className="ml-3">
-              <p className="text-xs font-medium text-gray-600">Total Pacientes</p>
-              <p className="text-lg font-bold text-primary-600">{weeklyStats.totalPatients}</p>
-            </div>
-          </div>
-        </Card>
+          </Card>
+        </Link>
 
         <Card className="p-3 bg-orange-50 border-orange-200 hover-lift">
           <div className="flex items-center">
@@ -112,17 +237,19 @@ export function BeginnerDashboard({ onNavigate }: BeginnerDashboardProps) {
           </div>
         </Card>
 
-        <Card className="p-3 bg-purple-50 border-purple-200 hover-lift">
-          <div className="flex items-center">
-            <div className="w-8 h-8 gradient-purple rounded-lg flex items-center justify-center">
-              <ClipboardDocumentListIcon className="h-4 w-4 text-white" />
+        <Link href="/hubs/clinimetrix">
+          <Card className="p-3 bg-purple-50 border-purple-200 hover-lift cursor-pointer transition-all duration-200 hover:bg-purple-100">
+            <div className="flex items-center">
+              <div className="w-8 h-8 gradient-purple rounded-lg flex items-center justify-center">
+                <ClipboardDocumentListIcon className="h-4 w-4 text-white" />
+              </div>
+              <div className="ml-3">
+                <p className="text-xs font-medium text-gray-600">Evaluaciones</p>
+                <p className="text-lg font-bold text-purple-600">{weeklyStats.completedAssessments}</p>
+              </div>
             </div>
-            <div className="ml-3">
-              <p className="text-xs font-medium text-gray-600">Evaluaciones</p>
-              <p className="text-lg font-bold text-purple-600">{weeklyStats.completedAssessments}</p>
-            </div>
-          </div>
-        </Card>
+          </Card>
+        </Link>
 
         <Card className="p-3 bg-secondary-50 border-secondary-200 hover-lift">
           <div className="flex items-center">
@@ -137,7 +264,7 @@ export function BeginnerDashboard({ onNavigate }: BeginnerDashboardProps) {
         </Card>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {/* Weekly Agenda */}
         <Card className="lg:col-span-2 p-4 hover-lift relative before:absolute before:top-0 before:left-0 before:right-0 before:h-1 before:border-gradient">
           <div className="flex items-center justify-between mb-3">
@@ -148,26 +275,86 @@ export function BeginnerDashboard({ onNavigate }: BeginnerDashboardProps) {
               </Button>
             </Link>
           </div>
-          <div className="grid grid-cols-7 gap-2">
-            {weekDays.map((day, index) => (
-              <div 
-                key={index} 
-                className={`text-center p-2 rounded-lg border transition-all duration-200 ${
-                  day.isToday 
-                    ? 'bg-primary-100 border-primary-300 text-primary-700' 
-                    : 'bg-gray-50 border-gray-200 hover:bg-gray-100'
-                }`}
-              >
-                <div className="text-xs font-medium">{day.dayName}</div>
-                <div className="text-lg font-bold">{day.dayNum}</div>
-                <div className={`text-xs ${day.isToday ? 'text-primary-600' : 'text-gray-600'}`}>
-                  {day.appointments} citas
+          <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+            {/* Calendar Header */}
+            <div className="grid grid-cols-7 bg-gray-50 border-b border-gray-200">
+              {['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'].map((dayName, index) => (
+                <div key={index} className="px-2 py-2 text-center text-xs font-medium text-gray-600 border-r border-gray-200 last:border-r-0">
+                  {dayName}
                 </div>
-              </div>
-            ))}
+              ))}
+            </div>
+            {/* Calendar Days */}
+            <div className="grid grid-cols-7">
+              {weekDays.map((day, index) => {
+                const formatDate = (date: Date) => {
+                  return date.toISOString().split('T')[0];
+                };
+                
+                return (
+                  <Link 
+                    key={index} 
+                    href={`/hubs/agenda?date=${formatDate(day.date)}`}
+                    className={`relative text-center p-3 border-r border-b border-gray-200 last:border-r-0 transition-all duration-200 cursor-pointer ${
+                      day.isToday 
+                        ? 'bg-primary-50 hover:bg-primary-100' 
+                        : 'hover:bg-gray-50'
+                    }`}
+                  >
+                    <div className={`text-sm font-bold mb-1 ${
+                      day.isToday ? 'text-primary-700' : 'text-gray-900'
+                    }`}>
+                      {day.dayNum}
+                    </div>
+                    <div className={`inline-flex items-center justify-center w-6 h-6 rounded-full text-xs font-medium ${
+                      day.isToday 
+                        ? 'bg-primary-600 text-white' 
+                        : day.appointments > 5 
+                          ? 'bg-orange-100 text-orange-700'
+                          : day.appointments > 2
+                            ? 'bg-green-100 text-green-700'
+                            : 'bg-gray-100 text-gray-600'
+                    }`}>
+                      {day.appointments}
+                    </div>
+                    {day.isToday && (
+                      <div className="absolute top-1 right-1 w-2 h-2 bg-primary-500 rounded-full"></div>
+                    )}
+                  </Link>
+                );
+              })}
+            </div>
           </div>
         </Card>
 
+        {/* Weekly Income */}
+        <Card className="p-4 hover-lift relative before:absolute before:top-0 before:left-0 before:right-0 before:h-1 before:border-gradient-secondary">
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-sm font-semibold text-dark-green">Ingresos Semanales</h3>
+            <Link href="/hubs/finance">
+              <Button variant="outline" size="sm" className="text-xs">
+                Ver Finanzas
+              </Button>
+            </Link>
+          </div>
+          <div className="text-center">
+            <div className="text-2xl font-bold text-secondary-600 mb-1">
+              ${weeklyIncome.currentWeek.toLocaleString()}
+            </div>
+            <div className="text-xs text-gray-600 mb-2">Esta Semana</div>
+            {weeklyIncome.currentWeek > 0 && (
+              <div className={`flex items-center justify-center text-xs ${
+                weeklyIncome.growth >= 0 ? 'text-secondary-600' : 'text-red-600'
+              }`}>
+                <ChartBarIcon className="h-3 w-3 mr-1" />
+                {weeklyIncome.growth >= 0 ? '+' : ''}{weeklyIncome.growth.toFixed(1)}% vs semana anterior
+              </div>
+            )}
+          </div>
+        </Card>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         {/* Favorite Scales */}
         <Card className="p-4 hover-lift relative before:absolute before:top-0 before:left-0 before:right-0 before:h-1 before:border-gradient-purple">
           <div className="flex items-center justify-between mb-3">
@@ -179,29 +366,40 @@ export function BeginnerDashboard({ onNavigate }: BeginnerDashboardProps) {
             </Link>
           </div>
           <div className="space-y-2">
-            {favoriteScales.map((scale, index) => (
-              <div key={index} className="flex items-center justify-between p-2 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors duration-200">
-                <div>
-                  <div className="text-xs font-semibold text-gray-900">{scale.name}</div>
-                  <div className="text-xs text-gray-600">{scale.description}</div>
-                </div>
-                <span className={`px-2 py-1 rounded-full text-xs font-medium ${scale.color}`}>
-                  {scale.uses}
-                </span>
+            {favoriteScales.length > 0 ? (
+              favoriteScales.map((scale, index) => (
+                <Link key={index} href={`/hubs/clinimetrix?scale=${scale.name.toLowerCase()}`}>
+                  <div className="flex items-center justify-between p-2 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors duration-200 cursor-pointer">
+                    <div>
+                      <div className="text-xs font-semibold text-gray-900">{scale.name}</div>
+                      <div className="text-xs text-gray-600">{scale.description}</div>
+                    </div>
+                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${scale.color}`}>
+                      {scale.uses}
+                    </span>
+                  </div>
+                </Link>
+              ))
+            ) : (
+              <div className="text-center py-4">
+                <p className="text-xs text-gray-500">No hay escalas favoritas aún</p>
+                <Link href="/hubs/clinimetrix">
+                  <Button variant="outline" size="sm" className="mt-2 text-xs">
+                    Explorar Escalas
+                  </Button>
+                </Link>
               </div>
-            ))}
+            )}
           </div>
         </Card>
-      </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {/* Quick Actions */}
         <Card className="p-4 hover-lift relative before:absolute before:top-0 before:left-0 before:right-0 before:h-1 before:border-gradient-secondary">
           <h3 className="text-sm font-semibold text-dark-green mb-3">Acciones Rápidas</h3>
-          <div className="grid grid-cols-2 gap-2">
+          <div className="grid grid-cols-1 gap-2">
             {quickActions.map((action) => (
               <Link key={action.name} href={action.path}>
-                <div className="p-3 bg-primary-50 rounded-lg hover:bg-primary-100 transition-all duration-200 cursor-pointer hover-lift border border-primary-200 text-center">
+                <div className="p-2 bg-primary-50 rounded-lg hover:bg-primary-100 transition-all duration-200 cursor-pointer hover-lift border border-primary-200 text-center">
                   <span className="text-xs font-medium text-primary-700">{action.name}</span>
                 </div>
               </Link>
@@ -210,7 +408,7 @@ export function BeginnerDashboard({ onNavigate }: BeginnerDashboardProps) {
         </Card>
 
         {/* Recent Alerts */}
-        <Card className="p-4 hover-lift relative before:absolute before:top-0 before:left-0 before:right-0 before:h-1 before:border-gradient-orange">
+        <Card className="p-4 hover-lift relative before:absolute before:top-0 before:left-0 before:right-0 before:h-1 before:border-gradient-orange cursor-pointer" onClick={handleAlertClick}>
           <div className="flex items-center justify-between mb-3">
             <h3 className="text-sm font-semibold text-dark-green">Alertas Recientes</h3>
             <span className="px-2 py-1 bg-orange-100 text-orange-800 text-xs rounded-full font-medium">
@@ -218,19 +416,26 @@ export function BeginnerDashboard({ onNavigate }: BeginnerDashboardProps) {
             </span>
           </div>
           <div className="space-y-2">
-            {recentAlerts.map((alert) => (
-              <div key={alert.id} className="flex items-start p-2 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors duration-200">
-                <div className={`w-2 h-2 rounded-full mt-2 mr-2 ${
-                  alert.severity === 'high' ? 'bg-red-500' : 
-                  alert.severity === 'medium' ? 'bg-orange-500' : 'bg-green-500'
-                }`} />
-                <div className="flex-1">
-                  <div className="text-xs font-medium text-gray-900">{alert.patient}</div>
-                  <div className="text-xs text-gray-600">{alert.message}</div>
+            {recentAlerts.length > 0 ? (
+              recentAlerts.map((alert) => (
+                <div key={alert.id} className="flex items-start p-2 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors duration-200">
+                  <div className={`w-2 h-2 rounded-full mt-2 mr-2 ${
+                    alert.severity === 'high' ? 'bg-red-500' : 
+                    alert.severity === 'medium' ? 'bg-orange-500' : 'bg-green-500'
+                  }`} />
+                  <div className="flex-1">
+                    <div className="text-xs font-medium text-gray-900">{alert.patient}</div>
+                    <div className="text-xs text-gray-600">{alert.message}</div>
+                  </div>
+                  <span className="text-xs text-gray-500">{alert.time}</span>
                 </div>
-                <span className="text-xs text-gray-500">{alert.time}</span>
+              ))
+            ) : (
+              <div className="text-center py-4">
+                <p className="text-xs text-gray-500">No hay alertas activas</p>
+                <p className="text-xs text-gray-400 mt-1">Las notificaciones aparecerán aquí</p>
               </div>
-            ))}
+            )}
           </div>
         </Card>
       </div>

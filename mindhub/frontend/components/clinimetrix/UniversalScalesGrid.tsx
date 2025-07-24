@@ -8,9 +8,9 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useUniversalScales } from '../../contexts/UniversalScalesContext';
-// NO USE otros hooks de escalas
 import { UniversalScale } from '../../contexts/UniversalScalesContext';
 import UniversalCardBasedAssessment from './UniversalCardBasedAssessment';
+import { clinimetrixApi } from '../../lib/api/clinimetrix-client';
 
 // =====================================================================
 // COMPONENTE DE TARJETA (ESTILOS ORIGINALES MANTENIDOS)
@@ -239,44 +239,35 @@ export const UniversalScalesGrid: React.FC = () => {
   const [showScaleHelp, setShowScaleHelp] = useState(false);
   const [currentScaleHelp, setCurrentScaleHelp] = useState<string | null>(null);
 
-  // Información de ayuda para escalas (expandida con GADI)
-  const scalesHelpInfo: Record<string, any> = {
-    'phq9': {
-      purpose: 'El PHQ-9 es una herramienta de cribado para evaluar la gravedad de los síntomas depresivos durante las últimas 2 semanas.',
-      scoring: {
-        method: 'Suma de puntuaciones (0-3 por ítem)',
-        ranges: [
-          { range: '0-4', severity: 'Mínimo', color: '#22c55e' },
-          { range: '5-9', severity: 'Leve', color: '#f59e0b' },
-          { range: '10-14', severity: 'Moderado', color: '#ef4444' },
-          { range: '15-19', severity: 'Moderadamente severo', color: '#dc2626' },
-          { range: '20-27', severity: 'Severo', color: '#991b1b' }
-        ]
-      },
-      clinical_considerations: [
-        'Evalúa síntomas durante las últimas 2 semanas',
-        'Pregunta 9 requiere evaluación especial del riesgo suicida',
-        'Útil para seguimiento de tratamiento',
-        'No es diagnóstico definitivo'
-      ]
-    },
-    'gadi': {
-      purpose: 'El GADI evalúa síntomas de ansiedad generalizada mediante tres factores: cognitivos, somáticos y alteraciones del sueño.',
-      scoring: {
-        method: 'Suma de puntuaciones (0-4 por ítem) - Total 0-88',
-        ranges: [
-          { range: '0-12', severity: 'Mínima', color: '#22c55e' },
-          { range: '13-22', severity: 'Leve', color: '#f59e0b' },
-          { range: '23-34', severity: 'Moderada', color: '#ef4444' },
-          { range: '35-88', severity: 'Severa', color: '#dc2626' }
-        ]
-      },
-      clinical_considerations: [
-        'Evalúa síntomas de las últimas dos semanas',
-        'Incluye 3 subescalas: Cognitiva, Somática y Sueño',
-        'Útil para monitoreo de tratamiento de ansiedad',
-        'Sensible a cambios terapéuticos'
-      ]
+  // Estado para información de ayuda de escalas (datos reales del API)
+  const [scalesHelpInfo, setScalesHelpInfo] = useState<Record<string, any>>({});
+  const [loadingHelpInfo, setLoadingHelpInfo] = useState<Record<string, boolean>>({});
+
+  // Función para cargar información de ayuda de una escala
+  const loadScaleHelpInfo = async (scaleId: string) => {
+    if (scalesHelpInfo[scaleId] || loadingHelpInfo[scaleId]) {
+      return; // Ya se cargó o se está cargando
+    }
+
+    setLoadingHelpInfo(prev => ({...prev, [scaleId]: true}));
+    
+    try {
+      const helpInfo = await clinimetrixApi.getScaleHelpInfo(scaleId);
+      setScalesHelpInfo(prev => ({...prev, [scaleId]: helpInfo}));
+    } catch (error) {
+      console.error(`Error loading help info for scale ${scaleId}:`, error);
+      // Fallback: información básica
+      setScalesHelpInfo(prev => ({
+        ...prev, 
+        [scaleId]: {
+          purpose: 'Evaluación psicométrica especializada',
+          scoring: { ranges: [] },
+          administration: { duration: 'Variable', instructions: 'Seguir instrucciones estándar' },
+          interpretation: { notes: ['Consultar documentación clínica'], warnings: [] }
+        }
+      }));
+    } finally {
+      setLoadingHelpInfo(prev => ({...prev, [scaleId]: false}));
     }
   };
 
@@ -308,9 +299,12 @@ export const UniversalScalesGrid: React.FC = () => {
     );
   };
 
-  const showScaleHelpModal = (scaleId: string) => {
+  const showScaleHelpModal = async (scaleId: string) => {
     setCurrentScaleHelp(scaleId);
     setShowScaleHelp(true);
+    
+    // Cargar información de ayuda si no está disponible
+    await loadScaleHelpInfo(scaleId);
   };
 
   // Filtrar escalas (idéntico)

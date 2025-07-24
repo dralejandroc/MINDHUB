@@ -9,6 +9,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { DragDropContext, Droppable, Draggable, DropResult } from 'react-beautiful-dnd';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { ChartBarIcon, ArrowPathIcon } from '@heroicons/react/24/outline';
+import { clinimetrixApi } from '../../lib/api/clinimetrix-client';
 
 // Interfaces
 interface WidgetData {
@@ -43,44 +44,17 @@ interface ReportsData {
   };
 }
 
-// Datos mock para desarrollo
-const mockReportsData: ReportsData = {
-  totalEvaluations: 1247,
-  evaluationsThisMonth: 89,
-  mostUsedScales: [
-    { name: 'PHQ-9', count: 456, percentage: 36.6 },
-    { name: 'SLUMS', count: 234, percentage: 18.8 },
-    { name: 'AQ-Adolescent', count: 198, percentage: 15.9 },
-    { name: 'PAS', count: 167, percentage: 13.4 },
-    { name: 'GAD-7', count: 192, percentage: 15.4 }
-  ],
-  averageCompletionTime: '8.5 min',
-  patientDemographics: {
-    totalPatients: 342,
-    ageGroups: [
-      { range: '18-25', count: 67, percentage: 19.6 },
-      { range: '26-35', count: 89, percentage: 26.0 },
-      { range: '36-50', count: 98, percentage: 28.7 },
-      { range: '51-65', count: 67, percentage: 19.6 },
-      { range: '65+', count: 21, percentage: 6.1 }
-    ],
-    genderDistribution: [
-      { gender: 'Femenino', count: 198, percentage: 57.9 },
-      { gender: 'Masculino', count: 134, percentage: 39.2 },
-      { gender: 'Otro', count: 10, percentage: 2.9 }
-    ]
-  },
-  scaleStatistics: [
-    { scale: 'PHQ-9', totalApplications: 456, averageScore: 12.4, completionRate: 94.5 },
-    { scale: 'SLUMS', totalApplications: 234, averageScore: 23.8, completionRate: 89.2 },
-    { scale: 'AQ-Adolescent', totalApplications: 198, averageScore: 28.3, completionRate: 92.1 },
-    { scale: 'PAS', totalApplications: 167, averageScore: 15.7, completionRate: 96.8 }
-  ],
-  alertsSummary: {
-    criticalAlerts: 12,
-    moderateAlerts: 34,
-    mildAlerts: 78
-  }
+// Estado para datos reales de reportes (las escalas son públicas, se registran las aplicaciones por usuario)
+interface ReportsState {
+  data: ReportsData | null;
+  loading: boolean;
+  error: string | null;
+}
+
+const initialReportsState: ReportsState = {
+  data: null,
+  loading: true,
+  error: null
 };
 
 // Configuración inicial de widgets
@@ -283,10 +257,10 @@ const Widget: React.FC<{ widget: WidgetData; isDragging: boolean }> = ({ widget,
 
 // Componente principal del Manager de Reportes
 export const ReportsManager: React.FC = () => {
+  const [reportsState, setReportsState] = useState<ReportsState>(initialReportsState);
   const [widgets, setWidgets] = useState<WidgetData[]>(initialWidgets);
   const [isArrangeMode, setIsArrangeMode] = useState(false);
   const [period, setPeriod] = useState('month');
-  const [reportsData, setReportsData] = useState<ReportsData>(mockReportsData);
 
   // Cargar datos de reportes
   useEffect(() => {
@@ -294,13 +268,45 @@ export const ReportsManager: React.FC = () => {
   }, [period]);
 
   const loadReportsData = async () => {
+    setReportsState(prev => ({ ...prev, loading: true, error: null }));
+    
     try {
-      // Simular carga de datos reales
-      // En producción, esto sería una llamada a la API
-      await new Promise(resolve => setTimeout(resolve, 500));
-      setReportsData(mockReportsData);
+      // Cargar estadísticas reales del API de Clinimetrix
+      // Las escalas son públicas para todos los usuarios, se registran las aplicaciones
+      const stats = await clinimetrixApi.getScaleStats();
+      
+      // Transformar datos del API al formato esperado
+      const reportsData: ReportsData = {
+        totalEvaluations: stats.total_assessments || 0,
+        evaluationsThisMonth: stats.total_assessments || 0, // TODO: Filtrar por mes actual en backend
+        mostUsedScales: stats.most_used_scales || [],
+        averageCompletionTime: '15 min', // TODO: Calcular desde el backend
+        patientDemographics: {
+          totalPatients: 0, // TODO: Obtener del backend
+          ageGroups: [],
+          genderDistribution: []
+        },
+        scaleStatistics: [], // TODO: Obtener estadísticas detalladas por escala
+        alertsSummary: {
+          criticalAlerts: 0,
+          moderateAlerts: 0,
+          mildAlerts: 0
+        }
+      };
+      
+      setReportsState({
+        data: reportsData,
+        loading: false,
+        error: null
+      });
+      
     } catch (error) {
       console.error('Error loading reports data:', error);
+      setReportsState({
+        data: null,
+        loading: false,
+        error: 'Error al cargar los datos de reportes. Verificar conexión con el backend.'
+      });
     }
   };
 
