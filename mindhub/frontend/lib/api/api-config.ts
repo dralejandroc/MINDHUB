@@ -66,7 +66,7 @@ export async function apiRequest(
  */
 export const API_BASE_URLS = {
   EXPEDIX: 'http://localhost:8080',
-  CLINIMETRIX: 'http://localhost:3002',
+  CLINIMETRIX: 'http://localhost:8080',
   FORMX: 'http://localhost:8083',
   AGENDA: 'http://localhost:3000',
 } as const;
@@ -86,3 +86,28 @@ export function getAuthHeaders(token?: string): HeadersInit {
 
   return headers;
 }
+
+/**
+ * Cliente API general para hacer requests
+ */
+export const apiClient = {
+  get: (url: string, options?: ApiRequestOptions) => 
+    apiRequest(url, { ...options, method: 'GET' }),
+  
+  post: (url: string, data?: any, options?: ApiRequestOptions) => 
+    apiRequest(url, { 
+      ...options, 
+      method: 'POST', 
+      body: data ? JSON.stringify(data) : undefined 
+    }),
+  
+  put: (url: string, data?: any, options?: ApiRequestOptions) => 
+    apiRequest(url, { 
+      ...options, 
+      method: 'PUT', 
+      body: data ? JSON.stringify(data) : undefined 
+    }),
+  
+  delete: (url: string, options?: ApiRequestOptions) => 
+    apiRequest(url, { ...options, method: 'DELETE' })
+};

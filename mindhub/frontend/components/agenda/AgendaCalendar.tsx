@@ -34,21 +34,33 @@ export default function AgendaCalendar({ selectedDate, onDateSelect, onNewAppoin
   useEffect(() => {
     const loadData = async () => {
       try {
+        console.log('🔄 Starting to load agenda data...');
+        console.log('🔗 API URL:', process.env.NEXT_PUBLIC_API_URL);
+        
         // Cargar configuración de agenda
-        const configResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/expedix/schedule-config`);
+        const configUrl = `${process.env.NEXT_PUBLIC_API_URL}/api/v1/expedix/schedule-config`;
+        console.log('🔄 Fetching config from:', configUrl);
+        const configResponse = await fetch(configUrl);
+        console.log('📡 Config response status:', configResponse.status);
         if (configResponse.ok) {
           const configData = await configResponse.json();
           if (configData.success && configData.data) {
             setScheduleConfig(configData.data);
             console.log('📅 Loaded schedule config:', configData.data);
           }
+        } else {
+          console.error('❌ Config response failed:', configResponse.status, await configResponse.text());
         }
 
         // Cargar citas
-        const appointmentsResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/expedix/agenda/appointments`);
+        const appointmentsUrl = `${process.env.NEXT_PUBLIC_API_URL}/api/v1/expedix/agenda/appointments`;
+        console.log('🔄 Fetching appointments from:', appointmentsUrl);
+        const appointmentsResponse = await fetch(appointmentsUrl);
+        console.log('📡 Appointments response status:', appointmentsResponse.status);
         if (appointmentsResponse.ok) {
           const appointmentsData = await appointmentsResponse.json();
-          console.log('📅 Loaded appointments:', appointmentsData);
+          console.log('📅 Raw appointments data:', appointmentsData);
+          console.log('📊 Total appointments received:', appointmentsData?.data?.length || 0);
           
           if (appointmentsData.success && appointmentsData.data) {
             // Transform appointments to match expected format by date
@@ -68,14 +80,28 @@ export default function AgendaCalendar({ selectedDate, onDateSelect, onNewAppoin
                 notes: apt.notes || ''
               };
               
+              console.log(`📌 Processing appointment: ${apt.date} ${apt.time} - ${apt.patient?.name}`);
+              
               if (!appointmentsByDate[apt.date]) {
                 appointmentsByDate[apt.date] = [];
               }
               appointmentsByDate[apt.date].push(appointment);
             });
             
+            console.log('📋 Processed appointments by date:', appointmentsByDate);
+            console.log('📅 Dates with appointments:', Object.keys(appointmentsByDate).sort());
+            
+            // Check July 2025 specifically
+            const july2025Dates = Object.keys(appointmentsByDate).filter(date => date.startsWith('2025-07'));
+            console.log('🌟 July 2025 dates with appointments:', july2025Dates);
+            
             setAppointments(appointmentsByDate);
+            console.log('✅ Appointments state updated with', Object.keys(appointmentsByDate).length, 'dates');
+          } else {
+            console.warn('⚠️ Appointments data not successful or missing data property');
           }
+        } else {
+          console.error('❌ Appointments response failed:', appointmentsResponse.status, await appointmentsResponse.text());
         }
       } catch (error) {
         console.error('❌ Error loading agenda data:', error);
@@ -229,7 +255,11 @@ export default function AgendaCalendar({ selectedDate, onDateSelect, onNewAppoin
 
   const getAppointmentsForDate = (date: Date) => {
     const dateKey = formatDateKey(date);
-    return appointments[dateKey] || [];
+    const dayAppointments = appointments[dateKey] || [];
+    if (dayAppointments.length > 0) {
+      console.log(`🗓️ Found ${dayAppointments.length} appointments for ${dateKey}:`, dayAppointments);
+    }
+    return dayAppointments;
   };
 
   const getStatusIndicatorColor = (status: Appointment['status']) => {

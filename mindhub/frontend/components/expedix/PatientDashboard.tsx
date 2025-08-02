@@ -20,6 +20,7 @@ import { expedixApi } from '@/lib/api/expedix-client';
 import ResourcesTimeline from './ResourcesTimeline';
 import PatientTimeline from './PatientTimeline';
 import PatientDocuments from './PatientDocuments';
+import PatientAssessments from './PatientAssessments';
 import { Button } from '@/components/ui/Button';
 
 interface Patient {
@@ -41,6 +42,7 @@ interface PatientDashboardProps {
 }
 
 interface DashboardData {
+  consultations: any[];
   prescriptions: any[];
   appointments: any[];
   documents: any[];
@@ -56,6 +58,7 @@ export default function PatientDashboard({
   const [activeTab, setActiveTab] = useState('timeline');
   const [loading, setLoading] = useState(false);
   const [dashboardData, setDashboardData] = useState<DashboardData>({
+    consultations: [],
     prescriptions: [],
     appointments: [],
     documents: [],
@@ -74,9 +77,21 @@ export default function PatientDashboard({
   const fetchDashboardData = async () => {
     try {
       setLoading(true);
+      
       // Fetch patient data from API
-      // const data = await expedixApi.getPatientDashboard(patient.id);
-      // setDashboardData(data);
+      const patientResponse = await expedixApi.getPatient(patient.id);
+      
+      if (patientResponse?.data) {
+        const patientData = patientResponse.data;
+        
+        setDashboardData({
+          consultations: patientData.consultations || [],
+          prescriptions: patientData.prescriptions || [],
+          appointments: patientData.appointments || [],
+          documents: patientData.documents || [],
+          assessments: patientData.assessments || []
+        });
+      }
     } catch (error) {
       console.error('Error fetching dashboard data:', error);
     } finally {
@@ -179,11 +194,61 @@ export default function PatientDashboard({
             {activeTab === 'consultations' && (
               <div className="bg-white rounded-xl p-6 border shadow">
                 <h3 className="text-lg font-bold mb-4 text-gray-900">Historial de Consultas</h3>
-                <div className="text-center py-6">
-                  <CalendarIcon className="h-10 w-10 text-gray-300 mx-auto mb-2" />
-                  <p className="text-gray-500 text-sm">No hay consultas registradas</p>
-                  <p className="text-gray-400 text-xs mt-1">Usa el botón "Nueva Consulta" arriba para agregar una</p>
-                </div>
+                {dashboardData.consultations.length === 0 ? (
+                  <div className="text-center py-6">
+                    <CalendarIcon className="h-10 w-10 text-gray-300 mx-auto mb-2" />
+                    <p className="text-gray-500 text-sm">No hay consultas registradas</p>
+                    <p className="text-gray-400 text-xs mt-1">Usa el botón "Nueva Consulta" arriba para agregar una</p>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {dashboardData.consultations.map((consultation, index) => (
+                      <div key={consultation.id || index} className="border border-gray-200 rounded-lg p-4">
+                        <div className="flex items-start justify-between mb-2">
+                          <h4 className="font-medium text-gray-900">
+                            {consultation.reason || 'Consulta médica'}
+                          </h4>
+                          <span className={`px-2 py-1 text-xs rounded-full ${
+                            consultation.status === 'completed' ? 'bg-green-100 text-green-800' :
+                            consultation.status === 'scheduled' ? 'bg-blue-100 text-blue-800' :
+                            'bg-gray-100 text-gray-800'
+                          }`}>
+                            {consultation.status === 'completed' ? 'Completada' :
+                             consultation.status === 'scheduled' ? 'Programada' : consultation.status}
+                          </span>
+                        </div>
+                        <div className="text-sm text-gray-600 mb-2">
+                          <div className="flex items-center space-x-4">
+                            <span className="flex items-center">
+                              <CalendarIcon className="h-4 w-4 mr-1" />
+                              {new Date(consultation.consultationDate).toLocaleDateString('es-ES', {
+                                weekday: 'long',
+                                year: 'numeric',
+                                month: 'long',
+                                day: 'numeric'
+                              })}
+                            </span>
+                            <span className="flex items-center">
+                              <UserIcon className="h-4 w-4 mr-1" />
+                              Dr. Alejandro Contreras
+                            </span>
+                          </div>
+                        </div>
+                        {consultation.diagnosis && (
+                          <div className="text-sm text-gray-700 mb-2">
+                            <strong>Diagnóstico:</strong> {consultation.diagnosis}
+                          </div>
+                        )}
+                        {consultation.notes && (
+                          <div className="text-sm text-gray-600">
+                            <strong>Notas:</strong> {consultation.notes.substring(0, 200)}
+                            {consultation.notes.length > 200 && '...'}
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             )}
 
@@ -198,19 +263,11 @@ export default function PatientDashboard({
             )}
 
             {activeTab === 'assessments' && (
-              <div className="bg-white rounded-xl p-6 border shadow">
-                <h3 className="text-lg font-bold mb-4 text-gray-900">Evaluaciones Clínicas</h3>
-                <div className="text-center py-8">
-                  <DocumentChartBarIcon className="h-12 w-12 text-gray-300 mx-auto mb-2" />
-                  <p className="text-gray-500">No hay evaluaciones registradas</p>
-                  <button
-                    onClick={onClinicalAssessment}
-                    className="mt-4 bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg"
-                  >
-                    Nueva Evaluación
-                  </button>
-                </div>
-              </div>
+              <PatientAssessments
+                patientId={patient.id}
+                patientName={`${patient.firstName} ${patient.lastName}`}
+                onNewAssessment={onClinicalAssessment}
+              />
             )}
 
             {activeTab === 'resources' && (

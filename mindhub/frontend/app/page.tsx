@@ -16,14 +16,8 @@ export default function Home() {
       setCurrentUser(JSON.parse(savedUser));
     } else {
       // Default fallback if no user is stored
-      const defaultUser = {
-        id: 'user-dr-alejandro',
-        name: 'Dr. Alejandro Contreras',
-        email: 'alejandro@mindhub.com',
-        role: 'professional'
-      };
-      setCurrentUser(defaultUser);
-      localStorage.setItem('currentUser', JSON.stringify(defaultUser));
+      // Redirect to login if no user
+      router.push('/login');
     }
     
     // Reset dashboard config if it's broken

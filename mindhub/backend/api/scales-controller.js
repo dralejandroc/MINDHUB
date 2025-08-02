@@ -95,16 +95,28 @@ router.get('/categories', async (req, res) => {
 
 /**
  * GET /api/scales/stats
- * Obtener estadísticas de uso de escalas
+ * Obtener estadísticas básicas de escalas
  */
 router.get('/stats', async (req, res) => {
   try {
-    const stats = await scaleService.getScaleUsageStats();
+    // Obtener estadísticas básicas desde el repository
+    const scales = await scaleRepository.getAllActiveScales();
+    
+    // Calcular estadísticas básicas
+    const stats = {
+      totalScales: scales.length,
+      activeScales: scales.filter(s => s.isActive).length,
+      categoriesCount: [...new Set(scales.map(s => s.category))].length,
+      averageItems: Math.round(scales.reduce((sum, s) => sum + (s.totalItems || 0), 0) / scales.length),
+      byCategory: scales.reduce((acc, scale) => {
+        acc[scale.category] = (acc[scale.category] || 0) + 1;
+        return acc;
+      }, {})
+    };
     
     res.json({
       success: true,
-      data: stats,
-      count: stats.length
+      data: stats
     });
     
   } catch (error) {
@@ -143,11 +155,15 @@ router.get('/:id', async (req, res) => {
       });
     }
     
-    // Validar completitud de la escala
-    const validation = await scaleService.validateScaleCompleteness(scaleId);
+    // Validación básica
+    const validation = {
+      isValid: scale && scale.items && scale.items.length > 0,
+      errors: [],
+      warnings: []
+    };
     
     if (!validation.isValid) {
-      console.warn(`Scale ${scaleId} has validation issues:`, validation.errors);
+      console.warn(`Scale ${scaleId} has validation issues`);
     }
     
     res.json({

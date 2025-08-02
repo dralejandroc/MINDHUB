@@ -20,7 +20,7 @@ const router = express.Router();
 // Import route modules  
 // const scalesRoutes = require('./routes/scales-universal'); // COMENTADO - usar solo sistema de seeds
 // const scalesSimpleRoutes = require('./routes/scales-simple'); // Comentado - usar universal
-// const assessmentRoutes = require('./routes/assessments'); // Commented for now
+const assessmentRoutes = require('./routes/assessments');
 // const administrationRoutes = require('./routes/administration'); // Commented for now
 
 // Import clinical assessment routes (new clinical workflow extension)
@@ -30,6 +30,68 @@ const clinicalWorkflowRoutes = require('./routes/clinical-workflows');
 const clinicalResultsRoutes = require('./routes/clinical-results');
 const complianceRoutes = require('./routes/compliance');
 
+// Import public routes for development (no authentication required)
+const scalesPublicRoutes = require('./routes/scales-public');
+const assessmentCompletionRoutes = require('./routes/assessment-completion');
+const remoteAssessmentsRoutes = require('./routes/remote-assessments');
+
+// Patient assessments endpoint (simple, no auth for development)
+router.get('/patient-assessments/:patientId', async (req, res) => {
+  try {
+    const { patientId } = req.params;
+    const { scaleId } = req.query;
+    
+    const { getPrismaClient } = require('../shared/config/prisma');
+    const prisma = getPrismaClient();
+    
+    // Build where clause
+    const whereClause = { patientId: patientId };
+    if (scaleId) whereClause.scaleId = scaleId;
+
+    // Get assessments for the patient
+    const assessments = await prisma.scaleAdministration.findMany({
+      where: whereClause,
+      include: {
+        scale: {
+          select: {
+            id: true,
+            name: true,
+            abbreviation: true,
+            category: true
+          }
+        },
+        subscaleScores: {
+          select: {
+            id: true,
+            subscaleId: true,
+            subscaleName: true,
+            score: true,
+            severity: true,
+            interpretation: true
+          }
+        }
+      },
+      orderBy: {
+        administrationDate: 'desc'
+      }
+    });
+
+    res.json({
+      success: true,
+      data: assessments,
+      total: assessments.length
+    });
+
+  } catch (error) {
+    console.error('Error fetching patient assessments:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to fetch patient assessments',
+      message: error.message
+    });
+  }
+});
+
 // Hub information endpoint
 router.get('/', (req, res) => {
   res.json({
@@ -37,7 +99,7 @@ router.get('/', (req, res) => {
     description: 'Clinical Assessment System',
     version: '1.0.0',
     features: [
-      '50+ Validated Clinical Assessment Scales',
+      'Universal Clinical Assessment System',
       'Self-administered and Hetero-administered Modes',
       'Secure Tokenized Remote Assessments', 
       'Automated Scoring and Interpretation',
@@ -52,6 +114,7 @@ router.get('/', (req, res) => {
     endpoints: {
       scales: '/api/v1/clinimetrix/scales',
       assessments: '/api/v1/clinimetrix/assessments',
+      remote_assessments: '/api/v1/clinimetrix/remote-assessments',
       workflows: '/api/v1/clinimetrix/workflows',
       results: '/api/v1/clinimetrix/results',
       compliance: '/api/v1/clinimetrix/compliance',
@@ -59,12 +122,7 @@ router.get('/', (req, res) => {
     },
     capabilities: {
       assessmentModes: ['self_administered', 'clinician_administered', 'both'],
-      supportedScales: [
-        'PHQ-9 (Patient Health Questionnaire)',
-        'GADI (General Anxiety Disorder Inventory)', 
-        'AQ-Adolescent (Autism Quotient)',
-        'PAS (Parental Acceptance Scale)'
-      ],
+      supportedScales: 'Universal - Any validated clinical scale',
       system: 'universal',
       features: [
         'Database-first architecture',
@@ -109,12 +167,23 @@ router.get('/health', async (req, res) => {
 
 // Mount route modules
 // router.use('/scales', scalesRoutes); // COMENTADO - usar solo sistema de seeds
-// router.use('/assessments', assessmentRoutes); // Commented for now
 // router.use('/administration', administrationRoutes); // Commented for now
 
-// Mount clinical assessment routes (clinical workflow extension)
-router.use('/assessments', clinicalAssessmentRoutes);
-router.use('/scales', clinicalScalesRoutes);
+// Mount public routes first (no authentication required for development)
+router.use('/scales', scalesPublicRoutes);
+
+// Mount assessment routes
+router.use('/assessments', assessmentRoutes);
+
+// Mount assessment completion routes (autoguardado system)
+router.use('/assessments', assessmentCompletionRoutes);
+
+// Mount remote assessments routes (evaluaciones remotas via tokens)
+router.use('/remote-assessments', remoteAssessmentsRoutes);
+
+// Mount clinical assessment routes (clinical workflow extension) 
+router.use('/clinical-assessments', clinicalAssessmentRoutes);
+// Note: scales route is mounted above for public access
 router.use('/workflows', clinicalWorkflowRoutes);
 router.use('/results', clinicalResultsRoutes);
 router.use('/compliance', complianceRoutes);

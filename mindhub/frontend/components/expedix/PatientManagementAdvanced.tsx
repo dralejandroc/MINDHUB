@@ -38,6 +38,7 @@ interface PatientManagementAdvancedProps {
   onNewConsultation: (patient: Patient) => void;
   onClinicalAssessment: (patient: Patient) => void;
   onSettings?: () => void;
+  onChangeView?: (view: 'cards' | 'timeline') => void;
 }
 
 type ViewMode = 'list' | 'cards';
@@ -61,7 +62,8 @@ export default function PatientManagementAdvanced({
   onNewPatient,
   onNewConsultation,
   onClinicalAssessment,
-  onSettings
+  onSettings,
+  onChangeView
 }: PatientManagementAdvancedProps) {
   const [viewMode, setViewMode] = useState<ViewMode>('list');
   const [searchTerm, setSearchTerm] = useState('');
@@ -406,6 +408,31 @@ export default function PatientManagementAdvanced({
 
   return (
     <div className="space-y-4">
+      {/* View Controls */}
+      {onChangeView && (
+        <div className="flex items-center justify-between bg-white p-3 rounded-lg border">
+          <div className="flex items-center space-x-2">
+            <h3 className="text-sm font-medium text-gray-700">Vista de Lista</h3>
+          </div>
+          <div className="flex items-center space-x-1">
+            <button
+              onClick={() => onChangeView('cards')}
+              className="inline-flex items-center px-3 py-1.5 text-sm font-medium text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-md transition-colors"
+            >
+              <Squares2X2Icon className="h-4 w-4 mr-1" />
+              Cambiar a Tarjetas
+            </button>
+            <button
+              onClick={() => onChangeView('timeline')}
+              className="inline-flex items-center px-3 py-1.5 text-sm font-medium text-purple-600 bg-purple-50 hover:bg-purple-100 rounded-md transition-colors"
+            >
+              <ClockIcon className="h-4 w-4 mr-1" />
+              Ver Timeline
+            </button>
+          </div>
+        </div>
+      )}
+      
       {/* Patient List/Cards */}
       {filteredPatients.length === 0 ? (
         <div className="text-center py-12">

@@ -455,8 +455,9 @@ router.get('/patient/:patientId',
                 tag: true,
                 assignedByUser: {
                   select: {
+                    id: true,
                     name: true,
-                    role: true
+                    email: true
                   }
                 }
               },

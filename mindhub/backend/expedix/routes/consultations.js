@@ -75,6 +75,32 @@ const validateConsultation = [
 ];
 
 /**
+ * GET /api/expedix/consultations
+ * Get recent consultations for dashboard (simplified for demo)
+ */
+router.get('/', async (req, res) => {
+  try {
+    // For now, return empty array to fix frontend connection
+    // TODO: Implement proper consultations query when database schema is fixed
+    res.json({
+      success: true,
+      data: [],
+      pagination: {
+        page: 1,
+        limit: 20,
+        total: 0,
+        pages: 0
+      }
+    });
+  } catch (error) {
+    res.status(500).json({ 
+      error: 'Failed to retrieve consultations', 
+      details: error.message 
+    });
+  }
+});
+
+/**
  * GET /api/expedix/consultations/patient/:patientId
  * Get all consultations for a patient
  */

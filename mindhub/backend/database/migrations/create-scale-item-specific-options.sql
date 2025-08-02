@@ -1,5 +1,5 @@
 -- Crear tabla para opciones de respuesta específicas por ítem
--- Necesaria para escalas como BDI-21 donde cada ítem tiene opciones únicas
+-- Necesaria para escalas donde cada ítem tiene opciones únicas
 
 CREATE TABLE IF NOT EXISTS scale_item_specific_options (
   id VARCHAR(191) COLLATE utf8mb4_unicode_ci NOT NULL PRIMARY KEY,
@@ -22,4 +22,4 @@ CREATE TABLE IF NOT EXISTS scale_item_specific_options (
 -- Comentario sobre uso:
 -- Esta tabla permite que cada ítem tenga sus propias opciones de respuesta específicas
 -- Se usa cuando los ítems no comparten las mismas opciones globales de la escala
--- Ejemplos: BDI-21 (opciones variables), escalas con ramificaciones condicionales
+-- Ejemplos: escalas con opciones variables por ítem, escalas con ramificaciones condicionales

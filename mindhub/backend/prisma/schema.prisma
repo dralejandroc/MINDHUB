@@ -9,36 +9,37 @@ datasource db {
 }
 
 model User {
-  id                   String                         @id @default(cuid())
-  auth0Id              String                         @unique
-  email                String                         @unique
-  name                 String?
-  picture              String?
-  clinicId             String?                        // Null para usuarios individuales
-  createdAt            DateTime                       @default(now())
-  updatedAt            DateTime                       @updatedAt
-  lastLoginAt          DateTime?
-  createdTokens        AssessmentToken[]
-  patientConsultations Consultation[]
-  administeredScales   ScaleAdministration[]
-  userRoles            UserRole[]
-  createdPatients      Patient[]
-  createdResources     Resource[]                     @relation("UserResources")
-  storageQuota         UserStorageQuota?
-  sentDistributions    ResourcePatientDistribution[]  @relation("SentByUser")
-  uploadedDocuments    PatientDocument[]              @relation("UploadedDocuments")
-  professionalIncomes  Income[]                       @relation("ProfessionalIncomes")
-  createdExpenses      Expense[]                      @relation("UserExpenses")
-  financialGoals       FinancialGoal[]                @relation("UserGoals")
-  financeConfigs       FinanceConfiguration[]         @relation("UserFinanceConfigs")
-  contracts            ProfessionalContract[]         @relation("ProfessionalContracts")
-  createdCashCuts      CashRegisterCut[]              @relation("CreatedCashCuts")
-  closedCashCuts       CashRegisterCut[]              @relation("ClosedCashCuts")
-  cashBreakdowns       CashCutProfessionalBreakdown[] @relation("ProfessionalCashBreakdowns")
-  createdPatientTags   PatientTag[]                   @relation("CreatedPatientTags")
-  assignedPatientTags  PatientTagAssignment[]         @relation("AssignedPatientTags")
-  removedPatientTags   PatientTagAssignment[]         @relation("RemovedPatientTags")
-  clinic               Clinic?                        @relation("ClinicUsers", fields: [clinicId], references: [id])
+  id                             String                            @id @default(cuid())
+  auth0Id                        String                            @unique
+  email                          String                            @unique
+  name                           String?
+  picture                        String?
+  createdAt                      DateTime                          @default(now())
+  updatedAt                      DateTime                          @updatedAt
+  lastLoginAt                    DateTime?
+  createdTokens                  AssessmentToken[]
+  cashBreakdowns                 CashCutProfessionalBreakdown[]    @relation("ProfessionalCashBreakdowns")
+  closedCashCuts                 CashRegisterCut[]                 @relation("ClosedCashCuts")
+  createdCashCuts                CashRegisterCut[]                 @relation("CreatedCashCuts")
+  patientConsultations           Consultation[]
+  createdExpenses                Expense[]                         @relation("UserExpenses")
+  financeConfigs                 FinanceConfiguration[]            @relation("UserFinanceConfigs")
+  financialGoals                 FinancialGoal[]                   @relation("UserGoals")
+  professionalIncomes            Income[]                          @relation("ProfessionalIncomes")
+  uploadedDocuments              PatientDocument[]                 @relation("UploadedDocuments")
+  assignedPatientTags            PatientTagAssignment[]            @relation("AssignedPatientTags")
+  removedPatientTags             PatientTagAssignment[]            @relation("RemovedPatientTags")
+  createdPatientTags             PatientTag[]                      @relation("CreatedPatientTags")
+  createdPatients                Patient[]
+  contracts                      ProfessionalContract[]            @relation("ProfessionalContracts")
+  messageTemplatesCreated        RemoteAssessmentMessageTemplate[] @relation("MessageTemplateCreator")
+  remoteAssessmentsAdministrator RemoteAssessment[]                @relation("RemoteAssessmentAdministrator")
+  remoteAssessmentsCreator       RemoteAssessment[]                @relation("RemoteAssessmentCreator")
+  sentDistributions              ResourcePatientDistribution[]     @relation("SentByUser")
+  createdResources               Resource[]                        @relation("UserResources")
+  administeredScales             ScaleAdministration[]
+  userRoles                      UserRole[]
+  storageQuota                   UserStorageQuota?
 
   @@map("users")
 }
@@ -78,6 +79,7 @@ model UserRole {
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([userId, roleId])
+  @@index([roleId], map: "user_roles_roleId_fkey")
   @@map("user_roles")
 }
 
@@ -89,37 +91,12 @@ model RolePermission {
   role         Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
 
   @@unique([roleId, permissionId])
+  @@index([permissionId], map: "role_permissions_permissionId_fkey")
   @@map("role_permissions")
-}
-
-model Clinic {
-  id                String    @id
-  name              String
-  code              String    @unique // CLI001, CLI002, etc.
-  address           String?
-  phone             String?
-  email             String?
-  website           String?
-  taxId             String?   @unique
-  licenseNumber     String?   @unique
-  isActive          Boolean   @default(true)
-  subscriptionType  String    @default("basic") // basic, premium, enterprise
-  maxPatients       Int?      @default(1000)
-  maxUsers          Int?      @default(10)
-  settings          Json?     // Configuraciones específicas de la clínica
-  createdAt         DateTime  @default(now())
-  updatedAt         DateTime  @updatedAt
-  
-  // Relaciones
-  users             User[]    @relation("ClinicUsers")
-  patients          Patient[] @relation("ClinicPatients")
-  
-  @@map("clinics")
 }
 
 model Patient {
   id                      String                        @id
-  clinicId                String?                       // Null para usuarios individuales
   firstName               String
   lastName                String
   paternalLastName        String?
@@ -145,21 +122,23 @@ model Patient {
   createdBy               String?
   createdAt               DateTime                      @default(now())
   updatedAt               DateTime                      @updatedAt
+  clinicId                String?                       @db.VarChar(255)
   assessmentTokens        AssessmentToken[]
   consultations           Consultation[]
-  medicalHistory          MedicalHistory[]
-  prescriptions           Prescription[]
-  scaleAdministrations    ScaleAdministration[]
-  resourceDistributions   ResourcePatientDistribution[]
-  documents               PatientDocument[]
   incomes                 Income[]
-  patientServices         PatientService[]
+  medicalHistory          MedicalHistory[]
   patientDiscounts        PatientDiscount[]
+  documents               PatientDocument[]
+  patientServices         PatientService[]
   tagAssignments          PatientTagAssignment[]        @relation("PatientTagAssignments")
-  waitingListEntries      WaitingList[]
   creator                 User?                         @relation(fields: [createdBy], references: [id])
-  clinic                  Clinic?                       @relation("ClinicPatients", fields: [clinicId], references: [id])
+  prescriptions           Prescription[]
+  remoteAssessments       RemoteAssessment[]            @relation("RemoteAssessmentPatient")
+  resourceDistributions   ResourcePatientDistribution[]
+  scaleAdministrations    ScaleAdministration[]
+  waitingListEntries      WaitingList[]
 
+  @@index([createdBy], map: "patients_createdBy_fkey")
   @@map("patients")
 }
 
@@ -168,10 +147,10 @@ model Consultation {
   patientId        String
   consultantId     String
   consultationDate DateTime
-  reason           String
-  notes            String?
-  diagnosis        String?
-  treatmentPlan    String?
+  reason           String?  @db.Text
+  notes            String?  @db.LongText
+  diagnosis        String?  @db.Text
+  treatmentPlan    String?  @db.Text
   status           String   @default("scheduled")
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
@@ -179,6 +158,8 @@ model Consultation {
   patient          Patient  @relation(fields: [patientId], references: [id], onDelete: Cascade)
   incomes          Income[]
 
+  @@index([consultantId], map: "consultations_consultantId_fkey")
+  @@index([patientId], map: "consultations_patientId_fkey")
   @@map("consultations")
 }
 
@@ -193,6 +174,7 @@ model MedicalHistory {
   updatedAt   DateTime  @updatedAt
   patient     Patient   @relation(fields: [patientId], references: [id], onDelete: Cascade)
 
+  @@index([patientId], map: "medical_history_patientId_fkey")
   @@map("medical_history")
 }
 
@@ -212,6 +194,8 @@ model Prescription {
   medication   Medication @relation(fields: [medicationId], references: [id])
   patient      Patient    @relation(fields: [patientId], references: [id], onDelete: Cascade)
 
+  @@index([medicationId], map: "prescriptions_medicationId_fkey")
+  @@index([patientId], map: "prescriptions_patientId_fkey")
   @@map("prescriptions")
 }
 
@@ -231,83 +215,89 @@ model Medication {
   @@map("medications")
 }
 
-// Mapear a la tabla 'scales' de los seeds SQL
 model Scale {
-  id                       String   @id
+  id                       String                    @id
   name                     String
-  abbreviation             String   @unique
-  version                  String?  @default("1.0")
+  abbreviation             String                    @unique
+  version                  String?                   @default("1.0")
   category                 String
   subcategory              String?
-  description              String?
+  description              String?                   @db.Text
   author                   String?
-  publicationYear          Int?     @map("publication_year")
-  estimatedDurationMinutes Int?     @map("estimated_duration_minutes")
-  administrationMode       String?  @map("administration_mode")
-  targetPopulation         String?  @map("target_population")
-  totalItems               Int      @map("total_items")
-  scoringMethod            String?  @map("scoring_method")
-  scoreRangeMin            Int?     @map("score_range_min")
-  scoreRangeMax            Int?     @map("score_range_max")
-  instructionsProfessional String?  @map("instructions_professional")
-  instructionsPatient      String?  @map("instructions_patient")
-  isActive                 Boolean  @default(true) @map("is_active")
-  createdAt                DateTime @default(now()) @map("created_at")
-  updatedAt                DateTime @updatedAt @map("updated_at")
-
-  // Relaciones con tablas de seeds
-  items               ScaleItem[]
-  responseOptions     ScaleResponseOption[]
-  interpretationRules ScaleInterpretationRule[]
-  subscales           ScaleSubscale[]
-
-  // Relaciones con sistema de evaluaciones
-  assessmentTokens     AssessmentToken[]     @relation("ScaleTokens")
-  scaleAdministrations ScaleAdministration[] @relation("ScaleAdministrations")
+  publicationYear          Int?                      @map("publication_year")
+  estimatedDurationMinutes Int?                      @map("estimated_duration_minutes")
+  administrationMode       String?                   @map("administration_mode")
+  targetPopulation         String?                   @map("target_population") @db.Text
+  totalItems               Int                       @map("total_items")
+  scoringMethod            String?                   @map("scoring_method")
+  scoreRangeMin            Int?                      @map("score_range_min")
+  scoreRangeMax            Int?                      @map("score_range_max")
+  instructionsProfessional String?                   @map("instructions_professional") @db.Text
+  instructionsPatient      String?                   @map("instructions_patient") @db.Text
+  isActive                 Boolean                   @default(true) @map("is_active")
+  createdAt                DateTime                  @default(now()) @map("created_at")
+  updatedAt                DateTime                  @updatedAt @map("updated_at")
+  tags                     Json?
+  assessmentTokens         AssessmentToken[]         @relation("ScaleTokens")
+  remoteAssessments        RemoteAssessment[]        @relation("RemoteAssessmentScale")
+  scaleAdministrations     ScaleAdministration[]     @relation("ScaleAdministrations")
+  scale_documentation      ScaleDocumentation[]
+  interpretationRules      ScaleInterpretationRule[]
+  items                    ScaleItem[]
+  responseOptions          ScaleResponseOption[]
+  subscales                ScaleSubscale[]
+  user_favorite_scales     user_favorite_scales[]
 
   @@map("scales")
 }
 
-// Mapear a la tabla 'scale_items' de los seeds SQL
 model ScaleItem {
-  id            String   @id
-  scaleId       String   @map("scale_id")
-  itemNumber    Int      @map("item_number")
-  itemText      String   @map("item_text")
-  itemCode      String?  @map("item_code")
-  subscale      String?
-  reverseScored Boolean  @default(false) @map("reverse_scored")
-  isActive      Boolean  @default(true) @map("is_active")
-  createdAt     DateTime @default(now()) @map("created_at")
-  updatedAt     DateTime @updatedAt @map("updated_at")
-
-  // Relaciones
-  scale         Scale          @relation(fields: [scaleId], references: [id], onDelete: Cascade)
-  itemResponses ItemResponse[]
+  id                          String                    @id
+  scaleId                     String                    @map("scale_id")
+  itemNumber                  Int                       @map("item_number")
+  itemText                    String?                   @map("item_text") @db.Text
+  itemCode                    String?                   @map("item_code")
+  subscale                    String?
+  responseGroup               String?                   @map("response_group")
+  reverseScored               Boolean                   @default(false) @map("reverse_scored")
+  isActive                    Boolean                   @default(true) @map("is_active")
+  createdAt                   DateTime                  @default(now()) @map("created_at")
+  updatedAt                   DateTime                  @updatedAt @map("updated_at")
+  question_type               String?                   @default("likert")
+  alert_trigger               Boolean?                  @default(false)
+  alert_condition             String?
+  help_text                   String?                   @db.Text
+  required                    Boolean?                  @default(true)
+  metadata                    Json?
+  itemResponses               ItemResponse[]
+  scale_item_specific_options ScaleItemSpecificOption[]
+  scale                       Scale                     @relation(fields: [scaleId], references: [id], onDelete: Cascade)
 
   @@unique([scaleId, itemNumber])
+  @@index([scaleId, responseGroup], map: "idx_scale_items_response_group")
   @@map("scale_items")
 }
 
-// Mapear a la tabla 'scale_response_options' de los seeds SQL
 model ScaleResponseOption {
-  id           String   @id
-  scaleId      String   @map("scale_id")
-  optionValue  String   @map("option_value")
-  optionLabel  String   @map("option_label")
-  scoreValue   Int      @map("score_value")
-  displayOrder Int      @default(0) @map("display_order")
-  isActive     Boolean  @default(true) @map("is_active")
-  createdAt    DateTime @default(now()) @map("created_at")
-  updatedAt    DateTime @updatedAt @map("updated_at")
+  id            String   @id
+  scaleId       String   @map("scale_id")
+  responseGroup String?  @map("response_group")
+  optionValue   String   @map("option_value")
+  optionLabel   String   @map("option_label")
+  scoreValue    Int      @map("score_value")
+  displayOrder  Int      @default(0) @map("display_order")
+  isActive      Boolean  @default(true) @map("is_active")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+  option_type   String?  @default("standard")
+  metadata      Json?
+  scale         Scale    @relation(fields: [scaleId], references: [id], onDelete: Cascade)
 
-  // Relaciones
-  scale Scale @relation(fields: [scaleId], references: [id], onDelete: Cascade)
-
+  @@index([scaleId], map: "scale_response_options_scale_id_fkey")
+  @@index([scaleId, responseGroup], map: "idx_scale_response_options_group")
   @@map("scale_response_options")
 }
 
-// Mapear a la tabla 'scale_interpretation_rules' de los seeds SQL  
 model ScaleInterpretationRule {
   id                  String   @id
   scaleId             String   @map("scale_id")
@@ -316,45 +306,86 @@ model ScaleInterpretationRule {
   severityLevel       String   @map("severity_level")
   interpretationLabel String   @map("interpretation_label")
   colorCode           String?  @map("color_code")
-  description         String?
-  recommendations     String?
+  description         String?  @db.Text
+  recommendations     String?  @db.Text
   isActive            Boolean  @default(true) @map("is_active")
   createdAt           DateTime @default(now()) @map("created_at")
   updatedAt           DateTime @updatedAt @map("updated_at")
+  scale               Scale    @relation(fields: [scaleId], references: [id], onDelete: Cascade)
 
-  // Relaciones
-  scale Scale @relation(fields: [scaleId], references: [id], onDelete: Cascade)
-
+  @@index([scaleId], map: "scale_interpretation_rules_scale_id_fkey")
   @@map("scale_interpretation_rules")
 }
 
-// Mapear a la tabla 'scale_subscales' de los seeds SQL
 model ScaleSubscale {
-  id           String   @id
-  scaleId      String   @map("scale_id")
-  subscaleName String   @map("subscale_name")
-  subscaleCode String?  @map("subscale_code")
-  minScore     Int      @default(0) @map("min_score")
-  maxScore     Int?     @map("max_score")
-  description  String?
-  isActive     Boolean  @default(true) @map("is_active")
-  createdAt    DateTime @default(now()) @map("created_at")
-  updatedAt    DateTime @updatedAt @map("updated_at")
+  id                         String               @id
+  scaleId                    String               @map("scale_id")
+  subscaleName               String               @map("subscale_name")
+  subscaleCode               String?              @map("subscale_code")
+  minScore                   Int                  @default(0) @map("min_score")
+  maxScore                   Int?                 @map("max_score")
+  description                String?              @db.Text
+  isActive                   Boolean              @default(true) @map("is_active")
+  createdAt                  DateTime             @default(now()) @map("created_at")
+  updatedAt                  DateTime             @updatedAt @map("updated_at")
+  items                      Json?
+  referencias_bibliograficas String?              @db.Text
+  indice_cronbach            Decimal?             @db.Decimal(3, 2)
+  subscaleScores             ScaleSubscaleScore[]
+  scale                      Scale                @relation(fields: [scaleId], references: [id], onDelete: Cascade)
 
-  // Relaciones
-  scale Scale @relation(fields: [scaleId], references: [id], onDelete: Cascade)
-
+  @@index([scaleId], map: "scale_subscales_scale_id_fkey")
   @@map("scale_subscales")
 }
 
+model ScaleItemSpecificOption {
+  id           String    @id
+  itemId       String    @map("item_id")
+  optionValue  String    @map("option_value")
+  optionLabel  String    @map("option_label") @db.Text
+  scoreValue   Int       @map("score_value")
+  displayOrder Int       @default(0) @map("display_order")
+  isActive     Boolean   @default(true) @map("is_active")
+  metadata     Json?
+  createdAt    DateTime  @default(now()) @map("created_at")
+  updatedAt    DateTime  @default(now()) @updatedAt @map("updated_at")
+  scale_items  ScaleItem @relation(fields: [itemId], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "scale_item_specific_options_ibfk_1")
+
+  @@index([isActive], map: "idx_item_specific_options_active")
+  @@index([itemId], map: "idx_item_specific_options_item_id")
+  @@index([displayOrder], map: "idx_item_specific_options_order")
+  @@map("scale_item_specific_options")
+}
+
+model ScaleDocumentation {
+  id                        String   @id
+  scaleId                   String   @map("scale_id")
+  bibliography              String?  @db.Text
+  sources_consulted         Json?
+  implementation_notes      String?  @db.Text
+  psychometric_properties   Json?
+  clinical_considerations   String?  @db.Text
+  special_items_notes       Json?
+  version_notes             String?  @db.Text
+  target_population_details String?  @db.Text
+  clinical_interpretation   String?  @db.Text
+  createdAt                 DateTime @default(now()) @map("created_at") @db.DateTime(0)
+  updatedAt                 DateTime @default(now()) @updatedAt @map("updated_at") @db.DateTime(0)
+  scales                    Scale    @relation(fields: [scaleId], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "scale_documentation_ibfk_1")
+
+  @@index([createdAt], map: "idx_created_at")
+  @@index([scaleId], map: "idx_scale_id")
+  @@map("scale_documentation")
+}
+
 model ScaleAdministration {
-  id                 String         @id @default(cuid())
+  id                 String               @id @default(cuid())
   patientId          String
   scaleId            String
   administratorId    String
-  administrationDate DateTime       @default(now())
+  administrationDate DateTime             @default(now())
   administrationType String
-  status             String         @default("completed")
+  status             String               @default("completed")
   totalScore         Float?
   rawScore           Float?
   percentileScore    Float?
@@ -366,13 +397,17 @@ model ScaleAdministration {
   completionTime     Int?
   startedAt          DateTime?
   completedAt        DateTime?
-  createdAt          DateTime       @default(now())
-  updatedAt          DateTime       @updatedAt
+  createdAt          DateTime             @default(now())
+  updatedAt          DateTime             @updatedAt
   responses          ItemResponse[]
-  administrator      User           @relation(fields: [administratorId], references: [id])
-  scale              Scale          @relation("ScaleAdministrations", fields: [scaleId], references: [id])
-  patient            Patient        @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  administrator      User                 @relation(fields: [administratorId], references: [id])
+  patient            Patient              @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  scale              Scale                @relation("ScaleAdministrations", fields: [scaleId], references: [id])
+  subscaleScores     ScaleSubscaleScore[]
 
+  @@index([administratorId], map: "scale_administrations_administratorId_fkey")
+  @@index([patientId], map: "scale_administrations_patientId_fkey")
+  @@index([scaleId], map: "scale_administrations_scaleId_fkey")
   @@map("scale_administrations")
 }
 
@@ -386,10 +421,11 @@ model ItemResponse {
   wasSkipped       Boolean             @default(false)
   responseTime     Int?
   createdAt        DateTime            @default(now())
-  scaleItem        ScaleItem           @relation(fields: [scaleItemId], references: [id])
   administration   ScaleAdministration @relation(fields: [administrationId], references: [id], onDelete: Cascade)
+  scaleItem        ScaleItem           @relation(fields: [scaleItemId], references: [id])
 
   @@unique([administrationId, scaleItemId])
+  @@index([scaleItemId], map: "item_responses_scaleItemId_fkey")
   @@map("item_responses")
 }
 
@@ -404,9 +440,12 @@ model AssessmentToken {
   usedAt    DateTime?
   createdAt DateTime  @default(now())
   creator   User      @relation(fields: [createdBy], references: [id])
-  scale     Scale     @relation("ScaleTokens", fields: [scaleId], references: [id])
   patient   Patient   @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  scale     Scale     @relation("ScaleTokens", fields: [scaleId], references: [id])
 
+  @@index([createdBy], map: "assessment_tokens_createdBy_fkey")
+  @@index([patientId], map: "assessment_tokens_patientId_fkey")
+  @@index([scaleId], map: "assessment_tokens_scaleId_fkey")
   @@map("assessment_tokens")
 }
 
@@ -437,6 +476,7 @@ model FormInstance {
   updatedAt   DateTime     @updatedAt
   template    FormTemplate @relation(fields: [templateId], references: [id])
 
+  @@index([templateId], map: "form_instances_templateId_fkey")
   @@map("form_instances")
 }
 
@@ -465,6 +505,94 @@ model ResourceTag {
   @@map("resource_tags")
 }
 
+model RemoteAssessment {
+  id              String                      @id @default(uuid())
+  token           String                      @unique
+  scaleId         String
+  patientId       String
+  administratorId String
+  createdAt       DateTime                    @default(now())
+  expiresAt       DateTime
+  accessedAt      DateTime?
+  completedAt     DateTime?
+  status          RemoteAssessmentStatus      @default(pending)
+  patientEmail    String?
+  patientPhone    String?
+  customMessage   String?                     @db.Text
+  privacyNoticeId String?
+  expirationDays  Int                         @default(7)
+  reminderEnabled Boolean                     @default(true)
+  reminderSentAt  DateTime?
+  reminderCount   Int                         @default(0)
+  deliveryMethod  DeliveryMethod              @default(copy_link)
+  createdBy       String
+  updatedAt       DateTime                    @updatedAt
+  accessLogs      RemoteAssessmentAccessLog[]
+  progress        RemoteAssessmentProgress?
+  administrator   User                        @relation("RemoteAssessmentAdministrator", fields: [administratorId], references: [id])
+  creator         User                        @relation("RemoteAssessmentCreator", fields: [createdBy], references: [id])
+  patient         Patient                     @relation("RemoteAssessmentPatient", fields: [patientId], references: [id])
+  scale           Scale                       @relation("RemoteAssessmentScale", fields: [scaleId], references: [id])
+
+  @@index([token])
+  @@index([patientId])
+  @@index([administratorId])
+  @@index([status])
+  @@index([expiresAt])
+  @@index([createdBy], map: "remote_assessments_createdBy_fkey")
+  @@index([scaleId], map: "remote_assessments_scaleId_fkey")
+  @@map("remote_assessments")
+}
+
+model RemoteAssessmentAccessLog {
+  id                 String           @id @default(uuid())
+  remoteAssessmentId String
+  accessedAt         DateTime         @default(now())
+  ipAddress          String?
+  userAgent          String?          @db.Text
+  deviceType         DeviceType       @default(unknown)
+  browser            String?
+  operatingSystem    String?
+  countryCode        String?
+  city               String?
+  action             AccessAction     @default(view)
+  metadata           Json?
+  remoteAssessment   RemoteAssessment @relation(fields: [remoteAssessmentId], references: [id], onDelete: Cascade)
+
+  @@index([remoteAssessmentId])
+  @@index([accessedAt])
+  @@map("remote_assessment_access_log")
+}
+
+model RemoteAssessmentProgress {
+  id                 String           @id @default(uuid())
+  remoteAssessmentId String           @unique
+  responses          Json
+  currentItemIndex   Int              @default(0)
+  totalItems         Int
+  percentageComplete Decimal          @default(0.00) @db.Decimal(5, 2)
+  createdAt          DateTime         @default(now())
+  updatedAt          DateTime         @updatedAt
+  remoteAssessment   RemoteAssessment @relation(fields: [remoteAssessmentId], references: [id], onDelete: Cascade)
+
+  @@map("remote_assessment_progress")
+}
+
+model RemoteAssessmentMessageTemplate {
+  id              String                  @id @default(uuid())
+  name            String
+  category        MessageTemplateCategory @default(custom)
+  messageTemplate String                  @db.Text
+  createdBy       String
+  isActive        Boolean                 @default(true)
+  createdAt       DateTime                @default(now())
+  creator         User                    @relation("MessageTemplateCreator", fields: [createdBy], references: [id])
+
+  @@index([category])
+  @@index([createdBy])
+  @@map("remote_assessment_message_templates")
+}
+
 model Resource {
   id                 String                        @id @default(cuid())
   title              String
@@ -485,11 +613,12 @@ model Resource {
   createdById        String?
   createdAt          DateTime                      @default(now())
   updatedAt          DateTime                      @updatedAt
-  creator            User?                         @relation("UserResources", fields: [createdById], references: [id])
   resourceCategories ResourceCategoryRelation[]
-  resourceTags       ResourceTagRelation[]
   distributions      ResourcePatientDistribution[]
+  resourceTags       ResourceTagRelation[]
+  creator            User?                         @relation("UserResources", fields: [createdById], references: [id])
 
+  @@index([createdById], map: "resources_createdById_fkey")
   @@map("resources")
 }
 
@@ -501,6 +630,7 @@ model ResourceCategoryRelation {
   resource   Resource         @relation(fields: [resourceId], references: [id], onDelete: Cascade)
 
   @@unique([resourceId, categoryId])
+  @@index([categoryId], map: "resource_category_relations_categoryId_fkey")
   @@map("resource_category_relations")
 }
 
@@ -508,10 +638,11 @@ model ResourceTagRelation {
   id         String      @id @default(cuid())
   resourceId String
   tagId      String
-  tag        ResourceTag @relation(fields: [tagId], references: [id], onDelete: Cascade)
   resource   Resource    @relation(fields: [resourceId], references: [id], onDelete: Cascade)
+  tag        ResourceTag @relation(fields: [tagId], references: [id], onDelete: Cascade)
 
   @@unique([resourceId, tagId])
+  @@index([tagId], map: "resource_tag_relations_tagId_fkey")
   @@map("resource_tag_relations")
 }
 
@@ -526,7 +657,6 @@ model ClinicConfiguration {
   @@map("clinic_configurations")
 }
 
-// Storage Quota Management
 model UserStorageQuota {
   id               String   @id @default(cuid())
   userId           String   @unique
@@ -541,63 +671,63 @@ model UserStorageQuota {
   @@map("user_storage_quota")
 }
 
-// Finance Management Models
 model Income {
-  id                 String    @id @default(cuid())
-  amount             Decimal   @db.Decimal(10, 2)
-  source             String // 'consultation', 'advance', 'therapy', 'evaluation', 'other'
-  paymentMethod      String // 'cash', 'credit_card', 'debit_card', 'transfer', 'payment_gateway', 'check'
-  currency           String    @default("MXN")
+  id                 String        @id @default(cuid())
+  amount             Decimal       @db.Decimal(10, 2)
+  source             String
+  paymentMethod      String
+  currency           String        @default("MXN")
   patientId          String?
   consultationId     String?
   professionalId     String?
-  serviceId          String? // Related service from configuration
-  originalAmount     Decimal?  @db.Decimal(10, 2) // Amount before discounts
-  discountAmount     Decimal?  @db.Decimal(10, 2) // Discount applied
-  discountPercentage Decimal?  @db.Decimal(5, 2) // Percentage of discount applied
-  isCourtesy         Boolean   @default(false) // True if 100% discount (courtesy)
-  professionalAmount Decimal?  @db.Decimal(10, 2) // Amount for professional (after commission calculation)
-  clinicAmount       Decimal?  @db.Decimal(10, 2) // Amount for clinic
-  commissionRate     Decimal?  @db.Decimal(5, 2) // Commission rate applied
   description        String?
-  concept            String? // More detailed than source
+  concept            String?
   notes              String?
-  reference          String? // Payment reference/receipt number  
-  status             String    @default("confirmed") // 'pending', 'confirmed', 'cancelled'
-  receivedDate       DateTime  @default(now())
+  reference          String?
+  status             String        @default("confirmed")
+  receivedDate       DateTime      @default(now())
   dueDate            DateTime?
-  createdAt          DateTime  @default(now())
-  updatedAt          DateTime  @updatedAt
+  createdAt          DateTime      @default(now())
+  updatedAt          DateTime      @updatedAt
+  discountAmount     Decimal?      @db.Decimal(10, 2)
+  originalAmount     Decimal?      @db.Decimal(10, 2)
+  serviceId          String?
+  clinicAmount       Decimal?      @db.Decimal(10, 2)
+  commissionRate     Decimal?      @db.Decimal(5, 2)
+  discountPercentage Decimal?      @db.Decimal(5, 2)
+  isCourtesy         Boolean       @default(false)
+  professionalAmount Decimal?      @db.Decimal(10, 2)
+  consultation       Consultation? @relation(fields: [consultationId], references: [id])
+  patient            Patient?      @relation(fields: [patientId], references: [id])
+  professional       User?         @relation("ProfessionalIncomes", fields: [professionalId], references: [id])
+  service            Service?      @relation("ServiceIncomes", fields: [serviceId], references: [id])
 
-  // Relations
-  patient      Patient?      @relation(fields: [patientId], references: [id])
-  consultation Consultation? @relation(fields: [consultationId], references: [id])
-  professional User?         @relation("ProfessionalIncomes", fields: [professionalId], references: [id])
-  service      Service?      @relation("ServiceIncomes", fields: [serviceId], references: [id])
-
+  @@index([consultationId], map: "incomes_consultationId_fkey")
+  @@index([patientId], map: "incomes_patientId_fkey")
+  @@index([professionalId], map: "incomes_professionalId_fkey")
+  @@index([serviceId], map: "incomes_serviceId_fkey")
   @@map("incomes")
 }
 
 model Expense {
   id            String    @id @default(cuid())
   amount        Decimal   @db.Decimal(10, 2)
-  category      String // 'rent', 'supplies', 'equipment', 'marketing', 'utilities', 'other'
-  paymentMethod String // 'cash', 'card', 'transfer', 'check'
+  category      String
+  paymentMethod String
   currency      String    @default("MXN")
   vendor        String?
   description   String
   notes         String?
-  reference     String? // Receipt/invoice number
+  reference     String?
   status        String    @default("confirmed")
   expenseDate   DateTime  @default(now())
   dueDate       DateTime?
   createdBy     String?
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
+  creator       User?     @relation("UserExpenses", fields: [createdBy], references: [id])
 
-  // Relations
-  creator User? @relation("UserExpenses", fields: [createdBy], references: [id])
-
+  @@index([createdBy], map: "expenses_createdBy_fkey")
   @@map("expenses")
 }
 
@@ -606,84 +736,79 @@ model FinancialGoal {
   title         String
   description   String?
   targetAmount  Decimal   @db.Decimal(10, 2)
-  currentAmount Decimal   @default(0) @db.Decimal(10, 2)
+  currentAmount Decimal   @default(0.00) @db.Decimal(10, 2)
   currency      String    @default("MXN")
-  category      String // 'monthly_income', 'quarterly_income', 'annual_income', 'expense_reduction'
+  category      String
   targetDate    DateTime?
-  status        String    @default("active") // 'active', 'achieved', 'cancelled'
+  status        String    @default("active")
   createdBy     String?
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
+  creator       User?     @relation("UserGoals", fields: [createdBy], references: [id])
 
-  // Relations  
-  creator User? @relation("UserGoals", fields: [createdBy], references: [id])
-
+  @@index([createdBy], map: "financial_goals_createdBy_fkey")
   @@map("financial_goals")
 }
 
-// Finance Configuration Models
 model FinanceConfiguration {
-  id              String   @id @default(cuid())
-  clinicId        String? // For multi-clinic support
-  isAutomatic     Boolean  @default(false) // Manual vs automatic billing
-  defaultCurrency String   @default("MXN")
-  taxRate         Decimal? @db.Decimal(5, 2) // Tax percentage
-  invoicePrefix   String? // Invoice numbering prefix
-  invoiceCounter  Int      @default(1)
-  paymentTerms    String? // Payment terms text
-  notes           String? // Additional configuration notes
-  isActive        Boolean  @default(true)
+  id              String         @id @default(cuid())
+  clinicId        String?
+  isAutomatic     Boolean        @default(false)
+  defaultCurrency String         @default("MXN")
+  taxRate         Decimal?       @db.Decimal(5, 2)
+  invoicePrefix   String?
+  invoiceCounter  Int            @default(1)
+  paymentTerms    String?
+  notes           String?
+  isActive        Boolean        @default(true)
   createdBy       String?
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+  discountPlans   DiscountPlan[]
+  creator         User?          @relation("UserFinanceConfigs", fields: [createdBy], references: [id])
+  services        Service[]
 
-  // Relations
-  creator       User?          @relation("UserFinanceConfigs", fields: [createdBy], references: [id])
-  services      Service[]
-  discountPlans DiscountPlan[]
-
+  @@index([createdBy], map: "finance_configurations_createdBy_fkey")
   @@map("finance_configurations")
 }
 
 model Service {
-  id          String   @id @default(cuid())
-  configId    String
-  name        String // "Consulta General", "Terapia", "Evaluación"
-  description String?
-  code        String? // Service code for billing
-  basePrice   Decimal  @db.Decimal(10, 2)
-  currency    String   @default("MXN")
-  duration    Int? // Duration in minutes
-  category    String // 'consultation', 'therapy', 'evaluation', 'other'
-  isActive    Boolean  @default(true)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  // Relations
-  configuration   FinanceConfiguration @relation(fields: [configId], references: [id], onDelete: Cascade)
-  patientServices PatientService[]
+  id              String               @id @default(cuid())
+  configId        String
+  name            String
+  description     String?
+  code            String?
+  basePrice       Decimal              @db.Decimal(10, 2)
+  currency        String               @default("MXN")
+  duration        Int?
+  category        String
+  isActive        Boolean              @default(true)
+  createdAt       DateTime             @default(now())
+  updatedAt       DateTime             @updatedAt
   incomes         Income[]             @relation("ServiceIncomes")
+  patientServices PatientService[]
+  configuration   FinanceConfiguration @relation(fields: [configId], references: [id], onDelete: Cascade)
 
+  @@index([configId], map: "services_configId_fkey")
   @@map("services")
 }
 
 model DiscountPlan {
-  id            String    @id @default(cuid())
-  configId      String
-  name          String // "Descuento Estudiante", "Seguro Popular"
-  description   String?
-  discountType  String // 'percentage', 'fixed_amount', 'custom_price'
-  discountValue Decimal   @db.Decimal(10, 2) // 20 (for 20%) or 100 (for $100 off)
-  currency      String    @default("MXN")
-  isActive      Boolean   @default(true)
-  validUntil    DateTime?
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
-
-  // Relations
+  id               String               @id @default(cuid())
+  configId         String
+  name             String
+  description      String?
+  discountType     String
+  discountValue    Decimal              @db.Decimal(10, 2)
+  currency         String               @default("MXN")
+  isActive         Boolean              @default(true)
+  validUntil       DateTime?
+  createdAt        DateTime             @default(now())
+  updatedAt        DateTime             @updatedAt
   configuration    FinanceConfiguration @relation(fields: [configId], references: [id], onDelete: Cascade)
   patientDiscounts PatientDiscount[]
 
+  @@index([configId], map: "discount_plans_configId_fkey")
   @@map("discount_plans")
 }
 
@@ -691,142 +816,135 @@ model PatientService {
   id          String   @id @default(cuid())
   patientId   String
   serviceId   String
-  customPrice Decimal? @db.Decimal(10, 2) // Override service base price
+  customPrice Decimal? @db.Decimal(10, 2)
   notes       String?
   isActive    Boolean  @default(true)
   assignedAt  DateTime @default(now())
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
-
-  // Relations
-  patient Patient @relation(fields: [patientId], references: [id], onDelete: Cascade)
-  service Service @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+  patient     Patient  @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  service     Service  @relation(fields: [serviceId], references: [id], onDelete: Cascade)
 
   @@unique([patientId, serviceId])
+  @@index([serviceId], map: "patient_services_serviceId_fkey")
   @@map("patient_services")
 }
 
 model PatientDiscount {
-  id             String    @id @default(cuid())
+  id             String       @id @default(cuid())
   patientId      String
   discountPlanId String
-  customValue    Decimal?  @db.Decimal(10, 2) // Override discount plan value
+  customValue    Decimal?     @db.Decimal(10, 2)
   notes          String?
-  isActive       Boolean   @default(true)
-  assignedAt     DateTime  @default(now())
+  isActive       Boolean      @default(true)
+  assignedAt     DateTime     @default(now())
   validUntil     DateTime?
-  createdAt      DateTime  @default(now())
-  updatedAt      DateTime  @updatedAt
-
-  // Relations
-  patient      Patient      @relation(fields: [patientId], references: [id], onDelete: Cascade)
-  discountPlan DiscountPlan @relation(fields: [discountPlanId], references: [id], onDelete: Cascade)
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  discountPlan   DiscountPlan @relation(fields: [discountPlanId], references: [id], onDelete: Cascade)
+  patient        Patient      @relation(fields: [patientId], references: [id], onDelete: Cascade)
 
   @@unique([patientId, discountPlanId])
+  @@index([discountPlanId], map: "patient_discounts_discountPlanId_fkey")
   @@map("patient_discounts")
 }
 
-// Professional Contract and Commission Models
 model ProfessionalContract {
   id             String    @id @default(cuid())
   professionalId String
-  clinicId       String? // For multi-clinic support
-  contractType   String // 'percentage', 'fixed_amount', 'hourly', 'salary'
-  commissionRate Decimal?  @db.Decimal(5, 2) // Percentage for professional (e.g., 60.00 = 60%)
-  fixedAmount    Decimal?  @db.Decimal(10, 2) // Fixed amount per service
-  hourlyRate     Decimal?  @db.Decimal(10, 2) // Hourly rate
-  monthlyRate    Decimal?  @db.Decimal(10, 2) // Monthly salary
+  clinicId       String?
+  contractType   String
+  commissionRate Decimal?  @db.Decimal(5, 2)
+  fixedAmount    Decimal?  @db.Decimal(10, 2)
+  hourlyRate     Decimal?  @db.Decimal(10, 2)
+  monthlyRate    Decimal?  @db.Decimal(10, 2)
   isActive       Boolean   @default(true)
   startDate      DateTime  @default(now())
   endDate        DateTime?
-  notes          String? // Contract notes/terms
+  notes          String?
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @updatedAt
+  professional   User      @relation("ProfessionalContracts", fields: [professionalId], references: [id])
 
-  // Relations
-  professional User @relation("ProfessionalContracts", fields: [professionalId], references: [id])
-
+  @@index([professionalId], map: "professional_contracts_professionalId_fkey")
   @@map("professional_contracts")
 }
 
-// Cash Register Cut Models
 model CashRegisterCut {
-  id              String    @id @default(cuid())
-  cutNumber       Int // Sequential number for cuts
-  cutType         String // 'daily', 'shift', 'manual'
-  startDate       DateTime
-  endDate         DateTime
-  totalIncome     Decimal   @db.Decimal(10, 2)
-  totalDiscounts  Decimal   @default(0) @db.Decimal(10, 2)
-  totalCourtesies Decimal   @default(0) @db.Decimal(10, 2)
-  netIncome       Decimal   @db.Decimal(10, 2)
-  status          String    @default("open") // 'open', 'closed', 'reconciled'
-  notes           String?
-  createdBy       String
-  closedBy        String?
-  closedAt        DateTime?
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
-
-  // Relations
-  creator               User                           @relation("CreatedCashCuts", fields: [createdBy], references: [id])
-  closer                User?                          @relation("ClosedCashCuts", fields: [closedBy], references: [id])
+  id                    String                         @id @default(cuid())
+  cutNumber             Int
+  cutType               String
+  startDate             DateTime
+  endDate               DateTime
+  totalIncome           Decimal                        @db.Decimal(10, 2)
+  totalDiscounts        Decimal                        @default(0.00) @db.Decimal(10, 2)
+  totalCourtesies       Decimal                        @default(0.00) @db.Decimal(10, 2)
+  netIncome             Decimal                        @db.Decimal(10, 2)
+  status                String                         @default("open")
+  notes                 String?
+  createdBy             String
+  closedBy              String?
+  closedAt              DateTime?
+  createdAt             DateTime                       @default(now())
+  updatedAt             DateTime                       @updatedAt
   paymentBreakdown      CashCutPaymentBreakdown[]
   professionalBreakdown CashCutProfessionalBreakdown[]
+  closer                User?                          @relation("ClosedCashCuts", fields: [closedBy], references: [id])
+  creator               User                           @relation("CreatedCashCuts", fields: [createdBy], references: [id])
 
+  @@index([closedBy], map: "cash_register_cuts_closedBy_fkey")
+  @@index([createdBy], map: "cash_register_cuts_createdBy_fkey")
   @@map("cash_register_cuts")
 }
 
 model CashCutPaymentBreakdown {
-  id               String  @id @default(cuid())
+  id               String          @id @default(cuid())
   cashCutId        String
-  paymentMethod    String // 'cash', 'credit_card', 'debit_card', etc.
-  amount           Decimal @db.Decimal(10, 2)
-  transactionCount Int     @default(0)
-
-  // Relations
-  cashCut CashRegisterCut @relation(fields: [cashCutId], references: [id], onDelete: Cascade)
+  paymentMethod    String
+  amount           Decimal         @db.Decimal(10, 2)
+  transactionCount Int             @default(0)
+  cashCut          CashRegisterCut @relation(fields: [cashCutId], references: [id], onDelete: Cascade)
 
   @@unique([cashCutId, paymentMethod])
   @@map("cash_cut_payment_breakdown")
 }
 
 model CashCutProfessionalBreakdown {
-  id                 String  @id @default(cuid())
+  id                 String          @id @default(cuid())
   cashCutId          String
   professionalId     String
-  totalIncome        Decimal @db.Decimal(10, 2)
-  professionalAmount Decimal @db.Decimal(10, 2)
-  clinicAmount       Decimal @db.Decimal(10, 2)
-  commissionRate     Decimal @db.Decimal(5, 2)
-  serviceCount       Int     @default(0)
-
-  // Relations
-  cashCut      CashRegisterCut @relation(fields: [cashCutId], references: [id], onDelete: Cascade)
-  professional User            @relation("ProfessionalCashBreakdowns", fields: [professionalId], references: [id])
+  totalIncome        Decimal         @db.Decimal(10, 2)
+  professionalAmount Decimal         @db.Decimal(10, 2)
+  clinicAmount       Decimal         @db.Decimal(10, 2)
+  commissionRate     Decimal         @db.Decimal(5, 2)
+  serviceCount       Int             @default(0)
+  cashCut            CashRegisterCut @relation(fields: [cashCutId], references: [id], onDelete: Cascade)
+  professional       User            @relation("ProfessionalCashBreakdowns", fields: [professionalId], references: [id])
 
   @@unique([cashCutId, professionalId])
+  @@index([professionalId], map: "cash_cut_professional_breakdown_professionalId_fkey")
   @@map("cash_cut_professional_breakdown")
 }
 
-// Resource Patient Distribution Tracking
 model ResourcePatientDistribution {
   id         String    @id @default(cuid())
   resourceId String
   patientId  String
-  sentVia    String    @default("expedix") // 'expedix', 'email', 'portal'
+  sentVia    String    @default("expedix")
   sentDate   DateTime  @default(now())
   viewedDate DateTime?
   message    String?
   sentById   String
-  resource   Resource  @relation(fields: [resourceId], references: [id], onDelete: Cascade)
   patient    Patient   @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  resource   Resource  @relation(fields: [resourceId], references: [id], onDelete: Cascade)
   sentBy     User      @relation("SentByUser", fields: [sentById], references: [id])
 
+  @@index([patientId], map: "resource_patient_distribution_patientId_fkey")
+  @@index([resourceId], map: "resource_patient_distribution_resourceId_fkey")
+  @@index([sentById], map: "resource_patient_distribution_sentById_fkey")
   @@map("resource_patient_distribution")
 }
 
-// Patient Documents for Expedix Integration
 model PatientDocument {
   id           String    @id @default(cuid())
   patientId    String
@@ -845,74 +963,73 @@ model PatientDocument {
   patient      Patient   @relation(fields: [patientId], references: [id], onDelete: Cascade)
   uploadedBy   User      @relation("UploadedDocuments", fields: [uploadedById], references: [id])
 
+  @@index([patientId], map: "patient_documents_patientId_fkey")
+  @@index([uploadedById], map: "patient_documents_uploadedById_fkey")
   @@map("patient_documents")
 }
 
-// Patient Tags System
 model PatientTag {
-  id          String   @id @default(cuid())
-  name        String
-  color       String
-  textColor   String?
-  category    String
-  icon        String?
-  description String?
-  isSystemTag Boolean  @default(false)
-  isCustom    Boolean  @default(true)
-  isActive    Boolean  @default(true)
-  createdBy   String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  // Relations
-  creator               User?                  @relation("CreatedPatientTags", fields: [createdBy], references: [id])
+  id                    String                 @id @default(cuid())
+  name                  String
+  color                 String
+  textColor             String?
+  category              String
+  icon                  String?
+  description           String?
+  isSystemTag           Boolean                @default(false)
+  isCustom              Boolean                @default(true)
+  isActive              Boolean                @default(true)
+  createdBy             String?
+  createdAt             DateTime               @default(now())
+  updatedAt             DateTime               @updatedAt
   patientTagAssignments PatientTagAssignment[]
+  creator               User?                  @relation("CreatedPatientTags", fields: [createdBy], references: [id])
 
   @@unique([name, category])
+  @@index([createdBy], map: "patient_tags_createdBy_fkey")
   @@map("patient_tags")
 }
 
-// Patient Tag Assignments
 model PatientTagAssignment {
-  id            String    @id @default(cuid())
-  patientId     String
-  tagId         String
-  assignedBy    String?
-  assignedAt    DateTime  @default(now())
-  isActive      Boolean   @default(true)
-  reason        String?
-  removedBy     String?
-  removedAt     DateTime?
-  removalReason String?
-
-  // Relations
-  patient        Patient    @relation("PatientTagAssignments", fields: [patientId], references: [id], onDelete: Cascade)
-  tag            PatientTag @relation(fields: [tagId], references: [id], onDelete: Cascade)
+  id             String     @id @default(cuid())
+  patientId      String
+  tagId          String
+  assignedBy     String?
+  assignedAt     DateTime   @default(now())
+  isActive       Boolean    @default(true)
+  reason         String?
+  removedBy      String?
+  removedAt      DateTime?
+  removalReason  String?
   assignedByUser User?      @relation("AssignedPatientTags", fields: [assignedBy], references: [id])
+  patient        Patient    @relation("PatientTagAssignments", fields: [patientId], references: [id], onDelete: Cascade)
   removedByUser  User?      @relation("RemovedPatientTags", fields: [removedBy], references: [id])
+  tag            PatientTag @relation(fields: [tagId], references: [id], onDelete: Cascade)
 
   @@unique([patientId, tagId])
+  @@index([assignedBy], map: "patient_tag_assignments_assignedBy_fkey")
+  @@index([removedBy], map: "patient_tag_assignments_removedBy_fkey")
+  @@index([tagId], map: "patient_tag_assignments_tagId_fkey")
   @@map("patient_tag_assignments")
 }
 
-// Schedule Configuration for Agenda System
 model ScheduleConfiguration {
   id                         String   @id @default(cuid())
-  userId                     String   @unique // One config per user
-  workingHoursStart          String // "08:30"
-  workingHoursEnd            String // "19:30"
+  userId                     String   @unique
+  workingHoursStart          String
+  workingHoursEnd            String
   lunchBreakEnabled          Boolean  @default(false)
-  lunchBreakStart            String? // "14:00"
-  lunchBreakEnd              String? // "16:00"
-  workingDays                Json // ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday"]
-  defaultAppointmentDuration Int      @default(60) // minutes
-  consultationTypes          Json // Array of consultation type objects
-  blockedDates               Json     @default("[]") // Array of blocked date strings
+  lunchBreakStart            String?
+  lunchBreakEnd              String?
+  workingDays                Json
+  defaultAppointmentDuration Int      @default(60)
+  consultationTypes          Json
+  blockedDates               Json     @default(dbgenerated("(json_array())"))
   maxDailyAppointments       Int      @default(20)
-  bufferTime                 Int      @default(0) // minutes
-  reminders                  Json // WhatsApp and Email reminder configuration
+  bufferTime                 Int      @default(0)
+  reminders                  Json
   createdAt                  DateTime @default(now())
-  updatedAt                  DateTime @updatedAt
+  updatedAt                  DateTime @default(now()) @updatedAt
 
   @@map("schedule_configurations")
 }
@@ -921,22 +1038,450 @@ model WaitingList {
   id              String    @id @default(cuid())
   patientId       String
   appointmentType String
-  preferredDates  Json // Array of preferred dates
-  preferredTimes  Json // Array of preferred time slots
-  priority        String    @default("media") // alta, media, baja
-  notes           String?
-  status          String    @default("waiting") // waiting, contacted, scheduled, expired
+  preferredDates  Json
+  preferredTimes  Json
+  priority        String    @default("media")
+  notes           String?   @db.Text
+  status          String    @default("waiting")
   contactAttempts Int       @default(0)
   lastContactDate DateTime?
   scheduledDate   DateTime?
   createdBy       String    @default("user-dr-alejandro")
   createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
-
-  patient Patient @relation(fields: [patientId], references: [id])
+  updatedAt       DateTime  @default(now()) @updatedAt
+  patient         Patient   @relation(fields: [patientId], references: [id])
 
   @@index([patientId])
   @@index([status])
   @@index([priority])
   @@map("waiting_list")
+}
+
+model appointment_behavioral_logs {
+  id             String                                 @id
+  appointment_id String?
+  patient_id     String
+  event_type     appointment_behavioral_logs_event_type
+  description    String?                                @db.Text
+  delay_minutes  Int?
+  recorded_by    String
+  recorded_at    DateTime                               @default(now()) @db.DateTime(0)
+  created_at     DateTime                               @default(now()) @db.DateTime(0)
+  updated_at     DateTime                               @default(now()) @db.DateTime(0)
+
+  @@index([appointment_id], map: "idx_appointment_id")
+  @@index([event_type], map: "idx_event_type")
+  @@index([patient_id], map: "idx_patient_id")
+  @@index([recorded_at], map: "idx_recorded_at")
+}
+
+model appointment_changes {
+  id                      String                          @id
+  original_appointment_id String
+  patient_id              String
+  change_type             appointment_changes_change_type
+  reason                  String?                         @db.Text
+  advance_notice_hours    Int?
+  requested_new_date      DateTime?                       @db.DateTime(0)
+  recorded_by             String
+  change_date             DateTime                        @default(now()) @db.DateTime(0)
+  created_at              DateTime                        @default(now()) @db.DateTime(0)
+  updated_at              DateTime                        @default(now()) @db.DateTime(0)
+
+  @@index([change_date], map: "idx_change_date")
+  @@index([change_type], map: "idx_change_type")
+  @@index([original_appointment_id], map: "idx_original_appointment")
+  @@index([patient_id], map: "idx_patient_id")
+}
+
+model appointment_logs {
+  id             String   @id @db.VarChar(255)
+  appointment_id String?  @db.VarChar(255)
+  patient_id     String   @db.VarChar(255)
+  user_id        String   @db.VarChar(255)
+  user_name      String   @db.VarChar(255)
+  action         String   @db.VarChar(50)
+  previous_data  String?  @db.Text
+  new_data       String?  @db.Text
+  changes        String?  @db.Text
+  reason         String?  @db.Text
+  created_at     DateTime @default(now()) @db.DateTime(0)
+
+  @@index([action], map: "idx_action")
+  @@index([appointment_id], map: "idx_appointment_id")
+  @@index([created_at], map: "idx_created_at")
+  @@index([patient_id], map: "idx_patient_id")
+  @@index([user_id], map: "idx_user_id")
+}
+
+model patient_alerts {
+  id              String    @id @db.VarChar(255)
+  patient_id      String    @db.VarChar(255)
+  type            String    @db.VarChar(100)
+  severity        String    @db.VarChar(20)
+  message         String    @db.Text
+  metadata        String?   @db.Text
+  is_active       Boolean   @default(true)
+  acknowledged_by String?   @db.VarChar(255)
+  acknowledged_at DateTime? @db.DateTime(0)
+  created_at      DateTime  @default(now()) @db.DateTime(0)
+
+  @@index([created_at], map: "idx_created_at")
+  @@index([is_active], map: "idx_is_active")
+  @@index([patient_id], map: "idx_patient_id")
+  @@index([severity], map: "idx_severity")
+  @@index([type], map: "idx_type")
+}
+
+model patient_communications {
+  id                 String                                    @id
+  patient_id         String
+  communication_type patient_communications_communication_type
+  direction          patient_communications_direction
+  content            String?                                   @db.Text
+  duration           Int?
+  recorded_by        String
+  communication_date DateTime                                  @default(now()) @db.DateTime(0)
+  created_at         DateTime                                  @default(now()) @db.DateTime(0)
+  updated_at         DateTime                                  @default(now()) @db.DateTime(0)
+
+  @@index([communication_date], map: "idx_communication_date")
+  @@index([communication_type], map: "idx_communication_type")
+  @@index([direction], map: "idx_direction")
+  @@index([patient_id], map: "idx_patient_id")
+}
+
+model user_favorite_scales {
+  id         String   @id
+  user_id    String
+  scale_id   String
+  created_at DateTime @default(now())
+  updated_at DateTime @default(now())
+  scales     Scale    @relation(fields: [scale_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "user_favorite_scales_ibfk_1")
+
+  @@unique([user_id, scale_id], map: "unique_user_scale")
+  @@index([scale_id], map: "idx_scale_favorites")
+  @@index([user_id], map: "idx_user_favorites")
+}
+
+model ScaleResponseGroup {
+  id           String   @id @default(cuid())
+  scaleId      String   @map("scale_id")
+  groupKey     String   @map("group_key")
+  name         String
+  description  String?  @db.Text
+  displayOrder Int      @default(0) @map("display_order")
+  isActive     Boolean  @default(true) @map("is_active")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  @@unique([scaleId, groupKey], map: "uk_scale_group")
+  @@index([scaleId], map: "idx_scale_response_groups_scale")
+  @@map("scale_response_groups")
+}
+
+model ScaleSubscaleScore {
+  id               String              @id @default(cuid())
+  administrationId String              @map("administration_id")
+  subscaleId       String              @map("subscale_id")
+  subscaleName     String              @map("subscale_name")
+  score            Float
+  rawScore         Float?              @map("raw_score")
+  percentileScore  Float?              @map("percentile_score")
+  tScore           Float?              @map("t_score")
+  interpretation   String?
+  severity         String?
+  createdAt        DateTime            @default(now()) @map("created_at")
+  updatedAt        DateTime            @updatedAt @map("updated_at")
+  administration   ScaleAdministration @relation(fields: [administrationId], references: [id], onDelete: Cascade)
+  subscale         ScaleSubscale       @relation(fields: [subscaleId], references: [id])
+
+  @@unique([administrationId, subscaleId])
+  @@index([administrationId], map: "idx_subscale_scores_administration")
+  @@index([subscaleId], map: "idx_subscale_scores_subscale")
+  @@map("scale_subscale_scores")
+}
+
+model form_analytics {
+  id           Int       @id @default(autoincrement())
+  form_id      String    @db.VarChar(100)
+  metric_name  String    @db.VarChar(100)
+  metric_value Decimal   @db.Decimal(10, 2)
+  period_start DateTime  @db.Date
+  period_end   DateTime  @db.Date
+  created_at   DateTime? @default(now()) @db.Timestamp(0)
+
+  @@index([form_id], map: "idx_form_id")
+  @@index([metric_name], map: "idx_metric_name")
+  @@index([period_start, period_end], map: "idx_period")
+}
+
+model form_assignments {
+  id                    String                   @id @db.VarChar(100)
+  form_id               String                   @db.VarChar(100)
+  patient_id            String                   @db.VarChar(36)
+  token                 String                   @unique(map: "token") @db.VarChar(128)
+  assigned_by           String                   @db.VarChar(36)
+  assigned_at           DateTime?                @default(now()) @db.Timestamp(0)
+  expires_at            DateTime                 @db.Timestamp(0)
+  status                form_assignments_status? @default(pending)
+  message               String?                  @db.Text
+  reminders_sent        Int?                     @default(0)
+  max_reminders         Int?                     @default(3)
+  completion_percentage Int?                     @default(0)
+  completed_at          DateTime?                @db.Timestamp(0)
+  reminder_schedule     Json?
+
+  @@index([assigned_at], map: "idx_assigned_at")
+  @@index([expires_at], map: "idx_expires_at")
+  @@index([form_id], map: "idx_form_id")
+  @@index([patient_id], map: "idx_patient_id")
+  @@index([status], map: "idx_status")
+  @@index([token], map: "idx_token")
+}
+
+model form_categories {
+  id          String    @id @db.VarChar(36)
+  name        String    @db.VarChar(255)
+  description String?   @db.Text
+  icon        String?   @db.VarChar(100)
+  color       String?   @db.VarChar(7)
+  sort_order  Int?      @default(0)
+  is_active   Boolean?  @default(true)
+  created_at  DateTime? @default(now()) @db.Timestamp(0)
+}
+
+model form_submissions {
+  id                      String    @id @db.VarChar(100)
+  assignment_id           String    @db.VarChar(100)
+  form_id                 String    @db.VarChar(100)
+  patient_id              String    @db.VarChar(36)
+  responses               Json
+  submitted_at            DateTime? @default(now()) @db.Timestamp(0)
+  submission_time_seconds Int?
+  completion_percentage   Int?      @default(100)
+  ip_address              String?   @db.VarChar(45)
+  user_agent              String?   @db.Text
+  signature_data          String?   @db.Text
+
+  @@index([assignment_id], map: "idx_assignment_id")
+  @@index([form_id], map: "idx_form_id")
+  @@index([patient_id], map: "idx_patient_id")
+  @@index([submitted_at], map: "idx_submitted_at")
+}
+
+model forms {
+  id           String    @id @db.VarChar(100)
+  title        String    @db.VarChar(500)
+  description  String?   @db.Text
+  structure    Json
+  settings     Json?
+  category     String?   @db.VarChar(100)
+  created_by   String    @db.VarChar(36)
+  created_at   DateTime? @default(now()) @db.Timestamp(0)
+  updated_at   DateTime? @default(now()) @db.Timestamp(0)
+  is_active    Boolean?  @default(true)
+  version      Int?      @default(1)
+  usage_count  Int?      @default(0)
+  last_used_at DateTime? @db.Timestamp(0)
+
+  @@index([is_active], map: "idx_active")
+  @@index([category], map: "idx_category")
+  @@index([created_at], map: "idx_created_at")
+  @@index([created_by], map: "idx_created_by")
+}
+
+model resource_access_logs {
+  id               String                      @id @default(dbgenerated("(uuid())")) @db.VarChar(36)
+  resource_send_id String                      @db.VarChar(36)
+  accessed_at      DateTime?                   @default(now()) @db.Timestamp(0)
+  ip_address       String?                     @db.VarChar(45)
+  user_agent       String?                     @db.Text
+  action           resource_access_logs_action
+  resource_sends   resource_sends              @relation(fields: [resource_send_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "resource_access_logs_ibfk_1")
+
+  @@index([accessed_at], map: "idx_accessed")
+  @@index([resource_send_id], map: "idx_send")
+}
+
+model resource_collections {
+  id          String    @id @default(dbgenerated("(uuid())")) @db.VarChar(36)
+  user_id     String    @db.VarChar(36)
+  name        String    @db.VarChar(255)
+  description String?   @db.Text
+  is_public   Boolean?  @default(false)
+  created_at  DateTime? @default(now()) @db.Timestamp(0)
+  updated_at  DateTime? @default(now()) @db.Timestamp(0)
+
+  @@index([user_id], map: "idx_user")
+}
+
+model resource_email_templates {
+  id             String           @id @default(dbgenerated("(uuid())")) @db.VarChar(36)
+  user_id        String           @db.VarChar(36)
+  name           String           @db.VarChar(255)
+  subject        String           @db.VarChar(500)
+  body_html      String           @db.Text
+  body_text      String?          @db.Text
+  is_default     Boolean?         @default(false)
+  created_at     DateTime?        @default(now()) @db.Timestamp(0)
+  updated_at     DateTime?        @default(now()) @db.Timestamp(0)
+  resource_sends resource_sends[]
+
+  @@index([user_id], map: "idx_user")
+}
+
+model resource_sends {
+  id                       String                          @id @default(dbgenerated("(uuid())")) @db.VarChar(36)
+  resource_id              String                          @db.VarChar(36)
+  patient_id               String                          @db.VarChar(36)
+  sent_by                  String                          @db.VarChar(36)
+  sent_at                  DateTime?                       @default(now()) @db.Timestamp(0)
+  send_method              resource_sends_send_method
+  email_template_id        String?                         @db.VarChar(36)
+  watermark_applied        Boolean?                        @default(false)
+  watermark_template_id    String?                         @db.VarChar(36)
+  customizations_json      Json?
+  delivery_status          resource_sends_delivery_status? @default(sent)
+  delivered_at             DateTime?                       @db.Timestamp(0)
+  viewed_at                DateTime?                       @db.Timestamp(0)
+  download_count           Int?                            @default(0)
+  notes                    String?                         @db.Text
+  resource_access_logs     resource_access_logs[]
+  resource_email_templates resource_email_templates?       @relation(fields: [email_template_id], references: [id], onUpdate: NoAction, map: "resource_sends_ibfk_1")
+  watermark_templates      watermark_templates?            @relation(fields: [watermark_template_id], references: [id], onUpdate: NoAction, map: "resource_sends_ibfk_2")
+
+  @@index([email_template_id], map: "email_template_id")
+  @@index([patient_id], map: "idx_patient")
+  @@index([resource_id], map: "idx_resource")
+  @@index([sent_at], map: "idx_sent_date")
+  @@index([delivery_status], map: "idx_status")
+  @@index([watermark_template_id], map: "watermark_template_id")
+}
+
+model watermark_templates {
+  id             String                        @id @default(dbgenerated("(uuid())")) @db.VarChar(36)
+  user_id        String                        @db.VarChar(36)
+  name           String                        @db.VarChar(255)
+  type           watermark_templates_type
+  logo_path      String?                       @db.VarChar(500)
+  text_content   String?                       @db.VarChar(500)
+  position       watermark_templates_position? @default(bottom_right)
+  opacity        Decimal?                      @default(0.50) @db.Decimal(3, 2)
+  font_size      Int?                          @default(12)
+  font_color     String?                       @default("#000000") @db.VarChar(7)
+  settings_json  Json?
+  is_default     Boolean?                      @default(false)
+  created_at     DateTime?                     @default(now()) @db.Timestamp(0)
+  updated_at     DateTime?                     @default(now()) @db.Timestamp(0)
+  resource_sends resource_sends[]
+
+  @@index([user_id, is_default], map: "idx_user_default")
+}
+
+enum RemoteAssessmentStatus {
+  pending
+  accessed
+  in_progress
+  completed
+  expired
+}
+
+enum DeliveryMethod {
+  email
+  sms
+  whatsapp
+  copy_link
+}
+
+enum DeviceType {
+  mobile
+  tablet
+  desktop
+  unknown
+}
+
+enum AccessAction {
+  view
+  start
+  save_progress
+  complete
+  expire
+}
+
+enum MessageTemplateCategory {
+  followup
+  initial
+  pre_appointment
+  post_appointment
+  custom
+}
+
+enum patient_communications_communication_type {
+  phone_call
+  whatsapp
+  email
+  in_person
+}
+
+enum appointment_behavioral_logs_event_type {
+  late_arrival
+  no_show
+  cancelled_last_minute
+  early_arrival
+  communication_issue
+  payment_delay
+}
+
+enum appointment_changes_change_type {
+  reschedule
+  cancellation
+  no_show
+}
+
+enum patient_communications_direction {
+  incoming
+  outgoing
+}
+
+enum watermark_templates_type {
+  text
+  image
+  combined
+}
+
+enum resource_access_logs_action {
+  view
+  download
+  print
+}
+
+enum resource_sends_send_method {
+  email
+  download
+  patient_portal @map("patient-portal")
+}
+
+enum watermark_templates_position {
+  top_left      @map("top-left")
+  top_center    @map("top-center")
+  top_right     @map("top-right")
+  center
+  bottom_left   @map("bottom-left")
+  bottom_center @map("bottom-center")
+  bottom_right  @map("bottom-right")
+}
+
+enum form_assignments_status {
+  pending
+  in_progress
+  completed
+  expired
+}
+
+enum resource_sends_delivery_status {
+  pending
+  sent
+  delivered
+  failed
 }

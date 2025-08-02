@@ -48,6 +48,8 @@ const transformPatientToFrontend = (patient) => {
     emergency_contact_name: patient.emergencyContactName,
     emergency_contact_phone: patient.emergencyContactPhone,
     address: patient.address,
+    consultations_count: patient._count?.consultations || 0,
+    evaluations_count: patient._count?.scaleAdministrations || 0,
     city: patient.city,
     state: patient.state,
     postal_code: patient.postalCode,
@@ -57,7 +59,13 @@ const transformPatientToFrontend = (patient) => {
     creator: patient.creator,
     _count: patient._count,
     // Add avatar initials for frontend convenience
-    avatar_initials: safeChar(patient.firstName) + safeChar(patient.paternalLastName || patient.lastName)
+    avatar_initials: safeChar(patient.firstName) + safeChar(patient.paternalLastName || patient.lastName),
+    
+    // Include related data when available
+    consultations: patient.consultations || [],
+    medicalHistory: patient.medicalHistory || [],
+    prescriptions: patient.prescriptions || [],
+    scaleAdministrations: patient.scaleAdministrations || []
   };
 };
 
@@ -230,10 +238,17 @@ router.get('/',
     const [patients, totalCount] = await executeTransaction([
       (prisma) => prisma.patient.findMany({
         where,
-        // Simplified for development - removed includes that may cause DB issues
         skip,
         take: parseInt(limit),
-        orderBy: { createdAt: 'desc' }
+        orderBy: { createdAt: 'desc' },
+        include: {
+          _count: {
+            select: {
+              consultations: true,
+              scaleAdministrations: true
+            }
+          }
+        }
       }),
       (prisma) => prisma.patient.count({ where })
     ], 'getPatients');

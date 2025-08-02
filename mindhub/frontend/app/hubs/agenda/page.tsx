@@ -9,6 +9,8 @@ import BlockTimeModal from '@/components/agenda/BlockTimeModal';
 import WaitingListModal from '@/components/agenda/WaitingListModal';
 import AppointmentDetailsModal from '@/components/agenda/AppointmentDetailsModal';
 import AddToWaitingListModal from '@/components/agenda/AddToWaitingListModal';
+import NewPatientQuickModal from '@/components/agenda/NewPatientQuickModal';
+import { AgendaErrorBoundary } from '@/components/agenda/AgendaErrorBoundary';
 import { 
   CalendarIcon, 
   PlusIcon, 
@@ -45,12 +47,18 @@ export default function AgendaPage() {
   const [showNewPatientModal, setShowNewPatientModal] = useState(false);
   const [editingAppointment, setEditingAppointment] = useState<any>(null);
   const [showAddToWaitingList, setShowAddToWaitingList] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   // Listen for new patient modal events
   useEffect(() => {
     const handleOpenNewPatientModal = (event: CustomEvent) => {
       if (event.detail?.fromAgenda) {
         setShowNewPatientModal(true);
+        // Store callback if provided
+        if (event.detail?.callback) {
+          setNewPatientCallback(() => event.detail.callback);
+        }
       }
     };
 
@@ -82,12 +90,44 @@ export default function AgendaPage() {
     setShowNewAppointment(true);
   };
 
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
+
+  const refreshAppointments = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/expedix/agenda/appointments`);
+      if (response.ok) {
+        // Trigger refresh in AgendaCalendar by changing key
+        setRefreshTrigger(prev => prev + 1);
+        toast.success('Datos actualizados');
+      } else {
+        throw new Error('Error al cargar citas');
+      }
+    } catch (error) {
+      console.error('Error refreshing appointments:', error);
+      setError('Error al cargar las citas');
+      toast.error('Error al actualizar los datos');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const [newPatientCallback, setNewPatientCallback] = useState<((patient: any) => void) | null>(null);
+
   const handleNewPatientSaved = (patient: any) => {
+    console.log('🎯 New patient created:', patient);
     setShowNewPatientModal(false);
-    // Reload patients in appointment modal if it's open
+    
+    // If there's a callback (from appointment modal), call it
+    if (newPatientCallback) {
+      newPatientCallback(patient);
+      setNewPatientCallback(null);
+    }
+    
+    // Refresh appointments if modal is open
     if (showNewAppointment) {
-      // Trigger reload
-      window.location.reload();
+      refreshAppointments();
     }
   };
 
@@ -104,9 +144,9 @@ export default function AgendaPage() {
   };
 
   const handleSaveAppointment = async (appointmentData: any) => {
+    setLoading(true);
     try {
       console.log('🔄 Saving appointment:', appointmentData);
-      console.log('🌐 API URL:', `${process.env.NEXT_PUBLIC_API_URL}/api/v1/expedix/agenda/appointments`);
       
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/expedix/agenda/appointments`, {
         method: 'POST',
@@ -114,24 +154,25 @@ export default function AgendaPage() {
         body: JSON.stringify(appointmentData)
       });
       
-      console.log('📡 Response status:', response.status);
-      console.log('📡 Response ok:', response.ok);
-      
       if (response.ok) {
         const result = await response.json();
         console.log('✅ Appointment saved successfully:', result);
         setShowNewAppointment(false);
         setAppointmentTime('');
-        // Recargar calendario
-        window.location.reload();
+        setEditingAppointment(null);
+        // Refresh calendar without reload
+        refreshAppointments();
+        toast.success('Cita agendada exitosamente');
       } else {
         const errorData = await response.text();
         console.error('❌ Error response:', errorData);
-        alert(`Error al agendar cita: ${response.status} - ${errorData}`);
+        toast.error(`Error al agendar cita: ${response.status}`);
       }
     } catch (error) {
       console.error('❌ Network error saving appointment:', error);
-      alert('Error de conexión al agendar cita. Revisa que el backend esté corriendo.');
+      toast.error('Error de conexión al agendar cita');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -140,6 +181,7 @@ export default function AgendaPage() {
       return;
     }
 
+    setLoading(true);
     try {
       console.log('🗑️ Deleting appointment:', appointmentId);
       
@@ -175,8 +217,8 @@ export default function AgendaPage() {
         
         setShowAppointmentDetails(false);
         setSelectedAppointment(null);
-        // Recargar calendario
-        window.location.reload();
+        // Refresh calendar without reload
+        refreshAppointments();
       } else {
         const errorData = await response.text();
         console.error('❌ Error deleting appointment:', errorData);
@@ -185,10 +227,13 @@ export default function AgendaPage() {
     } catch (error) {
       console.error('❌ Network error deleting appointment:', error);
       toast.error('Error de conexión al cancelar cita');
+    } finally {
+      setLoading(false);
     }
   };
 
   const handleStatusChange = async (appointmentId: string, newStatus: string) => {
+    setLoading(true);
     try {
       console.log('🔄 Changing appointment status:', appointmentId, newStatus);
       
@@ -208,8 +253,8 @@ export default function AgendaPage() {
             status: newStatus
           });
         }
-        // Recargar calendario para reflejar cambios
-        window.location.reload();
+        // Refresh calendar without reload
+        refreshAppointments();
       } else {
         const errorData = await response.text();
         console.error('❌ Error changing status:', errorData);
@@ -218,6 +263,8 @@ export default function AgendaPage() {
     } catch (error) {
       console.error('❌ Network error changing status:', error);
       toast.error('Error de conexión al cambiar estado');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -382,6 +429,7 @@ export default function AgendaPage() {
   }, [selectedDate]);
 
   return (
+    <AgendaErrorBoundary>
     <div className="space-y-6">
       <div className="bg-white rounded-lg shadow-sm border border-primary-100 p-3 mb-4">
         <div className="flex items-center justify-between">
@@ -483,7 +531,30 @@ export default function AgendaPage() {
         <div className="lg:col-span-3">
           {currentView === 'calendar' ? (
             <div className="bg-white rounded-xl shadow-lg border border-orange-100 overflow-hidden hover-lift relative before:absolute before:top-0 before:left-0 before:right-0 before:h-1 before:border-gradient-orange">
+              {loading && (
+                <div className="absolute inset-0 bg-white bg-opacity-75 z-50 flex items-center justify-center">
+                  <div className="flex items-center space-x-3">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-500"></div>
+                    <span className="text-primary-600 font-medium">Actualizando agenda...</span>
+                  </div>
+                </div>
+              )}
+              {error && (
+                <div className="absolute top-4 right-4 bg-red-50 border border-red-200 text-red-700 px-4 py-2 rounded-lg text-sm z-40">
+                  <div className="flex items-center space-x-2">
+                    <span>⚠️</span>
+                    <span>{error}</span>
+                    <button 
+                      onClick={() => setError(null)}
+                      className="ml-2 text-red-500 hover:text-red-700"
+                    >
+                      ×
+                    </button>
+                  </div>
+                </div>
+              )}
               <AgendaCalendar
+                key={refreshTrigger}
                 selectedDate={selectedDate}
                 onDateSelect={handleDateSelect}
                 onNewAppointment={handleNewAppointment}
@@ -493,6 +564,14 @@ export default function AgendaPage() {
             </div>
           ) : (
             <div className="bg-white rounded-xl shadow-lg border border-orange-100 overflow-hidden hover-lift relative before:absolute before:top-0 before:left-0 before:right-0 before:h-1 before:border-gradient-orange">
+              {loading && (
+                <div className="absolute inset-0 bg-white bg-opacity-75 z-50 flex items-center justify-center">
+                  <div className="flex items-center space-x-3">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-500"></div>
+                    <span className="text-primary-600 font-medium">Actualizando lista...</span>
+                  </div>
+                </div>
+              )}
               <AppointmentList
                 selectedDate={selectedDate}
                 onNewAppointment={(date, time) => handleNewAppointment(date, time)}
@@ -727,5 +806,6 @@ export default function AgendaPage() {
         />
       )}
     </div>
+    </AgendaErrorBoundary>
   );
 }

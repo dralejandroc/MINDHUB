@@ -25,34 +25,37 @@ interface AdvancedDashboardProps {
 }
 
 export function AdvancedDashboard({ onCustomizeLayout }: AdvancedDashboardProps) {
-  const { preferences } = useUserMetrics();
+  const { preferences, realDashboardData } = useUserMetrics();
   const [showCustomization, setShowCustomization] = useState(false);
 
+  // Use real dashboard data if available, fallback to localStorage
+  const useRealData = realDashboardData !== null;
+  
   const stats = [
     {
       label: 'Pacientes Totales',
-      value: preferences.metrics.patientsAdded || 0,
+      value: useRealData ? realDashboardData.totalPatients : (preferences.metrics.patientsAdded || 0),
       icon: UserGroupIcon,
       color: 'text-blue-600',
       bgColor: 'bg-blue-100'
     },
     {
       label: 'Escalas Aplicadas',
-      value: preferences.metrics.scalesApplied || 0,
+      value: useRealData ? realDashboardData.totalScaleApplications : (preferences.metrics.scalesApplied || 0),
       icon: ClipboardDocumentListIcon,
       color: 'text-purple-600',
       bgColor: 'bg-purple-100'
     },
     {
       label: 'Formularios Creados',
-      value: preferences.metrics.formsCreated || 0,
+      value: useRealData ? realDashboardData.totalFormInstances : (preferences.metrics.formsCreated || 0),
       icon: DocumentTextIcon,
       color: 'text-emerald-600',
       bgColor: 'bg-emerald-100'
     },
     {
       label: 'Recursos Subidos',
-      value: preferences.metrics.resourcesUploaded || 0,
+      value: useRealData ? realDashboardData.totalResources : (preferences.metrics.resourcesUploaded || 0),
       icon: BookOpenIcon,
       color: 'text-orange-600',
       bgColor: 'bg-orange-100'

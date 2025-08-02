@@ -261,6 +261,7 @@ export default function ExpedixPage() {
           onNewConsultation={handleNewConsultation}
           onClinicalAssessment={handleClinicalAssessment}
           onSettings={handleSettings}
+          onChangeView={setViewMode}
         />
       )}
       

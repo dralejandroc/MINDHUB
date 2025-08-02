@@ -11,20 +11,18 @@ export default function HubsLayout({
   const [currentUser, setCurrentUser] = useState(null);
 
   useEffect(() => {
-    // Read user from localStorage
+    // Read user from localStorage - NO HARDCODED DATA
     const savedUser = localStorage.getItem('currentUser');
     if (savedUser) {
-      setCurrentUser(JSON.parse(savedUser));
+      try {
+        setCurrentUser(JSON.parse(savedUser));
+      } catch (e) {
+        console.error('Error parsing user:', e);
+        window.location.href = '/login';
+      }
     } else {
-      // Default fallback
-      const defaultUser = {
-        id: 'user-dr-alejandro',
-        name: 'Dr. Alejandro Contreras',
-        email: 'alejandro@mindhub.com',
-        role: 'professional'
-      };
-      setCurrentUser(defaultUser);
-      localStorage.setItem('currentUser', JSON.stringify(defaultUser));
+      // No user found, redirect to login
+      window.location.href = '/login';
     }
   }, []);
 

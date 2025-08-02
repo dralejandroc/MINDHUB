@@ -1,116 +1,153 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { Card } from '@/components/ui/Card';
-import { Button } from '@/components/ui/Button';
+import Image from 'next/image';
+import { getAvailableUsers, login } from '@/lib/api/auth-client';
 
 export default function LoginPage() {
   const router = useRouter();
   const [selectedUser, setSelectedUser] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [users, setUsers] = useState<Array<{
+    id: string;
+    name: string;
+    email: string;
+    role: string;
+    description: string;
+  }>>([]);
 
-  const users = [
-    {
-      id: 'admin',
-      name: 'Administrador',
-      email: 'admin@mindhub.com',
-      role: 'administrator',
-      description: 'Usuario administrador - Vista limpia para nuevos usuarios'
-    },
-    {
-      id: 'dr-alejandro',
-      name: 'Dr. Alejandro Contreras',
-      email: 'dr_aleks_c@hotmail.com',
-      role: 'doctor',
-      description: 'Psiquiatra con 6 pacientes de prueba y consultas'
-    }
-  ];
+  // Load available users from backend
+  useEffect(() => {
+    loadUsers();
+  }, []);
 
-  const handleLogin = () => {
-    const user = users.find(u => u.id === selectedUser);
-    if (user) {
-      // Save user to localStorage based on selection
-      const userData = {
-        id: user.id === 'dr-alejandro' ? 'user-dr-alejandro' : user.id,
-        name: user.name,
-        email: user.email,
-        role: user.role,
-        isRealUser: user.id === 'dr-alejandro'
-      };
-      
-      localStorage.setItem('currentUser', JSON.stringify(userData));
-      router.push('/');
+  const loadUsers = async () => {
+    const response = await getAvailableUsers();
+    if (response.success && response.users) {
+      setUsers(response.users);
+      // Pre-select first user
+      if (response.users.length > 0) {
+        setSelectedUser(response.users[0].id);
+      }
+    } else {
+      setError('Error al cargar usuarios disponibles');
     }
   };
 
-  const handleLogout = () => {
-    localStorage.removeItem('currentUser');
-    setSelectedUser('');
+  const handleLogin = async () => {
+    const user = users.find(u => u.id === selectedUser);
+    if (!user) {
+      setError('Por favor selecciona un usuario');
+      return;
+    }
+
+    setIsLoading(true);
+    setError('');
+
+    try {
+      const response = await login(user.email);
+      
+      if (response.success) {
+        // Redirect based on role
+        if (user.role === 'admin') {
+          router.push('/admin');
+        } else {
+          router.push('/');
+        }
+      } else {
+        setError(response.error || 'Error al iniciar sesión');
+      }
+    } catch (err) {
+      setError('Error de conexión con el servidor');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-primary-50 to-secondary-50 flex items-center justify-center p-4">
-      <Card className="w-full max-w-md p-8 bg-white shadow-lg">
-        <div className="text-center mb-8">
-          <h1 className="text-2xl font-bold text-gray-900 mb-2">MindHub</h1>
-          <p className="text-gray-600">Selecciona tu usuario para continuar</p>
-        </div>
-
-        <div className="space-y-4 mb-6">
-          {users.map((user) => (
-            <div
-              key={user.id}
-              className={`p-4 border rounded-lg cursor-pointer transition-all duration-200 ${
-                selectedUser === user.id
-                  ? 'border-primary-500 bg-primary-50'
-                  : 'border-gray-200 hover:border-gray-300'
-              }`}
-              onClick={() => setSelectedUser(user.id)}
-            >
-              <div className="flex items-start">
-                <input
-                  type="radio"
-                  name="user"
-                  value={user.id}
-                  checked={selectedUser === user.id}
-                  onChange={() => setSelectedUser(user.id)}
-                  className="mt-1 mr-3"
-                />
-                <div className="flex-1">
-                  <div className="font-semibold text-gray-900">{user.name}</div>
-                  <div className="text-sm text-gray-600">{user.email}</div>
-                  <div className="text-xs text-gray-500 mt-1">{user.description}</div>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-
-        <div className="space-y-3">
-          <Button
-            onClick={handleLogin}
-            disabled={!selectedUser}
-            className="w-full"
-            variant="primary"
-          >
-            Iniciar Sesión
-          </Button>
-          
-          <Button
-            onClick={handleLogout}
-            variant="outline"
-            className="w-full"
-          >
-            Limpiar Sesión
-          </Button>
-        </div>
-
-        <div className="mt-6 text-center">
-          <p className="text-xs text-gray-500">
-            Sistema temporal de desarrollo - Auth0 se implementará mañana
+    <div className="min-h-screen flex items-center justify-center" 
+         style={{ background: 'linear-gradient(135deg, var(--warm-100, #fef7ee) 0%, var(--secondary-500, #29a98c) 100%)' }}>
+      <div className="bg-white/95 backdrop-blur-lg p-12 rounded-3xl shadow-2xl w-full max-w-md transform hover:scale-[1.02] transition-transform duration-300">
+        <div className="text-center mb-10">
+          <div className="inline-flex items-center justify-center w-24 h-24 bg-gradient-to-br from-primary-500 to-secondary-500 rounded-3xl mb-6 shadow-xl transform rotate-3 hover:rotate-6 transition-transform duration-300">
+            <span className="text-4xl font-bold text-white transform -rotate-3">M</span>
+          </div>
+          <h1 className="text-4xl font-bold bg-gradient-to-r from-primary-600 to-secondary-600 bg-clip-text text-transparent mb-3">
+            MindHub
+          </h1>
+          <p className="text-gray-600 text-lg">
+            Plataforma de Gestión Clínica
           </p>
         </div>
-      </Card>
+
+        {error && (
+          <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-6">
+            {error}
+          </div>
+        )}
+
+        <div className="space-y-6">
+          <div>
+            <label className="block text-sm font-semibold text-gray-700 mb-3">
+              Selecciona un usuario
+            </label>
+            <select 
+              value={selectedUser}
+              onChange={(e) => setSelectedUser(e.target.value)}
+              className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-4 focus:ring-primary-500/20 focus:border-primary-500 transition-all duration-200 appearance-none bg-white"
+              style={{
+                backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3E%3Cpath stroke='%236B7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3E%3C/svg%3E")`,
+                backgroundPosition: 'right 0.5rem center',
+                backgroundRepeat: 'no-repeat',
+                backgroundSize: '1.5em 1.5em',
+                paddingRight: '2.5rem'
+              }}
+            >
+              {users.map(user => (
+                <option key={user.id} value={user.id}>
+                  {user.name} - {user.description}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <button
+            onClick={handleLogin}
+            disabled={isLoading || !selectedUser}
+            className={`
+              w-full py-4 px-6 rounded-xl font-semibold text-white text-lg
+              transform transition-all duration-200 
+              ${isLoading || !selectedUser
+                ? 'bg-gray-400 cursor-not-allowed' 
+                : 'bg-gradient-to-r from-primary-600 to-secondary-600 hover:from-primary-700 hover:to-secondary-700 hover:shadow-xl hover:-translate-y-0.5 active:translate-y-0'
+              }
+            `}
+          >
+            {isLoading ? (
+              <span className="inline-flex items-center">
+                <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                Iniciando sesión...
+              </span>
+            ) : (
+              'Ingresar al Sistema'
+            )}
+          </button>
+        </div>
+
+        <div className="mt-8 pt-6 border-t border-gray-200 text-center">
+          <p className="text-sm text-gray-500">
+            Sistema de autenticación real desde backend
+          </p>
+          <p className="text-xs text-gray-400 mt-2">
+            No hay datos hardcodeados
+          </p>
+        </div>
+      </div>
     </div>
   );
 }

@@ -3,11 +3,14 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { UserMetricsManager } from '@/lib/user-metrics';
 import { UserPreferences, DashboardConfig, AdminDashboardSettings } from '@/types/user-metrics';
+import { dashboardDataService, DashboardData } from '@/lib/dashboard-data-service';
 
 interface UserMetricsContextType {
   preferences: UserPreferences;
   dashboardMode: 'beginner' | 'advanced';
   isAdmin: boolean;
+  realDashboardData: DashboardData | null;
+  isLoadingDashboardData: boolean;
   
   // Metric recording functions
   recordLogin: () => void;
@@ -27,6 +30,7 @@ interface UserMetricsContextType {
   
   // Refresh data
   refreshPreferences: () => void;
+  refreshDashboardData: () => void;
 }
 
 const UserMetricsContext = createContext<UserMetricsContextType | undefined>(undefined);
@@ -35,6 +39,8 @@ export function UserMetricsProvider({ children }: { children: React.ReactNode })
   const [metricsManager] = useState(() => UserMetricsManager.getInstance());
   const [preferences, setPreferences] = useState<UserPreferences>(() => metricsManager.getUserPreferences());
   const [dashboardMode, setDashboardMode] = useState<'beginner' | 'advanced'>(() => metricsManager.getDashboardMode());
+  const [realDashboardData, setRealDashboardData] = useState<DashboardData | null>(null);
+  const [isLoadingDashboardData, setIsLoadingDashboardData] = useState(false);
 
   const refreshPreferences = () => {
     const newPreferences = metricsManager.getUserPreferences();
@@ -43,10 +49,25 @@ export function UserMetricsProvider({ children }: { children: React.ReactNode })
     setDashboardMode(newMode);
   };
 
-  // Record login on mount
+  const refreshDashboardData = async () => {
+    setIsLoadingDashboardData(true);
+    try {
+      // Force refresh to get latest data
+      const data = await dashboardDataService.forceRefresh();
+      setRealDashboardData(data);
+      console.log('Dashboard data refreshed:', data);
+    } catch (error) {
+      console.error('Error fetching dashboard data:', error);
+    } finally {
+      setIsLoadingDashboardData(false);
+    }
+  };
+
+  // Record login on mount and fetch dashboard data
   useEffect(() => {
     metricsManager.recordLogin();
     refreshPreferences();
+    refreshDashboardData();
   }, [metricsManager]);
 
   const recordLogin = () => {
@@ -102,6 +123,8 @@ export function UserMetricsProvider({ children }: { children: React.ReactNode })
     preferences,
     dashboardMode,
     isAdmin: preferences.isAdmin,
+    realDashboardData,
+    isLoadingDashboardData,
     recordLogin,
     recordPatientAdded,
     recordScaleApplied,
@@ -112,7 +135,8 @@ export function UserMetricsProvider({ children }: { children: React.ReactNode })
     updateDashboardConfig,
     saveAdminSettings,
     getAdminSettings,
-    refreshPreferences
+    refreshPreferences,
+    refreshDashboardData
   };
 
   return (

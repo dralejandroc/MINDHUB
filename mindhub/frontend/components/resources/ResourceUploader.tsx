@@ -1,185 +1,178 @@
 'use client';
 
-import React, { useState, useRef, useCallback } from 'react';
+import React, { useState, useCallback } from 'react';
+import { useDropzone } from 'react-dropzone';
 import {
   CloudArrowUpIcon,
   DocumentTextIcon,
   PhotoIcon,
-  TrashIcon,
-  EyeIcon,
-  ArrowLeftIcon,
+  DocumentIcon,
+  XMarkIcon,
   CheckCircleIcon,
   ExclamationTriangleIcon,
-  DocumentIcon
+  TagIcon,
+  FolderIcon
 } from '@heroicons/react/24/outline';
 import { Button } from '@/components/ui/Button';
+import toast from 'react-hot-toast';
 
-interface UploadedFile {
+interface Category {
   id: string;
   name: string;
-  type: string;
-  size: number;
-  url?: string;
-  preview?: string;
-  status: 'uploading' | 'processing' | 'completed' | 'error';
-  error?: string;
+  description?: string;
+  icon?: string;
 }
 
 interface ResourceUploaderProps {
-  onBack: () => void;
+  categories: Category[];
+  onUploadComplete: (resource: any) => void;
 }
 
-export const ResourceUploader: React.FC<ResourceUploaderProps> = ({ onBack }) => {
-  const [files, setFiles] = useState<UploadedFile[]>([]);
-  const [isDragging, setIsDragging] = useState(false);
-  const [processing, setProcessing] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
+interface UploadFile {
+  file: File;
+  id: string;
+  progress: number;
+  status: 'pending' | 'uploading' | 'completed' | 'error';
+  error?: string;
+  preview?: string;
+}
 
-  const acceptedFileTypes = {
-    'application/pdf': ['.pdf'],
-    'application/msword': ['.doc'],
-    'application/vnd.openxmlformats-officedocument.wordprocessingml.document': ['.docx'],
-    'text/plain': ['.txt'],
-    'text/rtf': ['.rtf'],
-    'application/vnd.apple.pages': ['.pages']
-  };
+export const ResourceUploader: React.FC<ResourceUploaderProps> = ({
+  categories,
+  onUploadComplete
+}) => {
+  const [uploadFiles, setUploadFiles] = useState<UploadFile[]>([]);
+  const [uploading, setUploading] = useState(false);
+  const [formData, setFormData] = useState({
+    categoryId: '',
+    tags: [] as string[],
+    libraryType: 'private' as 'public' | 'private'
+  });
+  const [tagInput, setTagInput] = useState('');
 
-  const handleDragOver = useCallback((e: React.DragEvent) => {
-    e.preventDefault();
-    setIsDragging(true);
+  const onDrop = useCallback((acceptedFiles: File[]) => {
+    const newFiles: UploadFile[] = acceptedFiles.map(file => ({
+      file,
+      id: Math.random().toString(36).substr(2, 9),
+      progress: 0,
+      status: 'pending',
+      preview: file.type.startsWith('image/') ? URL.createObjectURL(file) : undefined
+    }));
+
+    setUploadFiles(prev => [...prev, ...newFiles]);
   }, []);
 
-  const handleDragLeave = useCallback((e: React.DragEvent) => {
-    e.preventDefault();
-    setIsDragging(false);
-  }, []);
-
-  const validateFile = (file: File): string | null => {
-    // Check file type
-    const isValidType = Object.keys(acceptedFileTypes).includes(file.type) || 
-                       file.name.toLowerCase().endsWith('.pages');
-    
-    if (!isValidType) {
-      return 'Tipo de archivo no soportado. Use PDF, Word, Pages o archivos de texto.';
-    }
-
-    // Check file size (max 10MB)
-    const maxSize = 10 * 1024 * 1024;
-    if (file.size > maxSize) {
-      return 'El archivo excede el tamaño máximo de 10MB.';
-    }
-
-    return null;
-  };
-
-  const processFiles = async (fileList: FileList) => {
-    const newFiles: UploadedFile[] = [];
-    
-    for (let i = 0; i < fileList.length; i++) {
-      const file = fileList[i];
-      const validationError = validateFile(file);
-      
-      const uploadedFile: UploadedFile = {
-        id: `file_${Date.now()}_${i}`,
-        name: file.name,
-        type: file.type || 'application/octet-stream',
-        size: file.size,
-        status: validationError ? 'error' : 'uploading',
-        error: validationError || undefined
-      };
-
-      // Generate preview for supported types
-      if (!validationError) {
-        if (file.type === 'application/pdf') {
-          uploadedFile.preview = 'PDF Document';
-        } else if (file.type.startsWith('image/')) {
-          const reader = new FileReader();
-          reader.onload = (e) => {
-            uploadedFile.preview = e.target?.result as string;
-            setFiles(prev => prev.map(f => f.id === uploadedFile.id ? uploadedFile : f));
-          };
-          reader.readAsDataURL(file);
-        } else {
-          uploadedFile.preview = 'Document';
-        }
-      }
-
-      newFiles.push(uploadedFile);
-    }
-
-    setFiles(prev => [...prev, ...newFiles]);
-
-    // Simulate file processing
-    for (const file of newFiles.filter(f => f.status === 'uploading')) {
-      setTimeout(async () => {
-        setFiles(prev => prev.map(f => 
-          f.id === file.id ? { ...f, status: 'processing' } : f
-        ));
-
-        // Simulate processing delay
-        await new Promise(resolve => setTimeout(resolve, 1500));
-
-        setFiles(prev => prev.map(f => 
-          f.id === file.id ? { ...f, status: 'completed', url: `/api/resources/${file.id}` } : f
-        ));
-      }, 500);
-    }
-  };
-
-  const handleDrop = useCallback((e: React.DragEvent) => {
-    e.preventDefault();
-    setIsDragging(false);
-    
-    const droppedFiles = e.dataTransfer.files;
-    if (droppedFiles.length > 0) {
-      processFiles(droppedFiles);
-    }
-  }, []);
-
-  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const selectedFiles = e.target.files;
-    if (selectedFiles && selectedFiles.length > 0) {
-      processFiles(selectedFiles);
-    }
-  };
+  const { getRootProps, getInputProps, isDragActive } = useDropzone({
+    onDrop,
+    accept: {
+      'application/pdf': ['.pdf'],
+      'image/*': ['.jpg', '.jpeg', '.png', '.gif'],
+      'text/plain': ['.txt'],
+      'application/msword': ['.doc'],
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document': ['.docx']
+    },
+    maxFileSize: 100 * 1024 * 1024, // 100MB
+    multiple: true
+  });
 
   const removeFile = (fileId: string) => {
-    setFiles(prev => prev.filter(f => f.id !== fileId));
+    setUploadFiles(prev => prev.filter(f => f.id !== fileId));
   };
 
-  const getFileIcon = (type: string, status: string) => {
-    if (status === 'uploading' || status === 'processing') {
-      return <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-orange-600" />;
+  const addTag = () => {
+    if (tagInput.trim() && !formData.tags.includes(tagInput.trim())) {
+      setFormData(prev => ({
+        ...prev,
+        tags: [...prev.tags, tagInput.trim()]
+      }));
+      setTagInput('');
     }
-    
-    if (status === 'error') {
-      return <ExclamationTriangleIcon className="h-6 w-6 text-red-500" />;
-    }
-
-    if (type === 'application/pdf') {
-      return <DocumentTextIcon className="h-6 w-6 text-red-500" />;
-    }
-    if (type.includes('word') || type.includes('document')) {
-      return <DocumentIcon className="h-6 w-6 text-blue-500" />;
-    }
-    if (type === 'text/plain' || type === 'text/rtf') {
-      return <DocumentTextIcon className="h-6 w-6 text-gray-500" />;
-    }
-    if (type.includes('pages')) {
-      return <DocumentIcon className="h-6 w-6 text-orange-500" />;
-    }
-    
-    return <DocumentIcon className="h-6 w-6 text-gray-500" />;
   };
 
-  const getStatusText = (status: string) => {
-    switch (status) {
-      case 'uploading': return 'Subiendo...';
-      case 'processing': return 'Procesando...';
-      case 'completed': return 'Completado';
-      case 'error': return 'Error';
-      default: return '';
+  const removeTag = (tagToRemove: string) => {
+    setFormData(prev => ({
+      ...prev,
+      tags: prev.tags.filter(tag => tag !== tagToRemove)
+    }));
+  };
+
+  const uploadFile = async (uploadFile: UploadFile) => {
+    const formDataToSend = new FormData();
+    formDataToSend.append('file', uploadFile.file);
+    formDataToSend.append('title', uploadFile.file.name.split('.')[0]);
+    formDataToSend.append('categoryId', formData.categoryId);
+    formDataToSend.append('libraryType', formData.libraryType);
+    formDataToSend.append('tags', JSON.stringify(formData.tags));
+
+    try {
+      setUploadFiles(prev => prev.map(f => 
+        f.id === uploadFile.id ? { ...f, status: 'uploading' } : f
+      ));
+
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/resources/upload`, {
+        method: 'POST',
+        body: formDataToSend,
+        // Add progress tracking if needed
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        
+        setUploadFiles(prev => prev.map(f => 
+          f.id === uploadFile.id ? { ...f, status: 'completed', progress: 100 } : f
+        ));
+
+        return result.data;
+      } else {
+        const error = await response.json();
+        throw new Error(error.error || 'Error al subir archivo');
+      }
+    } catch (error) {
+      setUploadFiles(prev => prev.map(f => 
+        f.id === uploadFile.id ? { 
+          ...f, 
+          status: 'error', 
+          error: error instanceof Error ? error.message : 'Error desconocido'
+        } : f
+      ));
+      throw error;
     }
+  };
+
+  const handleUploadAll = async () => {
+    if (uploadFiles.length === 0) return;
+
+    setUploading(true);
+    
+    try {
+      for (const file of uploadFiles.filter(f => f.status === 'pending')) {
+        const resource = await uploadFile(file);
+        if (resource) {
+          onUploadComplete(resource);
+        }
+      }
+      
+      toast.success(`${uploadFiles.length} archivo(s) subido(s) exitosamente`);
+      
+      // Clear completed files after a delay
+      setTimeout(() => {
+        setUploadFiles(prev => prev.filter(f => f.status !== 'completed'));
+      }, 2000);
+      
+    } catch (error) {
+      toast.error('Error al subir algunos archivos');
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const getFileIcon = (file: File) => {
+    if (file.type.startsWith('image/')) {
+      return <PhotoIcon className="h-8 w-8 text-blue-500" />;
+    } else if (file.type === 'application/pdf') {
+      return <DocumentTextIcon className="h-8 w-8 text-red-500" />;
+    }
+    return <DocumentIcon className="h-8 w-8 text-gray-500" />;
   };
 
   const formatFileSize = (bytes: number) => {
@@ -190,195 +183,226 @@ export const ResourceUploader: React.FC<ResourceUploaderProps> = ({ onBack }) =>
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
   };
 
-  const canProceed = files.length > 0 && files.every(f => f.status === 'completed');
-
   return (
     <div className="space-y-6">
-      {/* Back Button */}
-      <div className="flex items-center">
-        <Button
-          onClick={onBack}
-          variant="outline"
-          className="mr-4"
-        >
-          <ArrowLeftIcon className="w-4 h-4 mr-2" />
-          Volver a Biblioteca
-        </Button>
-        <div>
-          <h2 className="text-xl font-semibold text-gray-900">Subir y Crear Recursos</h2>
-          <p className="text-sm text-gray-600">Sube documentos y personalízalos con tu marca</p>
-        </div>
-      </div>
-
       {/* Upload Area */}
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+      <div className="bg-white rounded-xl shadow-lg border border-gray-200 p-6">
         <div
-          className={`relative border-2 border-dashed rounded-lg p-8 text-center transition-colors ${
-            isDragging
-              ? 'border-orange-500 bg-orange-50'
-              : 'border-gray-300 hover:border-orange-400 hover:bg-gray-50'
+          {...getRootProps()}
+          className={`border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors ${
+            isDragActive 
+              ? 'border-primary-500 bg-primary-50' 
+              : 'border-gray-300 hover:border-primary-400 hover:bg-gray-50'
           }`}
-          onDragOver={handleDragOver}
-          onDragLeave={handleDragLeave}
-          onDrop={handleDrop}
         >
-          <input
-            ref={fileInputRef}
-            type="file"
-            multiple
-            accept=".pdf,.doc,.docx,.txt,.rtf,.pages"
-            onChange={handleFileSelect}
-            className="hidden"
-          />
-          
-          <div className="space-y-4">
-            <div className="flex justify-center">
-              <CloudArrowUpIcon className="h-12 w-12 text-gray-400" />
-            </div>
-            
+          <input {...getInputProps()} />
+          <CloudArrowUpIcon className="h-16 w-16 text-gray-400 mx-auto mb-4" />
+          {isDragActive ? (
+            <p className="text-lg text-primary-600 font-medium">
+              Suelta los archivos aquí...
+            </p>
+          ) : (
             <div>
-              <p className="text-lg font-medium text-gray-900">
+              <p className="text-lg text-gray-900 font-medium mb-2">
                 Arrastra archivos aquí o haz clic para seleccionar
               </p>
-              <p className="text-sm text-gray-500 mt-2">
-                Soporta PDF, Word (.doc, .docx), Pages, y archivos de texto
+              <p className="text-sm text-gray-600 mb-4">
+                Soporta: PDF, imágenes (JPG, PNG, GIF), documentos de texto (TXT, DOC, DOCX)
               </p>
-              <p className="text-xs text-gray-400 mt-1">
-                Tamaño máximo: 10MB por archivo
+              <p className="text-xs text-gray-500">
+                Tamaño máximo por archivo: 100MB
               </p>
             </div>
-            
-            <Button
-              onClick={() => fileInputRef.current?.click()}
-              className="bg-orange-600 hover:bg-orange-700 text-white"
-            >
-              <PhotoIcon className="w-4 h-4 mr-2" />
-              Seleccionar Archivos
-            </Button>
-          </div>
+          )}
         </div>
+
+        {/* File Metadata Form */}
+        {uploadFiles.length > 0 && (
+          <div className="mt-6 space-y-4">
+            <h3 className="text-lg font-medium text-gray-900">Configuración de Archivos</h3>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Category Selection */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <FolderIcon className="h-4 w-4 inline mr-1" />
+                  Categoría
+                </label>
+                <select
+                  value={formData.categoryId}
+                  onChange={(e) => setFormData(prev => ({ ...prev, categoryId: e.target.value }))}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+                >
+                  <option value="">Seleccionar categoría</option>
+                  {categories.map((category) => (
+                    <option key={category.id} value={category.id}>
+                      {category.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Library Type */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Biblioteca
+                </label>
+                <select
+                  value={formData.libraryType}
+                  onChange={(e) => setFormData(prev => ({ 
+                    ...prev, 
+                    libraryType: e.target.value as 'public' | 'private'
+                  }))}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+                >
+                  <option value="private">Mi Biblioteca (Privada)</option>
+                  <option value="public">Biblioteca Pública</option>
+                </select>
+              </div>
+            </div>
+
+            {/* Tags */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                <TagIcon className="h-4 w-4 inline mr-1" />
+                Etiquetas
+              </label>
+              <div className="flex space-x-2 mb-2">
+                <input
+                  type="text"
+                  value={tagInput}
+                  onChange={(e) => setTagInput(e.target.value)}
+                  onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addTag())}
+                  placeholder="Agregar etiqueta..."
+                  className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+                />
+                <Button
+                  onClick={addTag}
+                  variant="outline"
+                  size="sm"
+                  disabled={!tagInput.trim()}
+                >
+                  Agregar
+                </Button>
+              </div>
+              
+              {formData.tags.length > 0 && (
+                <div className="flex flex-wrap gap-2">
+                  {formData.tags.map((tag, index) => (
+                    <span
+                      key={index}
+                      className="inline-flex items-center px-3 py-1 bg-primary-100 text-primary-800 rounded-full text-sm"
+                    >
+                      {tag}
+                      <button
+                        onClick={() => removeTag(tag)}
+                        className="ml-2 text-primary-600 hover:text-primary-800"
+                      >
+                        <XMarkIcon className="h-3 w-3" />
+                      </button>
+                    </span>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* File List */}
-      {files.length > 0 && (
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200">
-          <div className="px-6 py-4 border-b border-gray-200">
+      {uploadFiles.length > 0 && (
+        <div className="bg-white rounded-xl shadow-lg border border-gray-200 p-6">
+          <div className="flex items-center justify-between mb-4">
             <h3 className="text-lg font-medium text-gray-900">
-              Archivos Subidos ({files.length})
+              Archivos Seleccionados ({uploadFiles.length})
             </h3>
+            <div className="flex space-x-2">
+              <Button
+                onClick={() => setUploadFiles([])}
+                variant="outline"
+                size="sm"
+                disabled={uploading}
+              >
+                Limpiar
+              </Button>
+              <Button
+                onClick={handleUploadAll}
+                variant="primary"
+                disabled={uploading || uploadFiles.length === 0}
+              >
+                {uploading ? 'Subiendo...' : 'Subir Todos'}
+              </Button>
+            </div>
           </div>
-          
-          <div className="divide-y divide-gray-200">
-            {files.map((file) => (
-              <div key={file.id} className="p-6 flex items-center justify-between">
-                <div className="flex items-center space-x-4 flex-1">
-                  <div className="flex-shrink-0">
-                    {getFileIcon(file.type, file.status)}
-                  </div>
-                  
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between">
-                      <p className="text-sm font-medium text-gray-900 truncate">
-                        {file.name}
-                      </p>
-                      <span className={`text-xs px-2 py-1 rounded-full ${
-                        file.status === 'completed' 
-                          ? 'bg-green-100 text-green-800'
-                          : file.status === 'error'
-                          ? 'bg-red-100 text-red-800'
-                          : 'bg-yellow-100 text-yellow-800'
-                      }`}>
-                        {getStatusText(file.status)}
-                      </span>
-                    </div>
-                    
-                    <div className="flex items-center space-x-4 mt-1">
-                      <p className="text-xs text-gray-500">
-                        {formatFileSize(file.size)}
-                      </p>
-                      
-                      {file.status === 'processing' && (
-                        <div className="flex-1 bg-gray-200 rounded-full h-1 max-w-xs">
-                          <div className="bg-orange-600 h-1 rounded-full animate-pulse" style={{ width: '60%' }} />
-                        </div>
-                      )}
-                    </div>
-                    
-                    {file.error && (
-                      <p className="text-xs text-red-600 mt-1">{file.error}</p>
-                    )}
-                  </div>
-                </div>
-                
-                <div className="flex items-center space-x-2 ml-4">
-                  {file.status === 'completed' && (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => {
-                        // Preview functionality
-                        console.log('Preview file:', file.name);
-                      }}
-                    >
-                      <EyeIcon className="w-4 h-4 mr-1" />
-                      Preview
-                    </Button>
+
+          <div className="space-y-3">
+            {uploadFiles.map((uploadFile) => (
+              <div
+                key={uploadFile.id}
+                className="flex items-center space-x-4 p-4 border border-gray-200 rounded-lg"
+              >
+                {/* File Icon/Preview */}
+                <div className="flex-shrink-0">
+                  {uploadFile.preview ? (
+                    <img
+                      src={uploadFile.preview}
+                      alt={uploadFile.file.name}
+                      className="h-12 w-12 object-cover rounded"
+                    />
+                  ) : (
+                    getFileIcon(uploadFile.file)
                   )}
+                </div>
+
+                {/* File Info */}
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center justify-between">
+                    <p className="text-sm font-medium text-gray-900 truncate">
+                      {uploadFile.file.name}
+                    </p>
+                    <div className="flex items-center space-x-2">
+                      {uploadFile.status === 'completed' && (
+                        <CheckCircleIcon className="h-5 w-5 text-green-500" />
+                      )}
+                      {uploadFile.status === 'error' && (
+                        <ExclamationTriangleIcon className="h-5 w-5 text-red-500" />
+                      )}
+                      <button
+                        onClick={() => removeFile(uploadFile.id)}
+                        disabled={uploading}
+                        className="text-gray-400 hover:text-gray-600 disabled:opacity-50"
+                      >
+                        <XMarkIcon className="h-4 w-4" />
+                      </button>
+                    </div>
+                  </div>
                   
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => removeFile(file.id)}
-                    className="text-red-600 border-red-300 hover:bg-red-50"
-                  >
-                    <TrashIcon className="w-4 h-4" />
-                  </Button>
+                  <p className="text-sm text-gray-500 mb-2">
+                    {formatFileSize(uploadFile.file.size)} • {uploadFile.file.type}
+                  </p>
+
+                  {/* Progress Bar */}
+                  {uploadFile.status === 'uploading' && (
+                    <div className="w-full bg-gray-200 rounded-full h-2">
+                      <div
+                        className="bg-primary-600 h-2 rounded-full transition-all duration-300"
+                        style={{ width: `${uploadFile.progress}%` }}
+                      ></div>
+                    </div>
+                  )}
+
+                  {/* Error Message */}
+                  {uploadFile.status === 'error' && uploadFile.error && (
+                    <p className="text-sm text-red-600 mt-1">
+                      {uploadFile.error}
+                    </p>
+                  )}
                 </div>
               </div>
             ))}
           </div>
         </div>
       )}
-
-      {/* Next Step */}
-      {canProceed && (
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <h3 className="text-lg font-medium text-gray-900">
-                ¡Archivos listos!
-              </h3>
-              <p className="text-sm text-gray-600 mt-1">
-                Ahora puedes personalizar tus documentos con tu marca y configuración
-              </p>
-            </div>
-            
-            <Button
-              onClick={() => {
-                // Navigate to branding settings
-                console.log('Proceed to branding with files:', files.filter(f => f.status === 'completed'));
-              }}
-              className="bg-orange-600 hover:bg-orange-700 text-white"
-            >
-              <CheckCircleIcon className="w-4 h-4 mr-2" />
-              Continuar con Personalización
-            </Button>
-          </div>
-        </div>
-      )}
-
-      {/* Instructions */}
-      <div className="bg-blue-50 rounded-lg p-4">
-        <h4 className="text-sm font-medium text-blue-900 mb-2">
-          Tipos de archivo soportados:
-        </h4>
-        <ul className="text-sm text-blue-800 space-y-1">
-          <li>• <strong>PDF:</strong> Documentos PDF existentes</li>
-          <li>• <strong>Word:</strong> Documentos .doc y .docx</li>
-          <li>• <strong>Pages:</strong> Documentos de Apple Pages</li>
-          <li>• <strong>Texto:</strong> Archivos .txt y .rtf</li>
-        </ul>
-      </div>
     </div>
   );
 };

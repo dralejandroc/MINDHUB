@@ -21,6 +21,8 @@ export interface Patient {
   city?: string;
   state?: string;
   postal_code?: string;
+  consultations_count?: number;
+  evaluations_count?: number;
   created_at: string;
   updated_at: string;
 }
@@ -156,7 +158,7 @@ class ExpedixApiClient {
 
   // Prescription Management
   async getPrescriptions(patientId: string): Promise<{ data: Prescription[] }> {
-    return this.makeRequest<{ data: Prescription[] }>(`/api/v1/expedix/prescriptions?patient_id=${patientId}`);
+    return this.makeRequest<{ data: Prescription[] }>(`/api/v1/expedix/prescriptions/patient/${patientId}`);
   }
 
   async createPrescription(prescriptionData: Partial<Prescription>): Promise<{ data: Prescription }> {

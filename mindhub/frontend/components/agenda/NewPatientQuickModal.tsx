@@ -70,16 +70,25 @@ export default function NewPatientQuickModal({ onClose, onSave }: NewPatientQuic
         userId = user.id || userId;
       }
 
-      const response = await fetch(`${process.env.NEXT_PUBLIC_EXPEDIX_API}/api/v1/expedix/patients`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/expedix/patients`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          ...formData,
+          first_name: formData.firstName,
+          last_name: formData.lastName,
+          birth_date: formData.birthDate ? `${formData.birthDate}T00:00:00.000Z` : null,
+          gender: formData.gender,
+          ...(formData.email && { email: formData.email }),
+          ...(formData.phone && { cell_phone: formData.phone }),
+          ...(formData.curp && { curp: formData.curp }),
+          ...(formData.address && { address: formData.address }),
+          ...(formData.city && { city: formData.city }),
+          ...(formData.state && { state: formData.state }),
+          ...(formData.zipCode && { postal_code: formData.zipCode }),
           createdBy: userId,
-          isActive: true,
-          medicalRecordNumber: `EXP-${new Date().getFullYear()}-${Math.floor(Math.random() * 10000).toString().padStart(4, '0')}`
+          isActive: true
         })
       });
 
@@ -88,7 +97,22 @@ export default function NewPatientQuickModal({ onClose, onSave }: NewPatientQuic
         onSave(data.data);
         onClose();
       } else {
-        alert('Error al crear el paciente. Por favor intenta de nuevo.');
+        const errorData = await response.json();
+        console.error('❌ Server error creating patient:', errorData);
+        console.error('❌ Request data sent:', {
+          first_name: formData.firstName,
+          last_name: formData.lastName,
+          birth_date: formData.birthDate,
+          gender: formData.gender,
+          email: formData.email,
+          cell_phone: formData.phone,
+          curp: formData.curp,
+          address: formData.address,
+          city: formData.city,
+          state: formData.state,
+          postal_code: formData.zipCode
+        });
+        alert(`Error al crear el paciente: ${errorData.error || 'Error desconocido'}\n${errorData.details ? JSON.stringify(errorData.details, null, 2) : ''}`);
       }
     } catch (error) {
       console.error('Error creating patient:', error);

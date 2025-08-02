@@ -1,13 +1,13 @@
 /**
  * API Client para Clinimetrix - Sistema de Escalas Psicométricas
- * Conecta con el backend real en puerto 3002
+ * Conecta con el backend real en puerto 8080
  */
 
 import { apiRequest } from './api-config';
 import { mockClinimetrixApi } from './clinimetrix-mock';
 
-// Temporal flag para usar mock data mientras se implementa el backend
-const USE_MOCK_DATA = true;
+// NO USAR DATOS MOCK - Conectar con backend real
+const USE_MOCK_DATA = false;
 
 // Types
 export interface Scale {
@@ -15,18 +15,26 @@ export interface Scale {
   name: string;
   abbreviation: string;
   description: string;
-  version: string;
+  version?: string;
   category: string;
   subcategory?: string;
-  total_items: number;
-  estimated_duration_minutes: number;
-  administration_mode: 'self_administered' | 'clinician_administered' | 'both';
-  target_population: string;
-  scoring_method: string;
+  totalItems: number; // Updated to match API response
+  estimatedDurationMinutes: number; // Updated to match API response
+  administrationMode: 'self_administered' | 'clinician_administered' | 'both'; // Updated to match API response
+  targetPopulation: string; // Updated to match API response
+  scoringMethod?: string; // Updated to match API response
+  isActive: boolean; // Updated to match API response
+  scoreRange?: { min: number; max: number }; // Updated to match API response
   tags?: string[]; // JSON array of tags
   is_favorite?: boolean; // Para el usuario actual
-  created_at: string;
-  updated_at: string;
+  created_at?: string;
+  updated_at?: string;
+  
+  // Additional fields from new API
+  responseOptionsCount?: number;
+  hasInterpretationRules?: boolean;
+  hasSubscales?: boolean;
+  system?: string;
 }
 
 export interface ScaleDocumentation {
@@ -137,7 +145,7 @@ export interface FilterOptions {
  * Cliente API para Clinimetrix
  */
 class ClinimetrixApiClient {
-  private baseUrl = 'http://localhost:3002/api/v1/clinimetrix';
+  private baseUrl = 'http://localhost:8080/api';
 
   // =================== ESCALAS ===================
 
@@ -163,14 +171,16 @@ class ClinimetrixApiClient {
     if (filters.offset) params.append('offset', filters.offset.toString());
 
     const url = `${this.baseUrl}/scales${params.toString() ? '?' + params.toString() : ''}`;
-    return await apiRequest(url);
+    const response = await apiRequest(url);
+    return response.data || response; // Handle new API response format
   }
 
   /**
    * Obtener detalles de una escala específica
    */
   async getScale(scaleId: string): Promise<Scale> {
-    return await apiRequest(`${this.baseUrl}/scales/${scaleId}`);
+    const response = await apiRequest(`${this.baseUrl}/scales/${scaleId}`);
+    return response.data || response; // Handle new API response format
   }
 
   /**
@@ -261,7 +271,7 @@ class ClinimetrixApiClient {
    * Interpretar puntuación de una escala
    */
   async interpretScore(scaleId: string, score: number): Promise<InterpretationRule> {
-    return await apiRequest(`http://localhost:3002/api/clinimetrix/scales/${scaleId}/interpretation/${score}`);
+    return await apiRequest(`${this.baseUrl}/scales/${scaleId}/interpretation/${score}`);
   }
 
   // =================== EVALUACIONES ===================
@@ -356,7 +366,7 @@ class ClinimetrixApiClient {
    * Obtener evaluaciones de un paciente
    */
   async getPatientAssessments(patientId: string): Promise<Assessment[]> {
-    return await apiRequest(`${this.baseUrl}/patients/${patientId}/assessments`);
+    return await apiRequest(`${this.baseUrl}/assessments/patients/${patientId}`);
   }
 
   // =================== ESTADÍSTICAS ===================
@@ -368,7 +378,7 @@ class ClinimetrixApiClient {
     if (USE_MOCK_DATA) {
       return await mockClinimetrixApi.getScaleStats();
     }
-    return await apiRequest(`http://localhost:3002/api/clinimetrix/scales/stats/usage`);
+    return await apiRequest(`${this.baseUrl}/scales/stats`);
   }
 
   /**

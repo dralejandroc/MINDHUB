@@ -137,6 +137,68 @@ router.get('/dashboard/:userId', async (req, res) => {
       }
     });
 
+    // Get assessment statistics for the user's patients
+    const userPatientIds = patients.map(p => p.id);
+    
+    const totalAssessments = await prisma.scaleAdministration.count({
+      where: {
+        patientId: {
+          in: userPatientIds
+        }
+      }
+    });
+
+    const weeklyAssessments = await prisma.scaleAdministration.count({
+      where: {
+        patientId: {
+          in: userPatientIds
+        },
+        createdAt: {
+          gte: oneWeekAgo
+        }
+      }
+    });
+
+    // Get most recent assessments for recent activity
+    const recentAssessments = await prisma.scaleAdministration.findMany({
+      where: {
+        patientId: {
+          in: userPatientIds
+        }
+      },
+      include: {
+        scale: {
+          select: {
+            name: true,
+            abbreviation: true
+          }
+        },
+        patient: {
+          select: {
+            firstName: true,
+            lastName: true
+          }
+        }
+      },
+      orderBy: { createdAt: 'desc' },
+      take: 5
+    });
+
+    // Generate alerts from recent high severity assessments
+    const recentHighSeverityAssessments = await prisma.scaleAdministration.count({
+      where: {
+        patientId: {
+          in: userPatientIds
+        },
+        severity: {
+          in: ['severe', 'high']
+        },
+        createdAt: {
+          gte: oneWeekAgo
+        }
+      }
+    });
+
     res.json({
       success: true,
       data: {
@@ -152,11 +214,21 @@ router.get('/dashboard/:userId', async (req, res) => {
           activePatients: patients.filter(p => p.isActive).length,
           totalConsultations: consultations.length,
           weeklyConsultations: weeklyConsultations,
-          completedAssessments: 0, // TODO: implement assessments
-          pendingAlerts: 0 // TODO: implement alerts
+          completedAssessments: totalAssessments,
+          weeklyAssessments: weeklyAssessments,
+          pendingAlerts: recentHighSeverityAssessments
         },
         patients: patients.slice(0, 10),
-        recentConsultations: consultations
+        recentConsultations: consultations,
+        recentAssessments: recentAssessments.map(assessment => ({
+          id: assessment.id,
+          scaleName: assessment.scale?.name || 'Escala desconocida',
+          scaleAbbreviation: assessment.scale?.abbreviation || '',
+          patientName: `${assessment.patient?.firstName} ${assessment.patient?.lastName}`,
+          totalScore: assessment.totalScore,
+          severity: assessment.severity,
+          date: assessment.createdAt
+        }))
       }
     });
 

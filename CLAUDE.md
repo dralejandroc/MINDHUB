@@ -66,7 +66,7 @@ MindHub/
 - **Puerto API**: `http://localhost:8083`
 - **Funcionalidades**:
   - Creación de formularios personalizados
-  - Templates médicos preconfigurrados
+  - Templates médicos preconfigurrradors
   - Formularios de registro de pacientes
   - Validación automática de datos
 
@@ -91,7 +91,7 @@ MindHub/
 
 ### Backend
 - **Runtime**: Node.js con Express
-- **Base de Datos**: Prisma ORM con SQLite/MySQL (MAMP)
+- **Base de Datos**: Prisma ORM con MySQL (MAMP puerto 8889) - ÚNICO para todo el proyecto
 - **API**: RESTful APIs por módulo
 - **Archivos**: Sistema de archivos local + encriptación
 
@@ -106,11 +106,13 @@ MindHub/
 ## Principios de Desarrollo Específicos
 
 ### Gestión de Datos y Backend
-- **Política de No Hardcoding**: 
-  - Todos los datos deben estar en el backend y en la base de datos
+- **Base de Datos Única MySQL**: 
+  - Todo el proyecto usa ÚNICAMENTE MySQL a través de MAMP (puerto 8889)
+  - Todas las operaciones de base de datos deben usar Prisma ORM
+  - NO usar SQLite ni conexiones directas a bases de datos
+  - Todos los datos deben estar en el backend y en MySQL
   - Ajustar tablas según sea necesario para cada cambio
   - Cambios solicitados deben implementarse tanto en frontend como backend
-  - Modificaciones en tablas de bases de datos en MAMP antes de subir a producción
 
 ## Principios de Implementación de Cambios
 - Cuando se pida implementar un cambio, este debe ser completo, agregando todo lo necesario para que la función funcione:
@@ -144,3 +146,6 @@ MindHub/
 - Ir refinando el sistema según nuevas características encontradas
 - Mantener compatibilidad con sistema universal de aplicación
 - Escalar hasta 100+ escalas manteniendo rendimiento y simplicidad
+
+## Recordatorios de Desarrollo
+- No hagas commit ni push en github hasta que yo te lo pida. me puedes preguntar, pero no lo hagas sin que me autorice

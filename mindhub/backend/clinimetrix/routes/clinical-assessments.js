@@ -1307,4 +1307,69 @@ router.put('/:id/cancel',
   }
 );
 
+/**
+ * GET /api/v1/clinimetrix/patients/:patientId/assessments
+ * Get all assessments for a specific patient
+ */
+router.get('/patients/:patientId/assessments',
+  async (req, res) => {
+    try {
+      const { patientId } = req.params;
+      const { scaleId } = req.query;
+
+      const prisma = getPrismaClient();
+      
+      // Build where clause
+      const whereClause = {
+        patientId: patientId
+      };
+      
+      if (scaleId) {
+        whereClause.scaleId = scaleId;
+      }
+
+      // Get assessments for the patient
+      const assessments = await prisma.scaleAdministration.findMany({
+        where: whereClause,
+        include: {
+          scale: {
+            select: {
+              id: true,
+              name: true,
+              abbreviation: true,
+              category: true
+            }
+          },
+          subscaleScores: {
+            include: {
+              subscale: {
+                select: {
+                  id: true,
+                  name: true
+                }
+              }
+            }
+          }
+        },
+        orderBy: {
+          administrationDate: 'desc'
+        }
+      });
+
+      res.json({
+        success: true,
+        data: assessments,
+        total: assessments.length
+      });
+
+    } catch (error) {
+      console.error('Error fetching patient assessments:', error);
+      res.status(500).json({
+        error: 'Failed to fetch patient assessments',
+        message: error.message
+      });
+    }
+  }
+);
+
 module.exports = router;

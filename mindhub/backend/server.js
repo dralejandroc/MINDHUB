@@ -35,12 +35,20 @@ console.log('📦 Loading finance module...');
 const finance = require('./finance');
 console.log('✅ Finance module loaded');
 
-// const formx = require('./formx'); // Commented for now
-// const resources = require('./resources'); // Commented for now
+console.log('📦 Loading formx module...');
+const formxRoutes = require('./formx/routes/forms-advanced');
+console.log('✅ FormX module loaded');
+
+console.log('📦 Loading resources module...');
+const resourcesRoutes = require('./resources/routes/resources');
+console.log('✅ Resources module loaded');
 
 // Import universal scales API
 const universalScalesRouter = require('./api/universal-scales');
 const assessmentController = require('./api/assessment-controller');
+
+// Import authentication routes
+const authRoutes = require('./auth/routes');
 
 // Import shared middleware
 const errorHandler = require('./shared/middleware/error-handling');
@@ -60,7 +68,7 @@ const middleware = require('./shared/middleware');
 // const rateLimitingDashboard = require('./shared/routes/rate-limiting-dashboard');
 
 const app = express();
-const PORT = process.env.PORT || 3002;
+const PORT = process.env.PORT || 8080;
 
 console.log('🚀 Express app created, setting up middleware...');
 
@@ -183,12 +191,18 @@ try {
 app.use('/api/v1/clinimetrix', clinimetrix);
 app.use('/api/v1/frontdesk', frontdeskRoutes);
 app.use('/api/v1/finance', finance);
-// app.use('/api/v1/formx', formx); // Commented for now
-// app.use('/api/v1/resources', resources); // Commented for now
+app.use('/api/v1/formx/forms', formxRoutes);
+console.log('✅ FormX routes mounted at /api/v1/formx');
+
+app.use('/api/v1/resources', resourcesRoutes);
+console.log('✅ Resources routes mounted at /api/v1/resources');
 
 // Mount universal scales API (new architecture)
 app.use('/api', universalScalesRouter);
 app.use('/api', assessmentController);
+
+// Authentication routes - NO HARDCODED USERS
+app.use('/api/auth', authRoutes);
 
 // 404 handler
 app.use('*', (req, res) => {

@@ -25,6 +25,7 @@ import {
 } from '@heroicons/react/24/outline';
 import { expedixApi } from '@/lib/api/expedix-client';
 import { patientTimelineApi, type TimelineEvent as ApiTimelineEvent } from '@/lib/api/patient-timeline-client';
+import { clinimetrixApi } from '@/lib/api/clinimetrix-client';
 import { Button } from '@/components/ui/Button';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { generateCategoryTimeline } from './PatientTimelineCategories';
@@ -32,8 +33,8 @@ import { generateCategoryTimeline } from './PatientTimelineCategories';
 // Enhanced Timeline Event Types
 interface TimelineEvent {
   id: string;
-  type: 'consultation' | 'prescription' | 'appointment' | 'communication' | 'no_show' | 'reschedule' | 'cancel' | 'prescription_renewal' | 'alert' | 'note';
-  subtype?: 'regular' | 'urgent' | 'followup' | 'emergency' | 'phone_call' | 'whatsapp' | 'email' | 'delay' | 'frequent_changes' | 'in_person';
+  type: 'consultation' | 'prescription' | 'appointment' | 'communication' | 'no_show' | 'reschedule' | 'cancel' | 'prescription_renewal' | 'alert' | 'note' | 'assessment';
+  subtype?: 'regular' | 'urgent' | 'followup' | 'emergency' | 'phone_call' | 'whatsapp' | 'email' | 'delay' | 'frequent_changes' | 'in_person' | 'clinical_assessment';
   title: string;
   description?: string;
   date: string;
@@ -113,7 +114,7 @@ export default function PatientTimeline({ patient, userType = 'individual', onNe
   const [behaviorAnalysis, setBehaviorAnalysis] = useState<PatientBehaviorAnalysis | null>(null);
   const [loading, setLoading] = useState(true);
   const [analysisView, setAnalysisView] = useState<'clinical' | 'behavioral' | 'both'>('both');
-  const [filter, setFilter] = useState<'all' | 'appointments' | 'consultations' | 'communications' | 'alerts'>('all');
+  const [filter, setFilter] = useState<'all' | 'appointments' | 'consultations' | 'communications' | 'alerts' | 'assessments'>('all');
 
   useEffect(() => {
     if (patient?.id) {
@@ -128,15 +129,15 @@ export default function PatientTimeline({ patient, userType = 'individual', onNe
       setLoading(true);
       
       // Cargar datos reales completos del paciente desde el backend
-      const patientData = await expedixApi.getPatient(patient.id);
+      const patientResponse = await expedixApi.getPatient(patient.id);
       
-      if (!patientData) {
+      if (!patientResponse?.data) {
         console.error('No patient data found');
         return;
       }
 
       // Generar análisis y timeline basados únicamente en datos reales
-      const analysisResult = await generateRealDataAnalysis(patientData);
+      const analysisResult = await generateRealDataAnalysis(patientResponse.data);
       
       setTimelineEvents(analysisResult.timeline);
       setClinicalAnalysis(analysisResult.clinicalAnalysis);
@@ -162,16 +163,28 @@ export default function PatientTimeline({ patient, userType = 'individual', onNe
     let behavioralLogs = [];
     let communications = [];
     let appointmentChanges = [];
+    let scaleApplications = [];
     
     try {
       // Obtener logs conductuales reales del paciente
-      const behavioralResponse = await fetch(`/api/v1/frontdesk/patients/${patient.id}/behavioral-history`);
+      const behavioralResponse = await fetch(`http://localhost:8080/api/v1/frontdesk/patients/${patient.id}/behavioral-history`);
       if (behavioralResponse.ok) {
         const behavioralData = await behavioralResponse.json();
-        behavioralLogs = behavioralData.data || [];
+        behavioralLogs = behavioralData.data?.behavioralLogs || [];
+        communications = behavioralData.data?.communications || [];
+        appointmentChanges = behavioralData.data?.appointmentChanges || [];
       }
     } catch (error) {
       console.log('No behavioral data available yet:', error);
+    }
+    
+    try {
+      // Obtener aplicaciones de escalas clínicas desde Clinimetrix
+      const scaleAssessments = await clinimetrixApi.getPatientAssessments(patient.id);
+      scaleApplications = scaleAssessments?.data || scaleAssessments || [];
+      console.log('Scale applications found:', scaleApplications.length);
+    } catch (error) {
+      console.log('No scale applications available yet:', error);
     }
     
     // Calcular métricas reales
@@ -207,8 +220,8 @@ export default function PatientTimeline({ patient, userType = 'individual', onNe
       appointmentChanges
     });
     
-    // Timeline basado en datos reales + eventos conductuales
-    const timeline = generateRealTimeline(consultations, prescriptions, medicalHistory, behavioralLogs, communications);
+    // Timeline basado en datos reales + eventos conductuales + aplicaciones de escalas
+    const timeline = generateRealTimeline(consultations, prescriptions, medicalHistory, behavioralLogs, communications, scaleApplications);
     
     return {
       timeline,
@@ -380,7 +393,8 @@ export default function PatientTimeline({ patient, userType = 'individual', onNe
     prescriptions: any[], 
     medicalHistory: any[],
     behavioralLogs: any[] = [],
-    communications: any[] = []
+    communications: any[] = [],
+    scaleApplications: any[] = []
   ): TimelineEvent[] => {
     const events: TimelineEvent[] = [];
     
@@ -483,6 +497,38 @@ export default function PatientTimeline({ patient, userType = 'individual', onNe
       });
     });
     
+    // Convertir aplicaciones de escalas clínicas desde Clinimetrix
+    scaleApplications.forEach((assessment) => {
+      events.push({
+        id: assessment.id,
+        type: 'assessment',
+        subtype: assessment.administrationType || 'clinical_assessment',
+        title: `Aplicación de Escala: ${assessment.scale?.name || assessment.scale?.abbreviation || 'Escala Clínica'}`,
+        description: `Puntuación total: ${assessment.totalScore || 'N/A'}${assessment.interpretation ? ` - ${assessment.interpretation}` : ''}${assessment.severity ? ` (${assessment.severity})` : ''}`,
+        date: assessment.administrationDate || assessment.createdAt,
+        time: new Date(assessment.administrationDate || assessment.createdAt).toLocaleTimeString('es-ES', { 
+          hour: '2-digit', 
+          minute: '2-digit' 
+        }),
+        status: assessment.status === 'completed' ? 'completed' : 'pending',
+        priority: assessment.severity === 'severe' || assessment.severity === 'very_severe' ? 'high' : 'medium',
+        professional: assessment.administrator ? {
+          name: assessment.administrator.name || 'Profesional clínico',
+          role: 'Evaluador clínico'
+        } : undefined,
+        behaviorImpact: assessment.status === 'completed' ? 'positive' : 'neutral',
+        data: {
+          scaleId: assessment.scaleId,
+          scaleName: assessment.scale?.name,
+          scaleAbbreviation: assessment.scale?.abbreviation,
+          category: assessment.scale?.category,
+          totalScore: assessment.totalScore,
+          severity: assessment.severity,
+          interpretation: assessment.interpretation
+        }
+      });
+    });
+    
     // Convertir prescripciones reales a eventos
     prescriptions.forEach((prescription, index) => {
       events.push({
@@ -532,6 +578,8 @@ export default function PatientTimeline({ patient, userType = 'individual', onNe
         return event.subtype === 'delay' ? ClockIcon : CalendarIcon;
       case 'alert':
         return ExclamationTriangleIcon;
+      case 'assessment':
+        return DocumentChartBarIcon;
       default:
         return DocumentTextIcon;
     }
@@ -559,6 +607,8 @@ export default function PatientTimeline({ patient, userType = 'individual', onNe
         return 'text-yellow-600 bg-yellow-50 border-yellow-200';
       case 'alert':
         return 'text-red-600 bg-red-50 border-red-200';
+      case 'assessment':
+        return 'text-indigo-600 bg-indigo-50 border-indigo-200';
       default:
         return 'text-gray-600 bg-gray-50 border-gray-200';
     }
@@ -673,6 +723,7 @@ export default function PatientTimeline({ patient, userType = 'individual', onNe
     if (filter === 'consultations') return event.type === 'consultation';
     if (filter === 'communications') return event.type === 'communication';
     if (filter === 'alerts') return event.type === 'alert';
+    if (filter === 'assessments') return event.type === 'assessment';
     return true;
   });
 
@@ -862,6 +913,7 @@ export default function PatientTimeline({ patient, userType = 'individual', onNe
             { key: 'appointments', label: 'Citas', icon: '📅' },
             { key: 'consultations', label: 'Consultas', icon: '🩺' },
             { key: 'communications', label: 'Comunicación', icon: '💬' },
+            { key: 'assessments', label: 'Escalas', icon: '📊' },
             { key: 'alerts', label: 'Alertas', icon: '⚠️' }
           ].map(filterOption => (
             <button

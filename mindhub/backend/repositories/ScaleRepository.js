@@ -39,8 +39,8 @@ class ScaleRepository {
         targetPopulation: scale.targetPopulation,
         totalItems: scale.totalItems,
         scoringMethod: scale.scoringMethod,
-        scoreRangeMin: null, // No existe en assessment_scales
-        scoreRangeMax: null, // No existe en assessment_scales
+        scoreRangeMin: scale.scoreRangeMin || 0,
+        scoreRangeMax: scale.scoreRangeMax || (scale.totalItems * 4),
         instructionsProfessional: scale.interpretationGuidelines,
         instructionsPatient: scale.interpretationGuidelines,
         isActive: scale.isActive
@@ -65,7 +65,13 @@ class ScaleRepository {
         include: {
           items: {
             where: { isActive: true },
-            orderBy: { itemNumber: 'asc' }
+            orderBy: { itemNumber: 'asc' },
+            include: {
+              scale_item_specific_options: {
+                where: { isActive: true },
+                orderBy: { displayOrder: 'asc' }
+              }
+            }
           },
           responseOptions: {
             where: { isActive: true },
@@ -74,6 +80,10 @@ class ScaleRepository {
           interpretationRules: {
             where: { isActive: true },
             orderBy: { minScore: 'asc' }
+          },
+          subscales: {
+            where: { isActive: true },
+            orderBy: { subscaleName: 'asc' }
           }
         }
       });
@@ -99,32 +109,42 @@ class ScaleRepository {
         targetPopulation: scale.targetPopulation,
         totalItems: scale.totalItems,
         scoringMethod: scale.scoringMethod,
+        scoreRangeMin: scale.scoreRangeMin || 0,
+        scoreRangeMax: scale.scoreRangeMax || (scale.totalItems * 4),
         isActive: scale.isActive,
         items: scale.items.length > 0 ? scale.items.map(item => ({
           id: item.id,
           number: item.itemNumber,
+          itemNumber: item.itemNumber,
           text: item.itemText,
+          itemText: item.itemText,
           subscale: item.subscale,
+          responseGroup: item.responseGroup,
+          helpText: item.help_text || null,
           questionType: 'likert',
           required: true,
           metadata: {}
         })) : this.generateBasicItems(scale),
-        responseOptions: scale.responseOptions.length > 0 ? scale.responseOptions.map(option => ({
-          value: option.optionValue,
-          label: option.optionLabel,
-          score: option.scoreValue
-        })) : this.getStandardResponseOptions(scale),
+        responseOptions: await this.buildResponseOptions(scale),
         interpretationRules: scale.interpretationRules.map(rule => ({
           minScore: rule.minScore,
           maxScore: rule.maxScore,
-          severity: rule.severityLevel,
+          severityLevel: rule.severityLevel,
           label: rule.interpretationLabel,
-          recommendations: rule.recommendations ? rule.recommendations.split(',') : []
+          color: rule.colorCode,
+          description: rule.description,
+          recommendations: rule.recommendations ? (typeof rule.recommendations === 'string' ? rule.recommendations.split(',') : rule.recommendations) : []
         })),
-        instructions: {
-          professional: scale.interpretationGuidelines || `Instrucciones para aplicar ${scale.name}`,
-          patient: scale.interpretationGuidelines || `Instrucciones para responder ${scale.name}`
-        }
+        subscales: scale.subscales.map(subscale => ({
+          id: subscale.id,
+          name: subscale.subscaleName,
+          items: Array.isArray(subscale.items) ? subscale.items : (subscale.items ? JSON.parse(JSON.stringify(subscale.items)) : []),
+          min_score: subscale.minScore,
+          max_score: subscale.maxScore,
+          description: subscale.description
+        })),
+        instructionsPatient: scale.instructionsPatient,
+        instructionsProfessional: scale.instructionsProfessional
       };
       
     } catch (error) {
@@ -207,6 +227,116 @@ class ScaleRepository {
       console.error(`Error obteniendo escalas por categoría ${category}:`, error);
       throw error;
     }
+  }
+
+  /**
+   * Construye las opciones de respuesta combinando todas las fuentes
+   */
+  async buildResponseOptions(scale) {
+    const responseOptions = [];
+    
+    // 1. Opciones globales de la escala
+    if (scale.responseOptions && scale.responseOptions.length > 0) {
+      scale.responseOptions.forEach(option => {
+        responseOptions.push({
+          value: option.optionValue,
+          label: option.optionLabel,
+          score: option.scoreValue,
+          group: option.responseGroup || null
+        });
+      });
+    }
+    
+    // 2. Si no hay opciones globales pero sí ítems con responseGroup, consultar por grupo
+    if (responseOptions.length === 0 && scale.items.some(item => item.responseGroup)) {
+      // Obtener opciones agrupadas por responseGroup
+      const groupedOptions = await prisma.scaleResponseOption.findMany({
+        where: {
+          scaleId: scale.id,
+          isActive: true
+        },
+        orderBy: [
+          { responseGroup: 'asc' },
+          { displayOrder: 'asc' }
+        ]
+      });
+      
+      groupedOptions.forEach(option => {
+        responseOptions.push({
+          value: option.optionValue,
+          label: option.optionLabel,
+          score: option.scoreValue,
+          group: option.responseGroup
+        });
+      });
+    }
+    
+    // 3. Si aún no hay opciones, usar estándar
+    if (responseOptions.length === 0) {
+      return this.getStandardResponseOptions(scale);
+    }
+    
+    return responseOptions;
+  }
+
+  /**
+   * Enriquece los ítems con sus opciones específicas y de grupo
+   */
+  async enrichItemsWithOptions(scale) {
+    if (!scale.items || scale.items.length === 0) {
+      return scale;
+    }
+
+    // Obtener todas las opciones específicas de una vez
+    const allSpecificOptions = await prisma.scaleItemSpecificOption.findMany({
+      where: {
+        scaleId: scale.id,
+        isActive: true
+      },
+      orderBy: [{ itemNumber: 'asc' }, { displayOrder: 'asc' }]
+    });
+
+    // Obtener todas las opciones de grupo de una vez
+    const allGroupOptions = await prisma.scaleResponseOption.findMany({
+      where: {
+        scaleId: scale.id,
+        isActive: true
+      },
+      orderBy: [{ responseGroup: 'asc' }, { displayOrder: 'asc' }]
+    });
+
+    // Enriquecer cada ítem
+    const enrichedItems = scale.items.map(item => {
+      // Opciones específicas del ítem
+      const specificOptions = allSpecificOptions
+        .filter(opt => opt.itemNumber === item.itemNumber)
+        .map(opt => ({
+          value: opt.optionValue,
+          label: opt.optionLabel,
+          score: opt.scoreValue
+        }));
+
+      // Opciones del grupo de respuesta
+      const groupOptions = allGroupOptions
+        .filter(opt => opt.responseGroup === item.responseGroup)
+        .map(opt => ({
+          value: opt.optionValue,
+          label: opt.optionLabel,
+          score: opt.scoreValue,
+          group: opt.responseGroup
+        }));
+
+      return {
+        ...item,
+        specificOptions,
+        responseOptions: groupOptions
+      };
+    });
+
+    return {
+      ...scale,
+      items: enrichedItems
+    };
   }
 
   /**

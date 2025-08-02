@@ -41,7 +41,9 @@
     "universal:bulk-add-auto": "node scripts/bulk-add-scales.js --auto-migrate",
     "data:check": "node check-database-status.js",
     "data:create-minimal": "node create-minimal-test-data.js",
-    "data:create-full": "node create-test-data.js"
+    "data:create-full": "node create-test-data.js",
+    "sync-scales": "node scripts/sync-templates.js",
+    "sync-scale": "node scripts/sync-templates.js"
   },
   "dependencies": {
     "@prisma/client": "^5.6.0",
@@ -70,6 +72,7 @@
     "js-yaml": "^4.1.0",
     "jsonwebtoken": "^9.0.2",
     "lodash": "^4.17.21",
+    "mammoth": "^1.9.1",
     "moment": "^2.29.4",
     "multer": "^1.4.5-lts.1",
     "mysql2": "^3.6.5",
@@ -81,9 +84,9 @@
     "prisma": "^5.6.0",
     "qrcode": "^1.5.4",
     "rate-limit-redis": "^4.2.0",
+    "react-dropzone": "^14.3.8",
     "redis": "^4.6.10",
     "sharp": "^0.32.6",
-    "sqlite3": "^5.1.7",
     "twilio": "^4.19.3",
     "uuid": "^9.0.1",
     "validator": "^13.11.0",

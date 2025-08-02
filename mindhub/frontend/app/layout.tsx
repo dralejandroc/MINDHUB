@@ -3,9 +3,6 @@ import { Inter } from 'next/font/google';
 import { Toaster } from 'react-hot-toast';
 import './globals.css';
 // import { UserProvider } from '@auth0/nextjs-auth0/client';
-import { QueryProvider } from '@/contexts/QueryContext';
-import { UniversalScalesProvider } from '@/contexts/UniversalScalesContext';
-import { UserMetricsProvider } from '@/contexts/UserMetricsContext';
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-inter' });
 
@@ -100,14 +97,9 @@ export default function RootLayout({
       </head>
       <body className="bg-gray-50 antialiased">
         {/* <UserProvider> */}
-          <QueryProvider>
-            <UserMetricsProvider>
-              <UniversalScalesProvider>
                 <div id="root" className="min-h-screen">
                   {children}
                 </div>
-              </UniversalScalesProvider>
-            </UserMetricsProvider>
               
               {/* Toast notifications */}
               <Toaster
@@ -151,7 +143,6 @@ export default function RootLayout({
                 aria-atomic="true"
                 className="sr-only"
               />
-          </QueryProvider>
         {/* </UserProvider> */}
       </body>
     </html>

@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useDebounce } from '@/hooks/useDebounce';
 import { 
   XMarkIcon, 
   CalendarIcon, 
@@ -55,9 +56,41 @@ export default function NewAppointmentModal({ selectedDate, selectedTime, editin
   const [patients, setPatients] = useState<Patient[]>([]);
   const [filteredPatients, setFilteredPatients] = useState<Patient[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
+  const [searchLoading, setSearchLoading] = useState(false);
   const [showPatientSearch, setShowPatientSearch] = useState(false);
   const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null);
   const [consultationTypes, setConsultationTypes] = useState<Array<{id: string, name: string, duration: number, price: number, color: string}>>([]);
+  const debouncedSearchTerm = useDebounce(searchTerm, 300);
+
+  // Function to handle new patient creation with callback
+  const handleNewPatientCreation = () => {
+    const event = new CustomEvent('openNewPatientModal', { 
+      detail: { 
+        fromAgenda: true,
+        callback: (newPatient: any) => {
+          console.log('🎯 Callback received with new patient:', newPatient);
+          // Transform new patient data to match expected format
+          const patientForSelection = {
+            id: newPatient.id,
+            name: `${newPatient.first_name || ''} ${newPatient.last_name || newPatient.paternal_last_name || ''}`.trim(),
+            phone: newPatient.cell_phone || 'Sin teléfono',
+            email: newPatient.email || 'Sin email'
+          };
+          
+          // Add to patients list
+          setPatients(prev => [patientForSelection, ...prev]);
+          setFilteredPatients(prev => [patientForSelection, ...prev]);
+          
+          // Auto-select the new patient
+          setSelectedPatient(patientForSelection);
+          setFormData(prev => ({ ...prev, patientId: patientForSelection.id }));
+          
+          console.log('✅ New patient auto-selected:', patientForSelection);
+        }
+      }
+    });
+    window.dispatchEvent(event);
+  };
 
   // Cargar pacientes y configuración desde API
   useEffect(() => {
@@ -72,7 +105,7 @@ export default function NewAppointmentModal({ selectedDate, selectedTime, editin
         }
 
         // Load patients
-        const patientsResponse = await fetch(`${process.env.NEXT_PUBLIC_EXPEDIX_API}/api/v1/expedix/patients`);
+        const patientsResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/expedix/patients`);
         if (patientsResponse.ok) {
           const data = await patientsResponse.json();
           const patientsData = data.data?.map((p: any) => ({
@@ -110,19 +143,28 @@ export default function NewAppointmentModal({ selectedDate, selectedTime, editin
     loadData();
   }, [editingAppointment]);
 
-  // Filtrar pacientes
+  // Filtrar pacientes con debounce
   useEffect(() => {
-    if (searchTerm) {
-      const filtered = patients.filter(patient =>
-        patient.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        patient.phone.includes(searchTerm) ||
-        patient.email.toLowerCase().includes(searchTerm.toLowerCase())
-      );
-      setFilteredPatients(filtered);
-    } else {
-      setFilteredPatients(patients);
-    }
-  }, [searchTerm, patients]);
+    const searchPatients = async () => {
+      setSearchLoading(true);
+      try {
+        if (debouncedSearchTerm) {
+          const filtered = patients.filter(patient =>
+            patient.name.toLowerCase().includes(debouncedSearchTerm.toLowerCase()) ||
+            patient.phone.includes(debouncedSearchTerm) ||
+            patient.email.toLowerCase().includes(debouncedSearchTerm.toLowerCase())
+          );
+          setFilteredPatients(filtered);
+        } else {
+          setFilteredPatients(patients);
+        }
+      } finally {
+        setSearchLoading(false);
+      }
+    };
+
+    searchPatients();
+  }, [debouncedSearchTerm, patients]);
 
   const timeSlots = [
     '08:00', '08:30', '09:00', '09:30', '10:00', '10:30',
@@ -291,56 +333,63 @@ export default function NewAppointmentModal({ selectedDate, selectedTime, editin
                     }}
                   >
                     <div className="max-h-64 overflow-y-auto">
-                      {filteredPatients.map((patient) => (
-                        <button
-                          key={patient.id}
-                          type="button"
-                          onClick={() => handleSelectPatient(patient)}
-                          className="w-full p-3 text-left hover:bg-gray-50 transition-colors duration-200 border-b last:border-b-0"
-                          style={{ borderColor: 'var(--neutral-100)' }}
-                        >
-                          <div 
-                            className="font-medium"
-                            style={{ color: 'var(--dark-green)' }}
-                          >
-                            {patient.name}
-                          </div>
-                          <div 
-                            className="text-sm"
-                            style={{ color: 'var(--neutral-600)' }}
-                          >
-                            {patient.phone} • {patient.email}
-                          </div>
-                        </button>
-                      ))}
-                      {filteredPatients.length === 0 && (
+                      {searchLoading ? (
                         <div className="p-4 text-center">
-                          <p 
-                            className="text-sm"
-                            style={{ color: 'var(--neutral-500)' }}
-                          >
-                            No se encontraron pacientes
-                          </p>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setShowPatientSearch(false);
-                              // Open new patient modal
-                              const event = new CustomEvent('openNewPatientModal', { 
-                                detail: { fromAgenda: true }
-                              });
-                              window.dispatchEvent(event);
-                            }}
-                            className="mt-2 text-sm px-3 py-1 rounded-lg transition-colors duration-200"
-                            style={{ 
-                              backgroundColor: 'var(--primary-100)',
-                              color: 'var(--primary-700)'
-                            }}
-                          >
-                            <PlusIcon className="h-3 w-3 inline mr-1" />
-                            Crear nuevo paciente
-                          </button>
+                          <div className="flex items-center justify-center space-x-2">
+                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary-500"></div>
+                            <span className="text-sm text-neutral-500">Buscando...</span>
+                          </div>
                         </div>
+                      ) : (
+                        <>
+                          {filteredPatients.map((patient) => (
+                            <button
+                              key={patient.id}
+                              type="button"
+                              onClick={() => handleSelectPatient(patient)}
+                              className="w-full p-3 text-left hover:bg-gray-50 transition-colors duration-200 border-b last:border-b-0"
+                              style={{ borderColor: 'var(--neutral-100)' }}
+                            >
+                              <div 
+                                className="font-medium"
+                                style={{ color: 'var(--dark-green)' }}
+                              >
+                                {patient.name}
+                              </div>
+                              <div 
+                                className="text-sm"
+                                style={{ color: 'var(--neutral-600)' }}
+                              >
+                                {patient.phone} • {patient.email}
+                              </div>
+                            </button>
+                          ))}
+                          {filteredPatients.length === 0 && !searchLoading && (
+                            <div className="p-4 text-center">
+                              <p 
+                                className="text-sm"
+                                style={{ color: 'var(--neutral-500)' }}
+                              >
+                                No se encontraron pacientes
+                              </p>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setShowPatientSearch(false);
+                                  handleNewPatientCreation();
+                                }}
+                                className="mt-2 text-sm px-3 py-1 rounded-lg transition-colors duration-200"
+                                style={{ 
+                                  backgroundColor: 'var(--primary-100)',
+                                  color: 'var(--primary-700)'
+                                }}
+                              >
+                                <PlusIcon className="h-3 w-3 inline mr-1" />
+                                Crear nuevo paciente
+                              </button>
+                            </div>
+                          )}
+                        </>
                       )}
                     </div>
                     <div className="p-3 border-t" style={{ borderColor: 'var(--neutral-200)' }}>
@@ -348,11 +397,7 @@ export default function NewAppointmentModal({ selectedDate, selectedTime, editin
                         type="button"
                         onClick={() => {
                           setShowPatientSearch(false);
-                          // Open new patient modal
-                          const event = new CustomEvent('openNewPatientModal', { 
-                            detail: { fromAgenda: true }
-                          });
-                          window.dispatchEvent(event);
+                          handleNewPatientCreation();
                         }}
                         className="w-full text-sm px-3 py-2 rounded-lg transition-colors duration-200 flex items-center justify-center"
                         style={{ 

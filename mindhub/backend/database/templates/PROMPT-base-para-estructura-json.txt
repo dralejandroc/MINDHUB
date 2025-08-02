@@ -1,0 +1,423 @@
+## OBJETIVO
+Extraer y estructurar escalas clínicas en 2 documentos: formato JSON universal y otro .MD 
+Para que estos documentos sean compatibles con cualquier tipo de escala y lógica de respuestas.
+
+## FORMATO DE SALIDA REQUERIDO
+Generar JSON válido siguiendo EXACTAMENTE la estructura señalada y otro documento (de la misma escala) con estructura .MD definida a continuación. 
+
+Las escalas clinimétricas son estandarizadas, por lo que el formato de los ítems debe ser exacto acorde a la literatura científica actualizada. Para idioma español castellano o español latinoamericano, si se encuentran datos o evidencia científica específicamente para México mejor. 
+
+Las indicaciones de como realizar las escalas, tienen que dividirse en 2, donde una indicación es de como aplicar la escala o instrumento, que esto será las instrucciones al profesional ("instructions_professional") esta debe ser con lenguaje profesional, señalando las mejores practicas para la administración del instrumento, evitando utilizar puntos de corte ya que estos se generan automáticamente por el sistema, y dando así bien tipo entrenamiento resumido de las mejores practicas para la administración de la escala en cuestión. Y la otra parte serán indicaciones para el paciente ("instructions_patient"), que serán en un lenguaje NO tecnico, que viene específicamente en cada escala (cuando son Autoadministradas o se pueden realizar de ambas formas ("both"), si es una escala Heteroaplicada o "clinician_administered" no llevan instrucciones para el paciente. Evita usar frases como ¨marca con una cruz¨o cosas similares, ya que la escala es de selección o de anotar, mediante medios electrónicos, por lo que sera solo seleccionar. 
+
+**SIEMPRE USA snake_case como lenguaje informativo.**
+
+### Proceso de Investigación
+1. **Analizar documentos proporcionados** (si se incluyen archivos o imágenes)
+2. **Buscar información científica validada en:**
+   - PubMed y bases de datos académicas
+   - Sitios oficiales de las escalas
+   - Manuales clínicos publicados
+   - Artículos con factor de impacto
+   - Solo fuentes con referencias bibliográficas verificables
+
+3. **Extraer información completa:**
+   - TODOS los ítems/preguntas exactas
+   - Opciones de respuesta con sus valores numéricos
+   - Sistema de puntuación y cálculo
+   - Rangos de interpretación clínica
+   - Subescalas si existen
+   - Propiedades psicométricas (α de Cronbach, etc.)
+
+## REGLAS CRÍTICAS PARA EVITAR ERRORES DE IMPORTACIÓN
+
+### 1. **IDs ÚNICOS OBLIGATORIOS**
+- **JAMÁS** uses el mismo ID en diferentes secciones
+- `response_options[].id` debe ser diferente de `response_groups[].options[].id`
+- Si hay opciones globales Y opciones en grupos, usa prefijos diferentes:
+  - Opciones globales: `[scale-id]-opt-[n]`
+  - Opciones de grupo: `[scale-id]-grp-[group-index]-opt-[n]`
+
+### 2. **NUMERACIÓN DE ÍTEMS CONSECUTIVA**
+- Cada ítem debe tener un `number` único y consecutivo
+- Si un formulario tiene ítems como "7a, 7b, 7c, 7d", asigna números 7, 8, 9, 10
+- Conserva el código original en el campo `code` si es necesario
+- Actualiza las referencias en `subscales[].items` para usar los nuevos números
+
+### 3. **SISTEMA DE RESPUESTAS - USAR SOLO UNO**
+Basado en el análisis de 21 escalas clínicas, estos son los patrones más comunes:
+
+**OPCIÓN A: Response Options Globales (40% de las escalas)**
+Usar cuando TODOS los ítems comparten exactamente las mismas opciones de respuesta.
+Ejemplos: STAI, AQ, Plutchik, escalas Likert simples.
+```json
+{
+  "response_options": [
+    {"id": "scale-opt-0", "value": "0", "label": "No", "score": 0, "order_index": 1}
+  ],
+  "response_groups": [],
+  "items": [
+    {"response_group": null, "specific_options": []}
+  ]
+}
+```
+
+**OPCIÓN B: Response Groups (35% de las escalas)**
+Usar cuando hay grupos de ítems con diferentes tipos de respuesta.
+Ejemplos: BITE, IIEF-15, MOS-Sleep, escalas mixtas con secciones binarias y de frecuencia.
+```json
+{
+  "response_options": [],
+  "response_groups": [
+    {
+      "id": "scale-group-1",
+      "key": "binary_response",
+      "name": "Respuesta Binaria",
+      "options": [
+        {"id": "scale-grp-1-opt-0", "value": "0", "label": "No", "score": 0, "order_index": 1}
+      ]
+    }
+  ],
+  "items": [
+    {"response_group": "binary_response", "specific_options": []}
+  ]
+}
+```
+
+**OPCIÓN C: Specific Options (25% de las escalas)**
+Usar cuando cada ítem tiene opciones completamente únicas.
+Ejemplos: BDI-21, BDI-13, escalas donde cada pregunta tiene su propia redacción de opciones.
+```json
+{
+  "response_options": [],
+  "response_groups": [],
+  "items": [
+    {
+      "response_group": null,
+      "specific_options": [
+        {"id": "scale-item-1-opt-0", "value": "0", "label": "Opción única", "score": 0, "order_index": 1}
+      ]
+    }
+  ]
+}
+```
+
+### 4. **QUESTION_TYPE RECOMENDADOS**
+- `"likert"` - **USAR PARA EL 90% DE CASOS** (incluso binarias Sí/No)
+- `"multiple_choice"` - Solo si las opciones NO tienen orden lógico
+- `"numeric"` - Solo para entrada numérica libre (edad, horas, etc.)
+- `"text"` - Solo para respuestas abiertas de texto
+
+### 5. **CATEGORÍAS ESTANDARIZADAS**
+Usar siempre en español, en minúsculas:
+- `"autismo"` - TEA y trastornos relacionados
+- `"ansiedad"` - Trastornos de ansiedad (NO usar "anxiety")
+- `"depresion"` - Trastornos depresivos (sin tilde)
+- `"adicciones"` - Trastornos por uso de sustancias
+- `"personalidad"` - Trastornos de personalidad
+- `"cognitivo"` - TDAH, déficit cognitivos
+- `"psicosis"` - Trastornos psicóticos
+- `"trastornos_alimentarios"` - Anorexia, bulimia, etc.
+- `"general"` - Escalas multidimensionales o generales
+
+## ESTRUCTURA JSON REQUERIDA (v2.0 - Mejorada)
+
+```json
+{
+  "scale": {
+    "id": "string - identificador único en minúsculas con guiones (ej: bite, ipde-cie10)",
+    "name": "string - nombre completo oficial de la escala",
+    "abbreviation": "string - siglas o acrónimo oficial",
+    "description": "string - descripción detallada del propósito y uso de la escala",
+    "version": "string - versión de la escala",
+    "category": "string - categoría en español de la lista estandarizada",
+    "subcategory": "string - subcategoría específica o null",
+    "author": "string - autores principales de la escala",
+    "publication_year": "integer - año de publicación original",
+    "total_items": "integer - número total de ítems/preguntas",
+    "estimated_duration_minutes": "integer - tiempo estimado de aplicación en minutos",
+    "administration_mode": "string - uno de: self_administered, clinician_administered, both",
+    "target_population": "string - población objetivo detallada incluyendo edad, condiciones, contexto",
+    "scoring_method": "string - uno de: sum, sum_by_subscale, weighted_sum, average, categorical, algorithm",
+    "score_range_min": "integer - puntuación mínima posible",
+    "score_range_max": "integer - puntuación máxima posible",
+    "instructions_professional": "string - instrucciones completas para el profesional que administra la escala",
+    "instructions_patient": "string - instrucciones completas para el paciente/evaluado o null si es heteroaplicada",
+    
+    // NUEVOS CAMPOS OPCIONALES PARA METADATOS
+    "who_completes": "string - opcional: self/parent/teacher/clinician/multiple",
+    "requires_interview": "boolean - opcional: true si requiere entrevista estructurada",
+    "cultural_adaptation": "string - opcional: mexico/spain/universal",
+    "diagnostic_system": "string - opcional: dsm-5/cie-10/dsm-iv/cie-11"
+  },
+
+  "response_options": [
+    // SOLO usar si la escala tiene opciones GLOBALES para todos los ítems
+    // Si usas response_groups o specific_options, este array debe estar VACÍO []
+    {
+      "id": "string - formato: [scale-id]-opt-[n] (ej: bite-opt-0)",
+      "value": "string - valor de la opción",
+      "label": "string - texto que ve el usuario (con emojis si ayudan: ❌✅)",
+      "score": "integer - puntuación numérica",
+      "order_index": "integer - orden de presentación"
+    }
+  ],
+
+  "response_groups": [
+    // SOLO usar si la escala tiene DIFERENTES TIPOS de respuesta para distintos ítems
+    // Si usas response_options globales o solo specific_options, este array debe estar VACÍO []
+    {
+      "id": "string - identificador único del grupo (ej: bite-group-binary)",
+      "key": "string - clave del grupo en snake_case (ej: binary_response)",
+      "name": "string - nombre descriptivo del grupo",
+      "description": "string - descripción del grupo o null",
+      "display_order": "integer - orden de presentación",
+      "display_type": "string - opcional: horizontal/vertical/grid",
+      "options": [
+        {
+          "id": "string - formato: [scale-id]-grp-[n]-opt-[n] (ej: bite-grp-1-opt-0)",
+          "value": "string - valor de la opción",
+          "label": "string - texto de la opción",
+          "score": "integer - puntuación",
+          "order_index": "integer - orden"
+        }
+      ]
+    }
+  ],
+
+  "items": [
+    {
+      "id": "string - formato: [scale-id]-item-[n] (ej: bite-item-1)",
+      "number": "integer - número ÚNICO y CONSECUTIVO del ítem (1, 2, 3, 4, NO 1, 2, 2, 2)",
+      "text": "string - texto completo del ítem/pregunta EXACTO de la literatura",
+      "code": "string - código original del ítem (ej: 7a, 7b) o null",
+      "question_type": "string - uno de: likert, multiple_choice, numeric, text",
+      "response_group": "string - key del grupo de respuesta o null si usa response_options globales",
+      "reverse_scored": "boolean - true si se puntúa inversamente",
+      "alert_trigger": "boolean - true si puede generar alerta clínica",
+      "alert_condition": "string - condición para la alerta o null",
+      "help_text": "string - texto de ayuda adicional o null",
+      "required": "boolean - true si es obligatorio",
+      
+      // NUEVOS CAMPOS OPCIONALES
+      "depends_on": "object - opcional: {item_number: X, condition: 'equals', value: Y}",
+      "validation_rule": "string - opcional: regla de validación específica",
+      "display_condition": "string - opcional: condición para mostrar el ítem",
+      
+      "specific_options": [
+        // SOLO usar si este ítem específico tiene opciones únicas
+        // Si el ítem usa response_group o response_options globales, este array debe estar VACÍO []
+        {
+          "id": "string - formato: [scale-id]-item-[n]-opt-[n] (ej: bite-item-1-opt-0)",
+          "value": "string - valor",
+          "label": "string - texto de la opción",
+          "score": "integer - puntuación",
+          "order_index": "integer - orden"
+        }
+      ]
+    }
+  ],
+
+  "subscales": [
+    {
+      "id": "string - identificador único",
+      "name": "string - nombre de la subescala",
+      "code": "string - código de la subescala o null",
+      "items": "array - números de ítems que componen la subescala (usar los números finales, no los códigos)",
+      "min_score": "integer - puntuación mínima",
+      "max_score": "integer - puntuación máxima",
+      "description": "string - descripción de lo que mide o null",
+      
+      // NUEVO CAMPO OPCIONAL
+      "scoring_direction": "string - opcional: normal/reverse/mixed"
+    }
+  ],
+
+  "interpretation_rules": [
+    {
+      "id": "string - identificador único",
+      "min_score": "integer - puntuación mínima del rango",
+      "max_score": "integer - puntuación máxima del rango",
+      "severity_level": "string - uno de: minimal, mild, moderate, severe, very_severe, clinical, subclinical, at_risk",
+      "label": "string - etiqueta descriptiva del rango",
+      "color": "string - código de color hexadecimal o null",
+      "description": "string - descripción detallada o null",
+      "recommendations": "string - recomendaciones clínicas o null",
+      
+      // NUEVOS CAMPOS OPCIONALES
+      "applies_to": "string - opcional: total/subscale_name para reglas específicas",
+      "percentile_range": "string - opcional: rango percentil (ej: 75-90)"
+    }
+  ],
+
+  "documentation": {
+    "bibliography": "string - referencias bibliográficas principales",
+    "sources_consulted": "array - lista de fuentes consultadas",
+    "implementation_notes": "string - notas sobre la implementación",
+    "psychometric_properties": {
+      "reliability": "string - información sobre confiabilidad",
+      "validity": "string - información sobre validez",
+      "sensitivity": "string - sensibilidad o null",
+      "specificity": "string - especificidad o null",
+      
+      // NUEVOS CAMPOS OPCIONALES
+      "cronbach_alpha": "string - opcional: valor del α de Cronbach",
+      "test_retest": "string - opcional: confiabilidad test-retest",
+      "factor_structure": "string - opcional: estructura factorial"
+    },
+    "clinical_considerations": "string - consideraciones clínicas importantes",
+    "special_items_notes": "object - notas sobre ítems específicos o null",
+    "version_notes": "string - notas sobre esta versión",
+    "target_population_details": "string - detalles adicionales sobre población",
+    "clinical_interpretation": "string - guía de interpretación clínica",
+    
+    // NUEVOS CAMPOS OPCIONALES
+    "cultural_considerations": "string - opcional: consideraciones culturales específicas",
+    "training_requirements": "string - opcional: requisitos de entrenamiento para administrar",
+    "copyright_notice": "string - opcional: información de copyright"
+  }
+}
+```
+
+## PATRONES COMUNES IDENTIFICADOS (Basado en 21 escalas)
+
+### 1. **Escalas Binarias Simples (15%)**
+- IPDE, partes de BITE
+- Usar response_options globales con 2 opciones
+- question_type: "likert" (NO "binary")
+
+### 2. **Escalas Likert Estándar (40%)**
+- STAI, AQ, Plutchik, GADI
+- 4-5 opciones ordenadas de frecuencia/acuerdo
+- Usar response_options globales
+
+### 3. **Escalas con Opciones Específicas por Ítem (25%)**
+- BDI-21, BDI-13
+- Cada ítem tiene redacción única de opciones
+- Usar specific_options en cada ítem
+
+### 4. **Escalas Mixtas con Grupos (20%)**
+- BITE, IIEF-15, MOS-Sleep
+- Diferentes secciones con diferentes tipos de respuesta
+- Usar response_groups
+
+### 5. **Escalas con Ítems Condicionales**
+- Algunos ítems solo aparecen según respuestas previas
+- Usar campo "depends_on" (nuevo)
+
+## DOCUMENTO MD COMPLEMENTARIO
+
+**[nombre-escala]-docs.md**
+
+```markdown
+# [Nombre Completo de la Escala] - Documentación Científica
+
+## Información General
+- **Nombre completo**: [Nombre oficial]
+- **Abreviatura**: [Siglas]
+- **Autores**: [Autores principales]
+- **Año de publicación**: [Año]
+- **Versión documentada**: [Versión]
+
+## Descripción
+[Descripción detallada del instrumento, su propósito y aplicaciones clínicas]
+
+## Población Objetivo
+[Descripción detallada de la población para la cual está validada]
+
+## Estructura del Instrumento
+- **Número de ítems**: [N]
+- **Subescalas**: [Lista de subescalas si aplica]
+- **Tiempo de aplicación**: [Minutos estimados]
+- **Modo de administración**: [Auto/hetero/ambas]
+
+## Sistema de Puntuación
+[Descripción detallada del sistema de puntuación]
+
+### Cálculo de Puntuaciones
+[Fórmulas o procedimientos específicos]
+
+### Interpretación de Resultados
+[Rangos de puntuación y su significado clínico]
+
+## Propiedades Psicométricas
+
+### Confiabilidad
+- **Consistencia interna (α de Cronbach)**: [Valor]
+- **Test-retest**: [Valor si disponible]
+- **Confiabilidad inter-evaluador**: [Si aplica]
+
+### Validez
+- **Validez de constructo**: [Descripción]
+- **Validez de criterio**: [Descripción]
+- **Validez convergente/divergente**: [Si disponible]
+
+### Sensibilidad y Especificidad
+[Valores si están disponibles]
+
+## Adaptaciones y Versiones
+
+### Adaptación para México/Latinoamérica
+[Información sobre adaptaciones culturales si existen]
+
+### Otras Versiones
+[Versiones abreviadas, extendidas, para diferentes poblaciones]
+
+## Consideraciones Clínicas
+
+### Ventajas
+- [Lista de ventajas del instrumento]
+
+### Limitaciones
+- [Lista de limitaciones conocidas]
+
+### Recomendaciones de Uso
+[Cuándo usar y cuándo no usar el instrumento]
+
+## Consideraciones Éticas
+[Aspectos éticos relevantes en la aplicación]
+
+## Referencias Bibliográficas
+
+### Artículo Original
+[Referencia completa en formato APA]
+
+### Validaciones en Población Hispanohablante
+[Referencias de estudios de validación]
+
+### Otros Estudios Relevantes
+[Referencias adicionales importantes]
+
+## Notas de Implementación
+[Cualquier nota específica sobre la implementación digital de la escala]
+
+## Recursos Adicionales
+- [Enlaces a manuales oficiales]
+- [Sitios web de referencia]
+- [Materiales de entrenamiento]
+
+---
+*Última actualización: [Fecha]*
+*Versión del documento: 1.0*
+```
+
+## VALIDACIÓN FINAL ANTES DE ENTREGAR
+
+1. ✅ **IDs únicos**: Ningún ID se repite en todo el JSON
+2. ✅ **Numeración consecutiva**: items[].number son 1, 2, 3, 4... sin repetir
+3. ✅ **Sistema de respuestas consistente**: Solo un método usado por escala
+4. ✅ **Referencias válidas**: response_group apunta a keys existentes
+5. ✅ **Subscales actualizadas**: items[] usa números finales, no códigos originales
+6. ✅ **snake_case**: Todos los campos usan formato correcto
+7. ✅ **Categorías en español**: Usar lista estandarizada, no mezclar idiomas
+8. ✅ **JSON válido**: Sintaxis correcta sin errores de comas o llaves
+9. ✅ **Documentación MD**: Archivo complementario con información científica completa
+
+## TIPS BASADOS EN EXPERIENCIA
+
+1. **Para escalas tipo BDI**: Usar specific_options, cada ítem tiene opciones únicas
+2. **Para escalas tipo STAI/AQ**: Usar response_options globales
+3. **Para escalas tipo BITE/IIEF**: Usar response_groups para diferentes secciones
+4. **Emojis útiles**: ❌ ✅ ⚠️ 🔴 🟡 🟢 pueden mejorar la claridad visual
+5. **Help text**: Usar para aclarar términos técnicos o dar ejemplos
+6. **Ítems inversos**: Marcar claramente con reverse_scored: true
+7. **Alertas clínicas**: Usar alert_trigger para ítems de riesgo (suicidio, autolesión)

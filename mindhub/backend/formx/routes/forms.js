@@ -59,49 +59,83 @@ router.get('/',
       isActive = true
     } = req.query;
 
-    // Simple implementation for now
-    const forms = [
-      {
-        id: '1',
-        name: 'Patient Intake Form',
-        description: 'Initial patient information collection form',
-        category: 'intake',
-        isActive: true,
-        createdAt: new Date().toISOString(),
-        estimatedDuration: 15
-      },
-      {
-        id: '2',
-        name: 'Pre-consultation Questionnaire',
-        description: 'Questions to complete before consultation',
-        category: 'pre-consultation',
-        isActive: true,
-        createdAt: new Date().toISOString(),
-        estimatedDuration: 10
-      }
-    ];
+    // Build where clause for filtering
+    const whereClause = {
+      is_active: isActive === 'true' ? true : isActive === 'false' ? false : undefined
+    };
 
-    // Apply basic filtering
-    let filteredForms = forms;
     if (search) {
-      filteredForms = forms.filter(form => 
-        form.name.toLowerCase().includes(search.toLowerCase()) ||
-        form.description.toLowerCase().includes(search.toLowerCase())
-      );
+      whereClause.OR = [
+        { title: { contains: search } },
+        { description: { contains: search } }
+      ];
     }
 
     if (category) {
-      filteredForms = filteredForms.filter(form => form.category === category);
+      whereClause.category = category;
     }
+
+    // Clean up undefined values
+    Object.keys(whereClause).forEach(key => {
+      if (whereClause[key] === undefined) {
+        delete whereClause[key];
+      }
+    });
+
+    const skip = (parseInt(page) - 1) * parseInt(limit);
+    const take = parseInt(limit);
+
+    // Get forms with pagination
+    const [forms, totalCount] = await Promise.all([
+      executeQuery(
+        (prisma) => prisma.forms.findMany({
+          where: whereClause,
+          select: {
+            id: true,
+            title: true,
+            description: true,
+            category: true,
+            is_active: true,
+            created_at: true,
+            updated_at: true,
+            usage_count: true,
+            last_used_at: true,
+            version: true
+          },
+          orderBy: { created_at: 'desc' },
+          skip,
+          take
+        }),
+        'getForms'
+      ),
+      executeQuery(
+        (prisma) => prisma.forms.count({ where: whereClause }),
+        'getFormsCount'
+      )
+    ]);
+
+    // Transform data to match expected format
+    const transformedForms = forms.map(form => ({
+      id: form.id,
+      name: form.title,
+      description: form.description,
+      category: form.category,
+      isActive: form.is_active,
+      createdAt: form.created_at.toISOString(),
+      updatedAt: form.updated_at.toISOString(),
+      usageCount: form.usage_count || 0,
+      lastUsedAt: form.last_used_at?.toISOString(),
+      version: form.version
+    }));
 
     res.json({
       success: true,
-      data: filteredForms,
+      data: transformedForms,
       pagination: {
         page: parseInt(page),
         limit: parseInt(limit),
-        total: filteredForms.length,
-        pages: Math.ceil(filteredForms.length / limit)
+        total: totalCount,
+        pages: Math.ceil(totalCount / parseInt(limit))
       }
     });
 
@@ -119,13 +153,83 @@ router.get('/',
 });
 
 /**
+ * GET /api/v1/formx/stats
+ * Get FormX statistics
+ */
+router.get('/stats',
+  ...middleware.utils.forHub('formx'),
+  async (req, res) => {
+  try {
+    // Get today's date range
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+
+    // Get statistics
+    const [todayResponses, totalResponses, pendingAssignments] = await Promise.all([
+      // Today's responses
+      executeQuery(
+        (prisma) => prisma.form_submissions.count({
+          where: {
+            submitted_at: {
+              gte: today,
+              lt: tomorrow
+            }
+          }
+        }),
+        'getTodayResponses'
+      ),
+      
+      // Total responses
+      executeQuery(
+        (prisma) => prisma.form_submissions.count(),
+        'getTotalResponses'
+      ),
+      
+      // Pending assignments
+      executeQuery(
+        (prisma) => prisma.form_assignments.count({
+          where: {
+            status: 'pending',
+            expires_at: {
+              gt: new Date()
+            }
+          }
+        }),
+        'getPendingAssignments'
+      )
+    ]);
+
+    res.json({
+      success: true,
+      data: {
+        todayResponses,
+        totalResponses,
+        pendingAssignments
+      }
+    });
+
+  } catch (error) {
+    logger.error('Failed to get FormX statistics', { 
+      error: error.message,
+      userId: req.user?.id 
+    });
+    res.status(500).json({ 
+      error: 'Failed to retrieve statistics', 
+      details: error.message 
+    });
+  }
+});
+
+/**
  * GET /api/v1/formx/forms/:id
  * Get specific form details with configuration
  */
 router.get('/:id',
   ...middleware.utils.forRoles(['psychiatrist', 'psychologist', 'nurse', 'patient', 'admin'], ['read:forms']),
   [
-  param('id').isUUID().withMessage('Invalid form ID format')
+  param('id').isString().withMessage('Invalid form ID format')
 ], async (req, res) => {
   try {
     const errors = validationResult(req);
@@ -139,20 +243,22 @@ router.get('/:id',
     const { id } = req.params;
     
     const form = await executeQuery(
-      (prisma) => prisma.form.findUnique({
+      (prisma) => prisma.forms.findUnique({
         where: { id },
-        include: {
-          fields: {
-            orderBy: { order: 'asc' }
-          },
-          creator: {
-            select: { id: true, name: true, email: true }
-          },
-          _count: {
-            select: {
-              submissions: true
-            }
-          }
+        select: {
+          id: true,
+          title: true,
+          description: true,
+          structure: true,
+          settings: true,
+          category: true,
+          created_by: true,
+          created_at: true,
+          updated_at: true,
+          is_active: true,
+          version: true,
+          usage_count: true,
+          last_used_at: true
         }
       }),
       `getForm(${id})`
@@ -164,6 +270,13 @@ router.get('/:id',
       });
     }
 
+    // Parse JSON fields
+    const formData = {
+      ...form,
+      structure: typeof form.structure === 'string' ? JSON.parse(form.structure) : form.structure,
+      settings: typeof form.settings === 'string' ? JSON.parse(form.settings) : form.settings || {}
+    };
+
     // Log access for compliance
     logger.info('Form details accessed', {
       formId: id,
@@ -174,7 +287,7 @@ router.get('/:id',
 
     res.json({
       success: true,
-      data: form
+      data: formData
     });
 
   } catch (error) {
@@ -214,53 +327,60 @@ router.post('/',
       return res.status(401).json({ error: 'Authentication required' });
     }
 
-    // Process fields and assign order if not provided
-    const fieldsWithOrder = formData.fields.map((field, index) => ({
-      ...field,
-      order: field.order !== undefined ? field.order : index + 1
-    }));
+    // Generate unique form ID
+    const formId = `form_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+
+    // Prepare form structure with fields
+    const formStructure = {
+      pages: [{
+        id: 'page_1', 
+        title: 'Formulario',
+        fields: formData.fields.map((field, index) => ({
+          id: `field_${index + 1}`,
+          type: field.type,
+          label: field.label,
+          placeholder: field.placeholder,
+          helpText: field.helpText,
+          required: field.required !== undefined ? field.required : false,
+          order: field.order !== undefined ? field.order : index + 1,
+          validation: field.validation || {},
+          options: field.options || [],
+          conditionalLogic: field.conditionalLogic || {}
+        }))
+      }]
+    };
 
     const form = await executeQuery(
-      (prisma) => prisma.form.create({
+      (prisma) => prisma.forms.create({
         data: {
+          id: formId,
           title: formData.title,
           description: formData.description,
+          structure: JSON.stringify(formStructure),
+          settings: JSON.stringify(formData.settings || {}),
           category: formData.category,
-          settings: formData.settings || {},
-          isActive: formData.isActive !== undefined ? formData.isActive : true,
-          createdBy: userId,
-          fields: {
-            create: fieldsWithOrder.map(field => ({
-              type: field.type,
-              label: field.label,
-              placeholder: field.placeholder,
-              helpText: field.helpText,
-              required: field.required,
-              order: field.order,
-              validation: field.validation || {},
-              options: field.options || [],
-              conditionalLogic: field.conditionalLogic || {}
-            }))
-          }
-        },
-        include: {
-          fields: {
-            orderBy: { order: 'asc' }
-          },
-          creator: {
-            select: { id: true, name: true, email: true }
-          }
+          created_by: userId,
+          is_active: formData.isActive !== undefined ? formData.isActive : true,
+          version: 1,
+          usage_count: 0
         }
       }),
       'createForm'
     );
+
+    // Parse structure for response
+    const responseData = {
+      ...form,
+      structure: JSON.parse(form.structure),
+      settings: JSON.parse(form.settings)
+    };
 
     // Log creation for compliance
     logger.info('Form created', {
       formId: form.id,
       formTitle: form.title,
       category: form.category,
-      fieldCount: form.fields.length,
+      fieldCount: responseData.structure.pages[0].fields.length,
       createdBy: userId,
       ipAddress: req.ip
     });
@@ -268,7 +388,7 @@ router.post('/',
     res.status(201).json({
       success: true,
       message: 'Form created successfully',
-      data: form
+      data: responseData
     });
 
   } catch (error) {
@@ -290,7 +410,7 @@ router.post('/',
 router.put('/:id',
   ...middleware.utils.forRoles(['psychiatrist', 'psychologist', 'admin'], ['write:forms']),
   [
-  param('id').isUUID().withMessage('Invalid form ID format'),
+  param('id').isString().withMessage('Invalid form ID format'),
   ...validateForm
 ], async (req, res) => {
   try {
@@ -308,9 +428,9 @@ router.put('/:id',
 
     // Check if form exists
     const existingForm = await executeQuery(
-      (prisma) => prisma.form.findUnique({
+      (prisma) => prisma.forms.findUnique({
         where: { id },
-        select: { id: true, title: true }
+        select: { id: true, title: true, version: true }
       }),
       `checkForm(${id})`
     );
@@ -319,49 +439,50 @@ router.put('/:id',
       return res.status(404).json({ error: 'Form not found' });
     }
 
-    // Process fields and assign order if not provided
-    const fieldsWithOrder = updateData.fields.map((field, index) => ({
-      ...field,
-      order: field.order !== undefined ? field.order : index + 1
-    }));
+    // Prepare updated form structure
+    const formStructure = {
+      pages: [{
+        id: 'page_1',
+        title: 'Formulario',
+        fields: updateData.fields.map((field, index) => ({
+          id: field.id || `field_${index + 1}`,
+          type: field.type,
+          label: field.label,
+          placeholder: field.placeholder,
+          helpText: field.helpText,
+          required: field.required !== undefined ? field.required : false,
+          order: field.order !== undefined ? field.order : index + 1,
+          validation: field.validation || {},
+          options: field.options || [],
+          conditionalLogic: field.conditionalLogic || {}
+        }))
+      }]
+    };
 
-    // Update form using transaction to handle field updates
+    // Update form
     const form = await executeQuery(
-      (prisma) => prisma.form.update({
+      (prisma) => prisma.forms.update({
         where: { id },
         data: {
           title: updateData.title,
           description: updateData.description,
+          structure: JSON.stringify(formStructure),
+          settings: JSON.stringify(updateData.settings || {}),
           category: updateData.category,
-          settings: updateData.settings || {},
-          isActive: updateData.isActive,
-          updatedAt: new Date(),
-          fields: {
-            deleteMany: {}, // Delete existing fields
-            create: fieldsWithOrder.map(field => ({
-              type: field.type,
-              label: field.label,
-              placeholder: field.placeholder,
-              helpText: field.helpText,
-              required: field.required,
-              order: field.order,
-              validation: field.validation || {},
-              options: field.options || [],
-              conditionalLogic: field.conditionalLogic || {}
-            }))
-          }
-        },
-        include: {
-          fields: {
-            orderBy: { order: 'asc' }
-          },
-          creator: {
-            select: { id: true, name: true, email: true }
-          }
+          is_active: updateData.isActive,
+          version: (existingForm.version || 1) + 1,
+          updated_at: new Date()
         }
       }),
       `updateForm(${id})`
     );
+
+    // Parse structure for response
+    const responseData = {
+      ...form,
+      structure: JSON.parse(form.structure),
+      settings: JSON.parse(form.settings)
+    };
 
     // Log update for compliance
     logger.info('Form updated', {
@@ -369,13 +490,14 @@ router.put('/:id',
       formTitle: existingForm.title,
       updatedBy: userId,
       changes: Object.keys(updateData),
+      newVersion: form.version,
       ipAddress: req.ip
     });
 
     res.json({
       success: true,
       message: 'Form updated successfully',
-      data: form
+      data: responseData
     });
 
   } catch (error) {
@@ -398,7 +520,7 @@ router.put('/:id',
 router.delete('/:id',
   ...middleware.utils.forRoles(['psychiatrist', 'admin'], ['delete:forms']),
   [
-  param('id').isUUID().withMessage('Invalid form ID format'),
+  param('id').isString().withMessage('Invalid form ID format'),
   body('reason').optional().trim().isLength({ max: 500 }).withMessage('Reason must not exceed 500 characters')
 ], async (req, res) => {
   try {
@@ -416,9 +538,9 @@ router.delete('/:id',
 
     // Check if form exists
     const existingForm = await executeQuery(
-      (prisma) => prisma.form.findUnique({
+      (prisma) => prisma.forms.findUnique({
         where: { id },
-        select: { id: true, title: true, isActive: true }
+        select: { id: true, title: true, is_active: true }
       }),
       `checkForm(${id})`
     );
@@ -427,18 +549,17 @@ router.delete('/:id',
       return res.status(404).json({ error: 'Form not found' });
     }
 
-    if (!existingForm.isActive) {
+    if (!existingForm.is_active) {
       return res.status(400).json({ error: 'Form is already inactive' });
     }
 
-    // Soft delete (set isActive to false)
+    // Soft delete (set is_active to false)
     await executeQuery(
-      (prisma) => prisma.form.update({
+      (prisma) => prisma.forms.update({
         where: { id },
         data: { 
-          isActive: false,
-          deletedAt: new Date(),
-          deletedBy: userId
+          is_active: false,
+          updated_at: new Date()
         }
       }),
       `deactivateForm(${id})`
@@ -479,10 +600,11 @@ router.delete('/:id',
 router.post('/:id/submit',
   ...middleware.presets.public,
   [
-  param('id').isUUID().withMessage('Invalid form ID format'),
+  param('id').isString().withMessage('Invalid form ID format'),
   body('responses').isObject().withMessage('Responses are required'),
   body('submitterName').optional().trim().isLength({ max: 255 }),
-  body('submitterEmail').optional().isEmail()
+  body('submitterEmail').optional().isEmail(),
+  body('assignmentId').optional().isString()
 ], async (req, res) => {
   try {
     const errors = validationResult(req);
@@ -494,34 +616,34 @@ router.post('/:id/submit',
     }
 
     const { id } = req.params;
-    const { responses, submitterName, submitterEmail, signature } = req.body;
+    const { responses, submitterName, submitterEmail, signature, assignmentId } = req.body;
 
     // Check if form exists and is active
     const form = await executeQuery(
-      (prisma) => prisma.form.findUnique({
+      (prisma) => prisma.forms.findUnique({
         where: { id },
         select: { 
           id: true, 
           title: true, 
-          isActive: true,
-          definition: true,
+          is_active: true,
+          structure: true,
           settings: true
         }
       }),
       `getFormForSubmission(${id})`
     );
 
-    if (!form || !form.isActive) {
+    if (!form || !form.is_active) {
       return res.status(404).json({ error: 'Form not found or inactive' });
     }
 
-    // Parse form definition to validate responses
-    const definition = typeof form.definition === 'string' ? JSON.parse(form.definition) : form.definition;
+    // Parse form structure to validate responses
+    const structure = typeof form.structure === 'string' ? JSON.parse(form.structure) : form.structure;
     const settings = typeof form.settings === 'string' ? JSON.parse(form.settings) : form.settings;
 
     // Basic validation - check required fields
     const requiredFields = [];
-    definition.pages.forEach(page => {
+    structure.pages.forEach(page => {
       page.fields.forEach(field => {
         if (field.required && field.type !== 'section_header' && field.type !== 'info_text') {
           requiredFields.push(field.id);
@@ -537,22 +659,61 @@ router.post('/:id/submit',
       });
     }
 
+    // Generate submission ID
+    const submissionId = `submission_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+
     // Create submission
     const submission = await executeQuery(
-      (prisma) => prisma.formSubmission.create({
+      (prisma) => prisma.form_submissions.create({
         data: {
-          formId: id,
-          responseData: JSON.stringify(responses),
-          submitterName,
-          submitterEmail,
-          signature,
-          submittedAt: new Date(),
-          ipAddress: req.ip,
-          userAgent: req.get('User-Agent')
+          id: submissionId,
+          assignment_id: assignmentId || null,
+          form_id: id,
+          patient_id: req.user?.patientId || null,
+          responses: responses,
+          submitted_at: new Date(),
+          submission_time_seconds: null,
+          completion_percentage: 100,
+          ip_address: req.ip,
+          user_agent: req.get('User-Agent'),
+          signature_data: signature
         }
       }),
       'createFormSubmission'
     );
+
+    // Update form usage count
+    await executeQuery(
+      (prisma) => prisma.forms.update({
+        where: { id },
+        data: {
+          usage_count: { increment: 1 },
+          last_used_at: new Date()
+        }
+      }),
+      'updateFormUsage'
+    );
+
+    // Update assignment status if provided
+    if (assignmentId) {
+      await executeQuery(
+        (prisma) => prisma.form_assignments.update({
+          where: { id: assignmentId },
+          data: {
+            status: 'completed',
+            completed_at: new Date(),
+            completion_percentage: 100
+          }
+        }),
+        'updateAssignmentStatus'
+      ).catch(err => {
+        // Log but don't fail the submission if assignment update fails
+        logger.warn('Failed to update assignment status', {
+          assignmentId,
+          error: err.message
+        });
+      });
+    }
 
     logger.info('Form submitted', {
       formId: id,
@@ -587,7 +748,7 @@ router.post('/:id/submit',
 router.post('/:id/duplicate',
   ...middleware.utils.forRoles(['psychiatrist', 'psychologist', 'admin'], ['write:forms']),
   [
-  param('id').isUUID().withMessage('Invalid form ID format'),
+  param('id').isString().withMessage('Invalid form ID format'),
   body('title').optional().trim().isLength({ min: 3, max: 200 }).withMessage('Title must be between 3 and 200 characters')
 ], async (req, res) => {
   try {
@@ -605,13 +766,8 @@ router.post('/:id/duplicate',
 
     // Get original form
     const originalForm = await executeQuery(
-      (prisma) => prisma.form.findUnique({
-        where: { id },
-        include: {
-          fields: {
-            orderBy: { order: 'asc' }
-          }
-        }
+      (prisma) => prisma.forms.findUnique({
+        where: { id }
       }),
       `getFormForDuplication(${id})`
     );
@@ -620,41 +776,34 @@ router.post('/:id/duplicate',
       return res.status(404).json({ error: 'Original form not found' });
     }
 
+    // Generate new form ID
+    const duplicateFormId = `form_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+
     // Create duplicate
     const duplicateForm = await executeQuery(
-      (prisma) => prisma.form.create({
+      (prisma) => prisma.forms.create({
         data: {
+          id: duplicateFormId,
           title: title || `${originalForm.title} (Copy)`,
           description: originalForm.description,
-          category: originalForm.category,
+          structure: originalForm.structure,
           settings: originalForm.settings,
-          isActive: true,
-          createdBy: userId,
-          fields: {
-            create: originalForm.fields.map(field => ({
-              type: field.type,
-              label: field.label,
-              placeholder: field.placeholder,
-              helpText: field.helpText,
-              required: field.required,
-              order: field.order,
-              validation: field.validation,
-              options: field.options,
-              conditionalLogic: field.conditionalLogic
-            }))
-          }
-        },
-        include: {
-          fields: {
-            orderBy: { order: 'asc' }
-          },
-          creator: {
-            select: { id: true, name: true, email: true }
-          }
+          category: originalForm.category,
+          is_active: true,
+          created_by: userId,
+          version: 1,
+          usage_count: 0
         }
       }),
       'duplicateForm'
     );
+
+    // Parse structure for response
+    const responseData = {
+      ...duplicateForm,
+      structure: JSON.parse(duplicateForm.structure),
+      settings: JSON.parse(duplicateForm.settings)
+    };
 
     // Log duplication
     logger.info('Form duplicated', {
@@ -668,7 +817,7 @@ router.post('/:id/duplicate',
     res.status(201).json({
       success: true,
       message: 'Form duplicated successfully',
-      data: duplicateForm
+      data: responseData
     });
 
   } catch (error) {
@@ -679,6 +828,181 @@ router.post('/:id/duplicate',
     });
     res.status(500).json({ 
       error: 'Failed to duplicate form', 
+      details: error.message 
+    });
+  }
+});
+
+/**
+ * POST /api/v1/formx/forms/:id/assign
+ * Assign form to patient(s)
+ */
+router.post('/:id/assign',
+  ...middleware.utils.forRoles(['psychiatrist', 'psychologist', 'nurse', 'admin'], ['write:forms']),
+  [
+  param('id').isString().withMessage('Invalid form ID format'),
+  body('patientIds').isArray().withMessage('Patient IDs must be an array'),
+  body('patientIds.*').isString().withMessage('Each patient ID must be a string'),
+  body('expiresInDays').optional().isInt({ min: 1, max: 90 }).withMessage('Expiration must be between 1 and 90 days'),
+  body('message').optional().trim().isLength({ max: 1000 }).withMessage('Message must not exceed 1000 characters'),
+  body('maxReminders').optional().isInt({ min: 0, max: 10 }).withMessage('Max reminders must be between 0 and 10')
+], async (req, res) => {
+  try {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ 
+        error: 'Validation failed', 
+        details: errors.array() 
+      });
+    }
+
+    const { id } = req.params;
+    const { 
+      patientIds, 
+      expiresInDays = 7, 
+      message, 
+      maxReminders = 3 
+    } = req.body;
+    const userId = req.user?.id;
+
+    // Check if form exists
+    const form = await executeQuery(
+      (prisma) => prisma.forms.findUnique({
+        where: { id },
+        select: { id: true, title: true, is_active: true }
+      }),
+      `checkFormForAssignment(${id})`
+    );
+
+    if (!form || !form.is_active) {
+      return res.status(404).json({ error: 'Form not found or inactive' });
+    }
+
+    // Generate assignments
+    const assignments = patientIds.map(patientId => {
+      const token = require('crypto').randomBytes(32).toString('hex');
+      const assignmentId = `assignment_${Date.now()}_${Math.random().toString(36).substr(2, 9)}_${patientId}`;
+      
+      return {
+        id: assignmentId,
+        form_id: id,
+        patient_id: patientId,
+        token,
+        assigned_by: userId,
+        assigned_at: new Date(),
+        expires_at: new Date(Date.now() + expiresInDays * 24 * 60 * 60 * 1000),
+        status: 'pending',
+        message: message || null,
+        reminders_sent: 0,
+        max_reminders: maxReminders,
+        completion_percentage: 0
+      };
+    });
+
+    // Create assignments in batch
+    const createdAssignments = await executeQuery(
+      (prisma) => prisma.form_assignments.createMany({
+        data: assignments,
+        skipDuplicates: true
+      }),
+      'createFormAssignments'
+    );
+
+    // Log assignments
+    logger.info('Form assigned to patients', {
+      formId: id,
+      formTitle: form.title,
+      patientCount: patientIds.length,
+      assignedBy: userId,
+      expiresInDays,
+      ipAddress: req.ip
+    });
+
+    res.status(201).json({
+      success: true,
+      message: `Form assigned to ${patientIds.length} patient(s) successfully`,
+      data: {
+        formId: id,
+        assignmentCount: createdAssignments.count,
+        expiresAt: assignments[0].expiresAt
+      }
+    });
+
+  } catch (error) {
+    logger.error('Failed to assign form', { 
+      error: error.message,
+      formId: req.params.id,
+      userId: req.user?.id 
+    });
+    res.status(500).json({ 
+      error: 'Failed to assign form', 
+      details: error.message 
+    });
+  }
+});
+
+/**
+ * GET /api/v1/formx/forms/:id/assignments
+ * Get form assignments for a specific form
+ */
+router.get('/:id/assignments',
+  ...middleware.utils.forRoles(['psychiatrist', 'psychologist', 'nurse', 'admin'], ['read:forms']),
+  [
+  param('id').isString().withMessage('Invalid form ID format'),
+  query('status').optional().isIn(['pending', 'in_progress', 'completed', 'expired']),
+  query('patientId').optional().isString()
+], async (req, res) => {
+  try {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ 
+        error: 'Validation failed', 
+        details: errors.array() 
+      });
+    }
+
+    const { id } = req.params;
+    const { status, patientId } = req.query;
+
+    const whereClause = { form_id: id };
+    if (status) whereClause.status = status;
+    if (patientId) whereClause.patient_id = patientId;
+
+    const assignments = await executeQuery(
+      (prisma) => prisma.form_assignments.findMany({
+        where: whereClause,
+        select: {
+          id: true,
+          patient_id: true,
+          token: true,
+          assigned_at: true,
+          expires_at: true,
+          status: true,
+          completion_percentage: true,
+          completed_at: true,
+          message: true,
+          reminders_sent: true,
+          max_reminders: true
+        },
+        orderBy: { assigned_at: 'desc' }
+      }),
+      `getFormAssignments(${id})`
+    );
+
+    res.json({
+      success: true,
+      data: assignments,
+      count: assignments.length
+    });
+
+  } catch (error) {
+    logger.error('Failed to get form assignments', { 
+      error: error.message,
+      formId: req.params.id,
+      userId: req.user?.id 
+    });
+    res.status(500).json({ 
+      error: 'Failed to retrieve form assignments', 
       details: error.message 
     });
   }
@@ -705,22 +1029,19 @@ router.get('/category/:category',
     const { category } = req.params;
     
     const forms = await executeQuery(
-      (prisma) => prisma.form.findMany({
+      (prisma) => prisma.forms.findMany({
         where: { 
           category,
-          isActive: true 
+          is_active: true 
         },
         select: {
           id: true,
           title: true,
           description: true,
-          createdAt: true,
-          updatedAt: true,
-          _count: {
-            select: {
-              submissions: true
-            }
-          }
+          created_at: true,
+          updated_at: true,
+          usage_count: true,
+          last_used_at: true
         },
         orderBy: { title: 'asc' }
       }),

@@ -11,40 +11,47 @@ import { Card } from '@/components/ui/Card';
 import { useUserMetrics } from '@/contexts/UserMetricsContext';
 
 export function QuickStatsWidget() {
-  const { preferences } = useUserMetrics();
+  const { preferences, realDashboardData, isLoadingDashboardData } = useUserMetrics();
 
+  // Use real dashboard data if available, fallback to localStorage
+  const useRealData = realDashboardData !== null;
+  
   const stats = [
     {
       label: 'Pacientes',
-      value: preferences.metrics.patientsAdded,
+      value: useRealData ? realDashboardData.totalPatients : preferences.metrics.patientsAdded,
       icon: UserGroupIcon,
       color: 'text-blue-600',
       bgColor: 'bg-blue-100',
-      growth: '+2 esta semana'
+      growth: useRealData && realDashboardData.monthlyGrowth.patients !== undefined
+        ? `${realDashboardData.monthlyGrowth.patients > 0 ? '+' : ''}${realDashboardData.monthlyGrowth.patients}% este mes`
+        : '+2 esta semana'
     },
     {
       label: 'Escalas',
-      value: preferences.metrics.scalesApplied,
+      value: useRealData ? realDashboardData.totalScaleApplications : preferences.metrics.scalesApplied,
       icon: ClipboardDocumentListIcon,
       color: 'text-purple-600',
       bgColor: 'bg-purple-100',
-      growth: '+5 este mes'
+      growth: useRealData && realDashboardData.monthlyGrowth.assessments !== undefined
+        ? `${realDashboardData.monthlyGrowth.assessments > 0 ? '+' : ''}${realDashboardData.monthlyGrowth.assessments}% este mes`
+        : '+5 este mes'
     },
     {
       label: 'Formularios',
-      value: preferences.metrics.formsCreated,
+      value: useRealData ? realDashboardData.totalFormInstances : preferences.metrics.formsCreated,
       icon: DocumentTextIcon,
       color: 'text-emerald-600',
       bgColor: 'bg-emerald-100',
-      growth: '+1 este mes'
+      growth: useRealData ? '+0% este mes' : '+1 este mes'
     },
     {
       label: 'Recursos',
-      value: preferences.metrics.resourcesUploaded,
+      value: useRealData ? realDashboardData.totalResources : preferences.metrics.resourcesUploaded,
       icon: BookOpenIcon,
       color: 'text-orange-600',
       bgColor: 'bg-orange-100',
-      growth: '+3 este mes'
+      growth: useRealData ? '+0% este mes' : '+3 este mes'
     }
   ];
 

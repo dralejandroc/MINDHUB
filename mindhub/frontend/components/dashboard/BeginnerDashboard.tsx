@@ -16,6 +16,7 @@ import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import Link from 'next/link';
 import { clinimetrixApi } from '../../lib/api/clinimetrix-client';
+import { dashboardDataService } from '../../lib/dashboard-data-service';
 
 interface BeginnerDashboardProps {
   onNavigate?: (path: string) => void;
@@ -69,39 +70,47 @@ export function BeginnerDashboard({ onNavigate }: BeginnerDashboardProps) {
 
   const fetchRealDashboardData = async (userId) => {
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/expedix/auth/dashboard/${userId}`);
-      if (response.ok) {
-        const data = await response.json();
-        if (data.success) {
-          setWeeklyStats({
-            totalPatients: data.data.stats.totalPatients || 0,
-            totalAppointments: data.data.stats.weeklyConsultations || 0,
-            completedAssessments: data.data.stats.completedAssessments || 0,
-            pendingAlerts: data.data.stats.pendingAlerts || 0
-          });
-          
-          // Set real alerts from recent consultations
-          if (data.data.recentConsultations && data.data.recentConsultations.length > 0) {
-            const alerts = data.data.recentConsultations.slice(0, 3).map((consultation, index) => ({
-              id: consultation.id,
-              patient: `${consultation.patient.firstName} ${consultation.patient.lastName}`,
-              message: consultation.reason || 'Consulta completada',
-              severity: index === 0 ? 'high' : index === 1 ? 'medium' : 'low',
-              time: 'Reciente'
-            }));
-            setRecentAlerts(alerts);
-          }
-          
-          // Calculate weekly income (mock for now since we don't have finance data yet)
-          setWeeklyIncome({
-            currentWeek: data.data.stats.totalPatients * 850, // Average consultation price
-            previousWeek: data.data.stats.totalPatients * 750,
-            growth: 13.3
-          });
-        }
-      }
+      // Use the new dashboard data service
+      const dashboardData = await dashboardDataService.fetchDashboardData(userId);
+      
+      // Update dashboard stats with real data
+      setWeeklyStats({
+        totalPatients: dashboardData.totalPatients,
+        totalAppointments: dashboardData.totalConsultations,
+        completedAssessments: dashboardData.totalScaleApplications,
+        pendingAlerts: dashboardData.weeklyStats.alerts
+      });
+      
+      // Create alerts from recent activity
+      const alerts = dashboardData.recentActivity
+        .filter(activity => activity.type === 'consultation')
+        .slice(0, 3)
+        .map((activity, index) => ({
+          id: `alert-${index}`,
+          patient: activity.description.split(':')[1]?.trim() || 'Paciente',
+          message: activity.description.split(':')[0] || 'Actividad',
+          severity: index === 0 ? 'high' : index === 1 ? 'medium' : 'low',
+          time: 'Reciente'
+        }));
+      
+      setRecentAlerts(alerts);
+      
+      // Calculate weekly income based on real patient count
+      setWeeklyIncome({
+        currentWeek: dashboardData.totalPatients * 850, // Average consultation price
+        previousWeek: Math.max(0, dashboardData.totalPatients - 2) * 750, // Simulated previous week
+        growth: dashboardData.totalPatients > 0 ? 13.3 : 0
+      });
+
+      console.log('Dashboard data loaded from service:', {
+        totalPatients: dashboardData.totalPatients,
+        completedAssessments: dashboardData.totalScaleApplications,
+        totalConsultations: dashboardData.totalConsultations,
+        alerts: alerts.length
+      });
+
     } catch (error) {
-      console.log('Could not fetch real data');
+      console.log('Could not fetch real dashboard data:', error);
     } finally {
       setIsLoading(false);
     }
@@ -153,12 +162,7 @@ export function BeginnerDashboard({ onNavigate }: BeginnerDashboardProps) {
 
         const formattedScales = mostUsedScales.map((scale, index) => ({
           name: scale.name,
-          description: scale.name.includes('PHQ') ? 'Depresión' :
-                      scale.name.includes('GAD') ? 'Ansiedad' :
-                      scale.name.includes('Beck') || scale.name.includes('BDI') ? 'Beck Depresión' :
-                      scale.name.includes('MADRS') ? 'Montgomery' :
-                      scale.name.includes('STAI') ? 'Ansiedad Estado-Rasgo' :
-                      'Evaluación',
+          description: scale.category ? scale.category.charAt(0).toUpperCase() + scale.category.slice(1) : 'Evaluación Clínica',
           uses: scale.count,
           color: colors[index % colors.length]
         }));

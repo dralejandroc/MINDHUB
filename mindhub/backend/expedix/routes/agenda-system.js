@@ -1025,6 +1025,88 @@ router.get('/available-slots', (req, res) => {
   }
 });
 
+// ==================== DAILY STATS ====================
+
+// Obtener estadísticas diarias
+router.get('/daily-stats', async (req, res) => {
+  try {
+    const { date } = req.query;
+    const targetDate = date ? new Date(date) : new Date();
+    const dateStr = targetDate.toISOString().split('T')[0];
+    
+    console.log(`📊 Getting daily stats for ${dateStr}`);
+    
+    // Get appointments for the specific date
+    const startOfDay = new Date(dateStr);
+    startOfDay.setHours(0, 0, 0, 0);
+    
+    const endOfDay = new Date(dateStr);
+    endOfDay.setHours(23, 59, 59, 999);
+    
+    const dayConsultations = await prisma.consultation.findMany({
+      where: {
+        consultationDate: {
+          gte: startOfDay,
+          lte: endOfDay
+        }
+      },
+      include: {
+        patient: {
+          select: {
+            firstName: true,
+            lastName: true
+          }
+        }
+      }
+    });
+    
+    // Calculate stats
+    const expectedIncome = dayConsultations.length * 800; // Default cost per consultation
+    const actualIncome = dayConsultations.filter(c => c.status === 'completed').length * 800;
+    const advancePayments = dayConsultations.filter(c => c.status === 'confirmed').length * 800;
+    
+    const firstTimeConsultations = dayConsultations.filter(c => 
+      c.reason?.toLowerCase().includes('primera') || 
+      c.reason?.toLowerCase().includes('inicial')
+    ).length;
+    
+    const followUpConsultations = dayConsultations.filter(c => 
+      c.reason?.toLowerCase().includes('seguimiento') || 
+      c.reason?.toLowerCase().includes('control')
+    ).length;
+    
+    const videoConsultations = dayConsultations.filter(c => 
+      c.reason?.toLowerCase().includes('video') || 
+      c.reason?.toLowerCase().includes('teleconsulta')
+    ).length;
+    
+    const stats = {
+      expectedIncome,
+      advancePayments,
+      actualIncome,
+      firstTimeConsultations,
+      followUpConsultations,
+      videoConsultations,
+      blockedSlots: 0,
+      blockedReasons: []
+    };
+    
+    console.log(`📊 Daily stats for ${dateStr}:`, stats);
+
+    res.json({
+      success: true,
+      data: stats
+    });
+  } catch (error) {
+    console.error('❌ Error getting daily stats:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error obteniendo estadísticas diarias',
+      error: error.message
+    });
+  }
+});
+
 // ==================== PATIENTS ====================
 
 // Obtener pacientes

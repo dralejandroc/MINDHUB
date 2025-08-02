@@ -148,10 +148,7 @@ app.listen(PORT, () => {
   console.log('');
   console.log('📊 Escalas:');
   console.log(`   Listar todas: http://localhost:${PORT}/api/scales`);
-  console.log(`   PHQ-9: http://localhost:${PORT}/api/scales/phq9`);
-  console.log(`   GADI: http://localhost:${PORT}/api/scales/gadi`);
-  console.log(`   AQ-Adolescent: http://localhost:${PORT}/api/scales/aq-adolescent`);
-  console.log(`   PAS: http://localhost:${PORT}/api/scales/pas`);
+  console.log(`   Detalle de escala: http://localhost:${PORT}/api/scales/{scale-id}`);
   console.log('');
   console.log('🧪 Prueba rápida:');
   console.log(`   curl http://localhost:${PORT}/api/scales`);

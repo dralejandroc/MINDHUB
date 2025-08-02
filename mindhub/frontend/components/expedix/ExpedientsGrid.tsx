@@ -152,7 +152,7 @@ export default function ExpedientsGrid({ onSelectPatient }: ExpedientsGridProps)
           </div>
           <div className="flex items-center gap-1">
             <div className="w-2 h-2 bg-purple-500 rounded-full"></div>
-            <span>{patients.filter(p => p.updated_at !== p.created_at).length} con consultas</span>
+            <span>{patients.filter(p => (p.consultations_count || 0) > 0).length} con consultas</span>
           </div>
         </div>
       </div>
@@ -244,11 +244,11 @@ export default function ExpedientsGrid({ onSelectPatient }: ExpedientsGridProps)
                 <div className="flex items-center space-x-4 text-xs text-gray-500">
                   <div className="flex items-center space-x-1">
                     <CalendarIcon className="h-3 w-3" />
-                    <span>0 consultas</span>
+                    <span>{patient.consultations_count || 0} consultas</span>
                   </div>
                   <div className="flex items-center space-x-1">
                     <BeakerIcon className="h-3 w-3" />
-                    <span>0 evaluaciones</span>
+                    <span>{patient.evaluations_count || 0} evaluaciones</span>
                   </div>
                 </div>
                 <div className="text-xs text-blue-600 group-hover:text-blue-700 font-medium">

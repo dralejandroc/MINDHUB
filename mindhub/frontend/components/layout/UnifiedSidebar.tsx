@@ -119,10 +119,10 @@ export function UnifiedSidebar({ children, currentUser }: UnifiedSidebarProps) {
       }
     }
     return {
-      id: 'user-dr-alejandro',
-      name: 'Dr. Alejandro Contreras',
-      email: 'alejandro@mindhub.com',
-      role: 'professional'
+      id: '',
+    name: 'Loading...',
+    email: '',
+    role: ''
     };
   })();
 

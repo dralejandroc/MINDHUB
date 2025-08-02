@@ -400,6 +400,17 @@
   }
 }
 
+@keyframes modalFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 .animate-shimmer {
   animation: shimmer 2s infinite;
 }
@@ -410,6 +421,10 @@
 
 .animate-pulse-custom {
   animation: pulse-custom 2s ease-in-out infinite;
+}
+
+.animate-modal-fade-in {
+  animation: modalFadeIn 0.5s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 /* Component-specific styles */
