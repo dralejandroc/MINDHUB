@@ -23,9 +23,9 @@ console.log('📦 Loading expedix module...');
 const expedix = require('./expedix');
 console.log('✅ Expedix module loaded');
 
-console.log('📦 Loading clinimetrix module...');
-const clinimetrix = require('./clinimetrix');
-console.log('✅ Clinimetrix module loaded');
+// Legacy clinimetrix module moved to _TRASH_LEGACY_CLINIMETRIX/
+// Using new universal scales API and ClinimetrixPro instead
+console.log('📦 Legacy clinimetrix module disabled - using universal scales API');
 
 console.log('📦 Loading frontdesk module...');
 const frontdeskRoutes = require('./frontdesk/routes/frontdesk');
@@ -42,6 +42,12 @@ console.log('✅ FormX module loaded');
 console.log('📦 Loading resources module...');
 const resourcesRoutes = require('./resources/routes/resources');
 console.log('✅ Resources module loaded');
+
+console.log('📦 Loading ClinimetrixPro module...');
+const clinimetrixProTemplatesRoutes = require('./clinimetrix-pro/routes/templates');
+const clinimetrixProAssessmentsRoutes = require('./clinimetrix-pro/routes/assessments');
+const clinimetrixProValidationRoutes = require('./clinimetrix-pro/routes/validation');
+console.log('✅ ClinimetrixPro module loaded');
 
 // Import universal scales API
 const universalScalesRouter = require('./api/universal-scales');
@@ -124,7 +130,8 @@ app.get('/health', (req, res) => {
     version: '1.0.0',
     services: {
       expedix: 'active',
-      clinimetrix: 'active',
+      'clinimetrix-pro': 'active',
+      'universal-scales': 'active',
       frontdesk: 'active',
       finance: 'active',
       formx: 'active',
@@ -144,9 +151,13 @@ app.get('/', (req, res) => {
         path: '/api/v1/expedix',
         description: 'Patient management and medical records'
       },
-      clinimetrix: {
-        path: '/api/v1/clinimetrix', 
-        description: 'Clinical assessments and psychometric scales'
+      'clinimetrix-pro': {
+        path: '/api/clinimetrix-pro', 
+        description: 'Next-generation clinical assessments and templates'
+      },
+      'universal-scales': {
+        path: '/api/scales',
+        description: 'Universal clinical scales system'
       },
       formx: {
         path: '/api/v1/formx',
@@ -188,7 +199,8 @@ try {
   console.error('Error stack:', error.stack);
 }
 
-app.use('/api/v1/clinimetrix', clinimetrix);
+// Legacy clinimetrix routes disabled - using universal scales API at /api/scales
+// app.use('/api/v1/clinimetrix', clinimetrix);
 app.use('/api/v1/frontdesk', frontdeskRoutes);
 app.use('/api/v1/finance', finance);
 app.use('/api/v1/formx/forms', formxRoutes);
@@ -197,9 +209,18 @@ console.log('✅ FormX routes mounted at /api/v1/formx');
 app.use('/api/v1/resources', resourcesRoutes);
 console.log('✅ Resources routes mounted at /api/v1/resources');
 
+// Mount ClinimetrixPro API (next-generation architecture)
+app.use('/api/clinimetrix-pro/templates', clinimetrixProTemplatesRoutes);
+app.use('/api/clinimetrix-pro/assessments', clinimetrixProAssessmentsRoutes);
+app.use('/api/clinimetrix-pro/validation', clinimetrixProValidationRoutes);
+console.log('✅ ClinimetrixPro API mounted at /api/clinimetrix-pro');
+
 // Mount universal scales API (new architecture)
 app.use('/api', universalScalesRouter);
 app.use('/api', assessmentController);
+
+// Legacy clinimetrix endpoints for compatibility
+app.use('/api/v1/clinimetrix', assessmentController);
 
 // Authentication routes - NO HARDCODED USERS
 app.use('/api/auth', authRoutes);
@@ -214,6 +235,12 @@ app.use('*', (req, res) => {
       root: 'GET /',
       docs: 'GET /api/docs',
       
+      // ClinimetrixPro API (Next-Generation Architecture)
+      clinimetrixProTemplates: 'GET /api/clinimetrix-pro/templates',
+      clinimetrixProTemplate: 'GET /api/clinimetrix-pro/templates/:id',
+      clinimetrixProAssessments: 'POST /api/clinimetrix-pro/assessments',
+      clinimetrixProAssessment: 'GET /api/clinimetrix-pro/assessments/:id',
+      
       // Universal Scales API (New Architecture)
       scales: 'GET /api/scales',
       scaleById: 'GET /api/scales/:id',
@@ -225,7 +252,8 @@ app.use('*', (req, res) => {
       
       // Services
       expedix: 'GET /api/v1/expedix',
-      clinimetrix: 'GET /api/v1/clinimetrix',
+      'clinimetrix-pro': 'GET /api/clinimetrix-pro',
+      'universal-scales': 'GET /api/scales',
       frontdesk: 'GET /api/v1/frontdesk',
       finance: 'GET /api/v1/finance',
       formx: 'GET /api/v1/formx',
@@ -264,13 +292,13 @@ app.listen(PORT, () => {
   console.log('');
   console.log('🔧 Available Services:');
   console.log(`   📊 Expedix (Patients): http://localhost:${PORT}/api/v1/expedix`);
-  console.log(`   🧪 Clinimetrix (Assessments): http://localhost:${PORT}/api/v1/clinimetrix`);
+  console.log(`   🧪 ClinimetrixPro (Templates): http://localhost:${PORT}/api/clinimetrix-pro`);
   console.log(`   📝 FormX (Forms): http://localhost:${PORT}/api/v1/formx`);
   console.log(`   📖 Resources (Content): http://localhost:${PORT}/api/v1/resources`);
   console.log('');
   console.log('📊 Universal Scale System:');
   console.log(`   Get All Scales: http://localhost:${PORT}/api/scales`);
-  console.log(`   Clinimetrix Scales: http://localhost:${PORT}/api/v1/clinimetrix/scales`);
+  console.log(`   Create Session: http://localhost:${PORT}/api/sessions`);
   console.log('');
   console.log('🔐 Security & Monitoring:');
   console.log(`   Health Check: http://localhost:${PORT}/api/health/detailed`);

@@ -275,19 +275,36 @@ class FinanceService {
         }),
         
         // Daily income trend
-        (prisma) => prisma.$queryRaw`
-          SELECT 
-            DATE(receivedDate) as date,
-            SUM(amount) as total,
-            COUNT(*) as transactions
-          FROM incomes 
-          WHERE receivedDate BETWEEN ${startDate} AND ${endDate}
-            AND status = 'confirmed'
-            ${professionalId ? `AND professionalId = '${professionalId}'` : ''}
-          GROUP BY DATE(receivedDate)
-          ORDER BY date DESC
-          LIMIT 30
-        `
+        (prisma) => {
+          if (professionalId) {
+            return prisma.$queryRaw`
+              SELECT 
+                DATE(receivedDate) as date,
+                SUM(amount) as total,
+                COUNT(*) as transactions
+              FROM incomes 
+              WHERE receivedDate BETWEEN ${startDate} AND ${endDate}
+                AND status = 'confirmed'
+                AND professionalId = ${professionalId}
+              GROUP BY DATE(receivedDate)
+              ORDER BY date DESC
+              LIMIT 30
+            `;
+          } else {
+            return prisma.$queryRaw`
+              SELECT 
+                DATE(receivedDate) as date,
+                SUM(amount) as total,
+                COUNT(*) as transactions
+              FROM incomes 
+              WHERE receivedDate BETWEEN ${startDate} AND ${endDate}
+                AND status = 'confirmed'
+              GROUP BY DATE(receivedDate)
+              ORDER BY date DESC
+              LIMIT 30
+            `;
+          }
+        }
       ], 'getFinancialStats');
 
       return {

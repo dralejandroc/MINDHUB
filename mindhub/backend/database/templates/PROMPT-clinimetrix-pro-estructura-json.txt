@@ -1,0 +1,202 @@
+================================================================================
+PROMPT PARA CONVERSIÓN DE ESCALAS A CLINIMETRIX PRO JSON
+================================================================================
+
+OBJETIVO: Convertir escalas psicométricas a formato JSON optimizado para ClinimetrixPro
+
+INSTRUCCIONES PARA EL USUARIO:
+1. Proporciona la información de la escala en el formato especificado abajo
+2. Incluye toda la información disponible (no omitas detalles)
+3. Si no tienes algún dato, indica "NO_DISPONIBLE"
+4. Proporciona un ejemplo de 2-3 ítems completos para entender el patrón
+
+================================================================================
+FORMATO DE ENTRADA REQUERIDO:
+================================================================================
+
+**INFORMACIÓN BÁSICA:**
+- Nombre completo: [Nombre de la escala]
+- Abreviación: [Siglas/acrónimo]
+- Versión: [ej: 1.0, 2.1, etc.]
+- Categoría: [ej: Depresión, Ansiedad, Trastornos de Personalidad, etc.]
+- Subcategoría: [ej: Específica del trastorno]
+- Idioma: [ej: español, inglés]
+- Autores: [Lista de autores originales]
+- Año de creación: [Año]
+- Descripción: [Breve descripción del propósito]
+
+**ADMINISTRACIÓN:**
+- Modo de administración: [self_administered / clinician_administered / both]
+- Tiempo estimado: [minutos]
+- Población objetivo: [ej: adultos, adolescentes, etc.]
+- Rango de edad: [ej: 18-65 años]
+- Certificación requerida: [sí/no y detalles]
+- Contraindicaciones: [si las hay]
+
+**ESTRUCTURA DE LA ESCALA:**
+- Total de ítems: [número]
+- Número de secciones: [número]
+- Tipo de respuestas: [ej: Likert 5 puntos, binario, múltiple choice, etc.]
+- Ítems invertidos: [números de ítems, si los hay]
+- Subescalas: [nombres y qué ítems incluyen]
+
+**EJEMPLOS DE ÍTEMS (proporciona 2-3 ítems completos):**
+Ítem 1: [texto completo del ítem]
+Opciones de respuesta: [todas las opciones con sus puntuaciones]
+Observaciones: [si tiene algo especial]
+
+Ítem 2: [texto completo del ítem]
+Opciones de respuesta: [todas las opciones con sus puntuaciones]
+Observaciones: [si tiene algo especial]
+
+**PUNTUACIÓN:**
+- Rango de puntuación total: [mín - máx]
+- Método de cálculo: [suma simple, promedio, etc.]
+- Puntuación por subescalas: [rangos y métodos]
+- Ítems que se invierten: [números y cómo se invierten]
+
+**INTERPRETACIÓN:**
+- Puntos de corte: [todos los rangos con sus interpretaciones]
+Ejemplo:
+  0-9: Mínimo/ausente
+  10-18: Leve
+  19-29: Moderado
+  30-44: Severo
+  45+: Muy severo
+
+**DOCUMENTACIÓN CIENTÍFICA:**
+- Propiedades psicométricas:
+  - Confiabilidad (α de Cronbach): [valor]
+  - Validez: [tipos y valores]
+  - Sensibilidad: [valor]
+  - Especificidad: [valor]
+- Referencias bibliográficas principales: [3-5 referencias clave]
+- Datos normativos: [si están disponibles]
+- Estudios de validación: [información de validaciones]
+
+**CARACTERÍSTICAS ESPECIALES:**
+- ¿Tiene componentes interactivos? [sí/no, describir]
+- ¿Requiere materiales especiales? [sí/no, cuáles]
+- ¿Tiene secciones condicionales? [sí/no, describir lógica]
+- ¿Es multi-factor? [ej: frecuencia + severidad como DTS]
+- ¿Tiene múltiples versiones? [ej: versión corta/larga]
+- Consideraciones especiales: [cualquier nota importante]
+
+================================================================================
+EJEMPLO DE FORMATO COMPLETO (usando GAD-7):
+================================================================================
+
+**INFORMACIÓN BÁSICA:**
+- Nombre completo: Generalized Anxiety Disorder 7-item Scale
+- Abreviación: GAD-7
+- Versión: 1.0
+- Categoría: Ansiedad
+- Subcategoría: Trastorno de Ansiedad Generalizada
+- Idioma: español
+- Autores: Spitzer, Kroenke, Williams, Löwe
+- Año de creación: 2006
+- Descripción: Escala de cribado para trastorno de ansiedad generalizada
+
+**ADMINISTRACIÓN:**
+- Modo de administración: both
+- Tiempo estimado: 3 minutos
+- Población objetivo: adultos
+- Rango de edad: 18+ años
+- Certificación requerida: no
+- Contraindicaciones: ninguna
+
+**ESTRUCTURA DE LA ESCALA:**
+- Total de ítems: 7
+- Número de secciones: 1
+- Tipo de respuestas: Likert 4 puntos (0-3)
+- Ítems invertidos: ninguno
+- Subescalas: ninguna
+
+**EJEMPLOS DE ÍTEMS:**
+Ítem 1: En las últimas 2 semanas, ¿con qué frecuencia le han molestado los siguientes problemas? Sentirse nervioso, ansioso o muy alterado
+Opciones de respuesta: 
+- Para nada (0 puntos)
+- Varios días (1 punto)
+- Más de la mitad de los días (2 puntos)
+- Casi todos los días (3 puntos)
+Observaciones: ninguna
+
+**PUNTUACIÓN:**
+- Rango de puntuación total: 0-21
+- Método de cálculo: suma simple
+- Puntuación por subescalas: no aplica
+- Ítems que se invierten: ninguno
+
+**INTERPRETACIÓN:**
+- Puntos de corte:
+  0-4: Ansiedad mínima
+  5-9: Ansiedad leve
+  10-14: Ansiedad moderada
+  15-21: Ansiedad severa
+
+**DOCUMENTACIÓN CIENTÍFICA:**
+- Propiedades psicométricas:
+  - Confiabilidad (α de Cronbach): 0.92
+  - Validez: Excelente validez de constructo
+  - Sensibilidad: 89%
+  - Especificidad: 82%
+- Referencias bibliográficas principales: Spitzer et al. (2006), Löwe et al. (2008)
+- Datos normativos: Disponibles para población general
+- Estudios de validación: Múltiples validaciones internacionales
+
+**CARACTERÍSTICAS ESPECIALES:**
+- ¿Tiene componentes interactivos? no
+- ¿Requiere materiales especiales? no
+- ¿Tiene secciones condicionales? no
+- ¿Es multi-factor? no
+- ¿Tiene múltiples versiones? no
+- Consideraciones especiales: Ampliamente utilizada en atención primaria
+
+================================================================================
+INSTRUCCIONES PARA CLAUDE:
+================================================================================
+
+Cuando recibas información en este formato:
+
+1. **VALIDA** que toda la información esté presente
+2. **CONVIERTE** a JSON ÚNICO usando la estructura ClinimetrixPro:
+   - metadata (información básica)
+   - structure (secciones e ítems)
+   - responseGroups (opciones de respuesta compartidas)
+   - scoring (método de puntuación y rangos)
+   - interpretation (reglas de interpretación)
+   - documentation (propiedades psicométricas y referencias completas)
+
+3. **OPTIMIZA** para el motor de renderizado:
+   - Agrupa respuestas similares en responseGroups
+   - Numera ítems secuencialmente
+   - Incluye metadata necesaria para componentes especiales
+   - Genera IDs únicos y consistentes
+   - Incluye TODA la documentación científica dentro del JSON
+
+4. **VALIDA** el JSON resultante:
+   - Estructura completa y válida
+   - Todos los ítems tienen respuestas definidas
+   - Puntuaciones e interpretaciones son coherentes
+   - Documentación científica completa está incluida
+   - Instrucciones profesionales y para pacientes incluidas
+
+5. **GUARDA** como archivo .json ÚNICO en el directorio correcto:
+   `/Users/alekscon/taskmaster-ai/mindhub/backend/templates/scales/[abreviacion]-[version].json`
+
+================================================================================
+NOTAS IMPORTANTES:
+================================================================================
+
+- Mantén CONSISTENCIA en el formato JSON único
+- Usa nombres descriptivos para IDs
+- Incluye TODA la documentación científica DENTRO del JSON
+- Marca claramente ítems especiales (invertidos, condicionales, etc.)
+- Optimiza para RENDIMIENTO del motor de renderizado
+- Asegura COMPATIBILIDAD con todos los tipos de respuesta soportados
+- NO crear archivos MD adicionales - TODO va en el JSON enriquecido
+- Una escala = Un archivo JSON completo
+
+================================================================================
+¡LISTO PARA RECIBIR ESCALAS EN FORMATO JSON ÚNICO!
+================================================================================

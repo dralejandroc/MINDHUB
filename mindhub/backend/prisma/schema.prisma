@@ -40,6 +40,7 @@ model User {
   administeredScales             ScaleAdministration[]
   userRoles                      UserRole[]
   storageQuota                   UserStorageQuota?
+  clinimetrixAssessments         ClinimetrixAssessment[]
 
   @@map("users")
 }
@@ -136,6 +137,7 @@ model Patient {
   remoteAssessments       RemoteAssessment[]            @relation("RemoteAssessmentPatient")
   resourceDistributions   ResourcePatientDistribution[]
   scaleAdministrations    ScaleAdministration[]
+  clinimetrixAssessments  ClinimetrixAssessment[]
   waitingListEntries      WaitingList[]
 
   @@index([createdBy], map: "patients_createdBy_fkey")
@@ -1484,4 +1486,97 @@ enum resource_sends_delivery_status {
   sent
   delivered
   failed
+}
+
+// ClinimetrixPro Tables
+model ClinimetrixTemplate {
+  id           String   @id
+  templateData Json
+  version      String
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  
+  // Relations
+  registryEntry ClinimetrixRegistry?
+  assessments   ClinimetrixAssessment[]
+
+  @@map("clinimetrix_templates")
+}
+
+model ClinimetrixRegistry {
+  id                     String   @id @default(cuid())
+  templateId             String   @unique
+  abbreviation           String
+  name                   String
+  category               String
+  subcategory            String?
+  description            String   @db.Text
+  version                String
+  language               String
+  authors                String   @db.Text
+  year                   String
+  administrationMode     String
+  estimatedDurationMinutes Int
+  targetPopulation       Json
+  totalItems             Int
+  scoreRangeMin          Int
+  scoreRangeMax          Int
+  psychometricProperties Json?
+  clinicalValidation     Json?
+  isPublic               Boolean  @default(true)
+  isFeatured             Boolean  @default(false)
+  tags                   Json?
+  lastValidated          DateTime
+  isActive               Boolean  @default(true)
+  createdAt              DateTime @default(now())
+  updatedAt              DateTime @updatedAt
+  
+  // Relations
+  template    ClinimetrixTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
+  assessments ClinimetrixAssessment[]
+
+  @@index([category])
+  @@index([abbreviation])
+  @@index([isPublic, isActive])
+  @@map("clinimetrix_registry")
+}
+
+model ClinimetrixAssessment {
+  id               String   @id @default(cuid())
+  templateId       String
+  patientId        String?
+  administratorId  String
+  status           ClinimetrixAssessmentStatus @default(pending)
+  startedAt        DateTime?
+  completedAt      DateTime?
+  responses        Json?
+  scores           Json?
+  interpretation   Json?
+  notes            String?  @db.Text
+  sessionData      Json?
+  metadata         Json?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+  
+  // Relations
+  template     ClinimetrixTemplate @relation(fields: [templateId], references: [id], map: "clinimetrix_assessments_template_fkey")
+  registry     ClinimetrixRegistry @relation(fields: [templateId], references: [templateId], map: "clinimetrix_assessments_registry_fkey")
+  patient      Patient?           @relation(fields: [patientId], references: [id], map: "clinimetrix_assessments_patient_fkey")
+  administrator User              @relation(fields: [administratorId], references: [id], map: "clinimetrix_assessments_administrator_fkey")
+
+  @@index([templateId])
+  @@index([patientId])
+  @@index([administratorId])
+  @@index([status])
+  @@index([createdAt])
+  @@map("clinimetrix_assessments")
+}
+
+enum ClinimetrixAssessmentStatus {
+  pending
+  in_progress
+  completed
+  cancelled
+  expired
 }
