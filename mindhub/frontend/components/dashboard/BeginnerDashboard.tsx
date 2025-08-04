@@ -153,7 +153,7 @@ export function BeginnerDashboard({ onNavigate }: BeginnerDashboardProps) {
 
       try {
         // Obtener las primeras 4 escalas del catálogo como "más usadas"
-        const catalogScales = await clinimetrixProClient.templates.getCatalog();
+        const catalogScales = await clinimetrixProClient.getTemplateCatalog();
         const mostUsedScales = catalogScales.slice(0, 4);
         
         const colors = [

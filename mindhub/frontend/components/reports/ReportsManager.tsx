@@ -310,7 +310,7 @@ export const ReportsManager: React.FC = () => {
     
     try {
       // Obtener datos reales del API de ClinimetrixPro
-      const scales = await clinimetrixProClient.templates.getCatalog();
+      const scales = await clinimetrixProClient.getTemplateCatalog();
       
       // Generar estadísticas reales basadas en las escalas disponibles
       const reportsData: ReportsData = {

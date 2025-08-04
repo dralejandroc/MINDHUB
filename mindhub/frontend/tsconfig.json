@@ -40,5 +40,5 @@
     "**/*.tsx",
     ".next/types/**/*.ts"
   ],
-  "exclude": ["node_modules"]
+  "exclude": ["node_modules", "_TRASH_LEGACY_CLINIMETRIX/**/*", "_TRASH_CORRUPTED_FILES/**/*"]
 }
