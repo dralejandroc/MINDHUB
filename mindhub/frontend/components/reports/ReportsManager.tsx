@@ -51,6 +51,44 @@ interface ReportsState {
   error: string | null;
 }
 
+// Mock data for production build
+const mockReportsData = {
+  mostUsedScales: [
+    { name: 'BDI-21', count: 156, percentage: 25 },
+    { name: 'STAI', count: 134, percentage: 22 },
+    { name: 'Y-BOCS', count: 98, percentage: 16 },
+    { name: 'HARS', count: 87, percentage: 14 },
+    { name: 'DTS', count: 73, percentage: 12 }
+  ],
+  patientDemographics: {
+    ageGroups: [
+      { group: '18-25', count: 45, percentage: 18 },
+      { group: '26-35', count: 89, percentage: 36 },
+      { group: '36-45', count: 67, percentage: 27 },
+      { group: '46-60', count: 34, percentage: 14 },
+      { group: '60+', count: 12, percentage: 5 }
+    ],
+    genderDistribution: [
+      { gender: 'Femenino', count: 147, percentage: 59 },
+      { gender: 'Masculino', count: 98, percentage: 40 },
+      { gender: 'Otro', count: 2, percentage: 1 }
+    ]
+  },
+  scaleStatistics: [
+    { scale: 'BDI-21', averageScore: 14.2, completionRate: 94, averageTime: '7.5 min' },
+    { scale: 'STAI', averageScore: 42.8, completionRate: 97, averageTime: '8.2 min' },
+    { scale: 'Y-BOCS', averageScore: 18.5, completionRate: 91, averageTime: '12.1 min' },
+    { scale: 'HARS', averageScore: 16.3, completionRate: 95, averageTime: '6.8 min' }
+  ],
+  alertsSummary: {
+    total: 124,
+    high: 23,
+    medium: 67,
+    low: 34,
+    resolved: 89
+  }
+};
+
 const initialReportsState: ReportsState = {
   data: null,
   loading: true,
