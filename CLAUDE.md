@@ -4,6 +4,27 @@
 
 MindHub es una plataforma integral de gestión sanitaria que integra múltiples módulos especializados para clínicas y profesionales de la salud.
 
+## 🚀 DEPLOYMENT STATUS - PRODUCCIÓN ACTIVA
+
+### URLs de Producción (Railway)
+- **Frontend**: https://mindhub.cloud
+- **Backend API**: https://mindhub.cloud/api
+- **Database**: Railway MySQL (caboose.proxy.rlwy.net:41591)
+- **Railway Project**: https://railway.com/project/71f20b8c-d94c-4d10-9da0-f75eff30044a?environmentId=7554a992-fa66-4444-939d-8ced9da199e7
+
+### Estado del Deployment
+- ✅ Frontend desplegado en Vercel
+- ✅ Backend desplegado en Railway (Project ID: 71f20b8c-d94c-4d10-9da0-f75eff30044a)
+- ✅ Base de datos MySQL en Railway
+- ✅ Sistema de autenticación funcional
+- ✅ APIs conectadas a backend real (NO localhost)
+- ✅ Environment ID: 7554a992-fa66-4444-939d-8ced9da199e7
+
+### ⚠️ IMPORTANTE - NO MÁS LOCALHOST
+- TODAS las APIs deben apuntar a `https://mindhub.cloud/api`
+- NO usar `http://localhost:8080` ni `http://localhost:3002`
+- Backend está en producción en Railway, NO en desarrollo local
+
 ### Arquitectura del Sistema
 
 ```
@@ -20,7 +41,7 @@ MindHub/
 
 ### 1. **Expedix** - Gestión de Pacientes y Expedientes Médicos
 - **URL**: `/hubs/expedix`
-- **Puerto API**: `http://localhost:8080`
+- **API URL**: `https://mindhub.cloud/api/v1/expedix`
 - **Funcionalidades**:
   - Gestión completa de pacientes (CRUD)
   - Expedientes médicos digitales
@@ -32,7 +53,7 @@ MindHub/
 
 ### 2. **Clinimetrix** - Escalas y Evaluaciones Clínicas
 - **URL**: `/hubs/clinimetrix`
-- **Puerto API**: `http://localhost:3002` (activo)
+- **API URL**: `https://mindhub.cloud/api/clinimetrix-pro`
 - **Funcionalidades**:
   - ClinimetrixPro: Sistema de plantillas científicas ejecutables
   - Fidelidad absoluta a instrumentos psicométricos originales
@@ -59,7 +80,7 @@ MindHub/
 
 ### 3. **FormX** - Generador de Formularios
 - **URL**: `/hubs/formx`
-- **Puerto API**: `http://localhost:8083`
+- **API URL**: `https://mindhub.cloud/api/v1/formx`
 - **Funcionalidades**:
   - Creación de formularios personalizados
   - Templates médicos preconfigurrradors
@@ -87,15 +108,15 @@ MindHub/
 
 ### Backend
 - **Runtime**: Node.js con Express
-- **Base de Datos**: Prisma ORM con MySQL (MAMP puerto 8889) - ÚNICO para todo el proyecto
+- **Base de Datos**: Prisma ORM con Railway MySQL - ÚNICO para todo el proyecto
 - **API**: RESTful APIs por módulo
 - **Archivos**: Sistema de archivos local + encriptación
 
-### Infraestructura de Desarrollo
-- **Desarrollo**: http://localhost:3000 (Frontend) + http://localhost:8080-8084 (APIs)
-- **Base de Datos**: MAMP (MySQL/PHP/Apache)
-- **Hot Reload**: Next.js development server
-- **Build**: `npm run build`
+### Infraestructura de Producción
+- **Producción**: https://mindhub.cloud (Frontend) + https://mindhub.cloud/api (Backend)
+- **Base de Datos**: Railway MySQL (caboose.proxy.rlwy.net:41591)
+- **Deployment**: Frontend en Vercel, Backend en Railway
+- **Build**: Automático en deploy
 
 ### Principios de Desarrollo
 
