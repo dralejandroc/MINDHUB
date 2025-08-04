@@ -53,8 +53,8 @@ console.log('✅ ClinimetrixPro module loaded');
 const universalScalesRouter = require('./api/universal-scales');
 const assessmentController = require('./api/assessment-controller');
 
-// Import authentication routes
-const authRoutes = require('./auth/routes');
+// Import authentication routes (simple auth system)
+const { router: authRoutes } = require('./shared/routes/simple-auth');
 
 // Import shared middleware
 const errorHandler = require('./shared/middleware/error-handling');

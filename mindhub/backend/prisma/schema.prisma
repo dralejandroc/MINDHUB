@@ -10,10 +10,16 @@ datasource db {
 
 model User {
   id                             String                            @id @default(cuid())
-  auth0Id                        String                            @unique
+  auth0Id                        String?                           @unique
   email                          String                            @unique
+  password                       String?                           // For simple auth
   name                           String?
   picture                        String?
+  organizationId                 String?
+  organization                   Organization?                     @relation(fields: [organizationId], references: [id])
+  accountType                    AccountType                       @default(INDIVIDUAL)
+  isActive                       Boolean                           @default(true)
+  isBetaUser                     Boolean                           @default(true)
   createdAt                      DateTime                          @default(now())
   updatedAt                      DateTime                          @updatedAt
   lastLoginAt                    DateTime?
@@ -1579,4 +1585,61 @@ enum ClinimetrixAssessmentStatus {
   completed
   cancelled
   expired
+}
+
+model Organization {
+  id                String              @id @default(cuid())
+  name              String
+  type              OrganizationType    @default(CLINIC)
+  maxUsers          Int                 @default(15)
+  isActive          Boolean             @default(true)
+  isBetaOrg         Boolean             @default(true)
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+  users             User[]
+  subscriptionPlan  String?             // For future use
+  
+  @@map("organizations")
+}
+
+model AuthSession {
+  id            String   @id @default(cuid())
+  userId        String
+  token         String   @unique
+  refreshToken  String?  @unique
+  expiresAt     DateTime
+  createdAt     DateTime @default(now())
+  
+  @@index([userId])
+  @@index([token])
+  @@map("auth_sessions")
+}
+
+model BetaRegistration {
+  id              String      @id @default(cuid())
+  email           String      @unique
+  name            String?
+  professionalType String?    // psicologo, psiquiatra, clinica
+  city            String?
+  country         String?
+  howDidYouHear   String?     // google, redes_sociales, recomendacion, etc.
+  yearsOfPractice String?     // menos_1, 1_3, 4_7, 8_15, mas_15, no_practica
+  specialization  String?
+  expectations    String?     @db.Text
+  registeredAt    DateTime    @default(now())
+  inviteCode      String?
+  hasJoined       Boolean     @default(false)
+  
+  @@map("beta_registrations")
+}
+
+enum AccountType {
+  INDIVIDUAL
+  CLINIC
+}
+
+enum OrganizationType {
+  CLINIC
+  HOSPITAL
+  CONSULTORIO
 }
