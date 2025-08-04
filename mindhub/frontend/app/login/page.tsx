@@ -30,9 +30,8 @@ export default function LoginPage() {
       const result = await response.json();
 
       if (result.success) {
-        // Store tokens and user data
+        // Store tokens and user data (backend returns data object)
         localStorage.setItem('auth_token', result.data.token);
-        localStorage.setItem('refresh_token', result.data.refreshToken);
         localStorage.setItem('currentUser', JSON.stringify(result.data.user));
         
         // Redirect to app
@@ -60,7 +59,7 @@ export default function LoginPage() {
         {/* Header */}
         <div className="text-center">
           <Link href="/" className="inline-flex items-center space-x-2 mb-8">
-            <div className="w-10 h-10 bg-gradient-to-br from-primary-blue to-primary-purple rounded-lg flex items-center justify-center">
+            <div className="w-10 h-10 bg-gradient-to-br from-primary-teal to-purple-600 rounded-lg flex items-center justify-center">
               <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
               </svg>
@@ -91,7 +90,7 @@ export default function LoginPage() {
                 required
                 value={formData.email}
                 onChange={handleChange}
-                className="appearance-none relative block w-full px-4 py-3 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-blue focus:border-transparent focus:z-10 transition-all"
+                className="appearance-none relative block w-full px-4 py-3 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-teal focus:border-transparent focus:z-10 transition-all"
                 placeholder="tu@email.com"
               />
             </div>
@@ -108,7 +107,7 @@ export default function LoginPage() {
                 required
                 value={formData.password}
                 onChange={handleChange}
-                className="appearance-none relative block w-full px-4 py-3 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-blue focus:border-transparent focus:z-10 transition-all"
+                className="appearance-none relative block w-full px-4 py-3 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-teal focus:border-transparent focus:z-10 transition-all"
                 placeholder="Tu contraseña"
               />
             </div>
@@ -139,7 +138,7 @@ export default function LoginPage() {
             </div>
 
             <div className="text-sm">
-              <a href="#" className="font-medium text-primary-blue hover:text-primary-purple transition-colors">
+              <a href="#" className="font-medium text-primary-teal hover:text-purple-600 transition-colors">
                 ¿Olvidaste tu contraseña?
               </a>
             </div>
@@ -149,7 +148,7 @@ export default function LoginPage() {
             <button
               type="submit"
               disabled={isLoading}
-              className="group relative w-full flex justify-center py-3 px-4 border border-transparent text-sm font-medium rounded-lg text-white bg-gradient-to-r from-primary-blue to-primary-purple hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-blue transition-all duration-200 disabled:opacity-50"
+              className="group relative w-full flex justify-center py-3 px-4 border border-transparent text-sm font-medium rounded-lg text-white bg-gradient-to-r from-primary-teal to-purple-600 hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-teal transition-all duration-200 disabled:opacity-50"
             >
               {isLoading ? (
                 <div className="flex items-center">
@@ -165,7 +164,7 @@ export default function LoginPage() {
           <div className="text-center">
             <p className="text-gray-600">
               ¿No tienes cuenta?{' '}
-              <Link href="/register" className="font-medium text-primary-blue hover:text-primary-purple transition-colors">
+              <Link href="/register" className="font-medium text-primary-teal hover:text-purple-600 transition-colors">
                 Regístrate aquí
               </Link>
             </p>
@@ -174,8 +173,8 @@ export default function LoginPage() {
 
         {/* Beta Notice */}
         <div className="text-center">
-          <div className="inline-flex items-center px-4 py-2 rounded-full bg-primary-blue/10 text-primary-blue text-sm">
-            <span className="w-2 h-2 bg-primary-blue rounded-full mr-2 animate-pulse"></span>
+          <div className="inline-flex items-center px-4 py-2 rounded-full bg-primary-teal/10 text-primary-teal text-sm">
+            <span className="w-2 h-2 bg-primary-teal rounded-full mr-2 animate-pulse"></span>
             Beta - Acceso gratuito
           </div>
         </div>

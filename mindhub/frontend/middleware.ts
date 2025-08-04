@@ -17,14 +17,27 @@ function addSecurityHeaders(response: NextResponse) {
     "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; " +
     "font-src 'self' https://fonts.gstatic.com; " +
     "img-src 'self' data: https://*.auth0.com; " +
-    "connect-src 'self' https://*.auth0.com https://api.mindhub.com http://localhost:*"
+    "connect-src 'self' https://*.auth0.com https://mindhub.cloud https://api.mindhub.com http://localhost:*"
   );
   
   return response;
 }
 
 async function middleware(request: NextRequest) {
+  // Redirect www to non-www
+  if (request.nextUrl.hostname === 'www.mindhub.cloud') {
+    const redirectUrl = request.nextUrl.clone();
+    redirectUrl.hostname = 'mindhub.cloud';
+    return NextResponse.redirect(redirectUrl, 301);
+  }
+
   const response = NextResponse.next();
+  
+  // Ensure manifest.json is served with correct content type
+  if (request.nextUrl.pathname === '/manifest.json') {
+    response.headers.set('Content-Type', 'application/manifest+json');
+  }
+  
   return addSecurityHeaders(response);
 }
 
@@ -33,6 +46,8 @@ export default middleware;
 
 export const config = {
   matcher: [
+    '/((?!api|_next/static|_next/image|favicon.ico).*)',
+    '/manifest.json',
     '/hubs/:path*',
     '/profile/:path*',
     '/settings/:path*',

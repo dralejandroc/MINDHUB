@@ -10,6 +10,7 @@ export function BetaRegistrationModal({ onClose }: BetaRegistrationModalProps) {
   const [formData, setFormData] = useState({
     email: '',
     name: '',
+    password: '',
     professionalType: '',
     city: '',
     country: '',
@@ -40,6 +41,7 @@ export function BetaRegistrationModal({ onClose }: BetaRegistrationModalProps) {
 
       if (result.success) {
         setIsSuccess(true);
+        // Beta registration doesn't include login, just confirmation
       } else {
         setError(result.message || 'Error al registrarse');
       }
@@ -134,6 +136,23 @@ export function BetaRegistrationModal({ onClose }: BetaRegistrationModalProps) {
               onChange={handleChange}
               className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-teal focus:border-transparent transition-all"
               placeholder="Dr. Juan Pérez"
+            />
+          </div>
+
+          <div>
+            <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
+              Contraseña *
+            </label>
+            <input
+              type="password"
+              id="password"
+              name="password"
+              required
+              value={formData.password}
+              onChange={handleChange}
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-teal focus:border-transparent transition-all"
+              placeholder="Mínimo 6 caracteres"
+              minLength={6}
             />
           </div>
 

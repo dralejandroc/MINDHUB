@@ -101,7 +101,7 @@ export default function RegisterPage() {
         {/* Header */}
         <div className="text-center">
           <Link href="/" className="inline-flex items-center space-x-2 mb-8">
-            <div className="w-10 h-10 bg-gradient-to-br from-primary-blue to-primary-purple rounded-lg flex items-center justify-center">
+            <div className="w-10 h-10 bg-gradient-to-br from-primary-teal to-purple-600 rounded-lg flex items-center justify-center">
               <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
               </svg>
@@ -131,7 +131,7 @@ export default function RegisterPage() {
                   onClick={() => setFormData({...formData, accountType: 'INDIVIDUAL'})}
                   className={`p-4 border-2 rounded-lg text-left transition-all ${
                     formData.accountType === 'INDIVIDUAL'
-                      ? 'border-primary-blue bg-primary-blue/5 text-primary-blue'
+                      ? 'border-primary-teal bg-primary-teal/5 text-primary-teal'
                       : 'border-gray-200 hover:border-gray-300'
                   }`}
                 >
@@ -143,7 +143,7 @@ export default function RegisterPage() {
                   onClick={() => setFormData({...formData, accountType: 'CLINIC'})}
                   className={`p-4 border-2 rounded-lg text-left transition-all ${
                     formData.accountType === 'CLINIC'
-                      ? 'border-primary-blue bg-primary-blue/5 text-primary-blue'
+                      ? 'border-primary-teal bg-primary-teal/5 text-primary-teal'
                       : 'border-gray-200 hover:border-gray-300'
                   }`}
                 >
@@ -166,7 +166,7 @@ export default function RegisterPage() {
                   required={formData.accountType === 'CLINIC'}
                   value={formData.organizationName}
                   onChange={handleChange}
-                  className="appearance-none relative block w-full px-4 py-3 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-blue focus:border-transparent transition-all"
+                  className="appearance-none relative block w-full px-4 py-3 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-teal focus:border-transparent transition-all"
                   placeholder="Centro de Salud Mental"
                 />
               </div>
@@ -183,7 +183,7 @@ export default function RegisterPage() {
                   name="professionalType"
                   value={formData.professionalType}
                   onChange={handleChange}
-                  className="appearance-none relative block w-full px-4 py-3 border border-gray-300 text-gray-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-blue focus:border-transparent transition-all"
+                  className="appearance-none relative block w-full px-4 py-3 border border-gray-300 text-gray-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-teal focus:border-transparent transition-all"
                 >
                   <option value="">Selecciona tu especialidad</option>
                   <option value="psicologo">Psicólogo/a</option>
@@ -206,7 +206,7 @@ export default function RegisterPage() {
                 required
                 value={formData.name}
                 onChange={handleChange}
-                className="appearance-none relative block w-full px-4 py-3 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-blue focus:border-transparent transition-all"
+                className="appearance-none relative block w-full px-4 py-3 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-teal focus:border-transparent transition-all"
                 placeholder="Dr. Juan Pérez"
               />
             </div>
@@ -224,7 +224,7 @@ export default function RegisterPage() {
                 required
                 value={formData.email}
                 onChange={handleChange}
-                className="appearance-none relative block w-full px-4 py-3 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-blue focus:border-transparent transition-all"
+                className="appearance-none relative block w-full px-4 py-3 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-teal focus:border-transparent transition-all"
                 placeholder="tu@email.com"
               />
             </div>
@@ -242,7 +242,7 @@ export default function RegisterPage() {
                 required
                 value={formData.password}
                 onChange={handleChange}
-                className="appearance-none relative block w-full px-4 py-3 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-blue focus:border-transparent transition-all"
+                className="appearance-none relative block w-full px-4 py-3 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-teal focus:border-transparent transition-all"
                 placeholder="Mínimo 6 caracteres"
               />
             </div>
@@ -260,7 +260,7 @@ export default function RegisterPage() {
                 required
                 value={formData.confirmPassword}
                 onChange={handleChange}
-                className="appearance-none relative block w-full px-4 py-3 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-blue focus:border-transparent transition-all"
+                className="appearance-none relative block w-full px-4 py-3 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-teal focus:border-transparent transition-all"
                 placeholder="Confirma tu contraseña"
               />
             </div>
@@ -281,7 +281,7 @@ export default function RegisterPage() {
             <button
               type="submit"
               disabled={isLoading}
-              className="group relative w-full flex justify-center py-3 px-4 border border-transparent text-sm font-medium rounded-lg text-white bg-gradient-to-r from-primary-blue to-primary-purple hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-blue transition-all duration-200 disabled:opacity-50"
+              className="group relative w-full flex justify-center py-3 px-4 border border-transparent text-sm font-medium rounded-lg text-white bg-gradient-to-r from-primary-teal to-purple-600 hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-teal transition-all duration-200 disabled:opacity-50"
             >
               {isLoading ? (
                 <div className="flex items-center">
@@ -297,7 +297,7 @@ export default function RegisterPage() {
           <div className="text-center">
             <p className="text-gray-600">
               ¿Ya tienes cuenta?{' '}
-              <Link href="/login" className="font-medium text-primary-blue hover:text-primary-purple transition-colors">
+              <Link href="/login" className="font-medium text-primary-teal hover:text-purple-600 transition-colors">
                 Inicia sesión aquí
               </Link>
             </p>
@@ -308,17 +308,17 @@ export default function RegisterPage() {
         <div className="text-center space-y-4">
           <p className="text-xs text-gray-500">
             Al registrarte, aceptas nuestros{' '}
-            <Link href="/terms" className="text-primary-blue hover:underline">
+            <Link href="/terms" className="text-primary-teal hover:underline">
               Términos de Servicio
             </Link>{' '}
             y{' '}
-            <Link href="/privacy" className="text-primary-blue hover:underline">
+            <Link href="/privacy" className="text-primary-teal hover:underline">
               Política de Privacidad
             </Link>
           </p>
           
-          <div className="inline-flex items-center px-4 py-2 rounded-full bg-primary-blue/10 text-primary-blue text-sm">
-            <span className="w-2 h-2 bg-primary-blue rounded-full mr-2 animate-pulse"></span>
+          <div className="inline-flex items-center px-4 py-2 rounded-full bg-primary-teal/10 text-primary-teal text-sm">
+            <span className="w-2 h-2 bg-primary-teal rounded-full mr-2 animate-pulse"></span>
             Beta - Completamente gratuito durante 3 meses
           </div>
         </div>

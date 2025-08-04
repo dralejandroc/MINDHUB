@@ -1,33 +1,71 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3002';
+const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL || 'https://mindhub.cloud/api';
 
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json();
+    const { 
+      name, 
+      email, 
+      password, 
+      city, 
+      country, 
+      yearsOfPractice, 
+      specialization, 
+      howDidYouHear, 
+      expectations,
+      professionalType
+    } = await request.json();
     
-    const response = await fetch(`${API_BASE_URL}/api/auth/register`, {
+    // Validate required fields
+    if (!name || !email || !password) {
+      return NextResponse.json(
+        { success: false, message: 'Nombre, email y contraseña son requeridos' },
+        { status: 400 }
+      );
+    }
+
+    // Forward to backend registration
+    const response = await fetch(`${BACKEND_URL}/api/auth/register`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify(body),
+      body: JSON.stringify({
+        name,
+        email,
+        password,
+        city,
+        country,
+        yearsOfPractice,
+        specialization,
+        howDidYouHear,
+        expectations,
+        professionalType
+      }),
     });
 
     const data = await response.json();
 
-    return NextResponse.json(data, {
-      status: response.status,
-      headers: {
-        'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Methods': 'POST, OPTIONS',
-        'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-      },
+    if (!response.ok) {
+      return NextResponse.json(
+        { success: false, message: data.message || 'Error en el registro' },
+        { status: response.status }
+      );
+    }
+
+    return NextResponse.json({
+      success: true,
+      message: 'Registro exitoso - Bienvenido a MindHub',
+      data: {
+        token: data.data.token,
+        user: data.data.user
+      }
     });
   } catch (error) {
     console.error('Register API error:', error);
     return NextResponse.json(
-      { success: false, message: 'Error interno del servidor' },
+      { success: false, message: 'Error de conexión con el servidor' },
       { status: 500 }
     );
   }

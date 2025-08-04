@@ -1,0 +1,6 @@
+User-agent: *
+Disallow: /
+
+# MindHub Healthcare Platform
+# This is a private healthcare platform
+# Not intended for public indexing

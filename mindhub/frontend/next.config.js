@@ -7,7 +7,7 @@ const nextConfig = {
     ignoreDuringBuilds: true, // Temporalmente para desarrollo
   },
   env: {
-    NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080',
+    NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL || 'https://mindhub.cloud/api',
   },
   // Performance optimizations
   compress: true,
