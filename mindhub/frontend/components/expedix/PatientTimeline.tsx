@@ -25,7 +25,7 @@ import {
 } from '@heroicons/react/24/outline';
 import { expedixApi } from '@/lib/api/expedix-client';
 import { patientTimelineApi, type TimelineEvent as ApiTimelineEvent } from '@/lib/api/patient-timeline-client';
-import { clinimetrixApi } from '@/lib/api/clinimetrix-client';
+import { clinimetrixProClient } from '@/lib/api/clinimetrix-pro-client';
 import { Button } from '@/components/ui/Button';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { generateCategoryTimeline } from './PatientTimelineCategories';
@@ -179,9 +179,9 @@ export default function PatientTimeline({ patient, userType = 'individual', onNe
     }
     
     try {
-      // Obtener aplicaciones de escalas clínicas desde Clinimetrix
-      const scaleAssessments = await clinimetrixApi.getPatientAssessments(patient.id);
-      scaleApplications = scaleAssessments?.data || scaleAssessments || [];
+      // TODO: Implementar integración con ClinimetrixPro para obtener evaluaciones del paciente
+      // Por ahora no hay evaluaciones disponibles
+      scaleApplications = [];
       console.log('Scale applications found:', scaleApplications.length);
     } catch (error) {
       console.log('No scale applications available yet:', error);

@@ -9,7 +9,7 @@
 'use client';
 
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { clinimetrixProApi, type ClinimetrixProTemplateStructure, type ClinimetrixProAssessment } from '@/lib/api/clinimetrix-pro-client';
+import { clinimetrixProClient, type ClinimetrixProTemplateStructure, type ClinimetrixProAssessment } from '@/lib/api/clinimetrix-pro-client';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
@@ -151,7 +151,7 @@ export const ClinimetrixRenderer: React.FC<ClinimetrixRendererProps> = ({
       setState(prev => ({ ...prev, loading: true, error: null }));
 
       // Load template
-      const templateResponse = await clinimetrixProApi.getTemplate(templateId);
+      const templateResponse = await clinimetrixProClient.getTemplate(templateId);
       if (!templateResponse.success) {
         throw new Error('Failed to load template');
       }
@@ -160,13 +160,13 @@ export const ClinimetrixRenderer: React.FC<ClinimetrixRendererProps> = ({
 
       if (assessmentId) {
         // Load existing assessment
-        const assessmentResponse = await clinimetrixProApi.getAssessment(assessmentId);
+        const assessmentResponse = await clinimetrixProClient.getAssessment(assessmentId);
         if (assessmentResponse.success) {
           assessment = assessmentResponse.data;
         }
       } else if (mode === 'new') {
         // Create new assessment
-        const createResponse = await clinimetrixProApi.createAssessment({
+        const createResponse = await clinimetrixProClient.createAssessment({
           templateId,
           patientId,
           administratorId,
@@ -216,7 +216,7 @@ export const ClinimetrixRenderer: React.FC<ClinimetrixRendererProps> = ({
     try {
       setState(prev => ({ ...prev, saving: true }));
       
-      await clinimetrixProApi.updateAssessmentResponses(
+      await clinimetrixProClient.updateAssessmentResponses(
         state.assessment!.id, 
         state.responses
       );
@@ -282,7 +282,7 @@ export const ClinimetrixRenderer: React.FC<ClinimetrixRendererProps> = ({
     try {
       setState(prev => ({ ...prev, saving: true }));
       
-      const response = await clinimetrixProApi.completeAssessment(state.assessment!.id);
+      const response = await clinimetrixProClient.completeAssessment(state.assessment!.id);
       
       if (response.success) {
         setState(prev => ({ 

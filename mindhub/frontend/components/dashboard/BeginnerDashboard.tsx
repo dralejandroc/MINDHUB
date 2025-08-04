@@ -15,7 +15,7 @@ import {
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import Link from 'next/link';
-import { clinimetrixApi } from '../../lib/api/clinimetrix-client';
+import { clinimetrixProClient } from '../../lib/api/clinimetrix-pro-client';
 import { dashboardDataService } from '../../lib/dashboard-data-service';
 
 interface BeginnerDashboardProps {
@@ -152,7 +152,10 @@ export function BeginnerDashboard({ onNavigate }: BeginnerDashboardProps) {
       }
 
       try {
-        const mostUsedScales = await clinimetrixApi.getMostUsedScales(4);
+        // Obtener las primeras 4 escalas del catálogo como "más usadas"
+        const catalogScales = await clinimetrixProClient.templates.getCatalog();
+        const mostUsedScales = catalogScales.slice(0, 4);
+        
         const colors = [
           'bg-purple-100 text-purple-700',
           'bg-emerald-100 text-emerald-700',
@@ -163,7 +166,7 @@ export function BeginnerDashboard({ onNavigate }: BeginnerDashboardProps) {
         const formattedScales = mostUsedScales.map((scale, index) => ({
           name: scale.name,
           description: scale.category ? scale.category.charAt(0).toUpperCase() + scale.category.slice(1) : 'Evaluación Clínica',
-          uses: scale.count,
+          uses: 0, // Por implementar cuando tengamos estadísticas de uso
           color: colors[index % colors.length]
         }));
 
