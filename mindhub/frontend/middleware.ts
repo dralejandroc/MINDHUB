@@ -1,4 +1,4 @@
-import { withMiddlewareAuthRequired } from '@auth0/nextjs-auth0/edge';
+// import { withMiddlewareAuthRequired } from '@auth0/nextjs-auth0/edge';
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
@@ -13,24 +13,17 @@ function addSecurityHeaders(response: NextResponse) {
   response.headers.set('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
   response.headers.set('Content-Security-Policy', 
     "default-src 'self'; " +
-    "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://*.auth0.com; " +
+    "script-src 'self' 'unsafe-inline' 'unsafe-eval'; " +
     "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; " +
     "font-src 'self' https://fonts.gstatic.com; " +
-    "img-src 'self' data: https://*.auth0.com; " +
-    "connect-src 'self' https://*.auth0.com https://mindhub.cloud https://api.mindhub.com http://localhost:*"
+    "img-src 'self' data:; " +
+    "connect-src 'self' https://www.mindhub.cloud https://mindhub.cloud https://api.mindhub.com http://localhost:*"
   );
   
   return response;
 }
 
 async function middleware(request: NextRequest) {
-  // Redirect www to non-www
-  if (request.nextUrl.hostname === 'www.mindhub.cloud') {
-    const redirectUrl = request.nextUrl.clone();
-    redirectUrl.hostname = 'mindhub.cloud';
-    return NextResponse.redirect(redirectUrl, 301);
-  }
-
   const response = NextResponse.next();
   
   // Ensure manifest.json is served with correct content type

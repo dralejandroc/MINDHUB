@@ -4,14 +4,21 @@ const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://www.mindhub.clo
 
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json();
+    const { email } = await request.json();
     
-    const response = await fetch(`${API_BASE_URL}/auth/beta-register`, {
+    if (!email) {
+      return NextResponse.json(
+        { success: false, message: 'Email requerido' },
+        { status: 400 }
+      );
+    }
+    
+    const response = await fetch(`${API_BASE_URL}/auth/resend-verification`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify(body),
+      body: JSON.stringify({ email }),
     });
 
     const data = await response.json();
@@ -25,7 +32,7 @@ export async function POST(request: NextRequest) {
       },
     });
   } catch (error) {
-    console.error('Beta register API error:', error);
+    console.error('Resend verification API error:', error);
     return NextResponse.json(
       { success: false, message: 'Error interno del servidor' },
       { status: 500 }

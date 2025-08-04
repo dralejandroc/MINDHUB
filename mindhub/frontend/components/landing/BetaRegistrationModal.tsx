@@ -11,6 +11,7 @@ export function BetaRegistrationModal({ onClose }: BetaRegistrationModalProps) {
     email: '',
     name: '',
     password: '',
+    confirmPassword: '',
     professionalType: '',
     city: '',
     country: '',
@@ -28,6 +29,20 @@ export function BetaRegistrationModal({ onClose }: BetaRegistrationModalProps) {
     setIsSubmitting(true);
     setError('');
 
+    // Validate password confirmation
+    if (formData.password !== formData.confirmPassword) {
+      setError('Las contraseñas no coinciden');
+      setIsSubmitting(false);
+      return;
+    }
+
+    // Validate password strength
+    if (formData.password.length < 8) {
+      setError('La contraseña debe tener al menos 8 caracteres');
+      setIsSubmitting(false);
+      return;
+    }
+
     try {
       const response = await fetch('/api/auth/beta-register', {
         method: 'POST',
@@ -40,8 +55,17 @@ export function BetaRegistrationModal({ onClose }: BetaRegistrationModalProps) {
       const result = await response.json();
 
       if (result.success) {
-        setIsSuccess(true);
-        // Beta registration doesn't include login, just confirmation
+        // Auto-login after successful registration
+        if (result.data?.token) {
+          // Store token for auto-login
+          localStorage.setItem('mindhub_token', result.data.token);
+          localStorage.setItem('mindhub_user', JSON.stringify(result.data.user));
+          
+          // Set success state to trigger welcome flow
+          setIsSuccess(true);
+        } else {
+          setIsSuccess(true);
+        }
       } else {
         setError(result.message || 'Error al registrarse');
       }
@@ -72,14 +96,28 @@ export function BetaRegistrationModal({ onClose }: BetaRegistrationModalProps) {
             <h3 className="text-xl font-bold text-gray-900 mb-2">
               ¡Registro Exitoso!
             </h3>
-            <p className="text-gray-600 mb-6">
-              Te hemos registrado en nuestra lista beta. Te contactaremos pronto con los detalles de acceso.
+            <div className="bg-gradient-to-r from-teal-50 to-blue-50 rounded-lg p-4 mb-6">
+              <p className="text-gray-700 text-sm leading-relaxed">
+                <strong>¡Gracias por ser parte de este proyecto!</strong><br/>
+                Juntos mejoraremos tu práctica clínica a un nivel de mayor automatización, 
+                con menos tareas repetitivas y mayor libertad de tiempo, en apoyo de tu salud mental.
+              </p>
+            </div>
+            <p className="text-gray-600 mb-6 text-sm">
+              Tu cuenta está lista. Puedes comenzar a explorar MindHub ahora mismo.
             </p>
             <button
-              onClick={onClose}
+              onClick={() => {
+                onClose();
+                // Redirect to dashboard if token exists
+                const token = localStorage.getItem('mindhub_token');
+                if (token) {
+                  window.location.href = '/dashboard';
+                }
+              }}
               className="w-full bg-gradient-to-r from-primary-teal to-primary-blue text-white py-3 px-6 rounded-xl font-semibold hover:shadow-lg hover:scale-105 transition-all duration-300"
             >
-              Continuar
+              Comenzar a usar MindHub
             </button>
           </div>
         </div>
@@ -151,8 +189,26 @@ export function BetaRegistrationModal({ onClose }: BetaRegistrationModalProps) {
               value={formData.password}
               onChange={handleChange}
               className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-teal focus:border-transparent transition-all"
-              placeholder="Mínimo 6 caracteres"
-              minLength={6}
+              placeholder="Mínimo 8 caracteres"
+              minLength={8}
+              autoComplete="new-password"
+            />
+          </div>
+
+          <div>
+            <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 mb-2">
+              Confirmar contraseña *
+            </label>
+            <input
+              type="password"
+              id="confirmPassword"
+              name="confirmPassword"
+              required
+              value={formData.confirmPassword}
+              onChange={handleChange}
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-teal focus:border-transparent transition-all"
+              placeholder="Repetir contraseña"
+              autoComplete="new-password"
             />
           </div>
 
