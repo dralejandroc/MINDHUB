@@ -5,7 +5,7 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const search = searchParams.get('search');
     
-    let url = 'http://localhost:8080/api/v1/expedix/patients';
+    let url = 'https://www.mindhub.cloud/api/v1/expedix/patients';
     if (search) {
       url += `?search=${encodeURIComponent(search)}`;
     }
@@ -40,7 +40,7 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
     
-    const response = await fetch('http://localhost:8080/api/v1/expedix/patients', {
+    const response = await fetch('https://www.mindhub.cloud/api/v1/expedix/patients', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
