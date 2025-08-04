@@ -185,7 +185,7 @@ class DashboardDataService {
       
       for (const patient of patientSample) {
         try {
-          const response = await fetch(`http://localhost:8080/api/v1/clinimetrix/patient-assessments/${patient.id}`);
+          const response = await fetch(`http://localhost:3002/api/v1/clinimetrix/patient-assessments/${patient.id}`);
           if (response.ok) {
             const data = await response.json();
             if (data.success && data.data) {

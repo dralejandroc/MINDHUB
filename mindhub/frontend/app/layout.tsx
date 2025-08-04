@@ -2,7 +2,6 @@ import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
 import { Toaster } from 'react-hot-toast';
 import './globals.css';
-// import { UserProvider } from '@auth0/nextjs-auth0/client';
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-inter' });
 
@@ -92,58 +91,56 @@ export default function RootLayout({
         <meta name="apple-mobile-web-app-title" content="MindHub" />
         
         {/* Preconnect to external services */}
-        <link rel="preconnect" href={`https://${process.env.AUTH0_DOMAIN}`} />
-        <link rel="dns-prefetch" href={`https://${process.env.AUTH0_DOMAIN}`} />
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="dns-prefetch" href="https://fonts.googleapis.com" />
       </head>
       <body className="bg-gray-50 antialiased">
-        {/* <UserProvider> */}
-                <div id="root" className="min-h-screen">
-                  {children}
-                </div>
-              
-              {/* Toast notifications */}
-              <Toaster
-                position="top-right"
-                toastOptions={{
-                  duration: 5000,
-                  style: {
-                    background: '#fff',
-                    color: '#374151',
-                    border: '1px solid #e5e7eb',
-                    borderRadius: '0.5rem',
-                    fontSize: '0.875rem',
-                  },
-                  success: {
-                    iconTheme: {
-                      primary: '#22c55e',
-                      secondary: '#fff',
-                    },
-                  },
-                  error: {
-                    iconTheme: {
-                      primary: '#ef4444',
-                      secondary: '#fff',
-                    },
-                  },
-                }}
-              />
-              
-              {/* Accessibility announcements */}
-              <div
-                id="announcements"
-                aria-live="polite"
-                aria-atomic="true"
-                className="sr-only"
-              />
-              
-              {/* Loading indicator for screen readers */}
-              <div
-                id="loading-indicator"
-                aria-live="polite"
-                aria-atomic="true"
-                className="sr-only"
-              />
-        {/* </UserProvider> */}
+        <div id="root" className="min-h-screen">
+          {children}
+        </div>
+        
+        {/* Toast notifications */}
+        <Toaster
+          position="top-right"
+          toastOptions={{
+            duration: 5000,
+            style: {
+              background: '#fff',
+              color: '#374151',
+              border: '1px solid #e5e7eb',
+              borderRadius: '0.5rem',
+              fontSize: '0.875rem',
+            },
+            success: {
+              iconTheme: {
+                primary: '#22c55e',
+                secondary: '#fff',
+              },
+            },
+            error: {
+              iconTheme: {
+                primary: '#ef4444',
+                secondary: '#fff',
+              },
+            },
+          }}
+        />
+        
+        {/* Accessibility announcements */}
+        <div
+          id="announcements"
+          aria-live="polite"
+          aria-atomic="true"
+          className="sr-only"
+        />
+        
+        {/* Loading indicator for screen readers */}
+        <div
+          id="loading-indicator"
+          aria-live="polite"
+          aria-atomic="true"
+          className="sr-only"
+        />
       </body>
     </html>
   );

@@ -1,0 +1,287 @@
+SISTEMA CLINIMETRIX
+
+ESTRUCTURA DE ARCHIVOS MODULAR
+
+  Backend Structure:
+
+  backend/
+  ├── api/
+  │   ├── scales/
+  │   │   ├── scales-controller.js          # Controlador universal
+  │   │   ├── scales-service.js             # Lógica de negocio
+  │   │   └── scales-repository.js          # Acceso a datos
+  │   └── assessments/
+  │       ├── assessment-controller.js
+  │       ├── assessment-service.js
+  │       └── assessment-repository.js
+  ├── database/
+  │   ├── connection.js
+  │   ├── migrations/
+  │   │   ├── 001_create_scales_tables.sql
+  │   │   └── 002_seed_initial_scales.sql
+  │   └── seeds/
+  │       ├── phq9-seed.sql
+  │       ├── gadi-seed.sql
+  │       ├── aq-adolescent-seed.sql
+  │       └── pas-seed.sql
+  ├── models/
+  │   ├── Scale.js                          # Modelo universal
+  │   ├── ScaleItem.js
+  │   ├── ScaleResponse.js
+  │   └── Assessment.js
+  ├── services/
+  │   ├── ScaleCalculatorService.js         # Cálculo universal
+  │   ├── ScaleValidationService.js
+  │   └── ScaleExportService.js
+  └── utils/
+      ├── scale-importer.js                 # Para importar nuevas escalas
+      └── scale-validator.js
+
+  Frontend Structure:
+
+  frontend/
+  ├── components/
+  │   ├── scales/
+  │   │   ├── UniversalScaleRenderer.tsx    # Renderizador universal
+  │   │   ├── UniversalScaleGrid.tsx        # Grid de escalas
+  │   │   ├── UniversalScaleAssessment.tsx  # Evaluación universal
+  │   │   └── UniversalScaleResults.tsx     # Resultados universales
+  │   └── assessment/
+  │       ├── CardBasedAssessment.tsx       # Sistema de cards
+  │       ├── AssessmentProgress.tsx
+  │       └── AssessmentResults.tsx
+  ├── contexts/
+  │   ├── ScalesContext.tsx                 # Context para escalas
+  │   └── AssessmentContext.tsx             # Context para evaluaciones
+  ├── hooks/
+  │   ├── useScales.ts                      # Hook para cargar escalas
+  │   ├── useAssessment.ts                  # Hook para evaluaciones
+  │   └── useScaleCalculation.ts            # Hook para cálculos
+  ├── services/
+  │   ├── ScalesAPI.ts                      # API calls
+  │   └── AssessmentAPI.ts
+  └── types/
+      ├── Scale.ts                          # Tipos TypeScript
+      ├── Assessment.ts
+      └── ScaleResponse.ts
+
+
+  3. FLUJO DE DATOS UNIVERSAL
+
+  3.1 Carga de Escalas:
+
+  Database → Repository → Service → Controller → API → Frontend
+
+  3.2 Renderizado Universal:
+
+  Scale Config → UniversalRenderer → CardBasedAssessment → Results
+
+  3.3 Agregación de Nueva Escala:
+
+  SQL Seed File → Database Migration → Sistema automáticamente disponible
+
+  4. COMPONENTES CLAVE DEL SISTEMA
+
+  4.1 Scale Repository (Backend):
+
+  class ScaleRepository {
+      async getScaleById(id) {
+          // Obtiene escala completa con items, opciones, reglas
+      }
+
+      async getAllActiveScales() {
+          // Lista todas las escalas activas
+      }
+
+      async getScaleInterpretationRules(id) {
+          // Reglas de interpretación específicas
+      }
+  }
+
+  4.2 Universal Scale Service (Backend):
+
+  class UniversalScaleService {
+      async calculateScore(scaleId, responses) {
+          // Cálculo universal basado en configuración DB
+      }
+
+      async interpretScore(scaleId, totalScore) {
+          // Interpretación basada en reglas DB
+      }
+  }
+
+  4.3 Universal Scale Renderer (Frontend):
+
+  interface UniversalScaleRendererProps {
+      scaleId: string;
+      onComplete: (results: AssessmentResults) => void;
+  }
+
+  // Renderiza cualquier escala basándose en su configuración
+
+  5. PROCESO DE AGREGACIÓN DE NUEVAS ESCALAS
+
+  5.1 Crear Seed SQL:
+
+  -- Ejemplo: nueva-escala-seed.sql
+  INSERT INTO scales (id, name, abbreviation, ...) VALUES (...);
+  INSERT INTO scale_items (scale_id, item_number, item_text, ...) VALUES
+  (...);
+  INSERT INTO scale_response_options (...) VALUES (...);
+  INSERT INTO scale_interpretation_rules (...) VALUES (...);
+
+  5.2 Ejecutar Migración:
+
+  npm run migrate:up nueva-escala-seed.sql
+
+  5.3 Escala Automáticamente Disponible:
+
+  - Sin tocar código frontend
+  - Sin tocar código backend
+  - Solo configuración en DB
+
+  6. VENTAJAS DEL SISTEMA
+
+  6.1 Escalabilidad:
+
+  - Agregar escalas = Solo SQL
+  - Sin modificar código core
+  - Sistema crece sin complejidad
+
+  6.2 Mantenibilidad:
+
+  - Cada escala es independiente
+  - Cambios en una escala no afectan otras
+  - Código universal reutilizable
+
+  6.3 Flexibilidad:
+
+  - Soporte para cualquier tipo de escala
+  - Diferentes opciones de respuesta
+  - Múltiples tipos de interpretación
+
+  7. FASES DE IMPLEMENTACIÓN
+
+  Fase 1: Infraestructura Base
+
+  1. Crear tablas de base de datos
+  2. Implementar modelos y repositorios
+  3. Crear servicios universales
+
+  Fase 2: Migración de Escalas Existentes
+
+  1. Migrar PHQ-9 a DB
+  2. Migrar GADI a DB
+  3. Migrar AQ-Adolescent a DB
+  4. Migrar PAS a DB
+
+  Fase 3: Frontend Universal
+
+  1. Implementar renderizador universal
+  2. Adaptar sistema de cards
+  3. Integrar con nueva API
+
+  Fase 4: Testing y Optimización
+
+  1. Pruebas de todas las escalas
+  2. Optimización de rendimiento
+  3. Documentación del sistema
+
+Ventaja clave:
+
+  - Agregar nueva escala: Solo crear 1 archivo SQL
+  - Modificar GADI (ejemplo): Solo editar 1 archivo SQL
+  - Sistema sigue funcionando: Sin tocar código
+
+  Ejemplo de lo que contendría gadi-seed.sql:
+
+  INSERT INTO scales (id, name, abbreviation, total_items, ...)
+  VALUES ('gadi', 'General Anxiety Disorder Inventory', 'GADI', 22, ...);
+
+  INSERT INTO scale_items (scale_id, item_number, item_text, ...)
+  VALUES ('gadi', 1, 'Me siento tenso/a o nervioso/a', ...);
+  -- ... 22 items más
+
+  INSERT INTO scale_response_options (scale_id, option_value,
+  option_label, score_value, ...)
+  VALUES ('gadi', '0', 'Para nada', 0, ...);
+  -- ... opciones de respuesta
+
+  INSERT INTO scale_interpretation_rules (scale_id, min_score, max_score,
+  severity_level, ...)
+  VALUES ('gadi', 0, 12, 'minimal', ...);
+  -- ... reglas de interpretación
+
+  Respuesta directa:
+
+  - Archivos con "GADI" hardcodeado: 1 archivo (gadi-seed.sql)
+  - Archivos necesarios por escala: 1 archivo
+  - El nombre "GADI" NO aparece en ningún código de programación
+
+Tabla SQL donde vivirán las escalas:
+
+  -- TABLA PRINCIPAL - CATÁLOGO DE ESCALAS
+  CREATE TABLE scales (
+      id VARCHAR(50) PRIMARY KEY,                    -- 'gadi', 'phq-9', 
+  etc.
+      name VARCHAR(255) NOT NULL,                    -- 'General Anxiety 
+  Disorder Inventory'
+      abbreviation VARCHAR(20) NOT NULL,             -- 'GADI'
+      version VARCHAR(20) DEFAULT '1.0',             -- '1.0', '2.0', etc.
+      category VARCHAR(50),                          -- 'anxiety', 
+  'depression', etc.
+      subcategory VARCHAR(50),                       -- 'screening', 
+  'diagnostic', etc.
+      description TEXT,                              -- Descripción de la 
+  escala
+      author VARCHAR(255),                           -- Autor original
+      publication_year INTEGER,                      -- Año de publicación
+      estimated_duration_minutes INTEGER,            -- Tiempo estimado
+      administration_mode ENUM('self_administered',
+  'clinician_administered', 'both'),
+      target_population VARCHAR(100),                -- 'Adultos', 
+  'Niños', etc.
+      total_items INTEGER NOT NULL,                  -- 22 para GADI
+      scoring_method VARCHAR(50),                    -- 'sum', 'average', 
+  etc.
+      score_range_min INTEGER,                       -- 0
+      score_range_max INTEGER,                       -- 88 para GADI
+      is_active BOOLEAN DEFAULT TRUE,                -- Para 
+  activar/desactivar
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE
+  CURRENT_TIMESTAMP
+  );
+
+  Ejemplo de datos en la tabla:
+
+  -- Esto es lo que estaría en la base de datos (no en archivos)
+  +-------+--------------------------------+-------------+---------+------
+  ----+
+  | id    | name                          | abbreviation| total_items |
+  is_active |
+  +-------+--------------------------------+-------------+---------+------
+  ----+
+  | gadi  | General Anxiety Disorder Inv. | GADI        | 22      | TRUE
+      |
+  | phq-9 | Patient Health Questionnaire-9 | PHQ-9       | 9       | TRUE
+       |
+  | aq-a  | Autism Quotient Adolescent     | AQ-A        | 50      | TRUE
+       |
+  | pas   | Parental Acceptance Scale      | PAS         | 5       | TRUE
+       |
+  +-------+--------------------------------+-------------+---------+------
+  ----+
+
+  Flujo de datos:
+
+  1. Administrador ejecuta gadi-seed.sql → Datos van a tabla scales
+  2. Frontend llama /api/scales → Backend consulta tabla scales
+  3. Grid de escalas muestra datos dinámicamente desde base de datos
+
+  Ventaja:
+
+  - Archivo SQL: Solo para migrar datos (se ejecuta una vez)
+  - Base de datos: Fuente permanente de verdad
+  - Frontend: Siempre actualizado automáticamente
+

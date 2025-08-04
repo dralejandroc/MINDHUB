@@ -129,6 +129,48 @@ ClinimetrixPro es una reimplementación completa del módulo Clinimetrix de Mind
 - `components/ClinimetrixPro/Themes/`
 - `utils/accessibility.ts`
 
+### 2.4 Componentes Interactivos Especializados
+
+#### Tareas:
+
+- [ ] Crear componente Canvas para dibujos (MOCA)
+- [ ] Implementar memorización de palabras con temporizador
+- [ ] Crear sistema de reconocimiento de figuras
+- [ ] Implementar seguimiento de patrones y conexiones
+- [ ] Crear componente de copia de figuras complejas
+- [ ] Implementar sistema de cálculos en tiempo real
+- [ ] Crear interfaz de construcción de cubos virtual
+- [ ] Implementar sistema de lectura y repetición de números
+
+#### Entregables:
+
+- `components/ClinimetrixPro/Interactive/CanvasDrawing.tsx`
+- `components/ClinimetrixPro/Interactive/MemoryTask.tsx`
+- `components/ClinimetrixPro/Interactive/FigureRecognition.tsx`
+- `components/ClinimetrixPro/Interactive/PatternTracing.tsx`
+- `utils/canvasHelpers.ts`
+- `utils/memoryTaskTimer.ts`
+
+### 2.5 Sistema de Guía Inteligente
+
+#### Tareas:
+
+- [ ] Crear sistema de detección de contexto de aplicación
+- [ ] Implementar guías contextuales paso a paso
+- [ ] Crear sistema de advertencias y recordatorios
+- [ ] Implementar validación inteligente de respuestas
+- [ ] Crear sistema de sugerencias en tiempo real
+- [ ] Implementar detección de patrones de respuesta problemáticos
+- [ ] Crear guías de interpretación dinámica
+
+#### Entregables:
+
+- `components/ClinimetrixPro/Guidance/IntelligentGuide.tsx`
+- `components/ClinimetrixPro/Guidance/ContextualHints.tsx`
+- `components/ClinimetrixPro/Guidance/ValidationAlerts.tsx`
+- `services/ClinimetrixPro/GuidanceEngine.ts`
+- `utils/patternDetection.ts`
+
 ---
 
 ## Fase 3: Motor de Puntuación y Análisis
@@ -142,13 +184,21 @@ ClinimetrixPro es una reimplementación completa del módulo Clinimetrix de Mind
 - [ ] Agregar cálculo de subescalas
 - [ ] Implementar ítems invertidos
 - [ ] Crear sistema de interpretación dinámica
+- [ ] Implementar scoring condicional (DY-BOCS)
+- [ ] Crear scoring multi-factor (DTS - 2 respuestas por ítem)
+- [ ] Implementar scoring por secciones (DASH-II - 3 preguntas por ítem)
+- [ ] Crear sistema de scoring con múltiples versiones (GDS)
+- [ ] Implementar scoring complejo con validación cruzada (PANSS)
 
 #### Entregables:
 
 - `services/ClinimetrixPro/ScoringEngine.ts`
 - `services/ClinimetrixPro/InterpretationEngine.ts`
+- `services/ClinimetrixPro/ConditionalScoring.ts`
+- `services/ClinimetrixPro/MultiFactorScoring.ts`
+- `utils/complexScoringAlgorithms.ts`
 
-### 3.2 Validación Inteligente Básica
+### 3.2 Validación Inteligente Avanzada
 
 #### Tareas:
 
@@ -157,11 +207,19 @@ ClinimetrixPro es una reimplementación completa del módulo Clinimetrix de Mind
 - [ ] Análisis de tiempo de respuesta
 - [ ] Verificador de ítems de consistencia
 - [ ] Calculador de índice de validez
+- [ ] Validación de tareas interactivas (MOCA - dibujos, memoria)
+- [ ] Detección de respuestas conflictivas (PANSS - contradicciones)
+- [ ] Validación de completitud por secciones (DASH-II)
+- [ ] Verificación de patrones seleccionados (DY-BOCS)
+- [ ] Análisis de coherencia temporal en respuestas
 
 #### Entregables:
 
 - `services/ClinimetrixPro/ValidityAnalyzer.ts`
 - `services/ClinimetrixPro/PatternDetector.ts`
+- `services/ClinimetrixPro/InteractiveValidator.ts`
+- `services/ClinimetrixPro/CoherenceAnalyzer.ts`
+- `utils/advancedValidationRules.ts`
 
 ### 3.3 Generación de Reportes
 
@@ -319,35 +377,78 @@ mindhub/
 
 ---
 
+## Stack Tecnológico y Herramientas
+
+### Frontend
+- **Framework**: Next.js 14.2.30 con App Router
+- **Lenguaje**: TypeScript para type safety completo
+- **UI Framework**: React 18 con componentes funcionales
+- **Styling**: Tailwind CSS + CSS Variables personalizadas
+- **Canvas/Interactive**: HTML5 Canvas API + Fabric.js para tareas complejas
+- **State Management**: React Context + Zustand para estados complejos
+- **Validación**: Zod para schemas de validación
+- **Testing**: Jest + React Testing Library + Playwright para E2E
+
+### Backend
+- **Runtime**: Node.js 18+ con Express.js
+- **Lenguaje**: JavaScript/TypeScript
+- **ORM**: Prisma ORM para interacciones con base de datos
+- **Base de Datos**: MySQL 8.0 (MAMP para desarrollo)
+- **Validación**: JSON Schema + Ajv para validación de plantillas
+- **Caching**: Redis para caché de plantillas y resultados
+- **File Processing**: Sharp para procesamiento de imágenes
+- **PDF Generation**: Puppeteer + jsPDF para reportes
+
+### Arquitectura y Patrones
+- **Pattern**: Repository Pattern para acceso a datos
+- **Architecture**: Clean Architecture con separación clara de capas
+- **API Design**: RESTful APIs con OpenAPI/Swagger documentation
+- **Data Flow**: Unidirectional data flow con immutable updates
+- **Error Handling**: Centralized error handling con custom error types
+
+### DevOps y Herramientas
+- **Package Manager**: npm
+- **Bundling**: Next.js built-in webpack con optimizaciones
+- **Linting**: ESLint + Prettier para code quality
+- **Pre-commit**: Husky + lint-staged
+- **Documentation**: JSDoc + TypeScript interfaces
+- **Monitoring**: Console-based logging con structured logs
+
 ## Consideraciones Técnicas
 
 ### Seguridad
 
-- Validación exhaustiva de plantillas
-- Sanitización de respuestas
-- Encriptación de datos sensibles
-- Auditoría de accesos
+- Validación exhaustiva de plantillas con JSON Schema
+- Sanitización de respuestas con DOMPurify
+- Encriptación de datos sensibles con crypto-js
+- Auditoría de accesos con middleware de logging
+- CORS configurado específicamente para MindHub
+- Rate limiting para APIs públicas
 
 ### Performance
 
-- Lazy loading de plantillas
-- Renderizado optimizado
-- Caché inteligente
-- Compresión de respuestas
+- Lazy loading de plantillas con dynamic imports
+- Renderizado optimizado con React.memo y useMemo
+- Caché inteligente con Redis y browser storage
+- Compresión de respuestas con gzip
+- Image optimization con Next.js Image component
+- Code splitting automático por página
 
 ### Escalabilidad
 
-- Arquitectura modular
-- Servicios independientes
-- Base de datos optimizada
-- CDN para assets
+- Arquitectura modular con feature-based organization
+- Servicios independientes con clear interfaces
+- Base de datos optimizada con índices estratégicos
+- CDN para assets estáticos (Cloudflare en producción)
+- Horizontal scaling ready con stateless design
 
 ### Mantenibilidad
 
-- Código autodocumentado
-- Tests unitarios y de integración
-- Logging comprehensivo
-- Monitoreo de errores
+- Código autodocumentado con TypeScript interfaces
+- Tests unitarios y de integración con >80% coverage
+- Logging comprehensivo con Winston
+- Monitoreo de errores con custom error boundaries
+- Documentación actualizada automáticamente
 
 ---
 

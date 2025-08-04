@@ -28,7 +28,7 @@ const NAVIGATION_ITEMS = [
   {
     id: 'dashboard',
     name: 'Home',
-    href: '/',
+    href: '/app',
     icon: HomeIcon,
     status: 'active'
   },
@@ -48,16 +48,9 @@ const NAVIGATION_ITEMS = [
   },
   {
     id: 'clinimetrix',
-    name: 'Clinimetrix',
+    name: 'ClinimetrixPro',
     href: '/hubs/clinimetrix',
     icon: DocumentChartBarIcon,
-    status: 'active'
-  },
-  {
-    id: 'formx',
-    name: 'FormX',
-    href: '/hubs/formx',
-    icon: ClipboardDocumentListIcon,
     status: 'active'
   },
   {
@@ -80,14 +73,9 @@ const NAVIGATION_ITEMS = [
     href: '/frontdesk',
     icon: ClipboardDocumentListIcon,
     status: 'active'
-  },
-  {
-    id: 'reports',
-    name: 'Reportes',
-    href: '/reports',
-    icon: ChartBarIcon,
-    status: 'active'
   }
+  // FormX removed for beta deployment
+  // Reports integrated into other modules
 ];
 
 interface UnifiedSidebarProps {
@@ -126,10 +114,29 @@ export function UnifiedSidebar({ children, currentUser }: UnifiedSidebarProps) {
     };
   })();
 
-  const handleLogout = () => {
-    if (confirm('¿Estás seguro que deseas cambiar de usuario?')) {
-      localStorage.removeItem('currentUser');
-      window.location.href = '/login';
+  const handleLogout = async () => {
+    if (confirm('¿Estás seguro que deseas cerrar sesión?')) {
+      try {
+        // Call logout API
+        const token = localStorage.getItem('auth_token');
+        if (token) {
+          await fetch('/api/auth/logout', {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${token}`,
+              'Content-Type': 'application/json',
+            },
+          });
+        }
+      } catch (error) {
+        console.error('Logout error:', error);
+      } finally {
+        // Clear all auth data
+        localStorage.removeItem('currentUser');
+        localStorage.removeItem('auth_token');
+        localStorage.removeItem('refresh_token');
+        window.location.href = '/login';
+      }
     }
   };
 

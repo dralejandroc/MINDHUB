@@ -1,57 +1,47 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { UnifiedSidebar } from '@/components/layout/UnifiedSidebar';
-import { DashboardSwitcher } from '@/components/dashboard/DashboardSwitcher';
-import { StartPageHandler } from '@/components/layout/StartPageHandler';
-import { UserMetricsProvider } from '@/contexts/UserMetricsContext';
+import { useRouter } from 'next/navigation';
+import { LandingNavbar } from '@/components/landing/LandingNavbar';
+import { HeroSection } from '@/components/landing/HeroSection';
+import { StorytellingSection } from '@/components/landing/StorytellingSection';
+import { FeaturesSection } from '@/components/landing/FeaturesSection';
+import { PlansSection } from '@/components/landing/PlansSection';
+import { BetaExplanationSection } from '@/components/landing/BetaExplanationSection';
+import { BetaRegistrationModal } from '@/components/landing/BetaRegistrationModal';
+import { Footer } from '@/components/landing/Footer';
 
-export default function Home() {
-  const [currentUser, setCurrentUser] = useState(null);
-
+export default function LandingPage() {
+  const router = useRouter();
+  const [showBetaModal, setShowBetaModal] = useState(false);
+  
   useEffect(() => {
-    // Check if user is stored in localStorage
-    const savedUser = localStorage.getItem('currentUser');
-    if (savedUser) {
-      setCurrentUser(JSON.parse(savedUser));
-    } else {
-      // Default fallback if no user is stored
-      // Redirect to login if no user
-      router.push('/login');
-    }
-    
-    // Reset dashboard config if it's broken
-    const dashboardConfig = localStorage.getItem('userMetrics');
-    if (dashboardConfig) {
-      try {
-        const config = JSON.parse(dashboardConfig);
-        if (config.dashboardConfig?.theme === 'compact') {
-          // Reset to default theme
-          config.dashboardConfig.theme = 'default';
-          localStorage.setItem('userMetrics', JSON.stringify(config));
-        }
-      } catch (error) {
-        console.log('Resetting dashboard config due to error:', error);
-        localStorage.removeItem('userMetrics');
+    // Check if user is already logged in
+    if (typeof window !== 'undefined') {
+      const token = localStorage.getItem('auth_token');
+      if (token) {
+        router.push('/app');
       }
     }
-  }, []);
-
-  // Show loading state while user data loads
-  if (!currentUser) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
-      </div>
-    );
-  }
+  }, [router]);
 
   return (
-    <UserMetricsProvider>
-      <UnifiedSidebar currentUser={currentUser}>
-        <DashboardSwitcher />
-        <StartPageHandler />
-      </UnifiedSidebar>
-    </UserMetricsProvider>
+    <div className="min-h-screen bg-white">
+      <LandingNavbar onBetaClick={() => setShowBetaModal(true)} />
+      
+      <main>
+        <HeroSection onBetaClick={() => setShowBetaModal(true)} />
+        <StorytellingSection />
+        <FeaturesSection />
+        <PlansSection onBetaClick={() => setShowBetaModal(true)} />
+        <BetaExplanationSection onBetaClick={() => setShowBetaModal(true)} />
+      </main>
+
+      <Footer />
+
+      {showBetaModal && (
+        <BetaRegistrationModal onClose={() => setShowBetaModal(false)} />
+      )}
+    </div>
   );
 }

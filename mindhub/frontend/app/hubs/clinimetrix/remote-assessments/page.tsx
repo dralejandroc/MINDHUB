@@ -4,42 +4,13 @@ import React, { useState } from 'react';
 import { Send, Eye, Plus, User, Scale, ArrowLeft } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { Scale as ScaleType } from '@/lib/api/clinimetrix-client';
-import ScalesCatalog from '@/components/clinimetrix/ScalesCatalog';
-import SendRemoteAssessmentModal from '@/components/clinimetrix/SendRemoteAssessmentModal';
-import RemoteAssessmentsTracker from '@/components/clinimetrix/RemoteAssessmentsTracker';
+import ScalesCatalog from '@/components/clinimetrix-legacy-backup/ScalesCatalog';
+import SendRemoteAssessmentModal from '@/components/clinimetrix-legacy-backup/SendRemoteAssessmentModal';
+import RemoteAssessmentsTracker from '@/components/clinimetrix-legacy-backup/RemoteAssessmentsTracker';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
 
-// Mock patient data - En producción esto vendría de la API de Expedix
-const mockPatients = [
-  {
-    id: 'pat1',
-    firstName: 'María',
-    lastName: 'González López',
-    email: 'maria.gonzalez@email.com',
-    phone: '+52 55 1234-5678'
-  },
-  {
-    id: 'pat2', 
-    firstName: 'Juan Carlos',
-    lastName: 'Rodríguez Méndez',
-    email: 'jc.rodriguez@email.com',
-    phone: '+52 55 8765-4321'
-  },
-  {
-    id: 'pat3',
-    firstName: 'Ana Isabel',
-    lastName: 'Martínez Torres',
-    email: 'ana.martinez@email.com',
-    phone: '+52 55 5555-0123'
-  },
-  {
-    id: 'pat4',
-    firstName: 'Carlos Eduardo',
-    lastName: 'López Vargas',
-    email: 'carlos.lopez@email.com',
-    phone: '+52 55 4444-0987'
-  }
-];
+import { expedixApi } from '@/lib/api/expedix-client';
+import type { Patient } from '@/lib/api/expedix-client';
 
 type ViewMode = 'overview' | 'send' | 'tracker';
 
@@ -50,12 +21,33 @@ export default function RemoteAssessmentsPage() {
   
   // Estado para envío de evaluaciones
   const [selectedScale, setSelectedScale] = useState<ScaleType | null>(null);
-  const [selectedPatient, setSelectedPatient] = useState<any>(null);
+  const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null);
   const [showSendModal, setShowSendModal] = useState(false);
   const [showPatientSelector, setShowPatientSelector] = useState(false);
+  
+  // Estado para manejo de pacientes reales
+  const [patients, setPatients] = useState<Patient[]>([]);
+  const [patientsLoading, setPatientsLoading] = useState(false);
+  const [patientsError, setPatientsError] = useState<string | null>(null);
+
+  // Cargar pacientes reales desde Expedix
+  const loadPatients = async () => {
+    setPatientsLoading(true);
+    setPatientsError(null);
+    try {
+      const patientsData = await expedixApi.getPatients();
+      setPatients(patientsData || []);
+    } catch (error) {
+      console.error('Error loading patients:', error);
+      setPatientsError('Error al cargar la lista de pacientes');
+    } finally {
+      setPatientsLoading(false);
+    }
+  };
 
   const handleScaleSelection = (scale: ScaleType) => {
     setSelectedScale(scale);
+    loadPatients(); // Cargar pacientes cuando se selecciona una escala
     setShowPatientSelector(true);
   };
 
@@ -98,30 +90,56 @@ export default function RemoteAssessmentsPage() {
         </div>
         
         <div className="p-6">
-          <div className="space-y-3">
-            {mockPatients.map((patient) => (
+          {patientsLoading ? (
+            <div className="flex items-center justify-center py-8">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+              <span className="ml-3 text-gray-600">Cargando pacientes...</span>
+            </div>
+          ) : patientsError ? (
+            <div className="text-center py-8">
+              <p className="text-red-600 mb-4">{patientsError}</p>
               <button
-                key={patient.id}
-                onClick={() => handlePatientSelection(patient)}
-                className="w-full p-4 text-left border rounded-lg hover:bg-gray-50 hover:border-blue-300 transition-colors"
+                onClick={loadPatients}
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
               >
-                <div className="flex items-center space-x-3">
-                  <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
-                    <User className="w-5 h-5 text-blue-600" />
-                  </div>
-                  <div className="flex-1">
-                    <h3 className="font-medium text-gray-900">
-                      {patient.firstName} {patient.lastName}
-                    </h3>
-                    <div className="text-sm text-gray-600 space-y-1">
-                      {patient.email && <p>📧 {patient.email}</p>}
-                      {patient.phone && <p>📱 {patient.phone}</p>}
+                Reintentar
+              </button>
+            </div>
+          ) : patients.length === 0 ? (
+            <div className="text-center py-8 text-gray-500">
+              <User className="w-12 h-12 mx-auto mb-4 text-gray-300" />
+              <p>No se encontraron pacientes</p>
+              <p className="text-sm mt-2">Primero registra pacientes en Expedix</p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {patients.map((patient) => (
+                <button
+                  key={patient.id}
+                  onClick={() => handlePatientSelection(patient)}
+                  className="w-full p-4 text-left border rounded-lg hover:bg-gray-50 hover:border-blue-300 transition-colors"
+                >
+                  <div className="flex items-center space-x-3">
+                    <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
+                      <User className="w-5 h-5 text-blue-600" />
+                    </div>
+                    <div className="flex-1">
+                      <h3 className="font-medium text-gray-900">
+                        {patient.firstName} {patient.lastName}
+                      </h3>
+                      <div className="text-sm text-gray-600 space-y-1">
+                        {patient.email && <p>📧 {patient.email}</p>}
+                        {patient.phone && <p>📱 {patient.phone}</p>}
+                        {patient.dateOfBirth && (
+                          <p>🎂 {new Date(patient.dateOfBirth).toLocaleDateString('es-ES')}</p>
+                        )}
+                      </div>
                     </div>
                   </div>
-                </div>
-              </button>
-            ))}
-          </div>
+                </button>
+              ))}
+            </div>
+          )}
         </div>
       </div>
     </div>

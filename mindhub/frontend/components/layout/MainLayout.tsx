@@ -1,11 +1,38 @@
 'use client';
 
-import { useUser } from '@auth0/nextjs-auth0/client';
+import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { UnifiedSidebar } from '@/components/layout/UnifiedSidebar';
 
 export function MainLayout({ children }: { children: React.ReactNode }) {
-  const { user, isLoading } = useUser();
+  const [currentUser, setCurrentUser] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const router = useRouter();
+
+  useEffect(() => {
+    // Check if user is authenticated
+    const token = localStorage.getItem('auth_token');
+    const savedUser = localStorage.getItem('currentUser');
+    
+    if (!token || !savedUser) {
+      // Redirect to login if not authenticated
+      router.push('/login');
+      return;
+    }
+
+    try {
+      setCurrentUser(JSON.parse(savedUser));
+    } catch (error) {
+      console.error('Error parsing user data:', error);
+      localStorage.removeItem('currentUser');
+      localStorage.removeItem('auth_token');
+      router.push('/login');
+      return;
+    }
+
+    setIsLoading(false);
+  }, [router]);
 
   if (isLoading) {
     return (
@@ -14,12 +41,6 @@ export function MainLayout({ children }: { children: React.ReactNode }) {
       </div>
     );
   }
-
-  const currentUser = user ? {
-    name: user.name || 'Usuario',
-    email: user.email || '',
-    role: 'user'
-  } : undefined;
 
   return (
     <UnifiedSidebar currentUser={currentUser}>

@@ -32,34 +32,30 @@ MindHub/
 
 ### 2. **Clinimetrix** - Escalas y Evaluaciones Clínicas
 - **URL**: `/hubs/clinimetrix`
-- **Puerto API**: `http://localhost:3002` (actualizado)
+- **Puerto API**: `http://localhost:3002` (activo)
 - **Funcionalidades**:
-  - Sistema universal de aplicación de escalas clínicas
-  - Escalas científicamente validadas con documentación completa
-  - Soporte para escalas con características diferentes
-  - Evaluaciones psicológicas y clínicas
-  - Reportes automáticos de resultados
+  - ClinimetrixPro: Sistema de plantillas científicas ejecutables
+  - Fidelidad absoluta a instrumentos psicométricos originales
+  - Motor de renderizado dinámico universal
+  - Validación inteligente de respuestas
+  - Generación automática de reportes
   - Integración con expedientes de pacientes
-  
-**ESTADO ACTUAL - SISTEMA UNIVERSAL DE ESCALAS IMPLEMENTADO:**
-- ✅ Base de datos unificada para todas las escalas
-- ✅ 3 escalas diferentes completamente funcionales:
-  - **STAI**: 40 ítems, 2 subescalas, opciones globales estándar
-  - **Cuestionario Salamanca**: 22 ítems, 11 subescalas (trastornos personalidad)
-  - **BDI-21**: 21 ítems, 4 subescalas, 99 opciones específicas por ítem
-- ✅ Frontend sin datos mock/hardcodeados
-- ✅ API client completo para conexión con backend
-- ✅ Documentación científica completa por escala
-- ✅ Sistema preparado para escalas con cualquier característica
 
-**ARQUITECTURA DE BASE DE DATOS:**
-- `scales` - Registro de todas las escalas
-- `scale_items` - Todos los ítems de todas las escalas  
-- `scale_response_options` - Opciones globales compartidas
-- `scale_item_specific_options` - Opciones únicas por ítem (nueva tabla)
-- `scale_subscales` - Subescalas de todas las escalas
-- `scale_interpretation_rules` - Reglas de interpretación
-- `scale_documentation` - Documentación científica completa
+**ESTADO ACTUAL - CLINIMETRIX PRO EN DESARROLLO:**
+- ✅ Sistema legacy migrado a _TRASH_LEGACY_CLINIMETRIX/
+- ✅ Arquitectura ClinimetrixPro definida y planificada
+- ✅ Base de datos MySQL con Prisma ORM
+- ✅ Sistema de plantillas JSON científicas
+- 🚧 **EN PROGRESO**: Implementación por fases del nuevo sistema
+- 🚧 **EN PROGRESO**: Migración de escalas a formato de plantillas
+
+**ARQUITECTURA CLINIMETRIX PRO:**
+- `clinimetrix_templates` - Plantillas científicas ejecutables en JSON
+- `clinimetrix_assessments` - Respuestas y aplicaciones
+- `clinimetrix_registry` - Catálogo de escalas disponibles
+- **Backend**: `/backend/clinimetrix-pro/` con servicios especializados
+- **Frontend**: `/frontend/components/ClinimetrixPro/` con renderizado dinámico
+- **Templates**: `/backend/templates/scales/` con escalas en formato JSON
 
 ### 3. **FormX** - Generador de Formularios
 - **URL**: `/hubs/formx`
@@ -123,29 +119,38 @@ MindHub/
   - Registrar todo completamente
   - En fase avanzada de desarrollo, todo debe quedar funcionando de manera integral
 
-## Sistema Universal de Escalas Clínicas
+## ClinimetrixPro - Sistema de Plantillas Científicas
 
-### Principios del Sistema Universal
-- **Una sola base de datos** para todas las escalas, sin importar sus diferencias
-- **Flexibilidad total** para manejar escalas con características completamente diferentes
-- **Lógica simple** para el sistema universal de aplicación en cards
-- **Escalas públicas** accesibles a todos los usuarios de MindHub
-- **Registro de aplicaciones** por usuario (no acceso a escalas)
-- **Documentación científica** completa y validada por escala
+### Principios Fundamentales del Nuevo Sistema
+- **Fidelidad Científica**: Las plantillas son copias exactas de la literatura
+- **Flexibilidad Total**: Soporte para cualquier estructura de escala
+- **Inteligencia Integrada**: Detección de patrones y validación automática
+- **Escalabilidad**: Agregar escalas sin modificar código
+- **Simplicidad**: Arquitectura minimalista y mantenible
 
-### Flujo de Trabajo para Nuevas Escalas
-1. **Recibir escala** en formato markdown con JSON validado
-2. **Analizar estructura** y identificar características únicas
-3. **Adaptar tablas** si es necesario para nuevas características
-4. **Generar SQL manual** para importación segura
-5. **Validar importación** verificando integridad de datos
-6. **Documentar cambios** y continuar con siguiente escala
+### Arquitectura ClinimetrixPro
+```
+mindhub/backend/
+├── clinimetrix-pro/
+│   ├── routes/           # APIs RESTful
+│   └── services/         # Motores de scoring, validación, reportes
+├── templates/scales/     # Plantillas JSON científicas
+└── database/migrations/  # Esquema de base de datos
 
-### Próximos Pasos
-- Continuar agregando escalas una por una
-- Ir refinando el sistema según nuevas características encontradas
-- Mantener compatibilidad con sistema universal de aplicación
-- Escalar hasta 100+ escalas manteniendo rendimiento y simplicidad
+mindhub/frontend/
+└── components/ClinimetrixPro/
+    ├── Renderer/         # Motor de renderizado dinámico
+    ├── ResponseTypes/    # Componentes por tipo de respuesta
+    └── Interactive/      # Componentes especializados (Canvas, etc.)
+```
+
+### Estado de Migración
+- ✅ **Fase 0**: Sistema legacy movido a `_TRASH_LEGACY_CLINIMETRIX/`
+- 🚧 **Fase 1**: Diseño de plantillas y conversión de escalas piloto
+- 📋 **Fase 2**: Motor de renderizado dinámico
+- 📋 **Fase 3**: Sistema de scoring y análisis
+- 📋 **Fase 4**: APIs y servicios completos
+- 📋 **Fase 5**: Migración completa y desactivación del sistema anterior
 
 ## Recordatorios de Desarrollo
 - No hagas commit ni push en github hasta que yo te lo pida. me puedes preguntar, pero no lo hagas sin que me autorice
