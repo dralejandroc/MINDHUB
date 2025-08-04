@@ -4,6 +4,9 @@ import { useEffect, useState, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 
+// Force dynamic rendering to avoid SSG issues with searchParams
+export const dynamic = 'force-dynamic';
+
 interface VerificationResult {
   success: boolean;
   message: string;
