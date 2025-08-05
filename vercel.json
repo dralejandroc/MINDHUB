@@ -1,5 +1,7 @@
 {
-  "rootDirectory": "mindhub/frontend",
+  "buildCommand": "cd mindhub/frontend && npm run build",
+  "outputDirectory": "mindhub/frontend/.next",
+  "installCommand": "cd mindhub/frontend && npm install",
   "cleanUrls": true,
   "trailingSlash": false
 }
