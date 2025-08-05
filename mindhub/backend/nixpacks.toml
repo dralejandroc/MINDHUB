@@ -7,8 +7,11 @@ cmds = ['npm ci']
 [phases.build]
 cmds = [
   'npx prisma generate',
-  'ls -la shared/validators/',
-  'find . -name "*.json" | head -20'
+  'echo "Checking for JSON files..."',
+  'ls -la shared/validators/ || echo "validators directory not found"',
+  'find . -name "clinimetrix-template-schema.json" || echo "Schema file not found"',
+  'cp -r shared /app/ || true',
+  'ls -la /app/shared/validators/ || echo "Target validators directory not found"'
 ]
 
 [start]

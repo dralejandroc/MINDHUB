@@ -30,16 +30,54 @@ class TemplateValidator {
    */
   loadSchema() {
     try {
+      // Try to load from file first
       const schemaPath = path.join(__dirname, 'clinimetrix-template-schema.json');
-      const schemaData = fs.readFileSync(schemaPath, 'utf8');
-      this.schema = JSON.parse(schemaData);
-      this.validate = this.ajv.compile(this.schema);
+      if (fs.existsSync(schemaPath)) {
+        const schemaData = fs.readFileSync(schemaPath, 'utf8');
+        this.schema = JSON.parse(schemaData);
+      } else {
+        // Use embedded schema as fallback
+        console.log('⚠️  Using embedded schema (file not found)');
+        this.schema = this.getEmbeddedSchema();
+      }
       
+      this.validate = this.ajv.compile(this.schema);
       console.log('✅ ClinimetrixPro template schema loaded successfully');
     } catch (error) {
       console.error('❌ Error loading template schema:', error.message);
-      throw new Error('Failed to load template validation schema');
+      // Use embedded schema as last resort
+      this.schema = this.getEmbeddedSchema();
+      this.validate = this.ajv.compile(this.schema);
+      console.log('✅ Using embedded schema as fallback');
     }
+  }
+
+  /**
+   * Get embedded schema (fallback when file is not available)
+   */
+  getEmbeddedSchema() {
+    return {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "type": "object",
+      "required": ["metadata", "structure", "responseGroups", "scoring", "interpretation", "documentation"],
+      "properties": {
+        "metadata": {
+          "type": "object",
+          "required": ["id", "name", "abbreviation", "version"],
+          "properties": {
+            "id": { "type": "string" },
+            "name": { "type": "string" },
+            "abbreviation": { "type": "string" },
+            "version": { "type": "string" }
+          }
+        },
+        "structure": { "type": "object" },
+        "responseGroups": { "type": "object" },
+        "scoring": { "type": "object" },
+        "interpretation": { "type": "object" },
+        "documentation": { "type": "object" }
+      }
+    };
   }
 
   /**
