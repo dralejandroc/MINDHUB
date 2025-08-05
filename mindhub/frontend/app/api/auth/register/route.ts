@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL || 'https://mindhub.cloud/api';
+// Use Railway backend URL
+const BACKEND_URL = 'https://mindhub-production-f7fe.up.railway.app';
 
 export async function POST(request: NextRequest) {
   try {

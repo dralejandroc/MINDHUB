@@ -105,6 +105,10 @@ export function BetaRegistrationModal({ onClose }: BetaRegistrationModalProps) {
             </div>
             <p className="text-gray-600 mb-6 text-sm">
               Tu cuenta está lista. Puedes comenzar a explorar MindHub ahora mismo.
+              <br/><br/>
+              <small className="text-gray-500">
+                Nota: La verificación por email se activará próximamente.
+              </small>
             </p>
             <button
               onClick={() => {

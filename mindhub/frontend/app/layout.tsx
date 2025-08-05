@@ -145,6 +145,9 @@ export default function RootLayout({
         
         {/* Vercel Speed Insights */}
         <SpeedInsights />
+        
+        {/* Feedback Button - Available on all pages */}
+        <div id="feedback-portal" />
       </body>
     </html>
   );

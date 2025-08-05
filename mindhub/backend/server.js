@@ -101,6 +101,11 @@ app.use(helmet({
 app.use(cors({
   origin: [
     process.env.FRONTEND_URL || 'http://localhost:3000',
+    'https://mindhub.cloud',
+    'https://www.mindhub.cloud',
+    'https://mindhub-beta.vercel.app',
+    'https://*.vercel.app',
+    'http://localhost:3000',
     'http://localhost:3001',
     'http://localhost:3002'
   ],

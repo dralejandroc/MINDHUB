@@ -1,10 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL || 'https://www.mindhub.cloud/api';
+// Backend URL - should be configured with actual Railway backend URL
+const BACKEND_URL = process.env.BACKEND_URL || 'https://mindhub.cloud/api';
 
 export async function POST(request: NextRequest) {
   try {
     const { email, password } = await request.json();
+    
+    console.log('Attempting login to backend:', BACKEND_URL);
     
     // Forward to backend authentication
     const response = await fetch(`${BACKEND_URL}/auth/login`, {
@@ -16,6 +19,7 @@ export async function POST(request: NextRequest) {
     });
 
     const data = await response.json();
+    console.log('Backend response status:', response.status);
 
     if (!response.ok) {
       return NextResponse.json(
