@@ -1,4 +1,14 @@
 {
+  "name": "mindhub-monorepo",
+  "version": "1.0.0",
+  "scripts": {
+    "start": "cd mindhub/backend && npm start",
+    "build": "cd mindhub/backend && npm install",
+    "install": "cd mindhub/backend && npm install"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
   "dependencies": {
     "task-master-ai": "^0.19.0"
   }
