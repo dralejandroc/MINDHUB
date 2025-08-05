@@ -76,6 +76,11 @@ const middleware = require('./shared/middleware');
 const app = express();
 const PORT = process.env.PORT || 8080;
 
+// Railway provides DATABASE_URL
+if (process.env.DATABASE_URL) {
+  console.log('🔗 Using Railway MySQL database');
+}
+
 console.log('🚀 Express app created, setting up middleware...');
 
 // Initialize advanced security middleware - SIMPLIFIED FOR LOCAL DEV
