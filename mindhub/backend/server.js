@@ -44,14 +44,23 @@ const resourcesRoutes = require('./resources/routes/resources');
 console.log('✅ Resources module loaded');
 
 console.log('📦 Loading ClinimetrixPro module...');
+let clinimetrixProTemplatesRoutes;
+let clinimetrixProAssessmentsRoutes;
+let clinimetrixProValidationRoutes;
+
 try {
-  const clinimetrixProTemplatesRoutes = require('./clinimetrix-pro/routes/templates');
-  const clinimetrixProAssessmentsRoutes = require('./clinimetrix-pro/routes/assessments');
-  const clinimetrixProValidationRoutes = require('./clinimetrix-pro/routes/validation');
+  clinimetrixProTemplatesRoutes = require('./clinimetrix-pro/routes/templates');
+  clinimetrixProAssessmentsRoutes = require('./clinimetrix-pro/routes/assessments');
+  clinimetrixProValidationRoutes = require('./clinimetrix-pro/routes/validation');
   console.log('✅ ClinimetrixPro module loaded');
 } catch (error) {
   console.log('⚠️  ClinimetrixPro module disabled due to missing dependencies');
   console.log('    Error:', error.message);
+  // Create dummy routers to prevent errors
+  const express = require('express');
+  clinimetrixProTemplatesRoutes = express.Router();
+  clinimetrixProAssessmentsRoutes = express.Router();
+  clinimetrixProValidationRoutes = express.Router();
 }
 
 // Import universal scales API
