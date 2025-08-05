@@ -6,7 +6,7 @@
  */
 
 const jwt = require('jsonwebtoken');
-const { auth } = require('express-oauth-server');
+// const { auth } = require('express-oauth-server'); // Not used - commented out
 const rateLimit = require('express-rate-limit');
 const { promisify } = require('util');
 
