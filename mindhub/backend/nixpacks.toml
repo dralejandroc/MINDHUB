@@ -5,7 +5,11 @@ nixPkgs = ['nodejs_18', 'npm-9_x']
 cmds = ['npm ci']
 
 [phases.build]
-cmds = ['npx prisma generate']
+cmds = [
+  'npx prisma generate',
+  'ls -la shared/validators/',
+  'find . -name "*.json" | head -20'
+]
 
 [start]
 cmd = 'npm start'
