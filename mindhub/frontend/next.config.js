@@ -1,14 +1,18 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   typescript: {
-    ignoreBuildErrors: true, // Temporalmente para desarrollo
+    ignoreBuildErrors: false, // Enable strict TypeScript checking
   },
   eslint: {
-    ignoreDuringBuilds: true, // Temporalmente para desarrollo
+    ignoreDuringBuilds: false, // Enable ESLint checking
   },
   env: {
-    NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL || 'https://mindhub.cloud/api',
-    BACKEND_URL: process.env.BACKEND_URL || 'https://mindhub.cloud/api',
+    NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL || 'https://mindhub-production.up.railway.app',
+    BACKEND_URL: process.env.BACKEND_URL || 'https://mindhub-production.up.railway.app',
+  },
+  // Ensure all components are found
+  experimental: {
+    esmExternals: false,
   },
   // Performance optimizations
   compress: true,
@@ -38,22 +42,6 @@ const nextConfig = {
             value: 'no-store, must-revalidate',
           },
         ],
-      },
-    ];
-  },
-  // Handle redirects for authentication
-  async redirects() {
-    return [
-      {
-        source: '/api/auth/:path*',
-        has: [
-          {
-            type: 'host',
-            value: 'www.mindhub.cloud',
-          },
-        ],
-        destination: 'https://mindhub.cloud/api/auth/:path*',
-        permanent: false,
       },
     ];
   },
