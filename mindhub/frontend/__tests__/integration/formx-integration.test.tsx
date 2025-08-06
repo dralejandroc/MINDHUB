@@ -1,13 +1,13 @@
 import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { DragDropContext } from 'react-beautiful-dnd';
+import { DragDropContext } from '@hello-pangea/dnd';
 import FormBuilderAdvanced from '@/components/formx/FormBuilderAdvanced';
 import { mockTabletDevice, mockDesktopDevice } from '../setup';
 
-// Mock react-beautiful-dnd
-jest.mock('react-beautiful-dnd', () => ({
-  ...jest.requireActual('react-beautiful-dnd'),
+// Mock @hello-pangea/dnd
+jest.mock('@hello-pangea/dnd', () => ({
+  ...jest.requireActual('@hello-pangea/dnd'),
   DragDropContext: ({ children, onDragEnd }: { children: React.ReactNode; onDragEnd: any }) => (
     <div data-testid="drag-drop-context" data-on-drag-end={!!onDragEnd}>
       {children}
