@@ -537,7 +537,7 @@ export default function WaitingList({ onScheduleAppointment }: WaitingListProps)
 
                         <div className="flex items-center space-x-4 text-xs" style={{ color: 'var(--neutral-500)' }}>
                           <span>Agregado: {new Date(entry.addedDate).toLocaleDateString('es-ES')}</span>
-                          <span>Notificaciones: {entry.notificationsSent}</span>
+                          <span>Notificaciones: {(entry as any).notificationsSent || 0}</span>
                           {matchingSlots.length > 0 && (
                             <span 
                               className="px-2 py-1 rounded font-medium"

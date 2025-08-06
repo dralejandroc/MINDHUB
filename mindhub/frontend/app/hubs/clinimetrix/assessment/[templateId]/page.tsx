@@ -19,7 +19,7 @@ interface AssessmentResults {
 export default function AssessmentPage() {
   const params = useParams();
   const router = useRouter();
-  const templateId = params.templateId as string;
+  const templateId = params?.templateId as string;
   const [showResults, setShowResults] = useState(false);
   const [assessmentResults, setAssessmentResults] = useState<AssessmentResults | null>(null);
 

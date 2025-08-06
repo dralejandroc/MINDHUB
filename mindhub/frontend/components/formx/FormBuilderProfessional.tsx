@@ -424,7 +424,7 @@ export const FormBuilderProfessional: React.FC<FormBuilderProfessionalProps> = (
       fields: template.fields.map(fieldData => ({
         id: generateId(),
         ...fieldData,
-        options: fieldData.options || []
+        options: (fieldData as any).options || []
       })),
       order: form.sections.length
     };
@@ -603,8 +603,8 @@ export const FormBuilderProfessional: React.FC<FormBuilderProfessionalProps> = (
                 </label>
                 <input
                   type="number"
-                  value={selectedField.min || 0}
-                  onChange={(e) => setSelectedField({ ...selectedField, min: parseInt(e.target.value) })}
+                  value={(selectedField as any).min || 0}
+                  onChange={(e) => setSelectedField({ ...selectedField, min: parseInt(e.target.value) } as any)}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
                 />
               </div>
@@ -614,8 +614,8 @@ export const FormBuilderProfessional: React.FC<FormBuilderProfessionalProps> = (
                 </label>
                 <input
                   type="number"
-                  value={selectedField.max || 10}
-                  onChange={(e) => setSelectedField({ ...selectedField, max: parseInt(e.target.value) })}
+                  value={(selectedField as any).max || 10}
+                  onChange={(e) => setSelectedField({ ...selectedField, max: parseInt(e.target.value) } as any)}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
                 />
               </div>

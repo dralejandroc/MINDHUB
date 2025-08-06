@@ -460,7 +460,7 @@ export default function AgendaPage() {
               +Lista Espera
             </Button>
             <Button
-              onClick={handleNewAppointment}
+              onClick={() => handleNewAppointment()}
               variant="orange"
               size="sm"  
               className="h-8 px-2 text-xs"

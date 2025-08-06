@@ -15,13 +15,15 @@ interface ClinimetrixSectionHeaderProps {
     id: string;
     title: string;
     description?: string;
-    order: number;
+    itemRange?: {
+      start: number;
+      end: number;
+    };
     conditional?: {
       dependsOn: string;
       value: any;
       logic: 'equals' | 'not_equals' | 'greater_than' | 'less_than';
     };
-    items: any[];
   };
   template: ClinimetrixProTemplateStructure;
   sectionIndex: number;
@@ -34,8 +36,19 @@ export const ClinimetrixSectionHeader: React.FC<ClinimetrixSectionHeaderProps> =
   sectionIndex,
   className = ''
 }) => {
-  const totalSections = template.structure.sections.length;
+  const totalSections = template.structure.sections?.length || 0;
   const isMultiSection = totalSections > 1;
+  
+  // Get items for this section based on itemRange
+  const getSectionItems = () => {
+    if (!section.itemRange) return [];
+    return template.items.slice(
+      section.itemRange.start - 1,
+      section.itemRange.end
+    );
+  };
+  
+  const sectionItems = getSectionItems();
 
   return (
     <div className={`clinimetrix-section-header bg-gradient-to-r from-blue-50 to-indigo-50 px-6 py-4 border-b ${className}`}>
@@ -52,7 +65,7 @@ export const ClinimetrixSectionHeader: React.FC<ClinimetrixSectionHeaderProps> =
           </div>
           
           <div className="text-sm text-gray-500">
-            {section.items.length} pregunta{section.items.length !== 1 ? 's' : ''}
+            {sectionItems.length} pregunta{sectionItems.length !== 1 ? 's' : ''}
           </div>
         </div>
       )}
@@ -107,7 +120,7 @@ export const ClinimetrixSectionHeader: React.FC<ClinimetrixSectionHeaderProps> =
       )}
 
       {/* Administration Mode Notice */}
-      {template.metadata.administrationMode === 'clinician_administered' && (
+      {template.metadata.professionalLevel?.includes('clinician') && (
         <div className="mb-3 p-3 bg-purple-50 border border-purple-200 rounded-lg">
           <div className="flex items-center text-purple-800">
             <svg className="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
@@ -132,20 +145,31 @@ export const ClinimetrixSectionHeader: React.FC<ClinimetrixSectionHeaderProps> =
 
 // Helper function to get special instructions based on section and template
 function getSpecialInstructions(section: any, template: ClinimetrixProTemplateStructure): string | null {
+  // Get items for this section
+  const getSectionItems = () => {
+    if (!section.itemRange) return [];
+    return template.items.slice(
+      section.itemRange.start - 1,
+      section.itemRange.end
+    );
+  };
+  
+  const sectionItems = getSectionItems();
+  
   // Check for reversed items in this section
-  const hasReversedItems = section.items.some((item: any) => item.reversed);
+  const hasReversedItems = sectionItems.some((item: any) => item.reversed);
   if (hasReversedItems) {
     return 'Algunas preguntas en esta sección tienen puntuación invertida. Responda según su experiencia real.';
   }
 
   // Check for interactive components
-  const hasInteractiveItems = section.items.some((item: any) => item.interactive);
+  const hasInteractiveItems = sectionItems.some((item: any) => item.responseType === 'interactive');
   if (hasInteractiveItems) {
     return 'Esta sección incluye componentes interactivos. Siga las instrucciones específicas para cada pregunta.';
   }
 
   // Check for multi-factor items
-  const hasMultiFactorItems = section.items.some((item: any) => item.multiFactor);
+  const hasMultiFactorItems = sectionItems.some((item: any) => item.responseType === 'multi_factor');
   if (hasMultiFactorItems) {
     return 'Algunas preguntas requieren múltiples respuestas. Complete todos los factores antes de continuar.';
   }

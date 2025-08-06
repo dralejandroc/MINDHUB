@@ -16,23 +16,12 @@ import {
   AcademicCapIcon,
   BookOpenIcon
 } from '@heroicons/react/24/outline';
-import { expedixApi } from '@/lib/api/expedix-client';
+import { expedixApi, Patient } from '@/lib/api/expedix-client';
 import ResourcesTimeline from './ResourcesTimeline';
 import PatientTimeline from './PatientTimeline';
 import PatientDocuments from './PatientDocuments';
 import PatientAssessments from './PatientAssessments';
 import { Button } from '@/components/ui/Button';
-
-interface Patient {
-  id: string;
-  firstName: string;
-  lastName: string;
-  medicalRecordNumber: string;
-  email: string;
-  cellPhone: string;
-  dateOfBirth: string;
-  age: number;
-}
 
 interface PatientDashboardProps {
   patient: Patient;
@@ -115,8 +104,8 @@ export default function PatientDashboard({
               <UserIcon className="h-8 w-8" />
             </div>
             <div>
-              <h1 className="text-2xl font-bold">{patient.firstName} {patient.lastName}</h1>
-              <p className="text-blue-100">Expediente: {patient.medicalRecordNumber}</p>
+              <h1 className="text-2xl font-bold">{patient.first_name} {patient.paternal_last_name} {patient.maternal_last_name || ''}</h1>
+              <p className="text-blue-100">Expediente: {patient.id.slice(-8).toUpperCase()}</p>
               <p className="text-blue-100">{patient.age} años • {patient.email}</p>
             </div>
           </div>
@@ -181,13 +170,11 @@ export default function PatientDashboard({
               <PatientTimeline
                 patient={{
                   id: patient.id,
-                  firstName: patient.firstName,
-                  lastName: patient.lastName,
-                  age: patient.age,
-                  medicalRecordNumber: patient.medicalRecordNumber
+                  first_name: patient.first_name,
+                  paternal_last_name: patient.paternal_last_name,
+                  age: patient.age
                 }}
                 onNewConsultation={onNewConsultation}
-                onClinicalAssessment={onClinicalAssessment}
               />
             )}
 
@@ -265,7 +252,7 @@ export default function PatientDashboard({
             {activeTab === 'assessments' && (
               <PatientAssessments
                 patientId={patient.id}
-                patientName={`${patient.firstName} ${patient.lastName}`}
+                patientName={`${patient.first_name} ${patient.paternal_last_name} ${patient.maternal_last_name || ''}`}
                 onNewAssessment={onClinicalAssessment}
               />
             )}
@@ -288,7 +275,7 @@ export default function PatientDashboard({
                 
                 <ResourcesTimeline
                   patientId={patient.id}
-                  patientName={`${patient.firstName} ${patient.lastName}`}
+                  patientName={`${patient.first_name} ${patient.paternal_last_name} ${patient.maternal_last_name || ''}`}
                   isVisible={activeTab === 'resources'}
                 />
               </div>
@@ -305,7 +292,7 @@ export default function PatientDashboard({
                 
                 <PatientDocuments
                   patientId={patient.id}
-                  patientName={`${patient.firstName} ${patient.lastName}`}
+                  patientName={`${patient.first_name} ${patient.paternal_last_name} ${patient.maternal_last_name || ''}`}
                 />
               </div>
             )}

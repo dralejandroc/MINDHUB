@@ -27,7 +27,7 @@ export async function PUT(
       { 
         success: false, 
         error: 'Failed to update service',
-        message: error.message
+        message: error instanceof Error ? error.message : "Unknown error"
       }, 
       { status: 500 }
     );
@@ -64,7 +64,7 @@ export async function DELETE(
       { 
         success: false, 
         error: 'Failed to delete service',
-        message: error.message
+        message: error instanceof Error ? error.message : "Unknown error"
       }, 
       { status: 500 }
     );

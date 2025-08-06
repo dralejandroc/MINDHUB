@@ -8,8 +8,8 @@ import {
   CheckCircleIcon,
   ClockIcon,
   XCircleIcon,
-  TrendingUpIcon,
-  TrendingDownIcon,
+  ArrowTrendingUpIcon,
+  ArrowTrendingDownIcon,
   CalendarIcon
 } from '@heroicons/react/24/outline';
 import { Button } from '@/components/ui/Button';
@@ -154,8 +154,8 @@ export const FormAnalyticsDashboard: React.FC<FormAnalyticsDashboardProps> = ({ 
   };
 
   const getTrendIcon = (change: number) => {
-    if (change > 0) return <TrendingUpIcon className="h-4 w-4 text-green-500" />;
-    if (change < 0) return <TrendingDownIcon className="h-4 w-4 text-red-500" />;
+    if (change > 0) return <ArrowTrendingUpIcon className="h-4 w-4 text-green-500" />;
+    if (change < 0) return <ArrowTrendingDownIcon className="h-4 w-4 text-red-500" />;
     return <div className="h-4 w-4" />;
   };
 

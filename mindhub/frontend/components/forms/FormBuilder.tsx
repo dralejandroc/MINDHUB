@@ -5,7 +5,7 @@ import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
 import { 
   PlusIcon,
   TrashIcon,
-  DuplicateIcon,
+  DocumentDuplicateIcon,
   Cog6ToothIcon,
   EyeIcon,
   DocumentTextIcon,
@@ -850,7 +850,7 @@ export default function FormBuilder({ template, onSave, onCancel }: FormBuilderP
                                       onClick={() => duplicateField(field.id)}
                                       className="p-1 text-green-600 hover:text-green-800"
                                     >
-                                      <DuplicateIcon className="h-4 w-4" />
+                                      <DocumentDuplicateIcon className="h-4 w-4" />
                                     </button>
                                     
                                     <button

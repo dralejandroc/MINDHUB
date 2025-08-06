@@ -139,9 +139,14 @@ export default function PatientTimeline({ patient, userType = 'individual', onNe
       // Generar análisis y timeline basados únicamente en datos reales
       const analysisResult = await generateRealDataAnalysis(patientResponse.data);
       
-      setTimelineEvents(analysisResult.timeline);
-      setClinicalAnalysis(analysisResult.clinicalAnalysis);
-      setBehaviorAnalysis(analysisResult.behaviorAnalysis);
+      // Handle both array and object responses
+      if (Array.isArray(analysisResult)) {
+        setTimelineEvents(analysisResult);
+      } else {
+        setTimelineEvents(analysisResult.timeline || []);
+      }
+      setClinicalAnalysis(Array.isArray(analysisResult) ? null : analysisResult.clinicalAnalysis || null);
+      setBehaviorAnalysis(Array.isArray(analysisResult) ? null : analysisResult.behaviorAnalysis || null);
       
     } catch (error) {
       console.error('Error loading timeline data:', error);
@@ -163,7 +168,12 @@ export default function PatientTimeline({ patient, userType = 'individual', onNe
     let behavioralLogs = [];
     let communications = [];
     let appointmentChanges = [];
-    let scaleApplications = [];
+    let scaleApplications: any[] = [];
+    
+    if (!patient?.id) {
+      console.log('Patient ID not available, skipping external data fetch');
+      return [...medicalHistory];
+    }
     
     try {
       // Obtener logs conductuales reales del paciente

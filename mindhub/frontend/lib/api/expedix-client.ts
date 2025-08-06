@@ -11,12 +11,16 @@ export interface Patient {
   gender: 'masculine' | 'feminine';
   email: string;
   cell_phone: string;
+  phone?: string;
   curp?: string;
   rfc?: string;
   blood_type?: string;
   allergies?: string;
+  medical_history?: string;
+  current_medications?: string;
   emergency_contact_name?: string;
   emergency_contact_phone?: string;
+  emergency_contact_relationship?: string;
   address?: string;
   city?: string;
   state?: string;
@@ -25,6 +29,12 @@ export interface Patient {
   evaluations_count?: number;
   created_at: string;
   updated_at: string;
+  // Extended properties for dashboard views
+  consultations?: Appointment[];
+  prescriptions?: Prescription[];
+  appointments?: Appointment[];
+  documents?: Document[];
+  assessments?: any[];
 }
 
 export interface Prescription {
@@ -35,6 +45,7 @@ export interface Prescription {
   medications: Medication[];
   diagnosis: string;
   notes?: string;
+  status?: 'active' | 'inactive' | 'completed';
   print_config: {
     marginLeft: number;
     marginTop: number;

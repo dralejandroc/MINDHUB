@@ -119,7 +119,7 @@ export default function NewAppointmentModal({ selectedDate, selectedTime, editin
 
           // If editing, find and set the selected patient
           if (editingAppointment?.patientId) {
-            const patient = patientsData.find(p => p.id === editingAppointment.patientId);
+            const patient = patientsData.find((p: any) => p.id === editingAppointment.patientId);
             if (patient) {
               setSelectedPatient(patient);
               console.log('🔄 Loaded patient for editing:', patient);

@@ -3,7 +3,7 @@
 import React from 'react';
 import { cn } from '@/lib/utils';
 
-export interface CardProps extends React.HTMLAttributes<HTMLDivElement> {
+export interface CardProps extends React.HTMLAttributes<HTMLElement> {
   variant?: 'default' | 'outlined' | 'elevated' | 'ghost';
   padding?: 'none' | 'sm' | 'md' | 'lg';
   rounded?: 'none' | 'sm' | 'md' | 'lg' | 'xl';
@@ -11,7 +11,7 @@ export interface CardProps extends React.HTMLAttributes<HTMLDivElement> {
   touchOptimized?: boolean;
 }
 
-const Card = React.forwardRef<HTMLDivElement, CardProps>(({
+const Card = React.forwardRef<HTMLElement, CardProps>(({
   className,
   variant = 'default',
   padding = 'md',
@@ -68,7 +68,7 @@ const Card = React.forwardRef<HTMLDivElement, CardProps>(({
 
   return (
     <Component
-      ref={ref}
+      ref={ref as any}
       className={cardClasses}
       {...props}
     >

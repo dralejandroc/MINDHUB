@@ -53,6 +53,52 @@ interface ResourceUsage {
   sessionId?: string
 }
 
+// Helper functions
+const getTypeIcon = (type: string): string => {
+  switch (type?.toLowerCase()) {
+    case 'pdf': return '📄';
+    case 'video': return '🎥';
+    case 'audio': return '🎵';
+    case 'image': return '🖼️';
+    case 'document': return '📋';
+    default: return '📄';
+  }
+};
+
+const getStatusIcon = (status: string): string => {
+  switch (status?.toLowerCase()) {
+    case 'completed': return '✅';
+    case 'in_progress': return '⏳';
+    case 'pending': return '⏳';
+    default: return '📄';
+  }
+};
+
+const getStatusLabel = (status: string): string => {
+  switch (status?.toLowerCase()) {
+    case 'completed': return 'Completado';
+    case 'in_progress': return 'En Progreso';
+    case 'pending': return 'Pendiente';
+    default: return 'Desconocido';
+  }
+};
+
+// Local formatDate function that returns object with date and time
+const formatDate = (dateString: string) => {
+  const date = new Date(dateString)
+  return {
+    date: date.toLocaleDateString('es-MX', { 
+      day: '2-digit', 
+      month: 'short', 
+      year: 'numeric' 
+    }),
+    time: date.toLocaleTimeString('es-MX', { 
+      hour: '2-digit', 
+      minute: '2-digit' 
+    })
+  }
+}
+
 const ResourcesTimeline: React.FC<ResourceTimelineProps> = ({ 
   patientId, 
   patientName, 
@@ -210,20 +256,6 @@ const ResourcesTimeline: React.FC<ResourceTimelineProps> = ({
     }
   }
 
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString)
-    return {
-      date: date.toLocaleDateString('es-MX', { 
-        day: '2-digit', 
-        month: 'short', 
-        year: 'numeric' 
-      }),
-      time: date.toLocaleTimeString('es-MX', { 
-        hour: '2-digit', 
-        minute: '2-digit' 
-      })
-    }
-  }
 
   const handleResourceClick = (usage: ResourceUsage) => {
     setSelectedUsage(usage)

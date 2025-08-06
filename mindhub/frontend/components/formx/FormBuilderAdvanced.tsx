@@ -752,7 +752,7 @@ export const FormBuilderAdvanced: React.FC<FormBuilderAdvancedProps> = ({
                 <DesignPanel
                   section={designPanelSection}
                   form={form}
-                  selectedField={selectedField}
+                  selectedField={selectedField || null}
                   onUpdateForm={setForm}
                   onUpdateField={updateField}
                 />

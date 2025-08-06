@@ -347,7 +347,7 @@ export default function AppointmentInvitationModal({
                     style={{
                       backgroundColor: isSelected ? 'var(--primary-50)' : 'white',
                       borderColor: isSelected ? 'var(--primary-500)' : 'var(--neutral-200)',
-                      ringColor: isSelected ? 'var(--primary-500)' : undefined
+                      boxShadow: isSelected ? '0 0 0 3px var(--primary-500)' : undefined
                     }}
                     onClick={() => toggleEntrySelection(entry.id)}
                   >

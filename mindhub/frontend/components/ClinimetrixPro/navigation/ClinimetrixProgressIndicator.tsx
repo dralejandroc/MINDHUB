@@ -27,22 +27,35 @@ export const ClinimetrixProgressIndicator: React.FC<ClinimetrixProgressIndicator
   percentage,
   className = ''
 }) => {
-  const currentSection = template.structure.sections[currentSectionIndex];
-  const currentItem = currentSection?.items[currentItemIndex];
+  const sections = template.structure.sections || [];
+  const currentSection = sections[currentSectionIndex];
+  
+  // Get items for the current section based on itemRange
+  const getSectionItems = (section: any) => {
+    if (!section?.itemRange) return [];
+    return template.items.slice(
+      section.itemRange.start - 1,
+      section.itemRange.end
+    );
+  };
+  
+  const currentSectionItems = currentSection ? getSectionItems(currentSection) : [];
+  const currentItem = currentSectionItems[currentItemIndex];
   
   // Calculate item position globally
   let globalItemPosition = 0;
-  for (let i = 0; i < currentSectionIndex; i++) {
-    globalItemPosition += template.structure.sections[i].items.length;
+  for (let i = 0; i < currentSectionIndex && i < sections.length; i++) {
+    const sectionItems = getSectionItems(sections[i]);
+    globalItemPosition += sectionItems.length;
   }
   globalItemPosition += currentItemIndex + 1;
 
   // Calculate section progress
-  const sectionResponses = currentSection?.items.filter(item => 
-    responses[item.id] !== undefined && responses[item.id] !== null
-  ).length || 0;
-  const sectionPercentage = currentSection 
-    ? Math.round((sectionResponses / currentSection.items.length) * 100)
+  const sectionResponses = currentSectionItems.filter(item => 
+    responses[item.number] !== undefined && responses[item.number] !== null
+  ).length;
+  const sectionPercentage = currentSectionItems.length > 0
+    ? Math.round((sectionResponses / currentSectionItems.length) * 100)
     : 0;
 
   return (
@@ -91,14 +104,14 @@ export const ClinimetrixProgressIndicator: React.FC<ClinimetrixProgressIndicator
         </div>
 
         {/* Section Progress */}
-        {template.structure.sections.length > 1 && (
+        {sections.length > 1 && (
           <div className="mb-4">
             <div className="flex items-center justify-between text-sm text-gray-600 mb-2">
               <span>
                 Sección: {currentSection?.title || `Sección ${currentSectionIndex + 1}`}
               </span>
               <span>
-                {sectionResponses} de {currentSection?.items.length || 0} respondidas
+                {sectionResponses} de {currentSectionItems.length} respondidas
               </span>
             </div>
             <div className="w-full bg-gray-200 rounded-full h-2">
@@ -116,11 +129,12 @@ export const ClinimetrixProgressIndicator: React.FC<ClinimetrixProgressIndicator
         )}
 
         {/* Section Navigation Dots */}
-        {template.structure.sections.length > 1 && (
+        {sections.length > 1 && (
           <div className="flex items-center justify-center space-x-2">
-            {template.structure.sections.map((section, index) => {
-              const sectionCompleted = section.items.every(item =>
-                responses[item.id] !== undefined && responses[item.id] !== null
+            {sections.map((section, index) => {
+              const sectionItems = getSectionItems(section);
+              const sectionCompleted = sectionItems.every(item =>
+                responses[item.number] !== undefined && responses[item.number] !== null
               );
               const isCurrent = index === currentSectionIndex;
               const isAccessible = index <= currentSectionIndex; // Can only access current or previous sections
@@ -172,9 +186,9 @@ export const ClinimetrixProgressIndicator: React.FC<ClinimetrixProgressIndicator
         )}
 
         {/* Estimated Time Remaining */}
-        {template.metadata.estimatedDurationMinutes && (
+        {template.metadata.administrationTime && (
           <div className="mt-2 text-center text-xs text-gray-500">
-            Tiempo estimado: {Math.round(template.metadata.estimatedDurationMinutes * (1 - percentage / 100))} min restantes
+            Tiempo estimado: {template.metadata.administrationTime}
           </div>
         )}
       </div>

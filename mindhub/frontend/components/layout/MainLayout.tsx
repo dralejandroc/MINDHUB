@@ -6,7 +6,7 @@ import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { UnifiedSidebar } from '@/components/layout/UnifiedSidebar';
 
 export function MainLayout({ children }: { children: React.ReactNode }) {
-  const [currentUser, setCurrentUser] = useState(null);
+  const [currentUser, setCurrentUser] = useState<{ name?: string; email?: string; role?: string; } | undefined>(undefined);
   const [isLoading, setIsLoading] = useState(true);
   const router = useRouter();
 
@@ -22,7 +22,12 @@ export function MainLayout({ children }: { children: React.ReactNode }) {
     }
 
     try {
-      setCurrentUser(JSON.parse(savedUser));
+      const parsedUser = JSON.parse(savedUser);
+      setCurrentUser({
+        name: parsedUser.name,
+        email: parsedUser.email,
+        role: parsedUser.role
+      });
     } catch (error) {
       console.error('Error parsing user data:', error);
       localStorage.removeItem('currentUser');

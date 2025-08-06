@@ -405,7 +405,7 @@ const ResourceUpload: React.FC<ResourceUploadProps> = ({
                               <input
                                 type="text"
                                 value={uploadFile.resourceData?.title || ''}
-                                onChange={(e) => updateFileData(uploadFile.id, 'title', e.target.value)}
+                                onChange={(e) => updateFileData(uploadFile.id, 'title' as keyof UploadFile['resourceData'], e.target.value)}
                                 className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
                                 placeholder="Nombre del recurso"
                               />
@@ -417,7 +417,7 @@ const ResourceUpload: React.FC<ResourceUploadProps> = ({
                               </label>
                               <select
                                 value={uploadFile.resourceData?.category || ''}
-                                onChange={(e) => updateFileData(uploadFile.id, 'category', e.target.value)}
+                                onChange={(e) => updateFileData(uploadFile.id, 'category' as keyof UploadFile['resourceData'], e.target.value)}
                                 className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 text-sm"
                               >
                                 <option value="">Seleccionar categoría</option>
@@ -435,7 +435,7 @@ const ResourceUpload: React.FC<ResourceUploadProps> = ({
                               </label>
                               <textarea
                                 value={uploadFile.resourceData?.description || ''}
-                                onChange={(e) => updateFileData(uploadFile.id, 'description', e.target.value)}
+                                onChange={(e) => updateFileData(uploadFile.id, 'description' as keyof UploadFile['resourceData'], e.target.value)}
                                 rows={2}
                                 className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
                                 placeholder="Descripción del recurso (opcional)"

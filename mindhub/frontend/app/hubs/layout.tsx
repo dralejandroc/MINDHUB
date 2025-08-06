@@ -8,7 +8,7 @@ export default function HubsLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const [currentUser, setCurrentUser] = useState(null);
+  const [currentUser, setCurrentUser] = useState<any>(null);
 
   useEffect(() => {
     // Read user from localStorage - NO HARDCODED DATA

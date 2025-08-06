@@ -84,7 +84,7 @@ export async function GET(request: NextRequest) {
         };
 
         // Helper function to format bytes
-        function formatBytes(bytes) {
+        function formatBytes(bytes: number) {
           if (bytes === 0) return '0 Bytes';
           const k = 1024;
           const sizes = ['Bytes', 'KB', 'MB', 'GB'];
@@ -164,7 +164,7 @@ export async function GET(request: NextRequest) {
     };
 
     // Helper function to format bytes
-    function formatBytes(bytes) {
+    function formatBytes(bytes: number) {
       if (bytes === 0) return '0 Bytes';
       const k = 1024;
       const sizes = ['Bytes', 'KB', 'MB', 'GB'];

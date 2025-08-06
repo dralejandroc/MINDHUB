@@ -27,7 +27,7 @@ export async function POST(
       { 
         success: false, 
         error: 'Failed to assign discount to patient',
-        message: error.message
+        message: error instanceof Error ? error.message : "Unknown error"
       }, 
       { status: 500 }
     );

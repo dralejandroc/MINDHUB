@@ -64,7 +64,7 @@ export async function DELETE(
       { 
         success: false, 
         error: 'Failed to delete discount plan',
-        message: error.message
+        message: error instanceof Error ? error.message : 'Unknown error'
       }, 
       { status: 500 }
     );

@@ -326,7 +326,7 @@ export default function PatientServiceAssignment({ patientId, patientName, onClo
       evaluation: 'Evaluación',
       other: 'Otro'
     };
-    return labels[category] || category;
+    return (labels as any)[category] || category;
   };
 
   const getDiscountTypeLabel = (type: string) => {
@@ -335,7 +335,7 @@ export default function PatientServiceAssignment({ patientId, patientName, onClo
       fixed_amount: 'Monto Fijo',
       custom_price: 'Precio Personalizado'
     };
-    return labels[type] || type;
+    return (labels as any)[type] || type;
   };
 
   const tabs = [

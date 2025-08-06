@@ -487,7 +487,7 @@ export default function ResourceSender() {
             {selectedPatient?.first_name} {selectedPatient?.paternal_last_name}
           </div>
           <div className="text-sm text-green-700">
-            {selectedPatient?.phone} {selectedPatient?.email && `• ${selectedPatient.email}`}
+            {selectedPatient?.cell_phone} {selectedPatient?.email && `• ${selectedPatient.email}`}
           </div>
         </Card>
 

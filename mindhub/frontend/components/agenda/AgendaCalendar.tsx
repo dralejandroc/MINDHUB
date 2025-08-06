@@ -129,7 +129,7 @@ export default function AgendaCalendar({ selectedDate, onDateSelect, onNewAppoin
     if (firstDayOfWeek === 0) firstDayOfWeek = 7; // Domingo = 7
     startDate.setDate(startDate.getDate() - (firstDayOfWeek - 1));
     
-    const days = [];
+    const days: Date[] = [];
     // Generate up to 42 days (6 weeks) and filter by working days
     for (let i = 0; i < 42; i++) {
       const day = new Date(startDate);
@@ -150,7 +150,7 @@ export default function AgendaCalendar({ selectedDate, onDateSelect, onNewAppoin
     const diff = day === 0 ? -6 : 1 - day;
     startOfWeek.setDate(startOfWeek.getDate() + diff);
     
-    const days = [];
+    const days: Date[] = [];
     // Get working days from config, default to Monday-Saturday
     const workingDays = scheduleConfig?.workingDays || ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
     const dayMap = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];

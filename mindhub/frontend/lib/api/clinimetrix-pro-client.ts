@@ -184,6 +184,9 @@ export interface ClinimetrixAssessment {
   template?: ClinimetrixTemplate;
 }
 
+// Legacy type alias for compatibility
+export interface ClinimetrixProTemplateStructure extends TemplateData {}
+
 export interface ScoringResults {
   totalScore: number;
   scoreRange: {
@@ -455,6 +458,13 @@ export class ClinimetrixProClient {
     }
     
     return response.json();
+  }
+
+  /**
+   * Update assessment responses (alternative method name for compatibility)
+   */
+  async updateAssessmentResponses(assessmentId: string, responses: Record<string, any>): Promise<ClinimetrixAssessment> {
+    return this.updateResponses(assessmentId, { responses });
   }
 
   /**

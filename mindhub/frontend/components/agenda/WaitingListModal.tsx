@@ -190,11 +190,11 @@ export default function WaitingListModal({ isOpen, onClose, onAssignPatient }: W
 
     try {
       const waitingPatientData = {
-        patientId: selectedPatient.id,
         patientName: `${selectedPatient.first_name} ${selectedPatient.paternal_last_name} ${selectedPatient.maternal_last_name}`,
         phone: selectedPatient.cell_phone || selectedPatient.phone || '',
         email: selectedPatient.email || '',
         ...newPatient,
+        patientId: selectedPatient.id,
         dateAdded: new Date().toISOString(),
         position: waitingList.length + 1
       };
@@ -234,11 +234,11 @@ export default function WaitingListModal({ isOpen, onClose, onAssignPatient }: W
       // Agregar localmente
       const waitingPatientData = {
         id: Date.now().toString(),
-        patientId: selectedPatient.id,
         patientName: `${selectedPatient.first_name} ${selectedPatient.paternal_last_name} ${selectedPatient.maternal_last_name}`,
         phone: selectedPatient.cell_phone || selectedPatient.phone || '',
         email: selectedPatient.email || '',
         ...newPatient,
+        patientId: selectedPatient.id,
         dateAdded: new Date().toISOString(),
         position: waitingList.length + 1
       };

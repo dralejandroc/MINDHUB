@@ -1,7 +1,7 @@
 import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import PatientManagementOptimized from '@/components/expedix/PatientManagementOptimized';
+import PatientManagementAdvanced from '@/components/expedix/PatientManagementAdvanced';
 import { mockTabletDevice, mockDesktopDevice } from '../setup';
 
 // Mock utils
@@ -42,14 +42,14 @@ describe('Patient Management Integration Tests', () => {
 
   describe('Initial Load and Data Display', () => {
     it('should show loading state initially', () => {
-      render(<PatientManagementOptimized {...mockProps} />);
+      render(<PatientManagementAdvanced {...mockProps} />);
       
       expect(screen.getByText('Cargando pacientes...')).toBeInTheDocument();
       expect(screen.getByLabelText(/loading/i)).toBeInTheDocument();
     });
 
     it('should display patients after loading', async () => {
-      render(<PatientManagementOptimized {...mockProps} />);
+      render(<PatientManagementAdvanced {...mockProps} />);
       
       // Wait for loading to complete
       await waitFor(() => {
@@ -63,7 +63,7 @@ describe('Patient Management Integration Tests', () => {
     });
 
     it('should display correct patient statistics', async () => {
-      render(<PatientManagementOptimized {...mockProps} />);
+      render(<PatientManagementAdvanced {...mockProps} />);
       
       await waitFor(() => {
         expect(screen.queryByText('Cargando pacientes...')).not.toBeInTheDocument();
@@ -82,7 +82,7 @@ describe('Patient Management Integration Tests', () => {
   describe('Search Functionality', () => {
     it('should filter patients by search term', async () => {
       const user = userEvent.setup();
-      render(<PatientManagementOptimized {...mockProps} />);
+      render(<PatientManagementAdvanced {...mockProps} />);
       
       await waitFor(() => {
         expect(screen.queryByText('Cargando pacientes...')).not.toBeInTheDocument();
@@ -99,7 +99,7 @@ describe('Patient Management Integration Tests', () => {
 
     it('should filter by email', async () => {
       const user = userEvent.setup();
-      render(<PatientManagementOptimized {...mockProps} />);
+      render(<PatientManagementAdvanced {...mockProps} />);
       
       await waitFor(() => {
         expect(screen.queryByText('Cargando pacientes...')).not.toBeInTheDocument();
@@ -114,7 +114,7 @@ describe('Patient Management Integration Tests', () => {
 
     it('should filter by phone number', async () => {
       const user = userEvent.setup();
-      render(<PatientManagementOptimized {...mockProps} />);
+      render(<PatientManagementAdvanced {...mockProps} />);
       
       await waitFor(() => {
         expect(screen.queryByText('Cargando pacientes...')).not.toBeInTheDocument();
@@ -129,7 +129,7 @@ describe('Patient Management Integration Tests', () => {
 
     it('should show no results message when no matches', async () => {
       const user = userEvent.setup();
-      render(<PatientManagementOptimized {...mockProps} />);
+      render(<PatientManagementAdvanced {...mockProps} />);
       
       await waitFor(() => {
         expect(screen.queryByText('Cargando pacientes...')).not.toBeInTheDocument();
@@ -146,7 +146,7 @@ describe('Patient Management Integration Tests', () => {
   describe('View Mode Toggle', () => {
     it('should switch between grid and list view', async () => {
       const user = userEvent.setup();
-      render(<PatientManagementOptimized {...mockProps} />);
+      render(<PatientManagementAdvanced {...mockProps} />);
       
       await waitFor(() => {
         expect(screen.queryByText('Cargando pacientes...')).not.toBeInTheDocument();
@@ -166,7 +166,7 @@ describe('Patient Management Integration Tests', () => {
 
     it('should display patients differently in grid vs list view', async () => {
       const user = userEvent.setup();
-      render(<PatientManagementOptimized {...mockProps} />);
+      render(<PatientManagementAdvanced {...mockProps} />);
       
       await waitFor(() => {
         expect(screen.queryByText('Cargando pacientes...')).not.toBeInTheDocument();
@@ -189,7 +189,7 @@ describe('Patient Management Integration Tests', () => {
   describe('Patient Card Interactions', () => {
     it('should open patient details modal when card is clicked', async () => {
       const user = userEvent.setup();
-      render(<PatientManagementOptimized {...mockProps} />);
+      render(<PatientManagementAdvanced {...mockProps} />);
       
       await waitFor(() => {
         expect(screen.queryByText('Cargando pacientes...')).not.toBeInTheDocument();
@@ -207,7 +207,7 @@ describe('Patient Management Integration Tests', () => {
 
     it('should display patient medical information in modal', async () => {
       const user = userEvent.setup();
-      render(<PatientManagementOptimized {...mockProps} />);
+      render(<PatientManagementAdvanced {...mockProps} />);
       
       await waitFor(() => {
         expect(screen.queryByText('Cargando pacientes...')).not.toBeInTheDocument();
@@ -225,7 +225,7 @@ describe('Patient Management Integration Tests', () => {
 
     it('should call onSelectPatient when card is clicked', async () => {
       const user = userEvent.setup();
-      render(<PatientManagementOptimized {...mockProps} />);
+      render(<PatientManagementAdvanced {...mockProps} />);
       
       await waitFor(() => {
         expect(screen.queryByText('Cargando pacientes...')).not.toBeInTheDocument();
@@ -244,7 +244,7 @@ describe('Patient Management Integration Tests', () => {
 
     it('should handle quick action buttons correctly', async () => {
       const user = userEvent.setup();
-      render(<PatientManagementOptimized {...mockProps} />);
+      render(<PatientManagementAdvanced {...mockProps} />);
       
       await waitFor(() => {
         expect(screen.queryByText('Cargando pacientes...')).not.toBeInTheDocument();
@@ -262,7 +262,7 @@ describe('Patient Management Integration Tests', () => {
   describe('New Patient Button', () => {
     it('should call onNewPatient when new patient button is clicked', async () => {
       const user = userEvent.setup();
-      render(<PatientManagementOptimized {...mockProps} />);
+      render(<PatientManagementAdvanced {...mockProps} />);
       
       const newPatientButton = screen.getByText('Nuevo Paciente');
       await user.click(newPatientButton);
@@ -272,7 +272,7 @@ describe('Patient Management Integration Tests', () => {
 
     it('should show new patient button when no patients found', async () => {
       const user = userEvent.setup();
-      render(<PatientManagementOptimized {...mockProps} />);
+      render(<PatientManagementAdvanced {...mockProps} />);
       
       await waitFor(() => {
         expect(screen.queryByText('Cargando pacientes...')).not.toBeInTheDocument();
@@ -290,7 +290,7 @@ describe('Patient Management Integration Tests', () => {
   describe('Tablet Optimization', () => {
     it('should adapt layout for tablet devices', async () => {
       mockTabletDevice();
-      render(<PatientManagementOptimized {...mockProps} />);
+      render(<PatientManagementAdvanced {...mockProps} />);
       
       await waitFor(() => {
         expect(screen.queryByText('Cargando pacientes...')).not.toBeInTheDocument();
@@ -307,7 +307,7 @@ describe('Patient Management Integration Tests', () => {
 
     it('should use touch-optimized components on tablets', async () => {
       mockTabletDevice();
-      render(<PatientManagementOptimized {...mockProps} />);
+      render(<PatientManagementAdvanced {...mockProps} />);
       
       await waitFor(() => {
         expect(screen.queryByText('Cargando pacientes...')).not.toBeInTheDocument();
@@ -324,7 +324,7 @@ describe('Patient Management Integration Tests', () => {
 
     it('should show appropriate grid columns for tablet', async () => {
       mockTabletDevice();
-      render(<PatientManagementOptimized {...mockProps} />);
+      render(<PatientManagementAdvanced {...mockProps} />);
       
       await waitFor(() => {
         expect(screen.queryByText('Cargando pacientes...')).not.toBeInTheDocument();
@@ -339,7 +339,7 @@ describe('Patient Management Integration Tests', () => {
 
   describe('Status Display', () => {
     it('should display correct status badges', async () => {
-      render(<PatientManagementOptimized {...mockProps} />);
+      render(<PatientManagementAdvanced {...mockProps} />);
       
       await waitFor(() => {
         expect(screen.queryByText('Cargando pacientes...')).not.toBeInTheDocument();
@@ -351,7 +351,7 @@ describe('Patient Management Integration Tests', () => {
     });
 
     it('should show correct status colors', async () => {
-      render(<PatientManagementOptimized {...mockProps} />);
+      render(<PatientManagementAdvanced {...mockProps} />);
       
       await waitFor(() => {
         expect(screen.queryByText('Cargando pacientes...')).not.toBeInTheDocument();
@@ -370,7 +370,7 @@ describe('Patient Management Integration Tests', () => {
   describe('Modal Functionality', () => {
     it('should close modal when close button is clicked', async () => {
       const user = userEvent.setup();
-      render(<PatientManagementOptimized {...mockProps} />);
+      render(<PatientManagementAdvanced {...mockProps} />);
       
       await waitFor(() => {
         expect(screen.queryByText('Cargando pacientes...')).not.toBeInTheDocument();
@@ -390,7 +390,7 @@ describe('Patient Management Integration Tests', () => {
 
     it('should handle modal action buttons', async () => {
       const user = userEvent.setup();
-      render(<PatientManagementOptimized {...mockProps} />);
+      render(<PatientManagementAdvanced {...mockProps} />);
       
       await waitFor(() => {
         expect(screen.queryByText('Cargando pacientes...')).not.toBeInTheDocument();
@@ -424,7 +424,7 @@ describe('Patient Management Integration Tests', () => {
 
   describe('Accessibility', () => {
     it('should provide proper ARIA labels', async () => {
-      render(<PatientManagementOptimized {...mockProps} />);
+      render(<PatientManagementAdvanced {...mockProps} />);
       
       await waitFor(() => {
         expect(screen.queryByText('Cargando pacientes...')).not.toBeInTheDocument();
@@ -441,7 +441,7 @@ describe('Patient Management Integration Tests', () => {
 
     it('should support keyboard navigation', async () => {
       const user = userEvent.setup();
-      render(<PatientManagementOptimized {...mockProps} />);
+      render(<PatientManagementAdvanced {...mockProps} />);
       
       await waitFor(() => {
         expect(screen.queryByText('Cargando pacientes...')).not.toBeInTheDocument();
@@ -462,7 +462,7 @@ describe('Patient Management Integration Tests', () => {
 
     it('should handle escape key to close modal', async () => {
       const user = userEvent.setup();
-      render(<PatientManagementOptimized {...mockProps} />);
+      render(<PatientManagementAdvanced {...mockProps} />);
       
       await waitFor(() => {
         expect(screen.queryByText('Cargando pacientes...')).not.toBeInTheDocument();

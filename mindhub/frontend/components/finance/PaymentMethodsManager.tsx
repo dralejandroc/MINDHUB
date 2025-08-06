@@ -405,14 +405,14 @@ export default function PaymentMethodsManager() {
                     
                     {/* Información de comisiones */}
                     <div className="mt-3 space-y-1">
-                      {method.commission > 0 && (
+                      {method.commission && method.commission > 0 && (
                         <p className="text-xs text-gray-500">
                           Comisión: {method.commission}%
                         </p>
                       )}
-                      {method.fees > 0 && (
+                      {method.fees && method.fees > 0 && (
                         <p className="text-xs text-gray-500">
-                          Comisión fija: {formatCurrency(method.fees)}
+                          Comisión fija: {formatCurrency(method.fees || 0)}
                         </p>
                       )}
                     </div>

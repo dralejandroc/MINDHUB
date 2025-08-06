@@ -301,7 +301,7 @@ export default function CashRegisterCuts() {
       payment_gateway: 'Pasarela',
       check: 'Cheque'
     };
-    return labels[method] || method;
+    return (labels as any)[method] || method;
   };
 
   const getCutTypeLabel = (type: string) => {
@@ -310,7 +310,7 @@ export default function CashRegisterCuts() {
       shift: 'Por Turno',
       manual: 'Manual'
     };
-    return labels[type] || type;
+    return (labels as any)[type] || type;
   };
 
   const getStatusColor = (status: string) => {
@@ -319,7 +319,7 @@ export default function CashRegisterCuts() {
       closed: 'bg-green-100 text-green-800',
       reconciled: 'bg-purple-100 text-purple-800'
     };
-    return colors[status] || 'bg-gray-100 text-gray-800';
+    return (colors as any)[status] || 'bg-gray-100 text-gray-800';
   };
 
   return (

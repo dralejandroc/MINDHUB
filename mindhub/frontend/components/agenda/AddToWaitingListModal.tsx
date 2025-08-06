@@ -139,7 +139,7 @@ export default function AddToWaitingListModal({ onClose, onSave }: AddToWaitingL
   };
 
   const generateDateOptions = () => {
-    const dates = [];
+    const dates: string[] = [];
     const today = new Date();
     for (let i = 1; i <= 14; i++) {
       const date = new Date(today);

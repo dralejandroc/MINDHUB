@@ -64,7 +64,7 @@ export async function PUT(request: NextRequest) {
       { 
         success: false, 
         error: 'Failed to update finance configuration',
-        message: error.message
+        message: error instanceof Error ? error.message : "Unknown error"
       }, 
       { status: 500 }
     );

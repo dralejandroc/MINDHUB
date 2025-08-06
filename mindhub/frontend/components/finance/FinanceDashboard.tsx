@@ -139,7 +139,7 @@ export default function FinanceDashboard({ selectedDate, onNewIncome }: FinanceD
       evaluation: 'Evaluación',
       other: 'Otro'
     };
-    return labels[source] || source;
+    return (labels as any)[source] || source;
   };
 
   const getPaymentMethodIcon = (method: string) => {
@@ -167,7 +167,7 @@ export default function FinanceDashboard({ selectedDate, onNewIncome }: FinanceD
       // Legacy support
       card: 'Tarjeta'
     };
-    return labels[method] || method;
+    return (labels as any)[method] || method;
   };
 
   const getTodayIncome = () => {

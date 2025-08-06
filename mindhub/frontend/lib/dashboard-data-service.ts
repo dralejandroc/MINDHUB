@@ -193,7 +193,7 @@ class DashboardDataService {
             }
           }
         } catch (err) {
-          console.log(`Failed to fetch assessments for patient ${patient.id}:`, err.message);
+          console.log(`Failed to fetch assessments for patient ${patient.id}:`, err instanceof Error ? err.message : 'Unknown error');
           continue;
         }
       }

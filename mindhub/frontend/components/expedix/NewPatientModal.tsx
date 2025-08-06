@@ -102,7 +102,7 @@ export default function NewPatientModal({ isOpen, onClose, onSuccess }: NewPatie
       // Call API to create patient
       const response = await expedixApi.createPatient(patientData);
       
-      if (response.success) {
+      if ((response as any).success || response.data) {
         onSuccess(response.data);
         onClose();
         
@@ -128,7 +128,7 @@ export default function NewPatientModal({ isOpen, onClose, onSuccess }: NewPatie
           allergies: ''
         });
       } else {
-        throw new Error(response.message || 'Error al crear el paciente');
+        throw new Error((response as any).message || 'Error al crear el paciente');
       }
     } catch (error) {
       console.error('Error creating patient:', error);

@@ -40,7 +40,7 @@ describe('FormX Integration Tests', () => {
 
   describe('FormBuilder Core Functionality', () => {
     it('should render form builder with field palette', () => {
-      render(<FormBuilderAdvanced />);
+      render(<FormBuilderAdvanced onSave={jest.fn()} />);
       
       // Check main sections
       expect(screen.getByText('Campos de Formulario')).toBeInTheDocument();
@@ -58,7 +58,7 @@ describe('FormX Integration Tests', () => {
 
     it('should add field when clicking on field type', async () => {
       const user = userEvent.setup();
-      render(<FormBuilderAdvanced />);
+      render(<FormBuilderAdvanced onSave={jest.fn()} />);
       
       // Initially should show empty form message
       expect(screen.getByText('Arrastra campos aquí para crear tu formulario')).toBeInTheDocument();
@@ -74,7 +74,7 @@ describe('FormX Integration Tests', () => {
 
     it('should show field configuration when field is selected', async () => {
       const user = userEvent.setup();
-      render(<FormBuilderAdvanced />);
+      render(<FormBuilderAdvanced onSave={jest.fn()} />);
       
       // Add a text field
       await user.click(screen.getByText('Texto'));
@@ -97,7 +97,7 @@ describe('FormX Integration Tests', () => {
 
     it('should update field configuration', async () => {
       const user = userEvent.setup();
-      render(<FormBuilderAdvanced />);
+      render(<FormBuilderAdvanced onSave={jest.fn()} />);
       
       // Add a text field
       await user.click(screen.getByText('Texto'));
@@ -127,7 +127,7 @@ describe('FormX Integration Tests', () => {
 
     it('should remove field when delete button is clicked', async () => {
       const user = userEvent.setup();
-      render(<FormBuilderAdvanced />);
+      render(<FormBuilderAdvanced onSave={jest.fn()} />);
       
       // Add a text field
       await user.click(screen.getByText('Texto'));
@@ -153,7 +153,7 @@ describe('FormX Integration Tests', () => {
   describe('FormX-Specific Fields', () => {
     it('should render legal checkbox field correctly', async () => {
       const user = userEvent.setup();
-      render(<FormBuilderAdvanced />);
+      render(<FormBuilderAdvanced onSave={jest.fn()} />);
       
       await user.click(screen.getByText('Casilla Legal'));
       
@@ -172,7 +172,7 @@ describe('FormX Integration Tests', () => {
 
     it('should render medical history field with proper structure', async () => {
       const user = userEvent.setup();
-      render(<FormBuilderAdvanced />);
+      render(<FormBuilderAdvanced onSave={jest.fn()} />);
       
       await user.click(screen.getByText('Historial Médico'));
       
@@ -192,7 +192,7 @@ describe('FormX Integration Tests', () => {
 
     it('should render emergency contact field with contact options', async () => {
       const user = userEvent.setup();
-      render(<FormBuilderAdvanced />);
+      render(<FormBuilderAdvanced onSave={jest.fn()} />);
       
       await user.click(screen.getByText('Contacto de Emergencia'));
       
@@ -211,7 +211,7 @@ describe('FormX Integration Tests', () => {
 
     it('should render satisfaction rating field', async () => {
       const user = userEvent.setup();
-      render(<FormBuilderAdvanced />);
+      render(<FormBuilderAdvanced onSave={jest.fn()} />);
       
       await user.click(screen.getByText('Calificación'));
       
@@ -232,7 +232,7 @@ describe('FormX Integration Tests', () => {
   describe('Form Preview Functionality', () => {
     it('should show proper form preview with multiple fields', async () => {
       const user = userEvent.setup();
-      render(<FormBuilderAdvanced />);
+      render(<FormBuilderAdvanced onSave={jest.fn()} />);
       
       // Add multiple fields
       await user.click(screen.getByText('Texto'));
@@ -257,7 +257,7 @@ describe('FormX Integration Tests', () => {
 
     it('should handle form validation in preview', async () => {
       const user = userEvent.setup();
-      render(<FormBuilderAdvanced />);
+      render(<FormBuilderAdvanced onSave={jest.fn()} />);
       
       // Add required text field
       await user.click(screen.getByText('Texto'));
@@ -281,7 +281,7 @@ describe('FormX Integration Tests', () => {
       const user = userEvent.setup();
       const consoleSpy = jest.spyOn(console, 'log').mockImplementation();
       
-      render(<FormBuilderAdvanced />);
+      render(<FormBuilderAdvanced onSave={jest.fn()} />);
       
       // Add a few fields
       await user.click(screen.getByText('Texto'));
@@ -305,7 +305,7 @@ describe('FormX Integration Tests', () => {
     it('should adapt interface for tablet devices', async () => {
       mockTabletDevice();
       
-      render(<FormBuilderAdvanced />);
+      render(<FormBuilderAdvanced onSave={jest.fn()} />);
       
       // Field palette should have larger touch targets
       const fieldButtons = screen.getAllByRole('button').filter(btn =>
@@ -321,7 +321,7 @@ describe('FormX Integration Tests', () => {
       mockTabletDevice();
       const user = userEvent.setup();
       
-      render(<FormBuilderAdvanced />);
+      render(<FormBuilderAdvanced onSave={jest.fn()} />);
       
       // Simulate touch interaction
       const textFieldButton = screen.getByText('Texto');
@@ -340,7 +340,7 @@ describe('FormX Integration Tests', () => {
   describe('Error Handling', () => {
     it('should handle invalid field configurations gracefully', async () => {
       const user = userEvent.setup();
-      render(<FormBuilderAdvanced />);
+      render(<FormBuilderAdvanced onSave={jest.fn()} />);
       
       // Add field and try to set invalid configuration
       await user.click(screen.getByText('Número'));
@@ -368,7 +368,7 @@ describe('FormX Integration Tests', () => {
 
     it('should handle missing required field data', async () => {
       const user = userEvent.setup();
-      render(<FormBuilderAdvanced />);
+      render(<FormBuilderAdvanced onSave={jest.fn()} />);
       
       // Add required field
       await user.click(screen.getByText('Texto'));
@@ -395,7 +395,7 @@ describe('FormX Integration Tests', () => {
   describe('Accessibility', () => {
     it('should provide proper ARIA labels for form fields', async () => {
       const user = userEvent.setup();
-      render(<FormBuilderAdvanced />);
+      render(<FormBuilderAdvanced onSave={jest.fn()} />);
       
       await user.click(screen.getByText('Texto'));
       
@@ -407,7 +407,7 @@ describe('FormX Integration Tests', () => {
 
     it('should support keyboard navigation', async () => {
       const user = userEvent.setup();
-      render(<FormBuilderAdvanced />);
+      render(<FormBuilderAdvanced onSave={jest.fn()} />);
       
       // Tab through field palette
       await user.tab();
@@ -426,7 +426,7 @@ describe('FormX Integration Tests', () => {
 
     it('should announce changes to screen readers', async () => {
       const user = userEvent.setup();
-      render(<FormBuilderAdvanced />);
+      render(<FormBuilderAdvanced onSave={jest.fn()} />);
       
       await user.click(screen.getByText('Texto'));
       

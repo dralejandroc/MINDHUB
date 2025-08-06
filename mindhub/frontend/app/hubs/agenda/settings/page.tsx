@@ -535,7 +535,7 @@ export default function AgendaSettingsPage() {
                         <input
                           type="text"
                           value={editingTypeData?.name || ''}
-                          onChange={(e) => setEditingTypeData(prev => ({ ...prev, name: e.target.value }))}
+                          onChange={(e) => setEditingTypeData((prev: any) => ({ ...prev, name: e.target.value }))}
                           className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg"
                           placeholder="Ej: Consulta de control"
                         />
@@ -547,7 +547,7 @@ export default function AgendaSettingsPage() {
                         <input
                           type="number"
                           value={editingTypeData?.duration || 60}
-                          onChange={(e) => setEditingTypeData(prev => ({ ...prev, duration: parseInt(e.target.value) || 60 }))}
+                          onChange={(e) => setEditingTypeData((prev: any) => ({ ...prev, duration: parseInt(e.target.value) || 60 }))}
                           className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg"
                           min="15"
                           max="240"
@@ -561,7 +561,7 @@ export default function AgendaSettingsPage() {
                         <input
                           type="number"
                           value={editingTypeData?.price || 0}
-                          onChange={(e) => setEditingTypeData(prev => ({ ...prev, price: parseInt(e.target.value) || 0 }))}
+                          onChange={(e) => setEditingTypeData((prev: any) => ({ ...prev, price: parseInt(e.target.value) || 0 }))}
                           className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg"
                           min="0"
                           step="100"
@@ -575,7 +575,7 @@ export default function AgendaSettingsPage() {
                           {colorOptions.map(color => (
                             <button
                               key={color}
-                              onClick={() => setEditingTypeData(prev => ({ ...prev, color }))}
+                              onClick={() => setEditingTypeData((prev: any) => ({ ...prev, color }))}
                               className={`w-8 h-8 rounded ${color} ${
                                 editingTypeData?.color === color ? 'ring-2 ring-offset-2 ring-gray-500' : ''
                               }`}

@@ -69,7 +69,7 @@ export default function ExpedixPage() {
     } catch (error) {
       console.error('Error loading patient:', error);
       // On error, redirect back to expedients view and clear URL params
-      handleBackToExpedients();
+      handleBackToList();
     } finally {
       setLoading(false);
     }
@@ -284,16 +284,7 @@ export default function ExpedixPage() {
         <>
           {detailView === 'dashboard' && (
             <PatientDashboard
-              patient={{
-                id: selectedPatient.id,
-                firstName: selectedPatient.first_name,
-                lastName: `${selectedPatient.paternal_last_name} ${selectedPatient.maternal_last_name}`,
-                medicalRecordNumber: selectedPatient.id.slice(-8).toUpperCase(),
-                email: selectedPatient.email,
-                cellPhone: selectedPatient.cell_phone,
-                dateOfBirth: selectedPatient.birth_date,
-                age: selectedPatient.age
-              }}
+              patient={selectedPatient}
               onClose={handleBackToList}
               onNewConsultation={() => handleNewConsultation(selectedPatient)}
               onClinicalAssessment={() => handleClinicalAssessment(selectedPatient)}
@@ -302,17 +293,7 @@ export default function ExpedixPage() {
 
           {detailView === 'consultation' && (
             <ConsultationNotes
-              patient={{
-                id: selectedPatient.id,
-                firstName: selectedPatient.first_name,
-                paternalLastName: selectedPatient.paternal_last_name,
-                maternalLastName: selectedPatient.maternal_last_name,
-                birthDate: selectedPatient.birth_date,
-                age: selectedPatient.age,
-                gender: selectedPatient.gender as 'masculine' | 'feminine',
-                email: selectedPatient.email,
-                cellPhone: selectedPatient.cell_phone
-              }}
+              patient={selectedPatient}
               onSaveConsultation={(data) => {
                 console.log('Consulta guardada:', data);
                 handleBackToPatientDashboard();

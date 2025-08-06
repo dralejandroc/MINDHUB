@@ -145,6 +145,7 @@ module.exports = {
         },
         // Brand colors for MindHub - Following design guidelines
         'primary-teal': '#0891b2',
+        'primary-blue': '#1e40af',
         'primary-600': '#0e7490',
         'primary-700': '#155e75',
         'secondary-green': '#29a98c',

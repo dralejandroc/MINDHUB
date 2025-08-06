@@ -71,7 +71,7 @@ export const ResourceUploader: React.FC<ResourceUploaderProps> = ({
       'application/msword': ['.doc'],
       'application/vnd.openxmlformats-officedocument.wordprocessingml.document': ['.docx']
     },
-    maxFileSize: 100 * 1024 * 1024, // 100MB
+    maxFiles: 10, // Máximo 10 archivos
     multiple: true
   });
 

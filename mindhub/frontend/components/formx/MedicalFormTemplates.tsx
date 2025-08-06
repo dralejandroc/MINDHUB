@@ -5,7 +5,7 @@ import {
   UserIcon,
   HeartIcon,
   BeakerIcon,
-  BrainIcon,
+  CpuChipIcon,
   DocumentTextIcon,
   ShieldCheckIcon,
   PencilIcon,

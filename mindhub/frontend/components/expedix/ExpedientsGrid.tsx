@@ -35,7 +35,7 @@ export default function ExpedientsGrid({ onSelectPatient }: ExpedientsGridProps)
       const response = await expedixApi.getPatients();
       if (response.data) {
         // Handle both possible response formats
-        const patients = response.data.patients || response.data;
+        const patients = (response.data as any).patients || response.data;
         setPatients(Array.isArray(patients) ? patients : []);
       } else {
         setPatients([]);
@@ -148,7 +148,7 @@ export default function ExpedientsGrid({ onSelectPatient }: ExpedientsGridProps)
           </div>
           <div className="flex items-center gap-1">
             <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-            <span>{patients.filter(p => !p.status || p.status === 'active').length} activos</span>
+            <span>{patients.filter(p => !(p as any).status || (p as any).status === 'active').length} activos</span>
           </div>
           <div className="flex items-center gap-1">
             <div className="w-2 h-2 bg-purple-500 rounded-full"></div>
@@ -187,9 +187,9 @@ export default function ExpedientsGrid({ onSelectPatient }: ExpedientsGridProps)
                   </div>
                 </div>
                 <div className="flex items-center space-x-2">
-                  {getPriorityIcon(patient.priority || 'low')}
-                  <span className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(patient.status || 'active')}`}>
-                    {patient.status === 'active' || !patient.status ? 'Activo' : patient.status}
+                  {getPriorityIcon((patient as any).priority || 'low')}
+                  <span className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusColor((patient as any).status || 'active')}`}>
+                    {(patient as any).status === 'active' || !(patient as any).status ? 'Activo' : (patient as any).status}
                   </span>
                 </div>
               </div>
@@ -217,7 +217,7 @@ export default function ExpedientsGrid({ onSelectPatient }: ExpedientsGridProps)
                 </div>
                 <div className="flex flex-wrap gap-2">
                   {/* Placeholder para diagnósticos - se llenarán con datos reales */}
-                  {patient.medical_history ? (
+                  {(patient as any).medical_history ? (
                     <span className="px-2 py-1 text-xs bg-purple-50 text-purple-700 rounded-full">
                       Con historial médico
                     </span>
@@ -231,7 +231,7 @@ export default function ExpedientsGrid({ onSelectPatient }: ExpedientsGridProps)
                       Alergias registradas
                     </span>
                   )}
-                  {patient.current_medications && (
+                  {(patient as any).current_medications && (
                     <span className="px-2 py-1 text-xs bg-blue-50 text-blue-700 rounded-full">
                       Medicación actual
                     </span>

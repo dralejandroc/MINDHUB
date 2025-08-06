@@ -10,7 +10,7 @@ import {
   DocumentTextIcon,
   TableCellsIcon,
   UserGroupIcon,
-  CrownIcon,
+  StarIcon,
   BuildingOfficeIcon
 } from '@heroicons/react/24/outline';
 import { Card } from '@/components/ui/Card';
@@ -225,7 +225,7 @@ export default function PatientImportManager({ onClose, onImportComplete }: Pati
         <div className="bg-white rounded-lg shadow-xl w-full max-w-2xl">
           <div className="flex items-center justify-between p-6 border-b border-gray-200">
             <div className="flex items-center">
-              <CrownIcon className="h-6 w-6 text-yellow-600 mr-3" />
+              <StarIcon className="h-6 w-6 text-yellow-600 mr-3" />
               <h2 className="text-xl font-semibold text-gray-900">
                 Funcionalidad Premium
               </h2>
@@ -237,7 +237,7 @@ export default function PatientImportManager({ onClose, onImportComplete }: Pati
           
           <div className="p-6 text-center">
             <div className="mb-6">
-              <CrownIcon className="h-16 w-16 text-yellow-500 mx-auto mb-4" />
+              <StarIcon className="h-16 w-16 text-yellow-500 mx-auto mb-4" />
               <h3 className="text-lg font-semibold text-gray-900 mb-2">
                 Importación Masiva de Pacientes
               </h3>
@@ -273,7 +273,7 @@ export default function PatientImportManager({ onClose, onImportComplete }: Pati
                 Cerrar
               </Button>
               <Button className="bg-gradient-to-r from-blue-600 to-purple-600 text-white">
-                <CrownIcon className="h-4 w-4 mr-2" />
+                <StarIcon className="h-4 w-4 mr-2" />
                 Actualizar a Premium
               </Button>
             </div>
@@ -400,11 +400,7 @@ export default function PatientImportManager({ onClose, onImportComplete }: Pati
                   'bg-purple-100'
                 }`}>
                   {template.type === 'clinic' ? (
-                    <BuildingOfficeIcon className={`h-6 w-6 ${
-                      template.type === 'basic' ? 'text-green-600' :
-                      template.type === 'complete' ? 'text-blue-600' :
-                      'text-purple-600'
-                    }`} />
+                    <BuildingOfficeIcon className="h-6 w-6 text-purple-600" />
                   ) : (
                     <DocumentTextIcon className={`h-6 w-6 ${
                       template.type === 'basic' ? 'text-green-600' :

@@ -31,9 +31,9 @@ export function BeginnerDashboard({ onNavigate }: BeginnerDashboardProps) {
     pendingAlerts: 0
   });
   const [isClient, setIsClient] = useState(false);
-  const [currentUser, setCurrentUser] = useState(null);
+  const [currentUser, setCurrentUser] = useState<{isRealUser?: boolean} | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [recentAlerts, setRecentAlerts] = useState([]);
+  const [recentAlerts, setRecentAlerts] = useState<Array<{id: string; patient: string; message: string; severity: string; time: string}>>([]);
   const [weeklyIncome, setWeeklyIncome] = useState({
     currentWeek: 0,
     previousWeek: 0,
@@ -68,7 +68,7 @@ export function BeginnerDashboard({ onNavigate }: BeginnerDashboardProps) {
     }
   }, []);
 
-  const fetchRealDashboardData = async (userId) => {
+  const fetchRealDashboardData = async (userId: string) => {
     try {
       // Use the new dashboard data service
       const dashboardData = await dashboardDataService.fetchDashboardData(userId);

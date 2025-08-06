@@ -265,7 +265,7 @@ describe('WCAG 2.1 AA Accessibility Tests', () => {
     it('should use appropriate ARIA roles', () => {
       render(
         <div>
-          <Alert variant="error" role="alert" data-testid="alert">
+          <Alert variant="error" data-testid="alert">
             Error message
           </Alert>
           <Modal isOpen={true} onClose={() => {}} data-testid="modal">

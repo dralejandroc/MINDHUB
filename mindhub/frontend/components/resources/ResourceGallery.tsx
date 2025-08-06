@@ -168,7 +168,7 @@ export const ResourceGallery: React.FC<ResourceGalleryProps> = ({
               <Button variant="outline" size="sm">
                 Envío Masivo
               </Button>
-              <Button variant="danger" size="sm">
+              <Button variant="secondary" size="sm">
                 Eliminar
               </Button>
             </div>

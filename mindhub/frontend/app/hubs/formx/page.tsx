@@ -49,12 +49,13 @@ export default function FormXPage() {
         const statsResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/formx/stats`);
         if (statsResponse.ok) {
           const statsData = await statsResponse.json();
-          setStats({
-            totalForms: formsData.data?.length || 0,
+          setStats(prev => ({
+            ...prev,
+            totalForms: prev.totalForms,
             todayResponses: statsData.data?.todayResponses || 0,
             totalResponses: statsData.data?.totalResponses || 0,
             pendingAssignments: statsData.data?.pendingAssignments || 0
-          });
+          }));
         }
         
       } catch (error) {

@@ -14,7 +14,7 @@ interface AssessmentResponse {
 export default function RemoteAssessmentPage() {
   const params = useParams();
   const router = useRouter();
-  const token = params.token as string;
+  const token = params?.token as string;
 
   const [assessment, setAssessment] = useState<RemoteAssessmentDetails | null>(null);
   const [currentItemIndex, setCurrentItemIndex] = useState(0);

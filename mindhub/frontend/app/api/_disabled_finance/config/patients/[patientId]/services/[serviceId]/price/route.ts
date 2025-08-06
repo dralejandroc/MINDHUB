@@ -24,7 +24,7 @@ export async function GET(
       { 
         success: false, 
         error: 'Failed to calculate service price',
-        message: error.message
+        message: error instanceof Error ? error.message : "Unknown error"
       }, 
       { status: 500 }
     );

@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { clinimetrixProClient } from '@/lib/api/clinimetrix-pro-client';
-import type { ClinimetrixProRegistry } from '@/lib/api/clinimetrix-pro-client';
+import type { ClinimetrixRegistry } from '@/lib/api/clinimetrix-pro-client';
 import { expedixApi } from '@/lib/api/expedix-client';
 import type { Patient as ExpedixPatient } from '@/lib/api/expedix-client';
 
@@ -189,48 +189,49 @@ export const ClinimetrixProAssessmentModal: React.FC<ClinimetrixProAssessmentMod
       console.log('🔄 Loading ClinimetrixPro template for:', templateId);
       
       // Cargar template completo desde la base de datos
-      const template = await clinimetrixProClient.templates.getById(templateId);
+      const template = await clinimetrixProClient.getTemplate(templateId);
       console.log('📄 Raw template data:', template);
       console.log('📄 Template keys:', Object.keys(template || {}));
-      console.log('📄 Template.items:', template?.items?.length);
-      console.log('📄 Template structure:', {
-        hasItems: !!template?.items,
-        hasTemplateData: !!template?.templateData,
-        hasInterpretationRules: !!template?.interpretationRules,
-        hasSubscales: !!template?.subscales
-      });
+      // console.log('📄 Template.items:', template?.items?.length);
+      // console.log('📄 Template structure:', {
+      //   hasItems: !!template?.items,
+      //   hasTemplateData: !!template?.templateData,
+      //   hasInterpretationRules: !!template?.interpretationRules,
+      //   hasSubscales: !!template?.subscales
+      // });
       
       // El backend devuelve el templateData como un campo anidado con estructura específica
-      const templateData = template?.templateData || template;
+      const templateData = template || {};
       
       // Mapear la estructura real de la base de datos
       const metadata = templateData?.metadata || {};
       const structure = templateData?.structure || {};
-      const interpretation = templateData?.interpretation || {};
-      const responseGroups = templateData?.responseGroups || {};
+      // const interpretation = templateData?.interpretation || {};
+      // const responseGroups = templateData?.responseGroups || {};
       
       console.log('🔧 Debug template data structure:', {
         hasMetadata: !!metadata,
         hasStructure: !!structure,
-        hasResponseGroups: !!responseGroups,
-        responseGroupsKeys: Object.keys(responseGroups),
+        // hasResponseGroups: !!responseGroups,
+        // responseGroupsKeys: Object.keys(responseGroups),
         structureSections: structure?.sections?.length || 0,
-        hasInterpretation: !!interpretation,
-        interpretationKeys: Object.keys(interpretation),
-        interpretationRules: interpretation?.rules?.length || 0,
+        // hasInterpretation: !!interpretation,
+        // interpretationKeys: Object.keys(interpretation),
+        // interpretationRules: interpretation?.rules?.length || 0,
         fullTemplateDataKeys: Object.keys(templateData || {})
       });
       
       // Extraer todos los items de todas las secciones y mapear response options
-      const allItems = [];
+      const allItems: any[] = [];
       if (structure.sections && Array.isArray(structure.sections)) {
-        structure.sections.forEach(section => {
+        structure.sections.forEach((section: any) => {
           if (section.items && Array.isArray(section.items)) {
-            section.items.forEach(item => {
+            section.items.forEach((item: any) => {
               // Mapear las opciones de respuesta desde responseGroups
-              if (item.responseGroup && responseGroups[item.responseGroup]) {
-                item.specificOptions = responseGroups[item.responseGroup];
-              } else if (item.specificOptions && Array.isArray(item.specificOptions)) {
+              // if (item.responseGroup && responseGroups[item.responseGroup]) {
+              //   item.specificOptions = responseGroups[item.responseGroup];
+              // } else 
+              if (item.specificOptions && Array.isArray(item.specificOptions)) {
                 // Mantener opciones específicas si ya existen
                 item.specificOptions = item.specificOptions;
               } else {
@@ -246,20 +247,20 @@ export const ClinimetrixProAssessmentModal: React.FC<ClinimetrixProAssessmentMod
       }
       
       // Transformar datos para compatibilidad con la estructura esperada
-      const transformedData: TemplateData = {
-        id: template?.id || templateId,
-        name: metadata.name || metadata.title || 'Escala sin nombre',
-        abbreviation: metadata.abbreviation || metadata.acronym || '',
+      const transformedData: any = {
+        id: templateId,
+        name: metadata.name || 'Escala sin nombre',
+        abbreviation: metadata.abbreviation || '',
         description: metadata.description || '',
         items: allItems,
-        responseOptions: responseGroups || [],
-        administrationMode: metadata.administrationMode || 'self_administered',
+        responseOptions: [],
+        // administrationMode: metadata.administrationMode || 'self_administered',
         totalItems: structure.totalItems || allItems.length || 0,
-        estimatedDurationMinutes: metadata.estimatedDurationMinutes || metadata.duration,
-        instructionsPatient: metadata.instructionsPatient || null,
-        instructionsProfessional: metadata.instructionsProfessional || null,
-        interpretationRules: interpretation.rules || interpretation.interpretationRules || [],
-        subscales: structure.subscales || [],
+        // estimatedDurationMinutes: metadata.estimatedDurationMinutes || metadata.duration,
+        // instructionsPatient: metadata.instructionsPatient || null,
+        // instructionsProfessional: metadata.instructionsProfessional || null,
+        // interpretationRules: interpretation.rules || interpretation.interpretationRules || [],
+        // subscales: structure.subscales || [],
         // Agregar datos adicionales del template
         scoring: templateData?.scoring || {},
         documentation: templateData?.documentation || {}
@@ -269,21 +270,21 @@ export const ClinimetrixProAssessmentModal: React.FC<ClinimetrixProAssessmentMod
       console.log('📈 Transformed data with subscales:', transformedData.subscales?.length);
       console.log('📝 Transformed data items:', transformedData.items?.length);
       console.log('🔍 Full transformed data:', transformedData);
-      console.log('🔍 Metadata instructions professional:', metadata.instructionsProfessional);
+      // console.log('🔍 Metadata instructions professional:', metadata.instructionsProfessional);
       console.log('🔍 Available metadata keys:', Object.keys(metadata || {}));
       
       // Validación básica de datos
       if (!transformedData.items || transformedData.items.length === 0) {
         console.error('❌ No items found in template structure');
-        console.error('❌ Full template data was:', fullTemplateData);
-        console.error('❌ Available keys in fullTemplateData:', Object.keys(fullTemplateData || {}));
+        console.error('❌ Full template data was:', templateData);
+        console.error('❌ Available keys in templateData:', Object.keys(templateData || {}));
         setError('No se encontraron ítems en la escala');
         return;
       }
       
       console.log('✅ Template loaded successfully:', {
-        templateId: template.templateId,
-        name: template.name,
+        templateId: templateId,
+        name: metadata.name,
         totalItems: transformedData.totalItems,
         itemsFound: transformedData.items.length
       });
@@ -395,13 +396,13 @@ export const ClinimetrixProAssessmentModal: React.FC<ClinimetrixProAssessmentMod
     // Extraer subescalas dinámicamente desde los ítems
     if (templateData.items && templateData.items.length > 0) {
       templateData.items.forEach(item => {
-        if (item.subscale && responses[item.number]) {
+        if (item.subscale && responses[item.itemNumber]) {
           const subscaleName = item.subscale;
           if (!subscaleScores[subscaleName]) {
             subscaleScores[subscaleName] = 0;
             subscaleItemCounts[subscaleName] = 0;
           }
-          subscaleScores[subscaleName] += responses[item.number].score;
+          subscaleScores[subscaleName] += responses[item.itemNumber].score;
           subscaleItemCounts[subscaleName]++;
         }
       });
@@ -434,12 +435,12 @@ export const ClinimetrixProAssessmentModal: React.FC<ClinimetrixProAssessmentMod
       
       if (rule) {
         interpretation = {
-          severity: rule.severityLevel || rule.severity,
+          severity: rule.severityLevel || (rule as any).severity,
           label: rule.label,
-          color: rule.color || getColorBySeverity(rule.severityLevel || rule.severity),
-          description: rule.description || rule.clinicalInterpretation || rule.clinicalSignificance,
-          recommendations: rule.recommendations || rule.professionalRecommendations?.immediate || rule.professionalRecommendations?.treatment,
-          clinicalRange: rule.severityLevel || rule.severity,
+          color: rule.color || getColorBySeverity(rule.severityLevel || (rule as any).severity),
+          description: rule.description || (rule as any).clinicalInterpretation || (rule as any).clinicalSignificance,
+          recommendations: (rule as any).recommendations || (rule as any).professionalRecommendations?.immediate || (rule as any).professionalRecommendations?.treatment,
+          clinicalRange: rule.severityLevel || (rule as any).severity,
           scoreRange: `${rule.minScore}-${rule.maxScore}`,
           fullRule: rule // Incluir la regla completa para acceso a todos sus datos
         };
@@ -549,7 +550,7 @@ export const ClinimetrixProAssessmentModal: React.FC<ClinimetrixProAssessmentMod
     if (currentCard === 0) {
       const hasPatient = selectedPatient.trim() !== '';
       if (templateData?.administrationMode === 'both') {
-        return hasPatient && selectedAdminMode !== '';
+        return hasPatient && selectedAdminMode !== null && selectedAdminMode.trim() !== '';
       }
       return hasPatient;
     } else if (currentCard >= 1 && currentCard <= (templateData?.totalItems || 0)) {
@@ -631,11 +632,11 @@ export const ClinimetrixProAssessmentModal: React.FC<ClinimetrixProAssessmentMod
           margin: '0',
           opacity: '0.9'
         }}>
-          {templateData?.instructionsProfessional || 
-           templateData?.interpretationGuidelines || 
-           templateData?.clinicalInstructions ||
-           templateData?.clinical_considerations ||
-           templateData?.implementation_notes ||
+          {(templateData as any)?.instructionsProfessional || 
+           (templateData as any)?.interpretationGuidelines || 
+           (templateData as any)?.clinicalInstructions ||
+           (templateData as any)?.clinical_considerations ||
+           (templateData as any)?.implementation_notes ||
            `Aplicar la escala ${templateData?.name || 'clínica'} según protocolo estándar. Asegurar ambiente adecuado, privacidad y comprensión completa del paciente antes de iniciar. Proporcionar las instrucciones claramente y verificar que el paciente comprenda cada ítem antes de responder.`}
         </p>
       </div>
@@ -1303,25 +1304,25 @@ export const ClinimetrixProAssessmentModal: React.FC<ClinimetrixProAssessmentMod
       return <div>No hay datos de la escala</div>;
     }
 
-    const item = templateData.items.find(i => i.number === itemNumber) || templateData.items[itemNumber - 1];
+    const item = templateData.items.find(i => i.itemNumber === itemNumber) || templateData.items[itemNumber - 1];
     
     if (!item) {
       return <div>Ítem {itemNumber} no encontrado</div>;
     }
 
-    const itemText = item.text || 'Sin texto';
+    const itemText = item.questionText || 'Sin texto';
     const currentResponse = responses[itemNumber];
     
     // Usar las opciones específicas del ítem desde el JSON real
-    const responseOptions = item.specificOptions || [];
+    const responseOptions = item.responseOptions || [];
     
     // Validación de opciones de respuesta
     if (!responseOptions || responseOptions.length === 0) {
       console.error(`❌ No response options found for item ${itemNumber}:`, {
         itemId: item.id,
-        itemText: item.text,
-        responseGroup: item.responseGroup,
-        hasSpecificOptions: !!item.specificOptions
+        itemText: item.questionText,
+        responseGroup: (item as any).responseGroup,
+        hasSpecificOptions: !!(item as any).specificOptions
       });
       
       return (
@@ -1338,7 +1339,7 @@ export const ClinimetrixProAssessmentModal: React.FC<ClinimetrixProAssessmentMod
             No se encontraron opciones de respuesta para este ítem.
           </div>
           <div style={{ color: '#666', fontSize: '14px' }}>
-            {item.text || 'Sin texto'}
+            {item.questionText || 'Sin texto'}
           </div>
         </div>
       );
@@ -1346,8 +1347,8 @@ export const ClinimetrixProAssessmentModal: React.FC<ClinimetrixProAssessmentMod
     
     console.log('🔍 Item details for question', itemNumber, ':', {
       itemId: item.id,
-      itemText: item.text,
-      hasSpecificOptions: !!item.specificOptions,
+      itemText: item.questionText,
+      hasSpecificOptions: !!(item as any).specificOptions,
       optionsCount: responseOptions.length,
       firstOption: responseOptions[0]
     });
@@ -1784,7 +1785,7 @@ export const ClinimetrixProAssessmentModal: React.FC<ClinimetrixProAssessmentMod
               {subscaleScores && Object.keys(subscaleScores).length > 0 ? (
                 // Si tenemos puntuaciones calculadas, mostrarlas
                 Object.entries(subscaleScores).map(([subscaleName, score]) => {
-                  const subscale = templateData.subscales?.find(s => s.subscaleName === subscaleName);
+                  const subscale = templateData.subscales?.find(s => (s as any).subscaleName === subscaleName);
                   const maxScore = subscale?.maxScore || 0;
                   
                   return (
@@ -1807,7 +1808,7 @@ export const ClinimetrixProAssessmentModal: React.FC<ClinimetrixProAssessmentMod
                         fontWeight: '700',
                         fontSize: '1rem'
                       }}>
-                        {score}/{maxScore}
+                        {score as number}/{maxScore}
                       </span>
                     </div>
                   );
@@ -1815,7 +1816,7 @@ export const ClinimetrixProAssessmentModal: React.FC<ClinimetrixProAssessmentMod
               ) : (
                 // Si no tenemos puntuaciones pero sí definiciones de subescalas, mostrar estructura
                 templateData.subscales?.map((subscale) => (
-                  <div key={subscale.subscaleName} style={{
+                  <div key={(subscale as any).subscaleName} style={{
                     display: 'flex',
                     justifyContent: 'space-between',
                     alignItems: 'center',
@@ -1827,7 +1828,7 @@ export const ClinimetrixProAssessmentModal: React.FC<ClinimetrixProAssessmentMod
                       fontWeight: '600',
                       fontSize: '0.9rem'
                     }}>
-                      {subscale.subscaleName}
+                      {(subscale as any).subscaleName}
                     </span>
                     <span style={{ 
                       color: '#94a3b8', 
@@ -2173,10 +2174,10 @@ export const ClinimetrixProAssessmentModal: React.FC<ClinimetrixProAssessmentMod
                 // Calcular puntaje máximo dinámicamente para esta subescala
                 const subscaleItems = templateData.items?.filter(item => item.subscale === subscaleName) || [];
                 const maxScore = subscaleItems.reduce((max, item) => {
-                  const responseOptions = templateData.responseOptions?.filter(opt => 
-                    opt.responseGroup === item.responseGroup
+                  const responseOptions = (templateData as any).responseOptions?.filter((opt: any) => 
+                    opt.responseGroup === (item as any).responseGroup
                   ) || [];
-                  const itemMaxScore = Math.max(...responseOptions.map(opt => opt.scoreValue || 0));
+                  const itemMaxScore = Math.max(...responseOptions.map((opt: any) => opt.scoreValue || 0));
                   return max + (itemMaxScore || 0);
                 }, 0);
                 
@@ -2192,7 +2193,7 @@ export const ClinimetrixProAssessmentModal: React.FC<ClinimetrixProAssessmentMod
                     textAlign: 'center'
                   }}>
                     <div style={{ fontSize: '1.4rem', fontWeight: '700', color: '#d97706', marginBottom: '4px' }}>
-                      {score}/{maxScore}
+                      {score as number}/{maxScore}
                     </div>
                     <div style={{ fontSize: '0.9rem', fontWeight: '600', color: '#333', marginBottom: '4px' }}>
                       {displayName}

@@ -354,12 +354,14 @@ export const VITAL_SIGNS_RANGES: VitalSignsRanges = {
     systolic: {
       min: 60,
       max: 200,
-      normal: { min: 90, max: 140 }
+      normal: { min: 90, max: 140 },
+      unit: "mmHg"
     },
     diastolic: {
       min: 40,
       max: 120,
-      normal: { min: 60, max: 90 }
+      normal: { min: 60, max: 90 },
+      unit: "mmHg"
     },
     unit: "mmHg"
   },

@@ -376,7 +376,7 @@ export default function FinanceConfiguration() {
       evaluation: 'Evaluación',
       other: 'Otro'
     };
-    return labels[category] || category;
+    return (labels as any)[category] || category;
   };
 
   const getDiscountTypeLabel = (type: string) => {
@@ -385,7 +385,7 @@ export default function FinanceConfiguration() {
       fixed_amount: 'Monto Fijo',
       custom_price: 'Precio Personalizado'
     };
-    return labels[type] || type;
+    return (labels as any)[type] || type;
   };
 
   const tabs = [
@@ -582,7 +582,7 @@ export default function FinanceConfiguration() {
               </Button>
             </div>
 
-            {config?.services.length > 0 ? (
+            {config?.services && config.services.length > 0 ? (
               <div className="space-y-4">
                 {config.services.map((service) => (
                   <div key={service.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
@@ -768,7 +768,7 @@ export default function FinanceConfiguration() {
                       updateService(editingService.id, {
                         ...newService,
                         basePrice: parseFloat(newService.basePrice),
-                        duration: newService.duration ? parseInt(newService.duration) : null
+                        duration: newService.duration ? parseInt(newService.duration) : undefined
                       });
                     } else {
                       createService();
@@ -805,7 +805,7 @@ export default function FinanceConfiguration() {
               </Button>
             </div>
 
-            {config?.discountPlans.length > 0 ? (
+            {config?.discountPlans && config.discountPlans.length > 0 ? (
               <div className="space-y-4">
                 {config.discountPlans.map((discount) => (
                   <div key={discount.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
@@ -979,7 +979,7 @@ export default function FinanceConfiguration() {
                       updateDiscount(editingDiscount.id, {
                         ...newDiscount,
                         discountValue: parseFloat(newDiscount.discountValue),
-                        validUntil: newDiscount.validUntil || null
+                        validUntil: newDiscount.validUntil || undefined
                       });
                     } else {
                       createDiscount();

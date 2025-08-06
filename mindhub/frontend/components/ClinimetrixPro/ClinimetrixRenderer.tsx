@@ -9,7 +9,7 @@
 'use client';
 
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { clinimetrixProClient, type ClinimetrixProTemplateStructure, type ClinimetrixProAssessment } from '@/lib/api/clinimetrix-pro-client';
+import { clinimetrixProClient, type ClinimetrixAssessment } from '@/lib/api/clinimetrix-pro-client';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
@@ -37,15 +37,15 @@ export interface ClinimetrixRendererProps {
   patientId?: string;
   administratorId: string;
   mode?: 'new' | 'resume' | 'review';
-  onComplete?: (assessment: ClinimetrixProAssessment) => void;
-  onSave?: (assessment: ClinimetrixProAssessment) => void;
+  onComplete?: (assessment: ClinimetrixAssessment) => void;
+  onSave?: (assessment: ClinimetrixAssessment) => void;
   onCancel?: () => void;
   className?: string;
 }
 
 interface RendererState {
-  template: ClinimetrixProTemplateStructure | null;
-  assessment: ClinimetrixProAssessment | null;
+  template: any | null;
+  assessment: ClinimetrixAssessment | null;
   currentSectionIndex: number;
   currentItemIndex: number;
   responses: { [itemId: string]: any };
@@ -152,41 +152,29 @@ export const ClinimetrixRenderer: React.FC<ClinimetrixRendererProps> = ({
 
       // Load template
       const templateResponse = await clinimetrixProClient.getTemplate(templateId);
-      if (!templateResponse.success) {
-        throw new Error('Failed to load template');
-      }
 
-      let assessment: ClinimetrixProAssessment | null = null;
+      let assessment: ClinimetrixAssessment | null = null;
 
       if (assessmentId) {
         // Load existing assessment
-        const assessmentResponse = await clinimetrixProClient.getAssessment(assessmentId);
-        if (assessmentResponse.success) {
-          assessment = assessmentResponse.data;
-        }
-      } else if (mode === 'new') {
+        assessment = await clinimetrixProClient.getAssessment(assessmentId);
+      } else if (mode === 'new' && patientId) {
         // Create new assessment
-        const createResponse = await clinimetrixProClient.createAssessment({
+        assessment = await clinimetrixProClient.createAssessment({
           templateId,
           patientId,
           administratorId,
-          metadata: {
-            startedAt: new Date().toISOString(),
-            userAgent: navigator.userAgent
-          }
+          mode: 'professional'
         });
-        if (createResponse.success) {
-          assessment = createResponse.data;
-        }
       }
 
       setState(prev => ({
         ...prev,
-        template: templateResponse.data,
+        template: templateResponse,
         assessment,
         responses: assessment?.responses || {},
-        currentSectionIndex: assessment?.currentSection || 0,
-        currentItemIndex: assessment?.currentItem || 0,
+        currentSectionIndex: 0,
+        currentItemIndex: assessment?.currentStep || 0,
         loading: false
       }));
 
@@ -282,19 +270,20 @@ export const ClinimetrixRenderer: React.FC<ClinimetrixRendererProps> = ({
     try {
       setState(prev => ({ ...prev, saving: true }));
       
-      const response = await clinimetrixProClient.completeAssessment(state.assessment!.id);
+      const response = await clinimetrixProClient.completeAssessment(
+        state.assessment!.id, 
+        { responses: state.responses }
+      );
       
-      if (response.success) {
-        setState(prev => ({ 
-          ...prev, 
-          completed: true, 
-          assessment: response.data,
-          saving: false 
-        }));
-        
-        if (onComplete) {
-          onComplete(response.data);
-        }
+      setState(prev => ({ 
+        ...prev, 
+        completed: true, 
+        assessment: response.assessment,
+        saving: false 
+      }));
+      
+      if (onComplete) {
+        onComplete(response.assessment);
       }
     } catch (error) {
       console.error('Error completing assessment:', error);
@@ -308,15 +297,15 @@ export const ClinimetrixRenderer: React.FC<ClinimetrixRendererProps> = ({
     try {
       setState(prev => ({ ...prev, saving: true }));
       
-      const response = await clinimetrixProApi.updateAssessmentResponses(
+      const response = await clinimetrixProClient.updateAssessmentResponses(
         state.assessment!.id, 
         state.responses
       );
       
       setState(prev => ({ ...prev, saving: false }));
       
-      if (onSave && response.success) {
-        onSave(response.data);
+      if (onSave) {
+        onSave(response);
       }
     } catch (error) {
       console.error('Error saving assessment:', error);
@@ -367,7 +356,7 @@ export const ClinimetrixRenderer: React.FC<ClinimetrixRendererProps> = ({
       
       default:
         return (
-          <Alert type="warning">
+          <Alert variant="warning">
             Tipo de respuesta no soportado: {currentItem.responseType}
           </Alert>
         );
@@ -387,7 +376,7 @@ export const ClinimetrixRenderer: React.FC<ClinimetrixRendererProps> = ({
 
   if (state.error) {
     return (
-      <Alert type="error" className="max-w-md mx-auto">
+      <Alert variant="error" className="max-w-md mx-auto">
         <h3 className="font-semibold mb-2">Error al cargar la evaluación</h3>
         <p>{state.error}</p>
         <Button 
@@ -429,7 +418,7 @@ export const ClinimetrixRenderer: React.FC<ClinimetrixRendererProps> = ({
 
   if (!state.template || !currentSection || !currentItem) {
     return (
-      <Alert type="error">
+      <Alert variant="error">
         No se pudo cargar la estructura de la evaluación.
       </Alert>
     );
@@ -471,7 +460,7 @@ export const ClinimetrixRenderer: React.FC<ClinimetrixRendererProps> = ({
             </div>
             
             {currentItem.reversed && (
-              <Alert type="info" className="mb-4">
+              <Alert variant="info" className="mb-4">
                 <strong>Nota:</strong> Esta pregunta tiene puntuación invertida.
               </Alert>
             )}

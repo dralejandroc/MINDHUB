@@ -49,7 +49,10 @@ export default function FinancePage() {
             </Button>
           ]}
         />
-        <IncomeTracker />
+        <IncomeTracker 
+          selectedDate={new Date()} 
+          onNewIncome={() => {}} 
+        />
       </div>
     );
   }
@@ -68,7 +71,7 @@ export default function FinancePage() {
             </Button>
           ]}
         />
-        <FinancialReports />
+        <FinancialReports selectedDate={new Date()} />
       </div>
     );
   }
@@ -133,7 +136,10 @@ export default function FinancePage() {
       />
       
       {/* Main Finance Dashboard */}
-      <FinanceDashboard />
+      <FinanceDashboard 
+        selectedDate={new Date()} 
+        onNewIncome={() => {}} 
+      />
       
       {/* Quick Actions Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">

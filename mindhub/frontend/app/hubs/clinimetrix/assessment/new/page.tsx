@@ -5,16 +5,16 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { Alert } from '@/components/ui/Alert';
 import { ClinimetrixRenderer } from '@/components/ClinimetrixPro/ClinimetrixRenderer';
 import { clinimetrixProClient } from '@/lib/api/clinimetrix-pro-client';
-import type { ClinimetrixProTemplate } from '@/lib/api/clinimetrix-pro-client';
+import type { TemplateData } from '@/lib/api/clinimetrix-pro-client';
 
 export default function NewAssessmentPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const templateId = searchParams.get('templateId');
-  const patientId = searchParams.get('patientId');
-  const mode = (searchParams.get('mode') || 'professional') as 'professional' | 'patient';
+  const templateId = searchParams?.get('templateId');
+  const patientId = searchParams?.get('patientId');
+  const mode = (searchParams?.get('mode') || 'professional') as 'professional' | 'patient';
   
-  const [template, setTemplate] = useState<ClinimetrixProTemplate | null>(null);
+  const [template, setTemplate] = useState<TemplateData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -32,7 +32,7 @@ export default function NewAssessmentPage() {
     
     try {
       setLoading(true);
-      const templateData = await clinimetrixProClient.templates.getById(templateId);
+      const templateData = await clinimetrixProClient.getTemplate(templateId);
       setTemplate(templateData);
       setError(null);
     } catch (error) {
@@ -43,9 +43,9 @@ export default function NewAssessmentPage() {
     }
   };
 
-  const handleComplete = async (assessmentId: string) => {
+  const handleComplete = async (assessment: any) => {
     // Redirect to results page
-    router.push(`/hubs/clinimetrix/assessment/${assessmentId}/results`);
+    router.push(`/hubs/clinimetrix/assessment/${assessment?.id || 'new'}/results`);
   };
 
   const handleCancel = () => {
@@ -54,7 +54,7 @@ export default function NewAssessmentPage() {
     }
   };
 
-  const handleSave = async (assessmentId: string) => {
+  const handleSave = async (assessment: any) => {
     // Show success message
     alert('Evaluación guardada exitosamente. Puede continuar más tarde.');
   };
@@ -108,22 +108,24 @@ export default function NewAssessmentPage() {
           
           <div className="flex flex-wrap gap-4 text-sm text-gray-600">
             <span>📋 {template.structure.totalItems} ítems</span>
-            <span>⏱️ {template.metadata.estimatedDurationMinutes} minutos aprox.</span>
+            <span>⏱️ {template.metadata.administrationTime}</span>
             <span>👤 Modo: {mode === 'professional' ? 'Profesional' : 'Paciente'}</span>
             {patientId && <span>🏥 Paciente ID: {patientId}</span>}
           </div>
         </div>
 
         {/* Main Content */}
-        <ClinimetrixRenderer
-          templateId={templateId}
-          patientId={patientId || undefined}
-          administratorId="current-user-id" // This should come from auth context
-          mode="new"
-          onComplete={handleComplete}
-          onSave={handleSave}
-          onCancel={handleCancel}
-        />
+        {templateId && (
+          <ClinimetrixRenderer
+            templateId={templateId}
+            patientId={patientId || undefined}
+            administratorId="current-user-id" // This should come from auth context
+            mode="new"
+            onComplete={handleComplete}
+            onSave={handleSave}
+            onCancel={handleCancel}
+          />
+        )}
       </div>
     </div>
   );

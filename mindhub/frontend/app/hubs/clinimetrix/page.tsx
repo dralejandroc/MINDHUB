@@ -18,7 +18,7 @@ import {
 } from '@heroicons/react/24/outline';
 import { HeartIcon as HeartSolidIcon } from '@heroicons/react/24/solid';
 import { clinimetrixProClient } from '@/lib/api/clinimetrix-pro-client';
-import type { ClinimetrixProRegistry } from '@/lib/api/clinimetrix-pro-client';
+import type { ClinimetrixRegistry } from '@/lib/api/clinimetrix-pro-client';
 import { Button } from '@/components/ui/Button';
 import { ClinimetrixProAssessmentModal } from '@/components/ClinimetrixPro/ClinimetrixProAssessmentModal';
 
@@ -131,7 +131,7 @@ function generateAbstractPattern(scaleId: string, category: string): string {
 
 export default function ClinimetrixPage() {
   const router = useRouter();
-  const [scales, setScales] = useState<ClinimetrixProRegistry[]>([]);
+  const [scales, setScales] = useState<ClinimetrixRegistry[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<'cards' | 'list'>('cards');
@@ -139,7 +139,7 @@ export default function ClinimetrixPage() {
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [showFavoritesOnly, setShowFavoritesOnly] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
-  const [selectedScale, setSelectedScale] = useState<ClinimetrixProRegistry | null>(null);
+  const [selectedScale, setSelectedScale] = useState<ClinimetrixRegistry | null>(null);
   const [showAssessment, setShowAssessment] = useState(false);
 
   // Derived data
@@ -177,7 +177,7 @@ export default function ClinimetrixPage() {
       setLoading(true);
       setError(null);
       
-      const scalesData = await clinimetrixProClient.templates.getCatalog();
+      const scalesData = await clinimetrixProClient.getTemplateCatalog();
       
       // Cargar favoritos desde localStorage
       const favorites = JSON.parse(localStorage.getItem('clinimetrix-favorites') || '[]');
@@ -243,7 +243,7 @@ export default function ClinimetrixPage() {
     setShowFavoritesOnly(false);
   };
 
-  const handleSelectScale = (scale: ClinimetrixProRegistry) => {
+  const handleSelectScale = (scale: ClinimetrixRegistry) => {
     setSelectedScale(scale);
     setShowAssessment(true);
   };
@@ -510,9 +510,9 @@ export default function ClinimetrixPage() {
 
 // Scale Card Component
 function ScaleCard({ scale, onToggleFavorite, onSelect }: {
-  scale: ClinimetrixProRegistry;
+  scale: ClinimetrixRegistry;
   onToggleFavorite: (scaleId: string) => void;
-  onSelect: (scale: ClinimetrixProRegistry) => void;
+  onSelect: (scale: ClinimetrixRegistry) => void;
 }) {
 
   return (
@@ -589,19 +589,18 @@ function ScaleCard({ scale, onToggleFavorite, onSelect }: {
         <div className="grid grid-cols-3 gap-1.5">
           <div className="text-center p-1 bg-purple-50 rounded">
             <DocumentTextIcon className="h-2.5 w-2.5 text-purple-600 mx-auto mb-0.5" />
-            <div className="text-[9px] font-semibold text-gray-900">{scale.totalItems}</div>
+            <div className="text-[9px] font-semibold text-gray-900">N/A</div>
             <div className="text-[8px] text-gray-600">ítems</div>
           </div>
           <div className="text-center p-1 bg-blue-50 rounded">
             <ClockIcon className="h-2.5 w-2.5 text-blue-600 mx-auto mb-0.5" />
-            <div className="text-[9px] font-semibold text-gray-900">{scale.estimatedDurationMinutes}</div>
+            <div className="text-[9px] font-semibold text-gray-900">{scale.administrationTime}</div>
             <div className="text-[8px] text-gray-600">min</div>
           </div>
           <div className="text-center p-1 bg-gray-50 rounded">
             <UserGroupIcon className="h-2.5 w-2.5 text-gray-600 mx-auto mb-0.5" />
             <div className="text-[8px] font-medium text-gray-700 leading-tight">
-              {scale.administrationMode === 'self_administered' ? 'Autoaplica' : 
-               scale.administrationMode === 'clinician_administered' ? 'Por Clínico' : 'Mixta'}
+              Profesional
             </div>
           </div>
         </div>
@@ -628,9 +627,9 @@ function ScaleCard({ scale, onToggleFavorite, onSelect }: {
 
 // Scale List Item Component  
 function ScaleListItem({ scale, onToggleFavorite, onSelect }: {
-  scale: ClinimetrixProRegistry;
+  scale: ClinimetrixRegistry;
   onToggleFavorite: (scaleId: string) => void;
-  onSelect: (scale: ClinimetrixProRegistry) => void;
+  onSelect: (scale: ClinimetrixRegistry) => void;
 }) {
   return (
     <div 
@@ -666,10 +665,9 @@ function ScaleListItem({ scale, onToggleFavorite, onSelect }: {
           </p>
 
           <div className="flex items-center gap-6 text-xs text-gray-500">
-            <span>{scale.totalItems} ítems</span>
-            <span>{scale.estimatedDurationMinutes} min</span>
-            <span>{scale.administrationMode === 'self_administered' ? 'Autoaplicada' : 
-                   scale.administrationMode === 'clinician_administered' ? 'Por Clínico' : 'Mixta'}</span>
+            <span>N/A ítems</span>
+            <span>{scale.administrationTime}</span>
+            <span>Profesional</span>
           </div>
         </div>
 

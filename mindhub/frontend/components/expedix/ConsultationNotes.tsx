@@ -3,20 +3,10 @@
 import { useState, useEffect } from 'react';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
-import { expedixApi } from '@/lib/api/expedix-client';
+import { expedixApi, Patient } from '@/lib/api/expedix-client';
 import MentalExam from './MentalExam';
 
-interface Patient {
-  id: string;
-  firstName: string;
-  paternalLastName: string;
-  maternalLastName: string;
-  birthDate: string;
-  age: number;
-  gender: 'masculine' | 'feminine';
-  email: string;
-  cellPhone: string;
-}
+// Using Patient interface from expedix-client
 
 interface Medication {
   id: number;
@@ -623,7 +613,7 @@ export default function ConsultationNotes({ patient, onSaveConsultation, onCance
         const url = window.URL.createObjectURL(pdfBlob);
         const link = document.createElement('a');
         link.href = url;
-        link.download = `receta_${patient.firstName}_${patient.paternalLastName}_${new Date().toISOString().split('T')[0]}.pdf`;
+        link.download = `receta_${patient.first_name}_${patient.paternal_last_name}_${new Date().toISOString().split('T')[0]}.pdf`;
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
@@ -666,17 +656,17 @@ export default function ConsultationNotes({ patient, onSaveConsultation, onCance
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-4">
             <div className="w-12 h-12 bg-blue-600 rounded-full flex items-center justify-center text-white font-bold">
-              {patient.firstName.charAt(0)}{patient.paternalLastName.charAt(0)}
+              {patient.first_name.charAt(0)}{patient.paternal_last_name.charAt(0)}
             </div>
             <div>
               <h2 className="text-lg font-bold text-gray-900">
-                {patient.firstName} {patient.paternalLastName} {patient.maternalLastName}
+                {patient.first_name} {patient.paternal_last_name} {patient.maternal_last_name || ''}
               </h2>
               <p className="text-sm text-gray-600">
-                🗓️ {patient.birthDate} | Edad: {patient.age} años | Género: {patient.gender === 'masculine' ? 'Masculino' : 'Femenino'}
+                🗓️ {patient.birth_date} | Edad: {patient.age} años | Género: {patient.gender === 'masculine' ? 'Masculino' : 'Femenino'}
               </p>
               <p className="text-sm text-gray-600">
-                Email: {patient.email} | Tel: {patient.cellPhone}
+                Email: {patient.email} | Tel: {patient.cell_phone}
               </p>
             </div>
           </div>
@@ -739,7 +729,7 @@ export default function ConsultationNotes({ patient, onSaveConsultation, onCance
         onSubmit={handleSubmit} 
         onKeyDown={(e) => {
           // Prevenir submit con Enter excepto en textareas y en el botón de submit
-          if (e.key === 'Enter' && e.target.tagName !== 'TEXTAREA' && !e.target.classList.contains('submit-button')) {
+          if (e.key === 'Enter' && (e.target as HTMLElement).tagName !== 'TEXTAREA' && !(e.target as HTMLElement).classList.contains('submit-button')) {
             e.preventDefault();
           }
         }}

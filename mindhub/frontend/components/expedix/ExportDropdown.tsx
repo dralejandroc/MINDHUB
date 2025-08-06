@@ -187,7 +187,7 @@ export default function ExportDropdown({
       {showExportModal && selectedExportMode && (
         <ExportManager
           patientId={selectedExportMode === 'patients-table' ? undefined : patientId}
-          consultationId={selectedConsultationId}
+          consultationId={selectedConsultationId || undefined}
           mode={selectedExportMode}
           onClose={handleCloseExport}
         />

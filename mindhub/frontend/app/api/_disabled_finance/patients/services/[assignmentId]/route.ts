@@ -30,7 +30,7 @@ export async function DELETE(
       { 
         success: false, 
         error: 'Failed to remove service assignment',
-        message: error.message
+        message: error instanceof Error ? error.message : "Unknown error"
       }, 
       { status: 500 }
     );

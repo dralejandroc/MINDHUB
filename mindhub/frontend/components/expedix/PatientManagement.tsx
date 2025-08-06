@@ -227,7 +227,7 @@ export default function PatientManagement({
 
               {/* Table Body */}
               <div className="divide-y divide-gray-200">
-                {console.log('🎨 Rendering patients in table:', patients) || patients.map((patient) => (
+                {patients.map((patient) => (
                   <div key={patient.id} className="px-4 py-3 hover:bg-gray-50 transition-colors duration-150">
                     <div className="grid grid-cols-12 gap-3 items-center">
                       {/* Patient Info */}
