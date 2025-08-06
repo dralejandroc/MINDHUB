@@ -27,7 +27,7 @@ export async function PUT(
       { 
         success: false, 
         error: 'Failed to update discount plan',
-        message: error.message
+        message: error instanceof Error ? error.message : 'Unknown error'
       }, 
       { status: 500 }
     );
