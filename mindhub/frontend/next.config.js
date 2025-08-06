@@ -93,22 +93,6 @@ const nextConfig = {
       },
     ];
   },
-  // Ensure static file handling
-  async redirects() {
-    return [
-      {
-        source: '/(.*)',
-        has: [
-          {
-            type: 'host',
-            value: 'www.mindhub.cloud',
-          },
-        ],
-        destination: 'https://mindhub.cloud/$1',
-        permanent: true,
-      },
-    ];
-  },
 };
 
 module.exports = nextConfig;
