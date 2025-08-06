@@ -1,18 +1,31 @@
+const path = require('path');
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   typescript: {
-    ignoreBuildErrors: false, // Enable strict TypeScript checking
+    ignoreBuildErrors: false,
   },
   eslint: {
-    ignoreDuringBuilds: false, // Enable ESLint checking
+    ignoreDuringBuilds: false,
   },
   env: {
     NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL || 'https://mindhub-production.up.railway.app',
     BACKEND_URL: process.env.BACKEND_URL || 'https://mindhub-production.up.railway.app',
   },
-  // Ensure all components are found
-  experimental: {
-    esmExternals: false,
+  // Force webpack to resolve @ paths correctly
+  webpack: (config, { buildId, dev, isServer, defaultLoaders, webpack }) => {
+    config.resolve.alias = {
+      ...config.resolve.alias,
+      '@': path.resolve(__dirname),
+      '@/components': path.resolve(__dirname, 'components'),
+      '@/lib': path.resolve(__dirname, 'lib'),
+      '@/contexts': path.resolve(__dirname, 'contexts'),
+      '@/hooks': path.resolve(__dirname, 'hooks'),
+      '@/utils': path.resolve(__dirname, 'utils'),
+      '@/styles': path.resolve(__dirname, 'styles'),
+      '@/types': path.resolve(__dirname, 'types'),
+    };
+    return config;
   },
   // Performance optimizations
   compress: true,
