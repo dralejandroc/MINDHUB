@@ -6,7 +6,7 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
-import { DragDropContext, Droppable, Draggable, DropResult } from 'react-beautiful-dnd';
+import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { ChartBarIcon, ArrowPathIcon } from '@heroicons/react/24/outline';
 import { clinimetrixProClient } from '../../lib/api/clinimetrix-pro-client';
