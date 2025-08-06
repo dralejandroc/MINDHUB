@@ -17,7 +17,7 @@ function addSecurityHeaders(response: NextResponse) {
     "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; " +
     "font-src 'self' https://fonts.gstatic.com; " +
     "img-src 'self' data:; " +
-    "connect-src 'self' https://www.mindhub.cloud https://mindhub.cloud https://api.mindhub.com http://localhost:*"
+    "connect-src 'self' https://mindhub.cloud https://api.mindhub.com http://localhost:*"
   );
   
   return response;

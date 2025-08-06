@@ -91,6 +91,9 @@ export default function RootLayout({
         <meta name="apple-mobile-web-app-status-bar-style" content="default" />
         <meta name="apple-mobile-web-app-title" content="MindHub" />
         
+        {/* Explicit manifest link to prevent www domain issues */}
+        <link rel="manifest" href="/manifest.json" />
+        
         {/* Preconnect to external services - Google Fonts temporarily disabled */}
       </head>
       <body className="bg-gray-50 antialiased">

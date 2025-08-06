@@ -1,9 +1,9 @@
 // MindHub Healthcare Platform Service Worker
-// Version 1.0.0
+// Version 1.0.1 - Fixed www domain manifest.json caching issue
 
-const CACHE_NAME = 'mindhub-v1.0.0';
-const STATIC_CACHE = 'mindhub-static-v1.0.0';
-const DYNAMIC_CACHE = 'mindhub-dynamic-v1.0.0';
+const CACHE_NAME = 'mindhub-v1.0.1';
+const STATIC_CACHE = 'mindhub-static-v1.0.1';
+const DYNAMIC_CACHE = 'mindhub-dynamic-v1.0.1';
 
 // Essential files to cache for offline functionality
 const ESSENTIAL_URLS = [
@@ -58,7 +58,15 @@ self.addEventListener('activate', (event) => {
         );
       })
       .then(() => {
-        console.log('[SW] Service worker activated');
+        // Clear any cached requests that might have www domain references
+        return caches.open(STATIC_CACHE);
+      })
+      .then((cache) => {
+        // Remove any potentially cached manifest.json from www domain
+        return cache.delete('https://www.mindhub.cloud/manifest.json');
+      })
+      .then(() => {
+        console.log('[SW] Service worker activated and old www caches cleared');
         return self.clients.claim();
       })
   );
@@ -70,6 +78,33 @@ self.addEventListener('fetch', (event) => {
   
   // Skip non-HTTP requests
   if (!event.request.url.startsWith('http')) {
+    return;
+  }
+  
+  // Force fresh manifest.json to prevent www domain caching issues
+  if (requestUrl.pathname === '/manifest.json') {
+    event.respondWith(
+      fetch(event.request, { 
+        cache: 'no-cache',
+        headers: {
+          'Cache-Control': 'no-cache'
+        }
+      })
+        .then((response) => {
+          if (response.ok) {
+            const responseClone = response.clone();
+            caches.open(STATIC_CACHE)
+              .then((cache) => {
+                cache.put(event.request, responseClone);
+              });
+          }
+          return response;
+        })
+        .catch(() => {
+          // Fallback to cached version only if network fails
+          return caches.match(event.request);
+        })
+    );
     return;
   }
   
