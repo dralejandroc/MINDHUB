@@ -1,6 +1,6 @@
 {
   "name": "mindhub-frontend",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "MindHub Healthcare Platform - Frontend Application",
   "private": true,
   "scripts": {
