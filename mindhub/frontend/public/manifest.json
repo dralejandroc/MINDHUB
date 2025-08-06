@@ -1,0 +1,94 @@
+{
+  "name": "MindHub Healthcare Platform",
+  "short_name": "MindHub",
+  "description": "Comprehensive SaaS platform for psychiatrists and psychologists with clinical assessment tools, patient management, form builder, and resource library",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#f9fafb",
+  "theme_color": "#0ea5e9",
+  "lang": "en-US",
+  "dir": "ltr",
+  "categories": ["medical", "productivity", "health"],
+  "icons": [
+    {
+      "src": "/icon-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icon-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icon-192x192.svg",
+      "sizes": "192x192",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-512x512.svg",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Patient Records",
+      "short_name": "Expedix",
+      "description": "Access patient records and medical files",
+      "url": "/hubs/expedix",
+      "icons": [
+        {
+          "src": "/icon-192x192.png",
+          "sizes": "192x192",
+          "type": "image/png"
+        }
+      ]
+    },
+    {
+      "name": "Clinical Assessments",
+      "short_name": "Clinimetrix",
+      "description": "Clinical scales and psychological assessments",
+      "url": "/hubs/clinimetrix",
+      "icons": [
+        {
+          "src": "/icon-192x192.png",
+          "sizes": "192x192",
+          "type": "image/png"
+        }
+      ]
+    },
+    {
+      "name": "Forms Builder",
+      "short_name": "FormX",
+      "description": "Create and manage custom medical forms",
+      "url": "/hubs/formx",
+      "icons": [
+        {
+          "src": "/icon-192x192.png",
+          "sizes": "192x192",
+          "type": "image/png"
+        }
+      ]
+    },
+    {
+      "name": "Appointments",
+      "short_name": "Agenda",
+      "description": "Schedule and manage appointments",
+      "url": "/hubs/agenda",
+      "icons": [
+        {
+          "src": "/icon-192x192.png",
+          "sizes": "192x192",
+          "type": "image/png"
+        }
+      ]
+    }
+  ]
+}
