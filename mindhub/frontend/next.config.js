@@ -48,6 +48,32 @@ const nextConfig = {
         ],
       },
       {
+        source: '/sw.js',
+        headers: [
+          {
+            key: 'Content-Type',
+            value: 'application/javascript',
+          },
+          {
+            key: 'Cache-Control',
+            value: 'public, max-age=0, must-revalidate',
+          },
+          {
+            key: 'Service-Worker-Allowed',
+            value: '/',
+          },
+        ],
+      },
+      {
+        source: '/(icon-.*\\.(png|svg)|favicon\\.ico)',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'public, max-age=31536000, immutable',
+          },
+        ],
+      },
+      {
         source: '/api/:path*',
         headers: [
           {
@@ -55,6 +81,22 @@ const nextConfig = {
             value: 'no-store, must-revalidate',
           },
         ],
+      },
+    ];
+  },
+  // Ensure static file handling
+  async redirects() {
+    return [
+      {
+        source: '/(.*)',
+        has: [
+          {
+            type: 'host',
+            value: 'www.mindhub.cloud',
+          },
+        ],
+        destination: 'https://mindhub.cloud/$1',
+        permanent: true,
       },
     ];
   },

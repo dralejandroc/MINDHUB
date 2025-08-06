@@ -144,6 +144,25 @@ export default function RootLayout({
         {/* Vercel Speed Insights */}
         <SpeedInsights />
         
+        {/* PWA Service Worker Registration */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              if ('serviceWorker' in navigator && typeof window !== 'undefined') {
+                window.addEventListener('load', function() {
+                  navigator.serviceWorker.register('/sw.js', { scope: '/' })
+                    .then(function(registration) {
+                      console.log('[PWA] Service Worker registered successfully:', registration.scope);
+                    })
+                    .catch(function(error) {
+                      console.log('[PWA] Service Worker registration failed:', error);
+                    });
+                });
+              }
+            `,
+          }}
+        />
+        
         {/* Feedback Button - Available on all pages */}
         <div id="feedback-portal" />
       </body>
