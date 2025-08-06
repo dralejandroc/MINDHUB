@@ -2,13 +2,10 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import dynamic from 'next/dynamic';
-
-// Dynamic imports to avoid SSR issues
-const UnifiedSidebar = dynamic(() => import('@/components/layout/UnifiedSidebar').then(mod => ({ default: mod.UnifiedSidebar })), { ssr: false });
-const DashboardSwitcher = dynamic(() => import('@/components/dashboard/DashboardSwitcher').then(mod => ({ default: mod.DashboardSwitcher })), { ssr: false });
-const StartPageHandler = dynamic(() => import('@/components/layout/StartPageHandler').then(mod => ({ default: mod.StartPageHandler })), { ssr: false });
-const UserMetricsProvider = dynamic(() => import('@/contexts/UserMetricsContext').then(mod => ({ default: mod.UserMetricsProvider })), { ssr: false });
+import { UnifiedSidebar } from '@/components/layout/UnifiedSidebar';
+import { DashboardSwitcher } from '@/components/dashboard/DashboardSwitcher';
+import { StartPageHandler } from '@/components/layout/StartPageHandler';
+import { UserMetricsProvider } from '@/contexts/UserMetricsContext';
 
 export default function AppHome() {
   const [currentUser, setCurrentUser] = useState(null);
