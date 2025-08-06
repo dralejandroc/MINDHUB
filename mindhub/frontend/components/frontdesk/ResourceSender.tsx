@@ -252,7 +252,7 @@ export default function ResourceSender() {
     try {
       setProcessing(true);
       
-      const response = await fetch('http://localhost:8080/api/v1/frontdesk/resources/send', {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'https://mindhub-production.up.railway.app'}/v1/frontdesk/resources/send`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

@@ -1,10 +1,10 @@
 import type { Metadata } from 'next';
-import { Inter } from 'next/font/google';
+// import { Inter } from 'next/font/google'; // Temporalmente deshabilitado para evitar problemas de conectividad
 import { Toaster } from 'react-hot-toast';
 import { SpeedInsights } from '@vercel/speed-insights/next';
 import './globals.css';
 
-const inter = Inter({ subsets: ['latin'], variable: '--font-inter' });
+// const inter = Inter({ subsets: ['latin'], variable: '--font-inter' }); // Temporalmente deshabilitado
 
 export const metadata: Metadata = {
   title: 'MindHub - Healthcare Platform for Mental Health Professionals',
@@ -72,7 +72,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className={inter.variable}>
+    <html lang="en" className="font-sans">
       <head>
         {/* Security headers */}
         <meta httpEquiv="X-Content-Type-Options" content="nosniff" />
@@ -91,9 +91,7 @@ export default function RootLayout({
         <meta name="apple-mobile-web-app-status-bar-style" content="default" />
         <meta name="apple-mobile-web-app-title" content="MindHub" />
         
-        {/* Preconnect to external services */}
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="dns-prefetch" href="https://fonts.googleapis.com" />
+        {/* Preconnect to external services - Google Fonts temporarily disabled */}
       </head>
       <body className="bg-gray-50 antialiased">
         <div id="root" className="min-h-screen">

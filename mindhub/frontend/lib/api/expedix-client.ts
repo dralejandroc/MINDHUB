@@ -1,5 +1,5 @@
 // Expedix API Client - Centralized API communication for patient management
-const API_BASE_URL = process.env.NEXT_PUBLIC_EXPEDIX_API || 'http://localhost:8080';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://mindhub-production.up.railway.app';
 
 export interface Patient {
   id: string;

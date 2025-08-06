@@ -64,11 +64,13 @@ export async function apiRequest(
 /**
  * Configuración de URLs base para diferentes servicios
  */
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://mindhub-production.up.railway.app';
+
 export const API_BASE_URLS = {
-  EXPEDIX: 'http://localhost:8080',
-  CLINIMETRIX: 'http://localhost:8080',
-  FORMX: 'http://localhost:8083',
-  AGENDA: 'http://localhost:3000',
+  EXPEDIX: API_URL,
+  CLINIMETRIX: API_URL,
+  FORMX: API_URL,
+  AGENDA: API_URL,
 } as const;
 
 /**

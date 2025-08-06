@@ -33,35 +33,35 @@ export const SUBDOMAIN_CONFIG: Record<string, SubdomainConfig> = {
   'app': {
     subdomain: 'app',
     hubName: 'MindHub Dashboard',
-    apiUrl: isDevelopment ? 'http://localhost:8080' : `https://api.${domain}`,
+    apiUrl: isDevelopment ? 'http://localhost:8080' : `https://${domain}/api`,
     description: 'Main dashboard and hub management',
     permissions: ['read:profile', 'write:profile']
   },
   'clinimetrix': {
     subdomain: 'clinimetrix', 
     hubName: 'Clinimetrix',
-    apiUrl: isDevelopment ? 'http://localhost:8081' : `https://clinimetrix.api.${domain}`,
+    apiUrl: isDevelopment ? 'http://localhost:8081' : `https://${domain}/api`,
     description: 'Clinical Assessment System',
     permissions: ['read:assessments', 'write:assessments', 'read:patients']
   },
   'expedix': {
     subdomain: 'expedix',
     hubName: 'Expedix', 
-    apiUrl: isDevelopment ? 'http://localhost:8082' : `https://expedix.api.${domain}`,
+    apiUrl: isDevelopment ? 'http://localhost:8082' : `https://${domain}/api`,
     description: 'Patient Management System',
     permissions: ['read:patients', 'write:patients', 'read:prescriptions', 'write:prescriptions']
   },
   'formx': {
     subdomain: 'formx',
     hubName: 'Formx',
-    apiUrl: isDevelopment ? 'http://localhost:8083' : `https://formx.api.${domain}`,
+    apiUrl: isDevelopment ? 'http://localhost:8083' : `https://${domain}/api`,
     description: 'Form Builder System', 
     permissions: ['read:forms', 'write:forms']
   },
   'resources': {
     subdomain: 'resources',
     hubName: 'Resources',
-    apiUrl: isDevelopment ? 'http://localhost:8084' : `https://resources.api.${domain}`,
+    apiUrl: isDevelopment ? 'http://localhost:8084' : `https://${domain}/api`,
     description: 'Psychoeducational Library',
     permissions: ['read:resources', 'write:resources']
   }

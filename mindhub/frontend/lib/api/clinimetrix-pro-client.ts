@@ -6,8 +6,8 @@
  */
 
 // Base configuration
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3002';
-const CLINIMETRIX_PRO_BASE = `${API_BASE_URL}/api/clinimetrix-pro`;
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://mindhub-production.up.railway.app';
+const CLINIMETRIX_PRO_BASE = `${API_BASE_URL}/clinimetrix-pro`;
 
 // TypeScript interfaces for ClinimetrixPro entities
 

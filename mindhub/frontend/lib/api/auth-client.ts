@@ -5,7 +5,7 @@
 
 import { apiRequest } from './api-config';
 
-const AUTH_BASE_URL = 'http://localhost:8080/api/auth';
+const AUTH_BASE_URL = `${process.env.NEXT_PUBLIC_API_URL || 'https://mindhub-production.up.railway.app'}/auth`;
 
 export interface User {
   id: string;

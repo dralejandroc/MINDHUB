@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 
 export async function GET(request: NextRequest) {
-  const backendUrl = process.env.BACKEND_URL || 'https://mindhub.cloud/api';
+  const backendUrl = process.env.BACKEND_URL || 'https://mindhub-production.up.railway.app';
   
   try {
     // Check backend health

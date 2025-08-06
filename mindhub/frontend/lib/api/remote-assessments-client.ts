@@ -261,7 +261,7 @@ export class RemoteAssessmentsClient {
  * Se usa desde la página pública del paciente
  */
 export class PublicRemoteAssessmentsClient {
-  private static baseURL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
+  private static baseURL = process.env.NEXT_PUBLIC_API_URL || 'https://mindhub-production.up.railway.app';
 
   /**
    * Obtener detalles de evaluación remota por token
