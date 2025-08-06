@@ -1,0 +1,19 @@
+# Ignore test files
+**/*.test.ts
+**/*.test.tsx
+__tests__
+
+# Ignore trash directories
+_TRASH_*
+_TRASH_LEGACY_CLINIMETRIX
+_TRASH_CORRUPTED_FILES
+
+# Ignore storybook
+.storybook
+**/*.stories.tsx
+
+# Ignore local env files
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
