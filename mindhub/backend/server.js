@@ -295,41 +295,91 @@ app.use('*', (req, res) => {
 // app.use(errorHandler.globalErrorHandler); // Commented for local development
 
 // Graceful shutdown
-process.on('SIGTERM', () => {
-  console.log('SIGTERM received, shutting down gracefully...');
-  process.exit(0);
+let server;
+
+const gracefulShutdown = async (signal) => {
+  console.log(`${signal} received, shutting down gracefully...`);
+  
+  try {
+    // Close server
+    if (server) {
+      await new Promise((resolve) => {
+        server.close(resolve);
+      });
+      console.log('HTTP server closed');
+    }
+
+    // Close database connections
+    const { PrismaClient } = require('./generated/prisma');
+    const prisma = new PrismaClient();
+    await prisma.$disconnect();
+    console.log('Database connections closed');
+
+    process.exit(0);
+  } catch (error) {
+    console.error('Error during shutdown:', error);
+    process.exit(1);
+  }
+};
+
+process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+process.on('SIGINT', () => gracefulShutdown('SIGINT'));
+
+// Handle unhandled promise rejections
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('Unhandled Rejection at:', promise, 'reason:', reason);
+  gracefulShutdown('UNHANDLED_REJECTION');
 });
 
-process.on('SIGINT', () => {
-  console.log('SIGINT received, shutting down gracefully...');
-  process.exit(0);
+process.on('uncaughtException', (error) => {
+  console.error('Uncaught Exception:', error);
+  gracefulShutdown('UNCAUGHT_EXCEPTION');
 });
 
 // Start server
-app.listen(PORT, () => {
+server = app.listen(PORT, () => {
   console.log('🧠 MindHub Healthcare Platform');
   console.log('====================================');
   console.log(`🚀 Server running on port ${PORT}`);
-  console.log(`📍 Local URL: http://localhost:${PORT}`);
-  console.log(`📋 Health Check: http://localhost:${PORT}/health`);
-  console.log(`📚 API Docs: http://localhost:${PORT}/api/docs`);
+  
+  if (process.env.NODE_ENV === 'production') {
+    console.log(`🌍 Production URL: https://mindhub.cloud/api`);
+    console.log(`📋 Health Check: https://mindhub.cloud/api/health`);
+    console.log(`🔐 Auth Endpoint: https://mindhub.cloud/api/auth`);
+  } else {
+    console.log(`📍 Local URL: http://localhost:${PORT}`);
+    console.log(`📋 Health Check: http://localhost:${PORT}/health`);
+    console.log(`📚 API Docs: http://localhost:${PORT}/api/docs`);
+  }
+  
   console.log('');
   console.log('🔧 Available Services:');
-  console.log(`   📊 Expedix (Patients): http://localhost:${PORT}/api/v1/expedix`);
-  console.log(`   🧪 ClinimetrixPro (Templates): http://localhost:${PORT}/api/clinimetrix-pro`);
-  console.log(`   📝 FormX (Forms): http://localhost:${PORT}/api/v1/formx`);
-  console.log(`   📖 Resources (Content): http://localhost:${PORT}/api/v1/resources`);
+  console.log(`   📊 Expedix (Patients): /api/v1/expedix`);
+  console.log(`   🧪 ClinimetrixPro (Templates): /api/clinimetrix-pro`);
+  console.log(`   📝 FormX (Forms): /api/v1/formx`);
+  console.log(`   📖 Resources (Content): /api/v1/resources`);
+  console.log(`   🔐 Authentication: /api/auth`);
   console.log('');
   console.log('📊 Universal Scale System:');
-  console.log(`   Get All Scales: http://localhost:${PORT}/api/scales`);
-  console.log(`   Create Session: http://localhost:${PORT}/api/sessions`);
+  console.log(`   Get All Scales: /api/scales`);
+  console.log(`   Create Session: /api/sessions`);
   console.log('');
-  console.log('🔐 Security & Monitoring:');
-  console.log(`   Health Check: http://localhost:${PORT}/api/health/detailed`);
-  console.log(`   Rate Limiting Dashboard: http://localhost:${PORT}/api/rate-limiting/dashboard/overview`);
-  console.log(`   Security Metrics: http://localhost:${PORT}/api/health/metrics`);
-  console.log('');
-  console.log('✅ Platform ready with advanced security and monitoring!');
+  console.log('✅ Platform ready!');
+  
+  // Database connection check (only in non-production or if requested)
+  if (process.env.NODE_ENV !== 'production') {
+    const { PrismaClient } = require('./generated/prisma');
+    const prisma = new PrismaClient();
+    prisma.$connect()
+      .then(() => {
+        console.log('📦 Database connected successfully');
+      })
+      .catch((error) => {
+        console.error('❌ Database connection failed:', error.message);
+      });
+  } else {
+    console.log('📦 Database connection check skipped in production (handled by startup script)');
+  }
 });
 
 module.exports = app;

@@ -98,19 +98,25 @@ class AuthService {
         }
       });
 
-      // Create default role
+      // Create default role (optional - create if roles table exists)
       const defaultRole = accountType === 'CLINIC' ? 'clinic_admin' : 'professional';
-      const role = await prisma.role.findFirst({
-        where: { name: defaultRole }
-      });
-
-      if (role) {
-        await prisma.userRole.create({
-          data: {
-            userId: user.id,
-            roleId: role.id
-          }
+      try {
+        const role = await prisma.role.findFirst({
+          where: { name: defaultRole }
         });
+
+        if (role) {
+          await prisma.userRole.create({
+            data: {
+              userId: user.id,
+              roleId: role.id
+            }
+          });
+        } else {
+          console.log(`Role '${defaultRole}' not found, skipping role assignment`);
+        }
+      } catch (roleError) {
+        console.log('Role system not available, skipping role assignment:', roleError.message);
       }
 
       // Generate tokens

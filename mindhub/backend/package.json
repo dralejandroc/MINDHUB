@@ -4,7 +4,8 @@
   "description": "MindHub Healthcare Platform - Backend API Services",
   "main": "server.js",
   "scripts": {
-    "start": "node server.js",
+    "start": "node start-production.js",
+    "start:direct": "node server.js",
     "dev": "nodemon server.js",
     "start:dev": "node server-dev.js",
     "start:simple": "node server-simple.js",

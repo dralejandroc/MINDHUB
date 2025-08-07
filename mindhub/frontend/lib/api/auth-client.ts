@@ -5,7 +5,7 @@
 
 import { apiRequest } from './api-config';
 
-const AUTH_BASE_URL = `${process.env.NEXT_PUBLIC_API_URL || 'https://mindhub-production.up.railway.app'}/auth`;
+const AUTH_BASE_URL = `${process.env.NEXT_PUBLIC_API_URL || 'https://mindhub.cloud/api'}/auth`;
 
 export interface User {
   id: string;
@@ -145,7 +145,7 @@ export async function betaRegister(data: BetaRegistrationData): Promise<BetaRegi
   try {
     console.log('[AUTH CLIENT] Attempting beta registration for:', data.email);
     
-    const response = await fetch('/api/auth/beta-register', {
+    const response = await fetch(`${AUTH_BASE_URL}/beta-register`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
