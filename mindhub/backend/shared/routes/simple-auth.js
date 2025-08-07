@@ -290,7 +290,11 @@ router.post('/beta-register', async (req, res) => {
     console.error('Beta registration error:', error);
     res.status(500).json({
       success: false,
-      message: 'Error al registrar para beta'
+      message: 'Error al registrar para beta',
+      debug: {
+        error: error.message,
+        stack: error.stack
+      }
     });
   }
 });
