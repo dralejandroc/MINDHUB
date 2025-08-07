@@ -1,5 +1,5 @@
 const express = require('express');
-const { PrismaClient } = require('../../../generated/prisma');
+const { PrismaClient } = require('../../generated/prisma');
 const crypto = require('crypto');
 const bcryptjs = require('bcryptjs');
 
