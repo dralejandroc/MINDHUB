@@ -266,8 +266,10 @@ router.post('/beta-register', async (req, res) => {
     }
 
     // Create beta registration
+    const { v4: uuidv4 } = require('uuid');
     await prisma.beta_registrations.create({
       data: {
+        id: uuidv4(),
         email: email.toLowerCase().trim(),
         name: name.trim(),
         professionalType,
@@ -290,11 +292,7 @@ router.post('/beta-register', async (req, res) => {
     console.error('Beta registration error:', error);
     res.status(500).json({
       success: false,
-      message: 'Error al registrar para beta',
-      debug: {
-        error: error.message,
-        stack: error.stack
-      }
+      message: 'Error al registrar para beta'
     });
   }
 });
