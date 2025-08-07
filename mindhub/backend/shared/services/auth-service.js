@@ -88,7 +88,8 @@ class AuthService {
           accountType: accountType || 'INDIVIDUAL',
           organizationId,
           isBetaUser: true,
-          isActive: true
+          isActive: true,
+          updatedAt: new Date()
         },
         include: {
           organization: true,
