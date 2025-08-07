@@ -3,36 +3,6 @@
   "outputDirectory": ".next",
   "installCommand": "npm install",
   "ignoreCommand": "git diff --quiet HEAD^ HEAD ./",
-  "rewrites": [
-    {
-      "source": "/manifest.json",
-      "destination": "/manifest.json"
-    },
-    {
-      "source": "/sw.js",
-      "destination": "/sw.js"
-    },
-    {
-      "source": "/icon-192x192.png",
-      "destination": "/icon-192x192.png"
-    },
-    {
-      "source": "/icon-512x512.png",
-      "destination": "/icon-512x512.png"
-    },
-    {
-      "source": "/icon-192x192.svg",
-      "destination": "/icon-192x192.svg"
-    },
-    {
-      "source": "/icon-512x512.svg",
-      "destination": "/icon-512x512.svg"
-    },
-    {
-      "source": "/favicon.ico",
-      "destination": "/favicon.ico"
-    }
-  ],
   "headers": [
     {
       "source": "/manifest.json",
@@ -65,7 +35,7 @@
       ]
     },
     {
-      "source": "/icon-*.png",
+      "source": "/icon-192x192.png",
       "headers": [
         {
           "key": "Content-Type",
@@ -78,7 +48,33 @@
       ]
     },
     {
-      "source": "/icon-*.svg",
+      "source": "/icon-512x512.png",
+      "headers": [
+        {
+          "key": "Content-Type",
+          "value": "image/png"
+        },
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=31536000, immutable"
+        }
+      ]
+    },
+    {
+      "source": "/icon-192x192.svg",
+      "headers": [
+        {
+          "key": "Content-Type",
+          "value": "image/svg+xml"
+        },
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=31536000, immutable"
+        }
+      ]
+    },
+    {
+      "source": "/icon-512x512.svg",
       "headers": [
         {
           "key": "Content-Type",
