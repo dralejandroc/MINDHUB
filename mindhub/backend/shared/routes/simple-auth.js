@@ -43,7 +43,7 @@ router.post('/register', async (req, res) => {
     }
 
     // Check if email already exists
-    const existingUser = await prisma.user.findUnique({
+    const existingUser = await prisma.users.findUnique({
       where: { email: email.toLowerCase().trim() }
     });
 
@@ -242,7 +242,7 @@ router.post('/beta-register', async (req, res) => {
     }
 
     // Check if email already exists in beta registrations
-    const existingBeta = await prisma.betaRegistration.findUnique({
+    const existingBeta = await prisma.beta_registrations.findUnique({
       where: { email: email.toLowerCase().trim() }
     });
 
@@ -254,7 +254,7 @@ router.post('/beta-register', async (req, res) => {
     }
 
     // Check if email already exists in users table
-    const existingUser = await prisma.user.findUnique({
+    const existingUser = await prisma.users.findUnique({
       where: { email: email.toLowerCase().trim() }
     });
 
@@ -266,7 +266,7 @@ router.post('/beta-register', async (req, res) => {
     }
 
     // Create beta registration
-    await prisma.betaRegistration.create({
+    await prisma.beta_registrations.create({
       data: {
         email: email.toLowerCase().trim(),
         name: name.trim(),
@@ -330,37 +330,37 @@ router.get('/beta-stats', requireAuth, async (req, res) => {
     }
 
     // Get breakdown by professional type
-    const professionalTypeStats = await prisma.betaRegistration.groupBy({
+    const professionalTypeStats = await prisma.beta_registrations.groupBy({
       by: ['professionalType'],
       _count: true
     });
 
     // Get breakdown by country
-    const countryStats = await prisma.betaRegistration.groupBy({
+    const countryStats = await prisma.beta_registrations.groupBy({
       by: ['country'],
       _count: true
     });
 
     // Get breakdown by years of practice
-    const yearsOfPracticeStats = await prisma.betaRegistration.groupBy({
+    const yearsOfPracticeStats = await prisma.beta_registrations.groupBy({
       by: ['yearsOfPractice'],
       _count: true
     });
 
     // Get breakdown by how they heard about us
-    const howDidYouHearStats = await prisma.betaRegistration.groupBy({
+    const howDidYouHearStats = await prisma.beta_registrations.groupBy({
       by: ['howDidYouHear'],
       _count: true
     });
 
-    const totalUsers = await prisma.user.count({
+    const totalUsers = await prisma.users.count({
       where: { isBetaUser: true }
     });
 
-    const totalRegistrations = await prisma.betaRegistration.count();
+    const totalRegistrations = await prisma.beta_registrations.count();
 
     // Get recent registrations with full details
-    const recentRegistrations = await prisma.betaRegistration.findMany({
+    const recentRegistrations = await prisma.beta_registrations.findMany({
       take: 10,
       orderBy: { registeredAt: 'desc' },
       select: {
@@ -415,7 +415,7 @@ router.post('/create-test-user', async (req, res) => {
     };
 
     // Check if test user already exists
-    const existing = await prisma.user.findUnique({
+    const existing = await prisma.users.findUnique({
       where: { email: testUser.email }
     });
 

@@ -134,7 +134,7 @@ class AuthService {
       });
 
       // Update beta registration if exists
-      await prisma.betaRegistration.updateMany({
+      await prisma.beta_registrations.updateMany({
         where: { email },
         data: { hasJoined: true }
       });

@@ -281,7 +281,7 @@ router.post('/invitations', requireAuth, async (req, res) => {
 
     // For now, we'll store this in beta_registrations table with a special flag
     // In a real implementation, you'd want a proper invitations table
-    await prisma.betaRegistration.create({
+    await prisma.beta_registrations.create({
       data: {
         email: email.toLowerCase().trim(),
         name: name?.trim() || 'Invitado',
@@ -330,7 +330,7 @@ router.post('/accept-invitation', async (req, res) => {
     }
 
     // Find invitation
-    const invitation = await prisma.betaRegistration.findFirst({
+    const invitation = await prisma.beta_registrations.findFirst({
       where: {
         inviteCode: token,
         email: email.toLowerCase().trim(),
