@@ -1,9 +1,9 @@
 // MindHub Healthcare Platform Service Worker
-// Version 1.0.1 - Fixed www domain manifest.json caching issue
+// Version 1.0.2 - Fixed CSP Railway connection issue
 
-const CACHE_NAME = 'mindhub-v1.0.1';
-const STATIC_CACHE = 'mindhub-static-v1.0.1';
-const DYNAMIC_CACHE = 'mindhub-dynamic-v1.0.1';
+const CACHE_NAME = 'mindhub-v1.0.2';
+const STATIC_CACHE = 'mindhub-static-v1.0.2';
+const DYNAMIC_CACHE = 'mindhub-dynamic-v1.0.2';
 
 // Essential files to cache for offline functionality
 const ESSENTIAL_URLS = [
