@@ -7,7 +7,7 @@ import { acceptInvitation } from '@/lib/api/organizations-client';
 export default function InvitationPage() {
   const params = useParams();
   const router = useRouter();
-  const token = params.token as string;
+  const token = params?.token as string;
   
   const [formData, setFormData] = useState({
     email: '',

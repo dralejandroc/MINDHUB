@@ -326,8 +326,8 @@ const gracefulShutdown = async (signal) => {
     }
 
     // Close database connections
-    const { PrismaClient } = require('./generated/prisma');
-    const prisma = new PrismaClient();
+    const { getPrismaClient } = require('./shared/config/prisma');
+    const prisma = getPrismaClient();
     await prisma.$disconnect();
     console.log('Database connections closed');
 
@@ -384,8 +384,8 @@ server = app.listen(PORT, () => {
   
   // Database connection check (only in non-production or if requested)
   if (process.env.NODE_ENV !== 'production') {
-    const { PrismaClient } = require('./generated/prisma');
-    const prisma = new PrismaClient();
+    const { getPrismaClient } = require('./shared/config/prisma');
+    const prisma = getPrismaClient();
     prisma.$connect()
       .then(() => {
         console.log('📦 Database connected successfully');

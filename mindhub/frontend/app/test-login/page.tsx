@@ -41,7 +41,7 @@ export default function TestLoginPage() {
       setResult({
         status: 'ERROR',
         success: false,
-        error: error.message,
+        error: error instanceof Error ? error.message : 'Unknown error occurred',
         timestamp: new Date().toISOString()
       });
     } finally {
@@ -68,7 +68,7 @@ export default function TestLoginPage() {
         type: 'HEALTH_CHECK',
         status: 'ERROR',
         success: false,
-        error: error.message,
+        error: error instanceof Error ? error.message : 'Unknown error occurred',
         timestamp: new Date().toISOString()
       });
     } finally {
