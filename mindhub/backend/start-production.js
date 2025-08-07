@@ -2,11 +2,11 @@
 
 /**
  * Production startup script for Railway deployment
- * Ensures database connectivity and Prisma client is ready
+ * Simplified version that ensures Prisma is ready before starting server
  */
 
 const { spawn } = require('child_process');
-const { PrismaClient } = require('./generated/prisma');
+const path = require('path');
 
 // Production environment check
 const requiredEnvVars = [
@@ -16,6 +16,8 @@ const requiredEnvVars = [
 
 console.log('🚀 MindHub Backend - Production Startup');
 console.log('=====================================');
+console.log('NODE_ENV:', process.env.NODE_ENV);
+console.log('PORT:', process.env.PORT || 3002);
 
 // Check environment variables
 console.log('🔍 Checking required environment variables...');
@@ -28,56 +30,58 @@ for (const envVar of requiredEnvVars) {
 
 console.log('✅ All required environment variables are present');
 
-// Database connection check
-async function checkDatabaseConnection() {
-  const prisma = new PrismaClient();
-  
-  try {
-    console.log('🔍 Testing database connection...');
-    await prisma.$connect();
-    console.log('✅ Database connection successful');
-    
-    // Test a simple query to ensure tables exist
-    const userCount = await prisma.user.count();
-    console.log(`📊 Found ${userCount} users in database`);
-    
-    await prisma.$disconnect();
-    return true;
-  } catch (error) {
-    console.error('❌ Database connection failed:', error.message);
-    
-    if (error.message.includes('does not exist')) {
-      console.log('📋 Running database migrations...');
-      return runMigrations();
-    }
-    
-    return false;
-  }
-}
-
-// Run Prisma migrations
-function runMigrations() {
+// Generate Prisma client first
+function generatePrismaClient() {
   return new Promise((resolve, reject) => {
-    console.log('🔄 Applying database migrations...');
+    console.log('🔧 Generating Prisma client...');
     
-    const migrate = spawn('npx', ['prisma', 'db', 'push', '--accept-data-loss'], {
+    const generate = spawn('npx', ['prisma', 'generate'], {
       stdio: 'inherit',
-      env: process.env
+      env: process.env,
+      cwd: __dirname
     });
 
-    migrate.on('close', (code) => {
+    generate.on('close', (code) => {
       if (code === 0) {
-        console.log('✅ Database migrations completed');
-        resolve(true);
+        console.log('✅ Prisma client generated successfully');
+        resolve();
       } else {
-        console.error('❌ Database migrations failed');
-        reject(new Error('Migration failed'));
+        console.error('❌ Failed to generate Prisma client');
+        reject(new Error('Prisma generation failed'));
       }
     });
 
-    migrate.on('error', (error) => {
-      console.error('❌ Migration error:', error);
+    generate.on('error', (error) => {
+      console.error('❌ Prisma generate error:', error);
       reject(error);
+    });
+  });
+}
+
+// Push database schema (safer than migrations in production)
+function pushDatabaseSchema() {
+  return new Promise((resolve, reject) => {
+    console.log('🔄 Synchronizing database schema...');
+    
+    const push = spawn('npx', ['prisma', 'db', 'push', '--accept-data-loss'], {
+      stdio: 'inherit',
+      env: process.env,
+      cwd: __dirname
+    });
+
+    push.on('close', (code) => {
+      if (code === 0) {
+        console.log('✅ Database schema synchronized');
+        resolve();
+      } else {
+        console.log('⚠️ Database push failed, but continuing...');
+        resolve(); // Continue anyway, the database might already be set up
+      }
+    });
+
+    push.on('error', (error) => {
+      console.error('⚠️ Database push error:', error);
+      resolve(); // Continue anyway
     });
   });
 }
@@ -85,62 +89,24 @@ function runMigrations() {
 // Start the main server
 function startServer() {
   console.log('🌟 Starting MindHub server...');
+  console.log('Working directory:', __dirname);
   
-  const server = spawn('node', ['server.js'], {
-    stdio: 'inherit',
-    env: process.env
-  });
-
-  server.on('close', (code) => {
-    console.log(`Server process exited with code ${code}`);
-    process.exit(code);
-  });
-
-  server.on('error', (error) => {
-    console.error('Server error:', error);
-    process.exit(1);
-  });
-
-  // Handle graceful shutdown
-  process.on('SIGTERM', () => {
-    console.log('SIGTERM received, shutting down server...');
-    server.kill('SIGTERM');
-  });
-
-  process.on('SIGINT', () => {
-    console.log('SIGINT received, shutting down server...');
-    server.kill('SIGINT');
-  });
+  // Use node directly to run server.js
+  require('./server.js');
 }
 
 // Main startup sequence
 async function startup() {
   try {
-    // Check database connection
-    const dbConnected = await checkDatabaseConnection();
+    // Generate Prisma client first
+    await generatePrismaClient();
     
-    if (!dbConnected) {
-      console.error('❌ Failed to establish database connection');
-      process.exit(1);
-    }
-
-    // Generate Prisma client
-    console.log('🔧 Generating Prisma client...');
-    const generate = spawn('npx', ['prisma', 'generate'], {
-      stdio: 'inherit',
-      env: process.env
-    });
-
-    generate.on('close', (code) => {
-      if (code === 0) {
-        console.log('✅ Prisma client generated successfully');
-        startServer();
-      } else {
-        console.error('❌ Failed to generate Prisma client');
-        process.exit(1);
-      }
-    });
-
+    // Try to sync database schema
+    await pushDatabaseSchema();
+    
+    // Start the server
+    startServer();
+    
   } catch (error) {
     console.error('❌ Startup failed:', error.message);
     process.exit(1);

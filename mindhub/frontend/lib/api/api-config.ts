@@ -64,7 +64,7 @@ export async function apiRequest(
 /**
  * Configuración de URLs base para diferentes servicios
  */
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://mindhub.cloud/api';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || '/api';
 
 export const API_BASE_URLS = {
   EXPEDIX: API_URL,
