@@ -11,12 +11,11 @@ datasource db {
 model User {
   id                             String                            @id @default(cuid())
   auth0Id                        String?                           @unique
+  password                       String?
   email                          String                            @unique
-  password                       String?                           // For simple auth
   name                           String?
   picture                        String?
   organizationId                 String?
-  organization                   Organization?                     @relation(fields: [organizationId], references: [id])
   accountType                    AccountType                       @default(INDIVIDUAL)
   isActive                       Boolean                           @default(true)
   isBetaUser                     Boolean                           @default(true)
@@ -27,6 +26,7 @@ model User {
   cashBreakdowns                 CashCutProfessionalBreakdown[]    @relation("ProfessionalCashBreakdowns")
   closedCashCuts                 CashRegisterCut[]                 @relation("ClosedCashCuts")
   createdCashCuts                CashRegisterCut[]                 @relation("CreatedCashCuts")
+  clinimetrixAssessments         ClinimetrixAssessment[]
   patientConsultations           Consultation[]
   createdExpenses                Expense[]                         @relation("UserExpenses")
   financeConfigs                 FinanceConfiguration[]            @relation("UserFinanceConfigs")
@@ -46,8 +46,9 @@ model User {
   administeredScales             ScaleAdministration[]
   userRoles                      UserRole[]
   storageQuota                   UserStorageQuota?
-  clinimetrixAssessments         ClinimetrixAssessment[]
+  organization                   Organization?                     @relation(fields: [organizationId], references: [id])
 
+  @@index([organizationId], map: "users_organizationId_fkey")
   @@map("users")
 }
 
@@ -131,6 +132,7 @@ model Patient {
   updatedAt               DateTime                      @updatedAt
   clinicId                String?                       @db.VarChar(255)
   assessmentTokens        AssessmentToken[]
+  clinimetrixAssessments  ClinimetrixAssessment[]
   consultations           Consultation[]
   incomes                 Income[]
   medicalHistory          MedicalHistory[]
@@ -143,7 +145,6 @@ model Patient {
   remoteAssessments       RemoteAssessment[]            @relation("RemoteAssessmentPatient")
   resourceDistributions   ResourcePatientDistribution[]
   scaleAdministrations    ScaleAdministration[]
-  clinimetrixAssessments  ClinimetrixAssessment[]
   waitingListEntries      WaitingList[]
 
   @@index([createdBy], map: "patients_createdBy_fkey")
@@ -1387,6 +1388,130 @@ model watermark_templates {
   @@index([user_id, is_default], map: "idx_user_default")
 }
 
+model ClinimetrixTemplate {
+  id            String                  @id
+  templateData  Json
+  version       String
+  isActive      Boolean                 @default(true)
+  createdAt     DateTime                @default(now())
+  updatedAt     DateTime                @updatedAt
+  assessments   ClinimetrixAssessment[]
+  registryEntry ClinimetrixRegistry?
+
+  @@map("clinimetrix_templates")
+}
+
+model ClinimetrixRegistry {
+  id                       String                  @id @default(cuid())
+  templateId               String                  @unique
+  abbreviation             String
+  name                     String
+  category                 String
+  subcategory              String?
+  description              String                  @db.Text
+  version                  String
+  language                 String
+  authors                  String                  @db.Text
+  year                     String
+  administrationMode       String
+  estimatedDurationMinutes Int
+  targetPopulation         Json
+  totalItems               Int
+  scoreRangeMin            Int
+  scoreRangeMax            Int
+  psychometricProperties   Json?
+  clinicalValidation       Json?
+  isPublic                 Boolean                 @default(true)
+  isFeatured               Boolean                 @default(false)
+  tags                     Json?
+  lastValidated            DateTime
+  isActive                 Boolean                 @default(true)
+  createdAt                DateTime                @default(now())
+  updatedAt                DateTime                @updatedAt
+  assessments              ClinimetrixAssessment[]
+  template                 ClinimetrixTemplate     @relation(fields: [templateId], references: [id], onDelete: Cascade)
+
+  @@index([category])
+  @@index([abbreviation])
+  @@index([isPublic, isActive])
+  @@map("clinimetrix_registry")
+}
+
+model ClinimetrixAssessment {
+  id              String                      @id @default(cuid())
+  templateId      String
+  patientId       String?
+  administratorId String
+  status          ClinimetrixAssessmentStatus @default(pending)
+  startedAt       DateTime?
+  completedAt     DateTime?
+  responses       Json?
+  scores          Json?
+  interpretation  Json?
+  notes           String?                     @db.Text
+  sessionData     Json?
+  metadata        Json?
+  createdAt       DateTime                    @default(now())
+  updatedAt       DateTime                    @updatedAt
+  administrator   User                        @relation(fields: [administratorId], references: [id], map: "clinimetrix_assessments_administrator_fkey")
+  patient         Patient?                    @relation(fields: [patientId], references: [id], map: "clinimetrix_assessments_patient_fkey")
+  registry        ClinimetrixRegistry         @relation(fields: [templateId], references: [templateId], map: "clinimetrix_assessments_registry_fkey")
+  template        ClinimetrixTemplate         @relation(fields: [templateId], references: [id], map: "clinimetrix_assessments_template_fkey")
+
+  @@index([templateId])
+  @@index([patientId])
+  @@index([administratorId])
+  @@index([status])
+  @@index([createdAt])
+  @@map("clinimetrix_assessments")
+}
+
+model Organization {
+  id               String           @id @default(cuid())
+  name             String
+  type             OrganizationType @default(CLINIC)
+  maxUsers         Int              @default(15)
+  isActive         Boolean          @default(true)
+  isBetaOrg        Boolean          @default(true)
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+  subscriptionPlan String?
+  users            User[]
+
+  @@map("organizations")
+}
+
+model AuthSession {
+  id           String   @id @default(cuid())
+  userId       String
+  token        String   @unique
+  refreshToken String?  @unique
+  expiresAt    DateTime
+  createdAt    DateTime @default(now())
+
+  @@index([userId])
+  @@index([token])
+  @@map("auth_sessions")
+}
+
+model BetaRegistration {
+  id               String   @id @default(cuid())
+  email            String   @unique
+  name             String?
+  professionalType String?
+  city             String?
+  country          String?
+  howDidYouHear    String?
+  yearsOfPractice  String?
+  specialization   String?
+  expectations     String?  @db.Text
+  registeredAt     DateTime @default(now())
+  inviteCode       String?
+  hasJoined        Boolean  @default(false)
+
+  @@map("beta_registrations")
+}
+
 enum RemoteAssessmentStatus {
   pending
   accessed
@@ -1494,143 +1619,12 @@ enum resource_sends_delivery_status {
   failed
 }
 
-// ClinimetrixPro Tables
-model ClinimetrixTemplate {
-  id           String   @id
-  templateData Json
-  version      String
-  isActive     Boolean  @default(true)
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
-  
-  // Relations
-  registryEntry ClinimetrixRegistry?
-  assessments   ClinimetrixAssessment[]
-
-  @@map("clinimetrix_templates")
-}
-
-model ClinimetrixRegistry {
-  id                     String   @id @default(cuid())
-  templateId             String   @unique
-  abbreviation           String
-  name                   String
-  category               String
-  subcategory            String?
-  description            String   @db.Text
-  version                String
-  language               String
-  authors                String   @db.Text
-  year                   String
-  administrationMode     String
-  estimatedDurationMinutes Int
-  targetPopulation       Json
-  totalItems             Int
-  scoreRangeMin          Int
-  scoreRangeMax          Int
-  psychometricProperties Json?
-  clinicalValidation     Json?
-  isPublic               Boolean  @default(true)
-  isFeatured             Boolean  @default(false)
-  tags                   Json?
-  lastValidated          DateTime
-  isActive               Boolean  @default(true)
-  createdAt              DateTime @default(now())
-  updatedAt              DateTime @updatedAt
-  
-  // Relations
-  template    ClinimetrixTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
-  assessments ClinimetrixAssessment[]
-
-  @@index([category])
-  @@index([abbreviation])
-  @@index([isPublic, isActive])
-  @@map("clinimetrix_registry")
-}
-
-model ClinimetrixAssessment {
-  id               String   @id @default(cuid())
-  templateId       String
-  patientId        String?
-  administratorId  String
-  status           ClinimetrixAssessmentStatus @default(pending)
-  startedAt        DateTime?
-  completedAt      DateTime?
-  responses        Json?
-  scores           Json?
-  interpretation   Json?
-  notes            String?  @db.Text
-  sessionData      Json?
-  metadata         Json?
-  createdAt        DateTime @default(now())
-  updatedAt        DateTime @updatedAt
-  
-  // Relations
-  template     ClinimetrixTemplate @relation(fields: [templateId], references: [id], map: "clinimetrix_assessments_template_fkey")
-  registry     ClinimetrixRegistry @relation(fields: [templateId], references: [templateId], map: "clinimetrix_assessments_registry_fkey")
-  patient      Patient?           @relation(fields: [patientId], references: [id], map: "clinimetrix_assessments_patient_fkey")
-  administrator User              @relation(fields: [administratorId], references: [id], map: "clinimetrix_assessments_administrator_fkey")
-
-  @@index([templateId])
-  @@index([patientId])
-  @@index([administratorId])
-  @@index([status])
-  @@index([createdAt])
-  @@map("clinimetrix_assessments")
-}
-
 enum ClinimetrixAssessmentStatus {
   pending
   in_progress
   completed
   cancelled
   expired
-}
-
-model Organization {
-  id                String              @id @default(cuid())
-  name              String
-  type              OrganizationType    @default(CLINIC)
-  maxUsers          Int                 @default(15)
-  isActive          Boolean             @default(true)
-  isBetaOrg         Boolean             @default(true)
-  createdAt         DateTime            @default(now())
-  updatedAt         DateTime            @updatedAt
-  users             User[]
-  subscriptionPlan  String?             // For future use
-  
-  @@map("organizations")
-}
-
-model AuthSession {
-  id            String   @id @default(cuid())
-  userId        String
-  token         String   @unique
-  refreshToken  String?  @unique
-  expiresAt     DateTime
-  createdAt     DateTime @default(now())
-  
-  @@index([userId])
-  @@index([token])
-  @@map("auth_sessions")
-}
-
-model BetaRegistration {
-  id              String      @id @default(cuid())
-  email           String      @unique
-  name            String?
-  professionalType String?    // psicologo, psiquiatra, clinica
-  city            String?
-  country         String?
-  howDidYouHear   String?     // google, redes_sociales, recomendacion, etc.
-  yearsOfPractice String?     // menos_1, 1_3, 4_7, 8_15, mas_15, no_practica
-  specialization  String?
-  expectations    String?     @db.Text
-  registeredAt    DateTime    @default(now())
-  inviteCode      String?
-  hasJoined       Boolean     @default(false)
-  
-  @@map("beta_registrations")
 }
 
 enum AccountType {

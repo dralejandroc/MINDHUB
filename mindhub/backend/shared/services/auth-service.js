@@ -1,13 +1,13 @@
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
-const { PrismaClient } = require('../../../generated/prisma');
+const { PrismaClient } = require('../../generated/prisma');
 
 const prisma = new PrismaClient();
 
 class AuthService {
   constructor() {
-    this.JWT_SECRET = process.env.JWT_SECRET || 'mindhub-beta-secret-2025';
-    this.JWT_EXPIRES_IN = '24h';
+    this.JWT_SECRET = process.env.JWT_SECRET || 'mindhub-secret';
+    this.JWT_EXPIRES_IN = '1h';
     this.REFRESH_TOKEN_EXPIRES_IN = '7d';
   }
 
@@ -23,7 +23,7 @@ class AuthService {
   // Generate refresh token
   generateRefreshToken(userId) {
     return jwt.sign(
-      { userId, type: 'refresh' },
+      { userId },
       this.JWT_SECRET,
       { expiresIn: this.REFRESH_TOKEN_EXPIRES_IN }
     );
@@ -161,15 +161,7 @@ class AuthService {
     try {
       // Find user
       const user = await prisma.user.findUnique({
-        where: { email },
-        include: {
-          organization: true,
-          userRoles: {
-            include: {
-              role: true
-            }
-          }
-        }
+        where: { email }
       });
 
       if (!user || !user.password) {
@@ -187,18 +179,19 @@ class AuthService {
       }
 
       // Get user role
-      const userRole = user.userRoles[0]?.role?.name || 'professional';
+      const userRole = 'professional';
 
       // Generate tokens
       const token = this.generateToken(user.id, user.email, userRole);
       const refreshToken = this.generateRefreshToken(user.id);
 
-      // Create session
+      // Create session with shorter session token
+      const sessionToken = require('crypto').randomBytes(32).toString('hex'); // 64 chars
       await prisma.authSession.create({
         data: {
           userId: user.id,
-          token,
-          refreshToken,
+          token: sessionToken,
+          refreshToken: sessionToken + '-refresh',
           expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000)
         }
       });
@@ -215,7 +208,6 @@ class AuthService {
           email: user.email,
           name: user.name,
           accountType: user.accountType,
-          organization: user.organization,
           role: userRole
         },
         token,
@@ -306,15 +298,7 @@ class AuthService {
       const decoded = this.verifyToken(token);
       
       const user = await prisma.user.findUnique({
-        where: { id: decoded.userId },
-        include: {
-          organization: true,
-          userRoles: {
-            include: {
-              role: true
-            }
-          }
-        }
+        where: { id: decoded.userId }
       });
 
       if (!user || !user.isActive) {
@@ -326,8 +310,7 @@ class AuthService {
         email: user.email,
         name: user.name,
         accountType: user.accountType,
-        organization: user.organization,
-        role: user.userRoles[0]?.role?.name || 'professional',
+        role: 'professional',
         isBetaUser: user.isBetaUser
       };
     } catch (error) {

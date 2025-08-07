@@ -5,7 +5,7 @@
  * for the MindHub healthcare platform.
  */
 
-const { PrismaClient } = require('../../../generated/prisma');
+const { PrismaClient } = require('../../generated/prisma');
 const winston = require('winston');
 
 // Configure logger
