@@ -64,8 +64,7 @@ export async function apiRequest(
 /**
  * Configuración de URLs base para diferentes servicios
  */
-// Temporarily hardcoded until Vercel env vars are set
-const API_URL = 'https://mindhub-production.up.railway.app/api';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://mindhub-production.up.railway.app/api';
 
 export const API_BASE_URLS = {
   EXPEDIX: API_URL,
