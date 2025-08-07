@@ -100,7 +100,7 @@ async function findAvailableId(baseId) {
   const prisma = getPrismaClient();
   
   // Verificar si el ID base está disponible
-  const existing = await prisma.patient.findUnique({
+  const existing = await prisma.patients.findUnique({
     where: { id: baseId }
   });
 
@@ -114,7 +114,7 @@ async function findAvailableId(baseId) {
   for (const letter of alphabet) {
     const candidateId = `${baseId}${letter}`;
     
-    const existingWithSuffix = await prisma.patient.findUnique({
+    const existingWithSuffix = await prisma.patients.findUnique({
       where: { id: candidateId }
     });
 

@@ -500,7 +500,7 @@ class AuthenticationMiddleware {
         async (prisma) => {
           // For psychiatrists and psychologists, check if they have any consultation or assessment with the patient
           if (['psychiatrist', 'psychologist'].includes(userRole)) {
-            const hasConsultation = await prisma.consultation.findFirst({
+            const hasConsultation = await prisma.consultations.findFirst({
               where: {
                 patientId: patientId,
                 createdBy: userId
@@ -510,7 +510,7 @@ class AuthenticationMiddleware {
             if (hasConsultation) return true;
             
             // Check if they have any assessment with the patient
-            const hasAssessment = await prisma.scaleAdministration.findFirst({
+            const hasAssessment = await prisma.scale_administrations.findFirst({
               where: {
                 patientId: patientId,
                 administeredBy: userId
@@ -522,7 +522,7 @@ class AuthenticationMiddleware {
           
           // For nurses, check if they have care notes or vital signs entries
           if (userRole === 'nurse') {
-            const hasCareNotes = await prisma.medicalHistory.findFirst({
+            const hasCareNotes = await prisma.medical_history.findFirst({
               where: {
                 patientId: patientId,
                 createdBy: userId,
@@ -534,12 +534,12 @@ class AuthenticationMiddleware {
           }
           
           // Check if they are assigned to the same organization as the patient
-          const userOrganization = await prisma.user.findUnique({
+          const userOrganization = await prisma.users.findUnique({
             where: { id: userId },
             select: { organizationId: true }
           });
           
-          const patientOrganization = await prisma.patient.findUnique({
+          const patientOrganization = await prisma.patients.findUnique({
             where: { id: patientId },
             select: { organizationId: true }
           });

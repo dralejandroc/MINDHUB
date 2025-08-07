@@ -301,7 +301,7 @@ class IdentityProviderIntegration {
     // Store or update user in database
     try {
       const existingUser = await executeQuery(
-        (prisma) => prisma.user.findFirst({
+        (prisma) => prisma.users.findFirst({
           where: {
             OR: [
               { email: mappedUser.email },
@@ -318,7 +318,7 @@ class IdentityProviderIntegration {
       if (existingUser) {
         // Update existing user
         await executeQuery(
-          (prisma) => prisma.user.update({
+          (prisma) => prisma.users.update({
             where: { id: existingUser.id },
             data: {
               name: mappedUser.name,
@@ -336,7 +336,7 @@ class IdentityProviderIntegration {
       } else {
         // Create new user
         const newUser = await executeQuery(
-          (prisma) => prisma.user.create({
+          (prisma) => prisma.users.create({
             data: {
               id: mappedUser.id,
               email: mappedUser.email,
@@ -492,7 +492,7 @@ class IdentityProviderIntegration {
     // Create user session
     try {
       await executeQuery(
-        (prisma) => prisma.userSession.create({
+        (prisma) => prisma.usersSession.create({
           data: {
             id: sessionId,
             userId: user.id,
