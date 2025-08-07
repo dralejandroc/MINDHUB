@@ -1,13 +1,14 @@
 'use client';
 
 import { useState } from 'react';
+import { betaRegister, type BetaRegistrationData } from '@/lib/api/auth-client';
 
 interface BetaRegistrationModalProps {
   onClose: () => void;
 }
 
 export function BetaRegistrationModal({ onClose }: BetaRegistrationModalProps) {
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<BetaRegistrationData>({
     email: '',
     name: '',
     password: '',
@@ -23,6 +24,7 @@ export function BetaRegistrationModal({ onClose }: BetaRegistrationModalProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
   const [error, setError] = useState('');
+  const [debugInfo, setDebugInfo] = useState<any>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -44,33 +46,25 @@ export function BetaRegistrationModal({ onClose }: BetaRegistrationModalProps) {
     }
 
     try {
-      const response = await fetch('/api/auth/beta-register', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(formData),
-      });
-
-      const result = await response.json();
-
+      console.log('[BETA MODAL] Submitting registration for:', formData.email);
+      const result = await betaRegister(formData);
+      
+      console.log('[BETA MODAL] Registration result:', result);
+      
       if (result.success) {
-        // Auto-login after successful registration
-        if (result.data?.token) {
-          // Store token for auto-login
-          localStorage.setItem('mindhub_token', result.data.token);
-          localStorage.setItem('mindhub_user', JSON.stringify(result.data.user));
-          
-          // Set success state to trigger welcome flow
-          setIsSuccess(true);
-        } else {
-          setIsSuccess(true);
-        }
+        setIsSuccess(true);
+        setError('');
+        setDebugInfo(null);
+        console.log('[BETA MODAL] Registration successful');
       } else {
         setError(result.message || 'Error al registrarse');
+        setDebugInfo(result.debug);
+        console.error('[BETA MODAL] Registration failed:', result);
       }
     } catch (error) {
-      setError('Error de conexión. Por favor intenta de nuevo.');
+      console.error('[BETA MODAL] Unexpected error:', error);
+      setError('Error inesperado. Por favor intenta de nuevo.');
+      setDebugInfo({ error: error instanceof Error ? error.message : 'Unknown error' });
     } finally {
       setIsSubmitting(false);
     }
@@ -114,7 +108,7 @@ export function BetaRegistrationModal({ onClose }: BetaRegistrationModalProps) {
               onClick={() => {
                 onClose();
                 // Redirect to dashboard if token exists
-                const token = localStorage.getItem('mindhub_token');
+                const token = localStorage.getItem('authToken');
                 if (token) {
                   window.location.href = '/dashboard';
                 }
@@ -374,7 +368,15 @@ export function BetaRegistrationModal({ onClose }: BetaRegistrationModalProps) {
 
           {error && (
             <div className="bg-red-50 border border-red-200 rounded-lg p-3">
-              <p className="text-red-600 text-sm">{error}</p>
+              <p className="text-red-600 text-sm font-medium">{error}</p>
+              {debugInfo && process.env.NODE_ENV === 'development' && (
+                <div className="mt-2 p-2 bg-gray-100 rounded text-xs">
+                  <p className="text-gray-600 font-medium">Debug Info:</p>
+                  <pre className="text-gray-500 overflow-x-auto">
+                    {JSON.stringify(debugInfo, null, 2)}
+                  </pre>
+                </div>
+              )}
             </div>
           )}
 

@@ -110,3 +110,71 @@ export function logout() {
   localStorage.removeItem('currentUser');
   window.location.href = '/login';
 }
+
+/**
+ * Beta registration interface
+ */
+export interface BetaRegistrationData {
+  email: string;
+  name: string;
+  password: string;
+  confirmPassword: string;
+  professionalType: string;
+  city: string;
+  country: string;
+  howDidYouHear: string;
+  yearsOfPractice: string;
+  specialization?: string;
+  expectations?: string;
+}
+
+export interface BetaRegistrationResponse {
+  success: boolean;
+  message?: string;
+  data?: {
+    token?: string;
+    user?: User;
+  };
+  debug?: any;
+}
+
+/**
+ * Register for beta access
+ */
+export async function betaRegister(data: BetaRegistrationData): Promise<BetaRegistrationResponse> {
+  try {
+    console.log('[AUTH CLIENT] Attempting beta registration for:', data.email);
+    
+    const response = await fetch('/api/auth/beta-register', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(data),
+    });
+
+    console.log('[AUTH CLIENT] API response status:', response.status);
+    
+    const result = await response.json();
+    console.log('[AUTH CLIENT] API response data:', result);
+    
+    // Store auth data if registration is successful
+    if (result.success && result.data?.token) {
+      localStorage.setItem('authToken', result.data.token);
+      localStorage.setItem('currentUser', JSON.stringify(result.data.user));
+      console.log('[AUTH CLIENT] Auth data stored successfully');
+    }
+    
+    return result;
+  } catch (error) {
+    console.error('[AUTH CLIENT] Beta registration error:', error);
+    return {
+      success: false,
+      message: 'Error de conexión. Por favor intenta de nuevo.',
+      debug: {
+        error: error instanceof Error ? error.message : 'Unknown error',
+        type: 'CLIENT_ERROR'
+      }
+    };
+  }
+}
