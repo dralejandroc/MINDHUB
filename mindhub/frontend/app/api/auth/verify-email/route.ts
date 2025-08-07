@@ -14,7 +14,7 @@ export async function GET(request: NextRequest) {
       );
     }
     
-    const response = await fetch(`${API_BASE_URL}/auth/verify-email?token=${token}`, {
+    const response = await fetch(`${API_BASE_URL}/api/auth/verify-email?token=${token}`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',

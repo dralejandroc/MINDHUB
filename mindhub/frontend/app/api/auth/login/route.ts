@@ -10,7 +10,7 @@ export async function POST(request: NextRequest) {
     console.log('Attempting login to backend:', BACKEND_URL);
     
     // Forward to backend authentication
-    const response = await fetch(`${BACKEND_URL}/auth/login`, {
+    const response = await fetch(`${BACKEND_URL}/api/auth/login`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

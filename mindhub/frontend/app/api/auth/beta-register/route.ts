@@ -10,7 +10,7 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     console.log('[API] Request body received:', { ...body, password: '***', confirmPassword: '***' });
     
-    const backendUrl = `${API_BASE_URL}/auth/beta-register`;
+    const backendUrl = `${API_BASE_URL}/api/auth/beta-register`;
     console.log('[API] Making request to:', backendUrl);
     
     const response = await fetch(backendUrl, {

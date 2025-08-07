@@ -13,7 +13,7 @@ export async function POST(request: NextRequest) {
       );
     }
     
-    const response = await fetch(`${API_BASE_URL}/auth/resend-verification`, {
+    const response = await fetch(`${API_BASE_URL}/api/auth/resend-verification`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
