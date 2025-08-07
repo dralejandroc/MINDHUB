@@ -2,7 +2,6 @@
   "buildCommand": "npm run build",
   "outputDirectory": ".next",
   "installCommand": "npm install",
-  "ignoreCommand": "git diff --quiet HEAD^ HEAD ./",
   "headers": [
     {
       "source": "/manifest.json",
