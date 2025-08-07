@@ -1,4 +1,4 @@
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'https://mindhub-production.up.railway.app';
+const API_BASE = '/api';
 
 export interface Patient {
   id: string;

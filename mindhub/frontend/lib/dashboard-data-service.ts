@@ -153,7 +153,7 @@ class DashboardDataService {
 
   private async fetchPatients(): Promise<any[]> {
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'https://mindhub-production.up.railway.app'}/v1/expedix/patients`);
+      const response = await fetch(`/api/v1/expedix/patients`);
       const data = await response.json();
       return data?.data || [];
     } catch (error) {
@@ -164,7 +164,7 @@ class DashboardDataService {
 
   private async fetchConsultations(): Promise<any[]> {
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'https://mindhub-production.up.railway.app'}/v1/expedix/consultations`);
+      const response = await fetch(`/api/v1/expedix/consultations`);
       const data = await response.json();
       return data?.data || [];
     } catch (error) {
@@ -185,7 +185,7 @@ class DashboardDataService {
       
       for (const patient of patientSample) {
         try {
-          const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'https://mindhub-production.up.railway.app'}/v1/clinimetrix/patient-assessments/${patient.id}`);
+          const response = await fetch(`/api/v1/clinimetrix/patient-assessments/${patient.id}`);
           if (response.ok) {
             const data = await response.json();
             if (data.success && data.data) {

@@ -3,7 +3,7 @@
  * Handles all operations related to patient timeline and medical history
  */
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://mindhub-production.up.railway.app';
+const API_BASE_URL = '/api';
 
 export interface TimelineEvent {
   id: string;

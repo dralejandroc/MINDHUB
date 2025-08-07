@@ -5,7 +5,7 @@
 
 import { apiRequest } from './api-config';
 
-const ORGANIZATIONS_BASE_URL = `${process.env.NEXT_PUBLIC_API_URL || 'https://mindhub-production.up.railway.app/api'}/organizations`;
+const ORGANIZATIONS_BASE_URL = '/api/organizations';
 
 export interface Organization {
   id: string;

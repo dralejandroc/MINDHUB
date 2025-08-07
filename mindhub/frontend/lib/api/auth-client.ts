@@ -5,7 +5,7 @@
 
 import { apiRequest } from './api-config';
 
-const AUTH_BASE_URL = `${process.env.NEXT_PUBLIC_API_URL || 'https://mindhub-production.up.railway.app/api'}/auth`;
+const AUTH_BASE_URL = '/api/auth';
 
 export interface User {
   id: string;
@@ -145,17 +145,11 @@ export async function betaRegister(data: BetaRegistrationData): Promise<BetaRegi
   try {
     console.log('[AUTH CLIENT] Attempting beta registration for:', data.email);
     
-    const response = await fetch(`${AUTH_BASE_URL}/beta-register`, {
+    const result = await apiRequest(`${AUTH_BASE_URL}/beta-register`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(data),
+      body: JSON.stringify(data)
     });
 
-    console.log('[AUTH CLIENT] API response status:', response.status);
-    
-    const result = await response.json();
     console.log('[AUTH CLIENT] API response data:', result);
     
     // Store auth data if registration is successful

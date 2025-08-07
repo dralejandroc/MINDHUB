@@ -261,7 +261,7 @@ export class RemoteAssessmentsClient {
  * Se usa desde la página pública del paciente
  */
 export class PublicRemoteAssessmentsClient {
-  private static baseURL = process.env.NEXT_PUBLIC_API_URL || 'https://mindhub-production.up.railway.app';
+  private static baseURL = '/api';
 
   /**
    * Obtener detalles de evaluación remota por token
@@ -270,7 +270,7 @@ export class PublicRemoteAssessmentsClient {
     try {
       console.log('🔍 Validando token de evaluación remota:', token.substring(0, 8) + '...');
       
-      const response = await fetch(`${this.baseURL}/api/v1/clinimetrix/remote-assessments/${token}`, {
+      const response = await fetch(`${this.baseURL}/v1/clinimetrix/remote-assessments/${token}`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -311,7 +311,7 @@ export class PublicRemoteAssessmentsClient {
     try {
       console.log('💾 Guardando progreso:', progress.percentageComplete + '%');
       
-      const response = await fetch(`${this.baseURL}/api/v1/clinimetrix/remote-assessments/${token}/save-progress`, {
+      const response = await fetch(`${this.baseURL}/v1/clinimetrix/remote-assessments/${token}/save-progress`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -340,7 +340,7 @@ export class PublicRemoteAssessmentsClient {
     try {
       console.log('🎯 Completando evaluación remota con', completion.responses.length, 'respuestas');
       
-      const response = await fetch(`${this.baseURL}/api/v1/clinimetrix/remote-assessments/${token}/complete`, {
+      const response = await fetch(`${this.baseURL}/v1/clinimetrix/remote-assessments/${token}/complete`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
