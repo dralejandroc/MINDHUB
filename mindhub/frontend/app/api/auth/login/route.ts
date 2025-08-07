@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 
 // Backend URL - using environment variable
-const BACKEND_URL = process.env.BACKEND_URL || 'https://mindhub.cloud';
+const BACKEND_URL = process.env.BACKEND_URL || 'http://mindhub-backend:8080';
 
 export async function POST(request: NextRequest) {
   try {

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-const API_BASE_URL = process.env.BACKEND_URL || 'https://mindhub.cloud';
+const API_BASE_URL = process.env.BACKEND_URL || 'http://mindhub-backend:8080';
 
 export async function POST(request: NextRequest) {
   try {
