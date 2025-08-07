@@ -52,7 +52,7 @@ class AuthService {
   async register({ email, password, name, accountType, organizationName }) {
     try {
       // Check if user exists
-      const existingUser = await prisma.user.findUnique({
+      const existingUser = await prisma.users.findUnique({
         where: { email }
       });
 
@@ -78,7 +78,7 @@ class AuthService {
       }
 
       // Create user
-      const user = await prisma.user.create({
+      const user = await prisma.users.create({
         data: {
           email,
           password: hashedPassword,
@@ -101,12 +101,12 @@ class AuthService {
       // Create default role (optional - create if roles table exists)
       const defaultRole = accountType === 'CLINIC' ? 'clinic_admin' : 'professional';
       try {
-        const role = await prisma.role.findFirst({
+        const role = await prisma.roles.findFirst({
           where: { name: defaultRole }
         });
 
         if (role) {
-          await prisma.userRole.create({
+          await prisma.usersRole.create({
             data: {
               userId: user.id,
               roleId: role.id
@@ -124,7 +124,7 @@ class AuthService {
       const refreshToken = this.generateRefreshToken(user.id);
 
       // Create session
-      await prisma.authSession.create({
+      await prisma.auth_sessions.create({
         data: {
           userId: user.id,
           token,
@@ -160,7 +160,7 @@ class AuthService {
   async login({ email, password }) {
     try {
       // Find user
-      const user = await prisma.user.findUnique({
+      const user = await prisma.users.findUnique({
         where: { email }
       });
 
@@ -187,7 +187,7 @@ class AuthService {
 
       // Create session with shorter session token
       const sessionToken = require('crypto').randomBytes(32).toString('hex'); // 64 chars
-      await prisma.authSession.create({
+      await prisma.auth_sessions.create({
         data: {
           userId: user.id,
           token: sessionToken,
@@ -197,7 +197,7 @@ class AuthService {
       });
 
       // Update last login
-      await prisma.user.update({
+      await prisma.users.update({
         where: { id: user.id },
         data: { lastLoginAt: new Date() }
       });
@@ -222,7 +222,7 @@ class AuthService {
   // Logout user
   async logout(token) {
     try {
-      await prisma.authSession.deleteMany({
+      await prisma.auth_sessions.deleteMany({
         where: { token }
       });
       return { success: true };
@@ -239,7 +239,7 @@ class AuthService {
       const decoded = this.verifyToken(refreshToken);
       
       // Find session
-      const session = await prisma.authSession.findFirst({
+      const session = await prisma.auth_sessions.findFirst({
         where: { 
           refreshToken,
           userId: decoded.userId
@@ -251,7 +251,7 @@ class AuthService {
       }
 
       // Get user
-      const user = await prisma.user.findUnique({
+      const user = await prisma.users.findUnique({
         where: { id: decoded.userId },
         include: {
           userRoles: {
@@ -273,7 +273,7 @@ class AuthService {
       const newRefreshToken = this.generateRefreshToken(user.id);
 
       // Update session
-      await prisma.authSession.update({
+      await prisma.auth_sessions.update({
         where: { id: session.id },
         data: {
           token: newToken,
@@ -297,7 +297,7 @@ class AuthService {
     try {
       const decoded = this.verifyToken(token);
       
-      const user = await prisma.user.findUnique({
+      const user = await prisma.users.findUnique({
         where: { id: decoded.userId }
       });
 

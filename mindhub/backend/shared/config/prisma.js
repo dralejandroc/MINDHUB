@@ -253,7 +253,7 @@ const schemas = {
      */
     getUserByAuth0Id: async (auth0Id) => {
       return executeQuery(
-        (prisma) => prisma.user.findUnique({
+        (prisma) => prisma.users.findUnique({
           where: { auth0Id },
           include: {
             userRoles: {
@@ -282,7 +282,7 @@ const schemas = {
      */
     upsertUserFromAuth0: async (profile) => {
       return executeQuery(
-        (prisma) => prisma.user.upsert({
+        (prisma) => prisma.users.upsert({
           where: { auth0Id: profile.sub },
           update: {
             email: profile.email,
@@ -311,7 +311,7 @@ const schemas = {
      */
     getPatientWithHistory: async (patientId) => {
       return executeQuery(
-        (prisma) => prisma.patient.findUnique({
+        (prisma) => prisma.patients.findUnique({
           where: { id: patientId },
           include: {
             medicalHistory: true,
