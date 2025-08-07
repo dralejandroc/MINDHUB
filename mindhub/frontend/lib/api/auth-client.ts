@@ -5,7 +5,8 @@
 
 import { apiRequest } from './api-config';
 
-const AUTH_BASE_URL = `${process.env.NEXT_PUBLIC_API_URL || 'https://mindhub-production.up.railway.app/api'}/auth`;
+// Temporarily hardcoded until Vercel env vars are set
+const AUTH_BASE_URL = 'https://mindhub-production.up.railway.app/api/auth';
 
 export interface User {
   id: string;
