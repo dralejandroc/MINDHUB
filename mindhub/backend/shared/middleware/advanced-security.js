@@ -24,7 +24,7 @@ class AdvancedSecurityMiddleware {
           styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
           fontSrc: ["'self'", "https://fonts.gstatic.com"],
           imgSrc: ["'self'", "data:", "https:"],
-          connectSrc: ["'self'", "https://api.mindhub.health"],
+          connectSrc: ["'self'", "https://mindhub.cloud", "https://www.mindhub.cloud", "https://api.mindhub.com", "https://mindhub-production.up.railway.app", "https://api.mindhub.health", "http://localhost:*"],
           mediaSrc: ["'self'"],
           objectSrc: ["'none'"],
           childSrc: ["'none'"],

@@ -408,7 +408,7 @@ class EncryptionManager {
         "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
         "font-src 'self' https://fonts.gstatic.com",
         "img-src 'self' data: https:",
-        "connect-src 'self' https://api.mindhub.com https://*.auth0.com",
+        "connect-src 'self' https://mindhub.cloud https://www.mindhub.cloud https://api.mindhub.com https://mindhub-production.up.railway.app https://*.auth0.com http://localhost:*",
         "frame-ancestors 'none'"
       ].join('; '),
       'Permissions-Policy': [

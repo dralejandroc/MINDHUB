@@ -57,7 +57,7 @@ class IntegrixGateway {
           styleSrc: ["'self'", "'unsafe-inline'"],
           scriptSrc: ["'self'"],
           imgSrc: ["'self'", "data:", "https:"],
-          connectSrc: ["'self'", "https:"],
+          connectSrc: ["'self'", "https://mindhub.cloud", "https://www.mindhub.cloud", "https://api.mindhub.com", "https://mindhub-production.up.railway.app", "https://*.auth0.com", "http://localhost:*"],
           fontSrc: ["'self'", "https:", "data:"],
           objectSrc: ["'none'"],
           mediaSrc: ["'self'"],
