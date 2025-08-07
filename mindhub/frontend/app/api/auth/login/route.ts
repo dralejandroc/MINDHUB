@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-// Backend URL - should be configured with actual Railway backend URL
-const BACKEND_URL = process.env.BACKEND_URL || 'https://mindhub-production.up.railway.app';
+// Backend URL - using environment variable
+const BACKEND_URL = process.env.BACKEND_URL || 'https://mindhub.cloud/api';
 
 export async function POST(request: NextRequest) {
   try {

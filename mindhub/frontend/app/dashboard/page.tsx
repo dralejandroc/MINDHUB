@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { ClinicDashboard } from '@/components/dashboard/ClinicDashboard';
 
 interface User {
   id: string;
@@ -97,6 +98,9 @@ export default function DashboardPage() {
             </p>
           </div>
         </div>
+
+        {/* Clinic Dashboard */}
+        <ClinicDashboard className="mb-8" />
 
         {/* Modules Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">

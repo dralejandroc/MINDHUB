@@ -3,7 +3,7 @@
  * Servicio para la gestión de operaciones de recepción/secretarias
  */
 
-const { PrismaClient } = require('../../generated/prisma');
+const { PrismaClient } = require('../../../generated/prisma');
 const { v4: uuidv4 } = require('uuid');
 const BehavioralService = require('./BehavioralService');
 const prisma = new PrismaClient();

@@ -1,6 +1,6 @@
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
-const { PrismaClient } = require('../../generated/prisma');
+const { PrismaClient } = require('../../../generated/prisma');
 
 const prisma = new PrismaClient();
 

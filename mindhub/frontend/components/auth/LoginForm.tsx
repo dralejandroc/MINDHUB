@@ -70,15 +70,15 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onLoginSuccess }) => {
           <div className="rounded-md shadow-sm -space-y-px">
             <div>
               <label htmlFor="username" className="sr-only">
-                Usuario
+                Email
               </label>
               <input
                 id="username"
                 name="username"
-                type="text"
+                type="email"
                 required
                 className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-t-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
-                placeholder="Usuario"
+                placeholder="Email"
                 value={formData.username}
                 onChange={handleChange}
               />
@@ -152,9 +152,9 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onLoginSuccess }) => {
             <div className="bg-blue-50 border border-blue-200 rounded-md p-4">
               <h4 className="text-sm font-medium text-blue-800 mb-2">Credenciales de Prueba:</h4>
               <div className="text-xs text-blue-700 space-y-1">
-                <div><strong>Admin:</strong> admin / admin123</div>
-                <div><strong>Doctor:</strong> doctor / doctor123</div>
-                <div><strong>Psicólogo:</strong> psy / psy123</div>
+                <div><strong>Beta User:</strong> test@mindhub.com / test123456</div>
+                <div><strong>Fallback Admin:</strong> admin / admin123</div>
+                <div><strong>Fallback Doctor:</strong> doctor / doctor123</div>
               </div>
             </div>
           </div>

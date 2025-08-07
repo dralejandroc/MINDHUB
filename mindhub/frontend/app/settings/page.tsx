@@ -18,6 +18,7 @@ import {
 } from '@heroicons/react/24/outline';
 import { DashboardSettings } from '@/components/settings/DashboardSettings';
 import { AgendaConfigurationSettings } from '@/components/settings/AgendaConfigurationSettings';
+import { ClinicManagement } from '@/components/settings/ClinicManagement';
 
 interface ClinicConfiguration {
   clinicInfo: {
@@ -208,6 +209,7 @@ export default function GeneralSettingsPage() {
   const tabs = [
     { id: 'dashboard', name: 'Dashboard', icon: ComputerDesktopIcon },
     { id: 'general', name: 'General', icon: CogIcon },
+    { id: 'clinic', name: 'Gestión de Clínica', icon: BuildingOfficeIcon },
     { id: 'expedix', name: 'Expedix', icon: HeartIcon },
     { id: 'agenda', name: 'Agenda', icon: CalendarIcon },
     { id: 'clinimetrix', name: 'Clinimetrix', icon: ChartBarIcon },
@@ -276,6 +278,11 @@ export default function GeneralSettingsPage() {
           {/* Dashboard Tab */}
           {activeTab === 'dashboard' && (
             <DashboardSettings />
+          )}
+
+          {/* Clinic Management Tab */}
+          {activeTab === 'clinic' && (
+            <ClinicManagement />
           )}
 
           {/* General Tab */}

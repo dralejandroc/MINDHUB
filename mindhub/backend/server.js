@@ -70,6 +70,9 @@ const assessmentController = require('./api/assessment-controller');
 // Import authentication routes (simple auth system)
 const { router: authRoutes } = require('./shared/routes/simple-auth');
 
+// Import organizations routes
+const organizationsRoutes = require('./shared/routes/organizations');
+
 // Import shared middleware
 const errorHandler = require('./shared/middleware/error-handling');
 const authMiddleware = require('./shared/middleware/auth-middleware');
@@ -257,6 +260,10 @@ app.use('/api/v1/clinimetrix', assessmentController);
 
 // Authentication routes - NO HARDCODED USERS
 app.use('/api/auth', authRoutes);
+
+// Organizations routes
+app.use('/api/organizations', organizationsRoutes);
+console.log('✅ Organizations routes mounted at /api/organizations');
 
 // 404 handler
 app.use('*', (req, res) => {

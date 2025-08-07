@@ -1,6 +1,6 @@
 const express = require('express');
 const authService = require('../services/auth-service');
-const { PrismaClient } = require('../../generated/prisma');
+const { PrismaClient } = require('../../../generated/prisma');
 
 const router = express.Router();
 const prisma = new PrismaClient();
@@ -27,6 +27,14 @@ router.post('/register', async (req, res) => {
       });
     }
 
+    // Validate email format
+    if (!isValidEmail(email)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Por favor ingresa un email válido'
+      });
+    }
+
     if (password.length < 6) {
       return res.status(400).json({
         success: false,
@@ -34,13 +42,25 @@ router.post('/register', async (req, res) => {
       });
     }
 
+    // Check if email already exists
+    const existingUser = await prisma.user.findUnique({
+      where: { email: email.toLowerCase().trim() }
+    });
+
+    if (existingUser) {
+      return res.status(400).json({
+        success: false,
+        message: 'Este email ya está registrado'
+      });
+    }
+
     // Register user
     const result = await authService.register({
-      email,
+      email: email.toLowerCase().trim(),
       password,
-      name,
+      name: name.trim(),
       accountType: accountType || 'INDIVIDUAL',
-      organizationName
+      organizationName: organizationName ? organizationName.trim() : null
     });
 
     // Log registration for beta tracking
@@ -170,6 +190,12 @@ router.get('/me', async (req, res) => {
   }
 });
 
+// Utility function for email validation
+const isValidEmail = (email) => {
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  return emailRegex.test(email);
+};
+
 // Beta registration endpoint (for landing page)
 router.post('/beta-register', async (req, res) => {
   try {
@@ -193,6 +219,14 @@ router.post('/beta-register', async (req, res) => {
       });
     }
 
+    // Validate email format
+    if (!isValidEmail(email)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Por favor ingresa un email válido'
+      });
+    }
+
     if (!name) {
       return res.status(400).json({
         success: false,
@@ -207,30 +241,42 @@ router.post('/beta-register', async (req, res) => {
       });
     }
 
-    // Check if already registered
-    const existing = await prisma.betaRegistration.findUnique({
-      where: { email }
+    // Check if email already exists in beta registrations
+    const existingBeta = await prisma.betaRegistration.findUnique({
+      where: { email: email.toLowerCase().trim() }
     });
 
-    if (existing) {
-      return res.status(200).json({
-        success: true,
-        message: 'Ya estás registrado en nuestra lista beta'
+    if (existingBeta) {
+      return res.status(400).json({
+        success: false,
+        message: 'Este email ya está registrado en nuestra lista beta'
+      });
+    }
+
+    // Check if email already exists in users table
+    const existingUser = await prisma.user.findUnique({
+      where: { email: email.toLowerCase().trim() }
+    });
+
+    if (existingUser) {
+      return res.status(400).json({
+        success: false,
+        message: 'Este email ya está registrado. Puedes iniciar sesión directamente.'
       });
     }
 
     // Create beta registration
     await prisma.betaRegistration.create({
       data: {
-        email,
-        name,
+        email: email.toLowerCase().trim(),
+        name: name.trim(),
         professionalType,
-        city,
+        city: city.trim(),
         country,
         howDidYouHear,
         yearsOfPractice,
-        specialization: specialization || null,
-        expectations: expectations || null
+        specialization: specialization ? specialization.trim() : null,
+        expectations: expectations ? expectations.trim() : null
       }
     });
 
@@ -349,6 +395,56 @@ router.get('/beta-stats', requireAuth, async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Error al obtener estadísticas'
+    });
+  }
+});
+
+// TEMPORARY: Create test user endpoint - REMOVE IN PRODUCTION
+router.post('/create-test-user', async (req, res) => {
+  try {
+    // Only allow in development/beta
+    if (process.env.NODE_ENV === 'production') {
+      return res.status(404).json({ success: false, message: 'Not found' });
+    }
+
+    const testUser = {
+      email: 'test@mindhub.com',
+      password: 'test123456',
+      name: 'Usuario de Prueba',
+      accountType: 'INDIVIDUAL'
+    };
+
+    // Check if test user already exists
+    const existing = await prisma.user.findUnique({
+      where: { email: testUser.email }
+    });
+
+    if (existing) {
+      return res.json({
+        success: true,
+        message: 'Usuario de prueba ya existe',
+        data: { email: testUser.email }
+      });
+    }
+
+    // Create test user
+    const result = await authService.register(testUser);
+
+    res.json({
+      success: true,
+      message: 'Usuario de prueba creado exitosamente',
+      data: {
+        email: testUser.email,
+        password: testUser.password,
+        token: result.token
+      }
+    });
+  } catch (error) {
+    console.error('Error creating test user:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error al crear usuario de prueba',
+      error: error.message
     });
   }
 });

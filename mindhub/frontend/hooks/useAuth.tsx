@@ -76,40 +76,83 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const login = async (username: string, password: string, role: string): Promise<boolean> => {
-    // Simple demo authentication (migrated from XAMPP version)
-    const validCredentials = [
-      { username: 'admin', password: 'admin123' },
-      { username: 'doctor', password: 'doctor123' },
-      { username: 'psy', password: 'psy123' }
-    ];
-
-    const isValid = validCredentials.some(
-      cred => cred.username === username && cred.password === password
-    );
-
-    if (isValid) {
-      const user: User = {
-        username,
-        role: role as User['role'],
-        name: getDisplayName(username, role),
-        loginTime: new Date().toISOString()
-      };
-
-      localStorage.setItem('mindHubUser', JSON.stringify(user));
-      setAuthState({
-        user,
-        isAuthenticated: true,
-        isLoading: false
+    try {
+      // Call backend authentication API
+      const response = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email: username,
+          password: password
+        }),
       });
 
-      return true;
-    }
+      const data = await response.json();
+      
+      if (response.ok && data.success) {
+        const user: User = {
+          username: data.data.user.email,
+          role: data.data.user.role || 'doctor',
+          name: data.data.user.name || getDisplayName(username, role),
+          loginTime: new Date().toISOString()
+        };
 
-    return false;
+        // Store both user info and token
+        localStorage.setItem('mindHubUser', JSON.stringify(user));
+        localStorage.setItem('mindHubToken', data.data.token);
+        
+        setAuthState({
+          user,
+          isAuthenticated: true,
+          isLoading: false
+        });
+
+        return true;
+      }
+      
+      console.error('Login failed:', data.message);
+      return false;
+    } catch (error) {
+      console.error('Login error:', error);
+      
+      // Fallback to demo authentication for development
+      const validCredentials = [
+        { username: 'admin', password: 'admin123' },
+        { username: 'doctor', password: 'doctor123' },
+        { username: 'psy', password: 'psy123' }
+      ];
+
+      const isValid = validCredentials.some(
+        cred => cred.username === username && cred.password === password
+      );
+
+      if (isValid) {
+        const user: User = {
+          username,
+          role: role as User['role'],
+          name: getDisplayName(username, role),
+          loginTime: new Date().toISOString()
+        };
+
+        localStorage.setItem('mindHubUser', JSON.stringify(user));
+        setAuthState({
+          user,
+          isAuthenticated: true,
+          isLoading: false
+        });
+
+        return true;
+      }
+
+      return false;
+    }
   };
 
   const logout = () => {
     localStorage.removeItem('mindHubUser');
+    localStorage.removeItem('mindHubToken');
     setAuthState({
       user: null,
       isAuthenticated: false,

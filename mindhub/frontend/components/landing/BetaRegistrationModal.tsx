@@ -26,10 +26,22 @@ export function BetaRegistrationModal({ onClose }: BetaRegistrationModalProps) {
   const [error, setError] = useState('');
   const [debugInfo, setDebugInfo] = useState<any>(null);
 
+  const validateEmail = (email: string): boolean => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
     setError('');
+
+    // Validate email format
+    if (!validateEmail(formData.email)) {
+      setError('Por favor ingresa un email válido');
+      setIsSubmitting(false);
+      return;
+    }
 
     // Validate password confirmation
     if (formData.password !== formData.confirmPassword) {
