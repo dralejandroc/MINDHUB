@@ -2,14 +2,26 @@ const nodemailer = require('nodemailer');
 
 class EmailServiceZoho {
   constructor() {
-    // Configuración para Gmail (más confiable para desarrollo)
-    // Log para debug
-    console.log('🔧 Configurando servicio de email:');
-    console.log('   Email:', process.env.GMAIL_USER || process.env.ZOHO_EMAIL);
-    console.log('   App Password:', process.env.GMAIL_APP_PASSWORD ? '***' + process.env.GMAIL_APP_PASSWORD.slice(-4) : 'NOT_SET');
+    // Configuración para servicio de email
+    console.log('🔧 Configurando servicio de email...');
     
-    // Si hay configuración de Gmail, usarla. Si no, intentar con Zoho
-    if (process.env.GMAIL_USER && process.env.GMAIL_APP_PASSWORD) {
+    // Prioridad: SendGrid > Gmail > Zoho
+    if (process.env.SENDGRID_API_KEY) {
+      console.log('📧 Usando SendGrid para envío de emails profesionales');
+      this.transporter = nodemailer.createTransport({
+        host: 'smtp.sendgrid.net',
+        port: 587,
+        secure: false,
+        auth: {
+          user: 'apikey',
+          pass: process.env.SENDGRID_API_KEY
+        }
+      });
+      // Con dominio verificado, podemos usar @mindhub.cloud
+      this.fromEmail = process.env.SENDGRID_FROM_EMAIL || 'noreply@mindhub.cloud';
+      this.fromName = 'MindHub';
+      console.log('   From Email:', this.fromEmail);
+    } else if (process.env.GMAIL_USER && process.env.GMAIL_APP_PASSWORD) {
       console.log('📧 Usando Gmail para envío de emails');
       this.transporter = nodemailer.createTransport({
         service: 'gmail',
@@ -62,8 +74,8 @@ class EmailServiceZoho {
     const verificationUrl = `https://www.mindhub.cloud/verify-email?token=${verificationToken}`;
     
     const mailOptions = {
-      from: `MindHub <${this.fromEmail}>`,
-      replyTo: 'noreply@mindhub.cloud',
+      from: this.fromName ? `${this.fromName} <${this.fromEmail}>` : this.fromEmail,
+      replyTo: 'soporte@mindhub.cloud',
       to: to,
       subject: 'Bienvenido a MindHub - Confirma tu cuenta',
       html: `
