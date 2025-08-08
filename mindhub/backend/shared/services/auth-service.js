@@ -171,12 +171,13 @@ class AuthService {
         throw new Error('Credenciales inválidas');
       }
 
-      if (!user.isActive) {
-        throw new Error('Cuenta desactivada');
+      // Check if account is pending email verification
+      if (!user.emailVerified) {
+        throw new Error('Tu cuenta está pendiente de verificación. Revisa tu correo electrónico y haz clic en el enlace de confirmación para activar tu cuenta.');
       }
 
-      if (!user.emailVerified) {
-        throw new Error('Email no verificado. Revisa tu correo electrónico para activar tu cuenta.');
+      if (!user.isActive) {
+        throw new Error('Tu cuenta está desactivada. Contacta al soporte si necesitas ayuda.');
       }
 
       // Verify password

@@ -366,6 +366,89 @@ router.post('/beta-register', async (req, res) => {
   }
 });
 
+// Resend verification email endpoint
+router.post('/resend-verification', async (req, res) => {
+  try {
+    const { email } = req.body;
+
+    if (!email) {
+      return res.status(400).json({
+        success: false,
+        message: 'Email es requerido'
+      });
+    }
+
+    // Find user
+    const user = await prisma.users.findUnique({
+      where: { email: email.toLowerCase().trim() }
+    });
+
+    if (!user) {
+      return res.status(400).json({
+        success: false,
+        message: 'No se encontró una cuenta con este email'
+      });
+    }
+
+    if (user.emailVerified) {
+      return res.status(400).json({
+        success: false,
+        message: 'Esta cuenta ya está verificada'
+      });
+    }
+
+    // Generate new verification token if needed
+    const { v4: uuidv4 } = require('uuid');
+    let verificationToken = user.emailVerificationToken;
+    
+    if (!verificationToken) {
+      verificationToken = uuidv4();
+      await prisma.users.update({
+        where: { id: user.id },
+        data: { emailVerificationToken: verificationToken }
+      });
+    }
+
+    // Send verification email
+    const EmailService = require('../../services/EmailServiceZoho');
+    try {
+      const emailResult = await EmailService.sendVerificationEmail(
+        user.email,
+        user.name,
+        verificationToken
+      );
+      
+      if (!emailResult.success) {
+        console.error('Failed to resend verification email:', emailResult.error);
+        return res.status(500).json({
+          success: false,
+          message: 'Error al enviar el email de verificación'
+        });
+      }
+    } catch (emailError) {
+      console.error('Error resending verification email:', emailError);
+      return res.status(500).json({
+        success: false,
+        message: 'Error al enviar el email de verificación'
+      });
+    }
+
+    console.log(`Verification email resent to: ${user.email}`);
+
+    res.json({
+      success: true,
+      message: 'Email de verificación reenviado. Revisa tu bandeja de entrada.'
+    });
+
+  } catch (error) {
+    console.error('Resend verification error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error al reenviar email de verificación'
+    });
+  }
+});
+
 // Email verification endpoint
 router.post('/verify-email', async (req, res) => {
   try {
