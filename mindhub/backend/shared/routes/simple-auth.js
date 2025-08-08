@@ -877,11 +877,12 @@ router.post('/test-email', async (req, res) => {
       connectionTest,
       emailTest: emailResult,
       environment: {
+        SENDGRID_API_KEY: process.env.SENDGRID_API_KEY ? '***' + process.env.SENDGRID_API_KEY.slice(-4) : 'NOT_SET',
+        SENDGRID_FROM_EMAIL: process.env.SENDGRID_FROM_EMAIL || 'NOT_SET',
+        GMAIL_USER: process.env.GMAIL_USER ? '***' + process.env.GMAIL_USER.slice(-10) : 'NOT_SET',
+        GMAIL_APP_PASSWORD: process.env.GMAIL_APP_PASSWORD ? '***' + process.env.GMAIL_APP_PASSWORD.slice(-4) : 'NOT_SET',
         ZOHO_EMAIL: process.env.ZOHO_EMAIL,
-        ZOHO_APP_PASSWORD: process.env.ZOHO_APP_PASSWORD ? '***' + process.env.ZOHO_APP_PASSWORD.slice(-4) : 'NOT_SET',
-        ZOHO_CLIENT_ID: process.env.ZOHO_CLIENT_ID ? '***' + process.env.ZOHO_CLIENT_ID.slice(-4) : 'NOT_SET',
-        ZOHO_CLIENT_SECRET: process.env.ZOHO_CLIENT_SECRET ? '***' + process.env.ZOHO_CLIENT_SECRET.slice(-4) : 'NOT_SET',
-        ZOHO_REFRESH_TOKEN: process.env.ZOHO_REFRESH_TOKEN ? '***' + process.env.ZOHO_REFRESH_TOKEN.slice(-4) : 'NOT_SET'
+        ZOHO_APP_PASSWORD: process.env.ZOHO_APP_PASSWORD ? '***' + process.env.ZOHO_APP_PASSWORD.slice(-4) : 'NOT_SET'
       }
     });
     
