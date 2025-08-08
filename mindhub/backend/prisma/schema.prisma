@@ -1365,6 +1365,9 @@ model users {
   accountType                                                       users_accountType                     @default(INDIVIDUAL)
   isActive                                                          Boolean                               @default(true)
   isBetaUser                                                        Boolean                               @default(true)
+  emailVerified                                                     Boolean                               @default(false)
+  emailVerificationToken                                            String?                               @unique
+  emailVerifiedAt                                                   DateTime?
   createdAt                                                         DateTime                              @default(now())
   updatedAt                                                         DateTime
   lastLoginAt                                                       DateTime?

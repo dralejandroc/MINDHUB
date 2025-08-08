@@ -265,6 +265,11 @@ app.use('/api/auth', authRoutes);
 app.use('/api/organizations', organizationsRoutes);
 console.log('✅ Organizations routes mounted at /api/organizations');
 
+// Admin migrations routes (protected)
+const adminMigrationsRoutes = require('./shared/routes/admin-migrations');
+app.use('/api/admin/migrations', adminMigrationsRoutes);
+console.log('✅ Admin migrations routes mounted at /api/admin/migrations');
+
 // 404 handler
 app.use('*', (req, res) => {
   res.status(404).json({

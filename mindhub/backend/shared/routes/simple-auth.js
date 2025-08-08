@@ -202,6 +202,7 @@ router.post('/beta-register', async (req, res) => {
     const { 
       email, 
       name, 
+      password,
       professionalType, 
       city, 
       country, 
@@ -212,10 +213,10 @@ router.post('/beta-register', async (req, res) => {
     } = req.body;
 
     // Basic validation
-    if (!email) {
+    if (!email || !name || !password) {
       return res.status(400).json({
         success: false,
-        message: 'Email es requerido'
+        message: 'Email, nombre y contraseña son requeridos'
       });
     }
 
@@ -227,10 +228,10 @@ router.post('/beta-register', async (req, res) => {
       });
     }
 
-    if (!name) {
+    if (password.length < 8) {
       return res.status(400).json({
         success: false,
-        message: 'Nombre es requerido'
+        message: 'La contraseña debe tener al menos 8 caracteres'
       });
     }
 
@@ -241,7 +242,7 @@ router.post('/beta-register', async (req, res) => {
       });
     }
 
-    // Check if email already exists in beta registrations
+    // Check if email already exists
     const existingBeta = await prisma.beta_registrations.findUnique({
       where: { email: email.toLowerCase().trim() }
     });
@@ -253,7 +254,6 @@ router.post('/beta-register', async (req, res) => {
       });
     }
 
-    // Check if email already exists in users table
     const existingUser = await prisma.users.findUnique({
       where: { email: email.toLowerCase().trim() }
     });
@@ -265,8 +265,37 @@ router.post('/beta-register', async (req, res) => {
       });
     }
 
-    // Create beta registration
     const { v4: uuidv4 } = require('uuid');
+    const bcrypt = require('bcryptjs');
+
+    // Handle clinic registration - only save to beta_registrations, don't create user
+    if (professionalType === 'clinica') {
+      await prisma.beta_registrations.create({
+        data: {
+          id: uuidv4(),
+          email: email.toLowerCase().trim(),
+          name: name.trim(),
+          professionalType,
+          city: city.trim(),
+          country,
+          howDidYouHear,
+          yearsOfPractice,
+          specialization: specialization ? specialization.trim() : null,
+          expectations: expectations ? expectations.trim() : null
+        }
+      });
+
+      console.log(`New clinic beta registration: ${email} from ${city}, ${country}`);
+
+      return res.status(201).json({
+        success: true,
+        isClinica: true,
+        message: 'Muchas gracias por tu interés en MindHub. Durante nuestro periodo Beta, que esperamos dure un par de meses, por el momento no se soportan los Usuarios de Clínicas. Cuando nuestro Beta termine, tendremos planes que incluirán soporte para clínicas, desde 4 usuarios con una misma base de datos. Por el momento para empezar a probar MindHub y ayudarnos a mejorar, puedes inscribirte como Usuario individual'
+      });
+    }
+
+    // Handle individual professional registration
+    // 1. Create beta registration
     await prisma.beta_registrations.create({
       data: {
         id: uuidv4(),
@@ -282,17 +311,127 @@ router.post('/beta-register', async (req, res) => {
       }
     });
 
-    console.log(`New beta registration: ${email} from ${city}, ${country} (${professionalType}, ${yearsOfPractice} years, via ${howDidYouHear})`);
+    // 2. Create user account (inactive until email verification)
+    const hashedPassword = await bcrypt.hash(password, 10);
+    const emailVerificationToken = uuidv4();
+
+    const user = await prisma.users.create({
+      data: {
+        id: uuidv4(),
+        email: email.toLowerCase().trim(),
+        password: hashedPassword,
+        name: name.trim(),
+        accountType: 'INDIVIDUAL',
+        isBetaUser: true,
+        isActive: false, // Will be activated after email verification
+        emailVerified: false,
+        emailVerificationToken,
+        updatedAt: new Date()
+      }
+    });
+
+    // 3. Send verification email
+    const EmailService = require('../../services/EmailServiceZoho');
+    try {
+      const emailResult = await EmailService.sendVerificationEmail(
+        email.toLowerCase().trim(),
+        name.trim(),
+        emailVerificationToken
+      );
+      
+      if (!emailResult.success) {
+        console.error('Failed to send verification email:', emailResult.error);
+        // Don't fail the registration if email fails, but log it
+      }
+    } catch (emailError) {
+      console.error('Error sending verification email:', emailError);
+      // Continue with successful registration
+    }
+
+    console.log(`New individual beta registration with user account: ${email} from ${city}, ${country}`);
 
     res.status(201).json({
       success: true,
-      message: 'Te has registrado exitosamente para el beta. Te contactaremos pronto con los detalles de acceso.'
+      isClinica: false,
+      requiresVerification: true,
+      message: 'Muchas gracias por suscribirte a MindHub, estás a unos clics de poder disfrutar de la plataforma y ayudarte a tener más tiempo para ti y liberarte del papel para realizar tus escalas clinimétricas. Por favor revisa el buzón o bandeja de entrada de tu correo para confirmarlo, y estarás listo para empezar'
     });
+
   } catch (error) {
     console.error('Beta registration error:', error);
     res.status(500).json({
       success: false,
       message: 'Error al registrar para beta'
+    });
+  }
+});
+
+// Email verification endpoint
+router.post('/verify-email', async (req, res) => {
+  try {
+    const { token } = req.body;
+
+    if (!token) {
+      return res.status(400).json({
+        success: false,
+        message: 'Token de verificación requerido'
+      });
+    }
+
+    // Find user with verification token
+    const user = await prisma.users.findUnique({
+      where: { emailVerificationToken: token }
+    });
+
+    if (!user) {
+      return res.status(400).json({
+        success: false,
+        message: 'Token de verificación inválido o expirado'
+      });
+    }
+
+    if (user.emailVerified) {
+      return res.status(400).json({
+        success: false,
+        message: 'Este email ya está verificado'
+      });
+    }
+
+    // Update user - activate account and mark email as verified
+    await prisma.users.update({
+      where: { id: user.id },
+      data: {
+        isActive: true,
+        emailVerified: true,
+        emailVerifiedAt: new Date(),
+        emailVerificationToken: null, // Clear the token
+        updatedAt: new Date()
+      }
+    });
+
+    // Update beta registration to mark as joined
+    await prisma.beta_registrations.updateMany({
+      where: { email: user.email },
+      data: { hasJoined: true }
+    });
+
+    console.log(`Email verified for user: ${user.email}`);
+
+    res.json({
+      success: true,
+      message: 'Email verificado exitosamente. Tu cuenta está ahora activa.',
+      data: {
+        email: user.email,
+        name: user.name,
+        verified: true
+      }
+    });
+
+  } catch (error) {
+    console.error('Email verification error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error al verificar email'
     });
   }
 });

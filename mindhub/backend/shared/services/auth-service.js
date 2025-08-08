@@ -175,6 +175,10 @@ class AuthService {
         throw new Error('Cuenta desactivada');
       }
 
+      if (!user.emailVerified) {
+        throw new Error('Email no verificado. Revisa tu correo electrónico para activar tu cuenta.');
+      }
+
       // Verify password
       const validPassword = await this.comparePassword(password, user.password);
       if (!validPassword) {

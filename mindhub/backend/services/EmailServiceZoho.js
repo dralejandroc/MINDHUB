@@ -40,7 +40,7 @@ class EmailServiceZoho {
     const mailOptions = {
       from: this.aliases.noreply,
       to: to,
-      subject: 'Verifica tu cuenta de MindHub',
+      subject: 'Bienvenido a MindHub - Confirma tu cuenta',
       html: `
         <!DOCTYPE html>
         <html>
@@ -50,8 +50,9 @@ class EmailServiceZoho {
             .container { max-width: 600px; margin: 0 auto; padding: 20px; }
             .header { background: linear-gradient(135deg, #29A98C 0%, #1E3A8A 100%); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0; }
             .content { background: #f9f9f9; padding: 30px; border-radius: 0 0 10px 10px; }
-            .button { display: inline-block; padding: 15px 30px; background: #29A98C; color: white; text-decoration: none; border-radius: 5px; margin: 20px 0; }
+            .button { display: inline-block; padding: 15px 30px; background: #29A98C; color: white; text-decoration: none; border-radius: 5px; margin: 20px 0; font-weight: bold; }
             .footer { text-align: center; margin-top: 30px; font-size: 12px; color: #666; }
+            .highlight { background: #e6f3ff; padding: 15px; border-radius: 8px; margin: 15px 0; border-left: 4px solid #29A98C; }
           </style>
         </head>
         <body>
@@ -61,13 +62,21 @@ class EmailServiceZoho {
             </div>
             <div class="content">
               <h2>Hola ${name},</h2>
-              <p>Gracias por registrarte en MindHub. Para completar tu registro, por favor verifica tu dirección de email:</p>
-              <div style="text-align: center;">
-                <a href="${verificationUrl}" class="button">Verificar mi email</a>
+              <p><strong>Gracias por tu interés, Tu cuenta ha sido creada, solo tienes que verificar tu correo y estarás listo para probar MindHub.</strong></p>
+              
+              <div class="highlight">
+                <p><strong>Recuerda que estamos en etapa Beta</strong> por lo que tienes acceso sin restricciones a la plataforma, es probable que este periodo dure un par de meses en lo que nos aseguramos que MindHub cumpla con todos los estándares de calidad que tú te mereces.</p>
               </div>
+              
+              <p>Agradecemos mucho tu retroalimentación, si tienes algún comentario, observación, si existen fallas en la plataforma, por favor no dudes en hacer un ticket de feedback en la plataforma, o enviarnos un correo a feedback@mindhub.cloud</p>
+              
+              <div style="text-align: center;">
+                <a href="${verificationUrl}" class="button">Confirmar mi cuenta</a>
+              </div>
+              
               <p>O copia y pega este enlace en tu navegador:</p>
               <p style="word-break: break-all; background: #eee; padding: 10px; border-radius: 5px; font-size: 12px;">${verificationUrl}</p>
-              <p>Este enlace expirará en 24 horas.</p>
+              <p><small>Este enlace expirará en 24 horas.</small></p>
             </div>
             <div class="footer">
               <p>© 2025 MindHub - Plataforma de Gestión Sanitaria</p>
