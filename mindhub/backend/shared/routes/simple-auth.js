@@ -878,6 +878,7 @@ router.post('/test-email', async (req, res) => {
       emailTest: emailResult,
       environment: {
         ZOHO_EMAIL: process.env.ZOHO_EMAIL,
+        ZOHO_APP_PASSWORD: process.env.ZOHO_APP_PASSWORD ? '***' + process.env.ZOHO_APP_PASSWORD.slice(-4) : 'NOT_SET',
         ZOHO_CLIENT_ID: process.env.ZOHO_CLIENT_ID ? '***' + process.env.ZOHO_CLIENT_ID.slice(-4) : 'NOT_SET',
         ZOHO_CLIENT_SECRET: process.env.ZOHO_CLIENT_SECRET ? '***' + process.env.ZOHO_CLIENT_SECRET.slice(-4) : 'NOT_SET',
         ZOHO_REFRESH_TOKEN: process.env.ZOHO_REFRESH_TOKEN ? '***' + process.env.ZOHO_REFRESH_TOKEN.slice(-4) : 'NOT_SET'
