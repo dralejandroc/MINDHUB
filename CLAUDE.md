@@ -8,22 +8,23 @@ MindHub es una plataforma integral de gestión sanitaria que integra múltiples 
 
 ### URLs de Producción (Railway)
 - **Frontend**: https://mindhub.cloud
-- **Backend API**: https://mindhub.cloud/api
-- **Database**: Railway MySQL (caboose.proxy.rlwy.net:41591)
-- **Railway Project**: https://railway.com/project/71f20b8c-d94c-4d10-9da0-f75eff30044a?environmentId=7554a992-fa66-4444-939d-8ced9da199e7
+- **Backend API**: https://mindhub-production.up.railway.app
+- **Database**: Railway MySQL (mysql.railway.internal:3306) - INTERNAL ENDPOINT ONLY
+- **Railway Project**: https://railway.com/project/cb592087-84b0-4214-bbc2-2dfc7a78dbee?environmentId=63e89941-0786-4a34-af22-f0788a981fa2
 
 ### Estado del Deployment
 - ✅ Frontend desplegado en Vercel
-- ✅ Backend desplegado en Railway (Project ID: 71f20b8c-d94c-4d10-9da0-f75eff30044a)
-- ✅ Base de datos MySQL en Railway
+- ✅ Backend desplegado en Railway (Project ID: cb592087-84b0-4214-bbc2-2dfc7a78dbee)
+- ✅ Base de datos MySQL en Railway (ENDPOINT INTERNO)
 - ✅ Sistema de autenticación funcional
 - ✅ APIs conectadas a backend real (NO localhost)
-- ✅ Environment ID: 7554a992-fa66-4444-939d-8ced9da199e7
+- ✅ Environment ID: 63e89941-0786-4a34-af22-f0788a981fa2
 
-### ⚠️ IMPORTANTE - NO MÁS LOCALHOST
-- TODAS las APIs deben apuntar a `https://mindhub.cloud/api`
-- NO usar `http://localhost:8080` ni `http://localhost:3002`
-- Backend está en producción en Railway, NO en desarrollo local
+### 💰 IMPORTANTE - ENDPOINTS INTERNOS PARA EVITAR COSTOS
+- Backend en Railway usa **mysql.railway.internal:3306** (endpoint interno, GRATIS)
+- NO usar endpoints públicos como yamanote.proxy.rlwy.net (genera costos de egress)
+- Frontend apunta a **https://mindhub-production.up.railway.app**
+- NO usar localhost en producción
 
 ### Arquitectura del Sistema
 

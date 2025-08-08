@@ -27,7 +27,14 @@ function VerifyEmailContent() {
       }
 
       try {
-        const response = await fetch(`/api/auth/verify-email?token=${token}`);
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'https://mindhub.cloud/api'}/auth/verify-email`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ token }),
+        });
+        
         const data = await response.json();
         
         setResult(data);
@@ -70,11 +77,16 @@ function VerifyEmailContent() {
           <p className="text-gray-600 mb-6">
             {result?.message || 'Tu cuenta ha sido verificada exitosamente.'}
           </p>
+          <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-6">
+            <p className="text-green-800 text-sm">
+              Tu cuenta está ahora activa. Puedes iniciar sesión para comenzar a explorar MindHub.
+            </p>
+          </div>
           <Link
-            href="/"
+            href="/login?verified=true"
             className="inline-flex items-center px-6 py-3 bg-gradient-to-r from-primary-teal to-primary-blue text-white rounded-xl font-semibold hover:shadow-lg hover:scale-105 transition-all duration-300"
           >
-            Ir a MindHub
+            Ir al Login
           </Link>
         </div>
       );
@@ -100,6 +112,12 @@ function VerifyEmailContent() {
           >
             Volver al inicio
           </Link>
+          <p className="text-gray-500 text-xs mt-4">
+            ¿Necesitas ayuda? Escríbenos a{' '}
+            <a href="mailto:soporte@mindhub.cloud" className="text-primary-teal hover:underline">
+              soporte@mindhub.cloud
+            </a>
+          </p>
         </div>
       </div>
     );

@@ -649,6 +649,53 @@ router.post('/run-email-migration', async (req, res) => {
   }
 });
 
+// Test email connection endpoint (temporary)
+router.post('/test-email', async (req, res) => {
+  try {
+    const { secret, email } = req.body;
+    if (secret !== 'test-email-2025') {
+      return res.status(401).json({ success: false, message: 'Invalid secret' });
+    }
+
+    const EmailService = require('../../services/EmailServiceZoho');
+    
+    console.log('🧪 Testing email connection...');
+    
+    // Test connection
+    const connectionTest = await EmailService.verifyConnection();
+    console.log('Connection test result:', connectionTest);
+    
+    // Test sending actual email
+    const emailResult = await EmailService.sendVerificationEmail(
+      email || 'dr_aleks_c@hotmail.com',
+      'Usuario Prueba',
+      'test-token-12345'
+    );
+    
+    console.log('Email test result:', emailResult);
+    
+    res.json({
+      success: true,
+      connectionTest,
+      emailTest: emailResult,
+      environment: {
+        ZOHO_EMAIL: process.env.ZOHO_EMAIL,
+        ZOHO_CLIENT_ID: process.env.ZOHO_CLIENT_ID ? '***' + process.env.ZOHO_CLIENT_ID.slice(-4) : 'NOT_SET',
+        ZOHO_CLIENT_SECRET: process.env.ZOHO_CLIENT_SECRET ? '***' + process.env.ZOHO_CLIENT_SECRET.slice(-4) : 'NOT_SET',
+        ZOHO_REFRESH_TOKEN: process.env.ZOHO_REFRESH_TOKEN ? '***' + process.env.ZOHO_REFRESH_TOKEN.slice(-4) : 'NOT_SET'
+      }
+    });
+    
+  } catch (error) {
+    console.error('❌ Email test failed:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message,
+      stack: error.stack
+    });
+  }
+});
+
 // TEMPORARY: Create test user endpoint - REMOVE IN PRODUCTION
 router.post('/create-test-user', async (req, res) => {
   try {

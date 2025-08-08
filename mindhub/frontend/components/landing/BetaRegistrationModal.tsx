@@ -25,6 +25,8 @@ export function BetaRegistrationModal({ onClose }: BetaRegistrationModalProps) {
   const [isSuccess, setIsSuccess] = useState(false);
   const [error, setError] = useState('');
   const [debugInfo, setDebugInfo] = useState<any>(null);
+  const [isClinica, setIsClinica] = useState(false);
+  const [clinicaMessage, setClinicaMessage] = useState(false);
 
   const validateEmail = (email: string): boolean => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -64,10 +66,16 @@ export function BetaRegistrationModal({ onClose }: BetaRegistrationModalProps) {
       console.log('[BETA MODAL] Registration result:', result);
       
       if (result.success) {
-        setIsSuccess(true);
-        setError('');
-        setDebugInfo(null);
-        console.log('[BETA MODAL] Registration successful');
+        if (result.isClinica) {
+          setIsClinica(true);
+          setError(result.message);
+          console.log('[BETA MODAL] Clinic registration - showing message');
+        } else {
+          setIsSuccess(true);
+          setError('');
+          setDebugInfo(null);
+          console.log('[BETA MODAL] Registration successful - requires verification:', result.requiresVerification);
+        }
       } else {
         setError(result.message || 'Error al registrarse');
         setDebugInfo(result.debug);
@@ -83,10 +91,30 @@ export function BetaRegistrationModal({ onClose }: BetaRegistrationModalProps) {
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value
-    });
+    const { name, value } = e.target;
+    
+    // Handle clinic selection
+    if (name === 'professionalType' && value === 'clinica') {
+      setClinicaMessage(true);
+      // Automatically change back to individual after showing message
+      setTimeout(() => {
+        setFormData({
+          ...formData,
+          professionalType: ''
+        });
+        setClinicaMessage(false);
+      }, 5000); // Show message for 5 seconds
+      
+      setFormData({
+        ...formData,
+        [name]: value
+      });
+    } else {
+      setFormData({
+        ...formData,
+        [name]: value
+      });
+    }
   };
 
   if (isSuccess) {
@@ -104,30 +132,18 @@ export function BetaRegistrationModal({ onClose }: BetaRegistrationModalProps) {
             </h3>
             <div className="bg-gradient-to-r from-teal-50 to-blue-50 rounded-lg p-4 mb-6">
               <p className="text-gray-700 text-sm leading-relaxed">
-                <strong>¡Gracias por ser parte de este proyecto!</strong><br/>
-                Juntos mejoraremos tu práctica clínica a un nivel de mayor automatización, 
-                con menos tareas repetitivas y mayor libertad de tiempo, en apoyo de tu salud mental.
+                <strong>Muchas gracias por suscribirte a MindHub, estás a unos clics de poder disfrutar de la plataforma y ayudarte a tener más tiempo para ti y liberarte del papel para realizar tus escalas clinimétricas.</strong><br/><br/>
+                Por favor revisa el buzón o bandeja de entrada de tu correo para confirmarlo, y estarás listo para empezar.
               </p>
             </div>
-            <p className="text-gray-600 mb-6 text-sm">
-              Tu cuenta está lista. Puedes comenzar a explorar MindHub ahora mismo.
-              <br/><br/>
-              <small className="text-gray-500">
-                Nota: La verificación por email se activará próximamente.
-              </small>
-            </p>
             <button
               onClick={() => {
                 onClose();
-                // Redirect to dashboard if token exists
-                const token = localStorage.getItem('authToken');
-                if (token) {
-                  window.location.href = '/dashboard';
-                }
+                // Don't redirect automatically - user needs to verify email first
               }}
               className="w-full bg-gradient-to-r from-primary-teal to-primary-blue text-white py-3 px-6 rounded-xl font-semibold hover:shadow-lg hover:scale-105 transition-all duration-300"
             >
-              Comenzar a usar MindHub
+              Entendido
             </button>
           </div>
         </div>
@@ -152,6 +168,29 @@ export function BetaRegistrationModal({ onClose }: BetaRegistrationModalProps) {
             </svg>
           </button>
         </div>
+
+        {/* Clinic Message Alert */}
+        {clinicaMessage && (
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+            <div className="flex items-start">
+              <div className="flex-shrink-0">
+                <svg className="w-5 h-5 text-blue-600 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </div>
+              <div className="ml-3">
+                <h3 className="text-sm font-medium text-blue-800">
+                  Mensaje para Clínicas
+                </h3>
+                <div className="mt-2 text-sm text-blue-700">
+                  <p>
+                    Muchas gracias por tu interés en MindHub. Durante nuestro periodo Beta, que esperamos dure un par de meses, por el momento no se soportan los Usuarios de Clínicas. Cuando nuestro Beta termine, tendremos planes que incluirán soporte para clínicas, desde 4 usuarios con una misma base de datos. Por el momento para empezar a probar MindHub y ayudarnos a mejorar, puedes inscribirte como Usuario individual.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Form */}
         <form onSubmit={handleSubmit} className="space-y-6">

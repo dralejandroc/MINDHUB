@@ -131,6 +131,8 @@ export interface BetaRegistrationData {
 export interface BetaRegistrationResponse {
   success: boolean;
   message?: string;
+  isClinica?: boolean;
+  requiresVerification?: boolean;
   data?: {
     token?: string;
     user?: User;
@@ -152,12 +154,9 @@ export async function betaRegister(data: BetaRegistrationData): Promise<BetaRegi
 
     console.log('[AUTH CLIENT] API response data:', result);
     
-    // Store auth data if registration is successful
-    if (result.success && result.data?.token) {
-      localStorage.setItem('authToken', result.data.token);
-      localStorage.setItem('currentUser', JSON.stringify(result.data.user));
-      console.log('[AUTH CLIENT] Auth data stored successfully');
-    }
+    // Don't store auth data for beta registration - users need email verification first
+    // Auth data will be handled after login post-verification
+    console.log('[AUTH CLIENT] Beta registration completed, verification required');
     
     return result;
   } catch (error) {
