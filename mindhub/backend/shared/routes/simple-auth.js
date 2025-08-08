@@ -756,7 +756,7 @@ router.post('/generate-zoho-token', async (req, res) => {
     }
 
     const redirectUri = 'https://www.mindhub.cloud/api/auth/zoho/callback';
-    const scope = 'ZohoMail.messages.CREATE,ZohoMail.accounts.READ';
+    const scope = 'ZohoMail.messages.ALL';
     
     const authUrl = `https://accounts.zoho.com/oauth/v2/auth?` +
       `scope=${encodeURIComponent(scope)}&` +

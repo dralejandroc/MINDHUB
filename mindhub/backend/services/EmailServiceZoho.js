@@ -3,16 +3,13 @@ const nodemailer = require('nodemailer');
 class EmailServiceZoho {
   constructor() {
     // Configuración para Zoho Mail
-    this.transporter = nodemailer.createTransporter({
+    this.transporter = nodemailer.createTransport({
       host: 'smtp.zoho.com',
       port: 465,
       secure: true, // SSL
       auth: {
-        type: 'OAuth2',
         user: process.env.ZOHO_EMAIL || 'alejandro.contreras@mindhub.cloud',
-        clientId: process.env.ZOHO_CLIENT_ID,
-        clientSecret: process.env.ZOHO_CLIENT_SECRET,
-        refreshToken: process.env.ZOHO_REFRESH_TOKEN
+        pass: process.env.ZOHO_APP_PASSWORD // App password de Zoho
       }
     });
 
