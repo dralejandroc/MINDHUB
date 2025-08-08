@@ -732,6 +732,121 @@ router.post('/run-email-migration', async (req, res) => {
   }
 });
 
+// Generate Zoho OAuth2 Refresh Token endpoint (temporary)
+router.post('/generate-zoho-token', async (req, res) => {
+  try {
+    const { secret } = req.body;
+    if (secret !== 'generate-token-2025') {
+      return res.status(401).json({ success: false, message: 'Invalid secret' });
+    }
+
+    // Step 1: Generate authorization URL
+    const clientId = process.env.ZOHO_CLIENT_ID;
+    const clientSecret = process.env.ZOHO_CLIENT_SECRET;
+    
+    if (!clientId || !clientSecret) {
+      return res.json({
+        success: false,
+        error: 'Missing ZOHO_CLIENT_ID or ZOHO_CLIENT_SECRET in environment',
+        environment: {
+          ZOHO_CLIENT_ID: clientId ? '***' + clientId.slice(-4) : 'NOT_SET',
+          ZOHO_CLIENT_SECRET: clientSecret ? '***' + clientSecret.slice(-4) : 'NOT_SET'
+        }
+      });
+    }
+
+    const redirectUri = 'https://www.mindhub.cloud/api/auth/zoho/callback';
+    const scope = 'ZohoMail.Send.ALL,ZohoMail.accounts.READ';
+    
+    const authUrl = `https://accounts.zoho.com/oauth/v2/auth?` +
+      `scope=${encodeURIComponent(scope)}&` +
+      `client_id=${clientId}&` +
+      `response_type=code&` +
+      `redirect_uri=${encodeURIComponent(redirectUri)}&` +
+      `access_type=offline`;
+
+    res.json({
+      success: true,
+      message: 'Visit this URL to authorize the application',
+      authUrl,
+      instructions: [
+        '1. Visit the authUrl',
+        '2. Authorize the application',
+        '3. Copy the code from the redirect URL',
+        '4. Call /api/auth/exchange-zoho-code with the code'
+      ]
+    });
+
+  } catch (error) {
+    console.error('❌ Token generation failed:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+// Exchange authorization code for refresh token
+router.post('/exchange-zoho-code', async (req, res) => {
+  try {
+    const { secret, code } = req.body;
+    if (secret !== 'generate-token-2025') {
+      return res.status(401).json({ success: false, message: 'Invalid secret' });
+    }
+
+    if (!code) {
+      return res.status(400).json({ success: false, message: 'Authorization code required' });
+    }
+
+    const clientId = process.env.ZOHO_CLIENT_ID;
+    const clientSecret = process.env.ZOHO_CLIENT_SECRET;
+    const redirectUri = 'https://www.mindhub.cloud/api/auth/zoho/callback';
+
+    // Exchange code for tokens
+    const tokenResponse = await fetch('https://accounts.zoho.com/oauth/v2/token', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      body: new URLSearchParams({
+        grant_type: 'authorization_code',
+        client_id: clientId,
+        client_secret: clientSecret,
+        redirect_uri: redirectUri,
+        code: code
+      })
+    });
+
+    const tokenData = await tokenResponse.json();
+
+    if (tokenData.error) {
+      return res.json({
+        success: false,
+        error: tokenData.error,
+        description: tokenData.error_description
+      });
+    }
+
+    res.json({
+      success: true,
+      message: 'Refresh token generated successfully!',
+      refreshToken: tokenData.refresh_token,
+      accessToken: '***' + (tokenData.access_token || '').slice(-4),
+      instructions: [
+        'Copy the refreshToken and add it to Railway environment variables:',
+        'ZOHO_REFRESH_TOKEN=' + tokenData.refresh_token
+      ]
+    });
+
+  } catch (error) {
+    console.error('❌ Code exchange failed:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
 // Test email connection endpoint (temporary)
 router.post('/test-email', async (req, res) => {
   try {
