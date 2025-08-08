@@ -49,7 +49,7 @@ export default clerkMiddleware(async (auth, req) => {
   if (isProtectedRoute(req)) {
     const { userId } = await auth();
     if (!userId) {
-      return auth().redirectToSignIn();
+      return (await auth()).redirectToSignIn();
     }
   }
   
