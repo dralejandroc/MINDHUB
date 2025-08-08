@@ -41,7 +41,7 @@ export function LandingNavbar({ onBetaClick }: LandingNavbarProps) {
           {/* Action Buttons */}
           <div className="flex items-center space-x-4">
             <Link 
-              href="/login"
+              href="/sign-in"
               className="text-gray-600 hover:text-primary-blue transition-colors font-medium"
             >
               Iniciar Sesión

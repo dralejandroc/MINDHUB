@@ -132,7 +132,7 @@ export function UnifiedSidebar({ children, currentUser }: UnifiedSidebarProps) {
         localStorage.removeItem('currentUser');
         localStorage.removeItem('auth_token');
         localStorage.removeItem('refresh_token');
-        window.location.href = '/login';
+        window.location.href = '/sign-in';
       }
     }
   };

@@ -87,7 +87,7 @@ export class ClinimetrixApiClient {
 
   private handleAuthError(): void {
     // Redirect to login or refresh token
-    window.location.href = '/login';
+    window.location.href = '/sign-in';
   }
 
   // =============================================================================
