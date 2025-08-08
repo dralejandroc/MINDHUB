@@ -540,6 +540,79 @@ router.get('/beta-stats', requireAuth, async (req, res) => {
   }
 });
 
+// Email verification migration endpoint (temporary)
+router.post('/run-email-migration', async (req, res) => {
+  try {
+    const { secret } = req.body;
+    if (secret !== 'migration-email-2025') {
+      return res.status(401).json({ success: false, message: 'Invalid secret' });
+    }
+
+    console.log('🔧 Starting email verification migration...');
+    
+    // Check if columns already exist
+    const checkColumns = await prisma.$queryRaw`
+      SELECT COLUMN_NAME 
+      FROM INFORMATION_SCHEMA.COLUMNS 
+      WHERE TABLE_SCHEMA = DATABASE() 
+      AND TABLE_NAME = 'users' 
+      AND COLUMN_NAME IN ('emailVerified', 'emailVerificationToken', 'emailVerifiedAt')
+    `;
+    
+    if (checkColumns.length === 3) {
+      return res.json({
+        success: true,
+        message: 'Email verification fields already exist',
+        alreadyExists: true
+      });
+    }
+    
+    // Add emailVerified column
+    await prisma.$queryRaw`
+      ALTER TABLE users 
+      ADD COLUMN emailVerified BOOLEAN DEFAULT FALSE AFTER password
+    `;
+    
+    // Add emailVerificationToken column
+    await prisma.$queryRaw`
+      ALTER TABLE users 
+      ADD COLUMN emailVerificationToken VARCHAR(255) NULL AFTER emailVerified
+    `;
+    
+    // Add emailVerifiedAt column
+    await prisma.$queryRaw`
+      ALTER TABLE users 
+      ADD COLUMN emailVerifiedAt DATETIME NULL AFTER emailVerificationToken
+    `;
+    
+    // Add index for verification token
+    await prisma.$queryRaw`
+      CREATE INDEX idx_email_verification_token ON users(emailVerificationToken)
+    `;
+    
+    // Set existing users as verified
+    await prisma.$queryRaw`
+      UPDATE users 
+      SET emailVerified = TRUE, emailVerifiedAt = NOW() 
+      WHERE emailVerified IS NULL OR emailVerified = FALSE
+    `;
+    
+    console.log('✅ Email verification migration completed');
+    
+    res.json({
+      success: true,
+      message: 'Email verification migration completed successfully'
+    });
+    
+  } catch (error) {
+    console.error('❌ Migration failed:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
 // TEMPORARY: Create test user endpoint - REMOVE IN PRODUCTION
 router.post('/create-test-user', async (req, res) => {
   try {
