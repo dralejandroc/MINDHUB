@@ -10,11 +10,15 @@ class EmailServiceZoho {
     
     this.transporter = nodemailer.createTransport({
       host: 'smtp.zoho.com',
-      port: 465,
-      secure: true, // SSL
+      port: 587,
+      secure: false, // TLS
+      requireTLS: true,
       auth: {
         user: process.env.ZOHO_EMAIL || 'alejandro.contreras@mindhub.cloud',
         pass: process.env.ZOHO_APP_PASSWORD // App password de Zoho
+      },
+      tls: {
+        ciphers: 'SSLv3'
       },
       debug: true, // Habilitar debug
       logger: true // Habilitar logs
