@@ -17,11 +17,11 @@ router.get('/patient-stats', async (req, res) => {
   try {
     const stats = await executeQuery(
       async (prisma) => {
-        const totalPatients = await prisma.patient.count({
+        const totalPatients = await prisma.patients.count({
           where: { isActive: true }
         });
         
-        const activePatients = await prisma.patient.count({
+        const activePatients = await prisma.patients.count({
           where: { 
             isActive: true,
             // Patients with recent activity (consultations in last 6 months)
@@ -35,7 +35,7 @@ router.get('/patient-stats', async (req, res) => {
           }
         });
 
-        const newPatientsThisMonth = await prisma.patient.count({
+        const newPatientsThisMonth = await prisma.patients.count({
           where: {
             isActive: true,
             createdAt: {

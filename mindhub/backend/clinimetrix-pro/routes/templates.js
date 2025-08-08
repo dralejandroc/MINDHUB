@@ -12,7 +12,7 @@ const prisma = new PrismaClient();
 // Get all templates catalog (public registry)
 router.get('/catalog', async (req, res) => {
   try {
-    const templates = await prisma.clinimetrixRegistry.findMany({
+    const templates = await prisma.clinimetrix_registry.findMany({
       where: { isActive: true, isPublic: true },
       orderBy: [
         { isFeatured: 'desc' },
@@ -33,7 +33,7 @@ router.get('/:templateId', async (req, res) => {
   try {
     const { templateId } = req.params;
     
-    const template = await prisma.clinimetrixTemplate.findUnique({
+    const template = await prisma.clinimetrix_templates.findUnique({
       where: { id: templateId, isActive: true }
     });
 
@@ -53,7 +53,7 @@ router.get('/:templateId/metadata', async (req, res) => {
   try {
     const { templateId } = req.params;
     
-    const registry = await prisma.clinimetrixRegistry.findUnique({
+    const registry = await prisma.clinimetrix_registry.findUnique({
       where: { templateId, isActive: true }
     });
 
@@ -73,7 +73,7 @@ router.get('/search/:query', async (req, res) => {
   try {
     const { query } = req.params;
     
-    const templates = await prisma.clinimetrixRegistry.findMany({
+    const templates = await prisma.clinimetrix_registry.findMany({
       where: {
         isActive: true,
         isPublic: true,
@@ -102,7 +102,7 @@ router.get('/category/:category', async (req, res) => {
   try {
     const { category } = req.params;
     
-    const templates = await prisma.clinimetrixRegistry.findMany({
+    const templates = await prisma.clinimetrix_registry.findMany({
       where: {
         isActive: true,
         isPublic: true,
@@ -124,7 +124,7 @@ router.get('/category/:category', async (req, res) => {
 // Get available categories
 router.get('/meta/categories', async (req, res) => {
   try {
-    const categories = await prisma.clinimetrixRegistry.groupBy({
+    const categories = await prisma.clinimetrix_registry.groupBy({
       by: ['category'],
       where: { isActive: true, isPublic: true },
       _count: true

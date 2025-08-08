@@ -100,7 +100,7 @@ router.get('/database/all', async (req, res) => {
     const { PrismaClient } = require('../../generated/prisma');
     const prisma = new PrismaClient();
 
-    const templates = await prisma.clinimetrixTemplate.findMany({
+    const templates = await prisma.clinimetrix_templates.findMany({
       where: { isActive: true }
     });
 

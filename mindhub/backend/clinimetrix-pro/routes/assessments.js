@@ -31,7 +31,7 @@ router.post('/new', async (req, res) => {
     }
 
     // Create assessment with simplified data - no foreign key constraints to avoid issues
-    const assessment = await prisma.clinimetrixAssessment.create({
+    const assessment = await prisma.clinimetrix_assessments.create({
       data: {
         templateId,
         patientId: patientId || null,
@@ -63,7 +63,7 @@ router.get('/:assessmentId', async (req, res) => {
   try {
     const { assessmentId } = req.params;
     
-    const assessment = await prisma.clinimetrixAssessment.findUnique({
+    const assessment = await prisma.clinimetrix_assessments.findUnique({
       where: { id: assessmentId },
       include: {
         template: true
@@ -87,7 +87,7 @@ router.put('/:assessmentId/responses', async (req, res) => {
     const { assessmentId } = req.params;
     const { responses, currentStep } = req.body;
 
-    const assessment = await prisma.clinimetrixAssessment.update({
+    const assessment = await prisma.clinimetrix_assessments.update({
       where: { id: assessmentId },
       data: {
         responses,
@@ -110,7 +110,7 @@ router.post('/:assessmentId/complete', async (req, res) => {
     const { responses, demographics } = req.body;
 
     // Get assessment 
-    const assessment = await prisma.clinimetrixAssessment.findUnique({
+    const assessment = await prisma.clinimetrix_assessments.findUnique({
       where: { id: assessmentId }
     });
 
@@ -119,7 +119,7 @@ router.post('/:assessmentId/complete', async (req, res) => {
     }
 
     // Get template data separately to avoid foreign key issues
-    const template = await prisma.clinimetrixTemplate.findFirst({
+    const template = await prisma.clinimetrix_templates.findFirst({
       where: { id: assessment.templateId }
     });
 
@@ -148,7 +148,7 @@ router.post('/:assessmentId/complete', async (req, res) => {
     });
 
     // Update assessment with complete results - using only available schema fields
-    const updatedAssessment = await prisma.clinimetrixAssessment.update({
+    const updatedAssessment = await prisma.clinimetrix_assessments.update({
       where: { id: assessmentId },
       data: {
         responses: responses,
@@ -191,7 +191,7 @@ router.post('/calculate-scores', async (req, res) => {
     const { templateId, responses, demographics } = req.body;
 
     // Get template
-    const template = await prisma.clinimetrixTemplate.findUnique({
+    const template = await prisma.clinimetrix_templates.findUnique({
       where: { id: templateId, isActive: true }
     });
 
@@ -228,7 +228,7 @@ router.get('/recent/:limit?', async (req, res) => {
   try {
     const limit = parseInt(req.params.limit) || 10;
     
-    const assessments = await prisma.clinimetrixAssessment.findMany({
+    const assessments = await prisma.clinimetrix_assessments.findMany({
       take: limit,
       orderBy: { createdAt: 'desc' },
       include: {
@@ -253,7 +253,7 @@ router.get('/patient/:patientId', async (req, res) => {
   try {
     const { patientId } = req.params;
     
-    const assessments = await prisma.clinimetrixAssessment.findMany({
+    const assessments = await prisma.clinimetrix_assessments.findMany({
       where: { patientId },
       orderBy: { createdAt: 'desc' },
       include: {
@@ -278,7 +278,7 @@ router.delete('/:assessmentId', async (req, res) => {
   try {
     const { assessmentId } = req.params;
     
-    await prisma.clinimetrixAssessment.delete({
+    await prisma.clinimetrix_assessments.delete({
       where: { id: assessmentId }
     });
 
