@@ -1,49 +1,24 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
 import { ClinicDashboard } from '@/components/dashboard/ClinicDashboard';
-
-interface User {
-  id: string;
-  name: string;
-  email: string;
-  professionalType?: string;
-}
+import { UserProfile } from '@/components/auth/UserProfile';
+import { useAuth } from '@/hooks/useAuth';
+import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
+import { redirect } from 'next/navigation';
 
 export default function DashboardPage() {
-  const router = useRouter();
-  const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(true);
+  const { isLoaded, isSignedIn, user } = useAuth();
 
-  useEffect(() => {
-    const token = localStorage.getItem('mindhub_token');
-    const userData = localStorage.getItem('mindhub_user');
-
-    if (!token) {
-      router.push('/');
-      return;
-    }
-
-    if (userData) {
-      setUser(JSON.parse(userData));
-    }
-    
-    setLoading(false);
-  }, [router]);
-
-  const handleLogout = () => {
-    localStorage.removeItem('mindhub_token');
-    localStorage.removeItem('mindhub_user');
-    router.push('/');
-  };
-
-  if (loading) {
+  if (!isLoaded) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-teal-50 flex items-center justify-center">
-        <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-primary-teal"></div>
+        <LoadingSpinner size="lg" />
       </div>
     );
+  }
+
+  if (!isSignedIn) {
+    redirect('/sign-in');
   }
 
   return (
@@ -59,20 +34,7 @@ export default function DashboardPage() {
               <span className="text-sm text-gray-500">Beta</span>
             </div>
             
-            <div className="flex items-center space-x-4">
-              <div className="text-right">
-                <p className="text-sm font-medium text-gray-900">{user?.name}</p>
-                <p className="text-xs text-gray-500">{user?.email}</p>
-              </div>
-              <button
-                onClick={handleLogout}
-                className="text-gray-500 hover:text-gray-700 transition-colors"
-              >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-                </svg>
-              </button>
-            </div>
+            <UserProfile />
           </div>
         </div>
       </header>
@@ -83,7 +45,7 @@ export default function DashboardPage() {
         <div className="bg-gradient-to-r from-primary-teal to-primary-blue rounded-2xl text-white p-8 mb-8">
           <div className="max-w-3xl">
             <h2 className="text-3xl font-bold mb-4">
-              ¡Bienvenido a MindHub, {user?.name?.split(' ')[0]}! 👋
+              ¡Bienvenido a MindHub, {user?.firstName || 'Usuario'}! 👋
             </h2>
             <div className="bg-white/10 rounded-lg p-4 mb-4">
               <p className="text-lg leading-relaxed">

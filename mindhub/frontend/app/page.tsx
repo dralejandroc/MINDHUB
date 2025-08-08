@@ -16,13 +16,8 @@ export default function LandingPage() {
   const [showBetaModal, setShowBetaModal] = useState(false);
   
   useEffect(() => {
-    // Check if user is already logged in
-    if (typeof window !== 'undefined') {
-      const token = localStorage.getItem('auth_token');
-      if (token) {
-        router.push('/app');
-      }
-    }
+    // Check if user is already logged in via Clerk
+    // This will be handled automatically by Clerk middleware
   }, [router]);
 
   return (

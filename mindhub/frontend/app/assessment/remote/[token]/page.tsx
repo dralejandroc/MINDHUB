@@ -67,7 +67,7 @@ export default function RemoteAssessmentPage() {
       }
       
     } catch (error: any) {
-      setError(error.message);
+      setError(error.message || 'Error desconocido');
     } finally {
       setIsLoading(false);
     }
@@ -147,7 +147,7 @@ export default function RemoteAssessmentPage() {
       setIsCompleted(true);
       
     } catch (error: any) {
-      setError(error.message);
+      setError(error.message || 'Error desconocido');
     } finally {
       setIsCompleting(false);
     }

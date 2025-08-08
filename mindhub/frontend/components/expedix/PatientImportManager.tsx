@@ -70,7 +70,7 @@ export default function PatientImportManager({ onClose, onImportComplete }: Pati
         setHasPermissions(true);
       } else {
         setHasPermissions(false);
-        setError(data.message);
+        setError(data.message || 'Error desconocido');
       }
     } catch (error) {
       console.error('Error loading import limits:', error);
@@ -164,7 +164,7 @@ export default function PatientImportManager({ onClose, onImportComplete }: Pati
         setPreviewResult(data.data);
         setStep('preview');
       } else {
-        setError(data.message);
+        setError(data.message || 'Error desconocido');
       }
     } catch (error) {
       console.error('Error processing preview:', error);
@@ -196,7 +196,7 @@ export default function PatientImportManager({ onClose, onImportComplete }: Pati
         setStep('complete');
         onImportComplete(data.data.processed);
       } else {
-        setError(data.message);
+        setError(data.message || 'Error desconocido');
         setStep('preview'); // Volver a preview para mostrar errores
       }
     } catch (error) {
