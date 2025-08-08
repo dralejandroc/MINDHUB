@@ -236,7 +236,7 @@ router.get('/',
     }
 
     const [patients, totalCount] = await executeTransaction([
-      (prisma) => prisma.patient.findMany({
+      (prisma) => prisma.patients.findMany({
         where,
         skip,
         take: parseInt(limit),
@@ -250,7 +250,7 @@ router.get('/',
           }
         }
       }),
-      (prisma) => prisma.patient.count({ where })
+      (prisma) => prisma.patients.count({ where })
     ], 'getPatients');
 
     const transformedPatients = patients.map(transformPatientToFrontend);
@@ -307,7 +307,7 @@ router.get('/:id',
     const { id } = req.params;
     
     const patient = await executeQuery(
-      (prisma) => prisma.patient.findUnique({
+      (prisma) => prisma.patients.findUnique({
         where: { id },
         include: {
           // creator: { // Field doesn't exist in Patient schema
@@ -425,7 +425,7 @@ router.post('/',
 
     // Check for duplicate patients (same name and birth date)
     const existingPatient = await executeQuery(
-      (prisma) => prisma.patient.findFirst({
+      (prisma) => prisma.patients.findFirst({
         where: {
           firstName: patientData.firstName,
           paternalLastName: patientData.paternalLastName,
@@ -463,7 +463,7 @@ router.post('/',
     );
 
     const patient = await executeQuery(
-      (prisma) => prisma.patient.create({
+      (prisma) => prisma.patients.create({
         data: {
           id: readablePatientId,
           ...patientData,
@@ -534,7 +534,7 @@ router.put('/:id',
 
     // Check if patient exists
     const existingPatient = await executeQuery(
-      (prisma) => prisma.patient.findUnique({
+      (prisma) => prisma.patients.findUnique({
         where: { id },
         select: { id: true }
       }),
@@ -546,7 +546,7 @@ router.put('/:id',
     }
 
     const patient = await executeQuery(
-      (prisma) => prisma.patient.update({
+      (prisma) => prisma.patients.update({
         where: { id },
         data: updateData,
         include: {
@@ -610,7 +610,7 @@ router.delete('/:id',
 
     // Check if patient exists
     const existingPatient = await executeQuery(
-      (prisma) => prisma.patient.findUnique({
+      (prisma) => prisma.patients.findUnique({
         where: { id },
         select: { id: true }
       }),
@@ -629,7 +629,7 @@ router.delete('/:id',
     
     // Return success without actual deletion for now
     // await executeQuery(
-    //   (prisma) => prisma.patient.delete({ where: { id } }),
+    //   (prisma) => prisma.patients.delete({ where: { id } }),
     //   `deletePatient(${id})`
     // );
 
@@ -673,7 +673,7 @@ router.get('/:id/summary',
     const { id } = req.params;
     
     const summary = await executeQuery(
-      (prisma) => prisma.patient.findUnique({
+      (prisma) => prisma.patients.findUnique({
         where: { id },
         select: {
           id: true,
@@ -785,7 +785,7 @@ async function generateMedicalRecordNumber() {
   
   // Get the count of patients created this year
   const prisma = getPrismaClient();
-  const count = await prisma.patient.count({
+  const count = await prisma.patients.count({
     where: {
       createdAt: {
         gte: new Date(year, 0, 1),
