@@ -5,7 +5,23 @@
  * for the MindHub healthcare platform.
  */
 
-const { PrismaClient } = require('../../generated/prisma');
+// Try to import PrismaClient with better error handling
+let PrismaClient;
+try {
+  ({ PrismaClient } = require('../../generated/prisma'));
+  console.log('✅ Prisma client imported successfully');
+} catch (error) {
+  console.error('❌ Failed to import Prisma client:', error.message);
+  console.error('Trying alternative import paths...');
+  try {
+    ({ PrismaClient } = require('@prisma/client'));
+    console.log('✅ Prisma client imported from @prisma/client');
+  } catch (altError) {
+    console.error('❌ Alternative import failed:', altError.message);
+    throw new Error(`Failed to import PrismaClient: ${error.message}`);
+  }
+}
+
 const winston = require('winston');
 
 // Configure logger
@@ -60,7 +76,17 @@ let prisma;
  */
 function getPrismaClient() {
   if (!prisma) {
-    prisma = new PrismaClient(prismaConfig);
+    if (!PrismaClient) {
+      throw new Error('PrismaClient is not available. Make sure prisma generate has been run.');
+    }
+    
+    try {
+      prisma = new PrismaClient(prismaConfig);
+      console.log('✅ Prisma client instance created successfully');
+    } catch (error) {
+      console.error('❌ Failed to create Prisma client:', error.message);
+      throw error;
+    }
 
     // Setup event listeners for logging
     // prisma.$on('query', (e) => {

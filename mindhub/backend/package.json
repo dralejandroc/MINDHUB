@@ -44,7 +44,8 @@
     "data:create-minimal": "node create-minimal-test-data.js",
     "data:create-full": "node create-test-data.js",
     "sync-scales": "node scripts/sync-templates.js",
-    "sync-scale": "node scripts/sync-templates.js"
+    "sync-scale": "node scripts/sync-templates.js",
+    "postinstall": "npx prisma generate"
   },
   "dependencies": {
     "@prisma/client": "^5.6.0",
