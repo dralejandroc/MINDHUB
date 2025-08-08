@@ -46,8 +46,11 @@ export default clerkMiddleware(async (auth, req) => {
   }
   
   // Check if route requires authentication
-  if (isProtectedRoute(req) && !auth().userId) {
-    return auth().redirectToSignIn();
+  if (isProtectedRoute(req)) {
+    const { userId } = await auth();
+    if (!userId) {
+      return auth().redirectToSignIn();
+    }
   }
   
   return response;
