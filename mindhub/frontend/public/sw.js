@@ -81,6 +81,13 @@ self.addEventListener('fetch', (event) => {
     return;
   }
   
+  // Skip Clerk domains - let Clerk handle its own requests
+  if (requestUrl.hostname.includes('clerk.accounts.dev') ||
+      requestUrl.hostname === 'clerk.mindhub.cloud' ||
+      requestUrl.hostname === 'accounts.mindhub.cloud') {
+    return;
+  }
+  
   // Force fresh manifest.json to prevent www domain caching issues
   if (requestUrl.pathname === '/manifest.json') {
     event.respondWith(
