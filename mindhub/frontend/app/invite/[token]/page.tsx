@@ -231,7 +231,7 @@ export default function InvitationPage() {
           <p className="text-sm text-gray-600">
             ¿Ya tienes una cuenta?{' '}
             <button
-              onClick={() => router.push('/login')}
+              onClick={() => router.push('/sign-in')}
               className="text-primary-teal hover:text-teal-600 font-medium"
             >
               Iniciar sesión

@@ -10,7 +10,7 @@ export function checkAuthAndRedirect(): boolean {
   const token = localStorage.getItem('authToken');
   
   if (!user || !token) {
-    window.location.href = '/login';
+    window.location.href = '/sign-in';
     return false;
   }
   

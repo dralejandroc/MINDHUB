@@ -83,7 +83,7 @@ function VerifyEmailContent() {
             </p>
           </div>
           <Link
-            href="/login?verified=true"
+            href="/sign-in?verified=true"
             className="inline-flex items-center px-6 py-3 bg-gradient-to-r from-primary-teal to-primary-blue text-white rounded-xl font-semibold hover:shadow-lg hover:scale-105 transition-all duration-300"
           >
             Ir al Login

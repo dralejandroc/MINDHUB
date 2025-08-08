@@ -108,7 +108,7 @@ export async function getCurrentUser(): Promise<User | null> {
 export function logout() {
   localStorage.removeItem('authToken');
   localStorage.removeItem('currentUser');
-  window.location.href = '/login';
+  window.location.href = '/sign-in';
 }
 
 /**

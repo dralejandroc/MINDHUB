@@ -20,7 +20,7 @@ export default function AppHome() {
     
     if (!token || !savedUser) {
       // Redirect to login if not authenticated
-      router.push('/login');
+      router.push('/sign-in');
       return;
     }
 
@@ -30,7 +30,7 @@ export default function AppHome() {
       console.error('Error parsing user data:', error);
       localStorage.removeItem('currentUser');
       localStorage.removeItem('auth_token');
-      router.push('/login');
+      router.push('/sign-in');
       return;
     }
     
