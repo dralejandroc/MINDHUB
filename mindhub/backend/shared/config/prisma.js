@@ -157,11 +157,11 @@ async function getDatabaseHealth() {
     const versionResult = await client.$queryRaw`SELECT version()`;
     const version = versionResult[0]?.version || 'Unknown';
 
-    // Get connection count
+    // Get connection count (MySQL version)
     const connectionResult = await client.$queryRaw`
       SELECT count(*) as active_connections 
-      FROM pg_stat_activity 
-      WHERE state = 'active'
+      FROM information_schema.PROCESSLIST 
+      WHERE COMMAND != 'Sleep'
     `;
     const activeConnections = parseInt(connectionResult[0]?.active_connections || 0);
 

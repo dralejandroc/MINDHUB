@@ -49,7 +49,7 @@ const transformPatientToFrontend = (patient) => {
     emergency_contact_phone: patient.emergencyContactPhone,
     address: patient.address,
     consultations_count: patient._count?.consultations || 0,
-    evaluations_count: patient._count?.scaleAdministrations || 0,
+    evaluations_count: patient._count?.scale_administrations || 0,
     city: patient.city,
     state: patient.state,
     postal_code: patient.postalCode,
@@ -65,7 +65,7 @@ const transformPatientToFrontend = (patient) => {
     consultations: patient.consultations || [],
     medicalHistory: patient.medicalHistory || [],
     prescriptions: patient.prescriptions || [],
-    scaleAdministrations: patient.scaleAdministrations || []
+    scale_administrations: patient.scale_administrations || []
   };
 };
 
@@ -245,7 +245,7 @@ router.get('/',
           _count: {
             select: {
               consultations: true,
-              scaleAdministrations: true
+              scale_administrations: true
             }
           }
         }
@@ -345,7 +345,7 @@ router.get('/:id',
               // }
             }
           },
-          scaleAdministrations: {
+          scale_administrations: {
             orderBy: { administrationDate: 'desc' },
             take: 5,
             include: {
@@ -688,7 +688,7 @@ router.get('/:id/summary',
               consultations: true,
               prescriptions: { where: { status: 'active' } },
               medicalHistory: true,
-              scaleAdministrations: true
+              scale_administrations: true
             }
           }
         }
