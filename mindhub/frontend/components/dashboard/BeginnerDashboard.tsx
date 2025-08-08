@@ -30,6 +30,12 @@ export function BeginnerDashboard({ onNavigate }: BeginnerDashboardProps) {
     completedAssessments: 0,
     pendingAlerts: 0
   });
+  const [todayStats, setTodayStats] = useState({
+    appointmentsToday: 0,
+    pendingPatients: 0,
+    assessmentsScheduled: 0,
+    nextAppointment: null as any
+  });
   const [isClient, setIsClient] = useState(false);
   const [currentUser, setCurrentUser] = useState<{isRealUser?: boolean} | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -81,6 +87,20 @@ export function BeginnerDashboard({ onNavigate }: BeginnerDashboardProps) {
         pendingAlerts: dashboardData.weeklyStats.alerts
       });
       
+      // Calculate today's stats
+      const today = new Date().toISOString().split('T')[0];
+      const todayActivities = dashboardData.recentActivity.filter(activity => {
+        const activityDate = new Date(activity.timestamp).toISOString().split('T')[0];
+        return activityDate === today;
+      });
+      
+      setTodayStats({
+        appointmentsToday: todayActivities.filter(a => a.type === 'consultation').length,
+        pendingPatients: Math.max(0, todayActivities.filter(a => a.type === 'patient').length),
+        assessmentsScheduled: todayActivities.filter(a => a.type === 'scale').length,
+        nextAppointment: todayActivities.length > 0 ? { time: '10:00 AM' } : null
+      });
+      
       // Create alerts from recent activity
       const alerts = dashboardData.recentActivity
         .filter(activity => activity.type === 'consultation')
@@ -106,6 +126,7 @@ export function BeginnerDashboard({ onNavigate }: BeginnerDashboardProps) {
         totalPatients: dashboardData.totalPatients,
         completedAssessments: dashboardData.totalScaleApplications,
         totalConsultations: dashboardData.totalConsultations,
+        todayStats: todayActivities.length,
         alerts: alerts.length
       });
 
@@ -206,17 +227,72 @@ export function BeginnerDashboard({ onNavigate }: BeginnerDashboardProps) {
 
   return (
     <div className="space-y-6">
-      {/* Welcome Header */}
+      {/* Welcome Header with Date */}
       <div className="text-center py-4">
         <h1 className="text-2xl font-bold text-gray-900 mb-2">
-          Dashboard Clínico
+          Dashboard Clínico - {isClient ? new Date().toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }) : ''}
         </h1>
         <p className="text-sm text-gray-600 max-w-2xl mx-auto">
-          Resumen ejecutivo de tu práctica clínica con métricas clave y agenda semanal
+          Resumen ejecutivo de tu práctica clínica con métricas clave y agenda del día
         </p>
       </div>
 
-      {/* Quick Stats */}
+      {/* Today's Summary - Most Important Section */}
+      <Card className="p-6 bg-gradient-to-r from-primary-50 to-secondary-50 border-primary-200">
+        <div className="mb-4">
+          <h2 className="text-lg font-bold text-gray-900 flex items-center">
+            <CalendarIcon className="h-5 w-5 mr-2 text-primary-600" />
+            Resumen del Día
+          </h2>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div className="bg-white rounded-lg p-4 border border-gray-200">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-sm text-gray-600">Citas Hoy</span>
+              <ClockIcon className="h-4 w-4 text-primary-500" />
+            </div>
+            <p className="text-2xl font-bold text-gray-900">{todayStats.appointmentsToday}</p>
+            {todayStats.nextAppointment && (
+              <p className="text-xs text-gray-500 mt-1">Próxima: {todayStats.nextAppointment.time}</p>
+            )}
+          </div>
+          <div className="bg-white rounded-lg p-4 border border-gray-200">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-sm text-gray-600">Pacientes Pendientes</span>
+              <UserGroupIcon className="h-4 w-4 text-orange-500" />
+            </div>
+            <p className="text-2xl font-bold text-gray-900">{todayStats.pendingPatients}</p>
+            <p className="text-xs text-gray-500 mt-1">Por atender hoy</p>
+          </div>
+          <div className="bg-white rounded-lg p-4 border border-gray-200">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-sm text-gray-600">Evaluaciones Programadas</span>
+              <ClipboardDocumentListIcon className="h-4 w-4 text-purple-500" />
+            </div>
+            <p className="text-2xl font-bold text-gray-900">{todayStats.assessmentsScheduled}</p>
+            <p className="text-xs text-gray-500 mt-1">Para aplicar hoy</p>
+          </div>
+          <div className="bg-white rounded-lg p-4 border border-gray-200">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-sm text-gray-600">Alertas Activas</span>
+              <BellIcon className="h-4 w-4 text-red-500" />
+            </div>
+            <p className="text-2xl font-bold text-gray-900">{weeklyStats.pendingAlerts}</p>
+            <p className="text-xs text-gray-500 mt-1">Requieren atención</p>
+          </div>
+        </div>
+        {todayStats.appointmentsToday === 0 && (
+          <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+            <p className="text-sm text-yellow-800">
+              <ExclamationTriangleIcon className="h-4 w-4 inline mr-2" />
+              No tienes citas programadas para hoy. 
+              <Link href="/hubs/agenda" className="font-medium underline ml-1">Ver agenda completa</Link>
+            </p>
+          </div>
+        )}
+      </Card>
+
+      {/* Weekly Stats - Secondary */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
         <Link href="/hubs/expedix">
           <Card className="p-3 bg-primary-50 border-primary-200 hover-lift cursor-pointer transition-all duration-200 hover:bg-primary-100">

@@ -5,8 +5,8 @@
  * Provides type-safe methods for template management and assessment operations.
  */
 
-// Base configuration
-const API_BASE_URL = '/api';
+// Base configuration - connect directly to Railway backend
+const API_BASE_URL = 'https://mindhub-production.up.railway.app/api';
 const CLINIMETRIX_PRO_BASE = `${API_BASE_URL}/clinimetrix-pro`;
 
 // TypeScript interfaces for ClinimetrixPro entities

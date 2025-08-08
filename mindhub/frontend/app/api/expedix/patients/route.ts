@@ -5,7 +5,7 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const search = searchParams.get('search');
     
-    let url = 'https://mindhub-production.up.railway.app/v1/expedix/patients';
+    let url = 'https://mindhub-production.up.railway.app/api/v1/expedix/patients';
     if (search) {
       url += `?search=${encodeURIComponent(search)}`;
     }
