@@ -68,7 +68,7 @@ export function BetaRegistrationModal({ onClose }: BetaRegistrationModalProps) {
       if (result.success) {
         if (result.isClinica) {
           setIsClinica(true);
-          setError(result.message);
+          setError(result.message || 'Error en el registro');
           console.log('[BETA MODAL] Clinic registration - showing message');
         } else {
           setIsSuccess(true);
