@@ -2,27 +2,40 @@ const nodemailer = require('nodemailer');
 
 class EmailServiceZoho {
   constructor() {
-    // Configuración para Zoho Mail
+    // Configuración para Gmail (más confiable para desarrollo)
     // Log para debug
-    console.log('🔧 Configurando Zoho Mail con:');
-    console.log('   Email:', process.env.ZOHO_EMAIL);
-    console.log('   App Password:', process.env.ZOHO_APP_PASSWORD ? '***' + process.env.ZOHO_APP_PASSWORD.slice(-4) : 'NOT_SET');
+    console.log('🔧 Configurando servicio de email:');
+    console.log('   Email:', process.env.GMAIL_USER || process.env.ZOHO_EMAIL);
+    console.log('   App Password:', process.env.GMAIL_APP_PASSWORD ? '***' + process.env.GMAIL_APP_PASSWORD.slice(-4) : 'NOT_SET');
     
-    this.transporter = nodemailer.createTransport({
-      host: 'smtp.zoho.com',
-      port: 587,
-      secure: false, // TLS
-      requireTLS: true,
-      auth: {
-        user: process.env.ZOHO_EMAIL || 'alejandro.contreras@mindhub.cloud',
-        pass: process.env.ZOHO_APP_PASSWORD // App password de Zoho
-      },
-      tls: {
-        ciphers: 'SSLv3'
-      },
-      debug: true, // Habilitar debug
-      logger: true // Habilitar logs
-    });
+    // Si hay configuración de Gmail, usarla. Si no, intentar con Zoho
+    if (process.env.GMAIL_USER && process.env.GMAIL_APP_PASSWORD) {
+      console.log('📧 Usando Gmail para envío de emails');
+      this.transporter = nodemailer.createTransport({
+        service: 'gmail',
+        auth: {
+          user: process.env.GMAIL_USER,
+          pass: process.env.GMAIL_APP_PASSWORD
+        }
+      });
+      this.fromEmail = process.env.GMAIL_USER;
+    } else {
+      console.log('📧 Intentando usar Zoho Mail (puede requerir cuenta de pago)');
+      this.transporter = nodemailer.createTransport({
+        host: 'smtp.zoho.com',
+        port: 587,
+        secure: false, // TLS
+        requireTLS: true,
+        auth: {
+          user: process.env.ZOHO_EMAIL || 'alejandro.contreras@mindhub.cloud',
+          pass: process.env.ZOHO_APP_PASSWORD // App password de Zoho
+        },
+        tls: {
+          ciphers: 'SSLv3'
+        }
+      });
+      this.fromEmail = process.env.ZOHO_EMAIL || 'alejandro.contreras@mindhub.cloud';
+    }
 
     // Aliases para diferentes propósitos
     this.aliases = {
@@ -49,7 +62,8 @@ class EmailServiceZoho {
     const verificationUrl = `https://www.mindhub.cloud/verify-email?token=${verificationToken}`;
     
     const mailOptions = {
-      from: process.env.ZOHO_EMAIL || 'alejandro.contreras@mindhub.cloud',
+      from: `MindHub <${this.fromEmail}>`,
+      replyTo: 'noreply@mindhub.cloud',
       to: to,
       subject: 'Bienvenido a MindHub - Confirma tu cuenta',
       html: `
