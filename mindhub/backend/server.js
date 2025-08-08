@@ -158,6 +158,79 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 // app.use('/api/health', healthRoutes);
 // app.use('/api/rate-limiting', rateLimitingDashboard);
 
+// Auto-run email verification migration on startup
+(async () => {
+  try {
+    const { PrismaClient } = require('./generated/prisma');
+    const prisma = new PrismaClient();
+    
+    // Check if email verification columns exist
+    const checkColumns = await prisma.$queryRaw`
+      SELECT COLUMN_NAME 
+      FROM INFORMATION_SCHEMA.COLUMNS 
+      WHERE TABLE_SCHEMA = DATABASE() 
+      AND TABLE_NAME = 'users' 
+      AND COLUMN_NAME IN ('emailVerified', 'emailVerificationToken', 'emailVerifiedAt')
+    `;
+    
+    if (checkColumns.length < 3) {
+      console.log('🔧 Auto-applying email verification migration...');
+      
+      // Add missing columns
+      if (!checkColumns.find(c => c.COLUMN_NAME === 'emailVerified')) {
+        await prisma.$queryRaw`
+          ALTER TABLE users 
+          ADD COLUMN emailVerified BOOLEAN DEFAULT FALSE AFTER password
+        `;
+        console.log('✅ Added emailVerified column');
+      }
+      
+      if (!checkColumns.find(c => c.COLUMN_NAME === 'emailVerificationToken')) {
+        await prisma.$queryRaw`
+          ALTER TABLE users 
+          ADD COLUMN emailVerificationToken VARCHAR(255) NULL AFTER emailVerified
+        `;
+        console.log('✅ Added emailVerificationToken column');
+      }
+      
+      if (!checkColumns.find(c => c.COLUMN_NAME === 'emailVerifiedAt')) {
+        await prisma.$queryRaw`
+          ALTER TABLE users 
+          ADD COLUMN emailVerifiedAt DATETIME NULL AFTER emailVerificationToken
+        `;
+        console.log('✅ Added emailVerifiedAt column');
+      }
+      
+      // Add index
+      try {
+        await prisma.$queryRaw`
+          CREATE INDEX idx_email_verification_token ON users(emailVerificationToken)
+        `;
+        console.log('✅ Added verification token index');
+      } catch (e) {
+        // Index may already exist, ignore error
+        console.log('ℹ️ Verification token index may already exist');
+      }
+      
+      // Set existing users as verified
+      await prisma.$queryRaw`
+        UPDATE users 
+        SET emailVerified = TRUE, emailVerifiedAt = NOW() 
+        WHERE emailVerified IS NULL OR emailVerified = FALSE
+      `;
+      console.log('✅ Marked existing users as verified');
+      
+      console.log('🎉 Email verification migration completed automatically');
+    } else {
+      console.log('✅ Email verification system already configured');
+    }
+    
+    await prisma.$disconnect();
+  } catch (error) {
+    console.error('⚠️ Auto-migration failed:', error.message);
+  }
+})();
+
 // Health check endpoint
 app.get('/health', (req, res) => {
   res.json({
