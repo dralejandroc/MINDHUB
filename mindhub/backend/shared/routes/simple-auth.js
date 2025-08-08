@@ -540,6 +540,42 @@ router.get('/beta-stats', requireAuth, async (req, res) => {
   }
 });
 
+// Clean user for testing (temporary)
+router.post('/clean-user-for-test', async (req, res) => {
+  try {
+    const { secret, email } = req.body;
+    if (secret !== 'cleanup-test-2025') {
+      return res.status(401).json({ success: false, message: 'Invalid secret' });
+    }
+
+    console.log('🧹 Cleaning user for testing:', email);
+    
+    // Delete from beta_registrations
+    await prisma.beta_registrations.deleteMany({
+      where: { email: email.toLowerCase().trim() }
+    });
+    
+    // Delete from users
+    await prisma.users.deleteMany({
+      where: { email: email.toLowerCase().trim() }
+    });
+    
+    console.log('✅ User cleaned successfully');
+    
+    res.json({
+      success: true,
+      message: 'Usuario limpiado para pruebas'
+    });
+    
+  } catch (error) {
+    console.error('❌ Cleanup failed:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
 // Email verification migration endpoint (temporary)
 router.post('/run-email-migration', async (req, res) => {
   try {
