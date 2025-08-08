@@ -6,9 +6,10 @@ import { UnifiedSidebar } from '@/components/layout/UnifiedSidebar';
 import { DashboardSwitcher } from '@/components/dashboard/DashboardSwitcher';
 import { StartPageHandler } from '@/components/layout/StartPageHandler';
 import { UserMetricsProvider } from '@/contexts/UserMetricsContext';
+import { CurrentUser } from '@/types/user-metrics';
 
 export default function AppHome() {
-  const [currentUser, setCurrentUser] = useState(null);
+  const [currentUser, setCurrentUser] = useState<CurrentUser | undefined>(undefined);
   const [isLoading, setIsLoading] = useState(true);
   const router = useRouter();
 

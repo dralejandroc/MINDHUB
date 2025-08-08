@@ -1,3 +1,10 @@
+// Common user type for UnifiedSidebar and other components
+export interface CurrentUser {
+  name?: string;
+  email?: string;
+  role?: string;
+}
+
 export interface UserMetrics {
   loginCount: number;
   patientsAdded: number;

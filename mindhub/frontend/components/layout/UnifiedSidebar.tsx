@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { CurrentUser } from '@/types/user-metrics';
 import {
   UserGroupIcon,
   DocumentChartBarIcon,
@@ -80,11 +81,7 @@ const NAVIGATION_ITEMS = [
 
 interface UnifiedSidebarProps {
   children?: React.ReactNode;
-  currentUser?: {
-    name?: string;
-    email?: string;
-    role?: string;
-  };
+  currentUser?: CurrentUser;
 }
 
 export function UnifiedSidebar({ children, currentUser }: UnifiedSidebarProps) {

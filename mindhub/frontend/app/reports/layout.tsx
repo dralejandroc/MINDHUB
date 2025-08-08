@@ -2,13 +2,14 @@
 
 import { useState, useEffect } from 'react';
 import { UnifiedSidebar } from '@/components/layout/UnifiedSidebar';
+import { CurrentUser } from '@/types/user-metrics';
 
 export default function ReportsLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const [currentUser, setCurrentUser] = useState<any>(null);
+  const [currentUser, setCurrentUser] = useState<CurrentUser | undefined>(undefined);
 
   useEffect(() => {
     // Read user from localStorage
