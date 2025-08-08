@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 // import { Inter } from 'next/font/google'; // Temporalmente deshabilitado para evitar problemas de conectividad
 import { Toaster } from 'react-hot-toast';
 import { SpeedInsights } from '@vercel/speed-insights/next';
+import { ClerkProvider } from '@clerk/nextjs';
 import './globals.css';
 
 // const inter = Inter({ subsets: ['latin'], variable: '--font-inter' }); // Temporalmente deshabilitado
@@ -72,34 +73,35 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className="font-sans">
-      <head>
-        {/* Security headers */}
-        <meta httpEquiv="X-Content-Type-Options" content="nosniff" />
-        {/* X-Frame-Options should be set via HTTP header, not meta tag */}
-        {/* XSS Protection should be set via HTTP header */}
-        <meta name="referrer" content="strict-origin-when-cross-origin" />
-        
-        {/* Healthcare compliance */}
-        <meta name="robots" content="noindex, nofollow" />
-        <meta name="googlebot" content="noindex, nofollow" />
-        
-        {/* PWA support */}
-        <meta name="theme-color" content="#0ea5e9" />
-        <meta name="mobile-web-app-capable" content="yes" />
-        <meta name="apple-mobile-web-app-capable" content="yes" />
-        <meta name="apple-mobile-web-app-status-bar-style" content="default" />
-        <meta name="apple-mobile-web-app-title" content="MindHub" />
-        
-        {/* Explicit manifest link to prevent www domain issues */}
-        <link rel="manifest" href="/manifest.json" />
-        
-        {/* Preconnect to external services - Google Fonts temporarily disabled */}
-      </head>
-      <body className="bg-gray-50 antialiased">
-        <div id="root" className="min-h-screen">
-          {children}
-        </div>
+    <ClerkProvider>
+      <html lang="en" className="font-sans">
+        <head>
+          {/* Security headers */}
+          <meta httpEquiv="X-Content-Type-Options" content="nosniff" />
+          {/* X-Frame-Options should be set via HTTP header, not meta tag */}
+          {/* XSS Protection should be set via HTTP header */}
+          <meta name="referrer" content="strict-origin-when-cross-origin" />
+          
+          {/* Healthcare compliance */}
+          <meta name="robots" content="noindex, nofollow" />
+          <meta name="googlebot" content="noindex, nofollow" />
+          
+          {/* PWA support */}
+          <meta name="theme-color" content="#0ea5e9" />
+          <meta name="mobile-web-app-capable" content="yes" />
+          <meta name="apple-mobile-web-app-capable" content="yes" />
+          <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+          <meta name="apple-mobile-web-app-title" content="MindHub" />
+          
+          {/* Explicit manifest link to prevent www domain issues */}
+          <link rel="manifest" href="/manifest.json" />
+          
+          {/* Preconnect to external services - Google Fonts temporarily disabled */}
+        </head>
+        <body className="bg-gray-50 antialiased">
+          <div id="root" className="min-h-screen">
+            {children}
+          </div>
         
         {/* Toast notifications */}
         <Toaster
@@ -166,9 +168,10 @@ export default function RootLayout({
           }}
         />
         
-        {/* Feedback Button - Available on all pages */}
-        <div id="feedback-portal" />
-      </body>
-    </html>
+          {/* Feedback Button - Available on all pages */}
+          <div id="feedback-portal" />
+        </body>
+      </html>
+    </ClerkProvider>
   );
 }
