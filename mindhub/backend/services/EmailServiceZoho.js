@@ -75,7 +75,7 @@ class EmailServiceZoho {
     
     const mailOptions = {
       from: this.fromName ? `${this.fromName} <${this.fromEmail}>` : this.fromEmail,
-      replyTo: 'soporte@mindhub.cloud',
+      replyTo: process.env.SUPPORT_EMAIL || 'mindhub.principal@gmail.com',
       to: to,
       subject: 'Bienvenido a MindHub - Confirma tu cuenta',
       html: `
