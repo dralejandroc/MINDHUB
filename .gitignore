@@ -27,3 +27,9 @@ node_modules/
 # Task files
 # tasks.json
 # tasks/ 
+
+# Sensitive keys files - NEVER COMMIT
+MINDHUB_KEYS_SENSITIVE.md
+*KEYS_SENSITIVE*
+*.sensitive.*
+*_SENSITIVE.*
