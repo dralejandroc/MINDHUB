@@ -3,6 +3,11 @@ const nodemailer = require('nodemailer');
 class EmailServiceZoho {
   constructor() {
     // Configuración para Zoho Mail
+    // Log para debug
+    console.log('🔧 Configurando Zoho Mail con:');
+    console.log('   Email:', process.env.ZOHO_EMAIL);
+    console.log('   App Password:', process.env.ZOHO_APP_PASSWORD ? '***' + process.env.ZOHO_APP_PASSWORD.slice(-4) : 'NOT_SET');
+    
     this.transporter = nodemailer.createTransport({
       host: 'smtp.zoho.com',
       port: 465,
@@ -10,7 +15,9 @@ class EmailServiceZoho {
       auth: {
         user: process.env.ZOHO_EMAIL || 'alejandro.contreras@mindhub.cloud',
         pass: process.env.ZOHO_APP_PASSWORD // App password de Zoho
-      }
+      },
+      debug: true, // Habilitar debug
+      logger: true // Habilitar logs
     });
 
     // Aliases para diferentes propósitos
@@ -38,7 +45,7 @@ class EmailServiceZoho {
     const verificationUrl = `https://www.mindhub.cloud/verify-email?token=${verificationToken}`;
     
     const mailOptions = {
-      from: this.aliases.noreply,
+      from: process.env.ZOHO_EMAIL || 'alejandro.contreras@mindhub.cloud',
       to: to,
       subject: 'Bienvenido a MindHub - Confirma tu cuenta',
       html: `
