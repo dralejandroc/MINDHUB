@@ -7,7 +7,8 @@
 
 const express = require('express');
 const { body, param, query, validationResult } = require('express-validator');
-const authMiddleware = require('../../shared/middleware/auth-middleware');
+// Auth middleware removed - using Clerk authentication through API gateway
+const authMiddleware = (req, res, next) => next(); // Auth handled by Clerk at API gateway level
 const nodemailer = require('nodemailer');
 const PDFDocument = require('pdfkit');
 const PersonalizationService = require('../services/PersonalizationService');

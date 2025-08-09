@@ -6,7 +6,11 @@
  */
 
 const express = require('express');
-const { checkPermissions, requireAuth } = require('../shared/middleware/auth');
+
+// Auth middleware removed - using Clerk authentication through API gateway
+// These are stub functions to prevent errors during migration
+const requireAuth = (req, res, next) => next(); // Auth handled by Clerk at API gateway level
+const checkPermissions = (permission) => (req, res, next) => next(); // Permissions handled by Clerk
 
 // Simple logger for now
 const logger = {

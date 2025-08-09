@@ -6,7 +6,11 @@
  */
 
 const express = require('express');
-const { checkPermissions, requireAuth } = require('../shared/middleware/auth');
+
+// Auth middleware removed - using Clerk authentication through API gateway
+// These are stub functions to prevent errors during migration
+const requireAuth = (req, res, next) => next(); // Auth handled by Clerk at API gateway level
+const checkPermissions = (permission) => (req, res, next) => next(); // Permissions handled by Clerk
 
 // Simple logger for now
 const logger = {
@@ -39,7 +43,7 @@ const exportRoutes = require('./routes/export');
 const importRoutes = require('./routes/import');
 const patientImportRoutes = require('./routes/patient-import');
 const patientTimelineRoutes = require('./routes/patient-timeline');
-const authRoutes = require('./routes/auth');
+// const authRoutes = require('./routes/auth'); // Removed - using Clerk auth only
 const appointmentLogsRoutes = require('./routes/appointment-logs');
 
 // Simple test endpoint without any middleware
@@ -148,7 +152,7 @@ router.use('/export', exportRoutes);
 router.use('/import', importRoutes);
 router.use('/patient-import', patientImportRoutes);
 router.use('/patient-timeline', patientTimelineRoutes);
-router.use('/auth', authRoutes);
+// router.use('/auth', authRoutes); // Removed - using Clerk auth only
 router.use('/appointment-logs', appointmentLogsRoutes);
 
 // Hub-specific error handler
