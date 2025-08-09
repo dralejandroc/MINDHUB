@@ -323,7 +323,7 @@ export default function ClinimetrixScaleSelector({
                         {scale.administrationTime || '5-10'} min
                       </span>
                       <span>
-                        {scale.totalItems} ítems
+                        {scale.totalItems || 'N/A'} ítems
                       </span>
                     </div>
                   </div>

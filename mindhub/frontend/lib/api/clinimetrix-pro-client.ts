@@ -161,6 +161,11 @@ export interface ClinimetrixRegistry {
   lastUpdated: string;
   createdAt: string;
   updatedAt: string;
+  // Campos adicionales de la respuesta del backend
+  totalItems?: number;
+  scoreRangeMin?: number;
+  scoreRangeMax?: number;
+  estimatedDurationMinutes?: number;
 }
 
 export interface ClinimetrixAssessment {
