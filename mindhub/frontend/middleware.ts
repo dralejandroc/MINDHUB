@@ -57,12 +57,7 @@ export default clerkMiddleware(async (auth, req) => {
 
 export const config = {
   matcher: [
-    // Exclude static files completely from middleware
-    '/((?!api|_next/static|_next/image|favicon.ico|manifest.json|sw.js|robots.txt|icon-.*\\.(png|svg)).*)',
-    // Only protected routes
-    '/dashboard/:path*',
-    '/hubs/:path*', 
-    '/profile/:path*',
-    '/settings/:path*'
+    // Match all routes except static files and API routes
+    '/((?!_next/static|_next/image|favicon.ico|manifest.json|sw.js|robots.txt|.*\\.png|.*\\.svg).*)',
   ],
 };

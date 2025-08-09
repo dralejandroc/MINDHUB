@@ -67,15 +67,10 @@ try {
 const universalScalesRouter = require('./api/universal-scales');
 const assessmentController = require('./api/assessment-controller');
 
-// Import authentication routes (simple auth system)
-const { router: authRoutes } = require('./shared/routes/simple-auth');
-
-// Import organizations routes
-const organizationsRoutes = require('./shared/routes/organizations');
+// Legacy auth routes removed - using Clerk only
 
 // Import shared middleware
 const errorHandler = require('./shared/middleware/error-handling');
-const authMiddleware = require('./shared/middleware/auth-middleware');
 const dataValidation = require('./shared/middleware/data-validation');
 const rateLimiting = require('./shared/middleware/rate-limiting');
 const middleware = require('./shared/middleware');
@@ -142,7 +137,7 @@ app.use(cors({
   ],
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'X-User-Context', 'X-Api-Key']
 }));
 
 // General middleware
@@ -331,12 +326,7 @@ app.use('/api', assessmentController);
 // Legacy clinimetrix endpoints for compatibility
 app.use('/api/v1/clinimetrix', assessmentController);
 
-// Authentication routes - NO HARDCODED USERS
-app.use('/api/auth', authRoutes);
-
-// Organizations routes
-app.use('/api/organizations', organizationsRoutes);
-console.log('✅ Organizations routes mounted at /api/organizations');
+// Legacy authentication routes removed - using Clerk only
 
 // Admin migrations routes (protected)
 const adminMigrationsRoutes = require('./shared/routes/admin-migrations');

@@ -3,33 +3,36 @@
  * Utilities for getting Clerk session tokens and user data
  */
 
-import { useAuth } from '@clerk/nextjs';
-import { currentUser } from '@clerk/nextjs/server';
+import { useAuth, useUser } from '@clerk/nextjs';
 
 /**
- * Get Clerk session token for API calls (client-side)
+ * Hook to get Clerk session token for API calls (client-side)
+ * This must be used within React components
  */
-export async function getClerkToken(): Promise<string | null> {
-  try {
-    if (typeof window === 'undefined') {
-      return null; // Server-side, use server method
-    }
+export function useClerkToken() {
+  const { getToken } = useAuth();
+  
+  return async (): Promise<string | null> => {
+    try {
+      if (typeof window === 'undefined') {
+        return null; // Server-side, use server method
+      }
 
-    // Get Clerk's session token
-    const { getToken } = useAuth();
-    const token = await getToken();
-    return token;
-  } catch (error) {
-    console.error('Error getting Clerk token:', error);
-    return null;
-  }
+      const token = await getToken();
+      return token;
+    } catch (error) {
+      console.error('Error getting Clerk token:', error);
+      return null;
+    }
+  };
 }
 
 /**
- * Get Clerk user data for API calls (client-side)
+ * Hook to get Clerk user data for API calls (client-side)
+ * This must be used within React components
  */
-export function getClerkUser() {
-  const { user } = useAuth();
+export function useClerkUser() {
+  const { user } = useUser();
   
   if (!user) return null;
   
@@ -44,28 +47,83 @@ export function getClerkUser() {
 
 /**
  * Get Clerk session token for API calls (server-side)
+ * Note: Server-side token handling removed to avoid client/server import conflicts
+ * Use server components directly for server-side auth
  */
-export async function getClerkTokenServer(): Promise<string | null> {
-  try {
-    const user = await currentUser();
-    if (!user) return null;
+
+/**
+ * Hook to create authentication headers for API requests
+ * This must be used within React components
+ */
+export function useAuthHeaders() {
+  const getToken = useClerkToken();
+  const user = useClerkUser();
+  
+  return async (): Promise<HeadersInit> => {
+    const token = await getToken();
     
-    // For server-side, we'll need to get the session token differently
-    // This will be implemented based on Clerk's server-side auth
-    return user.id; // Temporary - will be updated with proper server token
-  } catch (error) {
-    console.error('Error getting Clerk token server-side:', error);
-    return null;
-  }
+    const headers: HeadersInit = {
+      'Content-Type': 'application/json',
+      'Accept': 'application/json',
+    };
+
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+
+    if (user?.id) {
+      const userContext = {
+        userId: user.id,
+        userEmail: user.email || '',
+        userName: user.name || '',
+      };
+      headers['X-User-Context'] = JSON.stringify(userContext);
+    }
+
+    return headers;
+  };
 }
 
 /**
- * Create authentication headers for API requests
+ * Hook for enhanced fetch with automatic Clerk authentication
+ * This must be used within React components
  */
-export async function getAuthHeaders(): Promise<HeadersInit> {
-  const token = await getClerkToken();
-  const userContext = getUserContext();
+export function useAuthenticatedFetch() {
+  const getAuthHeaders = useAuthHeaders();
   
+  return async (url: string, options: RequestInit = {}): Promise<Response> => {
+    const authHeaders = await getAuthHeaders();
+    
+    const config: RequestInit = {
+      ...options,
+      headers: {
+        ...authHeaders,
+        ...options.headers,
+      },
+    };
+
+    return fetch(url, config);
+  };
+}
+
+/**
+ * Hook to create user context for API requests
+ * This must be used within React components
+ */
+export function useUserContext() {
+  const user = useClerkUser();
+  
+  return {
+    userId: user?.id || '',
+    userEmail: user?.email || '',
+    userName: user?.name || '',
+  };
+}
+
+/**
+ * Create authentication headers with provided token (for API clients)
+ */
+export function createAuthHeaders(token?: string | null, userContext?: any): HeadersInit {
   const headers: HeadersInit = {
     'Content-Type': 'application/json',
     'Accept': 'application/json',
@@ -75,7 +133,7 @@ export async function getAuthHeaders(): Promise<HeadersInit> {
     headers['Authorization'] = `Bearer ${token}`;
   }
 
-  if (userContext.userId) {
+  if (userContext) {
     headers['X-User-Context'] = JSON.stringify(userContext);
   }
 
@@ -83,13 +141,15 @@ export async function getAuthHeaders(): Promise<HeadersInit> {
 }
 
 /**
- * Enhanced fetch with automatic Clerk authentication
+ * Enhanced fetch with provided token (for API clients)
  */
-export async function authenticatedFetch(
+export async function authenticatedFetchWithToken(
   url: string, 
+  token?: string | null, 
+  userContext?: any, 
   options: RequestInit = {}
 ): Promise<Response> {
-  const authHeaders = await getAuthHeaders();
+  const authHeaders = createAuthHeaders(token, userContext);
   
   const config: RequestInit = {
     ...options,
@@ -100,17 +160,4 @@ export async function authenticatedFetch(
   };
 
   return fetch(url, config);
-}
-
-/**
- * Create user context for API requests
- */
-export function getUserContext() {
-  const user = getClerkUser();
-  
-  return {
-    userId: user?.id || '',
-    userEmail: user?.email || '',
-    userName: user?.name || '',
-  };
 }

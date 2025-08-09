@@ -9,30 +9,41 @@ const express = require('express');
 const { body, param, query, validationResult } = require('express-validator');
 const mysql = require('../../shared/config/mysql');
 const { v4: uuidv4 } = require('uuid');
+const { combinedAuth, requireAuth } = require('../../shared/middleware/clerk-auth-middleware');
 
 const router = express.Router();
+
+// Apply Clerk authentication middleware to all routes
+router.use(combinedAuth);
+router.use(requireAuth);
 
 /**
  * Validation middleware for patient data
  */
 const validatePatient = [
-  body('first_name')
+  body('firstName')
     .trim()
     .isLength({ min: 2, max: 100 })
     .withMessage('First name must be between 2 and 100 characters'),
   
-  body('paternal_last_name')
+  body('lastName')
     .trim()
     .isLength({ min: 2, max: 100 })
-    .withMessage('Paternal last name must be between 2 and 100 characters'),
+    .withMessage('Last name must be between 2 and 100 characters'),
   
-  body('maternal_last_name')
+  body('paternalLastName')
+    .optional()
+    .trim()
+    .isLength({ max: 100 })
+    .withMessage('Paternal last name must be max 100 characters'),
+  
+  body('maternalLastName')
     .optional()
     .trim()
     .isLength({ max: 100 })
     .withMessage('Maternal last name must be max 100 characters'),
   
-  body('birth_date')
+  body('dateOfBirth')
     .isISO8601()
     .withMessage('Invalid birth date format'),
   
@@ -45,7 +56,7 @@ const validatePatient = [
     .isEmail()
     .withMessage('Invalid email format'),
   
-  body('cell_phone')
+  body('phone')
     .optional()
     .matches(/^\+?[1-9]\d{1,14}$/)
     .withMessage('Invalid phone number format'),
@@ -78,35 +89,36 @@ router.get('/', [
 
     const offset = (parseInt(page) - 1) * parseInt(limit);
     
-    let whereClause = '1=1';
-    let params = [];
+    let whereClause = 'createdBy = ?';
+    let params = [req.userId];
     
     if (search) {
       whereClause += ` AND (
-        first_name LIKE CONCAT('%', ?, '%') OR 
-        paternal_last_name LIKE CONCAT('%', ?, '%') OR 
-        maternal_last_name LIKE CONCAT('%', ?, '%') OR
-        cell_phone LIKE CONCAT('%', ?, '%')
+        firstName LIKE CONCAT('%', ?, '%') OR 
+        lastName LIKE CONCAT('%', ?, '%') OR 
+        paternalLastName LIKE CONCAT('%', ?, '%') OR
+        phone LIKE CONCAT('%', ?, '%')
       )`;
       params.push(search, search, search, search);
     }
 
-    // Get patients
+    // Get patients using Prisma schema field names
     const patientsQuery = `
       SELECT 
         id, 
-        first_name, 
-        paternal_last_name, 
-        maternal_last_name,
-        birth_date,
+        firstName, 
+        lastName, 
+        paternalLastName, 
+        maternalLastName,
+        dateOfBirth,
         gender,
         email,
-        cell_phone,
-        created_at,
-        TIMESTAMPDIFF(YEAR, birth_date, CURDATE()) as age
+        phone,
+        createdAt,
+        TIMESTAMPDIFF(YEAR, dateOfBirth, CURDATE()) as age
       FROM patients 
       WHERE ${whereClause}
-      ORDER BY created_at DESC 
+      ORDER BY createdAt DESC 
       LIMIT ? OFFSET ?
     `;
     
@@ -165,11 +177,11 @@ router.get('/:id', [
     const patientQuery = `
       SELECT 
         p.*,
-        TIMESTAMPDIFF(YEAR, p.birth_date, CURDATE()) as age,
+        TIMESTAMPDIFF(YEAR, p.dateOfBirth, CURDATE()) as age,
         u.name as professional_name
       FROM patients p
-      LEFT JOIN users u ON p.professional_id = u.id
-      WHERE p.id = ?
+      LEFT JOIN users u ON p.createdBy = u.id
+      WHERE p.id = ? AND p.createdBy = ?
     `;
     
     const consultationsQuery = `
@@ -177,9 +189,9 @@ router.get('/:id', [
         c.*,
         u.name as professional_name
       FROM consultations c
-      LEFT JOIN users u ON c.professional_id = u.id
-      WHERE c.patient_id = ?
-      ORDER BY c.consultation_date DESC
+      LEFT JOIN users u ON c.consultantId = u.id
+      WHERE c.patientId = ?
+      ORDER BY c.consultationDate DESC
       LIMIT 10
     `;
 
@@ -192,7 +204,7 @@ router.get('/:id', [
     `;
 
     const [patientResult, consultationsResult, phq9Result] = await Promise.all([
-      mysql.query(patientQuery, [id]),
+      mysql.query(patientQuery, [id, req.userId]),
       mysql.query(consultationsQuery, [id]),
       mysql.query(phq9Query, [id])
     ]);
@@ -239,37 +251,38 @@ router.post('/', validatePatient, async (req, res) => {
     const patientData = req.body;
     const patientId = uuidv4();
     
-    // For now, use demo professional ID
-    const professionalId = await getDemoProfessionalId();
+    // Use authenticated user as professional
+    const professionalId = req.userId;
 
     const insertQuery = `
       INSERT INTO patients (
-        id, professional_id, first_name, paternal_last_name, 
-        maternal_last_name, birth_date, gender, email, 
-        cell_phone
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        id, createdBy, firstName, lastName, 
+        paternalLastName, maternalLastName, dateOfBirth, gender, email, 
+        phone
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `;
 
     await mysql.query(insertQuery, [
       patientId,
       professionalId,
-      patientData.first_name,
-      patientData.paternal_last_name,
-      patientData.maternal_last_name || null,
-      patientData.birth_date,
+      patientData.firstName,
+      patientData.lastName,
+      patientData.paternalLastName || null,
+      patientData.maternalLastName || null,
+      patientData.dateOfBirth,
       patientData.gender,
       patientData.email || null,
-      patientData.cell_phone || null
+      patientData.phone || null
     ]);
 
     // Get created patient
     const getPatientQuery = `
       SELECT 
         p.*,
-        TIMESTAMPDIFF(YEAR, p.birth_date, CURDATE()) as age,
+        TIMESTAMPDIFF(YEAR, p.dateOfBirth, CURDATE()) as age,
         u.name as professional_name
       FROM patients p
-      LEFT JOIN users u ON p.professional_id = u.id
+      LEFT JOIN users u ON p.createdBy = u.id
       WHERE p.id = ?
     `;
 
@@ -311,9 +324,9 @@ router.put('/:id', [
     const { id } = req.params;
     const updateData = req.body;
 
-    // Check if patient exists
-    const checkQuery = 'SELECT id FROM patients WHERE id = ?';
-    const existingResult = await mysql.query(checkQuery, [id]);
+    // Check if patient exists and belongs to authenticated user
+    const checkQuery = 'SELECT id FROM patients WHERE id = ? AND createdBy = ?';
+    const existingResult = await mysql.query(checkQuery, [id, req.userId]);
 
     if (existingResult.rows.length === 0) {
       return res.status(404).json({ error: 'Patient not found' });
@@ -321,36 +334,39 @@ router.put('/:id', [
 
     const updateQuery = `
       UPDATE patients SET
-        first_name = ?,
-        paternal_last_name = ?,
-        maternal_last_name = ?,
-        birth_date = ?,
+        firstName = ?,
+        lastName = ?,
+        paternalLastName = ?,
+        maternalLastName = ?,
+        dateOfBirth = ?,
         gender = ?,
         email = ?,
-        cell_phone = ?,
-        updated_at = CURRENT_TIMESTAMP
-      WHERE id = ?
+        phone = ?,
+        updatedAt = CURRENT_TIMESTAMP
+      WHERE id = ? AND createdBy = ?
     `;
 
     await mysql.query(updateQuery, [
-      updateData.first_name,
-      updateData.paternal_last_name,
-      updateData.maternal_last_name || null,
-      updateData.birth_date,
+      updateData.firstName,
+      updateData.lastName,
+      updateData.paternalLastName || null,
+      updateData.maternalLastName || null,
+      updateData.dateOfBirth,
       updateData.gender,
       updateData.email || null,
-      updateData.cell_phone || null,
-      id
+      updateData.phone || null,
+      id,
+      req.userId
     ]);
 
     // Get updated patient
     const getPatientQuery = `
       SELECT 
         p.*,
-        TIMESTAMPDIFF(YEAR, p.birth_date, CURDATE()) as age,
+        TIMESTAMPDIFF(YEAR, p.dateOfBirth, CURDATE()) as age,
         u.name as professional_name
       FROM patients p
-      LEFT JOIN users u ON p.professional_id = u.id
+      LEFT JOIN users u ON p.createdBy = u.id
       WHERE p.id = ?
     `;
 
@@ -390,17 +406,17 @@ router.delete('/:id', [
 
     const { id } = req.params;
 
-    // Check if patient exists
-    const checkQuery = 'SELECT id FROM patients WHERE id = ?';
-    const existingResult = await mysql.query(checkQuery, [id]);
+    // Check if patient exists and belongs to authenticated user
+    const checkQuery = 'SELECT id FROM patients WHERE id = ? AND createdBy = ?';
+    const existingResult = await mysql.query(checkQuery, [id, req.userId]);
 
     if (existingResult.rows.length === 0) {
       return res.status(404).json({ error: 'Patient not found' });
     }
 
     // Delete patient (development only)
-    const deleteQuery = 'DELETE FROM patients WHERE id = ?';
-    await mysql.query(deleteQuery, [id]);
+    const deleteQuery = 'DELETE FROM patients WHERE id = ? AND createdBy = ?';
+    await mysql.query(deleteQuery, [id, req.userId]);
 
     res.json({
       success: true,

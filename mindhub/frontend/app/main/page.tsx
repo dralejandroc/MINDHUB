@@ -10,10 +10,8 @@ export default function MainPage() {
 
   useEffect(() => {
     if (isLoaded) {
-      // Check authentication (Clerk OR MindHub system)
-      const hasAuth = isSignedIn || localStorage.getItem('auth_token');
-      
-      if (!hasAuth) {
+      // Check authentication (Clerk only)
+      if (!isSignedIn) {
         redirect('/sign-in');
       } else {
         // User authenticated, check for preferred start page

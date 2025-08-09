@@ -58,22 +58,9 @@ export default function DebugPage() {
       expectations: 'Test expectations'
     };
 
-    try {
-      const response = await fetch('/api/auth/beta-register', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(testData),
-      });
-      
-      const result = await response.json();
-      console.log('Beta registration test result:', result);
-      return result;
-    } catch (error) {
-      console.error('Beta registration test error:', error);
-      return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
-    }
+    // Beta registration test removed - using Clerk authentication only
+    console.log('Beta registration test disabled - legacy auth system removed');
+    return { success: false, message: 'Beta registration disabled - using Clerk auth only' };
   };
 
   return (

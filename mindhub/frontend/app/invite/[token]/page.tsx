@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { acceptInvitation } from '@/lib/api/organizations-client';
+import { acceptInvitation } from '@/lib/api/organizations-client-stub';
 
 export default function InvitationPage() {
   const params = useParams();

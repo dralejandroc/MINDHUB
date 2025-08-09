@@ -6,10 +6,15 @@
 const express = require('express');
 const { PrismaClient } = require('../../generated/prisma');
 const ScoringEngine = require('../services/ScoringEngine');
+const { combinedAuth, requireAuth } = require('../../shared/middleware/clerk-auth-middleware');
 
 const router = express.Router();
 const prisma = new PrismaClient();
 const scoringEngine = new ScoringEngine();
+
+// Apply Clerk authentication middleware to all routes
+router.use(combinedAuth);
+router.use(requireAuth);
 
 // Create new assessment
 router.post('/new', async (req, res) => {
@@ -35,7 +40,7 @@ router.post('/new', async (req, res) => {
       data: {
         templateId,
         patientId: patientId || null,
-        administratorId: administratorId || 'system',
+        administratorId: req.userId,
         status: 'pending',
         responses: {},
         metadata: { 
@@ -63,8 +68,11 @@ router.get('/:assessmentId', async (req, res) => {
   try {
     const { assessmentId } = req.params;
     
-    const assessment = await prisma.clinimetrix_assessments.findUnique({
-      where: { id: assessmentId },
+    const assessment = await prisma.clinimetrix_assessments.findFirst({
+      where: { 
+        id: assessmentId,
+        administratorId: req.userId
+      },
       include: {
         template: true
       }
@@ -86,6 +94,18 @@ router.put('/:assessmentId/responses', async (req, res) => {
   try {
     const { assessmentId } = req.params;
     const { responses, currentStep } = req.body;
+
+    // First verify ownership
+    const existingAssessment = await prisma.clinimetrix_assessments.findFirst({
+      where: {
+        id: assessmentId,
+        administratorId: req.userId
+      }
+    });
+
+    if (!existingAssessment) {
+      return res.status(404).json({ error: 'Assessment not found' });
+    }
 
     const assessment = await prisma.clinimetrix_assessments.update({
       where: { id: assessmentId },
@@ -109,9 +129,12 @@ router.post('/:assessmentId/complete', async (req, res) => {
     const { assessmentId } = req.params;
     const { responses, demographics } = req.body;
 
-    // Get assessment 
-    const assessment = await prisma.clinimetrix_assessments.findUnique({
-      where: { id: assessmentId }
+    // Get assessment and verify ownership
+    const assessment = await prisma.clinimetrix_assessments.findFirst({
+      where: { 
+        id: assessmentId,
+        administratorId: req.userId
+      }
     });
 
     if (!assessment) {
@@ -229,6 +252,9 @@ router.get('/recent/:limit?', async (req, res) => {
     const limit = parseInt(req.params.limit) || 10;
     
     const assessments = await prisma.clinimetrix_assessments.findMany({
+      where: {
+        administratorId: req.userId
+      },
       take: limit,
       orderBy: { createdAt: 'desc' },
       include: {
@@ -254,7 +280,10 @@ router.get('/patient/:patientId', async (req, res) => {
     const { patientId } = req.params;
     
     const assessments = await prisma.clinimetrix_assessments.findMany({
-      where: { patientId },
+      where: { 
+        patientId,
+        administratorId: req.userId
+      },
       orderBy: { createdAt: 'desc' },
       include: {
         template: {
@@ -278,6 +307,18 @@ router.delete('/:assessmentId', async (req, res) => {
   try {
     const { assessmentId } = req.params;
     
+    // Verify ownership before deletion
+    const assessment = await prisma.clinimetrix_assessments.findFirst({
+      where: {
+        id: assessmentId,
+        administratorId: req.userId
+      }
+    });
+
+    if (!assessment) {
+      return res.status(404).json({ error: 'Assessment not found' });
+    }
+
     await prisma.clinimetrix_assessments.delete({
       where: { id: assessmentId }
     });

@@ -5,7 +5,7 @@
  * Provides type-safe methods for template management and assessment operations.
  */
 
-import { authenticatedFetch } from '@/lib/utils/clerk-auth';
+// Note: Authentication is handled by Next.js middleware for API routes
 
 // Base configuration - use Next.js proxy for consistent routing
 const API_BASE_URL = '/api';
@@ -343,72 +343,66 @@ export class ClinimetrixProClient {
     this.baseUrl = baseUrl;
   }
 
+  private async makeRequest<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
+    const response = await fetch(`${this.baseUrl}${endpoint}`, {
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+        ...options.headers,
+      },
+      ...options,
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(`API Error: ${errorData.message || response.statusText}`);
+    }
+
+    return response.json();
+  }
+
   // Template Management Methods
 
   /**
    * Get all templates from the public catalog
    */
   async getTemplateCatalog(): Promise<ClinimetrixRegistry[]> {
-    const response = await authenticatedFetch(`${this.baseUrl}/templates/catalog`);
-    if (!response.ok) {
-      throw new Error(`Failed to fetch template catalog: ${response.statusText}`);
-    }
-    return response.json();
+    return this.makeRequest<ClinimetrixRegistry[]>('/templates/catalog');
   }
 
   /**
    * Get a specific template by ID
    */
   async getTemplate(templateId: string): Promise<TemplateData> {
-    const response = await authenticatedFetch(`${this.baseUrl}/templates/${templateId}`);
-    if (!response.ok) {
-      throw new Error(`Failed to fetch template ${templateId}: ${response.statusText}`);
-    }
-    return response.json();
+    return this.makeRequest<TemplateData>(`/templates/${templateId}`);
   }
 
   /**
    * Get template metadata by ID
    */
   async getTemplateMetadata(templateId: string): Promise<ClinimetrixRegistry> {
-    const response = await authenticatedFetch(`${this.baseUrl}/templates/${templateId}/metadata`);
-    if (!response.ok) {
-      throw new Error(`Failed to fetch template metadata ${templateId}: ${response.statusText}`);
-    }
-    return response.json();
+    return this.makeRequest<ClinimetrixRegistry>(`/templates/${templateId}/metadata`);
   }
 
   /**
    * Search templates by query
    */
   async searchTemplates(query: string): Promise<ClinimetrixRegistry[]> {
-    const response = await authenticatedFetch(`${this.baseUrl}/templates/search/${encodeURIComponent(query)}`);
-    if (!response.ok) {
-      throw new Error(`Failed to search templates: ${response.statusText}`);
-    }
-    return response.json();
+    return this.makeRequest<ClinimetrixRegistry[]>(`/templates/search/${encodeURIComponent(query)}`);
   }
 
   /**
    * Get templates by category
    */
   async getTemplatesByCategory(category: string): Promise<ClinimetrixRegistry[]> {
-    const response = await authenticatedFetch(`${this.baseUrl}/templates/category/${encodeURIComponent(category)}`);
-    if (!response.ok) {
-      throw new Error(`Failed to fetch templates by category: ${response.statusText}`);
-    }
-    return response.json();
+    return this.makeRequest<ClinimetrixRegistry[]>(`/templates/category/${encodeURIComponent(category)}`);
   }
 
   /**
    * Get available categories
    */
   async getCategories(): Promise<Array<{ category: string; count: number }>> {
-    const response = await authenticatedFetch(`${this.baseUrl}/templates/meta/categories`);
-    if (!response.ok) {
-      throw new Error(`Failed to fetch categories: ${response.statusText}`);
-    }
-    return response.json();
+    return this.makeRequest<Array<{ category: string; count: number }>>('/templates/meta/categories');
   }
 
   // Assessment Management Methods
@@ -417,49 +411,27 @@ export class ClinimetrixProClient {
    * Create a new assessment
    */
   async createAssessment(request: CreateAssessmentRequest): Promise<ClinimetrixAssessment> {
-    const response = await authenticatedFetch(`${this.baseUrl}/assessments/new`, {
+    return this.makeRequest<ClinimetrixAssessment>('/assessments/new', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
       body: JSON.stringify(request),
     });
-
-    if (!response.ok) {
-      throw new Error(`Failed to create assessment: ${response.statusText}`);
-    }
-    
-    return response.json();
   }
 
   /**
    * Get assessment by ID
    */
   async getAssessment(assessmentId: string): Promise<ClinimetrixAssessment> {
-    const response = await authenticatedFetch(`${this.baseUrl}/assessments/${assessmentId}`);
-    if (!response.ok) {
-      throw new Error(`Failed to fetch assessment ${assessmentId}: ${response.statusText}`);
-    }
-    return response.json();
+    return this.makeRequest<ClinimetrixAssessment>(`/assessments/${assessmentId}`);
   }
 
   /**
    * Update assessment responses
    */
   async updateResponses(assessmentId: string, request: UpdateResponsesRequest): Promise<ClinimetrixAssessment> {
-    const response = await authenticatedFetch(`${this.baseUrl}/assessments/${assessmentId}/responses`, {
+    return this.makeRequest<ClinimetrixAssessment>(`/assessments/${assessmentId}/responses`, {
       method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-      },
       body: JSON.stringify(request),
     });
-
-    if (!response.ok) {
-      throw new Error(`Failed to update responses: ${response.statusText}`);
-    }
-    
-    return response.json();
   }
 
   /**
@@ -477,20 +449,14 @@ export class ClinimetrixProClient {
     assessment: ClinimetrixAssessment;
     results: ScoringResults;
   }> {
-    const response = await authenticatedFetch(`${this.baseUrl}/assessments/${assessmentId}/complete`, {
+    return this.makeRequest<{
+      success: boolean;
+      assessment: ClinimetrixAssessment;
+      results: ScoringResults;
+    }>(`/assessments/${assessmentId}/complete`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
       body: JSON.stringify(request),
     });
-
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      throw new Error(`Failed to complete assessment: ${errorData.message || response.statusText}`);
-    }
-    
-    return response.json();
   }
 
   /**
@@ -500,62 +466,37 @@ export class ClinimetrixProClient {
     success: boolean;
     results: ScoringResults;
   }> {
-    const response = await authenticatedFetch(`${this.baseUrl}/assessments/calculate-scores`, {
+    return this.makeRequest<{
+      success: boolean;
+      results: ScoringResults;
+    }>('/assessments/calculate-scores', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
       body: JSON.stringify(request),
     });
-
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      throw new Error(`Failed to calculate scores: ${errorData.message || response.statusText}`);
-    }
-    
-    return response.json();
   }
 
   /**
    * Get recent assessments
    */
   async getRecentAssessments(limit?: number): Promise<ClinimetrixAssessment[]> {
-    const url = limit ? `${this.baseUrl}/assessments/recent/${limit}` : `${this.baseUrl}/assessments/recent`;
-    const response = await authenticatedFetch(url);
-    
-    if (!response.ok) {
-      throw new Error(`Failed to fetch recent assessments: ${response.statusText}`);
-    }
-    
-    return response.json();
+    const endpoint = limit ? `/assessments/recent/${limit}` : '/assessments/recent';
+    return this.makeRequest<ClinimetrixAssessment[]>(endpoint);
   }
 
   /**
    * Get assessments by patient ID
    */
   async getPatientAssessments(patientId: string): Promise<ClinimetrixAssessment[]> {
-    const response = await authenticatedFetch(`${this.baseUrl}/assessments/patient/${patientId}`);
-    
-    if (!response.ok) {
-      throw new Error(`Failed to fetch patient assessments: ${response.statusText}`);
-    }
-    
-    return response.json();
+    return this.makeRequest<ClinimetrixAssessment[]>(`/assessments/patient/${patientId}`);
   }
 
   /**
    * Delete assessment
    */
   async deleteAssessment(assessmentId: string): Promise<{ message: string }> {
-    const response = await authenticatedFetch(`${this.baseUrl}/assessments/${assessmentId}`, {
+    return this.makeRequest<{ message: string }>(`/assessments/${assessmentId}`, {
       method: 'DELETE',
     });
-
-    if (!response.ok) {
-      throw new Error(`Failed to delete assessment: ${response.statusText}`);
-    }
-    
-    return response.json();
   }
 
 }

@@ -1,5 +1,5 @@
 // Expedix API Client - Centralized API communication for patient management
-import { getAuthHeaders, getUserContext } from '@/lib/utils/clerk-auth';
+import { createAuthHeaders, authenticatedFetchWithToken } from '@/lib/utils/clerk-auth';
 
 const API_BASE_URL = '/api';
 
@@ -99,13 +99,10 @@ class ExpedixApiClient {
   private async makeRequest<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
     const url = `${this.baseUrl}${endpoint}`;
     
-    // Get authentication headers from Clerk
-    const authHeaders = await getAuthHeaders();
-    const userContext = getUserContext();
-    
+    // For now, use basic headers without auth - this will be handled by middleware
     const defaultHeaders = {
-      ...authHeaders,
-      'X-User-Context': JSON.stringify(userContext),
+      'Content-Type': 'application/json',
+      'Accept': 'application/json',
       ...options.headers,
     };
 

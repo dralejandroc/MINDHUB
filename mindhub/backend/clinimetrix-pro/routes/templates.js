@@ -5,9 +5,14 @@
 
 const express = require('express');
 const { PrismaClient } = require('../../generated/prisma');
+const { combinedAuth, requireAuth } = require('../../shared/middleware/clerk-auth-middleware');
 
 const router = express.Router();
 const prisma = new PrismaClient();
+
+// Apply Clerk authentication middleware to all routes
+router.use(combinedAuth);
+router.use(requireAuth);
 
 // Get all templates catalog (public registry)
 router.get('/catalog', async (req, res) => {

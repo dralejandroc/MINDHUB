@@ -7,14 +7,8 @@ export default function ClientWrapper({ children }: { children: React.ReactNode 
   const router = useRouter();
 
   useEffect(() => {
-    // Check if we're on the root path and user has preferences
-    if (typeof window !== 'undefined' && window.location.pathname === '/') {
-      const token = localStorage.getItem('auth_token');
-      if (token) {
-        // User is logged in, redirect to app
-        router.push('/app');
-      }
-    }
+    // This component now only wraps children without legacy auth checks
+    // Authentication is handled by Clerk
   }, [router]);
 
   return <>{children}</>;

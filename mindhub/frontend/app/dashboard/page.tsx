@@ -11,13 +11,7 @@ export default function DashboardPage() {
   useEffect(() => {
     if (isLoaded) {
       if (!isSignedIn) {
-        // No Clerk auth, check MindHub token
-        const token = localStorage.getItem('auth_token');
-        if (!token) {
-          redirect('/sign-in'); // No auth at all
-        } else {
-          redirect('/app'); // Has MindHub token
-        }
+        redirect('/sign-in');
       } else {
         // Has Clerk auth, redirect to app
         redirect('/app');

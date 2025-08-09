@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { getOrganizationStats, getMyOrganization, type OrganizationStats, type Organization } from '@/lib/api/organizations-client';
+import { getOrganizationStats, getMyOrganization, type OrganizationStats, type Organization } from '@/lib/api/organizations-client-stub';
 import {
   UsersIcon,
   UserPlusIcon,

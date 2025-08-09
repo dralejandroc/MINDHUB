@@ -1358,12 +1358,17 @@ model user_storage_quota {
 model users {
   id                                                                String                                @id
   auth0Id                                                           String?                               @unique
+  clerk_user_id                                                     String?                               @unique
   email                                                             String                                @unique
   password                                                          String?
   name                                                              String?
+  first_name                                                        String?
+  last_name                                                         String?
+  avatar_url                                                        String?
   picture                                                           String?
   organizationId                                                    String?
   accountType                                                       users_accountType                     @default(INDIVIDUAL)
+  role                                                              String?                               @default("user")
   isActive                                                          Boolean                               @default(true)
   isBetaUser                                                        Boolean                               @default(true)
   emailVerified                                                     Boolean                               @default(false)

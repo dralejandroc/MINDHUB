@@ -19,33 +19,13 @@ function VerifyEmailContent() {
   const token = searchParams?.get('token');
 
   useEffect(() => {
-    const verifyEmail = async () => {
-      if (!token) {
-        setStatus('error');
-        setResult({ success: false, message: 'Token de verificación no válido' });
-        return;
-      }
-
-      try {
-        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'https://mindhub.cloud/api'}/auth/verify-email`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ token }),
-        });
-        
-        const data = await response.json();
-        
-        setResult(data);
-        setStatus(data.success ? 'success' : 'error');
-      } catch (error) {
-        setStatus('error');
-        setResult({ success: false, message: 'Error de conexión' });
-      }
-    };
-
-    verifyEmail();
+    // Since we migrated to Clerk auth, email verification is handled by Clerk
+    // This page is now just a redirect to inform users about the new system
+    setStatus('success');
+    setResult({ 
+      success: true, 
+      message: 'El sistema de autenticación ha sido actualizado. Ahora usamos Clerk para la verificación de email.' 
+    });
   }, [token]);
 
   const renderContent = () => {
