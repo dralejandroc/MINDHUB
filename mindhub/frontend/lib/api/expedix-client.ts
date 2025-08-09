@@ -123,7 +123,7 @@ class ExpedixApiClient {
   // Patient Management
   async getPatients(searchTerm?: string): Promise<{ data: Patient[]; total: number }> {
     const params = searchTerm ? `?search=${encodeURIComponent(searchTerm)}` : '';
-    const response = await this.makeRequest<{ success: boolean; data: Patient[]; pagination: { total: number } }>(`/api/expedix/patients${params}`);
+    const response = await this.makeRequest<{ success: boolean; data: Patient[]; pagination: { total: number } }>(`/expedix/patients${params}`);
     
     return {
       data: response.data || [],
@@ -132,7 +132,7 @@ class ExpedixApiClient {
   }
 
   async getPatient(id: string): Promise<{ data: Patient }> {
-    const response = await this.makeRequest<{ success: boolean; data: Patient }>(`/api/expedix/patients/${id}`);
+    const response = await this.makeRequest<{ success: boolean; data: Patient }>(`/expedix/patients/${id}`);
     
     return {
       data: response.data
@@ -140,7 +140,7 @@ class ExpedixApiClient {
   }
 
   async createPatient(patientData: Partial<Patient>): Promise<{ data: Patient }> {
-    const response = await this.makeRequest<{ success: boolean; data: Patient }>('/api/expedix/patients', {
+    const response = await this.makeRequest<{ success: boolean; data: Patient }>('/expedix/patients', {
       method: 'POST',
       body: JSON.stringify(patientData),
     });
@@ -151,7 +151,7 @@ class ExpedixApiClient {
   }
 
   async updatePatient(id: string, patientData: Partial<Patient>): Promise<{ data: Patient }> {
-    const response = await this.makeRequest<{ success: boolean; data: Patient }>(`/api/expedix/patients/${id}`, {
+    const response = await this.makeRequest<{ success: boolean; data: Patient }>(`/expedix/patients/${id}`, {
       method: 'PUT',
       body: JSON.stringify(patientData),
     });
@@ -162,7 +162,7 @@ class ExpedixApiClient {
   }
 
   async deletePatient(id: string): Promise<{ success: boolean }> {
-    return this.makeRequest<{ success: boolean }>(`/api/expedix/patients/${id}`, {
+    return this.makeRequest<{ success: boolean }>(`/expedix/patients/${id}`, {
       method: 'DELETE',
     });
   }
