@@ -9,6 +9,7 @@
 'use client';
 
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import { QuestionMarkCircleIcon, XMarkIcon } from '@heroicons/react/24/outline';
 import { clinimetrixProClient, type ClinimetrixAssessment } from '@/lib/api/clinimetrix-pro-client';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
@@ -53,6 +54,7 @@ interface RendererState {
   error: string | null;
   saving: boolean;
   completed: boolean;
+  showHelpModal: boolean;
 }
 
 // =================== MAIN COMPONENT ===================
@@ -79,7 +81,8 @@ export const ClinimetrixRenderer: React.FC<ClinimetrixRendererProps> = ({
     loading: true,
     error: null,
     saving: false,
-    completed: false
+    completed: false,
+    showHelpModal: false
   });
 
   // =================== COMPUTED VALUES ===================
@@ -313,6 +316,33 @@ export const ClinimetrixRenderer: React.FC<ClinimetrixRendererProps> = ({
     }
   };
 
+  const handleShowHelp = () => {
+    setState(prev => ({ ...prev, showHelpModal: true }));
+  };
+
+  const handleCloseHelp = () => {
+    setState(prev => ({ ...prev, showHelpModal: false }));
+  };
+
+  // Helper function to generate help content for an item
+  const getHelpContent = (item: any) => {
+    if (item.helpText) {
+      return item.helpText;
+    }
+
+    // Generate default help based on response type
+    const defaultHelp = {
+      likert: "Selecciona la opción que mejor describe tu experiencia o situación. Las opciones van desde la menor hasta la mayor intensidad.",
+      binary: "Selecciona 'Sí' si la afirmación se aplica a ti, o 'No' si no se aplica.",
+      multiple_choice: "Selecciona una de las opciones disponibles que mejor describa tu situación.",
+      numeric: "Ingresa un número que represente tu respuesta. Asegúrate de que esté dentro del rango permitido.",
+      text: "Escribe tu respuesta de forma libre y detallada. Sé honesto y específico en tu respuesta."
+    };
+
+    return defaultHelp[item.responseType as keyof typeof defaultHelp] || 
+           "Lee cuidadosamente la pregunta y selecciona o escribe la respuesta que mejor refleje tu situación actual.";
+  };
+
   // =================== RESPONSE TYPE RENDERER ===================
 
   const renderResponseComponent = () => {
@@ -448,15 +478,24 @@ export const ClinimetrixRenderer: React.FC<ClinimetrixRendererProps> = ({
         <div className="px-6 py-8">
           <div className="mb-6">
             <div className="flex items-start justify-between mb-4">
-              <h3 className="text-lg font-medium text-gray-900 leading-relaxed">
+              <h3 className="text-lg font-medium text-gray-900 leading-relaxed flex-1">
                 <span className="text-blue-600 font-semibold mr-2">
                   {currentItem.number}.
                 </span>
                 {currentItem.text}
               </h3>
-              {currentItem.required && (
-                <span className="text-red-500 text-sm font-medium ml-2">*</span>
-              )}
+              <div className="flex items-center ml-4">
+                {currentItem.required && (
+                  <span className="text-red-500 text-sm font-medium mr-2">*</span>
+                )}
+                <button
+                  onClick={handleShowHelp}
+                  className="flex items-center justify-center w-8 h-8 rounded-full bg-blue-50 hover:bg-blue-100 text-blue-600 hover:text-blue-700 transition-colors"
+                  title="Ayuda para responder esta pregunta"
+                >
+                  <QuestionMarkCircleIcon className="h-5 w-5" />
+                </button>
+              </div>
             </div>
             
             {currentItem.reversed && (
@@ -486,9 +525,84 @@ export const ClinimetrixRenderer: React.FC<ClinimetrixRendererProps> = ({
         />
       </Card>
 
+      {/* Help Modal */}
+      {state.showHelpModal && currentItem && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl max-w-lg w-full shadow-2xl">
+            {/* Modal Header */}
+            <div className="flex items-center justify-between p-6 border-b">
+              <div className="flex items-center">
+                <QuestionMarkCircleIcon className="h-6 w-6 text-blue-600 mr-2" />
+                <h3 className="text-lg font-semibold text-gray-900">
+                  Ayuda - Pregunta {currentItem.number}
+                </h3>
+              </div>
+              <button
+                onClick={handleCloseHelp}
+                className="p-1 hover:bg-gray-100 rounded-lg transition-colors"
+              >
+                <XMarkIcon className="h-5 w-5 text-gray-500" />
+              </button>
+            </div>
+
+            {/* Modal Content */}
+            <div className="p-6">
+              <div className="mb-4">
+                <h4 className="font-medium text-gray-900 mb-2">Pregunta:</h4>
+                <p className="text-gray-700 bg-gray-50 p-3 rounded-lg">
+                  {currentItem.text}
+                </p>
+              </div>
+
+              <div className="mb-4">
+                <h4 className="font-medium text-gray-900 mb-2">Cómo responder:</h4>
+                <p className="text-gray-600 text-sm leading-relaxed">
+                  {getHelpContent(currentItem)}
+                </p>
+              </div>
+
+              {currentItem.responseType === 'likert' && state.template?.responseGroups && (
+                <div className="mb-4">
+                  <h4 className="font-medium text-gray-900 mb-2">Opciones de respuesta:</h4>
+                  <div className="space-y-1">
+                    {state.template.responseGroups[currentItem.responseGroup]?.map((option: any, index: number) => (
+                      <div key={index} className="flex items-center text-sm">
+                        <span className="font-mono text-blue-600 mr-2">{option.score}</span>
+                        <span className="text-gray-700">{option.label}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {currentItem.required && (
+                <div className="bg-amber-50 border border-amber-200 rounded-lg p-3">
+                  <p className="text-amber-800 text-sm">
+                    <span className="font-semibold">⚠️ Pregunta requerida:</span> 
+                    Debes responder esta pregunta para poder continuar con la evaluación.
+                  </p>
+                </div>
+              )}
+            </div>
+
+            {/* Modal Footer */}
+            <div className="p-6 border-t bg-gray-50 rounded-b-xl">
+              <div className="flex justify-end">
+                <Button
+                  onClick={handleCloseHelp}
+                  variant="primary"
+                >
+                  Entendido
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Auto-save Indicator */}
       {state.saving && (
-        <div className="fixed bottom-4 right-4 bg-blue-600 text-white px-4 py-2 rounded-lg shadow-lg">
+        <div className="fixed bottom-4 right-4 bg-blue-600 text-white px-4 py-2 rounded-lg shadow-lg z-40">
           <div className="flex items-center">
             <LoadingSpinner size="sm" className="mr-2" />
             Guardando...

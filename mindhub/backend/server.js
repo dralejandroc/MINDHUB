@@ -47,11 +47,13 @@ console.log('📦 Loading ClinimetrixPro module...');
 let clinimetrixProTemplatesRoutes;
 let clinimetrixProAssessmentsRoutes;
 let clinimetrixProValidationRoutes;
+let clinimetrixProRemoteAssessmentsRoutes;
 
 try {
   clinimetrixProTemplatesRoutes = require('./clinimetrix-pro/routes/templates');
   clinimetrixProAssessmentsRoutes = require('./clinimetrix-pro/routes/assessments');
   clinimetrixProValidationRoutes = require('./clinimetrix-pro/routes/validation');
+  clinimetrixProRemoteAssessmentsRoutes = require('./clinimetrix-pro/routes/remote-assessments');
   console.log('✅ ClinimetrixPro module loaded');
 } catch (error) {
   console.log('⚠️  ClinimetrixPro module disabled due to missing dependencies');
@@ -61,6 +63,7 @@ try {
   clinimetrixProTemplatesRoutes = express.Router();
   clinimetrixProAssessmentsRoutes = express.Router();
   clinimetrixProValidationRoutes = express.Router();
+  clinimetrixProRemoteAssessmentsRoutes = express.Router();
 }
 
 // Import universal scales API
@@ -138,36 +141,60 @@ app.use(helmet({
 
 // CORS configuration - CRITICAL FIX FOR PRODUCTION
 console.log('🔧 Setting up CORS for production...');
+
+// Define allowed origins
+const allowedOrigins = [
+  'https://mindhub.cloud',
+  'https://www.mindhub.cloud',
+  'https://mindhub-beta.vercel.app',
+  'http://localhost:3000',
+  'http://localhost:3001',
+  'http://localhost:3002'
+];
+
 const corsOptions = {
   origin: function(origin, callback) {
-    // Allow requests with no origin (like mobile apps or Postman)
-    if (!origin) return callback(null, true);
+    console.log(`🌍 CORS request from origin: ${origin}`);
     
-    const allowedOrigins = [
-      'https://mindhub.cloud',
-      'https://www.mindhub.cloud',
-      'https://mindhub-beta.vercel.app',
-      'http://localhost:3000',
-      'http://localhost:3001',
-      'http://localhost:3002'
-    ];
+    // Allow requests with no origin (like mobile apps, Postman, server-to-server)
+    if (!origin) {
+      console.log('✅ CORS: Allowing request with no origin');
+      return callback(null, true);
+    }
     
-    // Check if origin is allowed or matches *.vercel.app pattern
+    // Check if origin is in allowed list
     const isAllowed = allowedOrigins.includes(origin) || 
                       origin.endsWith('.vercel.app') ||
                       origin.includes('localhost');
     
     if (isAllowed) {
+      console.log(`✅ CORS: Allowing origin ${origin}`);
       callback(null, true);
     } else {
-      console.warn(`⚠️ CORS blocked origin: ${origin}`);
-      callback(null, true); // Temporarily allow all for debugging
+      console.warn(`❌ CORS: Blocking origin ${origin}`);
+      // For production, we'll allow all origins temporarily to debug
+      if (process.env.NODE_ENV === 'production') {
+        console.log('🚨 PRODUCTION: Temporarily allowing all origins for debugging');
+        callback(null, true);
+      } else {
+        callback(new Error(`CORS policy violation: Origin ${origin} not allowed`));
+      }
     }
   },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'X-User-Context', 'X-Api-Key'],
-  maxAge: 86400 // Cache preflight requests for 24 hours
+  allowedHeaders: [
+    'Content-Type', 
+    'Authorization', 
+    'X-Requested-With', 
+    'X-User-Context', 
+    'X-Api-Key',
+    'Accept',
+    'Origin'
+  ],
+  exposedHeaders: ['Content-Length', 'X-Request-Id'],
+  maxAge: 86400, // Cache preflight requests for 24 hours
+  optionsSuccessStatus: 200 // For legacy browsers
 };
 
 app.use(cors(corsOptions));
@@ -176,9 +203,18 @@ app.use(cors(corsOptions));
 app.options('*', cors(corsOptions));
 
 console.log('✅ CORS configured for:', {
-  production: 'https://mindhub.cloud',
-  vercel: '*.vercel.app',
-  local: 'localhost:*'
+  allowedOrigins: allowedOrigins,
+  environment: process.env.NODE_ENV || 'development',
+  trustProxy: app.get('trust proxy')
+});
+
+// Debug middleware for CORS headers
+app.use((req, res, next) => {
+  if (process.env.NODE_ENV === 'production') {
+    console.log(`📡 ${req.method} ${req.path} from ${req.get('origin') || 'no-origin'}`);
+    console.log(`🔍 Headers: ${JSON.stringify(req.headers, null, 2)}`);
+  }
+  next();
 });
 
 // General middleware
@@ -358,6 +394,7 @@ console.log('✅ Resources routes mounted at /api/v1/resources');
 app.use('/api/clinimetrix-pro/templates', clinimetrixProTemplatesRoutes);
 app.use('/api/clinimetrix-pro/assessments', clinimetrixProAssessmentsRoutes);
 app.use('/api/clinimetrix-pro/validation', clinimetrixProValidationRoutes);
+app.use('/api/clinimetrix-pro/remote-assessments', clinimetrixProRemoteAssessmentsRoutes);
 console.log('✅ ClinimetrixPro API mounted at /api/clinimetrix-pro');
 
 // Mount universal scales API (new architecture)

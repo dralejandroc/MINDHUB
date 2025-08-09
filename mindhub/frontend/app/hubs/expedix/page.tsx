@@ -9,6 +9,7 @@ import ConsultationNotes from '@/components/expedix/ConsultationNotes';
 import PatientManagementAdvanced from '@/components/expedix/PatientManagementAdvanced';
 import PatientTimeline from '@/components/expedix/PatientTimeline';
 import NewPatientModal from '@/components/expedix/NewPatientModal';
+import ClinimetrixScaleSelector from '@/components/expedix/ClinimetrixScaleSelector';
 import { 
   DocumentTextIcon, 
   UserIcon,
@@ -303,15 +304,17 @@ export default function ExpedixPage() {
           )}
 
           {detailView === 'assessment' && (
-            <div className="bg-white rounded-2xl shadow-lg border border-primary-100 p-4 hover-lift relative before:absolute before:top-0 before:left-0 before:right-0 before:h-1 before:border-gradient">
-              <h2 className="text-sm font-semibold text-dark-green mb-3">
-                Evaluación Clínica - {selectedPatient.first_name} {selectedPatient.paternal_last_name}
-              </h2>
-              <p className="text-xs text-gray-600 mb-3">Funcionalidad de evaluación en desarrollo...</p>
-              <Button onClick={handleBackToList} size="sm" variant="outline">
-                Volver
-              </Button>
-            </div>
+            <ClinimetrixScaleSelector
+              patient={{
+                id: selectedPatient.id,
+                first_name: selectedPatient.first_name,
+                paternal_last_name: selectedPatient.paternal_last_name,
+                maternal_last_name: selectedPatient.maternal_last_name,
+                age: selectedPatient.age
+              }}
+              onClose={handleBackToPatientDashboard}
+              consultationId={undefined} // TODO: Pasar ID de consulta si hay una abierta
+            />
           )}
         </>
       )}

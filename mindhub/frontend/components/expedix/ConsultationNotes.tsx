@@ -5,6 +5,7 @@ import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { expedixApi, Patient } from '@/lib/api/expedix-client';
 import MentalExam from './MentalExam';
+import ClinimetrixScaleSelector from './ClinimetrixScaleSelector';
 
 // Using Patient interface from expedix-client
 
@@ -361,6 +362,7 @@ export default function ConsultationNotes({ patient, onSaveConsultation, onCance
   const [filteredMedications, setFilteredMedications] = useState<typeof MEDICATIONS_DATABASE>([]);
   const [filteredPrescriptions, setFilteredPrescriptions] = useState<string[]>([]);
   const [filteredDiagnoses, setFilteredDiagnoses] = useState<typeof CIE10_CODES>([]);
+  const [showQuickAssessment, setShowQuickAssessment] = useState(false);
 
   // Auto-determine note type on component mount
   useEffect(() => {
@@ -2603,23 +2605,80 @@ export default function ConsultationNotes({ patient, onSaveConsultation, onCance
         </Card>
 
         {/* Action Buttons */}
-        <div className="flex justify-end space-x-4 pt-6">
-          <Button
-            type="button"
-            onClick={onCancel}
-            variant="outline"
-          >
-            Cancelar
-          </Button>
-          <Button
-            type="submit"
-            className="bg-blue-600 hover:bg-blue-700 submit-button"
-            disabled={loading}
-          >
-            {loading ? '⏳ Guardando...' : '💾 Guardar Consulta'}
-          </Button>
+        <div className="flex items-center justify-between pt-6">
+          <div className="flex items-center space-x-2">
+            <Button
+              type="button"
+              onClick={() => setShowQuickAssessment(true)}
+              className="bg-purple-600 hover:bg-purple-700 text-white"
+              variant="purple"
+            >
+              🧪 Evaluación Rápida
+            </Button>
+          </div>
+          
+          <div className="flex space-x-4">
+            <Button
+              type="button"
+              onClick={onCancel}
+              variant="outline"
+            >
+              Cancelar
+            </Button>
+            <Button
+              type="submit"
+              className="bg-blue-600 hover:bg-blue-700 submit-button"
+              disabled={loading}
+            >
+              {loading ? '⏳ Guardando...' : '💾 Guardar Consulta'}
+            </Button>
+          </div>
         </div>
       </form>
+
+      {/* Quick Assessment Modal */}
+      {showQuickAssessment && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-xl max-w-6xl w-full max-h-[90vh] overflow-hidden">
+            <div className="p-6 border-b border-gray-200">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h2 className="text-xl font-bold text-gray-900">Evaluación Rápida</h2>
+                  <p className="text-sm text-gray-600 mt-1">
+                    Aplicar escala clínica durante la consulta con {patient.first_name} {patient.paternal_last_name}
+                  </p>
+                </div>
+                <button
+                  onClick={() => setShowQuickAssessment(false)}
+                  className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+                >
+                  ✕
+                </button>
+              </div>
+            </div>
+            
+            <div className="p-6 overflow-y-auto max-h-[calc(90vh-120px)]">
+              <ClinimetrixScaleSelector
+                patient={{
+                  id: patient.id,
+                  first_name: patient.first_name,
+                  paternal_last_name: patient.paternal_last_name,
+                  maternal_last_name: patient.maternal_last_name,
+                  age: patient.age
+                }}
+                onClose={() => setShowQuickAssessment(false)}
+                consultationId={undefined} // TODO: Pasar ID de consulta actual cuando esté disponible
+                isQuickMode={true}
+                onAssessmentCompleted={(result) => {
+                  console.log('Assessment completed during consultation:', result);
+                  setShowQuickAssessment(false);
+                  // TODO: Opcional - agregar el resultado a las notas de la consulta
+                }}
+              />
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

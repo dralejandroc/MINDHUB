@@ -5,10 +5,10 @@
  * Integrates with the existing MindHub user system through Prisma
  */
 
-const { ClerkExpressWithAuth, ClerkExpressRequireAuth } = require('@clerk/backend');
-const { PrismaClient } = require('@prisma/client');
+const { createClerkClient, verifyToken } = require('@clerk/backend');
+const { getPrismaClient } = require('../config/prisma');
 
-const prisma = new PrismaClient();
+const prisma = getPrismaClient();
 
 /**
  * Optional Clerk authentication middleware

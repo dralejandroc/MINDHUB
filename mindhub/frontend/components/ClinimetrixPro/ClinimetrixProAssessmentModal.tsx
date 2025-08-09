@@ -14,6 +14,11 @@ interface ClinimetrixProAssessmentModalProps {
   onComplete: (results: any) => void;
   onExit: () => void;
   fullscreen?: boolean;
+  preSelectedPatient?: {
+    id: string;
+    name: string;
+    age?: number;
+  };
 }
 
 // Remove local Patient interface since we'll use ExpedixPatient
@@ -134,7 +139,8 @@ export const ClinimetrixProAssessmentModal: React.FC<ClinimetrixProAssessmentMod
   scaleAbbreviation,
   onComplete,
   onExit,
-  fullscreen = false
+  fullscreen = false,
+  preSelectedPatient
 }) => {
   // Estados principales
   const [currentCard, setCurrentCard] = useState(0);
@@ -142,8 +148,8 @@ export const ClinimetrixProAssessmentModal: React.FC<ClinimetrixProAssessmentMod
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   
-  // Estados para configuración
-  const [selectedPatient, setSelectedPatient] = useState('');
+  // Estados para configuración - inicializar con paciente pre-seleccionado si existe
+  const [selectedPatient, setSelectedPatient] = useState(preSelectedPatient?.id || '');
   const [selectedPatientData, setSelectedPatientData] = useState<ExpedixPatient | null>(null);
   const [administrationMode, setAdministrationMode] = useState<'presencial-mismo' | 'presencial-otro' | 'distancia' | 'dispositivo-secundario'>('presencial-mismo');
   const [selectedAdminMode, setSelectedAdminMode] = useState<'clinician' | 'patient'>('patient');
@@ -2217,8 +2223,44 @@ export const ClinimetrixProAssessmentModal: React.FC<ClinimetrixProAssessmentMod
           borderTop: '2px solid #e2e8f0'
         }}>
           <button
-            onClick={() => {
-              alert('Función de descarga PDF será implementada próximamente');
+            onClick={async () => {
+              try {
+                const { clinimetrixPDFGenerator } = await import('@/lib/utils/pdf-generator');
+                
+                const pdfData = {
+                  scaleName: templateData.name,
+                  scaleAbbreviation: templateData.abbreviation,
+                  patientName: selectedPatientData ? `${selectedPatientData.first_name} ${selectedPatientData.paternal_last_name}` : 'Anónimo',
+                  patientAge: selectedPatientData?.age,
+                  date: new Date().toLocaleDateString('es-ES', { 
+                    year: 'numeric', 
+                    month: 'long', 
+                    day: 'numeric' 
+                  }),
+                  totalScore: assessmentResults.totalScore,
+                  maxPossibleScore: assessmentResults.maxPossibleScore,
+                  severityLevel: assessmentResults.interpretation?.primaryInterpretation || 'No determinado',
+                  interpretation: {
+                    description: assessmentResults.interpretation?.description,
+                    clinicalInterpretation: assessmentResults.interpretation?.clinicalInterpretation,
+                    professionalRecommendations: assessmentResults.interpretation?.professionalRecommendations,
+                    prognosticImplications: assessmentResults.interpretation?.prognosticImplications,
+                    color: assessmentResults.interpretation?.color
+                  },
+                  subscaleScores: assessmentResults.subscaleScores?.map((sub: any) => ({
+                    name: sub.name,
+                    score: sub.score,
+                    severity: sub.severity
+                  })),
+                  completionTime: assessmentResults.completionTime,
+                  templateData: templateData
+                };
+                
+                await clinimetrixPDFGenerator.generateAssessmentPDF(pdfData);
+              } catch (error) {
+                console.error('Error generating PDF:', error);
+                alert('Error al generar el PDF. Por favor, intenta de nuevo.');
+              }
             }}
             style={{
               flex: 1,
@@ -2241,8 +2283,14 @@ export const ClinimetrixProAssessmentModal: React.FC<ClinimetrixProAssessmentMod
           </button>
           
           <button
-            onClick={() => {
-              alert('Función de imprimir será implementada próximamente');
+            onClick={async () => {
+              try {
+                const { clinimetrixPDFGenerator } = await import('@/lib/utils/pdf-generator');
+                await clinimetrixPDFGenerator.printResults();
+              } catch (error) {
+                console.error('Error printing:', error);
+                alert('Error al imprimir. Por favor, intenta de nuevo.');
+              }
             }}
             style={{
               flex: 1,

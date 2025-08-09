@@ -798,4 +798,246 @@ async function generateMedicalRecordNumber() {
   return `${prefix}-${year}-${sequence}`;
 }
 
+/**
+ * POST /api/v1/expedix/patients/:id/assessments
+ * Save ClinimetrixPro assessment results to patient record
+ */
+router.post('/:id/assessments',
+  [
+    param('id').custom(validatePatientId),
+    body('assessmentId').isString().withMessage('Assessment ID is required'),
+    body('templateId').isString().withMessage('Template ID is required'),
+    body('scaleName').isString().withMessage('Scale name is required'),
+    body('scaleAbbreviation').optional().isString(),
+    body('results').isObject().withMessage('Results object is required'),
+    body('consultationId').optional().isString()
+  ],
+  async (req, res) => {
+    try {
+      const errors = validationResult(req);
+      if (!errors.isEmpty()) {
+        return res.status(400).json({ 
+          error: 'Validation failed', 
+          details: errors.array() 
+        });
+      }
+
+      const { id: patientId } = req.params;
+      const { 
+        assessmentId, 
+        templateId, 
+        scaleName, 
+        scaleAbbreviation,
+        results, 
+        consultationId 
+      } = req.body;
+      const userId = req.user?.id || 'system-user';
+
+      // Verify patient exists
+      const patient = await executeQuery(
+        (prisma) => prisma.patients.findUnique({
+          where: { id: patientId },
+          select: { 
+            id: true, 
+            firstName: true, 
+            paternalLastName: true,
+            maternalLastName: true 
+          }
+        }),
+        `verifyPatient(${patientId})`
+      );
+
+      if (!patient) {
+        return res.status(404).json({ error: 'Patient not found' });
+      }
+
+      // Check if assessment exists and update it with patient link
+      const prisma = getPrismaClient();
+      
+      // Update the ClinimetrixPro assessment to link it to patient
+      const updatedAssessment = await prisma.clinimetrix_assessments.update({
+        where: { id: assessmentId },
+        data: {
+          patientId: patientId,
+          metadata: {
+            ...results.metadata,
+            savedToExpedient: true,
+            savedAt: new Date().toISOString(),
+            patientName: `${patient.firstName} ${patient.paternalLastName} ${patient.maternalLastName || ''}`.trim(),
+            consultationId: consultationId || null
+          }
+        }
+      });
+
+      // If there's a consultation ID, create a link or note in the consultation
+      if (consultationId) {
+        try {
+          const consultation = await prisma.consultations.findUnique({
+            where: { id: consultationId }
+          });
+
+          if (consultation) {
+            // Add assessment reference to consultation notes
+            const assessmentNote = `\n\n--- EVALUACIÓN CLÍNICA ---\n` +
+              `Escala: ${scaleName} (${scaleAbbreviation || templateId})\n` +
+              `Puntuación Total: ${results.totalScore || 'N/A'}\n` +
+              `Nivel de Severidad: ${results.severityLevel || 'No determinado'}\n` +
+              `Interpretación: ${results.interpretation?.primaryInterpretation || 'Ver detalles completos en pestaña de evaluaciones'}\n` +
+              `Completado: ${new Date().toLocaleString('es-ES')}\n` +
+              `ID de Evaluación: ${assessmentId}`;
+
+            await prisma.consultations.update({
+              where: { id: consultationId },
+              data: {
+                notes: (consultation.notes || '') + assessmentNote
+              }
+            });
+          }
+        } catch (consultationError) {
+          console.warn('Could not link assessment to consultation:', consultationError.message);
+          // Don't fail the main operation if consultation linking fails
+        }
+      }
+
+      // Log the activity for audit
+      logger.info('ClinimetrixPro assessment saved to patient record', {
+        patientId,
+        assessmentId,
+        templateId,
+        scaleName,
+        consultationId,
+        totalScore: results.totalScore,
+        severityLevel: results.severityLevel,
+        savedBy: userId,
+        ipAddress: req.ip
+      });
+
+      res.json({
+        success: true,
+        message: 'Assessment results saved to patient record successfully',
+        data: {
+          assessmentId: updatedAssessment.id,
+          patientId,
+          scaleName,
+          totalScore: results.totalScore,
+          severityLevel: results.severityLevel,
+          consultationLinked: !!consultationId,
+          savedAt: new Date().toISOString()
+        }
+      });
+
+    } catch (error) {
+      logger.error('Failed to save assessment to patient record', { 
+        error: error.message,
+        patientId: req.params.id,
+        assessmentId: req.body.assessmentId,
+        userId: req.user?.id 
+      });
+      res.status(500).json({ 
+        error: 'Failed to save assessment to patient record', 
+        details: error.message 
+      });
+    }
+  }
+);
+
+/**
+ * GET /api/v1/expedix/patients/:id/assessments
+ * Get all ClinimetrixPro assessments for a patient
+ */
+router.get('/:id/assessments',
+  [
+    param('id').custom(validatePatientId),
+    query('limit').optional().isInt({ min: 1, max: 50 }).withMessage('Limit must be between 1 and 50'),
+    query('templateId').optional().isString()
+  ],
+  async (req, res) => {
+    try {
+      const errors = validationResult(req);
+      if (!errors.isEmpty()) {
+        return res.status(400).json({ 
+          error: 'Validation failed', 
+          details: errors.array() 
+        });
+      }
+
+      const { id: patientId } = req.params;
+      const { limit = 20, templateId } = req.query;
+
+      // Verify patient exists
+      const patient = await executeQuery(
+        (prisma) => prisma.patients.findUnique({
+          where: { id: patientId },
+          select: { id: true, firstName: true, paternalLastName: true }
+        }),
+        `verifyPatient(${patientId})`
+      );
+
+      if (!patient) {
+        return res.status(404).json({ error: 'Patient not found' });
+      }
+
+      // Build where clause
+      const where = {
+        patientId,
+        status: 'completed'
+      };
+
+      if (templateId) {
+        where.templateId = templateId;
+      }
+
+      // Get assessments
+      const prisma = getPrismaClient();
+      const assessments = await prisma.clinimetrix_assessments.findMany({
+        where,
+        take: parseInt(limit),
+        orderBy: { completedAt: 'desc' },
+        include: {
+          clinimetrix_registry: {
+            select: {
+              name: true,
+              abbreviation: true,
+              category: true,
+              description: true
+            }
+          }
+        }
+      });
+
+      // Transform data for frontend
+      const transformedAssessments = assessments.map(assessment => ({
+        id: assessment.id,
+        templateId: assessment.templateId,
+        scaleName: assessment.clinimetrix_registry?.name || 'Unknown Scale',
+        scaleAbbreviation: assessment.clinimetrix_registry?.abbreviation,
+        category: assessment.clinimetrix_registry?.category,
+        description: assessment.clinimetrix_registry?.description,
+        completedAt: assessment.completedAt,
+        totalScore: assessment.scores?.totalScore,
+        severityLevel: assessment.scores?.severityLevel,
+        interpretation: assessment.interpretation?.primaryInterpretation,
+        metadata: assessment.metadata
+      }));
+
+      res.json({
+        success: true,
+        data: transformedAssessments,
+        count: transformedAssessments.length
+      });
+
+    } catch (error) {
+      logger.error('Failed to get patient assessments', { 
+        error: error.message,
+        patientId: req.params.id,
+        userId: req.user?.id 
+      });
+      res.status(500).json({ 
+        error: 'Failed to retrieve patient assessments', 
+        details: error.message 
+      });
+    }
+  }
+);
+
 module.exports = router;

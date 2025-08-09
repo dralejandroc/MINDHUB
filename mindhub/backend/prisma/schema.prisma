@@ -190,7 +190,7 @@ model clinimetrix_assessments {
   sessionData           Json?
   metadata              Json?
   createdAt             DateTime                       @default(now())
-  updatedAt             DateTime
+  updatedAt             DateTime                       @updatedAt
   users                 users                          @relation(fields: [administratorId], references: [id], map: "clinimetrix_assessments_administrator_fkey")
   patients              patients?                      @relation(fields: [patientId], references: [id], map: "clinimetrix_assessments_patient_fkey")
   clinimetrix_registry  clinimetrix_registry           @relation(fields: [templateId], references: [templateId], map: "clinimetrix_assessments_registry_fkey")
@@ -247,6 +247,38 @@ model clinimetrix_templates {
   updatedAt               DateTime
   clinimetrix_assessments clinimetrix_assessments[]
   clinimetrix_registry    clinimetrix_registry?
+  clinimetrix_remote_assessments clinimetrix_remote_assessments[]
+}
+
+model clinimetrix_remote_assessments {
+  id                    String                                    @id
+  token                 String                                    @unique
+  templateId            String
+  patientId             String?
+  patientEmail          String
+  patientName           String
+  administratorId       String
+  status                clinimetrix_remote_assessments_status    @default(pending)
+  message               String?                                   @db.Text
+  reminderEnabled       Boolean                                   @default(true)
+  assessmentId          String?
+  expiresAt             DateTime
+  startedAt             DateTime?
+  completedAt           DateTime?
+  responses             Json?
+  results               Json?
+  metadata              Json?
+  createdAt             DateTime                                  @default(now())
+  updatedAt             DateTime                                  @updatedAt
+  clinimetrix_templates clinimetrix_templates                    @relation(fields: [templateId], references: [id])
+  patients              patients?                                @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  
+  @@index([token])
+  @@index([templateId])
+  @@index([patientId])
+  @@index([administratorId])
+  @@index([status])
+  @@index([expiresAt])
 }
 
 model consultations {
@@ -726,6 +758,7 @@ model patients {
   clinicId                      String?                         @db.VarChar(255)
   assessment_tokens             assessment_tokens[]
   clinimetrix_assessments       clinimetrix_assessments[]
+  clinimetrix_remote_assessments clinimetrix_remote_assessments[]
   consultations                 consultations[]
   incomes                       incomes[]
   medical_history               medical_history[]
@@ -1496,6 +1529,14 @@ enum watermark_templates_type {
 }
 
 enum clinimetrix_assessments_status {
+  pending
+  in_progress
+  completed
+  cancelled
+  expired
+}
+
+enum clinimetrix_remote_assessments_status {
   pending
   in_progress
   completed
