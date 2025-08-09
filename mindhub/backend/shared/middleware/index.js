@@ -4,7 +4,7 @@
  * Central export point for all authentication, authorization, and security middleware
  */
 
-const AuthenticationMiddleware = require('./auth-middleware');
+// const AuthenticationMiddleware = require('./auth-middleware'); // REMOVED - Using Clerk auth only
 const SessionManager = require('./session-manager');
 const SecurityMiddleware = require('./security-middleware');
 const rateLimitingMiddleware = require('./rate-limiting');
@@ -19,8 +19,15 @@ const RequestLoggingMiddleware = require('./request-logging');
 const PerformanceMonitoringMiddleware = require('./performance-monitoring');
 const ComprehensiveMiddleware = require('./comprehensive-middleware');
 
-// Initialize middleware instances
-const authMiddleware = new AuthenticationMiddleware();
+// Initialize middleware instances  
+// const authMiddleware = new AuthenticationMiddleware(); // REMOVED - Using Clerk auth only
+// Auth stubs for Clerk migration - all auth handled by Clerk at API gateway level
+const authMiddleware = {
+  authenticate: () => (req, res, next) => next(),
+  authorize: (roles, permissions) => (req, res, next) => next(),
+  authorizePatientAccess: () => (req, res, next) => next(),
+  rateLimitByRole: () => (req, res, next) => next()
+};
 const sessionManager = new SessionManager();
 const securityMiddleware = new SecurityMiddleware();
 // rateLimitingMiddleware is already an instance from the import
@@ -384,10 +391,10 @@ module.exports = {
   utils,
 
   // Direct access to individual middleware functions
-  authenticate: authMiddleware.authenticate.bind(authMiddleware),
-  authorize: authMiddleware.authorize.bind(authMiddleware),
-  authorizePatientAccess: authMiddleware.authorizePatientAccess.bind(authMiddleware),
-  rateLimitByRole: authMiddleware.rateLimitByRole.bind(authMiddleware),
+  authenticate: authMiddleware.authenticate,
+  authorize: authMiddleware.authorize,
+  authorizePatientAccess: authMiddleware.authorizePatientAccess,
+  rateLimitByRole: authMiddleware.rateLimitByRole,
   
   validateSession: sessionManager.validateSession.bind(sessionManager),
   createSession: sessionManager.createSession.bind(sessionManager),
