@@ -11,16 +11,10 @@ export default function DashboardPage() {
   useEffect(() => {
     if (isLoaded) {
       if (!isSignedIn) {
-        // Check if there's a token in localStorage (for custom auth)
-        const token = localStorage.getItem('auth_token');
-        if (!token) {
-          redirect('/sign-in');
-        } else {
-          // User has token, redirect to app
-          redirect('/app');
-        }
+        // User not signed in with Clerk, redirect to sign-in
+        redirect('/sign-in');
       } else {
-        // Redirect to the proper app dashboard
+        // User is signed in with Clerk, redirect to app dashboard
         redirect('/app');
       }
     }

@@ -1,5 +1,7 @@
 /**
- * Authentication API Client
+ * @deprecated Authentication API Client
+ * This entire file is deprecated in favor of Clerk authentication
+ * Use Clerk hooks and components instead of these functions
  * Connects to real backend - NO HARDCODED DATA
  */
 

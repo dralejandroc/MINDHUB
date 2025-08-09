@@ -62,13 +62,8 @@ export default function NewPatientQuickModal({ onClose, onSave }: NewPatientQuic
     setIsLoading(true);
 
     try {
-      // Get current user
-      const savedUser = localStorage.getItem('currentUser');
-      let userId = 'user-dr-alejandro'; // Default
-      if (savedUser) {
-        const user = JSON.parse(savedUser);
-        userId = user.id || userId;
-      }
+      // TODO: Get current user from Clerk
+      const userId = 'user-dr-alejandro'; // Default for now
 
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/expedix/patients`, {
         method: 'POST',

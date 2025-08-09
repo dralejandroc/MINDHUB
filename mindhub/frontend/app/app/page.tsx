@@ -1,70 +1,55 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { useAuth } from '@/hooks/useAuth';
 import { UnifiedSidebar } from '@/components/layout/UnifiedSidebar';
 import { DashboardSwitcher } from '@/components/dashboard/DashboardSwitcher';
 import { StartPageHandler } from '@/components/layout/StartPageHandler';
 import { UserMetricsProvider } from '@/contexts/UserMetricsContext';
-import { CurrentUser } from '@/types/user-metrics';
+import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 
 export default function AppHome() {
-  const [currentUser, setCurrentUser] = useState<CurrentUser | undefined>(undefined);
-  const [isLoading, setIsLoading] = useState(true);
+  const { isLoaded, isSignedIn, user } = useAuth();
   const router = useRouter();
 
   useEffect(() => {
-    // Check if user is authenticated
-    const token = localStorage.getItem('auth_token');
-    const savedUser = localStorage.getItem('currentUser');
-    
-    if (!token || !savedUser) {
-      // Redirect to login if not authenticated
+    if (isLoaded && !isSignedIn) {
       router.push('/sign-in');
-      return;
     }
+  }, [isLoaded, isSignedIn, router]);
 
-    try {
-      setCurrentUser(JSON.parse(savedUser));
-    } catch (error) {
-      console.error('Error parsing user data:', error);
-      localStorage.removeItem('currentUser');
-      localStorage.removeItem('auth_token');
-      router.push('/sign-in');
-      return;
-    }
-    
-    // Reset dashboard config if it's broken
-    const dashboardConfig = localStorage.getItem('userMetrics');
-    if (dashboardConfig) {
-      try {
-        const config = JSON.parse(dashboardConfig);
-        if (config.dashboardConfig?.theme === 'compact') {
-          // Reset to default theme
-          config.dashboardConfig.theme = 'default';
-          localStorage.setItem('userMetrics', JSON.stringify(config));
+  // Reset dashboard config if it's broken
+  useEffect(() => {
+    if (isSignedIn) {
+      const dashboardConfig = localStorage.getItem('userMetrics');
+      if (dashboardConfig) {
+        try {
+          const config = JSON.parse(dashboardConfig);
+          if (config.dashboardConfig?.theme === 'compact') {
+            // Reset to default theme
+            config.dashboardConfig.theme = 'default';
+            localStorage.setItem('userMetrics', JSON.stringify(config));
+          }
+        } catch (error) {
+          console.log('Resetting dashboard config due to error:', error);
+          localStorage.removeItem('userMetrics');
         }
-      } catch (error) {
-        console.log('Resetting dashboard config due to error:', error);
-        localStorage.removeItem('userMetrics');
       }
     }
+  }, [isSignedIn]);
 
-    setIsLoading(false);
-  }, [router]);
-
-  // Show loading state while user data loads
-  if (isLoading || !currentUser) {
+  if (!isLoaded || !isSignedIn) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
+        <LoadingSpinner size="lg" />
       </div>
     );
   }
 
   return (
     <UserMetricsProvider>
-      <UnifiedSidebar currentUser={currentUser}>
+      <UnifiedSidebar>
         <DashboardSwitcher />
         <StartPageHandler />
       </UnifiedSidebar>

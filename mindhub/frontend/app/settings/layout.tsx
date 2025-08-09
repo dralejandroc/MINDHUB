@@ -1,36 +1,25 @@
 'use client';
 
-import { useState, useEffect } from 'react';
 import { UnifiedSidebar } from '@/components/layout/UnifiedSidebar';
-import { CurrentUser } from '@/types/user-metrics';
+import { useAuth } from '@clerk/nextjs';
+import { useRouter } from 'next/navigation';
+import { useEffect } from 'react';
 
 export default function SettingsLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const [currentUser, setCurrentUser] = useState<CurrentUser | undefined>(undefined);
+  const { isSignedIn, isLoaded } = useAuth();
+  const router = useRouter();
 
   useEffect(() => {
-    // Read user from localStorage
-    const savedUser = localStorage.getItem('currentUser');
-    if (savedUser) {
-      setCurrentUser(JSON.parse(savedUser));
-    } else {
-      // Default fallback
-      const defaultUser = {
-        id: 'user-dr-alejandro',
-        name: 'Dr. Alejandro Contreras',
-        email: 'alejandro@mindhub.com',
-        role: 'professional'
-      };
-      setCurrentUser(defaultUser);
-      localStorage.setItem('currentUser', JSON.stringify(defaultUser));
+    if (isLoaded && !isSignedIn) {
+      router.push('/sign-in');
     }
-  }, []);
+  }, [isLoaded, isSignedIn, router]);
 
-  // Show loading while user loads
-  if (!currentUser) {
+  if (!isLoaded) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
@@ -38,8 +27,12 @@ export default function SettingsLayout({
     );
   }
 
+  if (!isSignedIn) {
+    return null;
+  }
+
   return (
-    <UnifiedSidebar currentUser={currentUser}>
+    <UnifiedSidebar>
       {children}
     </UnifiedSidebar>
   );
