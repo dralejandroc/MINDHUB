@@ -3,7 +3,8 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { CurrentUser } from '@/types/user-metrics';
+import { useAuth } from '@/hooks/useAuth';
+import { useClerk } from '@clerk/nextjs';
 import {
   UserGroupIcon,
   DocumentChartBarIcon,
@@ -81,10 +82,9 @@ const NAVIGATION_ITEMS = [
 
 interface UnifiedSidebarProps {
   children?: React.ReactNode;
-  currentUser?: CurrentUser;
 }
 
-export function UnifiedSidebar({ children, currentUser }: UnifiedSidebarProps) {
+export function UnifiedSidebar({ children }: UnifiedSidebarProps) {
   const pathname = usePathname();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [isCollapsed, setIsCollapsed] = useState(true); // Default to collapsed
@@ -95,44 +95,26 @@ export function UnifiedSidebar({ children, currentUser }: UnifiedSidebarProps) {
     setSidebarOpen(false); // Also close mobile sidebar when navigating
   }, [pathname]);
 
-  // Default user if not provided - read from localStorage first
-  const user = currentUser || (() => {
-    if (typeof window !== 'undefined') {
-      const savedUser = localStorage.getItem('currentUser');
-      if (savedUser) {
-        return JSON.parse(savedUser);
-      }
-    }
-    return {
-      id: '',
-    name: 'Loading...',
-    email: '',
-    role: ''
-    };
-  })();
+  // Get user from Clerk only
+  const { user } = useAuth();
+  const { signOut } = useClerk();
+  
+  const displayUser = {
+    name: user?.fullName || user?.firstName || 'Usuario',
+    email: user?.emailAddresses?.[0]?.emailAddress || '',
+    role: 'professional'
+  };
 
   const handleLogout = async () => {
     if (confirm('¿Estás seguro que deseas cerrar sesión?')) {
       try {
-        // Call logout API
-        const token = localStorage.getItem('auth_token');
-        if (token) {
-          await fetch('/api/auth/logout', {
-            method: 'POST',
-            headers: {
-              'Authorization': `Bearer ${token}`,
-              'Content-Type': 'application/json',
-            },
-          });
-        }
+        // Use Clerk's signOut
+        await signOut();
+        // Clear any non-auth local storage if needed
+        localStorage.removeItem('userMetrics');
+        window.location.href = '/sign-in';
       } catch (error) {
         console.error('Logout error:', error);
-      } finally {
-        // Clear all auth data
-        localStorage.removeItem('currentUser');
-        localStorage.removeItem('auth_token');
-        localStorage.removeItem('refresh_token');
-        window.location.href = '/sign-in';
       }
     }
   };
@@ -301,12 +283,12 @@ export function UnifiedSidebar({ children, currentUser }: UnifiedSidebarProps) {
             <div className="flex items-center">
               <div className="h-7 w-7 gradient-secondary rounded-full flex items-center justify-center">
                 <span className="text-xs font-bold text-white">
-                  {user.name?.charAt(0).toUpperCase() || 'U'}
+                  {displayUser.name?.charAt(0).toUpperCase() || 'U'}
                 </span>
               </div>
               <div className="ml-2">
-                <p className="text-xs font-medium text-dark-green">{user.name}</p>
-                <p className="text-xs text-gray-600">{user.email}</p>
+                <p className="text-xs font-medium text-dark-green">{displayUser.name}</p>
+                <p className="text-xs text-gray-600">{displayUser.email}</p>
               </div>
             </div>
             <div className="flex items-center space-x-1">
@@ -335,7 +317,7 @@ export function UnifiedSidebar({ children, currentUser }: UnifiedSidebarProps) {
           <div className="flex flex-col items-center space-y-1.5">
             <div className="w-7 h-7 gradient-secondary rounded-full flex items-center justify-center">
               <span className="text-xs font-bold text-white">
-                {user.name?.charAt(0).toUpperCase() || 'U'}
+                {displayUser.name?.charAt(0).toUpperCase() || 'U'}
               </span>
             </div>
             <Link
@@ -404,10 +386,10 @@ export function UnifiedSidebar({ children, currentUser }: UnifiedSidebarProps) {
             <UserCircleIcon className="h-8 w-8 text-gray-400" />
             <div className="hidden sm:flex sm:flex-col sm:items-start">
               <span className="text-sm font-semibold leading-6 text-gray-900">
-                {user.name}
+                {displayUser.name}
               </span>
               <span className="text-xs leading-5 text-gray-500">
-                {user.email}
+                {displayUser.email}
               </span>
             </div>
             <button

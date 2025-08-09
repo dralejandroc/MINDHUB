@@ -1,45 +1,30 @@
 'use client';
 
-import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { useAuth } from '@/hooks/useAuth';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { UnifiedSidebar } from '@/components/layout/UnifiedSidebar';
+import { useEffect } from 'react';
 
 export function MainLayout({ children }: { children: React.ReactNode }) {
-  const [currentUser, setCurrentUser] = useState<{ name?: string; email?: string; role?: string; } | undefined>(undefined);
-  const [isLoading, setIsLoading] = useState(true);
+  const { isLoaded, isSignedIn } = useAuth();
   const router = useRouter();
 
   useEffect(() => {
-    // Check if user is authenticated
-    const token = localStorage.getItem('auth_token');
-    const savedUser = localStorage.getItem('currentUser');
-    
-    if (!token || !savedUser) {
-      // Redirect to login if not authenticated
+    if (isLoaded && !isSignedIn) {
       router.push('/sign-in');
-      return;
     }
+  }, [isLoaded, isSignedIn, router]);
 
-    try {
-      const parsedUser = JSON.parse(savedUser);
-      setCurrentUser({
-        name: parsedUser.name,
-        email: parsedUser.email,
-        role: parsedUser.role
-      });
-    } catch (error) {
-      console.error('Error parsing user data:', error);
-      localStorage.removeItem('currentUser');
-      localStorage.removeItem('auth_token');
-      router.push('/sign-in');
-      return;
-    }
+  if (!isLoaded) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <LoadingSpinner size="lg" />
+      </div>
+    );
+  }
 
-    setIsLoading(false);
-  }, [router]);
-
-  if (isLoading) {
+  if (!isSignedIn) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <LoadingSpinner size="lg" />
@@ -48,7 +33,7 @@ export function MainLayout({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <UnifiedSidebar currentUser={currentUser}>
+    <UnifiedSidebar>
       {children}
     </UnifiedSidebar>
   );

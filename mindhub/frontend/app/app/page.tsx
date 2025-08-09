@@ -15,11 +15,8 @@ export default function AppHome() {
 
   useEffect(() => {
     if (isLoaded && !isSignedIn) {
-      // Check if user has MindHub token as fallback
-      const token = localStorage.getItem('auth_token');
-      if (!token) {
-        router.push('/sign-in');
-      }
+      // Redirect to sign-in if not authenticated with Clerk
+      router.push('/sign-in');
     }
   }, [isLoaded, isSignedIn, router]);
 
@@ -50,16 +47,13 @@ export default function AppHome() {
     );
   }
 
-  // If not signed in with Clerk, check for MindHub token
+  // If not signed in with Clerk, show loading
   if (!isSignedIn) {
-    const token = localStorage.getItem('auth_token');
-    if (!token) {
-      return (
-        <div className="min-h-screen flex items-center justify-center">
-          <LoadingSpinner size="lg" />
-        </div>
-      );
-    }
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <LoadingSpinner size="lg" />
+      </div>
+    );
   }
 
   return (

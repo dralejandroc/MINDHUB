@@ -1,45 +1,34 @@
 'use client';
 
-import { useState, useEffect } from 'react';
 import { UnifiedSidebar } from '@/components/layout/UnifiedSidebar';
-import { CurrentUser } from '@/types/user-metrics';
+import { useAuth } from '@/hooks/useAuth';
+import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 
 export default function SettingsLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const [currentUser, setCurrentUser] = useState<CurrentUser | undefined>(undefined);
+  const { isLoaded, isSignedIn } = useAuth();
 
-  useEffect(() => {
-    // Read user from localStorage
-    const savedUser = localStorage.getItem('currentUser');
-    if (savedUser) {
-      setCurrentUser(JSON.parse(savedUser));
-    } else {
-      // Default fallback
-      const defaultUser = {
-        id: 'user-dr-alejandro',
-        name: 'Dr. Alejandro Contreras',
-        email: 'alejandro@mindhub.com',
-        role: 'professional'
-      };
-      setCurrentUser(defaultUser);
-      localStorage.setItem('currentUser', JSON.stringify(defaultUser));
-    }
-  }, []);
-
-  // Show loading while user loads
-  if (!currentUser) {
+  if (!isLoaded) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
+        <LoadingSpinner size="lg" />
+      </div>
+    );
+  }
+
+  if (!isSignedIn) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <p>Please sign in to access settings.</p>
       </div>
     );
   }
 
   return (
-    <UnifiedSidebar currentUser={currentUser}>
+    <UnifiedSidebar>
       {children}
     </UnifiedSidebar>
   );
