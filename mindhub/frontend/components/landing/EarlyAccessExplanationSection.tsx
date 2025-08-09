@@ -1,16 +1,16 @@
 'use client';
 
-interface BetaExplanationSectionProps {
-  onBetaClick: () => void;
+interface EarlyAccessExplanationSectionProps {
+  onEarlyAccessClick: () => void;
 }
 
-export function BetaExplanationSection({ onBetaClick }: BetaExplanationSectionProps) {
+export function EarlyAccessExplanationSection({ onEarlyAccessClick }: EarlyAccessExplanationSectionProps) {
   return (
     <section className="py-20 bg-gradient-to-br from-gray-50 to-white">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center mb-16">
           <h2 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-6">
-            ¿Por qué un Beta abierto?
+            ¿Por qué Early Access?
           </h2>
           <div className="w-24 h-1 bg-gradient-to-r from-primary-teal to-primary-blue mx-auto rounded-full"></div>
         </div>
@@ -42,10 +42,10 @@ export function BetaExplanationSection({ onBetaClick }: BetaExplanationSectionPr
                 
                 <div className="pt-6">
                   <button
-                    onClick={onBetaClick}
+                    onClick={onEarlyAccessClick}
                     className="bg-gradient-to-r from-primary-teal to-primary-blue text-white px-8 py-4 rounded-xl hover:shadow-2xl hover:scale-105 transition-all duration-300 font-semibold text-lg shadow-lg"
                   >
-                    🤝 Formar parte del Beta
+                    🤝 Formar parte del Early Access
                   </button>
                 </div>
               </div>
@@ -55,7 +55,7 @@ export function BetaExplanationSection({ onBetaClick }: BetaExplanationSectionPr
             <div className="bg-gradient-to-br from-primary-teal/5 to-primary-blue/5 p-8 lg:p-12 flex items-center">
               <div className="w-full">
                 <h3 className="text-xl font-semibold text-gray-900 mb-8 text-center">
-                  Beneficios del Beta
+                  Beneficios del Early Access
                 </h3>
                 <div className="space-y-6">
                   <div className="flex items-center p-4 bg-white rounded-xl shadow-sm hover:shadow-md transition-all duration-200">

@@ -2,11 +2,11 @@
 
 import { useRouter } from 'next/navigation';
 
-interface BetaRegistrationModalProps {
+interface EarlyAccessRegistrationModalProps {
   onClose: () => void;
 }
 
-export function BetaRegistrationModal({ onClose }: BetaRegistrationModalProps) {
+export function EarlyAccessRegistrationModal({ onClose }: EarlyAccessRegistrationModalProps) {
   const router = useRouter();
 
   const handleSignUp = () => {
@@ -35,7 +35,7 @@ export function BetaRegistrationModal({ onClose }: BetaRegistrationModalProps) {
         <div className="text-center">
           <div className="mb-6">
             <div className="bg-gradient-to-r from-blue-600 to-teal-600 text-white p-4 rounded-lg mb-4">
-              <h3 className="text-lg font-semibold mb-2">🎉 ¡Bienvenido a la Beta de MindHub!</h3>
+              <h3 className="text-lg font-semibold mb-2">🎉 ¡Bienvenido al Early Access de MindHub!</h3>
               <p className="text-sm opacity-90">
                 Estás a punto de unirte a la plataforma que transformará tu práctica clínica
               </p>
@@ -45,7 +45,7 @@ export function BetaRegistrationModal({ onClose }: BetaRegistrationModalProps) {
               <div className="flex">
                 <div className="ml-3">
                   <p className="text-sm text-blue-700">
-                    <strong>Periodo Beta:</strong> Acceso completo sin restricciones por unos meses mientras perfeccionamos MindHub para que cumpla con todos los estándares de calidad que te mereces.
+                    <strong>Early Access Period:</strong> Acceso completo sin restricciones por unos meses mientras perfeccionamos MindHub para que cumpla con todos los estándares de calidad que te mereces.
                   </p>
                 </div>
               </div>

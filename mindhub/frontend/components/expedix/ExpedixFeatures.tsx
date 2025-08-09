@@ -28,7 +28,7 @@ function FeatureCard({ icon: Icon, title, description, status, onClick }: Featur
 
   const statusText = {
     available: 'Disponible',
-    beta: 'Beta',
+    beta: 'Early Access',
     'coming-soon': 'Próximamente'
   };
 

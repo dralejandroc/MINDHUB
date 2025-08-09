@@ -7,8 +7,8 @@ import { HeroSection } from '@/components/landing/HeroSection';
 import { StorytellingSection } from '@/components/landing/StorytellingSection';
 import { FeaturesSection } from '@/components/landing/FeaturesSection';
 import { PlansSection } from '@/components/landing/PlansSection';
-import { BetaExplanationSection } from '@/components/landing/BetaExplanationSection';
-import { BetaRegistrationModal } from '@/components/landing/BetaRegistrationModal';
+import { EarlyAccessExplanationSection } from '@/components/landing/EarlyAccessExplanationSection';
+import { EarlyAccessRegistrationModal } from '@/components/landing/EarlyAccessRegistrationModal';
 import { Footer } from '@/components/landing/Footer';
 
 export default function LandingPage() {
@@ -29,13 +29,13 @@ export default function LandingPage() {
         <StorytellingSection />
         <FeaturesSection />
         <PlansSection onBetaClick={() => setShowBetaModal(true)} />
-        <BetaExplanationSection onBetaClick={() => setShowBetaModal(true)} />
+        <EarlyAccessExplanationSection onEarlyAccessClick={() => setShowBetaModal(true)} />
       </main>
 
       <Footer />
 
       {showBetaModal && (
-        <BetaRegistrationModal onClose={() => setShowBetaModal(false)} />
+        <EarlyAccessRegistrationModal onClose={() => setShowBetaModal(false)} />
       )}
     </div>
   );
