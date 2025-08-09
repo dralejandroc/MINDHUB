@@ -17,7 +17,15 @@ const isPublicRoute = createRouteMatcher([
   '/sign-up(.*)',
   '/api/public(.*)',
   '/api/health',
-  '/verify-email(.*)'
+  '/verify-email(.*)',
+  '/manifest.json',
+  '/sw.js',
+  '/robots.txt',
+  '/favicon.ico',
+  '/icon-192x192.png',
+  '/icon-512x512.png',
+  '/icon-192x192.svg',
+  '/icon-512x512.svg'
 ]);
 
 export default clerkMiddleware(async (auth, req) => {
@@ -60,8 +68,7 @@ export default clerkMiddleware(async (auth, req) => {
 
 export const config = {
   matcher: [
-    '/((?!api|_next/static|_next/image|favicon.ico).*)',
-    '/manifest.json',
+    '/((?!api|_next/static|_next/image|favicon.ico|manifest.json|sw.js|robots.txt|icon-.*\\.(png|svg)).*)',
     '/hubs/:path*',
     '/profile/:path*',
     '/settings/:path*',
