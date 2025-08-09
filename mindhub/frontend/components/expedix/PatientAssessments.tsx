@@ -175,7 +175,7 @@ export default function PatientAssessments({
           recentActivity
         });
       } else {
-        throw new Error(data.error || 'Error al cargar evaluaciones');
+        throw new Error('No se pudieron cargar las evaluaciones');
       }
       
     } catch (err) {
@@ -261,7 +261,7 @@ export default function PatientAssessments({
         });
         setShowHistoryModal(true);
       } else {
-        throw new Error(response.error || 'Error al cargar historial');
+        throw new Error('No se pudo cargar el historial de la escala');
       }
       
     } catch (err) {
