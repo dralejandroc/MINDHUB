@@ -12,7 +12,7 @@ const { contextMiddleware } = require('../config/request-context');
 const { initializeLogging } = require('../config/logging');
 const errorHandling = require('./error-handling');
 const rateLimit = require('./rate-limiting');
-const auth = require('./auth');
+// const auth = require('./auth'); // REMOVED - Using Clerk auth only
 const healthRoutes = require('../routes/health');
 
 /**
@@ -84,11 +84,11 @@ const initializeMiddleware = (app, options = {}) => {
   app.use('/ping', healthRoutes);
   app.use('/metrics', healthRoutes);
 
-  // Authentication middleware (for protected routes)
-  app.use('/api', auth.authenticateToken);
+  // Authentication middleware (for protected routes) - REMOVED - Using Clerk auth only
+  // app.use('/api', auth.authenticateToken);
 
-  // Authorization middleware (for role-based access control)
-  app.use('/api', auth.authorizeRequest);
+  // Authorization middleware (for role-based access control) - REMOVED - Using Clerk auth only  
+  // app.use('/api', auth.authorizeRequest);
 
   // Error logging middleware
   app.use(errorLoggingMiddleware);
