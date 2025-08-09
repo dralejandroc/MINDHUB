@@ -1,5 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 
+// Prevent static generation for this API route
+export const runtime = 'nodejs';
+export const dynamic = 'force-dynamic';
+
 export async function GET(request: NextRequest) {
   const backendUrl = process.env.BACKEND_URL || 'https://mindhub-production.up.railway.app';
   

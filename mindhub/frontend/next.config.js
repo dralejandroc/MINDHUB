@@ -31,6 +31,16 @@ const nextConfig = {
   compress: true,
   poweredByHeader: false,
   generateEtags: true,
+  // Exclude API routes from static generation to prevent build timeouts
+  experimental: {
+    outputFileTracingExcludes: {
+      '/api/**/*': ['**/*'],
+    },
+  },
+  // Configure build settings
+  generateBuildId: async () => {
+    return process.env.BUILD_ID || 'production-build';
+  },
   // Ensure public files are served correctly
   async headers() {
     return [
