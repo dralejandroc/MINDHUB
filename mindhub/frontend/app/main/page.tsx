@@ -10,32 +10,13 @@ export default function MainPage() {
 
   useEffect(() => {
     if (isLoaded) {
-      if (!isSignedIn) {
-        // Check if there's a token in localStorage (for custom auth)
-        const token = localStorage.getItem('auth_token');
-        if (!token) {
-          redirect('/sign-in');
-        } else {
-          // User has token, check for preferred start page
-          const userMetrics = localStorage.getItem('userMetrics');
-          if (userMetrics) {
-            try {
-              const metrics = JSON.parse(userMetrics);
-              const startPage = metrics.dashboardConfig?.startPage;
-              if (startPage && startPage !== 'dashboard') {
-                redirect(`/hubs/${startPage}`);
-              } else {
-                redirect('/app');
-              }
-            } catch {
-              redirect('/app');
-            }
-          } else {
-            redirect('/app');
-          }
-        }
+      // Check authentication (Clerk OR MindHub system)
+      const hasAuth = isSignedIn || localStorage.getItem('auth_token');
+      
+      if (!hasAuth) {
+        redirect('/sign-in');
       } else {
-        // Check for preferred start page
+        // User authenticated, check for preferred start page
         const userMetrics = localStorage.getItem('userMetrics');
         if (userMetrics) {
           try {
