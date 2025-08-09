@@ -16,9 +16,25 @@ MindHub es una plataforma integral de gestión sanitaria que integra múltiples 
 - ✅ Frontend desplegado en Vercel
 - ✅ Backend desplegado en Railway (Project ID: cb592087-84b0-4214-bbc2-2dfc7a78dbee)
 - ✅ Base de datos MySQL en Railway (ENDPOINT INTERNO)
-- ✅ Sistema de autenticación funcional
+- ✅ **Sistema de autenticación: 100% Clerk** (Clerk App ID: `app_2qkqyqQGUgMkE6Ke3mSWWxjAbBx`)
 - ✅ APIs conectadas a backend real (NO localhost)
 - ✅ Environment ID: 63e89941-0786-4a34-af22-f0788a981fa2
+
+### 🔐 **SISTEMA DE AUTENTICACIÓN - CLERK ÚNICAMENTE**
+- **Proveedor**: Clerk (https://clerk.com)
+- **Clerk App ID**: `app_2qkqyqQGUgMkE6Ke3mSWWxjAbBx`
+- **Frontend Auth**: `@clerk/nextjs` con componentes React
+- **Backend Auth**: Middleware Clerk JWT validation en API routes
+- **Usuario Principal**: Dr. Alejandro (dr_aleks_c@hotmail.com)
+- **Funciones**:
+  - ✅ Login/Logout automático
+  - ✅ JWT tokens para APIs
+  - ✅ Gestión de usuarios y sesiones
+  - ✅ Integración con base de datos (tabla `users` con `clerk_user_id`)
+  - ❌ **NO hay sistema custom de MindHub** - eliminado completamente
+- **URLs de Clerk**:
+  - Sign In: https://mindhub.cloud/sign-in
+  - Dashboard: https://mindhub.cloud/dashboard (post-login)
 
 ### 💰 IMPORTANTE - ENDPOINTS INTERNOS PARA EVITAR COSTOS
 - Backend en Railway usa **mysql.railway.internal:3306** (endpoint interno, GRATIS)
@@ -105,7 +121,7 @@ MindHub/
 - **Styling**: Tailwind CSS + CSS Variables personalizadas
 - **Componentes**: Sistema de componentes unificado
 - **Estado**: Context API + useState/useEffect
-- **Autenticación**: Auth0 (configurado pero opcional)
+- **Autenticación**: Clerk (App ID: `app_2qkqyqQGUgMkE6Ke3mSWWxjAbBx`) - Sistema ÚNICO
 
 ### Backend
 - **Runtime**: Node.js con Express
