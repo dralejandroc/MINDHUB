@@ -1,6 +1,5 @@
 /**
- * @deprecated Organizations API Client
- * This system is deprecated in favor of Clerk organizations
+ * Organizations API Client
  * Handles clinic/organization management functionality
  */
 

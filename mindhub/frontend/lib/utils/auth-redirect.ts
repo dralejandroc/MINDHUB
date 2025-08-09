@@ -1,21 +1,32 @@
 /**
  * Authentication redirect utility
- * Now uses Clerk for authentication
+ * Checks if user is logged in and redirects to login if not
  */
-import { auth } from '@clerk/nextjs/server';
 
-/**
- * @deprecated Use Clerk hooks instead
- */
 export function checkAuthAndRedirect(): boolean {
-  console.warn('checkAuthAndRedirect is deprecated - use Clerk hooks instead');
+  if (typeof window === 'undefined') return true;
+  
+  const user = localStorage.getItem('currentUser');
+  const token = localStorage.getItem('authToken');
+  
+  if (!user || !token) {
+    window.location.href = '/sign-in';
+    return false;
+  }
+  
   return true;
 }
 
-/**
- * @deprecated Use Clerk useUser hook instead
- */
 export function getUserFromStorage() {
-  console.warn('getUserFromStorage is deprecated - use Clerk useUser hook instead');
-  return null;
+  if (typeof window === 'undefined') return null;
+  
+  const userStr = localStorage.getItem('currentUser');
+  if (!userStr) return null;
+  
+  try {
+    return JSON.parse(userStr);
+  } catch (e) {
+    console.error('Error parsing user:', e);
+    return null;
+  }
 }

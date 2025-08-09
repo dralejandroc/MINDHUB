@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { useAuth, useUser } from '@clerk/nextjs';
+import { CurrentUser } from '@/types/user-metrics';
 import {
   UserGroupIcon,
   DocumentChartBarIcon,
@@ -81,9 +81,10 @@ const NAVIGATION_ITEMS = [
 
 interface UnifiedSidebarProps {
   children?: React.ReactNode;
+  currentUser?: CurrentUser;
 }
 
-export function UnifiedSidebar({ children }: UnifiedSidebarProps) {
+export function UnifiedSidebar({ children, currentUser }: UnifiedSidebarProps) {
   const pathname = usePathname();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [isCollapsed, setIsCollapsed] = useState(true); // Default to collapsed
@@ -94,23 +95,44 @@ export function UnifiedSidebar({ children }: UnifiedSidebarProps) {
     setSidebarOpen(false); // Also close mobile sidebar when navigating
   }, [pathname]);
 
-  const { signOut } = useAuth();
-  const { user } = useUser();
-  
-  // Use Clerk user data
-  const currentUser = {
-    id: user?.id || '',
-    name: user?.fullName || user?.firstName || 'Usuario',
-    email: user?.primaryEmailAddress?.emailAddress || '',
-    role: 'user'
-  };
+  // Default user if not provided - read from localStorage first
+  const user = currentUser || (() => {
+    if (typeof window !== 'undefined') {
+      const savedUser = localStorage.getItem('currentUser');
+      if (savedUser) {
+        return JSON.parse(savedUser);
+      }
+    }
+    return {
+      id: '',
+    name: 'Loading...',
+    email: '',
+    role: ''
+    };
+  })();
 
   const handleLogout = async () => {
     if (confirm('¿Estás seguro que deseas cerrar sesión?')) {
       try {
-        await signOut();
+        // Call logout API
+        const token = localStorage.getItem('auth_token');
+        if (token) {
+          await fetch('/api/auth/logout', {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${token}`,
+              'Content-Type': 'application/json',
+            },
+          });
+        }
       } catch (error) {
         console.error('Logout error:', error);
+      } finally {
+        // Clear all auth data
+        localStorage.removeItem('currentUser');
+        localStorage.removeItem('auth_token');
+        localStorage.removeItem('refresh_token');
+        window.location.href = '/sign-in';
       }
     }
   };
@@ -279,12 +301,12 @@ export function UnifiedSidebar({ children }: UnifiedSidebarProps) {
             <div className="flex items-center">
               <div className="h-7 w-7 gradient-secondary rounded-full flex items-center justify-center">
                 <span className="text-xs font-bold text-white">
-                  {currentUser.name?.charAt(0).toUpperCase() || 'U'}
+                  {user.name?.charAt(0).toUpperCase() || 'U'}
                 </span>
               </div>
               <div className="ml-2">
-                <p className="text-xs font-medium text-dark-green">{currentUser.name}</p>
-                <p className="text-xs text-gray-600">{currentUser.email}</p>
+                <p className="text-xs font-medium text-dark-green">{user.name}</p>
+                <p className="text-xs text-gray-600">{user.email}</p>
               </div>
             </div>
             <div className="flex items-center space-x-1">
@@ -313,7 +335,7 @@ export function UnifiedSidebar({ children }: UnifiedSidebarProps) {
           <div className="flex flex-col items-center space-y-1.5">
             <div className="w-7 h-7 gradient-secondary rounded-full flex items-center justify-center">
               <span className="text-xs font-bold text-white">
-                {currentUser.name?.charAt(0).toUpperCase() || 'U'}
+                {user.name?.charAt(0).toUpperCase() || 'U'}
               </span>
             </div>
             <Link
@@ -382,10 +404,10 @@ export function UnifiedSidebar({ children }: UnifiedSidebarProps) {
             <UserCircleIcon className="h-8 w-8 text-gray-400" />
             <div className="hidden sm:flex sm:flex-col sm:items-start">
               <span className="text-sm font-semibold leading-6 text-gray-900">
-                {currentUser.name}
+                {user.name}
               </span>
               <span className="text-xs leading-5 text-gray-500">
-                {currentUser.email}
+                {user.email}
               </span>
             </div>
             <button

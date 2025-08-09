@@ -96,8 +96,13 @@ export default function NewAppointmentModal({ selectedDate, selectedTime, editin
   useEffect(() => {
     const loadData = async () => {
       try {
-        // User ID will be provided by Clerk when needed
-        const userId = ''; // TODO: Get from Clerk when implementing user-specific filtering
+        // Get current user to filter patients
+        const savedUser = localStorage.getItem('currentUser');
+        let userId = '';
+        if (savedUser) {
+          const user = JSON.parse(savedUser);
+          userId = user.id || '';
+        }
 
         // Load patients
         const patientsResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/expedix/patients`);
@@ -190,11 +195,15 @@ export default function NewAppointmentModal({ selectedDate, selectedTime, editin
     }
 
     try {
+      // Get current user for logging
+      const savedUser = localStorage.getItem('currentUser');
+      const currentUser = savedUser ? JSON.parse(savedUser) : null;
+
       // Create appointment with logging
       const appointmentData = {
         ...formData,
-        createdBy: 'clerk-user', // TODO: Get from Clerk
-        createdByName: 'Usuario' // TODO: Get from Clerk
+        createdBy: currentUser?.id || 'unknown',
+        createdByName: currentUser?.name || 'Usuario desconocido'
       };
 
       // Save appointment and create log

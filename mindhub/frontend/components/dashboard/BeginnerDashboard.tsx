@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useAuth, useUser } from '@clerk/nextjs';
 import { 
   ChevronRightIcon,
   CalendarIcon,
@@ -38,6 +37,7 @@ export function BeginnerDashboard({ onNavigate }: BeginnerDashboardProps) {
     nextAppointment: null as any
   });
   const [isClient, setIsClient] = useState(false);
+  const [currentUser, setCurrentUser] = useState<{isRealUser?: boolean} | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [recentAlerts, setRecentAlerts] = useState<Array<{id: string; patient: string; message: string; severity: string; time: string}>>([]);
   const [weeklyIncome, setWeeklyIncome] = useState({
@@ -53,27 +53,26 @@ export function BeginnerDashboard({ onNavigate }: BeginnerDashboardProps) {
   }>>([]);
   const [loadingFavorites, setLoadingFavorites] = useState(true);
 
-  const { isSignedIn, userId } = useAuth();
-  const { user } = useUser();
-
   useEffect(() => {
     setIsClient(true);
     
-    if (isSignedIn && userId) {
-      // Check if it's a real user (Dr. Alejandro) by email or username
-      const isRealUser = user?.primaryEmailAddress?.emailAddress === 'alejandro@mindhub.cloud' || 
-                         user?.username === 'dr-alejandro';
+    // Get current user from localStorage
+    const savedUser = localStorage.getItem('currentUser');
+    if (savedUser) {
+      const user = JSON.parse(savedUser);
+      setCurrentUser(user);
       
-      if (isRealUser) {
-        fetchRealDashboardData(userId);
+      // If it's Dr. Alejandro, fetch real data
+      if (user.isRealUser && user.id) {
+        fetchRealDashboardData(user.id);
       } else {
-        // Other users - everything starts at 0
+        // Admin user - everything starts at 0
         setIsLoading(false);
       }
     } else {
       setIsLoading(false);
     }
-  }, [isSignedIn, userId, user]);
+  }, []);
 
   const fetchRealDashboardData = async (userId: string) => {
     try {
@@ -168,11 +167,7 @@ export function BeginnerDashboard({ onNavigate }: BeginnerDashboardProps) {
   // Cargar escalas favoritas/más utilizadas (las escalas son públicas para todos los usuarios)
   useEffect(() => {
     const loadFavoriteScales = async () => {
-      // Check if it's a real user (Dr. Alejandro)
-      const isRealUser = user?.primaryEmailAddress?.emailAddress === 'alejandro@mindhub.cloud' || 
-                         user?.username === 'dr-alejandro';
-      
-      if (!isRealUser) {
+      if (!currentUser?.isRealUser) {
         setLoadingFavorites(false);
         return;
       }
@@ -206,10 +201,10 @@ export function BeginnerDashboard({ onNavigate }: BeginnerDashboardProps) {
       }
     };
 
-    if (isSignedIn && user) {
+    if (currentUser) {
       loadFavoriteScales();
     }
-  }, [isSignedIn, user]);
+  }, [currentUser]);
 
   const quickActions = [
     { name: 'Nuevo Paciente', path: '/hubs/expedix?action=new-patient' },
