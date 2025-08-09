@@ -7,10 +7,13 @@
 
 const express = require('express');
 
-// Auth middleware removed - using Clerk authentication through API gateway
-// These are stub functions to prevent errors during migration
-const requireAuth = (req, res, next) => next(); // Auth handled by Clerk at API gateway level
-const checkPermissions = (permission) => (req, res, next) => next(); // Permissions handled by Clerk
+// ===================================================================
+// AUTH MIDDLEWARE COMPLETELY REMOVED - USING CLERK AUTHENTICATION
+// ===================================================================
+// Railway deployment fix: These are stub functions to prevent import errors
+// All authentication is now handled by Clerk through the API gateway
+const requireAuth = (req, res, next) => next(); // STUB - Auth via Clerk
+const checkPermissions = (permission) => (req, res, next) => next(); // STUB - Auth via Clerk
 
 // Simple logger for now
 const logger = {
