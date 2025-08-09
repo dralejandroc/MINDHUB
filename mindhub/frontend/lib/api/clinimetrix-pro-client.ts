@@ -5,6 +5,8 @@
  * Provides type-safe methods for template management and assessment operations.
  */
 
+import { authenticatedFetch } from '@/lib/utils/clerk-auth';
+
 // Base configuration - use Next.js proxy for consistent routing
 const API_BASE_URL = '/api';
 const CLINIMETRIX_PRO_BASE = `${API_BASE_URL}/clinimetrix-pro`;
@@ -347,7 +349,7 @@ export class ClinimetrixProClient {
    * Get all templates from the public catalog
    */
   async getTemplateCatalog(): Promise<ClinimetrixRegistry[]> {
-    const response = await fetch(`${this.baseUrl}/templates/catalog`);
+    const response = await authenticatedFetch(`${this.baseUrl}/templates/catalog`);
     if (!response.ok) {
       throw new Error(`Failed to fetch template catalog: ${response.statusText}`);
     }
@@ -358,7 +360,7 @@ export class ClinimetrixProClient {
    * Get a specific template by ID
    */
   async getTemplate(templateId: string): Promise<TemplateData> {
-    const response = await fetch(`${this.baseUrl}/templates/${templateId}`);
+    const response = await authenticatedFetch(`${this.baseUrl}/templates/${templateId}`);
     if (!response.ok) {
       throw new Error(`Failed to fetch template ${templateId}: ${response.statusText}`);
     }
@@ -369,7 +371,7 @@ export class ClinimetrixProClient {
    * Get template metadata by ID
    */
   async getTemplateMetadata(templateId: string): Promise<ClinimetrixRegistry> {
-    const response = await fetch(`${this.baseUrl}/templates/${templateId}/metadata`);
+    const response = await authenticatedFetch(`${this.baseUrl}/templates/${templateId}/metadata`);
     if (!response.ok) {
       throw new Error(`Failed to fetch template metadata ${templateId}: ${response.statusText}`);
     }
@@ -380,7 +382,7 @@ export class ClinimetrixProClient {
    * Search templates by query
    */
   async searchTemplates(query: string): Promise<ClinimetrixRegistry[]> {
-    const response = await fetch(`${this.baseUrl}/templates/search/${encodeURIComponent(query)}`);
+    const response = await authenticatedFetch(`${this.baseUrl}/templates/search/${encodeURIComponent(query)}`);
     if (!response.ok) {
       throw new Error(`Failed to search templates: ${response.statusText}`);
     }
@@ -391,7 +393,7 @@ export class ClinimetrixProClient {
    * Get templates by category
    */
   async getTemplatesByCategory(category: string): Promise<ClinimetrixRegistry[]> {
-    const response = await fetch(`${this.baseUrl}/templates/category/${encodeURIComponent(category)}`);
+    const response = await authenticatedFetch(`${this.baseUrl}/templates/category/${encodeURIComponent(category)}`);
     if (!response.ok) {
       throw new Error(`Failed to fetch templates by category: ${response.statusText}`);
     }
@@ -402,7 +404,7 @@ export class ClinimetrixProClient {
    * Get available categories
    */
   async getCategories(): Promise<Array<{ category: string; count: number }>> {
-    const response = await fetch(`${this.baseUrl}/templates/meta/categories`);
+    const response = await authenticatedFetch(`${this.baseUrl}/templates/meta/categories`);
     if (!response.ok) {
       throw new Error(`Failed to fetch categories: ${response.statusText}`);
     }
@@ -415,7 +417,7 @@ export class ClinimetrixProClient {
    * Create a new assessment
    */
   async createAssessment(request: CreateAssessmentRequest): Promise<ClinimetrixAssessment> {
-    const response = await fetch(`${this.baseUrl}/assessments/new`, {
+    const response = await authenticatedFetch(`${this.baseUrl}/assessments/new`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -434,7 +436,7 @@ export class ClinimetrixProClient {
    * Get assessment by ID
    */
   async getAssessment(assessmentId: string): Promise<ClinimetrixAssessment> {
-    const response = await fetch(`${this.baseUrl}/assessments/${assessmentId}`);
+    const response = await authenticatedFetch(`${this.baseUrl}/assessments/${assessmentId}`);
     if (!response.ok) {
       throw new Error(`Failed to fetch assessment ${assessmentId}: ${response.statusText}`);
     }
@@ -445,7 +447,7 @@ export class ClinimetrixProClient {
    * Update assessment responses
    */
   async updateResponses(assessmentId: string, request: UpdateResponsesRequest): Promise<ClinimetrixAssessment> {
-    const response = await fetch(`${this.baseUrl}/assessments/${assessmentId}/responses`, {
+    const response = await authenticatedFetch(`${this.baseUrl}/assessments/${assessmentId}/responses`, {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
@@ -475,7 +477,7 @@ export class ClinimetrixProClient {
     assessment: ClinimetrixAssessment;
     results: ScoringResults;
   }> {
-    const response = await fetch(`${this.baseUrl}/assessments/${assessmentId}/complete`, {
+    const response = await authenticatedFetch(`${this.baseUrl}/assessments/${assessmentId}/complete`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -498,7 +500,7 @@ export class ClinimetrixProClient {
     success: boolean;
     results: ScoringResults;
   }> {
-    const response = await fetch(`${this.baseUrl}/assessments/calculate-scores`, {
+    const response = await authenticatedFetch(`${this.baseUrl}/assessments/calculate-scores`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -519,7 +521,7 @@ export class ClinimetrixProClient {
    */
   async getRecentAssessments(limit?: number): Promise<ClinimetrixAssessment[]> {
     const url = limit ? `${this.baseUrl}/assessments/recent/${limit}` : `${this.baseUrl}/assessments/recent`;
-    const response = await fetch(url);
+    const response = await authenticatedFetch(url);
     
     if (!response.ok) {
       throw new Error(`Failed to fetch recent assessments: ${response.statusText}`);
@@ -532,7 +534,7 @@ export class ClinimetrixProClient {
    * Get assessments by patient ID
    */
   async getPatientAssessments(patientId: string): Promise<ClinimetrixAssessment[]> {
-    const response = await fetch(`${this.baseUrl}/assessments/patient/${patientId}`);
+    const response = await authenticatedFetch(`${this.baseUrl}/assessments/patient/${patientId}`);
     
     if (!response.ok) {
       throw new Error(`Failed to fetch patient assessments: ${response.statusText}`);
@@ -545,7 +547,7 @@ export class ClinimetrixProClient {
    * Delete assessment
    */
   async deleteAssessment(assessmentId: string): Promise<{ message: string }> {
-    const response = await fetch(`${this.baseUrl}/assessments/${assessmentId}`, {
+    const response = await authenticatedFetch(`${this.baseUrl}/assessments/${assessmentId}`, {
       method: 'DELETE',
     });
 

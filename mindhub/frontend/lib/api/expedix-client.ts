@@ -1,4 +1,6 @@
 // Expedix API Client - Centralized API communication for patient management
+import { getAuthHeaders, getUserContext } from '@/lib/utils/clerk-auth';
+
 const API_BASE_URL = '/api';
 
 export interface Patient {
@@ -97,8 +99,13 @@ class ExpedixApiClient {
   private async makeRequest<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
     const url = `${this.baseUrl}${endpoint}`;
     
+    // Get authentication headers from Clerk
+    const authHeaders = await getAuthHeaders();
+    const userContext = getUserContext();
+    
     const defaultHeaders = {
-      'Content-Type': 'application/json',
+      ...authHeaders,
+      'X-User-Context': JSON.stringify(userContext),
       ...options.headers,
     };
 
