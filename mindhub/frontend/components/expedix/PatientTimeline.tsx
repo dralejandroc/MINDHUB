@@ -177,7 +177,7 @@ export default function PatientTimeline({ patient, userType = 'individual', onNe
     
     try {
       // Obtener logs conductuales reales del paciente
-      const behavioralResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'https://mindhub-production.up.railway.app'}/v1/frontdesk/patients/${patient.id}/behavioral-history`);
+      const behavioralResponse = await fetch(`/api/frontdesk/patients/${patient.id}/behavioral-history`);
       if (behavioralResponse.ok) {
         const behavioralData = await behavioralResponse.json();
         behavioralLogs = behavioralData.data?.behavioralLogs || [];

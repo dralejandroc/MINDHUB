@@ -109,7 +109,7 @@ export default function QuickPayment({ onPaymentComplete }: QuickPaymentProps) {
 
   const loadPendingPayments = async (patientId: string) => {
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'https://mindhub-production.up.railway.app'}/v1/frontdesk/payments/pending/${patientId}`);
+      const response = await fetch(`/api/frontdesk/payments/pending/${patientId}`);
       const data = await response.json();
       
       if (data.success) {
@@ -144,7 +144,7 @@ export default function QuickPayment({ onPaymentComplete }: QuickPaymentProps) {
     try {
       setProcessing(true);
       
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'https://mindhub-production.up.railway.app'}/v1/frontdesk/payments/process`, {
+      const response = await fetch(`/api/frontdesk/payments/process`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -193,7 +193,7 @@ export default function QuickPayment({ onPaymentComplete }: QuickPaymentProps) {
     try {
       setProcessing(true);
       
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'https://mindhub-production.up.railway.app'}/v1/frontdesk/payments/pay-pending/${pendingPayment.id}`, {
+      const response = await fetch(`/api/frontdesk/payments/pay-pending/${pendingPayment.id}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

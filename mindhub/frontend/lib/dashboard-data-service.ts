@@ -153,7 +153,7 @@ class DashboardDataService {
 
   private async fetchPatients(): Promise<any[]> {
     try {
-      const response = await fetch(`/api/v1/expedix/patients`);
+      const response = await fetch(`/api/expedix/patients`);
       const data = await response.json();
       return data?.data || [];
     } catch (error) {
@@ -164,7 +164,7 @@ class DashboardDataService {
 
   private async fetchConsultations(): Promise<any[]> {
     try {
-      const response = await fetch(`/api/v1/expedix/consultations`);
+      const response = await fetch(`/api/expedix/consultations`);
       const data = await response.json();
       return data?.data || [];
     } catch (error) {

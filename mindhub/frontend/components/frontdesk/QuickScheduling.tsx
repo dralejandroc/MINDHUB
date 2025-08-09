@@ -144,7 +144,7 @@ export default function QuickScheduling({ onAppointmentScheduled }: QuickSchedul
   const loadAvailableSlots = async (date: string) => {
     try {
       setLoading(true);
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'https://mindhub-production.up.railway.app'}/v1/frontdesk/appointments/slots/${date}`);
+      const response = await fetch(`/api/frontdesk/appointments/slots/${date}`);
       const data = await response.json();
       
       if (data.success) {
@@ -194,7 +194,7 @@ export default function QuickScheduling({ onAppointmentScheduled }: QuickSchedul
     try {
       setProcessing(true);
       
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'https://mindhub-production.up.railway.app'}/v1/expedix/patients`, {
+      const response = await fetch(`/api/expedix/patients`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -226,7 +226,7 @@ export default function QuickScheduling({ onAppointmentScheduled }: QuickSchedul
     try {
       setProcessing(true);
       
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'https://mindhub-production.up.railway.app'}/v1/frontdesk/appointments/schedule`, {
+      const response = await fetch(`/api/frontdesk/appointments/schedule`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

@@ -98,7 +98,7 @@ export default function PatientAssessments({
       setError(null);
       
       // Use the patient assessments endpoint
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'https://mindhub-production.up.railway.app'}/v1/clinimetrix/patient-assessments/${patientId}`);
+      const response = await fetch(`/api/clinimetrix/patient-assessments/${patientId}`);
       
       if (!response.ok) {
         throw new Error(`Error ${response.status}: ${response.statusText}`);
@@ -238,7 +238,7 @@ export default function PatientAssessments({
       setLoadingHistory(true);
       
       // Use the patient assessments endpoint and filter by scale ID  
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'https://mindhub-production.up.railway.app'}/v1/clinimetrix/patient-assessments/${patientId}?scaleId=${scaleId}`);
+      const response = await fetch(`/api/clinimetrix/patient-assessments/${patientId}?scaleId=${scaleId}`);
       
       if (!response.ok) {
         throw new Error(`Error ${response.status}: ${response.statusText}`);

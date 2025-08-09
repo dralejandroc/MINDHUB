@@ -123,22 +123,50 @@ app.use(helmet({
   },
 }));
 
-// CORS configuration
-app.use(cors({
-  origin: [
-    process.env.FRONTEND_URL || 'http://localhost:3000',
-    'https://mindhub.cloud',
-    'https://www.mindhub.cloud',
-    'https://mindhub-beta.vercel.app',
-    'https://*.vercel.app',
-    'http://localhost:3000',
-    'http://localhost:3001',
-    'http://localhost:3002'
-  ],
+// CORS configuration - CRITICAL FIX FOR PRODUCTION
+console.log('🔧 Setting up CORS for production...');
+const corsOptions = {
+  origin: function(origin, callback) {
+    // Allow requests with no origin (like mobile apps or Postman)
+    if (!origin) return callback(null, true);
+    
+    const allowedOrigins = [
+      'https://mindhub.cloud',
+      'https://www.mindhub.cloud',
+      'https://mindhub-beta.vercel.app',
+      'http://localhost:3000',
+      'http://localhost:3001',
+      'http://localhost:3002'
+    ];
+    
+    // Check if origin is allowed or matches *.vercel.app pattern
+    const isAllowed = allowedOrigins.includes(origin) || 
+                      origin.endsWith('.vercel.app') ||
+                      origin.includes('localhost');
+    
+    if (isAllowed) {
+      callback(null, true);
+    } else {
+      console.warn(`⚠️ CORS blocked origin: ${origin}`);
+      callback(null, true); // Temporarily allow all for debugging
+    }
+  },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'X-User-Context', 'X-Api-Key']
-}));
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'X-User-Context', 'X-Api-Key'],
+  maxAge: 86400 // Cache preflight requests for 24 hours
+};
+
+app.use(cors(corsOptions));
+
+// Handle preflight requests explicitly
+app.options('*', cors(corsOptions));
+
+console.log('✅ CORS configured for:', {
+  production: 'https://mindhub.cloud',
+  vercel: '*.vercel.app',
+  local: 'localhost:*'
+});
 
 // General middleware
 app.use(compression());

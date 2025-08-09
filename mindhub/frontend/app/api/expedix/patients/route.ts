@@ -1,11 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 
+const BACKEND_URL = process.env.BACKEND_URL || 'https://mindhub-production.up.railway.app';
+
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const search = searchParams.get('search');
     
-    let url = 'https://mindhub-production.up.railway.app/api/v1/expedix/patients';
+    let url = `${BACKEND_URL}/api/v1/expedix/patients`;
     if (search) {
       url += `?search=${encodeURIComponent(search)}`;
     }
@@ -40,7 +42,7 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
     
-    const response = await fetch('https://mindhub-production.up.railway.app/v1/expedix/patients', {
+    const response = await fetch(`${BACKEND_URL}/v1/expedix/patients`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

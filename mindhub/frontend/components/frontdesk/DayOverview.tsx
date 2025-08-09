@@ -55,8 +55,8 @@ export default function DayOverview({ stats, onRefresh }: DayOverviewProps) {
   const loadTodaysData = async () => {
     try {
       const [appointmentsRes, tasksRes] = await Promise.all([
-        fetch(`${process.env.NEXT_PUBLIC_API_URL || 'https://mindhub-production.up.railway.app'}/v1/frontdesk/appointments/today`),
-        fetch(`${process.env.NEXT_PUBLIC_API_URL || 'https://mindhub-production.up.railway.app'}/v1/frontdesk/tasks/pending`)
+        fetch(`/api/frontdesk/appointments/today`),
+        fetch(`/api/frontdesk/tasks/pending`)
       ]);
 
       const appointmentsData = await appointmentsRes.json();
