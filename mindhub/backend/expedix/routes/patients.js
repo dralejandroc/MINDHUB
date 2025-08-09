@@ -468,6 +468,7 @@ router.post('/',
           id: readablePatientId,
           ...patientData,
           curp: generatedCURP,
+          updatedAt: new Date(),
           ...(userId && { createdBy: userId }) // Only include createdBy if userId exists
         },
         ...(userId && {
