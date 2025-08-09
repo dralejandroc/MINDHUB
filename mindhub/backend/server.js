@@ -95,6 +95,14 @@ if (process.env.DATABASE_URL) {
 
 console.log('🚀 Express app created, setting up middleware...');
 
+// Load version check to confirm deployment
+try {
+  const versionCheck = require('./VERSION_CHECK');
+  console.log('🔍 Version check loaded:', versionCheck.version);
+} catch (e) {
+  console.log('⚠️ Version check not found - may be running old version');
+}
+
 // CRITICAL: Trust proxy for Railway/Vercel deployment
 // This is required for rate limiting and getting correct client IPs
 app.set('trust proxy', true);
