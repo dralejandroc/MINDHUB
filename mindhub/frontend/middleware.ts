@@ -10,22 +10,14 @@ const isProtectedRoute = createRouteMatcher([
   '/api/protected(.*)'
 ]);
 
-// Define public routes that don't require authentication
+// Define public routes that don't require authentication  
 const isPublicRoute = createRouteMatcher([
   '/',
   '/sign-in(.*)',
   '/sign-up(.*)',
   '/api/public(.*)',
   '/api/health',
-  '/verify-email(.*)',
-  '/manifest.json',
-  '/sw.js',
-  '/robots.txt',
-  '/favicon.ico',
-  '/icon-192x192.png',
-  '/icon-512x512.png',
-  '/icon-192x192.svg',
-  '/icon-512x512.svg'
+  '/verify-email(.*)'
 ]);
 
 export default clerkMiddleware(async (auth, req) => {
@@ -50,10 +42,7 @@ export default clerkMiddleware(async (auth, req) => {
     "worker-src 'self' blob:"
   );
   
-  // Ensure manifest.json is served with correct content type
-  if (req.nextUrl.pathname === '/manifest.json') {
-    response.headers.set('Content-Type', 'application/manifest+json');
-  }
+  // Static files are handled outside middleware - no need for special handling
   
   // Check if route requires authentication
   if (isProtectedRoute(req)) {
@@ -68,10 +57,12 @@ export default clerkMiddleware(async (auth, req) => {
 
 export const config = {
   matcher: [
+    // Exclude static files completely from middleware
     '/((?!api|_next/static|_next/image|favicon.ico|manifest.json|sw.js|robots.txt|icon-.*\\.(png|svg)).*)',
-    '/hubs/:path*',
+    // Only protected routes
+    '/dashboard/:path*',
+    '/hubs/:path*', 
     '/profile/:path*',
-    '/settings/:path*',
-    '/api/protected/:path*'
+    '/settings/:path*'
   ],
 };
