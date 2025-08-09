@@ -470,7 +470,7 @@ server = app.listen(PORT, () => {
   if (process.env.NODE_ENV === 'production') {
     console.log(`🌍 Production URL: https://mindhub.cloud/api`);
     console.log(`📋 Health Check: https://mindhub.cloud/api/health`);
-    console.log(`🔐 Auth Endpoint: https://mindhub.cloud/api/auth`);
+    // Auth handled by Clerk - no custom endpoint needed
   } else {
     console.log(`📍 Local URL: http://localhost:${PORT}`);
     console.log(`📋 Health Check: http://localhost:${PORT}/health`);
@@ -483,7 +483,7 @@ server = app.listen(PORT, () => {
   console.log(`   🧪 ClinimetrixPro (Templates): /api/clinimetrix-pro`);
   console.log(`   📝 FormX (Forms): /api/v1/formx`);
   console.log(`   📖 Resources (Content): /api/v1/resources`);
-  console.log(`   🔐 Authentication: /api/auth`);
+  // Authentication handled by Clerk - no backend auth routes
   console.log('');
   console.log('📊 Universal Scale System:');
   console.log(`   Get All Scales: /api/scales`);
