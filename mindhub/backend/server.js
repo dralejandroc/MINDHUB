@@ -95,6 +95,11 @@ if (process.env.DATABASE_URL) {
 
 console.log('🚀 Express app created, setting up middleware...');
 
+// CRITICAL: Trust proxy for Railway/Vercel deployment
+// This is required for rate limiting and getting correct client IPs
+app.set('trust proxy', true);
+console.log('✅ Trust proxy enabled for production deployment');
+
 // Initialize advanced security middleware - SIMPLIFIED FOR LOCAL DEV
 console.log('🔧 Initializing middleware (simplified for local dev)...');
 // const ddosProtection = new AdvancedDDoSProtection();
