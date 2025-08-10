@@ -248,9 +248,9 @@ async function testImportSystem() {
     console.log('   ✅ APIs REST completamente funcionales');
 
     console.log('\n📋 ENDPOINTS DISPONIBLES:');
-    console.log('   📥 GET  /api/v1/expedix/patient-import/template - Descargar plantilla');
-    console.log('   📤 POST /api/v1/expedix/patient-import/validate - Validar archivo');
-    console.log('   ⚡ POST /api/v1/expedix/patient-import/process - Procesar importación');
+    console.log('   📥 GET  /api/expedix/patient-import/template - Descargar plantilla');
+    console.log('   📤 POST /api/expedix/patient-import/validate - Validar archivo');
+    console.log('   ⚡ POST /api/expedix/patient-import/process - Procesar importación');
 
     console.log('\n📁 ARCHIVOS GENERADOS:');
     console.log(`   📄 ${templatePath}`);

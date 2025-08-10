@@ -16,7 +16,7 @@ export async function PUT(
     const body = await request.json().catch(() => ({}));
     
     const response = await fetch(
-      `${FINANCE_API_BASE}/api/v1/finance/cash-register/cuts/${params.id}/close`,
+      `${FINANCE_API_BASE}/api/finance/cash-register/cuts/${params.id}/close`,
       {
         method: 'PUT',
         headers: {

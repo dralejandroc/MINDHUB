@@ -13,7 +13,7 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     
     const response = await fetch(
-      `${FINANCE_API_BASE}/api/v1/finance/professional-contracts`,
+      `${FINANCE_API_BASE}/api/finance/professional-contracts`,
       {
         method: 'POST',
         headers: {

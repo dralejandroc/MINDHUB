@@ -22,7 +22,7 @@ const generateFormId = () => {
 };
 
 /**
- * POST /api/v1/formx/forms
+ * POST /api/formx/forms
  * Create a new dynamic form
  */
 router.post('/', [
@@ -85,7 +85,7 @@ router.post('/', [
 });
 
 /**
- * GET /api/v1/formx/forms
+ * GET /api/formx/forms
  * List all forms with filtering
  */
 router.get('/', [
@@ -111,7 +111,7 @@ router.get('/', [
 });
 
 /**
- * GET /api/v1/formx/forms/:id
+ * GET /api/formx/forms/:id
  * Get specific form by ID - only match if id looks like an actual form ID
  */
 router.get('/:id', [
@@ -175,7 +175,7 @@ router.get('/:id', [
 });
 
 /**
- * POST /api/v1/formx/forms/:id/assign
+ * POST /api/formx/forms/:id/assign
  * Assign form to a patient with token
  */
 router.post('/:id/assign', [
@@ -264,7 +264,7 @@ router.post('/:id/assign', [
 });
 
 /**
- * GET /api/v1/formx/forms/token/:token
+ * GET /api/formx/forms/token/:token
  * Get form by patient token (for patient access)
  */
 router.get('/token/:token', [
@@ -403,7 +403,7 @@ router.get('/token/:token', [
 });
 
 /**
- * GET /api/v1/formx/forms/:id/assignments
+ * GET /api/formx/forms/:id/assignments
  * Get all assignments for a form
  */
 router.get('/:id/assignments', [
@@ -480,7 +480,7 @@ router.get('/:id/assignments', [
 });
 
 /**
- * PUT /api/v1/formx/forms/:id
+ * PUT /api/formx/forms/:id
  * Update an existing form
  */
 router.put('/:id', [
@@ -580,7 +580,7 @@ router.put('/:id', [
 });
 
 /**
- * POST /api/v1/formx/forms/:id/duplicate
+ * POST /api/formx/forms/:id/duplicate
  * Duplicate an existing form
  */
 router.post('/:id/duplicate', [
@@ -656,7 +656,7 @@ router.post('/:id/duplicate', [
 });
 
 /**
- * GET /api/v1/formx/forms/:id/analytics
+ * GET /api/formx/forms/:id/analytics
  * Get analytics for a specific form
  */
 router.get('/:id/analytics', [
@@ -728,7 +728,7 @@ router.get('/:id/analytics', [
 });
 
 /**
- * POST /api/v1/formx/assignments/bulk
+ * POST /api/formx/assignments/bulk
  * Bulk assign form to multiple patients
  */
 router.post('/assignments/bulk', [
@@ -800,7 +800,7 @@ router.post('/assignments/bulk', [
 });
 
 /**
- * DELETE /api/v1/formx/forms/:id
+ * DELETE /api/formx/forms/:id
  * Soft delete a form
  */
 router.delete('/:id', [

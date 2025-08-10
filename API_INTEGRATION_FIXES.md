@@ -3,12 +3,12 @@
 ## 🎯 Problem Summary
 The MindHub frontend was experiencing API integration errors with the following symptoms:
 - Frontend calling `/api/expedix/patients` returning HTML error pages instead of JSON
-- Backend routes mounted at `/api/v1/expedix/*` but frontend calling `/api/expedix/*`
+- Backend routes mounted at `/api/expedix/*` but frontend calling `/api/expedix/*`
 - "Unexpected token '<', '<!DOCTYPE'..." errors indicating HTML responses
 - 500 Internal Server Errors on all API endpoints
 
 ## 🔍 Root Cause Analysis
-1. **Route Mismatch**: Backend routes were at `/api/v1/expedix/*` but frontend was calling `/api/expedix/*`
+1. **Route Mismatch**: Backend routes were at `/api/expedix/*` but frontend was calling `/api/expedix/*`
 2. **Authentication Conflicts**: Individual route files had Clerk auth middleware enabled but main router had it disabled
 3. **Next.js Proxy Issues**: API proxy routes were returning HTML error pages instead of JSON in production
 4. **Missing Headers**: Frontend proxy routes weren't forwarding authentication headers to backend
@@ -85,7 +85,7 @@ if (userContextHeader) {
 
 ### Backend Direct Access ✅
 ```bash
-curl -X GET "https://mindhub-production.up.railway.app/api/v1/expedix/patients"
+curl -X GET "https://mindhub-production.up.railway.app/api/expedix/patients"
 # Returns: {"success":true,"data":[...]} - Working correctly
 ```
 
@@ -97,7 +97,7 @@ curl -X GET "https://mindhub-production.up.railway.app/api/v1/expedix/patients"
 ## 🚀 Current Status
 
 ### ✅ Working Components
-- **Backend API**: Fully functional at `https://mindhub-production.up.railway.app/api/v1/`
+- **Backend API**: Fully functional at `https://mindhub-production.up.railway.app/api/`
 - **Database Connection**: Railway MySQL working correctly
 - **Patient Management**: CRUD operations working
 - **Frontend API Clients**: Updated to call backend directly
@@ -117,12 +117,12 @@ curl -X GET "https://mindhub-production.up.railway.app/api/v1/expedix/patients"
 
 | Endpoint | Status | Method |
 |----------|--------|--------|
-| `/api/v1/expedix/patients` | ✅ Working | GET, POST, PUT, DELETE |
-| `/api/v1/expedix/consultations` | ✅ Working | GET, POST |
-| `/api/v1/frontdesk/appointments/today` | ✅ Working | GET |
-| `/api/v1/frontdesk/tasks/pending` | ✅ Working | GET |
-| `/api/v1/frontdesk/stats/today` | ✅ Working | GET |
-| `/api/v1/finance/income` | ✅ Working | GET, POST |
+| `/api/expedix/patients` | ✅ Working | GET, POST, PUT, DELETE |
+| `/api/expedix/consultations` | ✅ Working | GET, POST |
+| `/api/frontdesk/appointments/today` | ✅ Working | GET |
+| `/api/frontdesk/tasks/pending` | ✅ Working | GET |
+| `/api/frontdesk/stats/today` | ✅ Working | GET |
+| `/api/finance/income` | ✅ Working | GET, POST |
 | `/api/clinimetrix-pro/templates` | ✅ Working | GET |
 | `/api/clinimetrix-pro/assessments` | ✅ Working | GET, POST |
 

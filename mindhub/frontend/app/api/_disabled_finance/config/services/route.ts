@@ -15,7 +15,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const response = await fetch(`http://localhost:8080/api/v1/finance/config/${configId}/services`, {
+    const response = await fetch(`http://localhost:8080/api/finance/config/${configId}/services`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

@@ -558,7 +558,7 @@ class ServiceCommunicator {
       }
     );
 
-    const endpoint = `/api/v1/patients/${patientId}/${dataType}`;
+    const endpoint = `/api/patients/${patientId}/${dataType}`;
     const result = await this.get(serviceName, endpoint, {}, { 
       user, 
       correlationId,

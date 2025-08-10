@@ -11,7 +11,7 @@ const RESOURCES_API_BASE = process.env.NEXT_PUBLIC_RESOURCES_API || process.env.
 export async function GET(request: NextRequest) {
   try {
     const response = await fetch(
-      `${RESOURCES_API_BASE}/api/v1/resources/storage/stats`,
+      `${RESOURCES_API_BASE}/api/resources/storage/stats`,
       {
         method: 'GET',
         headers: {

@@ -39,7 +39,7 @@ export const SendResourceModal: React.FC<SendResourceModalProps> = ({
     setSending(true);
     try {
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/v1/resources/${resource.id}/send`,
+        `${process.env.NEXT_PUBLIC_API_URL}/api/resources/${resource.id}/send`,
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },

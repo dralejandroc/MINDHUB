@@ -145,7 +145,7 @@ const validateCompletePatientRegistration = [
 ];
 
 /**
- * POST /api/v1/expedix/registration/patient
+ * POST /api/expedix/registration/patient
  * Complete patient registration with medical history
  */
 router.post('/patient',
@@ -304,7 +304,7 @@ router.post('/patient',
 );
 
 /**
- * POST /api/v1/expedix/registration/patient/:id/medical-history
+ * POST /api/expedix/registration/patient/:id/medical-history
  * Add detailed medical history forms
  */
 router.post('/:id/medical-history',
@@ -408,7 +408,7 @@ router.post('/:id/medical-history',
 );
 
 /**
- * GET /api/v1/expedix/registration/patient/:id/forms
+ * GET /api/expedix/registration/patient/:id/forms
  * Get available registration forms for patient
  */
 router.get('/:id/forms',

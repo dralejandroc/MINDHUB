@@ -105,7 +105,7 @@ export default function NewAppointmentModal({ selectedDate, selectedTime, editin
         }
 
         // Load patients
-        const patientsResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/expedix/patients`);
+        const patientsResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/expedix/patients`);
         if (patientsResponse.ok) {
           const data = await patientsResponse.json();
           const patientsData = data.data?.map((p: any) => ({
@@ -128,7 +128,7 @@ export default function NewAppointmentModal({ selectedDate, selectedTime, editin
         }
 
         // Load consultation types from schedule config
-        const configResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/expedix/schedule-config`);
+        const configResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/expedix/schedule-config`);
         if (configResponse.ok) {
           const configData = await configResponse.json();
           if (configData.success && configData.data?.consultationTypes) {

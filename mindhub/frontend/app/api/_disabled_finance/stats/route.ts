@@ -10,7 +10,7 @@ export async function GET(request: NextRequest) {
       params.append(key, value);
     });
     
-    let url = 'http://localhost:8080/api/v1/finance/stats';
+    let url = 'http://localhost:8080/api/finance/stats';
     if (params.toString()) {
       url += `?${params.toString()}`;
     }

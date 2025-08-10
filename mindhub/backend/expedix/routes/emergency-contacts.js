@@ -70,7 +70,7 @@ const validateEmergencyContact = [
 ];
 
 /**
- * GET /api/v1/expedix/emergency-contacts/:patientId
+ * GET /api/expedix/emergency-contacts/:patientId
  * Get emergency contacts for a patient
  */
 router.get('/:patientId',
@@ -155,7 +155,7 @@ router.get('/:patientId',
 );
 
 /**
- * GET /api/v1/expedix/emergency-contacts/contact/:id
+ * GET /api/expedix/emergency-contacts/contact/:id
  * Get specific emergency contact details
  */
 router.get('/contact/:id',
@@ -216,7 +216,7 @@ router.get('/contact/:id',
 );
 
 /**
- * POST /api/v1/expedix/emergency-contacts
+ * POST /api/expedix/emergency-contacts
  * Create new emergency contact
  */
 router.post('/',
@@ -322,7 +322,7 @@ router.post('/',
 );
 
 /**
- * PUT /api/v1/expedix/emergency-contacts/:id
+ * PUT /api/expedix/emergency-contacts/:id
  * Update emergency contact
  */
 router.put('/:id',
@@ -440,7 +440,7 @@ router.put('/:id',
 );
 
 /**
- * DELETE /api/v1/expedix/emergency-contacts/:id
+ * DELETE /api/expedix/emergency-contacts/:id
  * Soft delete emergency contact
  */
 router.delete('/:id',
@@ -573,7 +573,7 @@ router.delete('/:id',
 );
 
 /**
- * POST /api/v1/expedix/emergency-contacts/:id/primary
+ * POST /api/expedix/emergency-contacts/:id/primary
  * Set emergency contact as primary
  */
 router.post('/:id/primary',
@@ -664,7 +664,7 @@ router.post('/:id/primary',
 );
 
 /**
- * GET /api/v1/expedix/emergency-contacts/:patientId/primary
+ * GET /api/expedix/emergency-contacts/:patientId/primary
  * Get primary emergency contact for a patient
  */
 router.get('/:patientId/primary',

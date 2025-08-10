@@ -15,7 +15,7 @@ const router = express.Router();
 const contractService = new ProfessionalContractService();
 
 /**
- * POST /api/v1/finance/professional-contracts
+ * POST /api/finance/professional-contracts
  * Create a new professional contract
  */
 router.post('/',
@@ -90,7 +90,7 @@ router.post('/',
 );
 
 /**
- * GET /api/v1/finance/professional-contracts/professional/:professionalId
+ * GET /api/finance/professional-contracts/professional/:professionalId
  * Get contracts for a specific professional
  */
 router.get('/professional/:professionalId',
@@ -128,7 +128,7 @@ router.get('/professional/:professionalId',
 );
 
 /**
- * GET /api/v1/finance/professional-contracts/professional/:professionalId/active
+ * GET /api/finance/professional-contracts/professional/:professionalId/active
  * Get active contract for a professional
  */
 router.get('/professional/:professionalId/active',
@@ -168,7 +168,7 @@ router.get('/professional/:professionalId/active',
 );
 
 /**
- * GET /api/v1/finance/professional-contracts/professionals
+ * GET /api/finance/professional-contracts/professionals
  * Get all professionals with their active contracts
  */
 router.get('/professionals',
@@ -206,7 +206,7 @@ router.get('/professionals',
 );
 
 /**
- * PUT /api/v1/finance/professional-contracts/:id
+ * PUT /api/finance/professional-contracts/:id
  * Update a professional contract
  */
 router.put('/:id',
@@ -255,7 +255,7 @@ router.put('/:id',
 );
 
 /**
- * DELETE /api/v1/finance/professional-contracts/:id
+ * DELETE /api/finance/professional-contracts/:id
  * Deactivate a professional contract
  */
 router.delete('/:id',
@@ -296,7 +296,7 @@ router.delete('/:id',
 );
 
 /**
- * POST /api/v1/finance/professional-contracts/calculate-payment
+ * POST /api/finance/professional-contracts/calculate-payment
  * Calculate payment amounts for a service
  */
 router.post('/calculate-payment',

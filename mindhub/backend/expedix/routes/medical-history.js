@@ -83,7 +83,7 @@ const validateMedicalHistoryEntry = [
 ];
 
 /**
- * GET /api/v1/expedix/medical-history/:patientId
+ * GET /api/expedix/medical-history/:patientId
  * Get medical history for a patient with filtering and pagination
  */
 router.get('/:patientId',
@@ -221,7 +221,7 @@ router.get('/:patientId',
 );
 
 /**
- * GET /api/v1/expedix/medical-history/:patientId/summary
+ * GET /api/expedix/medical-history/:patientId/summary
  * Get medical history summary with key information
  */
 router.get('/:patientId/summary',
@@ -359,7 +359,7 @@ router.get('/:patientId/summary',
 );
 
 /**
- * POST /api/v1/expedix/medical-history
+ * POST /api/expedix/medical-history
  * Create a new medical history entry
  */
 router.post('/',
@@ -471,7 +471,7 @@ router.post('/',
 );
 
 /**
- * PUT /api/v1/expedix/medical-history/:id
+ * PUT /api/expedix/medical-history/:id
  * Update medical history entry
  */
 router.put('/:id',
@@ -573,7 +573,7 @@ router.put('/:id',
 );
 
 /**
- * DELETE /api/v1/expedix/medical-history/:id
+ * DELETE /api/expedix/medical-history/:id
  * Soft delete medical history entry
  */
 router.delete('/:id',
@@ -666,7 +666,7 @@ router.delete('/:id',
 );
 
 /**
- * GET /api/v1/expedix/medical-history/:patientId/timeline
+ * GET /api/expedix/medical-history/:patientId/timeline
  * Get timeline view of medical history
  */
 router.get('/:patientId/timeline',

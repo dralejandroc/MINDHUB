@@ -187,7 +187,7 @@ const BASE_TEMPLATE_CONFIGS = {
 };
 
 /**
- * GET /api/v1/formx/customizable-templates/base-templates
+ * GET /api/formx/customizable-templates/base-templates
  * Get available base template configurations
  */
 router.get('/base-templates',
@@ -225,7 +225,7 @@ router.get('/base-templates',
 );
 
 /**
- * POST /api/v1/formx/customizable-templates/create-custom
+ * POST /api/formx/customizable-templates/create-custom
  * Create a custom template based on a base template with user modifications
  */
 router.post('/create-custom',
@@ -351,7 +351,7 @@ router.post('/create-custom',
 );
 
 /**
- * GET /api/v1/formx/customizable-templates/user-templates
+ * GET /api/formx/customizable-templates/user-templates
  * Get user's custom templates
  */
 router.get('/user-templates',
@@ -437,7 +437,7 @@ router.get('/user-templates',
 );
 
 /**
- * PUT /api/v1/formx/customizable-templates/:id/customize
+ * PUT /api/formx/customizable-templates/:id/customize
  * Modify an existing custom template
  */
 router.put('/:id/customize',

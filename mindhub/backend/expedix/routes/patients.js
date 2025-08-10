@@ -178,7 +178,7 @@ const validatePatient = [
 ];
 
 /**
- * GET /api/v1/expedix/patients
+ * GET /api/expedix/patients
  * List patients with filtering, pagination, and search
  */
 router.get('/',
@@ -286,7 +286,7 @@ router.get('/',
 });
 
 /**
- * GET /api/v1/expedix/patients/:id
+ * GET /api/expedix/patients/:id
  * Get specific patient details with access control
  */
 router.get('/:id',
@@ -398,7 +398,7 @@ router.get('/:id',
 });
 
 /**
- * POST /api/v1/expedix/patients
+ * POST /api/expedix/patients
  * Create a new patient record
  */
 router.post('/',
@@ -510,7 +510,7 @@ router.post('/',
 });
 
 /**
- * PUT /api/v1/expedix/patients/:id
+ * PUT /api/expedix/patients/:id
  * Update complete patient record
  */
 router.put('/:id',
@@ -586,7 +586,7 @@ router.put('/:id',
 });
 
 /**
- * DELETE /api/v1/expedix/patients/:id
+ * DELETE /api/expedix/patients/:id
  * Soft delete patient record (archive)
  */
 router.delete('/:id',
@@ -661,7 +661,7 @@ router.delete('/:id',
 });
 
 /**
- * GET /api/v1/expedix/patients/:id/summary
+ * GET /api/expedix/patients/:id/summary
  * Get patient summary with key metrics
  */
 router.get('/:id/summary',
@@ -799,7 +799,7 @@ async function generateMedicalRecordNumber() {
 }
 
 /**
- * POST /api/v1/expedix/patients/:id/assessments
+ * POST /api/expedix/patients/:id/assessments
  * Save ClinimetrixPro assessment results to patient record
  */
 router.post('/:id/assessments',
@@ -942,7 +942,7 @@ router.post('/:id/assessments',
 );
 
 /**
- * GET /api/v1/expedix/patients/:id/assessments
+ * GET /api/expedix/patients/:id/assessments
  * Get all ClinimetrixPro assessments for a patient
  */
 router.get('/:id/assessments',

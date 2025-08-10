@@ -142,7 +142,7 @@ export function StartPageSettings() {
       
       // In a real implementation, you might also save to a backend API
       // const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
-      // await fetch(`${API_BASE_URL}/api/v1/user/preferences/start-page`, {
+      // await fetch(`${API_BASE_URL}/api/user/preferences/start-page`, {
       //   method: 'POST',
       //   headers: { 'Content-Type': 'application/json' },
       //   body: JSON.stringify(newPreferences)

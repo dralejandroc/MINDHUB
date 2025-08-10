@@ -16,7 +16,7 @@ const router = express.Router();
 const auditLogger = new AuditLogger();
 
 /**
- * GET /api/v1/formx/analytics/forms/:id/metrics
+ * GET /api/formx/analytics/forms/:id/metrics
  * Get comprehensive metrics for a specific form
  */
 router.get('/forms/:id/metrics',
@@ -142,7 +142,7 @@ router.get('/forms/:id/metrics',
 );
 
 /**
- * GET /api/v1/formx/analytics/dashboard
+ * GET /api/formx/analytics/dashboard
  * Get dashboard overview of all forms
  */
 router.get('/dashboard',
@@ -315,7 +315,7 @@ router.get('/dashboard',
 );
 
 /**
- * GET /api/v1/formx/analytics/patient-engagement/:patientId
+ * GET /api/formx/analytics/patient-engagement/:patientId
  * Get patient-specific form engagement analytics
  */
 router.get('/patient-engagement/:patientId',

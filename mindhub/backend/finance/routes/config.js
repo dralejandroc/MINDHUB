@@ -15,7 +15,7 @@ const router = express.Router();
 const configService = new FinanceConfigService();
 
 /**
- * GET /api/v1/finance/config
+ * GET /api/finance/config
  * Get finance configuration for current user
  */
 router.get('/',
@@ -45,7 +45,7 @@ router.get('/',
 );
 
 /**
- * PUT /api/v1/finance/config/:id
+ * PUT /api/finance/config/:id
  * Update finance configuration
  */
 router.put('/:id',
@@ -91,7 +91,7 @@ router.put('/:id',
 );
 
 /**
- * POST /api/v1/finance/config/:id/services
+ * POST /api/finance/config/:id/services
  * Create a new service
  */
 router.post('/:id/services',
@@ -138,7 +138,7 @@ router.post('/:id/services',
 );
 
 /**
- * PUT /api/v1/finance/config/services/:serviceId
+ * PUT /api/finance/config/services/:serviceId
  * Update a service
  */
 router.put('/services/:serviceId',
@@ -186,7 +186,7 @@ router.put('/services/:serviceId',
 );
 
 /**
- * POST /api/v1/finance/config/:id/discount-plans
+ * POST /api/finance/config/:id/discount-plans
  * Create a new discount plan
  */
 router.post('/:id/discount-plans',
@@ -232,7 +232,7 @@ router.post('/:id/discount-plans',
 );
 
 /**
- * PUT /api/v1/finance/config/discount-plans/:discountId
+ * PUT /api/finance/config/discount-plans/:discountId
  * Update a discount plan
  */
 router.put('/discount-plans/:discountId',
@@ -279,7 +279,7 @@ router.put('/discount-plans/:discountId',
 );
 
 /**
- * DELETE /api/v1/finance/config/services/:serviceId
+ * DELETE /api/finance/config/services/:serviceId
  * Delete a service
  */
 router.delete('/services/:serviceId',
@@ -317,7 +317,7 @@ router.delete('/services/:serviceId',
 );
 
 /**
- * DELETE /api/v1/finance/config/discount-plans/:discountId
+ * DELETE /api/finance/config/discount-plans/:discountId
  * Delete a discount plan
  */
 router.delete('/discount-plans/:discountId',
@@ -355,7 +355,7 @@ router.delete('/discount-plans/:discountId',
 );
 
 /**
- * POST /api/v1/finance/config/patients/:patientId/services
+ * POST /api/finance/config/patients/:patientId/services
  * Assign service to patient
  */
 router.post('/patients/:patientId/services',
@@ -405,7 +405,7 @@ router.post('/patients/:patientId/services',
 );
 
 /**
- * POST /api/v1/finance/config/patients/:patientId/discounts
+ * POST /api/finance/config/patients/:patientId/discounts
  * Assign discount to patient
  */
 router.post('/patients/:patientId/discounts',
@@ -457,7 +457,7 @@ router.post('/patients/:patientId/discounts',
 );
 
 /**
- * GET /api/v1/finance/config/patients/:patientId/services/:serviceId/price
+ * GET /api/finance/config/patients/:patientId/services/:serviceId/price
  * Calculate price for patient service with discounts
  */
 router.get('/patients/:patientId/services/:serviceId/price',
@@ -500,7 +500,7 @@ router.get('/patients/:patientId/services/:serviceId/price',
 );
 
 /**
- * GET /api/v1/finance/patients/:patientId/services
+ * GET /api/finance/patients/:patientId/services
  * Get patient service assignments
  */
 router.get('/patients/:patientId/services',
@@ -538,7 +538,7 @@ router.get('/patients/:patientId/services',
 );
 
 /**
- * GET /api/v1/finance/patients/:patientId/discounts
+ * GET /api/finance/patients/:patientId/discounts
  * Get patient discount assignments
  */
 router.get('/patients/:patientId/discounts',
@@ -576,7 +576,7 @@ router.get('/patients/:patientId/discounts',
 );
 
 /**
- * DELETE /api/v1/finance/patients/services/:assignmentId
+ * DELETE /api/finance/patients/services/:assignmentId
  * Remove patient service assignment
  */
 router.delete('/patients/services/:assignmentId',
@@ -614,7 +614,7 @@ router.delete('/patients/services/:assignmentId',
 );
 
 /**
- * DELETE /api/v1/finance/patients/discounts/:assignmentId
+ * DELETE /api/finance/patients/discounts/:assignmentId
  * Remove patient discount assignment
  */
 router.delete('/patients/discounts/:assignmentId',

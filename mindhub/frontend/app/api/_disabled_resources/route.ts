@@ -14,7 +14,7 @@ export async function GET(request: NextRequest) {
     const queryString = searchParams.toString();
     
     const response = await fetch(
-      `${RESOURCES_API_BASE}/api/v1/resources${queryString ? `?${queryString}` : ''}`,
+      `${RESOURCES_API_BASE}/api/resources${queryString ? `?${queryString}` : ''}`,
       {
         method: 'GET',
         headers: {
@@ -115,7 +115,7 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     
     const response = await fetch(
-      `${RESOURCES_API_BASE}/api/v1/resources`,
+      `${RESOURCES_API_BASE}/api/resources`,
       {
         method: 'POST',
         headers: {

@@ -135,7 +135,7 @@ MindHub is a cloud-native SaaS platform built on Google App Engine, designed for
 
 ### RESTful API Design
 ```
-/api/v1/
+/api/
 ├── clinimetrix/
 │   ├── assessments/
 │   ├── scales/

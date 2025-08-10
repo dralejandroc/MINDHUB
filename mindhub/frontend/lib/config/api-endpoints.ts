@@ -29,7 +29,7 @@ export const FRONTEND_ENDPOINTS = {
   clinimetrix: {
     templates: '/api/clinimetrix-pro/templates',
     assessments: '/api/clinimetrix-pro/assessments',
-    patientAssessments: '/api/v1/clinimetrix/patient-assessments'
+    patientAssessments: '/api/clinimetrix/patient-assessments'
   },
   
   // Finance Module
@@ -54,9 +54,9 @@ export const FRONTEND_ENDPOINTS = {
   
   // Resources Module
   resources: {
-    base: '/api/v1/resources',
-    documents: '/api/v1/resources/documents',
-    library: '/api/v1/resources/library'
+    base: '/api/resources',
+    documents: '/api/resources/documents',
+    library: '/api/resources/library'
   },
   
   // System Endpoints
@@ -70,9 +70,9 @@ export const FRONTEND_ENDPOINTS = {
 export const BACKEND_ENDPOINTS = {
   // Expedix
   expedix: {
-    patients: '/api/v1/expedix/patients',
-    consultations: '/api/v1/expedix/consultations',
-    patientTimeline: '/api/v1/expedix/patient-timeline'
+    patients: '/api/expedix/patients',
+    consultations: '/api/expedix/consultations',
+    patientTimeline: '/api/expedix/patient-timeline'
   },
   
   // Clinimetrix Pro
@@ -83,25 +83,25 @@ export const BACKEND_ENDPOINTS = {
   
   // Universal Clinimetrix (Legacy)
   clinimetrix: {
-    patientAssessments: '/api/v1/clinimetrix/patient-assessments'
+    patientAssessments: '/api/clinimetrix/patient-assessments'
   },
   
   // Finance
   finance: {
-    income: '/api/v1/finance/income',
-    cashRegister: '/api/v1/finance/cash-register'
+    income: '/api/finance/income',
+    cashRegister: '/api/finance/cash-register'
   },
   
   // FrontDesk
   frontdesk: {
-    tasks: '/api/v1/frontdesk/tasks',
-    stats: '/api/v1/frontdesk/stats',
-    appointments: '/api/v1/frontdesk/appointments'
+    tasks: '/api/frontdesk/tasks',
+    stats: '/api/frontdesk/stats',
+    appointments: '/api/frontdesk/appointments'
   },
   
   // Resources
   resources: {
-    base: '/api/v1/resources'
+    base: '/api/resources'
   }
 } as const;
 

@@ -25,7 +25,7 @@ export async function GET(request: NextRequest) {
       headers['X-User-Context'] = userContextHeader;
     }
 
-    const response = await fetch(`${BACKEND_URL}/api/v1/frontdesk/tasks/pending`, {
+    const response = await fetch(`${BACKEND_URL}/api/frontdesk/tasks/pending`, {
       method: 'GET',
       headers,
     });

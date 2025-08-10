@@ -33,7 +33,7 @@ app.get('/', (req, res) => {
     timestamp: new Date().toISOString(),
     endpoints: {
       health: '/health',
-      clinimetrix: '/api/v1/clinimetrix',
+      clinimetrix: '/api/clinimetrix',
       scales: '/api/scales',
       sessions: '/api/sessions',
       assessments: '/api/assessments'
@@ -52,21 +52,21 @@ app.get('/health', (req, res) => {
 });
 
 // Clinimetrix hub
-app.get('/api/v1/clinimetrix', (req, res) => {
+app.get('/api/clinimetrix', (req, res) => {
   res.json({
     hub: 'Clinimetrix',
     description: 'Clinical Assessment System',
     version: '1.0.0',
     system: 'universal',
     endpoints: {
-      scales: '/api/v1/clinimetrix/scales',
-      health: '/api/v1/clinimetrix/health'
+      scales: '/api/clinimetrix/scales',
+      health: '/api/clinimetrix/health'
     }
   });
 });
 
 // Clinimetrix health
-app.get('/api/v1/clinimetrix/health', (req, res) => {
+app.get('/api/clinimetrix/health', (req, res) => {
   res.json({
     status: 'healthy',
     hub: 'Clinimetrix',
@@ -80,7 +80,7 @@ app.get('/api/v1/clinimetrix/health', (req, res) => {
 });
 
 // Clinimetrix scales - integrar con sistema universal
-app.get('/api/v1/clinimetrix/scales', async (req, res) => {
+app.get('/api/clinimetrix/scales', async (req, res) => {
   try {
     const UniversalScaleService = require('./services/UniversalScaleService');
     const scaleService = new UniversalScaleService();
@@ -113,7 +113,7 @@ app.get('/api/v1/clinimetrix/scales', async (req, res) => {
 });
 
 // Clinimetrix scale details
-app.get('/api/v1/clinimetrix/scales/:id', async (req, res) => {
+app.get('/api/clinimetrix/scales/:id', async (req, res) => {
   try {
     const { id } = req.params;
     const UniversalScaleService = require('./services/UniversalScaleService');
@@ -157,7 +157,7 @@ app.use('*', (req, res) => {
     availableEndpoints: {
       root: '/',
       health: '/health',
-      clinimetrix: '/api/v1/clinimetrix',
+      clinimetrix: '/api/clinimetrix',
       scales: '/api/scales'
     }
   });
@@ -183,8 +183,8 @@ const server = app.listen(PORT, '0.0.0.0', () => {
   console.log(`📋 Health Check: http://localhost:${PORT}/health`);
   console.log('');
   console.log('🔧 Available Services:');
-  console.log(`   🧪 Clinimetrix: http://localhost:${PORT}/api/v1/clinimetrix`);
-  console.log(`   📊 Scales: http://localhost:${PORT}/api/v1/clinimetrix/scales`);
+  console.log(`   🧪 Clinimetrix: http://localhost:${PORT}/api/clinimetrix`);
+  console.log(`   📊 Scales: http://localhost:${PORT}/api/clinimetrix/scales`);
   console.log(`   🔗 Universal API: http://localhost:${PORT}/api/scales`);
   console.log('');
   console.log('✅ Platform ready for testing!');

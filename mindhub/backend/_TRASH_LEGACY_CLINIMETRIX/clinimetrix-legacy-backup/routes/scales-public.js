@@ -11,7 +11,7 @@ const router = express.Router();
 const prisma = new PrismaClient();
 
 /**
- * GET /api/v1/clinimetrix/scales
+ * GET /api/clinimetrix/scales
  * Obtener todas las escalas disponibles con filtros
  */
 router.get('/', async (req, res) => {
@@ -66,7 +66,7 @@ router.get('/', async (req, res) => {
 });
 
 /**
- * GET /api/v1/clinimetrix/scales/categories
+ * GET /api/clinimetrix/scales/categories
  * Obtener categorías únicas de escalas
  */
 router.get('/categories', async (req, res) => {
@@ -94,7 +94,7 @@ router.get('/categories', async (req, res) => {
 });
 
 /**
- * GET /api/v1/clinimetrix/scales/tags
+ * GET /api/clinimetrix/scales/tags
  * Obtener todos los tags únicos
  */
 router.get('/tags', async (req, res) => {
@@ -112,7 +112,7 @@ router.get('/tags', async (req, res) => {
 });
 
 /**
- * GET /api/v1/clinimetrix/scales/favorites
+ * GET /api/clinimetrix/scales/favorites
  * Obtener escalas favoritas del usuario
  */
 router.get('/favorites', async (req, res) => {
@@ -129,7 +129,7 @@ router.get('/favorites', async (req, res) => {
 });
 
 /**
- * GET /api/v1/clinimetrix/scales/:id
+ * GET /api/clinimetrix/scales/:id
  * Obtener detalle completo de una escala incluyendo items, opciones y documentación
  */
 router.get('/:id', async (req, res) => {
@@ -253,7 +253,7 @@ router.get('/:id', async (req, res) => {
 });
 
 /**
- * POST /api/v1/clinimetrix/scales/:id/toggle-favorite
+ * POST /api/clinimetrix/scales/:id/toggle-favorite
  * Marcar/desmarcar escala como favorita
  */
 router.post('/:id/toggle-favorite', async (req, res) => {
@@ -275,7 +275,7 @@ router.post('/:id/toggle-favorite', async (req, res) => {
 });
 
 /**
- * GET /api/v1/clinimetrix/scales/stats/usage
+ * GET /api/clinimetrix/scales/stats/usage
  * Obtener estadísticas de uso de escalas
  */
 router.get('/stats/usage', async (req, res) => {
@@ -379,7 +379,7 @@ router.get('/stats/usage', async (req, res) => {
 });
 
 /**
- * GET /api/v1/clinimetrix/scales/stats/overview
+ * GET /api/clinimetrix/scales/stats/overview
  * Obtener estadísticas generales del catálogo
  */
 router.get('/stats/overview', async (req, res) => {
@@ -413,7 +413,7 @@ router.get('/stats/overview', async (req, res) => {
 });
 
 /**
- * GET /api/v1/clinimetrix/scales/public/patient-assessments/:patientId
+ * GET /api/clinimetrix/scales/public/patient-assessments/:patientId
  * Get all assessments for a specific patient - PUBLIC endpoint for development
  */
 router.get('/patient-assessments/:patientId', async (req, res) => {

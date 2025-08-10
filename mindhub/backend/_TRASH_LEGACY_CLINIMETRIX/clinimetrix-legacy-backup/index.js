@@ -112,12 +112,12 @@ router.get('/', (req, res) => {
       'Healthcare Compliance (NOM-024)'
     ],
     endpoints: {
-      scales: '/api/v1/clinimetrix/scales',
-      assessments: '/api/v1/clinimetrix/assessments',
-      remote_assessments: '/api/v1/clinimetrix/remote-assessments',
-      workflows: '/api/v1/clinimetrix/workflows',
-      results: '/api/v1/clinimetrix/results',
-      compliance: '/api/v1/clinimetrix/compliance',
+      scales: '/api/clinimetrix/scales',
+      assessments: '/api/clinimetrix/assessments',
+      remote_assessments: '/api/clinimetrix/remote-assessments',
+      workflows: '/api/clinimetrix/workflows',
+      results: '/api/clinimetrix/results',
+      compliance: '/api/clinimetrix/compliance',
       administration: '/api/clinimetrix/administration'
     },
     capabilities: {

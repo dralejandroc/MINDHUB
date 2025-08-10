@@ -7,7 +7,7 @@ async function debugAgendaIssue() {
     console.log('🔍 Debugging agenda calendar issue...\n');
     
     // Step 1: Fetch appointments like the frontend does
-    const response = await fetch('http://localhost:8080/api/v1/expedix/agenda/appointments');
+    const response = await fetch('http://localhost:8080/api/expedix/agenda/appointments');
     const appointmentsData = await response.json();
     
     console.log('1. Raw API response:', {

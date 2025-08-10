@@ -72,7 +72,7 @@ export default function WaitingListModal({ isOpen, onClose, onAssignPatient }: W
 
   const loadPatients = async () => {
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_EXPEDIX_API}/api/v1/expedix/patients`);
+      const response = await fetch(`${process.env.NEXT_PUBLIC_EXPEDIX_API}/api/expedix/patients`);
       if (response.ok) {
         const data = await response.json();
         setPatients(data.patients || []);
@@ -85,7 +85,7 @@ export default function WaitingListModal({ isOpen, onClose, onAssignPatient }: W
   const loadWaitingList = async () => {
     setLoading(true);
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/expedix/agenda/waiting-list`);
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/expedix/agenda/waiting-list`);
       if (response.ok) {
         const data = await response.json();
         setWaitingList(data.patients || []);
@@ -152,7 +152,7 @@ export default function WaitingListModal({ isOpen, onClose, onAssignPatient }: W
     
     // Guardar en API
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/expedix/agenda/waiting-list/reorder`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/expedix/agenda/waiting-list/reorder`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ patients: newList })
@@ -169,7 +169,7 @@ export default function WaitingListModal({ isOpen, onClose, onAssignPatient }: W
     if (!confirm('¿Está seguro de eliminar este paciente de la lista de espera?')) return;
 
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/expedix/agenda/waiting-list/${patientId}`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/expedix/agenda/waiting-list/${patientId}`, {
         method: 'DELETE'
       });
       setWaitingList(waitingList.filter(p => p.id !== patientId));
@@ -199,7 +199,7 @@ export default function WaitingListModal({ isOpen, onClose, onAssignPatient }: W
         position: waitingList.length + 1
       };
 
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/expedix/agenda/waiting-list`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/expedix/agenda/waiting-list`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(waitingPatientData)

@@ -1,6 +1,6 @@
 /**
  * Routes para exportación de datos de pacientes
- * /api/v1/expedix/export/*
+ * /api/expedix/export/*
  */
 
 const express = require('express');
@@ -13,7 +13,7 @@ const { authenticate } = require('../../shared/middleware');
 const exportService = new ExportService();
 
 /**
- * POST /api/v1/expedix/export/consultation
+ * POST /api/expedix/export/consultation
  * Exportar consulta individual en PDF
  */
 router.post('/consultation', authenticate, async (req, res) => {
@@ -60,7 +60,7 @@ router.post('/consultation', authenticate, async (req, res) => {
 });
 
 /**
- * POST /api/v1/expedix/export/patient-record
+ * POST /api/expedix/export/patient-record
  * Exportar expediente completo de paciente
  */
 router.post('/patient-record', authenticate, async (req, res) => {
@@ -115,7 +115,7 @@ router.post('/patient-record', authenticate, async (req, res) => {
 });
 
 /**
- * POST /api/v1/expedix/export/patients-table
+ * POST /api/expedix/export/patients-table
  * Exportar tabla de pacientes en Excel
  */
 router.post('/patients-table', authenticate, async (req, res) => {
@@ -163,7 +163,7 @@ router.post('/patients-table', authenticate, async (req, res) => {
 });
 
 /**
- * GET /api/v1/expedix/export/bulk-options/:patientId
+ * GET /api/expedix/export/bulk-options/:patientId
  * Obtener opciones disponibles para exportación masiva de un paciente
  */
 router.get('/bulk-options/:patientId', authenticate, async (req, res) => {
@@ -240,7 +240,7 @@ router.get('/bulk-options/:patientId', authenticate, async (req, res) => {
 });
 
 /**
- * POST /api/v1/expedix/export/cleanup
+ * POST /api/expedix/export/cleanup
  * Limpiar archivos temporales antiguos (solo para administradores)
  */
 router.post('/cleanup', authenticate, async (req, res) => {
@@ -267,7 +267,7 @@ router.post('/cleanup', authenticate, async (req, res) => {
 });
 
 /**
- * GET /api/v1/expedix/export/formats
+ * GET /api/expedix/export/formats
  * Obtener formatos de exportación disponibles y sus características
  */
 router.get('/formats', authenticate, async (req, res) => {

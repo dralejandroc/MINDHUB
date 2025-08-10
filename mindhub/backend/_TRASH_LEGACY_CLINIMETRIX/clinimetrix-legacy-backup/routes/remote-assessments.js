@@ -69,7 +69,7 @@ async function logAccess(remoteAssessmentId, req, action = 'view') {
 }
 
 /**
- * POST /api/v1/clinimetrix/remote-assessments/create
+ * POST /api/clinimetrix/remote-assessments/create
  * Crear una nueva evaluación remota y generar enlace tokenizado
  */
 router.post('/create', [
@@ -309,7 +309,7 @@ router.post('/create', [
 });
 
 /**
- * GET /api/v1/clinimetrix/remote-assessments/:token
+ * GET /api/clinimetrix/remote-assessments/:token
  * Validar token y obtener información de la escala para aplicación remota
  */
 router.get('/:token', [
@@ -528,7 +528,7 @@ router.get('/:token', [
 });
 
 /**
- * POST /api/v1/clinimetrix/remote-assessments/:token/save-progress
+ * POST /api/clinimetrix/remote-assessments/:token/save-progress
  * Guardar progreso parcial de la evaluación remota
  */
 router.post('/:token/save-progress', [
@@ -640,7 +640,7 @@ router.post('/:token/save-progress', [
 });
 
 /**
- * POST /api/v1/clinimetrix/remote-assessments/:token/complete
+ * POST /api/clinimetrix/remote-assessments/:token/complete
  * Completar evaluación remota y procesar resultados
  */
 router.post('/:token/complete', [
@@ -840,7 +840,7 @@ router.post('/:token/complete', [
 });
 
 /**
- * GET /api/v1/clinimetrix/remote-assessments/administrator/:administratorId
+ * GET /api/clinimetrix/remote-assessments/administrator/:administratorId
  * Obtener evaluaciones remotas creadas por un administrador
  */
 router.get('/administrator/:administratorId', [
@@ -982,7 +982,7 @@ router.get('/administrator/:administratorId', [
 });
 
 /**
- * GET /api/v1/clinimetrix/remote-assessments/message-templates
+ * GET /api/clinimetrix/remote-assessments/message-templates
  * Obtener plantillas de mensaje predefinidas
  */
 router.get('/message-templates', async (req, res) => {

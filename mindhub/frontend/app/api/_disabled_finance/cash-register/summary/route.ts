@@ -14,7 +14,7 @@ export async function GET(request: NextRequest) {
     const queryString = searchParams.toString();
     
     const response = await fetch(
-      `${FINANCE_API_BASE}/api/v1/finance/cash-register/summary${queryString ? `?${queryString}` : ''}`,
+      `${FINANCE_API_BASE}/api/finance/cash-register/summary${queryString ? `?${queryString}` : ''}`,
       {
         method: 'GET',
         headers: {

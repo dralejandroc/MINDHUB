@@ -49,7 +49,7 @@ export const PatientSelectorModal: React.FC<PatientSelectorModalProps> = ({
   const loadPatients = useCallback(async () => {
     try {
       setLoading(true);
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/expedix/patients?limit=100`);
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/expedix/patients?limit=100`);
       
       if (response.ok) {
         const data = await response.json();
@@ -103,7 +103,7 @@ export const PatientSelectorModal: React.FC<PatientSelectorModalProps> = ({
     setAssigning(true);
     try {
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/v1/formx/forms/${formId}/assign`,
+        `${process.env.NEXT_PUBLIC_API_URL}/api/formx/forms/${formId}/assign`,
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },

@@ -367,7 +367,7 @@ const PATIENT_FORM_TEMPLATES = {
 };
 
 /**
- * GET /api/v1/formx/patient-registration/templates
+ * GET /api/formx/patient-registration/templates
  * Get available patient registration form templates
  */
 router.get('/templates',
@@ -402,7 +402,7 @@ router.get('/templates',
 );
 
 /**
- * POST /api/v1/formx/patient-registration/create-forms
+ * POST /api/formx/patient-registration/create-forms
  * Create and assign patient registration forms to a patient
  */
 router.post('/create-forms',
@@ -575,7 +575,7 @@ router.post('/create-forms',
 );
 
 /**
- * POST /api/v1/formx/patient-registration/submit-complete
+ * POST /api/formx/patient-registration/submit-complete
  * Submit complete patient registration and sync to Expedix
  */
 router.post('/submit-complete',
@@ -675,7 +675,7 @@ router.post('/submit-complete',
 
       // Send to Expedix via internal API call
       try {
-        const expedixResponse = await axios.post('/api/v1/expedix/patients/complete-registration', {
+        const expedixResponse = await axios.post('/api/expedix/patients/complete-registration', {
           patientId: patientId,
           registrationData: aggregatedData,
           source: 'formx_registration',

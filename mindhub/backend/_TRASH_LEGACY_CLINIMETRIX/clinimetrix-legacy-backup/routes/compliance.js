@@ -15,7 +15,7 @@ const router = express.Router();
 const healthcareCompliance = new HealthcareCompliance();
 
 /**
- * GET /api/v1/clinimetrix/compliance/status
+ * GET /api/clinimetrix/compliance/status
  * Get compliance status for organization
  */
 router.get('/status',
@@ -53,7 +53,7 @@ router.get('/status',
 );
 
 /**
- * POST /api/v1/clinimetrix/compliance/report
+ * POST /api/clinimetrix/compliance/report
  * Generate compliance report
  */
 router.post('/report',
@@ -109,7 +109,7 @@ router.post('/report',
 );
 
 /**
- * GET /api/v1/clinimetrix/compliance/standards
+ * GET /api/clinimetrix/compliance/standards
  * Get available compliance standards
  */
 router.get('/standards',
@@ -218,7 +218,7 @@ router.get('/standards',
 );
 
 /**
- * POST /api/v1/clinimetrix/compliance/patient-consent
+ * POST /api/clinimetrix/compliance/patient-consent
  * Record patient consent for clinical assessments
  */
 router.post('/patient-consent',
@@ -320,7 +320,7 @@ router.post('/patient-consent',
 );
 
 /**
- * GET /api/v1/clinimetrix/compliance/patient-consent/:patientId
+ * GET /api/clinimetrix/compliance/patient-consent/:patientId
  * Get patient consent status
  */
 router.get('/patient-consent/:patientId',
@@ -404,7 +404,7 @@ router.get('/patient-consent/:patientId',
 );
 
 /**
- * GET /api/v1/clinimetrix/compliance/audit-logs
+ * GET /api/clinimetrix/compliance/audit-logs
  * Get audit logs for compliance monitoring
  */
 router.get('/audit-logs',

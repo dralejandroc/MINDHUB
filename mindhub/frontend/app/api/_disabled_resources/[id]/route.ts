@@ -14,7 +14,7 @@ export async function GET(
 ) {
   try {
     const response = await fetch(
-      `${RESOURCES_API_BASE}/api/v1/resources/${params.id}`,
+      `${RESOURCES_API_BASE}/api/resources/${params.id}`,
       {
         method: 'GET',
         headers: {
@@ -71,7 +71,7 @@ export async function PUT(
     const body = await request.json();
     
     const response = await fetch(
-      `${RESOURCES_API_BASE}/api/v1/resources/${params.id}`,
+      `${RESOURCES_API_BASE}/api/resources/${params.id}`,
       {
         method: 'PUT',
         headers: {
@@ -121,7 +121,7 @@ export async function DELETE(
 ) {
   try {
     const response = await fetch(
-      `${RESOURCES_API_BASE}/api/v1/resources/${params.id}`,
+      `${RESOURCES_API_BASE}/api/resources/${params.id}`,
       {
         method: 'DELETE',
         headers: {

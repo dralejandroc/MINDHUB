@@ -14,7 +14,7 @@ export async function GET(
 ) {
   try {
     const response = await fetch(
-      `${FINANCE_API_BASE}/api/v1/finance/cash-register/cuts/${params.id}`,
+      `${FINANCE_API_BASE}/api/finance/cash-register/cuts/${params.id}`,
       {
         method: 'GET',
         headers: {

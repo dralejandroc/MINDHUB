@@ -21,7 +21,7 @@ const ScaleRepository = require('../../repositories/ScaleRepository');
 const scaleRepository = new ScaleRepository();
 
 /**
- * POST /api/v1/clinimetrix/workflows/assessment-battery
+ * POST /api/clinimetrix/workflows/assessment-battery
  * Create an assessment battery for a patient
  */
 router.post('/assessment-battery',
@@ -197,7 +197,7 @@ router.post('/assessment-battery',
 );
 
 /**
- * GET /api/v1/clinimetrix/workflows/assessment-batteries
+ * GET /api/clinimetrix/workflows/assessment-batteries
  * Get assessment batteries with filtering
  */
 router.get('/assessment-batteries',
@@ -380,7 +380,7 @@ router.get('/assessment-batteries',
 );
 
 /**
- * POST /api/v1/clinimetrix/workflows/assessment-batteries/:id/start
+ * POST /api/clinimetrix/workflows/assessment-batteries/:id/start
  * Start execution of an assessment battery
  */
 router.post('/:id/start',
@@ -510,7 +510,7 @@ router.post('/:id/start',
 );
 
 /**
- * GET /api/v1/clinimetrix/workflows/clinical-insights/:patientId
+ * GET /api/clinimetrix/workflows/clinical-insights/:patientId
  * Get clinical insights and recommendations for a patient
  */
 router.get('/clinical-insights/:patientId',

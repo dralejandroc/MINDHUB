@@ -16,7 +16,7 @@ export async function GET(request: NextRequest) {
       params.append(key, value);
     });
     
-    let url = `${BACKEND_URL}/api/v1/resources`;
+    let url = `${BACKEND_URL}/api/resources`;
     if (params.toString()) {
       url += `?${params.toString()}`;
     }
@@ -72,7 +72,7 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
     
-    const response = await fetch(`${BACKEND_URL}/api/v1/resources`, {
+    const response = await fetch(`${BACKEND_URL}/api/resources`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

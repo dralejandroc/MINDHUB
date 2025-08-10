@@ -43,7 +43,7 @@ export const FormManagementView: React.FC<FormManagementViewProps> = ({
   useEffect(() => {
     const loadCategories = async () => {
       try {
-        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/formx/categories`);
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/formx/categories`);
         if (response.ok) {
           const data = await response.json();
           setCategories(data.data || []);
@@ -87,7 +87,7 @@ export const FormManagementView: React.FC<FormManagementViewProps> = ({
     }
 
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/formx/forms/${form.id}`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/formx/forms/${form.id}`, {
         method: 'DELETE'
       });
 

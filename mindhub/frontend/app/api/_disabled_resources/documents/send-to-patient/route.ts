@@ -13,7 +13,7 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     
     const response = await fetch(
-      `${RESOURCES_API_BASE}/api/v1/resources/documents/send-to-patient`,
+      `${RESOURCES_API_BASE}/api/resources/documents/send-to-patient`,
       {
         method: 'POST',
         headers: {

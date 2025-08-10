@@ -5,7 +5,7 @@ export async function GET(
   { params }: { params: { patientId: string; serviceId: string } }
 ) {
   try {
-    const response = await fetch(`http://localhost:8080/api/v1/finance/config/patients/${params.patientId}/services/${params.serviceId}/price`, {
+    const response = await fetch(`http://localhost:8080/api/finance/config/patients/${params.patientId}/services/${params.serviceId}/price`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',

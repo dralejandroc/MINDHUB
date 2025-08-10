@@ -84,7 +84,7 @@ class APIVersioningMiddleware {
     // Deprecation warnings
     this.deprecationWarnings = {
       'v1': {
-        '/api/v1/patients/basic-info': {
+        '/api/patients/basic-info': {
           message: 'This endpoint is deprecated. Use /api/v2/patients/profile instead.',
           deprecatedIn: 'v2.0.0',
           removedIn: 'v3.0.0',
@@ -100,7 +100,7 @@ class APIVersioningMiddleware {
   extractVersion(req) {
     // Priority order for version detection:
     // 1. Header (X-API-Version)
-    // 2. URL path (/api/v1/...)
+    // 2. URL path (/api/...)
     // 3. Query parameter (?version=v1)
     // 4. Accept header (Accept: application/vnd.mindhub.v1+json)
 

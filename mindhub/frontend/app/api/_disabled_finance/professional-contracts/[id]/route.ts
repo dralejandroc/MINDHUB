@@ -16,7 +16,7 @@ export async function PUT(
     const body = await request.json();
     
     const response = await fetch(
-      `${FINANCE_API_BASE}/api/v1/finance/professional-contracts/${params.id}`,
+      `${FINANCE_API_BASE}/api/finance/professional-contracts/${params.id}`,
       {
         method: 'PUT',
         headers: {
@@ -54,7 +54,7 @@ export async function DELETE(
     const body = await request.json().catch(() => ({}));
     
     const response = await fetch(
-      `${FINANCE_API_BASE}/api/v1/finance/professional-contracts/${params.id}`,
+      `${FINANCE_API_BASE}/api/finance/professional-contracts/${params.id}`,
       {
         method: 'DELETE',
         headers: {

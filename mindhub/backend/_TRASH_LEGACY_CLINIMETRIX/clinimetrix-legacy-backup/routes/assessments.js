@@ -57,7 +57,7 @@ const validateAssessment = [
 ];
 
 /**
- * GET /api/v1/clinimetrix/assessments
+ * GET /api/clinimetrix/assessments
  * List clinical assessments with filtering and pagination
  */
 router.get('/',
@@ -113,7 +113,7 @@ router.get('/',
 );
 
 /**
- * GET /api/v1/clinimetrix/assessments/patients/:patient_id
+ * GET /api/clinimetrix/assessments/patients/:patient_id
  * Get all assessments for a specific patient
  */
 router.get('/patients/:patient_id', async (req, res) => {
@@ -209,7 +209,7 @@ router.get('/patients/:patient_id', async (req, res) => {
 });
 
 /**
- * GET /api/v1/clinimetrix/assessments/:id
+ * GET /api/clinimetrix/assessments/:id
  * Get specific assessment details
  */
 router.get('/:id',
@@ -304,7 +304,7 @@ router.get('/:id',
 });
 
 /**
- * POST /api/v1/clinimetrix/assessments
+ * POST /api/clinimetrix/assessments
  * Create a new clinical assessment
  */
 router.post('/',
@@ -440,7 +440,7 @@ router.post('/',
 });
 
 /**
- * POST /api/v1/clinimetrix/assessments/remote-token
+ * POST /api/clinimetrix/assessments/remote-token
  * Generate token for remote assessment
  */
 router.post('/remote-token',
@@ -550,7 +550,7 @@ router.post('/remote-token',
 });
 
 /**
- * GET /api/v1/clinimetrix/assessments/compare/:patient_id/:scale_id
+ * GET /api/clinimetrix/assessments/compare/:patient_id/:scale_id
  * Compare assessment results over time for a patient and scale
  */
 router.get('/compare/:patient_id/:scale_id',

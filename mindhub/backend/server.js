@@ -329,7 +329,7 @@ app.get('/', (req, res) => {
     description: 'Integrated healthcare platform for mental health professionals',
     services: {
       expedix: {
-        path: '/api/v1/expedix',
+        path: '/api/expedix',
         description: 'Patient management and medical records'
       },
       'clinimetrix-pro': {
@@ -341,11 +341,11 @@ app.get('/', (req, res) => {
         description: 'Universal clinical scales system'
       },
       formx: {
-        path: '/api/v1/formx',
+        path: '/api/formx',
         description: 'Dynamic forms and data collection'
       },
       resources: {
-        path: '/api/v1/resources',
+        path: '/api/resources',
         description: 'Educational content and resource management'
       }
     },
@@ -370,8 +370,8 @@ try {
   console.log('Expedix type:', typeof expedix);
   console.log('Expedix stack length:', expedix.stack ? expedix.stack.length : 'No stack');
   
-  app.use('/api/v1/expedix', expedix);
-  console.log('✅ Expedix module mounted successfully at /api/v1/expedix');
+  app.use('/api/expedix', expedix);
+  console.log('✅ Expedix module mounted successfully at /api/expedix');
   
   // Test that routes are registered
   console.log('📋 App routes after mounting:', app._router ? app._router.stack.length : 'No router stack');
@@ -381,14 +381,14 @@ try {
 }
 
 // Legacy clinimetrix routes disabled - using universal scales API at /api/scales
-// app.use('/api/v1/clinimetrix', clinimetrix);
-app.use('/api/v1/frontdesk', frontdeskRoutes);
-app.use('/api/v1/finance', finance);
-app.use('/api/v1/formx/forms', formxRoutes);
-console.log('✅ FormX routes mounted at /api/v1/formx');
+// app.use('/api/clinimetrix', clinimetrix);
+app.use('/api/frontdesk', frontdeskRoutes);
+app.use('/api/finance', finance);
+app.use('/api/formx/forms', formxRoutes);
+console.log('✅ FormX routes mounted at /api/formx');
 
-app.use('/api/v1/resources', resourcesRoutes);
-console.log('✅ Resources routes mounted at /api/v1/resources');
+app.use('/api/resources', resourcesRoutes);
+console.log('✅ Resources routes mounted at /api/resources');
 
 // Mount ClinimetrixPro API (next-generation architecture)
 app.use('/api/clinimetrix-pro/templates', clinimetrixProTemplatesRoutes);
@@ -402,7 +402,7 @@ app.use('/api', universalScalesRouter);
 app.use('/api', assessmentController);
 
 // Legacy clinimetrix endpoints for compatibility
-app.use('/api/v1/clinimetrix', assessmentController);
+app.use('/api/clinimetrix', assessmentController);
 
 // Legacy authentication routes removed - using Clerk only
 
@@ -437,13 +437,13 @@ app.use('*', (req, res) => {
       patientTimeline: 'GET /api/patients/:patientId/timeline',
       
       // Services
-      expedix: 'GET /api/v1/expedix',
+      expedix: 'GET /api/expedix',
       'clinimetrix-pro': 'GET /api/clinimetrix-pro',
       'universal-scales': 'GET /api/scales',
-      frontdesk: 'GET /api/v1/frontdesk',
-      finance: 'GET /api/v1/finance',
-      formx: 'GET /api/v1/formx',
-      resources: 'GET /api/v1/resources',
+      frontdesk: 'GET /api/frontdesk',
+      finance: 'GET /api/finance',
+      formx: 'GET /api/formx',
+      resources: 'GET /api/resources',
       
       // Monitoring and Security
       healthDetailed: 'GET /api/health/detailed',
@@ -516,10 +516,10 @@ server = app.listen(PORT, () => {
   
   console.log('');
   console.log('🔧 Available Services:');
-  console.log(`   📊 Expedix (Patients): /api/v1/expedix`);
+  console.log(`   📊 Expedix (Patients): /api/expedix`);
   console.log(`   🧪 ClinimetrixPro (Templates): /api/clinimetrix-pro`);
-  console.log(`   📝 FormX (Forms): /api/v1/formx`);
-  console.log(`   📖 Resources (Content): /api/v1/resources`);
+  console.log(`   📝 FormX (Forms): /api/formx`);
+  console.log(`   📖 Resources (Content): /api/resources`);
   // Authentication handled by Clerk - no backend auth routes
   console.log('');
   console.log('📊 Universal Scale System:');

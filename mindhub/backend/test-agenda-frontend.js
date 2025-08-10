@@ -8,7 +8,7 @@ async function testAgendaEndpoints() {
   try {
     // Test 1: Schedule config
     console.log('1. Testing schedule config endpoint:');
-    const configResponse = await fetch(`${baseUrl}/api/v1/expedix/schedule-config`);
+    const configResponse = await fetch(`${baseUrl}/api/expedix/schedule-config`);
     console.log(`   Status: ${configResponse.status}`);
     if (configResponse.ok) {
       const configData = await configResponse.json();
@@ -21,7 +21,7 @@ async function testAgendaEndpoints() {
     
     // Test 2: Appointments
     console.log('2. Testing appointments endpoint:');
-    const appointmentsResponse = await fetch(`${baseUrl}/api/v1/expedix/agenda/appointments`);
+    const appointmentsResponse = await fetch(`${baseUrl}/api/expedix/agenda/appointments`);
     console.log(`   Status: ${appointmentsResponse.status}`);
     if (appointmentsResponse.ok) {
       const appointmentsData = await appointmentsResponse.json();

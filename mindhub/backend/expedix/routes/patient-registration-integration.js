@@ -62,7 +62,7 @@ async function generateMedicalRecordNumber() {
 }
 
 /**
- * POST /api/v1/expedix/patients/complete-registration
+ * POST /api/expedix/patients/complete-registration
  * Process complete patient registration from FormX
  */
 router.post('/complete-registration',
@@ -353,7 +353,7 @@ router.post('/complete-registration',
 );
 
 /**
- * GET /api/v1/expedix/patients/:id/registration-status
+ * GET /api/expedix/patients/:id/registration-status
  * Get comprehensive registration status for a patient
  */
 router.get('/:id/registration-status',
@@ -471,7 +471,7 @@ router.get('/:id/registration-status',
 );
 
 /**
- * PUT /api/v1/expedix/patients/:id/update-registration
+ * PUT /api/expedix/patients/:id/update-registration
  * Update specific sections of patient registration
  */
 router.put('/:id/update-registration',

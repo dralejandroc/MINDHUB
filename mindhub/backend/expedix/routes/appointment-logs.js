@@ -7,7 +7,7 @@ const router = express.Router();
 const prisma = new PrismaClient();
 
 /**
- * GET /api/v1/expedix/appointment-logs/patient/:patientId
+ * GET /api/expedix/appointment-logs/patient/:patientId
  * Get appointment logs for a specific patient
  */
 router.get('/patient/:patientId', [
@@ -44,7 +44,7 @@ router.get('/patient/:patientId', [
 });
 
 /**
- * GET /api/v1/expedix/appointment-logs/patient/:patientId/stats
+ * GET /api/expedix/appointment-logs/patient/:patientId/stats
  * Get appointment change statistics for a patient
  */
 router.get('/patient/:patientId/stats', [
@@ -79,7 +79,7 @@ router.get('/patient/:patientId/stats', [
 });
 
 /**
- * GET /api/v1/expedix/appointment-logs/patient/:patientId/alerts
+ * GET /api/expedix/appointment-logs/patient/:patientId/alerts
  * Get active alerts for a patient
  */
 router.get('/patient/:patientId/alerts', [
@@ -118,7 +118,7 @@ router.get('/patient/:patientId/alerts', [
 });
 
 /**
- * POST /api/v1/expedix/appointment-logs/log-action
+ * POST /api/expedix/appointment-logs/log-action
  * Log an appointment action (used internally by other services)
  */
 router.post('/log-action', async (req, res) => {

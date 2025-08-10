@@ -21,9 +21,9 @@ const auditLogger = new AuditLogger();
  * Hub integration configuration
  */
 const HUB_CONFIG = {
-  CLINIMETRIX_URL: process.env.CLINIMETRIX_API_URL || 'http://localhost:3001/api/v1/clinimetrix',
-  FORMX_URL: process.env.FORMX_API_URL || 'http://localhost:3002/api/v1/formx',
-  EXPEDIX_URL: process.env.EXPEDIX_API_URL || 'http://localhost:3003/api/v1/expedix',
+  CLINIMETRIX_URL: process.env.CLINIMETRIX_API_URL || 'http://localhost:3001/api/clinimetrix',
+  FORMX_URL: process.env.FORMX_API_URL || 'http://localhost:3002/api/formx',
+  EXPEDIX_URL: process.env.EXPEDIX_API_URL || 'http://localhost:3003/api/expedix',
   INTEGRATION_TIMEOUT: 10000 // 10 seconds
 };
 
@@ -54,7 +54,7 @@ const WORKFLOW_TYPES = {
 };
 
 /**
- * GET /api/v1/expedix/hub-integration/overview
+ * GET /api/expedix/hub-integration/overview
  * Get hub integration overview and status
  */
 router.get('/overview',
@@ -101,7 +101,7 @@ router.get('/overview',
 );
 
 /**
- * POST /api/v1/expedix/hub-integration/patient/:patientId/sync
+ * POST /api/expedix/hub-integration/patient/:patientId/sync
  * Synchronize patient data across all hubs
  */
 router.post('/patient/:patientId/sync',
@@ -244,7 +244,7 @@ router.post('/patient/:patientId/sync',
 );
 
 /**
- * POST /api/v1/expedix/hub-integration/workflow/:workflowType/start
+ * POST /api/expedix/hub-integration/workflow/:workflowType/start
  * Start an integrated workflow
  */
 router.post('/workflow/:workflowType/start',
@@ -335,7 +335,7 @@ router.post('/workflow/:workflowType/start',
 );
 
 /**
- * GET /api/v1/expedix/hub-integration/patient/:patientId/timeline
+ * GET /api/expedix/hub-integration/patient/:patientId/timeline
  * Get integrated patient timeline across all hubs
  */
 router.get('/patient/:patientId/timeline',
@@ -440,7 +440,7 @@ router.get('/patient/:patientId/timeline',
 );
 
 /**
- * GET /api/v1/expedix/hub-integration/patient/:patientId/comprehensive-view
+ * GET /api/expedix/hub-integration/patient/:patientId/comprehensive-view
  * Get comprehensive patient view across all hubs
  */
 router.get('/patient/:patientId/comprehensive-view',

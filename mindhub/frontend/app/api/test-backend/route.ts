@@ -10,7 +10,7 @@ export async function GET(request: NextRequest) {
   try {
     console.log('Testing backend connectivity...');
     
-    const response = await fetch(`${BACKEND_URL}/api/v1/expedix/test`, {
+    const response = await fetch(`${BACKEND_URL}/api/expedix/test`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',

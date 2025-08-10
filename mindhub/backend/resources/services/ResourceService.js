@@ -324,8 +324,8 @@ class ResourceService {
 
       return resources.map(r => ({
         ...r,
-        thumbnail_url: `/api/v1/resources/thumbnail/${r.id}`,
-        download_url: `/api/v1/resources/download/${r.id}`
+        thumbnail_url: `/api/resources/thumbnail/${r.id}`,
+        download_url: `/api/resources/download/${r.id}`
       }));
 
     } catch (error) {
@@ -394,8 +394,8 @@ class ResourceService {
         success: true,
         sendId: sendId,
         downloadUrl: processedFilePath ? 
-          `/api/v1/resources/download/${sendId}` : 
-          `/api/v1/resources/download/${resourceId}`
+          `/api/resources/download/${sendId}` : 
+          `/api/resources/download/${resourceId}`
       };
 
     } catch (error) {
@@ -441,8 +441,8 @@ class ResourceService {
     const resource = results[0];
     return {
       ...resource,
-      thumbnail_url: `/api/v1/resources/thumbnail/${resource.id}`,
-      download_url: `/api/v1/resources/download/${resource.id}`
+      thumbnail_url: `/api/resources/thumbnail/${resource.id}`,
+      download_url: `/api/resources/download/${resource.id}`
     };
   }
 

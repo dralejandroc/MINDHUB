@@ -32,7 +32,7 @@ class PatientTagsApiClient {
   private baseUrl: string;
 
   constructor() {
-    this.baseUrl = `${API_BASE_URL}/api/v1/expedix`;
+    this.baseUrl = `${API_BASE_URL}/expedix`;
   }
 
   private async makeRequest<T>(endpoint: string, options: RequestInit = {}): Promise<T> {

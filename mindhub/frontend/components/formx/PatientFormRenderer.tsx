@@ -87,7 +87,7 @@ export const PatientFormRenderer: React.FC<PatientFormRendererProps> = ({
       try {
         setLoading(true);
         const response = await fetch(
-          `${process.env.NEXT_PUBLIC_API_URL}/api/v1/formx/forms/token/${formToken}`
+          `${process.env.NEXT_PUBLIC_API_URL}/api/formx/forms/token/${formToken}`
         );
 
         if (response.ok) {
@@ -248,7 +248,7 @@ export const PatientFormRenderer: React.FC<PatientFormRendererProps> = ({
       };
 
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/v1/formx/submissions`,
+        `${process.env.NEXT_PUBLIC_API_URL}/api/formx/submissions`,
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },

@@ -42,7 +42,7 @@ const APPOINTMENT_TYPES = {
 };
 
 /**
- * GET /api/v1/expedix/appointments/patient/:patientId
+ * GET /api/expedix/appointments/patient/:patientId
  * Get appointments for a specific patient
  */
 router.get('/patient/:patientId',
@@ -171,7 +171,7 @@ router.get('/patient/:patientId',
 );
 
 /**
- * POST /api/v1/expedix/appointments/schedule
+ * POST /api/expedix/appointments/schedule
  * Schedule a new appointment
  */
 router.post('/schedule',
@@ -385,7 +385,7 @@ router.post('/schedule',
 );
 
 /**
- * POST /api/v1/expedix/appointments/:id/confirm
+ * POST /api/expedix/appointments/:id/confirm
  * Confirm appointment (can be done by patient or staff)
  */
 router.post('/:id/confirm',
@@ -566,7 +566,7 @@ router.post('/:id/confirm',
 );
 
 /**
- * POST /api/v1/expedix/appointments/:id/cancel
+ * POST /api/expedix/appointments/:id/cancel
  * Cancel appointment with reason tracking
  */
 router.post('/:id/cancel',
@@ -744,7 +744,7 @@ router.post('/:id/cancel',
 );
 
 /**
- * GET /api/v1/expedix/appointments/provider/:providerId/schedule
+ * GET /api/expedix/appointments/provider/:providerId/schedule
  * Get provider's schedule for appointment booking
  */
 router.get('/provider/:providerId/schedule',

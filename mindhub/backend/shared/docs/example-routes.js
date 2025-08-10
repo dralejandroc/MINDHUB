@@ -91,7 +91,7 @@ router.get('/patients', async (req, res) => {
         {
           lang: 'javascript',
           source: `
-const response = await fetch('/api/v1/expedix/patients?page=1&limit=20', {
+const response = await fetch('/api/expedix/patients?page=1&limit=20', {
   method: 'GET',
   headers: {
     'Authorization': 'Bearer your-jwt-token',
@@ -114,7 +114,7 @@ headers = {
 }
 
 response = requests.get(
-    '/api/v1/expedix/patients',
+    '/api/expedix/patients',
     headers=headers,
     params={'page': 1, 'limit': 20}
 )

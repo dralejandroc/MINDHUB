@@ -38,7 +38,7 @@ export default function AgendaCalendar({ selectedDate, onDateSelect, onNewAppoin
         console.log('🔗 API URL:', process.env.NEXT_PUBLIC_API_URL);
         
         // Cargar configuración de agenda
-        const configUrl = `${process.env.NEXT_PUBLIC_API_URL}/api/v1/expedix/schedule-config`;
+        const configUrl = `${process.env.NEXT_PUBLIC_API_URL}/api/expedix/schedule-config`;
         console.log('🔄 Fetching config from:', configUrl);
         const configResponse = await fetch(configUrl);
         console.log('📡 Config response status:', configResponse.status);
@@ -53,7 +53,7 @@ export default function AgendaCalendar({ selectedDate, onDateSelect, onNewAppoin
         }
 
         // Cargar citas
-        const appointmentsUrl = `${process.env.NEXT_PUBLIC_API_URL}/api/v1/expedix/agenda/appointments`;
+        const appointmentsUrl = `${process.env.NEXT_PUBLIC_API_URL}/api/expedix/agenda/appointments`;
         console.log('🔄 Fetching appointments from:', appointmentsUrl);
         const appointmentsResponse = await fetch(appointmentsUrl);
         console.log('📡 Appointments response status:', appointmentsResponse.status);

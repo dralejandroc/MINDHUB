@@ -17,7 +17,7 @@ const router = express.Router();
 const auditLogger = new AuditLogger();
 
 /**
- * POST /api/v1/formx/forms/:id/versions
+ * POST /api/formx/forms/:id/versions
  * Create a new version of a form
  */
 router.post('/:id/versions',
@@ -162,7 +162,7 @@ router.post('/:id/versions',
 );
 
 /**
- * GET /api/v1/formx/forms/:id/versions
+ * GET /api/formx/forms/:id/versions
  * Get version history for a form
  */
 router.get('/:id/versions',
@@ -276,7 +276,7 @@ router.get('/:id/versions',
 );
 
 /**
- * GET /api/v1/formx/forms/:id/versions/:versionId
+ * GET /api/formx/forms/:id/versions/:versionId
  * Get specific version details
  */
 router.get('/:id/versions/:versionId',
@@ -385,7 +385,7 @@ router.get('/:id/versions/:versionId',
 );
 
 /**
- * POST /api/v1/formx/forms/:id/versions/:versionId/activate
+ * POST /api/formx/forms/:id/versions/:versionId/activate
  * Activate a specific version (rollback)
  */
 router.post('/:id/versions/:versionId/activate',
@@ -506,7 +506,7 @@ router.post('/:id/versions/:versionId/activate',
 );
 
 /**
- * GET /api/v1/formx/forms/:id/versions/compare
+ * GET /api/formx/forms/:id/versions/compare
  * Compare two form versions
  */
 router.get('/:id/versions/compare',

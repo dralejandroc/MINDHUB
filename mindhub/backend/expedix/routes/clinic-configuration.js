@@ -144,7 +144,7 @@ const DEFAULT_CLINIC_CONFIG = {
 };
 
 /**
- * GET /api/v1/expedix/clinic-configuration
+ * GET /api/expedix/clinic-configuration
  * Get current clinic configuration
  */
 router.get('/',
@@ -200,7 +200,7 @@ router.get('/',
 );
 
 /**
- * POST /api/v1/expedix/clinic-configuration
+ * POST /api/expedix/clinic-configuration
  * Create or update clinic configuration
  */
 router.post('/',
@@ -362,7 +362,7 @@ router.post('/',
 );
 
 /**
- * GET /api/v1/expedix/clinic-configuration/print-preview
+ * GET /api/expedix/clinic-configuration/print-preview
  * Get prescription print preview configuration
  */
 router.get('/print-preview',
@@ -422,7 +422,7 @@ router.get('/print-preview',
 );
 
 /**
- * PUT /api/v1/expedix/clinic-configuration/section/:section
+ * PUT /api/expedix/clinic-configuration/section/:section
  * Update specific configuration section
  */
 router.put('/section/:section',
@@ -524,7 +524,7 @@ router.put('/section/:section',
 );
 
 /**
- * GET /api/v1/expedix/clinic-configuration/default
+ * GET /api/expedix/clinic-configuration/default
  * Get default configuration template
  */
 router.get('/default', async (req, res) => {

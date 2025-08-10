@@ -73,7 +73,7 @@ const validateIncomeCreation = [
 ];
 
 /**
- * POST /api/v1/finance/income
+ * POST /api/finance/income
  * Create a new income record
  */
 router.post('/income',
@@ -110,7 +110,7 @@ router.post('/income',
 );
 
 /**
- * GET /api/v1/finance/income
+ * GET /api/finance/income
  * Get income records with filtering and pagination
  */
 router.get('/income',
@@ -159,7 +159,7 @@ router.get('/income',
 );
 
 /**
- * GET /api/v1/finance/income/:id
+ * GET /api/finance/income/:id
  * Get a specific income record
  */
 router.get('/income/:id',
@@ -210,7 +210,7 @@ router.get('/income/:id',
 );
 
 /**
- * PUT /api/v1/finance/income/:id
+ * PUT /api/finance/income/:id
  * Update an income record
  */
 router.put('/income/:id',
@@ -255,7 +255,7 @@ router.put('/income/:id',
 );
 
 /**
- * DELETE /api/v1/finance/income/:id
+ * DELETE /api/finance/income/:id
  * Delete (cancel) an income record
  */
 router.delete('/income/:id',
@@ -294,7 +294,7 @@ router.delete('/income/:id',
 );
 
 /**
- * GET /api/v1/finance/stats
+ * GET /api/finance/stats
  * Get financial statistics
  */
 router.get('/stats',
@@ -335,7 +335,7 @@ router.get('/stats',
 );
 
 /**
- * POST /api/v1/finance/income/from-consultation
+ * POST /api/finance/income/from-consultation
  * Create income record from consultation completion
  */
 router.post('/income/from-consultation',

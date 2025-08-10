@@ -12,7 +12,7 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
       queryParams.append(key, value);
     });
     
-    let url = `${BACKEND_URL}/api/v1/clinimetrix/patient-assessments/${params.id}`;
+    let url = `${BACKEND_URL}/api/clinimetrix/patient-assessments/${params.id}`;
     if (queryParams.toString()) {
       url += `?${queryParams.toString()}`;
     }

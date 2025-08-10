@@ -42,7 +42,7 @@ class ExpedixAssessmentsClient {
   private baseUrl: string;
 
   constructor() {
-    this.baseUrl = `${API_URL}/api/v1/expedix/patients`;
+    this.baseUrl = `${API_URL}/api/expedix/patients`;
   }
 
   /**

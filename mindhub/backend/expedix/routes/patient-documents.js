@@ -118,7 +118,7 @@ const upload = multer({
 });
 
 /**
- * POST /api/v1/expedix/patient-documents/:patientId/upload
+ * POST /api/expedix/patient-documents/:patientId/upload
  * Upload patient documents
  */
 router.post('/:patientId/upload',
@@ -325,7 +325,7 @@ router.post('/:patientId/upload',
 );
 
 /**
- * GET /api/v1/expedix/patient-documents/:patientId
+ * GET /api/expedix/patient-documents/:patientId
  * Get all documents for a patient
  */
 router.get('/:patientId',
@@ -478,7 +478,7 @@ router.get('/:patientId',
 );
 
 /**
- * GET /api/v1/expedix/patient-documents/:patientId/document/:documentId/download
+ * GET /api/expedix/patient-documents/:patientId/document/:documentId/download
  * Download a specific document
  */
 router.get('/:patientId/document/:documentId/download',
@@ -616,7 +616,7 @@ router.get('/:patientId/document/:documentId/download',
 );
 
 /**
- * PUT /api/v1/expedix/patient-documents/:patientId/document/:documentId
+ * PUT /api/expedix/patient-documents/:patientId/document/:documentId
  * Update document metadata
  */
 router.put('/:patientId/document/:documentId',
@@ -692,7 +692,7 @@ router.put('/:patientId/document/:documentId',
 );
 
 /**
- * DELETE /api/v1/expedix/patient-documents/:patientId/document/:documentId
+ * DELETE /api/expedix/patient-documents/:patientId/document/:documentId
  * Soft delete a document
  */
 router.delete('/:patientId/document/:documentId',

@@ -29,7 +29,7 @@ export const ResourcePreview: React.FC<ResourcePreviewProps> = ({
       window.open(resource.download_url, '_blank');
     } else {
       // Construct download URL
-      window.open(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/resources/download/${resource.id}`, '_blank');
+      window.open(`${process.env.NEXT_PUBLIC_API_URL}/api/resources/download/${resource.id}`, '_blank');
     }
   };
 

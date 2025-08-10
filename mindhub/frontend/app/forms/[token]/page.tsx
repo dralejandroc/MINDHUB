@@ -57,7 +57,7 @@ export default function PatientFormPage() {
   const loadForm = async () => {
     try {
       setLoading(true);
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/formx/forms/token/${token}`);
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/formx/forms/token/${token}`);
       
       if (response.status === 404) {
         setError('Formulario no encontrado o token inválido');
@@ -91,7 +91,7 @@ export default function PatientFormPage() {
 
   const handleSubmit = async (responses: Record<string, any>) => {
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/formx/forms/token/${token}/submit`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/formx/forms/token/${token}/submit`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -117,7 +117,7 @@ export default function PatientFormPage() {
 
   const handleSaveDraft = async (responses: Record<string, any>) => {
     try {
-      await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/formx/forms/token/${token}/draft`, {
+      await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/formx/forms/token/${token}/draft`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'

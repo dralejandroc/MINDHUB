@@ -70,7 +70,7 @@ export default function NewPatientQuickModal({ onClose, onSave }: NewPatientQuic
         userId = user.id || userId;
       }
 
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/expedix/patients`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/expedix/patients`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

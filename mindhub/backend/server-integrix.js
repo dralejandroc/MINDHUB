@@ -165,13 +165,13 @@ app.get('/', (req, res) => {
       capabilities: 'GET /api/capabilities',
       
       // Hub services
-      expedix: 'GET /api/v1/expedix',
-      clinimetrix: 'GET /api/v1/clinimetrix',
-      formx: 'GET /api/v1/formx',
-      resources: 'GET /api/v1/resources',
+      expedix: 'GET /api/expedix',
+      clinimetrix: 'GET /api/clinimetrix',
+      formx: 'GET /api/formx',
+      resources: 'GET /api/resources',
       
       // Cross-hub operations
-      integrix: 'GET /api/v1/integrix'
+      integrix: 'GET /api/integrix'
     }
   });
 });
@@ -253,7 +253,7 @@ console.log('📡 Registering hub services...');
 // Register Expedix Hub
 hubGateway.registerService('expedix', {
   name: 'expedix',
-  baseUrl: '/api/v1/expedix',
+  baseUrl: '/api/expedix',
   description: 'Patient management and medical records',
   features: ['patients', 'medical-history', 'consultations', 'demographics'],
   router: expedix,
@@ -270,7 +270,7 @@ hubGateway.registerService('expedix', {
 // Register Clinimetrix Hub
 hubGateway.registerService('clinimetrix', {
   name: 'clinimetrix',
-  baseUrl: '/api/v1/clinimetrix',
+  baseUrl: '/api/clinimetrix',
   description: 'Clinical assessments and psychometric scales',
   features: ['assessments', 'scales', 'scoring', 'analytics'],
   router: clinimetrix,
@@ -321,7 +321,7 @@ hubGateway.registerService('assessments', {
 // Register FormX Hub
 hubGateway.registerService('formx', {
   name: 'formx',
-  baseUrl: '/api/v1/formx',
+  baseUrl: '/api/formx',
   description: 'Form Builder and Management System',
   features: ['form-builder', 'templates', 'submissions', 'validations', 'analytics'],
   router: formx,
@@ -366,9 +366,9 @@ app.use('/api/auth', authRoutes);
 app.use('/api/auth/auth0', auth0Routes);
 
 // Mount existing services
-app.use('/api/v1/expedix', expedix);
-app.use('/api/v1/clinimetrix', clinimetrix);
-app.use('/api/v1/formx', formx);
+app.use('/api/expedix', expedix);
+app.use('/api/clinimetrix', clinimetrix);
+app.use('/api/formx', formx);
 app.use('/api', universalScalesRouter);
 app.use('/api', assessmentController);
 
@@ -455,9 +455,9 @@ app.use('*', (req, res) => {
       ],
       
       clinimetrix: [
-        'GET /api/v1/clinimetrix',
-        'GET /api/v1/clinimetrix/scales',
-        'GET /api/v1/clinimetrix/assessments'
+        'GET /api/clinimetrix',
+        'GET /api/clinimetrix/scales',
+        'GET /api/clinimetrix/assessments'
       ],
       
       universalScales: [

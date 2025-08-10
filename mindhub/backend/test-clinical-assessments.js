@@ -12,7 +12,7 @@ const app = express();
 app.use(express.json());
 
 // Mount clinimetrix routes
-app.use('/api/v1/clinimetrix', clinimetrix);
+app.use('/api/clinimetrix', clinimetrix);
 
 // Generate test token for healthcare professional
 function generateTestToken(role = 'psychiatrist') {
@@ -54,7 +54,7 @@ async function testClinicalAssessments() {
   // Test 1: Get Clinimetrix hub info
   console.log('1. Testing Clinimetrix hub endpoint...');
   try {
-    const response = await fetch('http://localhost:3001/api/v1/clinimetrix', {
+    const response = await fetch('http://localhost:3001/api/clinimetrix', {
       headers: headers
     });
     
@@ -73,7 +73,7 @@ async function testClinicalAssessments() {
   // Test 2: Get clinical assessments list
   console.log('\n2. Testing clinical assessments list endpoint...');
   try {
-    const response = await fetch('http://localhost:3001/api/v1/clinimetrix/assessments', {
+    const response = await fetch('http://localhost:3001/api/clinimetrix/assessments', {
       headers: headers
     });
     
@@ -93,7 +93,7 @@ async function testClinicalAssessments() {
   // Test 3: Get clinical scales
   console.log('\n3. Testing clinical scales endpoint...');
   try {
-    const response = await fetch('http://localhost:3001/api/v1/clinimetrix/scales', {
+    const response = await fetch('http://localhost:3001/api/clinimetrix/scales', {
       headers: headers
     });
     
@@ -113,7 +113,7 @@ async function testClinicalAssessments() {
   // Test 4: Get clinical workflows
   console.log('\n4. Testing clinical workflows endpoint...');
   try {
-    const response = await fetch('http://localhost:3001/api/v1/clinimetrix/workflows', {
+    const response = await fetch('http://localhost:3001/api/clinimetrix/workflows', {
       headers: headers
     });
     
@@ -139,7 +139,7 @@ async function testClinicalAssessments() {
       'Content-Type': 'application/json'
     };
     
-    const response = await fetch('http://localhost:3001/api/v1/clinimetrix/assessments', {
+    const response = await fetch('http://localhost:3001/api/clinimetrix/assessments', {
       headers: nurseHeaders
     });
     
@@ -167,10 +167,10 @@ const PORT = 3001;
 app.listen(PORT, () => {
   console.log(`🚀 Clinical Assessments Test Server running on port ${PORT}`);
   console.log(`📋 Available endpoints:`);
-  console.log(`   GET /api/v1/clinimetrix - Hub information`);
-  console.log(`   GET /api/v1/clinimetrix/assessments - Clinical assessments`);
-  console.log(`   GET /api/v1/clinimetrix/scales - Clinical scales`);
-  console.log(`   GET /api/v1/clinimetrix/workflows - Clinical workflows`);
+  console.log(`   GET /api/clinimetrix - Hub information`);
+  console.log(`   GET /api/clinimetrix/assessments - Clinical assessments`);
+  console.log(`   GET /api/clinimetrix/scales - Clinical scales`);
+  console.log(`   GET /api/clinimetrix/workflows - Clinical workflows`);
   console.log(`\n🔑 Test token (Psychiatrist):`);
   console.log(`   ${generateTestToken('psychiatrist')}`);
   

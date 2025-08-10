@@ -10,7 +10,7 @@ export async function GET(request: NextRequest) {
       params.append(key, value);
     });
     
-    let url = 'http://localhost:8080/api/v1/finance/income';
+    let url = 'http://localhost:8080/api/finance/income';
     if (params.toString()) {
       url += `?${params.toString()}`;
     }
@@ -51,7 +51,7 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
     
-    const response = await fetch('http://localhost:8080/api/v1/finance/income', {
+    const response = await fetch('http://localhost:8080/api/finance/income', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

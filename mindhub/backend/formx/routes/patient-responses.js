@@ -13,7 +13,7 @@ const { executeQuery, executeTransaction } = require('../../shared/config/prisma
 const router = express.Router();
 
 /**
- * POST /api/v1/formx/submissions
+ * POST /api/formx/submissions
  * Submit form responses from patient
  */
 router.post('/', [
@@ -374,7 +374,7 @@ router.post('/', [
 });
 
 /**
- * GET /api/v1/formx/submissions/:id
+ * GET /api/formx/submissions/:id
  * Get specific submission
  */
 router.get('/:id', [
@@ -439,7 +439,7 @@ router.get('/:id', [
 });
 
 /**
- * GET /api/v1/formx/submissions/patient/:patientId
+ * GET /api/formx/submissions/patient/:patientId
  * Get all submissions for a patient
  */
 router.get('/patient/:patientId', [

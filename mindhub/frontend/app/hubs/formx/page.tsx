@@ -34,7 +34,7 @@ export default function FormXPage() {
         setLoading(true);
         
         // Load forms
-        const formsResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/formx/forms`);
+        const formsResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/formx/forms`);
         if (formsResponse.ok) {
           const formsData = await formsResponse.json();
           setForms(formsData.data || []);
@@ -46,7 +46,7 @@ export default function FormXPage() {
         }
         
         // Load real stats from backend
-        const statsResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/formx/stats`);
+        const statsResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/formx/stats`);
         if (statsResponse.ok) {
           const statsData = await statsResponse.json();
           setStats(prev => ({
@@ -77,7 +77,7 @@ export default function FormXPage() {
   const handleEditForm = async (form: any) => {
     try {
       // Load full form data
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/formx/forms/${form.id}`);
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/formx/forms/${form.id}`);
       if (response.ok) {
         const formData = await response.json();
         setEditingForm(formData.data);
@@ -93,7 +93,7 @@ export default function FormXPage() {
 
   const handleDuplicateForm = async (form: any) => {
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/formx/forms/${form.id}/duplicate`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/formx/forms/${form.id}/duplicate`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ title: `${form.title} (Copia)` })
@@ -102,7 +102,7 @@ export default function FormXPage() {
       if (response.ok) {
         toast.success('Formulario duplicado exitosamente');
         // Refresh forms list
-        const formsResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/formx/forms`);
+        const formsResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/formx/forms`);
         if (formsResponse.ok) {
           const formsData = await formsResponse.json();
           setForms(formsData.data || []);
@@ -129,7 +129,7 @@ export default function FormXPage() {
     // Refresh data after assignment
     const loadData = async () => {
       try {
-        const formsResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/formx/forms`);
+        const formsResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/formx/forms`);
         if (formsResponse.ok) {
           const formsData = await formsResponse.json();
           setForms(formsData.data || []);
@@ -272,7 +272,7 @@ export default function FormXPage() {
             // Refresh forms and stats
             const loadData = async () => {
               try {
-                const formsResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/formx/forms`);
+                const formsResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/formx/forms`);
                 if (formsResponse.ok) {
                   const formsData = await formsResponse.json();
                   setForms(formsData.data || []);
@@ -598,7 +598,7 @@ export default function FormXPage() {
           onRefresh={() => {
             const loadData = async () => {
               try {
-                const formsResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/formx/forms`);
+                const formsResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/formx/forms`);
                 if (formsResponse.ok) {
                   const formsData = await formsResponse.json();
                   setForms(formsData.data || []);
@@ -650,7 +650,7 @@ export default function FormXPage() {
           onRefresh={() => {
             const loadData = async () => {
               try {
-                const formsResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/formx/forms`);
+                const formsResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/formx/forms`);
                 if (formsResponse.ok) {
                   const formsData = await formsResponse.json();
                   setForms(formsData.data || []);

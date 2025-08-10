@@ -20,7 +20,7 @@ const ScaleRepository = require('../../repositories/ScaleRepository');
 const scaleRepository = new ScaleRepository();
 
 /**
- * GET /api/v1/clinimetrix/scales
+ * GET /api/clinimetrix/scales
  * Get available clinical scales with filtering
  */
 router.get('/',
@@ -166,7 +166,7 @@ router.get('/',
 );
 
 /**
- * GET /api/v1/clinimetrix/scales/:id
+ * GET /api/clinimetrix/scales/:id
  * Get detailed scale information for clinical use
  */
 router.get('/:id',
@@ -301,7 +301,7 @@ router.get('/:id',
 );
 
 /**
- * GET /api/v1/clinimetrix/scales/categories
+ * GET /api/clinimetrix/scales/categories
  * Get available scale categories for filtering
  */
 router.get('/categories',

@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 
 export async function GET(request: NextRequest) {
   try {
-    const response = await fetch('http://localhost:8080/api/v1/frontdesk/tasks/pending', {
+    const response = await fetch('http://localhost:8080/api/frontdesk/tasks/pending', {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',

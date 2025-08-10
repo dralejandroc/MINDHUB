@@ -52,7 +52,7 @@ export default function DailyView({
     const loadAppointments = async () => {
       try {
         console.log('🔄 Loading appointments for daily view...', selectedDate.toISOString().split('T')[0]);
-        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/expedix/agenda/appointments`);
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/expedix/agenda/appointments`);
         
         if (response.ok) {
           const data = await response.json();

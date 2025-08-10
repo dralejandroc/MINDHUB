@@ -99,13 +99,13 @@ export const agendaApi = {
     if (params?.status) searchParams.append('status', params.status);
     if (params?.patientId) searchParams.append('patientId', params.patientId);
 
-    const response = await fetch(`${API_BASE}/api/v1/expedix/agenda/appointments?${searchParams}`);
+    const response = await fetch(`${API_BASE}/expedix/agenda/appointments?${searchParams}`);
     return response.json();
   },
 
   // Crear nueva cita
   async createAppointment(appointmentData: AppointmentData): Promise<ApiResponse<Appointment>> {
-    const response = await fetch(`${API_BASE}/api/v1/expedix/agenda/appointments`, {
+    const response = await fetch(`${API_BASE}/expedix/agenda/appointments`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -117,7 +117,7 @@ export const agendaApi = {
 
   // Actualizar cita
   async updateAppointment(appointmentId: string, updates: Partial<Appointment>): Promise<ApiResponse<Appointment>> {
-    const response = await fetch(`${API_BASE}/api/v1/expedix/agenda/appointments/${appointmentId}`, {
+    const response = await fetch(`${API_BASE}/expedix/agenda/appointments/${appointmentId}`, {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
@@ -129,7 +129,7 @@ export const agendaApi = {
 
   // Cancelar cita
   async cancelAppointment(appointmentId: string): Promise<ApiResponse<Appointment>> {
-    const response = await fetch(`${API_BASE}/api/v1/expedix/agenda/appointments/${appointmentId}`, {
+    const response = await fetch(`${API_BASE}/expedix/agenda/appointments/${appointmentId}`, {
       method: 'DELETE',
     });
     return response.json();
@@ -146,13 +146,13 @@ export const agendaApi = {
     if (params?.priority) searchParams.append('priority', params.priority);
     if (params?.status) searchParams.append('status', params.status);
 
-    const response = await fetch(`${API_BASE}/api/v1/expedix/agenda/waiting-list?${searchParams}`);
+    const response = await fetch(`${API_BASE}/expedix/agenda/waiting-list?${searchParams}`);
     return response.json();
   },
 
   // Agregar a lista de espera
   async addToWaitingList(waitingListData: WaitingListData): Promise<ApiResponse<WaitingListEntry>> {
-    const response = await fetch(`${API_BASE}/api/v1/expedix/agenda/waiting-list`, {
+    const response = await fetch(`${API_BASE}/expedix/agenda/waiting-list`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -164,7 +164,7 @@ export const agendaApi = {
 
   // Actualizar entrada en lista de espera
   async updateWaitingListEntry(entryId: string, updates: Partial<WaitingListEntry>): Promise<ApiResponse<WaitingListEntry>> {
-    const response = await fetch(`${API_BASE}/api/v1/expedix/agenda/waiting-list/${entryId}`, {
+    const response = await fetch(`${API_BASE}/expedix/agenda/waiting-list/${entryId}`, {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
@@ -176,7 +176,7 @@ export const agendaApi = {
 
   // Remover de lista de espera
   async removeFromWaitingList(entryId: string): Promise<ApiResponse<void>> {
-    const response = await fetch(`${API_BASE}/api/v1/expedix/agenda/waiting-list/${entryId}`, {
+    const response = await fetch(`${API_BASE}/expedix/agenda/waiting-list/${entryId}`, {
       method: 'DELETE',
     });
     return response.json();
@@ -191,7 +191,7 @@ export const agendaApi = {
     paymentAmount: number;
     confirmationHours: number;
   }): Promise<ApiResponse<AppointmentInvitation[]>> {
-    const response = await fetch(`${API_BASE}/api/v1/expedix/agenda/invitations/send`, {
+    const response = await fetch(`${API_BASE}/expedix/agenda/invitations/send`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -210,7 +210,7 @@ export const agendaApi = {
     if (params?.status) searchParams.append('status', params.status);
     if (params?.timeFilter) searchParams.append('timeFilter', params.timeFilter);
 
-    const response = await fetch(`${API_BASE}/api/v1/expedix/agenda/invitations?${searchParams}`);
+    const response = await fetch(`${API_BASE}/expedix/agenda/invitations?${searchParams}`);
     return response.json();
   },
 
@@ -220,7 +220,7 @@ export const agendaApi = {
     status: AppointmentInvitation['status'],
     data?: { paymentMethod?: 'card' | 'transfer' | 'cash' }
   ): Promise<ApiResponse<AppointmentInvitation>> {
-    const response = await fetch(`${API_BASE}/api/v1/expedix/agenda/invitations/${invitationId}/status`, {
+    const response = await fetch(`${API_BASE}/expedix/agenda/invitations/${invitationId}/status`, {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
@@ -241,7 +241,7 @@ export const agendaApi = {
     if (params?.startDate) searchParams.append('startDate', params.startDate);
     if (params?.endDate) searchParams.append('endDate', params.endDate);
 
-    const response = await fetch(`${API_BASE}/api/v1/expedix/agenda/available-slots?${searchParams}`);
+    const response = await fetch(`${API_BASE}/expedix/agenda/available-slots?${searchParams}`);
     return response.json();
   },
 
@@ -252,7 +252,7 @@ export const agendaApi = {
     const searchParams = new URLSearchParams();
     if (search) searchParams.append('search', search);
 
-    const response = await fetch(`${API_BASE}/api/v1/expedix/agenda/patients?${searchParams}`);
+    const response = await fetch(`${API_BASE}/expedix/agenda/patients?${searchParams}`);
     return response.json();
   },
 
@@ -264,13 +264,13 @@ export const agendaApi = {
     monitoredInvitations: number;
     invitations: AppointmentInvitation[];
   }>> {
-    const response = await fetch(`${API_BASE}/api/v1/expedix/agenda/monitor/status`);
+    const response = await fetch(`${API_BASE}/expedix/agenda/monitor/status`);
     return response.json();
   },
 
   // Probar recordatorio
   async testReminder(invitationId: string): Promise<ApiResponse<void>> {
-    const response = await fetch(`${API_BASE}/api/v1/expedix/agenda/monitor/test-reminder/${invitationId}`, {
+    const response = await fetch(`${API_BASE}/expedix/agenda/monitor/test-reminder/${invitationId}`, {
       method: 'POST',
     });
     return response.json();

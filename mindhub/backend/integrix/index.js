@@ -133,7 +133,7 @@ class IntegrixGateway {
       displayName: 'Expedix Patient Management',
       description: 'Comprehensive patient management and medical records system',
       version: '1.0.0',
-      baseUrl: '/api/v1/expedix',
+      baseUrl: '/api/expedix',
       domain: 'patient-management',
       owner: 'expedix-team',
       tags: ['critical', 'core', 'patient-data'],
@@ -153,7 +153,7 @@ class IntegrixGateway {
       // Health check configuration
       healthCheck: {
         enabled: true,
-        endpoint: '/api/v1/expedix/health',
+        endpoint: '/api/expedix/health',
         interval: 30000,
         timeout: 5000,
         handler: async () => {
@@ -185,7 +185,7 @@ class IntegrixGateway {
       displayName: 'Clinimetrix Assessment Platform',
       description: 'Clinical assessments, psychometric scales, and scoring system',
       version: '1.0.0',
-      baseUrl: '/api/v1/clinimetrix',
+      baseUrl: '/api/clinimetrix',
       domain: 'clinical-assessments',
       owner: 'clinimetrix-team',
       tags: ['critical', 'core', 'assessments'],
@@ -202,7 +202,7 @@ class IntegrixGateway {
       
       healthCheck: {
         enabled: true,
-        endpoint: '/api/v1/clinimetrix/health',
+        endpoint: '/api/clinimetrix/health',
         interval: 30000,
         handler: async () => {
           return { healthy: true, details: { status: 'operational' } };
@@ -229,7 +229,7 @@ class IntegrixGateway {
       displayName: 'FormX Dynamic Forms',
       description: 'Dynamic form builder, templates, and submission management',
       version: '1.0.0',
-      baseUrl: '/api/v1/formx',
+      baseUrl: '/api/formx',
       domain: 'form-management',
       owner: 'formx-team',
       tags: ['core', 'forms'],
@@ -245,7 +245,7 @@ class IntegrixGateway {
       
       healthCheck: {
         enabled: true,
-        endpoint: '/api/v1/formx/health',
+        endpoint: '/api/formx/health',
         interval: 30000
       },
       
@@ -269,7 +269,7 @@ class IntegrixGateway {
       displayName: 'Resources Library',
       description: 'Educational content, treatment plans, and resource management',
       version: '1.0.0',
-      baseUrl: '/api/v1/resources',
+      baseUrl: '/api/resources',
       domain: 'content-management',
       owner: 'resources-team',
       tags: ['content', 'educational'],
@@ -285,7 +285,7 @@ class IntegrixGateway {
       
       healthCheck: {
         enabled: true,
-        endpoint: '/api/v1/resources/health',
+        endpoint: '/api/resources/health',
         interval: 45000
       },
       
@@ -409,25 +409,25 @@ class IntegrixGateway {
     this.app.use('/api/hub-links', hubLinksRoutes);
     
     // Mount service routes with middleware
-    this.app.use('/api/v1/expedix', 
+    this.app.use('/api/expedix', 
       RoutingMiddleware.routeRequest(),
       RoutingMiddleware.checkServiceHealth(),
       expedix
     );
     
-    this.app.use('/api/v1/clinimetrix',
+    this.app.use('/api/clinimetrix',
       RoutingMiddleware.routeRequest(),
       RoutingMiddleware.checkServiceHealth(),
       clinimetrix
     );
     
-    this.app.use('/api/v1/formx',
+    this.app.use('/api/formx',
       RoutingMiddleware.routeRequest(),
       RoutingMiddleware.checkServiceHealth(),
       formx
     );
     
-    this.app.use('/api/v1/resources',
+    this.app.use('/api/resources',
       RoutingMiddleware.routeRequest(),
       RoutingMiddleware.checkServiceHealth(),
       resources
@@ -466,10 +466,10 @@ class IntegrixGateway {
           health: '/api/gateway/health',
           services: '/api/gateway/services',
           hubLinks: '/api/hub-links',
-          expedix: '/api/v1/expedix',
-          clinimetrix: '/api/v1/clinimetrix',
-          formx: '/api/v1/formx',
-          resources: '/api/v1/resources',
+          expedix: '/api/expedix',
+          clinimetrix: '/api/clinimetrix',
+          formx: '/api/formx',
+          resources: '/api/resources',
           scales: '/api/scales',
           assessments: '/api/assessments'
         }

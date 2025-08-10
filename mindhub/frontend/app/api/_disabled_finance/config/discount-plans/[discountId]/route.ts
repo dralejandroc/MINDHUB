@@ -7,7 +7,7 @@ export async function PUT(
   try {
     const body = await request.json();
     
-    const response = await fetch(`http://localhost:8080/api/v1/finance/config/discount-plans/${params.discountId}`, {
+    const response = await fetch(`http://localhost:8080/api/finance/config/discount-plans/${params.discountId}`, {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
@@ -39,7 +39,7 @@ export async function DELETE(
   { params }: { params: { discountId: string } }
 ) {
   try {
-    const response = await fetch(`http://localhost:8080/api/v1/finance/config/discount-plans/${params.discountId}`, {
+    const response = await fetch(`http://localhost:8080/api/finance/config/discount-plans/${params.discountId}`, {
       method: 'DELETE',
     });
 

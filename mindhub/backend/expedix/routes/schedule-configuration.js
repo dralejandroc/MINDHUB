@@ -125,7 +125,7 @@ const APPOINTMENT_TYPES = {
 };
 
 /**
- * GET /api/v1/expedix/schedule-config
+ * GET /api/expedix/schedule-config
  * Get current user's schedule configuration
  */
 router.get('/',
@@ -228,7 +228,7 @@ router.get('/',
 );
 
 /**
- * POST /api/v1/expedix/schedule-config
+ * POST /api/expedix/schedule-config
  * Save current user's schedule configuration
  */
 router.post('/',
@@ -361,7 +361,7 @@ router.post('/',
 );
 
 /**
- * GET /api/v1/expedix/schedule-config/default
+ * GET /api/expedix/schedule-config/default
  * Get default schedule configuration
  */
 router.get('/default',
@@ -399,7 +399,7 @@ router.get('/default',
 );
 
 /**
- * GET /api/v1/expedix/schedule-config/provider/:providerId
+ * GET /api/expedix/schedule-config/provider/:providerId
  * Get schedule configuration for a specific provider
  */
 router.get('/provider/:providerId',
@@ -503,7 +503,7 @@ router.get('/provider/:providerId',
 );
 
 /**
- * POST /api/v1/expedix/schedule-config/provider/:providerId
+ * POST /api/expedix/schedule-config/provider/:providerId
  * Create or update schedule configuration for a provider
  */
 router.post('/provider/:providerId',
@@ -678,7 +678,7 @@ router.post('/provider/:providerId',
 );
 
 /**
- * GET /api/v1/expedix/schedule-config/provider/:providerId/availability
+ * GET /api/expedix/schedule-config/provider/:providerId/availability
  * Get provider availability for a specific date range
  */
 router.get('/provider/:providerId/availability',

@@ -7,7 +7,7 @@ export async function PUT(
   try {
     const body = await request.json();
     
-    const response = await fetch(`http://localhost:8080/api/v1/finance/config/services/${params.serviceId}`, {
+    const response = await fetch(`http://localhost:8080/api/finance/config/services/${params.serviceId}`, {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
@@ -39,7 +39,7 @@ export async function DELETE(
   { params }: { params: { serviceId: string } }
 ) {
   try {
-    const response = await fetch(`http://localhost:8080/api/v1/finance/config/services/${params.serviceId}`, {
+    const response = await fetch(`http://localhost:8080/api/finance/config/services/${params.serviceId}`, {
       method: 'DELETE',
     });
 

@@ -46,7 +46,7 @@ export class ClinimetrixApiClient {
     this.baseUrl = config.baseUrl;
     
     this.client = axios.create({
-      baseURL: `${config.baseUrl}/api/v1/clinimetrix`,
+      baseURL: `${config.baseUrl}/api/clinimetrix`,
       timeout: config.timeout || 30000,
       headers: {
         'Content-Type': 'application/json',

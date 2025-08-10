@@ -213,28 +213,28 @@ The MindHub API provides secure, compliant access to patient management, clinica
 ### Expedix - Patient Management
 Comprehensive patient data management with medical records, demographics, and care coordination.
 
-- **Base URL**: \`/api/v1/expedix\`
+- **Base URL**: \`/api/expedix\`
 - **Key Features**: Patient records, medical history, care plans
 - **Compliance**: PHI-protected endpoints with audit logging
 
 ### Clinimetrix - Clinical Assessments
 Standardized psychological assessments and clinical evaluation tools.
 
-- **Base URL**: \`/api/v1/clinimetrix\`
+- **Base URL**: \`/api/clinimetrix\`
 - **Key Features**: Assessment scales, scoring algorithms, interpretations
 - **Specialization**: Depression, anxiety, bipolar, trauma assessments
 
 ### Formx - Dynamic Forms
 Flexible form builder and submission management system.
 
-- **Base URL**: \`/api/v1/formx\`
+- **Base URL**: \`/api/formx\`
 - **Key Features**: Form creation, conditional logic, submissions
 - **Use Cases**: Intake forms, consent forms, satisfaction surveys
 
 ### Resources - Educational Content
 Educational materials and resources for patients and professionals.
 
-- **Base URL**: \`/api/v1/resources\`
+- **Base URL**: \`/api/resources\`
 - **Key Features**: Content library, personalized recommendations
 - **Content Types**: Handouts, videos, interactive tools
 
@@ -748,7 +748,7 @@ All API interactions involving patient data are automatically logged:
   "userRole": "psychiatrist",
   "patientId": "patient-456",
   "action": "READ",
-  "endpoint": "/api/v1/expedix/patients/patient-456",
+  "endpoint": "/api/expedix/patients/patient-456",
   "ipAddress": "192.168.1.1",
   "userAgent": "MindHub-Client/1.0",
   "justification": "Clinical assessment review",

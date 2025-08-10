@@ -673,7 +673,7 @@ class IntegrixAPIArchitecture {
       strategy: 'URL-based versioning',
       pattern: '/api/v{major}',
       examples: [
-        '/api/v1/patients',
+        '/api/patients',
         '/api/v2/assessments'
       ],
       

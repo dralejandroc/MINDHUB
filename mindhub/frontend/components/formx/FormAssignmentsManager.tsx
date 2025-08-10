@@ -55,7 +55,7 @@ export const FormAssignmentsManager: React.FC<FormAssignmentsManagerProps> = ({
       // If a specific form is selected, load its assignments
       if (selectedForm !== 'all') {
         const response = await fetch(
-          `${process.env.NEXT_PUBLIC_API_URL}/api/v1/formx/forms/${selectedForm}/assignments`
+          `${process.env.NEXT_PUBLIC_API_URL}/api/formx/forms/${selectedForm}/assignments`
         );
         
         if (response.ok) {
@@ -69,7 +69,7 @@ export const FormAssignmentsManager: React.FC<FormAssignmentsManagerProps> = ({
         for (const form of forms) {
           try {
             const response = await fetch(
-              `${process.env.NEXT_PUBLIC_API_URL}/api/v1/formx/forms/${form.id}/assignments`
+              `${process.env.NEXT_PUBLIC_API_URL}/api/formx/forms/${form.id}/assignments`
             );
             
             if (response.ok) {

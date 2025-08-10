@@ -98,7 +98,7 @@ const validateAssessmentResponse = [
 ];
 
 /**
- * POST /api/v1/clinimetrix/assessments
+ * POST /api/clinimetrix/assessments
  * Create a new clinical assessment
  */
 router.post('/',
@@ -252,7 +252,7 @@ router.post('/',
 );
 
 /**
- * GET /api/v1/clinimetrix/assessments
+ * GET /api/clinimetrix/assessments
  * Get clinical assessments with filtering and pagination
  */
 router.get('/',
@@ -414,7 +414,7 @@ router.get('/',
 );
 
 /**
- * GET /api/v1/clinimetrix/assessments/:id
+ * GET /api/clinimetrix/assessments/:id
  * Get specific clinical assessment details
  */
 router.get('/:id',
@@ -532,7 +532,7 @@ router.get('/:id',
 );
 
 /**
- * POST /api/v1/clinimetrix/assessments/:id/start
+ * POST /api/clinimetrix/assessments/:id/start
  * Start assessment administration
  */
 router.post('/:id/start',
@@ -635,7 +635,7 @@ router.post('/:id/start',
 );
 
 /**
- * POST /api/v1/clinimetrix/assessments/:id/responses
+ * POST /api/clinimetrix/assessments/:id/responses
  * Submit assessment responses
  */
 router.post('/:id/responses',
@@ -769,7 +769,7 @@ router.post('/:id/responses',
 );
 
 /**
- * POST /api/v1/clinimetrix/assessments/:id/complete
+ * POST /api/clinimetrix/assessments/:id/complete
  * Complete assessment and calculate results
  */
 router.post('/:id/complete',
@@ -962,7 +962,7 @@ router.post('/:id/complete',
 );
 
 /**
- * GET /api/v1/clinimetrix/assessments/:id/results
+ * GET /api/clinimetrix/assessments/:id/results
  * Get assessment results and interpretation
  */
 router.get('/:id/results',
@@ -1085,7 +1085,7 @@ router.get('/:id/results',
 );
 
 /**
- * GET /api/v1/clinimetrix/patients/:patientId/assessments
+ * GET /api/clinimetrix/patients/:patientId/assessments
  * Get all assessments for a specific patient
  */
 router.get('/patients/:patientId/assessments',
@@ -1205,7 +1205,7 @@ router.get('/patients/:patientId/assessments',
 );
 
 /**
- * PUT /api/v1/clinimetrix/assessments/:id/cancel
+ * PUT /api/clinimetrix/assessments/:id/cancel
  * Cancel an assessment
  */
 router.put('/:id/cancel',
@@ -1308,7 +1308,7 @@ router.put('/:id/cancel',
 );
 
 /**
- * GET /api/v1/clinimetrix/patients/:patientId/assessments
+ * GET /api/clinimetrix/patients/:patientId/assessments
  * Get all assessments for a specific patient
  */
 router.get('/patients/:patientId/assessments',

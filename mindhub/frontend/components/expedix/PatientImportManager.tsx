@@ -62,7 +62,7 @@ export default function PatientImportManager({ onClose, onImportComplete }: Pati
 
   const loadImportLimits = async () => {
     try {
-      const response = await fetch('/api/v1/expedix/import/limits');
+      const response = await fetch('/api/expedix/import/limits');
       const data = await response.json();
       
       if (data.success) {
@@ -82,7 +82,7 @@ export default function PatientImportManager({ onClose, onImportComplete }: Pati
   const downloadTemplate = async (templateType: string) => {
     try {
       setProcessing(true);
-      const response = await fetch(`/api/v1/expedix/import/template/${templateType}`);
+      const response = await fetch(`/api/expedix/import/template/${templateType}`);
       
       if (response.ok) {
         const blob = await response.blob();
@@ -153,7 +153,7 @@ export default function PatientImportManager({ onClose, onImportComplete }: Pati
       const formData = new FormData();
       formData.append('file', uploadedFile);
       
-      const response = await fetch('/api/v1/expedix/import/preview', {
+      const response = await fetch('/api/expedix/import/preview', {
         method: 'POST',
         body: formData
       });
@@ -185,7 +185,7 @@ export default function PatientImportManager({ onClose, onImportComplete }: Pati
       const formData = new FormData();
       formData.append('file', uploadedFile);
       
-      const response = await fetch('/api/v1/expedix/import/execute', {
+      const response = await fetch('/api/expedix/import/execute', {
         method: 'POST',
         body: formData
       });

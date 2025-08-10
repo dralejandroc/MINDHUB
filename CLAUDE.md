@@ -58,7 +58,7 @@ MindHub/
 
 ### 1. **Expedix** - Gestión de Pacientes y Expedientes Médicos
 - **URL**: `/hubs/expedix`
-- **API URL**: `https://mindhub.cloud/api/v1/expedix`
+- **API URL**: `https://mindhub.cloud/api/expedix`
 - **Funcionalidades**:
   - Gestión completa de pacientes (CRUD)
   - Expedientes médicos digitales
@@ -97,7 +97,7 @@ MindHub/
 
 ### 3. **FormX** - Generador de Formularios
 - **URL**: `/hubs/formx`
-- **API URL**: `https://mindhub.cloud/api/v1/formx`
+- **API URL**: `https://mindhub.cloud/api/formx`
 - **Funcionalidades**:
   - Creación de formularios personalizados
   - Templates médicos preconfigurrradors
@@ -350,3 +350,4 @@ El **CardBase** es el sistema de navegación por tarjetas que maneja todo el flu
 
 ## Recordatorios de Desarrollo
 - No hagas commit ni push en github hasta que yo te lo pida. me puedes preguntar, pero no lo hagas sin que me autorice
+- todos los endpoints correctos, olvidate de los anteriores, el /v1 ya no existen. No quiero que vuelvas a cometer este error.

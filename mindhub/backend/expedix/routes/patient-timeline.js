@@ -21,7 +21,7 @@ const { logger } = require('../../shared/config/storage');
 const router = express.Router();
 
 /**
- * GET /api/v1/expedix/patient-timeline/:patientId
+ * GET /api/expedix/patient-timeline/:patientId
  * Get comprehensive timeline for a patient
  */
 router.get('/:patientId',
@@ -323,7 +323,7 @@ router.get('/:patientId',
 );
 
 /**
- * POST /api/v1/expedix/patient-timeline/:patientId/note
+ * POST /api/expedix/patient-timeline/:patientId/note
  * Add a clinical note to patient timeline
  */
 router.post('/:patientId/note',
@@ -437,7 +437,7 @@ router.post('/:patientId/note',
 );
 
 /**
- * GET /api/v1/expedix/patient-timeline/:patientId/alerts
+ * GET /api/expedix/patient-timeline/:patientId/alerts
  * Get active alerts and reminders for patient
  */
 router.get('/:patientId/alerts',

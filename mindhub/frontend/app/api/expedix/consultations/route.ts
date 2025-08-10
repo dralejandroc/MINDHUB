@@ -9,7 +9,7 @@ export async function GET(request: NextRequest) {
     const page = searchParams.get('page') || '1';
     const limit = searchParams.get('limit') || '20';
     
-    let url = `${BACKEND_URL}/api/v1/expedix/consultations?page=${page}&limit=${limit}`;
+    let url = `${BACKEND_URL}/api/expedix/consultations?page=${page}&limit=${limit}`;
     if (patient_id) {
       url += `&patient_id=${encodeURIComponent(patient_id)}`;
     }
@@ -76,7 +76,7 @@ export async function POST(request: NextRequest) {
       headers['X-User-Context'] = userContextHeader;
     }
     
-    const response = await fetch(`${BACKEND_URL}/api/v1/expedix/consultations`, {
+    const response = await fetch(`${BACKEND_URL}/api/expedix/consultations`, {
       method: 'POST',
       headers,
       body: JSON.stringify(body),

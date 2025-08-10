@@ -51,12 +51,12 @@ router.get('/', (req, res) => {
       'Healthcare Compliance (NOM-024)'
     ],
     endpoints: {
-      forms: '/api/v1/formx/forms',
-      templates: '/api/v1/formx/templates',
-      submissions: '/api/v1/formx/submissions',
-      versioning: '/api/v1/formx/forms/:id/versions',
-      analytics: '/api/v1/formx/analytics',
-      patients: '/api/v1/formx/patients'
+      forms: '/api/formx/forms',
+      templates: '/api/formx/templates',
+      submissions: '/api/formx/submissions',
+      versioning: '/api/formx/forms/:id/versions',
+      analytics: '/api/formx/analytics',
+      patients: '/api/formx/patients'
     },
     fieldTypes: [
       'text', 'textarea', 'number', 'email', 'phone', 'date', 'time',

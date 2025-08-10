@@ -84,7 +84,7 @@ async function runClerkIntegrationTests() {
   // Test 2: Try accessing protected route without auth (should fail)
   console.log('');
   console.log('🔒 Testing Authentication Requirements...');
-  const unauthedPatients = await testEndpoint('/api/v1/expedix/patients', 'GET', null, false);
+  const unauthedPatients = await testEndpoint('/api/expedix/patients', 'GET', null, false);
   results.tests.push({ name: 'Unauthenticated Access (should fail)', success: !unauthedPatients.success, status: unauthedPatients.status });
   if (!unauthedPatients.success && unauthedPatients.status === 401) results.passed++; else results.failed++;
   
@@ -93,7 +93,7 @@ async function runClerkIntegrationTests() {
   console.log('🔓 Testing Authenticated Endpoints...');
   
   // Expedix routes
-  const patients = await testEndpoint('/api/v1/expedix/patients', 'GET');
+  const patients = await testEndpoint('/api/expedix/patients', 'GET');
   results.tests.push({ name: 'Get Patients (Expedix)', ...patients });
   if (patients.success) results.passed++; else results.failed++;
   
@@ -119,7 +119,7 @@ async function runClerkIntegrationTests() {
   console.log('');
   console.log('🚫 Testing Invalid Authentication...');
   
-  const invalidAuth = await testEndpoint('/api/v1/expedix/patients', 'GET', null, true);
+  const invalidAuth = await testEndpoint('/api/expedix/patients', 'GET', null, true);
   // Mock invalid token test - in real scenario this would use an actual invalid token
   results.tests.push({ name: 'Invalid Token (mocked)', success: true, status: 'Would fail in production' });
   results.passed++;

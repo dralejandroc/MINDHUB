@@ -207,7 +207,7 @@ export const ScaleAssessmentModal: React.FC<ScaleAssessmentModalProps> = ({
     setIsSearchingPatients(true);
     
     try {
-      const url = `http://localhost:8080/api/v1/expedix/patients?search=${encodeURIComponent(query)}&limit=10`;
+      const url = `http://localhost:8080/api/expedix/patients?search=${encodeURIComponent(query)}&limit=10`;
       
       const response = await fetch(url);
       

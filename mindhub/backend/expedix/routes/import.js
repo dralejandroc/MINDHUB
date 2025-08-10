@@ -1,6 +1,6 @@
 /**
  * Routes para importación masiva de pacientes
- * /api/v1/expedix/import/*
+ * /api/expedix/import/*
  * Solo disponible para usuarios Premium y Clínicas
  */
 
@@ -55,7 +55,7 @@ const upload = multer({
 });
 
 /**
- * GET /api/v1/expedix/import/template/:type
+ * GET /api/expedix/import/template/:type
  * Generar y descargar plantilla de Excel para importación
  * Tipos: basic, complete, clinic
  */
@@ -113,7 +113,7 @@ router.get('/template/:type', authenticate, async (req, res) => {
 });
 
 /**
- * POST /api/v1/expedix/import/preview
+ * POST /api/expedix/import/preview
  * Vista previa de importación (sin guardar en base de datos)
  */
 router.post('/preview', authenticate, upload.single('file'), async (req, res) => {
@@ -175,7 +175,7 @@ router.post('/preview', authenticate, upload.single('file'), async (req, res) =>
 });
 
 /**
- * POST /api/v1/expedix/import/execute
+ * POST /api/expedix/import/execute
  * Ejecutar importación real (guardar en base de datos)
  */
 router.post('/execute', authenticate, upload.single('file'), async (req, res) => {
@@ -250,7 +250,7 @@ router.post('/execute', authenticate, upload.single('file'), async (req, res) =>
 });
 
 /**
- * GET /api/v1/expedix/import/limits
+ * GET /api/expedix/import/limits
  * Obtener límites de importación según el tipo de cuenta
  */
 router.get('/limits', authenticate, async (req, res) => {
@@ -327,7 +327,7 @@ router.get('/limits', authenticate, async (req, res) => {
 });
 
 /**
- * GET /api/v1/expedix/import/history
+ * GET /api/expedix/import/history
  * Obtener historial de importaciones del usuario
  */
 router.get('/history', authenticate, async (req, res) => {
@@ -366,7 +366,7 @@ router.get('/history', authenticate, async (req, res) => {
 });
 
 /**
- * POST /api/v1/expedix/import/cleanup
+ * POST /api/expedix/import/cleanup
  * Limpiar archivos temporales (solo para administradores)
  */
 router.post('/cleanup', authenticate, async (req, res) => {

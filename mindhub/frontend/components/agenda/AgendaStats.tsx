@@ -33,7 +33,7 @@ export default function AgendaStats() {
     const loadStats = async () => {
       try {
         console.log('🔄 Loading agenda statistics...');
-        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/expedix/agenda/stats?period=${selectedPeriod}`);
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/expedix/agenda/stats?period=${selectedPeriod}`);
         
         if (response.ok) {
           const data = await response.json();
@@ -57,7 +57,7 @@ export default function AgendaStats() {
 
     const calculateStatsFromAppointments = async () => {
       try {
-        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/expedix/agenda/appointments`);
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/expedix/agenda/appointments`);
         if (response.ok) {
           const data = await response.json();
           if (data.success && data.data) {

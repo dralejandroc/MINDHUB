@@ -14,7 +14,7 @@ const frontDeskService = new FrontDeskService();
 // ============ ESTADÍSTICAS ============
 
 /**
- * GET /api/v1/frontdesk/stats/today
+ * GET /api/frontdesk/stats/today
  * Obtener estadísticas del día actual
  */
 router.get('/stats/today', async (req, res) => {
@@ -56,7 +56,7 @@ router.get('/stats/today', async (req, res) => {
 });
 
 /**
- * GET /api/v1/frontdesk/appointments/today
+ * GET /api/frontdesk/appointments/today
  * Obtener citas del día actual
  */
 router.get('/appointments/today', async (req, res) => {
@@ -103,7 +103,7 @@ router.get('/appointments/today', async (req, res) => {
 });
 
 /**
- * GET /api/v1/frontdesk/tasks/pending
+ * GET /api/frontdesk/tasks/pending
  * Obtener tareas pendientes
  */
 router.get('/tasks/pending', async (req, res) => {
@@ -149,7 +149,7 @@ router.get('/tasks/pending', async (req, res) => {
 // ============ PAGOS ============
 
 /**
- * GET /api/v1/frontdesk/payments/pending/:patientId
+ * GET /api/frontdesk/payments/pending/:patientId
  * Obtener pagos pendientes de un paciente
  */
 router.get('/payments/pending/:patientId', async (req, res) => {
@@ -174,7 +174,7 @@ router.get('/payments/pending/:patientId', async (req, res) => {
 });
 
 /**
- * POST /api/v1/frontdesk/payments/process
+ * POST /api/frontdesk/payments/process
  * Procesar un nuevo pago
  */
 router.post('/payments/process', [
@@ -233,7 +233,7 @@ router.post('/payments/process', [
 });
 
 /**
- * POST /api/v1/frontdesk/payments/pay-pending/:pendingId
+ * POST /api/frontdesk/payments/pay-pending/:pendingId
  * Pagar un monto pendiente específico
  */
 router.post('/payments/pay-pending/:pendingId', [
@@ -289,7 +289,7 @@ router.post('/payments/pay-pending/:pendingId', [
 // ============ CITAS ============
 
 /**
- * GET /api/v1/frontdesk/appointments/slots/:date
+ * GET /api/frontdesk/appointments/slots/:date
  * Obtener horarios disponibles para una fecha
  */
 router.get('/appointments/slots/:date', async (req, res) => {
@@ -314,7 +314,7 @@ router.get('/appointments/slots/:date', async (req, res) => {
 });
 
 /**
- * POST /api/v1/frontdesk/appointments/schedule
+ * POST /api/frontdesk/appointments/schedule
  * Agendar una nueva cita
  */
 router.post('/appointments/schedule', async (req, res) => {
@@ -344,7 +344,7 @@ router.post('/appointments/schedule', async (req, res) => {
 });
 
 /**
- * PUT /api/v1/frontdesk/appointments/:id/status
+ * PUT /api/frontdesk/appointments/:id/status
  * Actualizar estado de una cita
  */
 router.put('/appointments/:id/status', async (req, res) => {
@@ -374,7 +374,7 @@ router.put('/appointments/:id/status', async (req, res) => {
 // ============ BEHAVIORAL TRACKING ============
 
 /**
- * POST /api/v1/frontdesk/appointments/:id/behavioral-event
+ * POST /api/frontdesk/appointments/:id/behavioral-event
  * Registrar evento conductual del paciente (retraso, no-show, etc.)
  */
 router.post('/appointments/:id/behavioral-event', [
@@ -432,7 +432,7 @@ router.post('/appointments/:id/behavioral-event', [
 });
 
 /**
- * GET /api/v1/frontdesk/patients/:patientId/behavioral-history
+ * GET /api/frontdesk/patients/:patientId/behavioral-history
  * Obtener historial conductual de un paciente
  */
 router.get('/patients/:patientId/behavioral-history', async (req, res) => {
@@ -461,7 +461,7 @@ router.get('/patients/:patientId/behavioral-history', async (req, res) => {
 });
 
 /**
- * POST /api/v1/frontdesk/communications/log
+ * POST /api/frontdesk/communications/log
  * Registrar comunicación entre sesiones (llamadas, WhatsApp, etc.)
  */
 router.post('/communications/log', [
@@ -524,7 +524,7 @@ router.post('/communications/log', [
 // ============ RECURSOS ============
 
 /**
- * POST /api/v1/frontdesk/resources/send
+ * POST /api/frontdesk/resources/send
  * Enviar recursos a un paciente
  */
 router.post('/resources/send', async (req, res) => {
@@ -554,7 +554,7 @@ router.post('/resources/send', async (req, res) => {
 });
 
 /**
- * GET /api/v1/frontdesk/resources/history
+ * GET /api/frontdesk/resources/history
  * Obtener historial de recursos enviados
  */
 router.get('/resources/history', async (req, res) => {
@@ -585,7 +585,7 @@ router.get('/resources/history', async (req, res) => {
 // ============ NOTIFICACIONES Y RECORDATORIOS ============
 
 /**
- * POST /api/v1/frontdesk/reminders/appointment
+ * POST /api/frontdesk/reminders/appointment
  * Enviar recordatorio de cita
  */
 router.post('/reminders/appointment', async (req, res) => {
@@ -616,7 +616,7 @@ router.post('/reminders/appointment', async (req, res) => {
 });
 
 /**
- * GET /api/v1/frontdesk/notifications/pending
+ * GET /api/frontdesk/notifications/pending
  * Obtener notificaciones pendientes de enviar
  */
 router.get('/notifications/pending', async (req, res) => {
@@ -642,7 +642,7 @@ router.get('/notifications/pending', async (req, res) => {
 // ============ REPORTES RÁPIDOS ============
 
 /**
- * GET /api/v1/frontdesk/reports/daily
+ * GET /api/frontdesk/reports/daily
  * Reporte diario para recepción
  */
 router.get('/reports/daily', async (req, res) => {
@@ -669,7 +669,7 @@ router.get('/reports/daily', async (req, res) => {
 });
 
 /**
- * GET /api/v1/frontdesk/reports/payments
+ * GET /api/frontdesk/reports/payments
  * Reporte de pagos del día
  */
 router.get('/reports/payments', async (req, res) => {

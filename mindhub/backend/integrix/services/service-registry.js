@@ -34,7 +34,7 @@ class ServiceRegistry extends EventEmitter {
       displayName: config.displayName || serviceName,
       description: config.description || '',
       version: config.version || '1.0.0',
-      baseUrl: config.baseUrl || `/api/v1/${serviceName}`,
+      baseUrl: config.baseUrl || `/api/${serviceName}`,
       
       // Service metadata
       metadata: {
@@ -465,7 +465,7 @@ class ServiceRegistry extends EventEmitter {
    * @returns {boolean} Match result
    */
   matchEndpointPattern(endpoint, pattern) {
-    // Convert pattern to regex (e.g., /api/v1/patients/{id} -> /api/v1/patients/[^/]+)
+    // Convert pattern to regex (e.g., /api/patients/{id} -> /api/patients/[^/]+)
     const regexPattern = pattern.replace(/{[^}]+}/g, '[^/]+');
     const regex = new RegExp(`^${regexPattern}$`);
     return regex.test(endpoint);

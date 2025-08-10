@@ -17,7 +17,7 @@ const router = express.Router();
 const auditLogger = new AuditLogger();
 
 /**
- * GET /api/v1/formx/patients/:patientId/forms
+ * GET /api/formx/patients/:patientId/forms
  * Get all forms assigned to a specific patient
  */
 router.get('/:patientId/forms',
@@ -198,7 +198,7 @@ router.get('/:patientId/forms',
 );
 
 /**
- * POST /api/v1/formx/patients/:patientId/forms/:formId/assign
+ * POST /api/formx/patients/:patientId/forms/:formId/assign
  * Assign a form to a patient
  */
 router.post('/:patientId/forms/:formId/assign',
@@ -395,7 +395,7 @@ router.post('/:patientId/forms/:formId/assign',
 );
 
 /**
- * POST /api/v1/formx/patients/:patientId/forms/:formId/submit
+ * POST /api/formx/patients/:patientId/forms/:formId/submit
  * Submit a form on behalf of a patient or allow patient self-submission
  */
 router.post('/:patientId/forms/:formId/submit',
@@ -598,7 +598,7 @@ router.post('/:patientId/forms/:formId/submit',
 );
 
 /**
- * GET /api/v1/formx/patients/:patientId/forms/:formId/submission
+ * GET /api/formx/patients/:patientId/forms/:formId/submission
  * Get form submission details for a patient
  */
 router.get('/:patientId/forms/:formId/submission',

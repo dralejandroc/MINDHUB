@@ -636,10 +636,10 @@ function getTopViolatingIPs(limit) {
 function getTopEndpoints(limit) {
   // Mock data - in production, this would come from actual request tracking
   return [
-    { endpoint: '/api/v1/patients', count: 1500 },
-    { endpoint: '/api/v1/assessments', count: 1200 },
-    { endpoint: '/api/v1/forms', count: 800 },
-    { endpoint: '/api/v1/resources', count: 600 }
+    { endpoint: '/api/patients', count: 1500 },
+    { endpoint: '/api/assessments', count: 1200 },
+    { endpoint: '/api/forms', count: 800 },
+    { endpoint: '/api/resources', count: 600 }
   ].slice(0, limit);
 }
 

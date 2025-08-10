@@ -16,7 +16,7 @@ Este documento describe la integración completa de Clerk JWT authentication en 
   - Soporte para autenticación por API key (servicios internos)
 
 ### 2. Rutas Protegidas
-- **Expedix**: Todas las rutas en `/api/v1/expedix/*`
+- **Expedix**: Todas las rutas en `/api/expedix/*`
 - **ClinimetrixPro**: Todas las rutas en `/api/clinimetrix-pro/*`
 - Filtrado automático de datos por usuario autenticado
 
@@ -96,7 +96,7 @@ node test-clerk-integration.js
 
 ### 1. Request del Frontend
 ```javascript
-fetch('/api/v1/expedix/patients', {
+fetch('/api/expedix/patients', {
   headers: {
     'Authorization': `Bearer ${clerkToken}`,
     'X-User-Context': JSON.stringify(userData),

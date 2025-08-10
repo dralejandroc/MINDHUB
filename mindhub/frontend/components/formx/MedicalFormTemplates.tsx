@@ -687,7 +687,7 @@ export const MedicalFormTemplates: React.FC<MedicalFormTemplatesProps> = ({
         }
       };
 
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/formx/forms`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/formx/forms`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(formData)

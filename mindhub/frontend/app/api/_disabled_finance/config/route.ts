@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 
 export async function GET(request: NextRequest) {
   try {
-    const response = await fetch('http://localhost:8080/api/v1/finance/config', {
+    const response = await fetch('http://localhost:8080/api/finance/config', {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
@@ -44,7 +44,7 @@ export async function PUT(request: NextRequest) {
       );
     }
 
-    const response = await fetch(`http://localhost:8080/api/v1/finance/config/${configId}`, {
+    const response = await fetch(`http://localhost:8080/api/finance/config/${configId}`, {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',

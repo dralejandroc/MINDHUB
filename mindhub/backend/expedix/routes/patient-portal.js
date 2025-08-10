@@ -37,7 +37,7 @@ const PORTAL_ACCESS_LEVELS = {
 };
 
 /**
- * POST /api/v1/expedix/patient-portal/request-access
+ * POST /api/expedix/patient-portal/request-access
  * Request portal access for a patient
  */
 router.post('/request-access',
@@ -212,7 +212,7 @@ router.post('/request-access',
 );
 
 /**
- * POST /api/v1/expedix/patient-portal/verify-access
+ * POST /api/expedix/patient-portal/verify-access
  * Verify portal access token and activate account
  */
 router.post('/verify-access',
@@ -347,7 +347,7 @@ router.post('/verify-access',
 );
 
 /**
- * POST /api/v1/expedix/patient-portal/login
+ * POST /api/expedix/patient-portal/login
  * Login to patient portal
  */
 router.post('/login',
@@ -547,7 +547,7 @@ const verifyPortalToken = async (req, res, next) => {
 };
 
 /**
- * GET /api/v1/expedix/patient-portal/dashboard
+ * GET /api/expedix/patient-portal/dashboard
  * Get patient dashboard information
  */
 router.get('/dashboard',
@@ -645,7 +645,7 @@ router.get('/dashboard',
 );
 
 /**
- * GET /api/v1/expedix/patient-portal/appointments
+ * GET /api/expedix/patient-portal/appointments
  * Get patient appointments
  */
 router.get('/appointments',
@@ -733,7 +733,7 @@ router.get('/appointments',
 );
 
 /**
- * POST /api/v1/expedix/patient-portal/appointments/:appointmentId/confirm
+ * POST /api/expedix/patient-portal/appointments/:appointmentId/confirm
  * Confirm an appointment
  */
 router.post('/appointments/:appointmentId/confirm',
@@ -832,7 +832,7 @@ router.post('/appointments/:appointmentId/confirm',
 );
 
 /**
- * GET /api/v1/expedix/patient-portal/forms/prefill/:formType
+ * GET /api/expedix/patient-portal/forms/prefill/:formType
  * Get pre-filled form data for patient
  */
 router.get('/forms/prefill/:formType',

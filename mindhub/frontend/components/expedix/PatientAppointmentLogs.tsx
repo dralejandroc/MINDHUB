@@ -65,9 +65,9 @@ export default function PatientAppointmentLogs({ patientId }: PatientAppointment
     try {
       // Load logs, stats, and alerts in parallel
       const [logsResponse, statsResponse, alertsResponse] = await Promise.all([
-        fetch(`${process.env.NEXT_PUBLIC_EXPEDIX_API}/api/v1/expedix/appointment-logs/patient/${patientId}?limit=10`),
-        fetch(`${process.env.NEXT_PUBLIC_EXPEDIX_API}/api/v1/expedix/appointment-logs/patient/${patientId}/stats`),
-        fetch(`${process.env.NEXT_PUBLIC_EXPEDIX_API}/api/v1/expedix/appointment-logs/patient/${patientId}/alerts`)
+        fetch(`${process.env.NEXT_PUBLIC_EXPEDIX_API}/api/expedix/appointment-logs/patient/${patientId}?limit=10`),
+        fetch(`${process.env.NEXT_PUBLIC_EXPEDIX_API}/api/expedix/appointment-logs/patient/${patientId}/stats`),
+        fetch(`${process.env.NEXT_PUBLIC_EXPEDIX_API}/api/expedix/appointment-logs/patient/${patientId}/alerts`)
       ]);
 
       if (logsResponse.ok) {

@@ -17,7 +17,7 @@ export async function GET(
     const queryString = searchParams.toString();
     
     const response = await fetch(
-      `${RESOURCES_API_BASE}/api/v1/resources/tracking/patient/${params.patientId}${queryString ? `?${queryString}` : ''}`,
+      `${RESOURCES_API_BASE}/api/resources/tracking/patient/${params.patientId}${queryString ? `?${queryString}` : ''}`,
       {
         method: 'GET',
         headers: {

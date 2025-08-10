@@ -5,7 +5,7 @@ export async function DELETE(
   { params }: { params: { assignmentId: string } }
 ) {
   try {
-    const response = await fetch(`http://localhost:8080/api/v1/finance/patients/services/${params.assignmentId}`, {
+    const response = await fetch(`http://localhost:8080/api/finance/patients/services/${params.assignmentId}`, {
       method: 'DELETE',
     });
 

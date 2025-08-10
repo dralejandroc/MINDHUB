@@ -83,7 +83,7 @@ const DEFAULT_TAG_CATEGORIES = {
 };
 
 /**
- * GET /api/v1/expedix/patient-tags/categories
+ * GET /api/expedix/patient-tags/categories
  * Get all available tag categories and predefined tags
  */
 router.get('/categories',
@@ -145,7 +145,7 @@ router.get('/categories',
 );
 
 /**
- * POST /api/v1/expedix/patient-tags/create-custom
+ * POST /api/expedix/patient-tags/create-custom
  * Create a custom patient tag
  */
 router.post('/create-custom',
@@ -250,7 +250,7 @@ router.post('/create-custom',
 );
 
 /**
- * PUT /api/v1/expedix/patient-tags/patient/:patientId
+ * PUT /api/expedix/patient-tags/patient/:patientId
  * Add or update tags for a patient
  */
 router.put('/patient/:patientId',
@@ -421,7 +421,7 @@ router.put('/patient/:patientId',
 );
 
 /**
- * GET /api/v1/expedix/patient-tags/patient/:patientId
+ * GET /api/expedix/patient-tags/patient/:patientId
  * Get all tags assigned to a patient
  */
 router.get('/patient/:patientId',
@@ -524,7 +524,7 @@ router.get('/patient/:patientId',
 );
 
 /**
- * DELETE /api/v1/expedix/patient-tags/patient/:patientId/tag/:tagId
+ * DELETE /api/expedix/patient-tags/patient/:patientId/tag/:tagId
  * Remove a tag from a patient
  */
 router.delete('/patient/:patientId/tag/:tagId',
@@ -624,7 +624,7 @@ router.delete('/patient/:patientId/tag/:tagId',
 );
 
 /**
- * GET /api/v1/expedix/patient-tags/search
+ * GET /api/expedix/patient-tags/search
  * Search patients by tags
  */
 router.get('/search',

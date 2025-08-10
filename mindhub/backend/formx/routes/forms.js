@@ -30,7 +30,7 @@ const validateForm = [
 ];
 
 /**
- * GET /api/v1/formx/forms
+ * GET /api/formx/forms
  * List forms with filtering, pagination, and search
  */
 router.get('/',
@@ -153,7 +153,7 @@ router.get('/',
 });
 
 /**
- * GET /api/v1/formx/stats
+ * GET /api/formx/stats
  * Get FormX statistics
  */
 router.get('/stats',
@@ -223,7 +223,7 @@ router.get('/stats',
 });
 
 /**
- * GET /api/v1/formx/forms/:id
+ * GET /api/formx/forms/:id
  * Get specific form details with configuration
  */
 router.get('/:id',
@@ -304,7 +304,7 @@ router.get('/:id',
 });
 
 /**
- * POST /api/v1/formx/forms
+ * POST /api/formx/forms
  * Create a new form template
  */
 router.post('/',
@@ -404,7 +404,7 @@ router.post('/',
 });
 
 /**
- * PUT /api/v1/formx/forms/:id
+ * PUT /api/formx/forms/:id
  * Update complete form template
  */
 router.put('/:id',
@@ -514,7 +514,7 @@ router.put('/:id',
 });
 
 /**
- * DELETE /api/v1/formx/forms/:id
+ * DELETE /api/formx/forms/:id
  * Soft delete form template (archive)
  */
 router.delete('/:id',
@@ -594,7 +594,7 @@ router.delete('/:id',
 });
 
 /**
- * POST /api/v1/formx/forms/:id/submit
+ * POST /api/formx/forms/:id/submit
  * Submit form response with validation
  */
 router.post('/:id/submit',
@@ -742,7 +742,7 @@ router.post('/:id/submit',
 });
 
 /**
- * POST /api/v1/formx/forms/:id/duplicate
+ * POST /api/formx/forms/:id/duplicate
  * Create a copy of an existing form
  */
 router.post('/:id/duplicate',
@@ -834,7 +834,7 @@ router.post('/:id/duplicate',
 });
 
 /**
- * POST /api/v1/formx/forms/:id/assign
+ * POST /api/formx/forms/:id/assign
  * Assign form to patient(s)
  */
 router.post('/:id/assign',
@@ -942,7 +942,7 @@ router.post('/:id/assign',
 });
 
 /**
- * GET /api/v1/formx/forms/:id/assignments
+ * GET /api/formx/forms/:id/assignments
  * Get form assignments for a specific form
  */
 router.get('/:id/assignments',
@@ -1009,7 +1009,7 @@ router.get('/:id/assignments',
 });
 
 /**
- * GET /api/v1/formx/forms/category/:category
+ * GET /api/formx/forms/category/:category
  * Get forms by category
  */
 router.get('/category/:category',

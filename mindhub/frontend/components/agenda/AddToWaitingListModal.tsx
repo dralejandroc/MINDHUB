@@ -53,7 +53,7 @@ export default function AddToWaitingListModal({ onClose, onSave }: AddToWaitingL
     const fetchPatients = async () => {
       try {
         console.log('🔄 Fetching patients for waiting list...');
-        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/expedix/patients`);
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/expedix/patients`);
         
         if (response.ok) {
           const data = await response.json();

@@ -18,7 +18,7 @@ export async function GET(request: NextRequest) {
     // First try the resources API
     try {
       const response = await fetch(
-        `${RESOURCES_API_BASE}/api/v1/resources/documents/patients?${searchParams.toString()}`,
+        `${RESOURCES_API_BASE}/api/resources/documents/patients?${searchParams.toString()}`,
         {
           method: 'GET',
           headers: {
@@ -43,7 +43,7 @@ export async function GET(request: NextRequest) {
       expedixParams.append('limit', limit);
 
       const response = await fetch(
-        `${EXPEDIX_API_BASE}/api/v1/expedix/patients?${expedixParams.toString()}`,
+        `${EXPEDIX_API_BASE}/api/expedix/patients?${expedixParams.toString()}`,
         {
           method: 'GET',
           headers: {

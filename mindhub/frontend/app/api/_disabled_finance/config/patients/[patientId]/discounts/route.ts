@@ -7,7 +7,7 @@ export async function POST(
   try {
     const body = await request.json();
     
-    const response = await fetch(`http://localhost:8080/api/v1/finance/config/patients/${params.patientId}/discounts`, {
+    const response = await fetch(`http://localhost:8080/api/finance/config/patients/${params.patientId}/discounts`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

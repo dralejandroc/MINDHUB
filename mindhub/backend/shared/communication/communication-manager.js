@@ -376,7 +376,7 @@ class CommunicationManager {
       try {
         const result = await this.serviceCommunicator.post(
           step.service,
-          `/api/v1/${step.action}`,
+          `/api/${step.action}`,
           context,
           {
             user: options.user,
@@ -434,7 +434,7 @@ class CommunicationManager {
       // Immediate HTTP notifications
       this.serviceCommunicator.broadcast(
         ['expedix', 'clinimetrix', 'integrix'],
-        '/api/v1/emergency/alert',
+        '/api/emergency/alert',
         data,
         { user: options.user, correlationId }
       ),

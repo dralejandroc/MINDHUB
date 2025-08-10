@@ -68,7 +68,7 @@ export default function ExportManager({ patientId, consultationId, mode, onClose
 
   const loadExportFormats = async () => {
     try {
-      const response = await fetch('/api/v1/expedix/export/formats');
+      const response = await fetch('/api/expedix/export/formats');
       const data = await response.json();
       
       if (data.success) {
@@ -93,7 +93,7 @@ export default function ExportManager({ patientId, consultationId, mode, onClose
     
     setLoading(true);
     try {
-      const response = await fetch(`/api/v1/expedix/export/bulk-options/${patientId}`);
+      const response = await fetch(`/api/expedix/export/bulk-options/${patientId}`);
       const data = await response.json();
       
       if (data.success) {
@@ -125,12 +125,12 @@ export default function ExportManager({ patientId, consultationId, mode, onClose
       
       switch (exportType) {
         case 'consultation':
-          endpoint = '/api/v1/expedix/export/consultation';
+          endpoint = '/api/expedix/export/consultation';
           requestBody = { consultationId };
           break;
           
         case 'patientRecordSummary':
-          endpoint = '/api/v1/expedix/export/patient-record';
+          endpoint = '/api/expedix/export/patient-record';
           requestBody = {
             patientId,
             options: {
@@ -142,7 +142,7 @@ export default function ExportManager({ patientId, consultationId, mode, onClose
           break;
           
         case 'patientRecordComplete':
-          endpoint = '/api/v1/expedix/export/patient-record';
+          endpoint = '/api/expedix/export/patient-record';
           requestBody = {
             patientId,
             options: {
@@ -155,7 +155,7 @@ export default function ExportManager({ patientId, consultationId, mode, onClose
           break;
           
         case 'patientsTable':
-          endpoint = '/api/v1/expedix/export/patients-table';
+          endpoint = '/api/expedix/export/patients-table';
           requestBody = {
             filters: {
               includeInactive: selectedOptions.includeInactive || false,

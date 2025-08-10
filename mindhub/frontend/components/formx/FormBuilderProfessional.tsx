@@ -442,8 +442,8 @@ export const FormBuilderProfessional: React.FC<FormBuilderProfessionalProps> = (
     try {
       const isEditing = editingForm && editingForm.id;
       const url = isEditing 
-        ? `${process.env.NEXT_PUBLIC_API_URL}/api/v1/formx/forms/${editingForm.id}`
-        : `${process.env.NEXT_PUBLIC_API_URL}/api/v1/formx/forms`;
+        ? `${process.env.NEXT_PUBLIC_API_URL}/api/formx/forms/${editingForm.id}`
+        : `${process.env.NEXT_PUBLIC_API_URL}/api/formx/forms`;
       
       const method = isEditing ? 'PUT' : 'POST';
       

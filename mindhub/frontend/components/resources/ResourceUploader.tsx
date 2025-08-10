@@ -109,7 +109,7 @@ export const ResourceUploader: React.FC<ResourceUploaderProps> = ({
         f.id === uploadFile.id ? { ...f, status: 'uploading' } : f
       ));
 
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/resources/upload`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/resources/upload`, {
         method: 'POST',
         body: formDataToSend,
         // Add progress tracking if needed

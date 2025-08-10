@@ -14,7 +14,7 @@ export async function GET(request: NextRequest) {
     const queryString = searchParams.toString();
     
     const response = await fetch(
-      `${FINANCE_API_BASE}/api/v1/finance/cash-register/cuts${queryString ? `?${queryString}` : ''}`,
+      `${FINANCE_API_BASE}/api/finance/cash-register/cuts${queryString ? `?${queryString}` : ''}`,
       {
         method: 'GET',
         headers: {
@@ -48,7 +48,7 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     
     const response = await fetch(
-      `${FINANCE_API_BASE}/api/v1/finance/cash-register/cuts`,
+      `${FINANCE_API_BASE}/api/finance/cash-register/cuts`,
       {
         method: 'POST',
         headers: {

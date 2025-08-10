@@ -52,7 +52,7 @@ const upload = multer({
 });
 
 /**
- * POST /api/v1/resources/upload
+ * POST /api/resources/upload
  * Upload a new resource
  */
 router.post('/upload', 
@@ -122,7 +122,7 @@ router.post('/upload',
 );
 
 /**
- * GET /api/v1/resources
+ * GET /api/resources
  * Search and list resources
  */
 router.get('/',
@@ -173,7 +173,7 @@ router.get('/',
 );
 
 /**
- * GET /api/v1/resources/categories
+ * GET /api/resources/categories
  * Get resource categories
  */
 router.get('/categories', async (req, res) => {
@@ -195,7 +195,7 @@ router.get('/categories', async (req, res) => {
 });
 
 /**
- * GET /api/v1/resources/:id
+ * GET /api/resources/:id
  * Get resource details
  */
 router.get('/:id',
@@ -226,7 +226,7 @@ router.get('/:id',
 );
 
 /**
- * POST /api/v1/resources/:id/send
+ * POST /api/resources/:id/send
  * Send resource to patient
  */
 router.post('/:id/send',
@@ -285,7 +285,7 @@ router.post('/:id/send',
 );
 
 /**
- * GET /api/v1/resources/thumbnail/:id
+ * GET /api/resources/thumbnail/:id
  * Get resource thumbnail
  */
 router.get('/thumbnail/:id', async (req, res) => {
@@ -337,7 +337,7 @@ router.get('/thumbnail/:id', async (req, res) => {
 });
 
 /**
- * GET /api/v1/resources/download/:id
+ * GET /api/resources/download/:id
  * Download resource (original or processed)
  */
 router.get('/download/:id', async (req, res) => {
@@ -415,7 +415,7 @@ router.get('/download/:id', async (req, res) => {
 });
 
 /**
- * GET /api/v1/resources/patient/:patientId/history
+ * GET /api/resources/patient/:patientId/history
  * Get resource send history for a patient
  */
 router.get('/patient/:patientId/history',
@@ -455,7 +455,7 @@ router.get('/patient/:patientId/history',
 );
 
 /**
- * POST /api/v1/resources/watermark-templates
+ * POST /api/resources/watermark-templates
  * Create watermark template
  */
 router.post('/watermark-templates',

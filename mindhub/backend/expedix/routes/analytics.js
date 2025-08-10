@@ -10,7 +10,7 @@ const { executeQuery } = require('../../shared/config/prisma');
 const router = express.Router();
 
 /**
- * GET /api/v1/expedix/analytics/patient-stats
+ * GET /api/expedix/analytics/patient-stats
  * Get patient statistics for dashboard
  */
 router.get('/patient-stats', async (req, res) => {
@@ -69,7 +69,7 @@ router.get('/patient-stats', async (req, res) => {
 });
 
 /**
- * GET /api/v1/expedix/analytics/today-appointments
+ * GET /api/expedix/analytics/today-appointments
  * Get today's appointments
  */
 router.get('/today-appointments', async (req, res) => {
@@ -96,7 +96,7 @@ router.get('/today-appointments', async (req, res) => {
 });
 
 /**
- * GET /api/v1/expedix/analytics/pending-assessments
+ * GET /api/expedix/analytics/pending-assessments
  * Get pending assessments
  */
 router.get('/pending-assessments', async (req, res) => {
@@ -147,7 +147,7 @@ router.get('/pending-assessments', async (req, res) => {
 });
 
 /**
- * GET /api/v1/expedix/analytics/today-prescriptions
+ * GET /api/expedix/analytics/today-prescriptions
  * Get recent prescriptions (fallback to last prescriptions if none today)
  */
 router.get('/today-prescriptions', async (req, res) => {

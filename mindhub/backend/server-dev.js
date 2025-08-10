@@ -66,19 +66,19 @@ app.get('/', (req, res) => {
     description: 'Integrated healthcare platform for mental health professionals',
     services: {
       expedix: {
-        path: '/api/v1/expedix',
+        path: '/api/expedix',
         description: 'Patient management and medical records'
       },
       clinimetrix: {
-        path: '/api/v1/clinimetrix', 
+        path: '/api/clinimetrix', 
         description: 'Clinical assessments and psychometric scales'
       },
       formx: {
-        path: '/api/v1/formx',
+        path: '/api/formx',
         description: 'Dynamic forms and data collection'
       },
       resources: {
-        path: '/api/v1/resources',
+        path: '/api/resources',
         description: 'Educational content and resource management'
       }
     },
@@ -93,7 +93,7 @@ app.get('/api/docs', (req, res) => {
 });
 
 // Test endpoint for AQ-Adolescent scale
-app.get('/api/v1/test/aq-adolescent', (req, res) => {
+app.get('/api/test/aq-adolescent', (req, res) => {
   try {
     const AQAdolescentScale = require('./shared/scales/aq-adolescent-scale');
     const scale = new AQAdolescentScale();
@@ -126,10 +126,10 @@ app.get('/api/v1/test/aq-adolescent', (req, res) => {
 });
 
 // Mount service modules (without complex middleware)
-app.use('/api/v1/expedix', expedix);
-app.use('/api/v1/clinimetrix', clinimetrix);
-app.use('/api/v1/formx', formx);
-app.use('/api/v1/resources', resources);
+app.use('/api/expedix', expedix);
+app.use('/api/clinimetrix', clinimetrix);
+app.use('/api/formx', formx);
+app.use('/api/resources', resources);
 
 // Mount universal API endpoints
 app.use('/api/scales', scalesController);
@@ -145,11 +145,11 @@ app.use('*', (req, res) => {
       health: 'GET /health',
       root: 'GET /',
       docs: 'GET /api/docs',
-      expedix: 'GET /api/v1/expedix',
-      clinimetrix: 'GET /api/v1/clinimetrix',
-      formx: 'GET /api/v1/formx',
-      resources: 'GET /api/v1/resources',
-      testScale: 'GET /api/v1/test/aq-adolescent'
+      expedix: 'GET /api/expedix',
+      clinimetrix: 'GET /api/clinimetrix',
+      formx: 'GET /api/formx',
+      resources: 'GET /api/resources',
+      testScale: 'GET /api/test/aq-adolescent'
     }
   });
 });
@@ -187,13 +187,13 @@ app.listen(PORT, () => {
   console.log(`📚 API Docs: http://localhost:${PORT}/api/docs`);
   console.log('');
   console.log('🔧 Available Services:');
-  console.log(`   📊 Expedix (Patients): http://localhost:${PORT}/api/v1/expedix`);
-  console.log(`   🧪 Clinimetrix (Assessments): http://localhost:${PORT}/api/v1/clinimetrix`);
-  console.log(`   📝 FormX (Forms): http://localhost:${PORT}/api/v1/formx`);
-  console.log(`   📖 Resources (Content): http://localhost:${PORT}/api/v1/resources`);
+  console.log(`   📊 Expedix (Patients): http://localhost:${PORT}/api/expedix`);
+  console.log(`   🧪 Clinimetrix (Assessments): http://localhost:${PORT}/api/clinimetrix`);
+  console.log(`   📝 FormX (Forms): http://localhost:${PORT}/api/formx`);
+  console.log(`   📖 Resources (Content): http://localhost:${PORT}/api/resources`);
   console.log('');
   console.log('🧪 Test Endpoints:');
-  console.log(`   AQ-Adolescent Scale Info: http://localhost:${PORT}/api/v1/test/aq-adolescent`);
+  console.log(`   AQ-Adolescent Scale Info: http://localhost:${PORT}/api/test/aq-adolescent`);
   console.log('');
   console.log('🔷 Universal Scale System:');
   console.log(`   List all scales: http://localhost:${PORT}/api/scales`);

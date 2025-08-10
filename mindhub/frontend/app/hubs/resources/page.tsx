@@ -82,7 +82,7 @@ export default function ResourcesPage() {
     try {
       // Load resources
       const resourcesResponse = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/v1/resources?` + new URLSearchParams({
+        `${process.env.NEXT_PUBLIC_API_URL}/api/resources?` + new URLSearchParams({
           libraryType: libraryType,
           ...(searchQuery && { q: searchQuery }),
           ...(selectedCategory && { categoryId: selectedCategory }),
@@ -96,7 +96,7 @@ export default function ResourcesPage() {
       }
 
       // Load categories
-      const categoriesResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/resources/categories`);
+      const categoriesResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/resources/categories`);
       if (categoriesResponse.ok) {
         const categoriesData = await categoriesResponse.json();
         setCategories(categoriesData.data || []);

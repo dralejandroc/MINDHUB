@@ -16,7 +16,7 @@ export async function GET(request: NextRequest) {
       params.append(key, value);
     });
     
-    let url = `${BACKEND_URL}/api/v1/expedix/patients`;
+    let url = `${BACKEND_URL}/api/expedix/patients`;
     if (params.toString()) {
       url += `?${params.toString()}`;
     }
@@ -104,7 +104,7 @@ export async function POST(request: NextRequest) {
       headers['X-User-Context'] = userContextHeader;
     }
     
-    const response = await fetch(`${BACKEND_URL}/api/v1/expedix/patients`, {
+    const response = await fetch(`${BACKEND_URL}/api/expedix/patients`, {
       method: 'POST',
       headers,
       body: JSON.stringify(body),

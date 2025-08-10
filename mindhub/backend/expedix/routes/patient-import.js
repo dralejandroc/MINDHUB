@@ -77,7 +77,7 @@ const upload = multer({
 });
 
 /**
- * GET /api/v1/expedix/patient-import/template
+ * GET /api/expedix/patient-import/template
  * Download CSV template for patient import
  */
 router.get('/template', 
@@ -197,7 +197,7 @@ router.get('/template',
 );
 
 /**
- * POST /api/v1/expedix/patient-import/validate
+ * POST /api/expedix/patient-import/validate
  * Upload and validate patient import file
  */
 router.post('/validate',
@@ -281,7 +281,7 @@ router.post('/validate',
 );
 
 /**
- * POST /api/v1/expedix/patient-import/process
+ * POST /api/expedix/patient-import/process
  * Process validated data and create patients
  */
 router.post('/process',

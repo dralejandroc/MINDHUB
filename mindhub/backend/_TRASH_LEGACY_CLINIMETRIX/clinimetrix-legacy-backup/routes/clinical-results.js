@@ -17,7 +17,7 @@ const router = express.Router();
 const auditLogger = new AuditLogger();
 
 /**
- * GET /api/v1/clinimetrix/results/assessments/:assessmentId
+ * GET /api/clinimetrix/results/assessments/:assessmentId
  * Get clinical assessment results with interpretations
  */
 router.get('/assessments/:assessmentId',
@@ -154,7 +154,7 @@ router.get('/assessments/:assessmentId',
 );
 
 /**
- * POST /api/v1/clinimetrix/results/interpretations
+ * POST /api/clinimetrix/results/interpretations
  * Generate clinical interpretation for assessment results
  */
 router.post('/interpretations',
@@ -280,7 +280,7 @@ router.post('/interpretations',
 );
 
 /**
- * GET /api/v1/clinimetrix/results/reports/:patientId
+ * GET /api/clinimetrix/results/reports/:patientId
  * Get comprehensive clinical assessment report for patient
  */
 router.get('/reports/:patientId',

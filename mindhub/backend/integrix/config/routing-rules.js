@@ -13,13 +13,13 @@ const routingRules = {
     name: 'expedix',
     displayName: 'Expedix Patient Management',
     domain: 'patient-management',
-    baseUrl: '/api/v1/expedix',
+    baseUrl: '/api/expedix',
     description: 'Comprehensive patient management and medical records system',
     
     endpoints: [
       // Patient Management
       {
-        pattern: '/api/v1/expedix/patients',
+        pattern: '/api/expedix/patients',
         methods: ['GET', 'POST'],
         description: 'List and create patients',
         authentication: true,
@@ -27,7 +27,7 @@ const routingRules = {
         rateLimit: { window: '15m', max: 100 }
       },
       {
-        pattern: '/api/v1/expedix/patients/{id}',
+        pattern: '/api/expedix/patients/{id}',
         methods: ['GET', 'PUT', 'PATCH', 'DELETE'],
         description: 'Manage individual patient',
         authentication: true,
@@ -37,7 +37,7 @@ const routingRules = {
       
       // Medical History
       {
-        pattern: '/api/v1/expedix/patients/{patientId}/medical-history',
+        pattern: '/api/expedix/patients/{patientId}/medical-history',
         methods: ['GET', 'POST'],
         description: 'Patient medical history',
         authentication: true,
@@ -45,7 +45,7 @@ const routingRules = {
         rateLimit: { window: '15m', max: 100 }
       },
       {
-        pattern: '/api/v1/expedix/patients/{patientId}/medical-history/{recordId}',
+        pattern: '/api/expedix/patients/{patientId}/medical-history/{recordId}',
         methods: ['GET', 'PUT', 'DELETE'],
         description: 'Specific medical record',
         authentication: true,
@@ -55,7 +55,7 @@ const routingRules = {
       
       // Consultations
       {
-        pattern: '/api/v1/expedix/patients/{patientId}/consultations',
+        pattern: '/api/expedix/patients/{patientId}/consultations',
         methods: ['GET', 'POST'],
         description: 'Patient consultations',
         authentication: true,
@@ -65,7 +65,7 @@ const routingRules = {
       
       // Emergency Contacts
       {
-        pattern: '/api/v1/expedix/patients/{patientId}/emergency-contacts',
+        pattern: '/api/expedix/patients/{patientId}/emergency-contacts',
         methods: ['GET', 'POST', 'PUT', 'DELETE'],
         description: 'Emergency contact management',
         authentication: true,
@@ -75,7 +75,7 @@ const routingRules = {
       
       // Search
       {
-        pattern: '/api/v1/expedix/search',
+        pattern: '/api/expedix/search',
         methods: ['GET'],
         description: 'Search patients',
         authentication: true,
@@ -106,13 +106,13 @@ const routingRules = {
     name: 'clinimetrix',
     displayName: 'Clinimetrix Assessment Platform',
     domain: 'clinical-assessments',
-    baseUrl: '/api/v1/clinimetrix',
+    baseUrl: '/api/clinimetrix',
     description: 'Clinical assessments, psychometric scales, and scoring system',
     
     endpoints: [
       // Scales Management
       {
-        pattern: '/api/v1/clinimetrix/scales',
+        pattern: '/api/clinimetrix/scales',
         methods: ['GET'],
         description: 'List available scales',
         authentication: true,
@@ -120,7 +120,7 @@ const routingRules = {
         rateLimit: { window: '15m', max: 200 }
       },
       {
-        pattern: '/api/v1/clinimetrix/scales/{scaleId}',
+        pattern: '/api/clinimetrix/scales/{scaleId}',
         methods: ['GET'],
         description: 'Get scale details',
         authentication: true,
@@ -130,7 +130,7 @@ const routingRules = {
       
       // Assessment Sessions
       {
-        pattern: '/api/v1/clinimetrix/assessments',
+        pattern: '/api/clinimetrix/assessments',
         methods: ['GET', 'POST'],
         description: 'Assessment sessions',
         authentication: true,
@@ -138,7 +138,7 @@ const routingRules = {
         rateLimit: { window: '15m', max: 100 }
       },
       {
-        pattern: '/api/v1/clinimetrix/assessments/{assessmentId}',
+        pattern: '/api/clinimetrix/assessments/{assessmentId}',
         methods: ['GET', 'PUT', 'DELETE'],
         description: 'Manage assessment',
         authentication: true,
@@ -148,7 +148,7 @@ const routingRules = {
       
       // Assessment Administration
       {
-        pattern: '/api/v1/clinimetrix/assessments/{assessmentId}/start',
+        pattern: '/api/clinimetrix/assessments/{assessmentId}/start',
         methods: ['POST'],
         description: 'Start assessment',
         authentication: true,
@@ -156,7 +156,7 @@ const routingRules = {
         rateLimit: { window: '15m', max: 50 }
       },
       {
-        pattern: '/api/v1/clinimetrix/assessments/{assessmentId}/responses',
+        pattern: '/api/clinimetrix/assessments/{assessmentId}/responses',
         methods: ['POST', 'PUT'],
         description: 'Submit responses',
         authentication: true,
@@ -164,7 +164,7 @@ const routingRules = {
         rateLimit: { window: '15m', max: 200 }
       },
       {
-        pattern: '/api/v1/clinimetrix/assessments/{assessmentId}/complete',
+        pattern: '/api/clinimetrix/assessments/{assessmentId}/complete',
         methods: ['POST'],
         description: 'Complete assessment',
         authentication: true,
@@ -174,7 +174,7 @@ const routingRules = {
       
       // Results and Analytics
       {
-        pattern: '/api/v1/clinimetrix/assessments/{assessmentId}/results',
+        pattern: '/api/clinimetrix/assessments/{assessmentId}/results',
         methods: ['GET'],
         description: 'Get assessment results',
         authentication: true,
@@ -182,7 +182,7 @@ const routingRules = {
         rateLimit: { window: '15m', max: 100 }
       },
       {
-        pattern: '/api/v1/clinimetrix/patients/{patientId}/assessment-history',
+        pattern: '/api/clinimetrix/patients/{patientId}/assessment-history',
         methods: ['GET'],
         description: 'Patient assessment history',
         authentication: true,
@@ -192,7 +192,7 @@ const routingRules = {
       
       // Clinical Workflows
       {
-        pattern: '/api/v1/clinimetrix/workflows',
+        pattern: '/api/clinimetrix/workflows',
         methods: ['GET', 'POST'],
         description: 'Clinical workflows',
         authentication: true,
@@ -223,13 +223,13 @@ const routingRules = {
     name: 'formx',
     displayName: 'FormX Dynamic Forms',
     domain: 'form-management',
-    baseUrl: '/api/v1/formx',
+    baseUrl: '/api/formx',
     description: 'Dynamic form builder, templates, and submission management',
     
     endpoints: [
       // Form Templates
       {
-        pattern: '/api/v1/formx/templates',
+        pattern: '/api/formx/templates',
         methods: ['GET', 'POST'],
         description: 'Form templates',
         authentication: true,
@@ -237,7 +237,7 @@ const routingRules = {
         rateLimit: { window: '15m', max: 100 }
       },
       {
-        pattern: '/api/v1/formx/templates/{templateId}',
+        pattern: '/api/formx/templates/{templateId}',
         methods: ['GET', 'PUT', 'DELETE'],
         description: 'Manage template',
         authentication: true,
@@ -247,7 +247,7 @@ const routingRules = {
       
       // Forms
       {
-        pattern: '/api/v1/formx/forms',
+        pattern: '/api/formx/forms',
         methods: ['GET', 'POST'],
         description: 'Form instances',
         authentication: true,
@@ -255,7 +255,7 @@ const routingRules = {
         rateLimit: { window: '15m', max: 100 }
       },
       {
-        pattern: '/api/v1/formx/forms/{formId}',
+        pattern: '/api/formx/forms/{formId}',
         methods: ['GET', 'PUT', 'DELETE'],
         description: 'Manage form',
         authentication: true,
@@ -265,7 +265,7 @@ const routingRules = {
       
       // Submissions
       {
-        pattern: '/api/v1/formx/forms/{formId}/submissions',
+        pattern: '/api/formx/forms/{formId}/submissions',
         methods: ['GET', 'POST'],
         description: 'Form submissions',
         authentication: true,
@@ -273,7 +273,7 @@ const routingRules = {
         rateLimit: { window: '15m', max: 200 }
       },
       {
-        pattern: '/api/v1/formx/forms/{formId}/submissions/{submissionId}',
+        pattern: '/api/formx/forms/{formId}/submissions/{submissionId}',
         methods: ['GET', 'PUT'],
         description: 'Manage submission',
         authentication: true,
@@ -283,7 +283,7 @@ const routingRules = {
       
       // Form Analytics
       {
-        pattern: '/api/v1/formx/analytics',
+        pattern: '/api/formx/analytics',
         methods: ['GET'],
         description: 'Form analytics',
         authentication: true,
@@ -293,7 +293,7 @@ const routingRules = {
       
       // Form Versioning
       {
-        pattern: '/api/v1/formx/templates/{templateId}/versions',
+        pattern: '/api/formx/templates/{templateId}/versions',
         methods: ['GET', 'POST'],
         description: 'Form versions',
         authentication: true,
@@ -324,13 +324,13 @@ const routingRules = {
     name: 'resources',
     displayName: 'Resources Library',
     domain: 'content-management',
-    baseUrl: '/api/v1/resources',
+    baseUrl: '/api/resources',
     description: 'Educational content, treatment plans, and resource management',
     
     endpoints: [
       // Content Library
       {
-        pattern: '/api/v1/resources/content',
+        pattern: '/api/resources/content',
         methods: ['GET', 'POST'],
         description: 'Content library',
         authentication: true,
@@ -338,7 +338,7 @@ const routingRules = {
         rateLimit: { window: '15m', max: 200 }
       },
       {
-        pattern: '/api/v1/resources/content/{contentId}',
+        pattern: '/api/resources/content/{contentId}',
         methods: ['GET', 'PUT', 'DELETE'],
         description: 'Manage content',
         authentication: true,
@@ -348,7 +348,7 @@ const routingRules = {
       
       // Categories
       {
-        pattern: '/api/v1/resources/categories',
+        pattern: '/api/resources/categories',
         methods: ['GET', 'POST'],
         description: 'Content categories',
         authentication: true,
@@ -358,7 +358,7 @@ const routingRules = {
       
       // Treatment Plans
       {
-        pattern: '/api/v1/resources/treatment-plans',
+        pattern: '/api/resources/treatment-plans',
         methods: ['GET', 'POST'],
         description: 'Treatment plans',
         authentication: true,
@@ -366,7 +366,7 @@ const routingRules = {
         rateLimit: { window: '15m', max: 100 }
       },
       {
-        pattern: '/api/v1/resources/treatment-plans/{planId}',
+        pattern: '/api/resources/treatment-plans/{planId}',
         methods: ['GET', 'PUT', 'DELETE'],
         description: 'Manage treatment plan',
         authentication: true,
@@ -376,7 +376,7 @@ const routingRules = {
       
       // Patient Resources
       {
-        pattern: '/api/v1/resources/patients/{patientId}/assigned',
+        pattern: '/api/resources/patients/{patientId}/assigned',
         methods: ['GET', 'POST', 'DELETE'],
         description: 'Patient assigned resources',
         authentication: true,
@@ -386,7 +386,7 @@ const routingRules = {
       
       // File Management
       {
-        pattern: '/api/v1/resources/content/{contentId}/download',
+        pattern: '/api/resources/content/{contentId}/download',
         methods: ['GET'],
         description: 'Download content',
         authentication: true,
@@ -501,13 +501,13 @@ const integrixRoutes = {
   name: 'integrix',
   displayName: 'Integrix Integration Hub',
   domain: 'integration',
-  baseUrl: '/api/v1/integrix',
+  baseUrl: '/api/integrix',
   description: 'Cross-hub operations and data aggregation',
   
   endpoints: [
     // Patient Overview
     {
-      pattern: '/api/v1/integrix/patients/{patientId}/overview',
+      pattern: '/api/integrix/patients/{patientId}/overview',
       methods: ['GET'],
       description: 'Complete patient overview across all hubs',
       authentication: true,
@@ -518,7 +518,7 @@ const integrixRoutes = {
     
     // Patient Timeline
     {
-      pattern: '/api/v1/integrix/patients/{patientId}/timeline',
+      pattern: '/api/integrix/patients/{patientId}/timeline',
       methods: ['GET'],
       description: 'Patient activity timeline',
       authentication: true,
@@ -529,7 +529,7 @@ const integrixRoutes = {
     
     // Workflow Management
     {
-      pattern: '/api/v1/integrix/workflows',
+      pattern: '/api/integrix/workflows',
       methods: ['GET', 'POST'],
       description: 'Cross-hub workflows',
       authentication: true,
@@ -537,7 +537,7 @@ const integrixRoutes = {
       rateLimit: { window: '15m', max: 50 }
     },
     {
-      pattern: '/api/v1/integrix/workflows/{workflowId}/trigger',
+      pattern: '/api/integrix/workflows/{workflowId}/trigger',
       methods: ['POST'],
       description: 'Trigger workflow',
       authentication: true,
@@ -547,7 +547,7 @@ const integrixRoutes = {
     
     // Analytics Dashboard
     {
-      pattern: '/api/v1/integrix/analytics/dashboard',
+      pattern: '/api/integrix/analytics/dashboard',
       methods: ['GET'],
       description: 'Integrated analytics dashboard',
       authentication: true,
@@ -558,7 +558,7 @@ const integrixRoutes = {
     
     // Data Synchronization
     {
-      pattern: '/api/v1/integrix/sync/patient-data',
+      pattern: '/api/integrix/sync/patient-data',
       methods: ['POST'],
       description: 'Sync patient data across hubs',
       authentication: true,
@@ -568,7 +568,7 @@ const integrixRoutes = {
     
     // Reports
     {
-      pattern: '/api/v1/integrix/reports/generate',
+      pattern: '/api/integrix/reports/generate',
       methods: ['POST'],
       description: 'Generate integrated reports',
       authentication: true,

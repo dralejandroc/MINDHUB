@@ -16,7 +16,7 @@ const router = express.Router();
 const prisma = new PrismaClient();
 
 /**
- * POST /api/v1/clinimetrix/assessments/complete
+ * POST /api/clinimetrix/assessments/complete
  * Completa una evaluación y calcula automáticamente todos los puntajes
  */
 router.post('/complete', [
@@ -194,7 +194,7 @@ router.post('/complete', [
 });
 
 /**
- * GET /api/v1/clinimetrix/assessments/patient/:patientId/scale/:scaleId/history
+ * GET /api/clinimetrix/assessments/patient/:patientId/scale/:scaleId/history
  * Obtiene el historial temporal de una escala específica para un paciente
  */
 router.get('/patient/:patientId/scale/:scaleId/history', [
@@ -280,7 +280,7 @@ router.get('/patient/:patientId/scale/:scaleId/history', [
 });
 
 /**
- * GET /api/v1/clinimetrix/assessments/patient/:patientId/summary
+ * GET /api/clinimetrix/assessments/patient/:patientId/summary
  * Obtiene un resumen de todas las evaluaciones de un paciente
  */
 router.get('/patient/:patientId/summary', [

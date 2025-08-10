@@ -11,7 +11,7 @@ const FINANCE_API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:80
 export async function POST(request: NextRequest) {
   try {
     const response = await fetch(
-      `${FINANCE_API_BASE}/api/v1/finance/cash-register/cuts/daily`,
+      `${FINANCE_API_BASE}/api/finance/cash-register/cuts/daily`,
       {
         method: 'POST',
         headers: {

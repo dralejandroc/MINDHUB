@@ -61,7 +61,7 @@ const REPORT_TYPES = {
 };
 
 /**
- * GET /api/v1/expedix/clinical-reports/types
+ * GET /api/expedix/clinical-reports/types
  * Get available report types
  */
 router.get('/types',
@@ -104,7 +104,7 @@ router.get('/types',
 );
 
 /**
- * POST /api/v1/expedix/clinical-reports/generate
+ * POST /api/expedix/clinical-reports/generate
  * Generate a clinical report
  */
 router.post('/generate',
@@ -261,7 +261,7 @@ router.post('/generate',
 );
 
 /**
- * GET /api/v1/expedix/clinical-reports/patient/:patientId/summary
+ * GET /api/expedix/clinical-reports/patient/:patientId/summary
  * Get patient summary for quick access
  */
 router.get('/patient/:patientId/summary',

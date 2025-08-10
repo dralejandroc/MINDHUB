@@ -22,7 +22,7 @@ const contentController = new ContentController();
 const auditLogger = new AuditLogger();
 
 /**
- * GET /api/v1/resources/content
+ * GET /api/resources/content
  * List educational resources with filtering and search
  */
 router.get('/',
@@ -123,7 +123,7 @@ router.get('/',
 });
 
 /**
- * GET /api/v1/resources/content/:id
+ * GET /api/resources/content/:id
  * Get specific resource details
  */
 router.get('/:id',
@@ -196,7 +196,7 @@ router.get('/:id',
 });
 
 /**
- * GET /api/v1/resources/content/category/:category
+ * GET /api/resources/content/category/:category
  * Get resources by category
  */
 router.get('/category/:category',
@@ -262,7 +262,7 @@ router.get('/category/:category',
 });
 
 /**
- * POST /api/v1/resources/content/search
+ * POST /api/resources/content/search
  * Advanced search for educational resources
  */
 router.post('/search',
@@ -333,7 +333,7 @@ router.post('/search',
 });
 
 /**
- * GET /api/v1/resources/analytics/overview
+ * GET /api/resources/analytics/overview
  * Get resource library analytics and statistics
  */
 router.get('/analytics/overview',

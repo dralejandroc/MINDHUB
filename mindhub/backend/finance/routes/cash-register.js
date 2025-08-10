@@ -15,7 +15,7 @@ const router = express.Router();
 const cashRegisterService = new CashRegisterService();
 
 /**
- * POST /api/v1/finance/cash-register/cuts
+ * POST /api/finance/cash-register/cuts
  * Create a new cash register cut
  */
 router.post('/cuts',
@@ -60,7 +60,7 @@ router.post('/cuts',
 );
 
 /**
- * GET /api/v1/finance/cash-register/cuts
+ * GET /api/finance/cash-register/cuts
  * Get cash register cuts with filters
  */
 router.get('/cuts',
@@ -103,7 +103,7 @@ router.get('/cuts',
 );
 
 /**
- * GET /api/v1/finance/cash-register/cuts/:id
+ * GET /api/finance/cash-register/cuts/:id
  * Get cash register cut by ID with full breakdown
  */
 router.get('/cuts/:id',
@@ -141,7 +141,7 @@ router.get('/cuts/:id',
 );
 
 /**
- * PUT /api/v1/finance/cash-register/cuts/:id/close
+ * PUT /api/finance/cash-register/cuts/:id/close
  * Close a cash register cut
  */
 router.put('/cuts/:id/close',
@@ -186,7 +186,7 @@ router.put('/cuts/:id/close',
 );
 
 /**
- * PUT /api/v1/finance/cash-register/cuts/:id/recalculate
+ * PUT /api/finance/cash-register/cuts/:id/recalculate
  * Recalculate cash register cut totals
  */
 router.put('/cuts/:id/recalculate',
@@ -226,7 +226,7 @@ router.put('/cuts/:id/recalculate',
 );
 
 /**
- * POST /api/v1/finance/cash-register/cuts/daily
+ * POST /api/finance/cash-register/cuts/daily
  * Generate daily cash register cut
  */
 router.post('/cuts/daily',
@@ -256,7 +256,7 @@ router.post('/cuts/daily',
 );
 
 /**
- * GET /api/v1/finance/cash-register/summary
+ * GET /api/finance/cash-register/summary
  * Get financial summary for a period
  */
 router.get('/summary',

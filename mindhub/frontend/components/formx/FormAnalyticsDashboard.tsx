@@ -48,7 +48,7 @@ export const FormAnalyticsDashboard: React.FC<FormAnalyticsDashboardProps> = ({ 
     try {
       // Load overall analytics
       const overviewResponse = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/v1/formx/analytics/overview?period=${selectedPeriod}`
+        `${process.env.NEXT_PUBLIC_API_URL}/api/formx/analytics/overview?period=${selectedPeriod}`
       );
       
       let overviewData = {
@@ -89,7 +89,7 @@ export const FormAnalyticsDashboard: React.FC<FormAnalyticsDashboardProps> = ({ 
         forms.slice(0, 10).map(async (form) => {
           try {
             const response = await fetch(
-              `${process.env.NEXT_PUBLIC_API_URL}/api/v1/formx/forms/${form.id}/analytics?period=${selectedPeriod}`
+              `${process.env.NEXT_PUBLIC_API_URL}/api/formx/forms/${form.id}/analytics?period=${selectedPeriod}`
             );
             
             if (response.ok) {

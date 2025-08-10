@@ -60,7 +60,7 @@ export const BulkFormAssignmentModal: React.FC<BulkFormAssignmentModalProps> = (
   const loadPatients = async () => {
     try {
       setLoading(true);
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/expedix/patients`);
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/expedix/patients`);
       
       if (response.ok) {
         const data = await response.json();
@@ -112,7 +112,7 @@ export const BulkFormAssignmentModal: React.FC<BulkFormAssignmentModalProps> = (
 
     setIsAssigning(true);
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/formx/assignments/bulk`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/formx/assignments/bulk`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'

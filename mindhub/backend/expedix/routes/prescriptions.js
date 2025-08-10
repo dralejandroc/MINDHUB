@@ -59,7 +59,7 @@ const INTERACTION_LEVELS = {
 };
 
 /**
- * GET /api/v1/expedix/prescriptions/patient/:patientId
+ * GET /api/expedix/prescriptions/patient/:patientId
  * Get prescription history for a patient
  */
 router.get('/patient/:patientId',
@@ -205,7 +205,7 @@ router.get('/patient/:patientId',
 );
 
 /**
- * POST /api/v1/expedix/prescriptions/create
+ * POST /api/expedix/prescriptions/create
  * Create a new prescription with medication history tracking
  */
 router.post('/create',
@@ -428,7 +428,7 @@ router.post('/create',
 );
 
 /**
- * PUT /api/v1/expedix/prescriptions/:id/modify
+ * PUT /api/expedix/prescriptions/:id/modify
  * Modify existing prescription with history tracking
  */
 router.put('/:id/modify',
@@ -543,7 +543,7 @@ router.put('/:id/modify',
 );
 
 /**
- * POST /api/v1/expedix/prescriptions/:id/generate-pdf
+ * POST /api/expedix/prescriptions/:id/generate-pdf
  * Generate customizable PDF prescription
  */
 router.post('/:id/generate-pdf',
@@ -624,7 +624,7 @@ router.post('/:id/generate-pdf',
 );
 
 /**
- * GET /api/v1/expedix/prescriptions/:id/history
+ * GET /api/expedix/prescriptions/:id/history
  * Get prescription modification history
  */
 router.get('/:id/history',
