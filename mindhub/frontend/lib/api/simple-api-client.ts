@@ -1,7 +1,9 @@
 /**
- * Simple API Client - Direct backend communication without complex authentication
- * This is a temporary solution to fix the immediate 500 errors from proxy routes
+ * Simple API Client - Direct backend communication with Clerk authentication
+ * This client handles Clerk token authentication for direct backend calls
  */
+
+// This client should be used from components that have access to Clerk context
 
 // Backend configuration - calling backend directly
 const API_BASE_URL = 'https://mindhub-production.up.railway.app/api';
@@ -30,13 +32,14 @@ export class SimpleApiClient {
     this.baseUrl = API_BASE_URL;
   }
 
-  private async makeRequest<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
+  private async makeRequest<T>(endpoint: string, options: RequestInit = {}, authToken?: string): Promise<T> {
     const url = `${this.baseUrl}${endpoint}`;
     
-    // Basic headers
+    // Headers with Clerk authentication
     const headers: HeadersInit = {
       'Content-Type': 'application/json',
       'Accept': 'application/json',
+      ...(authToken && { 'Authorization': `Bearer ${authToken}` }),
       ...options.headers,
     };
 
@@ -71,20 +74,20 @@ export class SimpleApiClient {
   }
 
   // FrontDesk API methods
-  async getFrontDeskTodayStats(): Promise<ApiResponse<any>> {
-    return this.makeRequest<ApiResponse<any>>('/frontdesk/stats/today');
+  async getFrontDeskTodayStats(authToken?: string): Promise<ApiResponse<any>> {
+    return this.makeRequest<ApiResponse<any>>('/frontdesk/stats/today', {}, authToken);
   }
 
-  async getFrontDeskTodayAppointments(): Promise<ApiResponse<any[]>> {
-    return this.makeRequest<ApiResponse<any[]>>('/frontdesk/appointments/today');
+  async getFrontDeskTodayAppointments(authToken?: string): Promise<ApiResponse<any[]>> {
+    return this.makeRequest<ApiResponse<any[]>>('/frontdesk/appointments/today', {}, authToken);
   }
 
-  async getFrontDeskPendingTasks(): Promise<ApiResponse<any[]>> {
-    return this.makeRequest<ApiResponse<any[]>>('/frontdesk/tasks/pending');
+  async getFrontDeskPendingTasks(authToken?: string): Promise<ApiResponse<any[]>> {
+    return this.makeRequest<ApiResponse<any[]>>('/frontdesk/tasks/pending', {}, authToken);
   }
 
   // Finance API methods
-  async getFinanceIncome(params?: { limit?: number; status?: string }): Promise<ApiResponse<any[]>> {
+  async getFinanceIncome(params?: { limit?: number; status?: string; authToken?: string }): Promise<ApiResponse<any[]>> {
     const queryParams = new URLSearchParams();
     if (params?.limit) queryParams.append('limit', params.limit.toString());
     if (params?.status) queryParams.append('status', params.status);
@@ -92,17 +95,17 @@ export class SimpleApiClient {
     const queryString = queryParams.toString();
     const endpoint = `/finance/income${queryString ? `?${queryString}` : ''}`;
     
-    return this.makeRequest<ApiResponse<any[]>>(endpoint);
+    return this.makeRequest<ApiResponse<any[]>>(endpoint, {}, params?.authToken);
   }
 
   // Expedix API methods  
-  async getExpedixPatients(searchTerm?: string): Promise<ApiResponse<any[]>> {
+  async getExpedixPatients(searchTerm?: string, authToken?: string): Promise<ApiResponse<any[]>> {
     const params = searchTerm ? `?search=${encodeURIComponent(searchTerm)}` : '';
-    return this.makeRequest<ApiResponse<any[]>>(`/expedix/patients${params}`);
+    return this.makeRequest<ApiResponse<any[]>>(`/expedix/patients${params}`, {}, authToken);
   }
 
-  async getExpedixConsultations(): Promise<ApiResponse<any[]>> {
-    return this.makeRequest<ApiResponse<any[]>>('/expedix/consultations');
+  async getExpedixConsultations(authToken?: string): Promise<ApiResponse<any[]>> {
+    return this.makeRequest<ApiResponse<any[]>>('/expedix/consultations', {}, authToken);
   }
 }
 

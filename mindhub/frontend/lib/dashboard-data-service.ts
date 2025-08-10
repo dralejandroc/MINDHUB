@@ -43,7 +43,7 @@ class DashboardDataService {
     return DashboardDataService.instance;
   }
 
-  async fetchDashboardData(userId?: string): Promise<DashboardData> {
+  async fetchDashboardData(userId?: string, authToken?: string): Promise<DashboardData> {
     // Check cache (temporarily disabled for testing)
     const now = Date.now();
     // if (this.cachedData && (now - this.lastFetch) < this.cacheTimeout) {
@@ -154,9 +154,9 @@ class DashboardDataService {
     }
   }
 
-  private async fetchPatients(): Promise<any[]> {
+  private async fetchPatients(authToken?: string): Promise<any[]> {
     try {
-      const response = await simpleApiClient.getExpedixPatients();
+      const response = await simpleApiClient.getExpedixPatients(undefined, authToken);
       return response?.data || [];
     } catch (error) {
       console.error('Error fetching patients:', error);
