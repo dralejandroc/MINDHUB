@@ -19,6 +19,7 @@ import QuickPayment from '@/components/frontdesk/QuickPayment';
 import QuickScheduling from '@/components/frontdesk/QuickScheduling';
 import ResourceSender from '@/components/frontdesk/ResourceSender';
 import DayOverview from '@/components/frontdesk/DayOverview';
+import { simpleApiClient } from '@/lib/api/simple-api-client';
 
 export default function FrontDeskPage() {
   const [activeModule, setActiveModule] = useState('overview');
@@ -28,6 +29,7 @@ export default function FrontDeskPage() {
     pendingPayments: 0,
     resourcesSent: 0
   });
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     loadTodaysStats();
@@ -35,13 +37,22 @@ export default function FrontDeskPage() {
 
   const loadTodaysStats = async () => {
     try {
-      const response = await fetch('/api/frontdesk/stats/today');
-      const data = await response.json();
-      if (data.success) {
-        setTodaysStats(data.data);
+      setLoading(true);
+      const response = await simpleApiClient.getFrontDeskTodayStats();
+      if (response.success) {
+        setTodaysStats(response.data);
       }
     } catch (error) {
       console.error('Error loading today stats:', error);
+      // Set default values on error to prevent UI issues
+      setTodaysStats({
+        appointments: 0,
+        payments: 0,
+        pendingPayments: 0,
+        resourcesSent: 0
+      });
+    } finally {
+      setLoading(false);
     }
   };
 

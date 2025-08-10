@@ -12,6 +12,7 @@ import {
   ExclamationTriangleIcon,
   MagnifyingGlassIcon
 } from '@heroicons/react/24/outline';
+import { dashboardDataService } from '@/lib/dashboard-data-service';
 
 // Types for dashboard data
 interface DashboardStats {
@@ -68,19 +69,40 @@ export const MainDashboard: React.FC<MainDashboardProps> = ({ user }) => {
     try {
       setLoading(true);
       
-      // Fetch dashboard statistics
-      const [statsResponse, activityResponse] = await Promise.all([
-        fetch('/api/dashboard/stats'),
-        fetch('/api/dashboard/recent-activity')
-      ]);
+      // Use the fixed dashboard data service instead of broken proxy routes
+      const dashboardData = await dashboardDataService.fetchDashboardData(user.id);
       
-      const statsData = await statsResponse.json();
-      const activityData = await activityResponse.json();
+      // Convert dashboard data to component format
+      setStats({
+        totalPatients: dashboardData.totalPatients,
+        activePatients: dashboardData.totalPatients, // Assume all are active for now
+        pendingAssessments: Math.max(0, dashboardData.totalScaleApplications - dashboardData.weeklyStats.assessments),
+        completedAssessmentsToday: dashboardData.weeklyStats.assessments,
+        scheduledAppointments: dashboardData.weeklyStats.consultations,
+      });
       
-      setStats(statsData.data);
-      setRecentActivity(activityData.data);
+      // Convert recent activity to component format
+      const recentActivityFormatted = dashboardData.recentActivity.map((activity, index) => ({
+        id: `activity-${index}`,
+        type: activity.type as 'assessment' | 'consultation' | 'patient_registration',
+        description: activity.description,
+        timestamp: new Date(activity.timestamp),
+        patientName: 'Unknown', // Extract from description if needed
+        status: 'completed' as const,
+      }));
+      
+      setRecentActivity(recentActivityFormatted);
     } catch (error) {
       console.error('Error loading dashboard data:', error);
+      // Set default values on error
+      setStats({
+        totalPatients: 0,
+        activePatients: 0,
+        pendingAssessments: 0,
+        completedAssessmentsToday: 0,
+        scheduledAppointments: 0,
+      });
+      setRecentActivity([]);
     } finally {
       setLoading(false);
     }

@@ -1,7 +1,10 @@
 /**
  * Dashboard Data Service
  * Fetches real statistics from backend APIs for dashboard display
+ * Updated to use direct backend API clients instead of broken proxy routes
  */
+
+import { simpleApiClient } from './api/simple-api-client';
 
 export interface DashboardData {
   totalPatients: number;
@@ -153,9 +156,8 @@ class DashboardDataService {
 
   private async fetchPatients(): Promise<any[]> {
     try {
-      const response = await fetch(`/api/expedix/patients`);
-      const data = await response.json();
-      return data?.data || [];
+      const response = await simpleApiClient.getExpedixPatients();
+      return response?.data || [];
     } catch (error) {
       console.error('Error fetching patients:', error);
       return [];
@@ -164,9 +166,22 @@ class DashboardDataService {
 
   private async fetchConsultations(): Promise<any[]> {
     try {
-      const response = await fetch(`/api/expedix/consultations`);
-      const data = await response.json();
-      return data?.data || [];
+      // Try to get consultations directly first
+      const response = await simpleApiClient.getExpedixConsultations();
+      if (response?.data) {
+        return response.data;
+      }
+      
+      // Fallback: extract consultations from patient data
+      const patientsResponse = await simpleApiClient.getExpedixPatients();
+      const allConsultations: any[] = [];
+      patientsResponse.data?.forEach((patient: any) => {
+        if (patient.consultations && patient.consultations.length > 0) {
+          allConsultations.push(...patient.consultations);
+        }
+      });
+      
+      return allConsultations;
     } catch (error) {
       console.error('Error fetching consultations:', error);
       return [];
@@ -185,15 +200,13 @@ class DashboardDataService {
       
       for (const patient of patientSample) {
         try {
-          const response = await fetch(`/api/v1/clinimetrix/patient-assessments/${patient.id}`);
-          if (response.ok) {
-            const data = await response.json();
-            if (data.success && data.data) {
-              allAssessments = allAssessments.concat(data.data);
-            }
+          // For now, extract assessments from patient data if available
+          if (patient.assessments && patient.assessments.length > 0) {
+            allAssessments = allAssessments.concat(patient.assessments);
           }
+          // TODO: Implement proper assessments endpoint when clinimetrix integration is complete
         } catch (err) {
-          console.log(`Failed to fetch assessments for patient ${patient.id}:`, err instanceof Error ? err.message : 'Unknown error');
+          console.log(`Failed to extract assessments for patient ${patient.id}:`, err instanceof Error ? err.message : 'Unknown error');
           continue;
         }
       }
