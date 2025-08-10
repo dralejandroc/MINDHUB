@@ -121,10 +121,10 @@ router.get('/appointments', async (req, res) => {
     }
 
     // Cargar citas reales desde la base de datos
-    const consultations = await prisma.consultation.findMany({
+    const consultations = await prisma.consultations.findMany({
       where: whereClause,
       include: {
-        patient: {
+        patients: {
           select: {
             id: true,
             firstName: true,
@@ -212,10 +212,10 @@ router.get('/appointments', async (req, res) => {
         typeColor: typeColor, // Agregar color del tipo de consulta
         createdAt: consultation.createdAt.toISOString(),
         patient: consultation.patient ? {
-          id: consultation.patient.id,
-          name: `${consultation.patient.firstName || ''} ${consultation.patient.lastName || consultation.patient.paternalLastName || ''}`.trim(),
-          email: consultation.patient.email || '',
-          phone: consultation.patient.phone || ''
+          id: consultation.patients.id,
+          name: `${consultation.patients.firstName || ''} ${consultation.patients.lastName || consultation.patients.paternalLastName || ''}`.trim(),
+          email: consultation.patients.email || '',
+          phone: consultation.patients.phone || ''
         } : null
       };
     });
@@ -253,7 +253,7 @@ router.post('/appointments', async (req, res) => {
     }
 
     // Verificar que el paciente existe
-    const patient = await prisma.patient.findUnique({
+    const patient = await prisma.patients.findUnique({
       where: { id: patientId }
     });
 
@@ -268,7 +268,7 @@ router.post('/appointments', async (req, res) => {
     const appointmentDateTime = new Date(`${date}T${time}:00.000`);
 
     // Verificar disponibilidad (opcional)
-    const existingAppointment = await prisma.consultation.findFirst({
+    const existingAppointment = await prisma.consultations.findFirst({
       where: {
         consultationDate: appointmentDateTime,
         NOT: {
@@ -286,7 +286,7 @@ router.post('/appointments', async (req, res) => {
 
     // Crear la cita en la base de datos
     const appointmentId = uuidv4();
-    const newAppointment = await prisma.consultation.create({
+    const newAppointment = await prisma.consultations.create({
       data: {
         id: appointmentId,
         patientId: patientId,
@@ -348,10 +348,10 @@ router.post('/appointments', async (req, res) => {
         notes: notes || '',
         createdAt: new Date().toISOString(),
         patient: newAppointment.patient ? {
-          id: newAppointment.patient.id,
-          name: `${newAppointment.patient.firstName || ''} ${newAppointment.patient.lastName || newAppointment.patient.paternalLastName || ''}`.trim(),
-          email: newAppointment.patient.email || '',
-          phone: newAppointment.patient.phone || ''
+          id: newAppointment.patients.id,
+          name: `${newAppointment.patients.firstName || ''} ${newAppointment.patients.lastName || newAppointment.patients.paternalLastName || ''}`.trim(),
+          email: newAppointment.patients.email || '',
+          phone: newAppointment.patients.phone || ''
         } : null
       }
     });
@@ -404,7 +404,7 @@ router.delete('/appointments/:id', async (req, res) => {
     const appointmentId = req.params.id;
 
     // Buscar la cita en la base de datos
-    const appointment = await prisma.consultation.findUnique({
+    const appointment = await prisma.consultations.findUnique({
       where: { id: appointmentId },
       include: {
         patient: {
@@ -426,7 +426,7 @@ router.delete('/appointments/:id', async (req, res) => {
     }
 
     // Eliminar físicamente la cita para liberar el espacio
-    const deletedAppointment = await prisma.consultation.delete({
+    const deletedAppointment = await prisma.consultations.delete({
       where: { id: appointmentId }
     });
 
@@ -494,7 +494,7 @@ router.patch('/appointments/:id/status', async (req, res) => {
     }
 
     // Buscar la cita en la base de datos
-    const appointment = await prisma.consultation.findUnique({
+    const appointment = await prisma.consultations.findUnique({
       where: { id: appointmentId }
     });
     
@@ -506,7 +506,7 @@ router.patch('/appointments/:id/status', async (req, res) => {
     }
 
     // Actualizar el estado
-    const updatedAppointment = await prisma.consultation.update({
+    const updatedAppointment = await prisma.consultations.update({
       where: { id: appointmentId },
       data: {
         status: status,
@@ -604,10 +604,10 @@ router.get('/waiting-list', async (req, res) => {
     const result = waitingListEntries.map(entry => ({
       id: entry.id,
       patientId: entry.patientId,
-      patientName: `${entry.patient.firstName} ${entry.patient.lastName} ${entry.patient.paternalLastName || ''}`.trim(),
-      patientPhone: entry.patient.phone,
-      patientEmail: entry.patient.email,
-      patientAge: entry.patient.dateOfBirth ? Math.floor((new Date() - new Date(entry.patient.dateOfBirth)) / (365.25 * 24 * 60 * 60 * 1000)) : null,
+      patientName: `${entry.patients.firstName} ${entry.patients.lastName} ${entry.patients.paternalLastName || ''}`.trim(),
+      patientPhone: entry.patients.phone,
+      patientEmail: entry.patients.email,
+      patientAge: entry.patients.dateOfBirth ? Math.floor((new Date() - new Date(entry.patients.dateOfBirth)) / (365.25 * 24 * 60 * 60 * 1000)) : null,
       appointmentType: entry.appointmentType,
       preferredDates: entry.preferredDates,
       preferredTimes: entry.preferredTimes,
@@ -644,7 +644,7 @@ router.post('/waiting-list', async (req, res) => {
     const currentUser = req.user || { id: 'user-dr-alejandro' };
 
     // Validar que el paciente existe
-    const patient = await prisma.patient.findUnique({
+    const patient = await prisma.patients.findUnique({
       where: { id: patientId },
       select: {
         id: true,
@@ -720,9 +720,9 @@ router.post('/waiting-list', async (req, res) => {
       data: {
         id: newEntry.id,
         patientId: newEntry.patientId,
-        patientName: `${newEntry.patient.firstName} ${newEntry.patient.lastName} ${newEntry.patient.paternalLastName || ''}`.trim(),
-        patientPhone: newEntry.patient.phone,
-        patientEmail: newEntry.patient.email,
+        patientName: `${newEntry.patients.firstName} ${newEntry.patients.lastName} ${newEntry.patients.paternalLastName || ''}`.trim(),
+        patientPhone: newEntry.patients.phone,
+        patientEmail: newEntry.patients.email,
         appointmentType: newEntry.appointmentType,
         preferredDates: newEntry.preferredDates,
         preferredTimes: newEntry.preferredTimes,
@@ -1043,7 +1043,7 @@ router.get('/daily-stats', async (req, res) => {
     const endOfDay = new Date(dateStr);
     endOfDay.setHours(23, 59, 59, 999);
     
-    const dayConsultations = await prisma.consultation.findMany({
+    const dayConsultations = await prisma.consultations.findMany({
       where: {
         consultationDate: {
           gte: startOfDay,
@@ -1051,7 +1051,7 @@ router.get('/daily-stats', async (req, res) => {
         }
       },
       include: {
-        patient: {
+        patients: {
           select: {
             firstName: true,
             lastName: true
@@ -1461,9 +1461,9 @@ async function processWaitingListForSlot(availableSlot) {
     const suggestions = candidates.map(candidate => ({
       waitingListId: candidate.id,
       patientId: candidate.patientId,
-      patientName: `${candidate.patient.firstName} ${candidate.patient.lastName} ${candidate.patient.paternalLastName || ''}`.trim(),
-      patientPhone: candidate.patient.phone,
-      patientEmail: candidate.patient.email,
+      patientName: `${candidate.patients.firstName} ${candidate.patients.lastName} ${candidate.patients.paternalLastName || ''}`.trim(),
+      patientPhone: candidate.patients.phone,
+      patientEmail: candidate.patients.email,
       appointmentType: candidate.appointmentType,
       priority: candidate.priority,
       notes: candidate.notes,

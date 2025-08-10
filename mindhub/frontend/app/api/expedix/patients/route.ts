@@ -1,15 +1,24 @@
 import { NextRequest, NextResponse } from 'next/server';
 
+// Prevent static generation for this API route
+export const runtime = 'nodejs';
+export const dynamic = 'force-dynamic';
+
 const BACKEND_URL = process.env.BACKEND_URL || 'https://mindhub-production.up.railway.app';
 
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
-    const search = searchParams.get('search');
+    
+    // Forward all query parameters
+    const params = new URLSearchParams();
+    searchParams.forEach((value, key) => {
+      params.append(key, value);
+    });
     
     let url = `${BACKEND_URL}/api/v1/expedix/patients`;
-    if (search) {
-      url += `?search=${encodeURIComponent(search)}`;
+    if (params.toString()) {
+      url += `?${params.toString()}`;
     }
 
     const response = await fetch(url, {
@@ -31,7 +40,13 @@ export async function GET(request: NextRequest) {
       { 
         success: false, 
         error: 'Failed to fetch data from backend',
-        patients: []
+        data: [],
+        pagination: {
+          page: 1,
+          limit: 20,
+          total: 0,
+          pages: 0
+        }
       }, 
       { status: 500 }
     );
