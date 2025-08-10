@@ -325,6 +325,23 @@ const utils = {
    */
   withRequiredAuth: () => {
     return [clerkRequiredAuth];
+  },
+
+  /**
+   * Admin-only access - requires org:admin role
+   */
+  adminOnly: () => {
+    return [
+      clerkRequiredAuth,
+      requireRole(['org:admin'])
+    ];
+  },
+
+  /**
+   * Member or Admin access - requires valid Clerk token (default for most routes)
+   */
+  memberOrAdmin: () => {
+    return [clerkRequiredAuth];
   }
 };
 

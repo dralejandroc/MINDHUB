@@ -82,6 +82,19 @@ const clerkRequiredAuth = async (req, res, next) => {
       // Get full user data from Clerk
       const clerkUser = await clerk.users.getUser(verifiedToken.sub);
       
+      // Get organization memberships to determine role
+      const orgMemberships = await clerk.users.getOrganizationMembershipList({
+        userId: verifiedToken.sub
+      });
+      
+      // Determine Clerk role (org:admin or org:member)
+      let clerkRole = 'org:member'; // Default to member
+      if (orgMemberships.length > 0) {
+        // Check if user is admin in any organization
+        const isAdmin = orgMemberships.some(membership => membership.role === 'org:admin');
+        clerkRole = isAdmin ? 'org:admin' : 'org:member';
+      }
+      
       // Find or create user in local database
       let localUser = await findOrCreateLocalUser(verifiedToken.sub, clerkUser);
 
@@ -97,13 +110,14 @@ const clerkRequiredAuth = async (req, res, next) => {
         id: localUser.id,
         email: localUser.email || clerkUser.emailAddresses[0]?.emailAddress,
         name: localUser.name || `${clerkUser.firstName} ${clerkUser.lastName}`.trim(),
-        role: localUser.role || 'professional', // Default to professional for healthcare platform
+        role: clerkRole, // Use Clerk role directly
         isAuthenticated: true,
         authProvider: 'clerk',
         
-        // Healthcare-specific context
-        permissions: getUserPermissions(localUser.role),
-        canAccessPatientData: ['professional', 'admin', 'psychiatrist', 'psychologist', 'nurse'].includes(localUser.role)
+        // Simplified permissions based on Clerk roles
+        permissions: getUserPermissions(clerkRole),
+        canAccessPatientData: true, // Both members and admins can access patient data
+        isAdmin: clerkRole === 'org:admin'
       };
       
       console.log(`✅ User authenticated: ${req.user.email} (Role: ${req.user.role})`);
@@ -291,38 +305,24 @@ const requirePermission = (permissions) => {
 };
 
 /**
- * Get user permissions based on role
- * @param {string} role - User role
+ * Get user permissions based on Clerk role (Member/Admin only)
+ * @param {string} clerkRole - Clerk role (org:member or org:admin)
  * @returns {Array} Array of permissions
  */
-function getUserPermissions(role) {
+function getUserPermissions(clerkRole) {
   const rolePermissions = {
-    admin: [
+    'org:admin': [
       'read:all_data', 'write:all_data', 'delete:all_data',
-      'manage:users', 'manage:roles', 'manage:system'
+      'manage:users', 'manage:system', 'access:admin_panel'
     ],
-    professional: [
-      'read:patient_data', 'write:patient_data', 'read:assessments', 
-      'write:assessments', 'read:consultations', 'write:consultations'
-    ],
-    psychiatrist: [
-      'read:all_patient_data', 'write:medical_records', 'write:prescriptions',
-      'write:diagnoses', 'read:assessments', 'write:assessments'
-    ],
-    psychologist: [
-      'read:patient_data', 'write:psychological_reports', 'write:clinical_assessments',
-      'read:assessments', 'write:assessments'
-    ],
-    nurse: [
-      'read:patient_basic_data', 'write:care_notes', 'write:vital_signs',
-      'read:basic_assessments'
-    ],
-    patient: [
-      'read:own_data', 'write:own_forms', 'read:own_assessments'
+    'org:member': [
+      'read:own_data', 'write:own_data', 'read:own_patients', 
+      'write:own_patients', 'read:own_assessments', 'write:own_assessments'
     ]
   };
   
-  return rolePermissions[role] || rolePermissions.professional;
+  // Default to member permissions if role not found
+  return rolePermissions[clerkRole] || rolePermissions['org:member'];
 }
 
 /**

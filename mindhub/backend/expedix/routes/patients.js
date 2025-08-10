@@ -182,8 +182,7 @@ const validatePatient = [
  * List patients with filtering, pagination, and search
  */
 router.get('/',
-  ...middleware.utils.withRequiredAuth(), // REQUIRED authentication for production security
-  ...middleware.utils.forRoles(['professional', 'admin', 'psychiatrist', 'psychologist', 'nurse'], ['read:patient_data']), // Role-based authorization
+  ...middleware.utils.withRequiredAuth(), // REQUIRED Clerk authentication (Member/Admin both allowed)
   [
   query('page').optional().isInt({ min: 1 }).withMessage('Page must be a positive integer'),
   query('limit').optional().isInt({ min: 1, max: 100 }).withMessage('Limit must be between 1 and 100'),
@@ -216,14 +215,14 @@ router.get('/',
       ...(category && { patientCategory: category })
     };
 
-    // Filter by clinic if user belongs to one (temporarily disabled for development)
-    // if (req.user?.clinicId) {
-    //   where.clinicId = req.user.clinicId;
-    // } else if (req.user?.clinicId === null) {
-    //   // User is individual, show only individual patients
-    //   where.clinicId = null;
-    // }
-    // If no user info, show all patients (development mode)
+    // SECURITY: Filter patients based on user role
+    if (req.user) {
+      if (req.user.role === 'org:member') {
+        // Members can only see their own patients
+        where.createdBy = req.user.id;
+      }
+      // Admins (org:admin) can see all patients - no additional filter needed
+    }
 
     // Add search functionality
     if (search) {
