@@ -125,7 +125,7 @@ router.get('/patient/:patientId', [
 
     // Verify patient exists
     const patient = await executeQuery(
-      (prisma) => prisma.patient.findUnique({
+      (prisma) => prisma.patients.findUnique({
         where: { id: patientId },
         select: { id: true, medicalRecordNumber: true, firstName: true, lastName: true }
       }),
@@ -301,7 +301,7 @@ router.post('/', validateConsultation, async (req, res) => {
 
     // Verify patient exists
     const patient = await executeQuery(
-      (prisma) => prisma.patient.findUnique({
+      (prisma) => prisma.patients.findUnique({
         where: { id: consultationData.patientId },
         select: { id: true, medicalRecordNumber: true }
       }),

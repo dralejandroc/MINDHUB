@@ -244,8 +244,7 @@ router.get('/',
         include: {
           _count: {
             select: {
-              consultations: true,
-              scale_administrations: true
+              consultations: true
             }
           }
         }

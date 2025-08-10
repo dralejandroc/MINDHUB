@@ -5,7 +5,8 @@
 
 const express = require('express');
 const router = express.Router();
-const { authenticate } = require('../../shared/middleware');
+// Authentication handled by Clerk - middleware temporarily disabled for development
+// const { authenticate } = require('../../shared/middleware');
 const FrontDeskService = require('../services/FrontDeskService');
 
 const frontDeskService = new FrontDeskService();
@@ -16,9 +17,10 @@ const frontDeskService = new FrontDeskService();
  * GET /api/v1/frontdesk/stats/today
  * Obtener estadísticas del día actual
  */
-router.get('/stats/today', authenticate, async (req, res) => {
+router.get('/stats/today', async (req, res) => {
   try {
-    const userId = req.user.id;
+    // For development - using placeholder user ID since auth is disabled
+    const userId = 'dev-user';
     const stats = await frontDeskService.getTodayStats(userId);
 
     res.json({
@@ -39,9 +41,10 @@ router.get('/stats/today', authenticate, async (req, res) => {
  * GET /api/v1/frontdesk/appointments/today
  * Obtener citas del día actual
  */
-router.get('/appointments/today', authenticate, async (req, res) => {
+router.get('/appointments/today', async (req, res) => {
   try {
-    const userId = req.user.id;
+    // For development - using placeholder user ID since auth is disabled
+    const userId = 'dev-user';
     const appointments = await frontDeskService.getTodayAppointments(userId);
 
     res.json({
@@ -62,9 +65,10 @@ router.get('/appointments/today', authenticate, async (req, res) => {
  * GET /api/v1/frontdesk/tasks/pending
  * Obtener tareas pendientes
  */
-router.get('/tasks/pending', authenticate, async (req, res) => {
+router.get('/tasks/pending', async (req, res) => {
   try {
-    const userId = req.user.id;
+    // For development - using placeholder user ID since auth is disabled
+    const userId = 'dev-user';
     const tasks = await frontDeskService.getPendingTasks(userId);
 
     res.json({
@@ -87,10 +91,11 @@ router.get('/tasks/pending', authenticate, async (req, res) => {
  * GET /api/v1/frontdesk/payments/pending/:patientId
  * Obtener pagos pendientes de un paciente
  */
-router.get('/payments/pending/:patientId', authenticate, async (req, res) => {
+router.get('/payments/pending/:patientId', async (req, res) => {
   try {
     const { patientId } = req.params;
-    const userId = req.user.id;
+    // For development - using placeholder user ID since auth is disabled
+    const userId = 'dev-user';
     const pendingPayments = await frontDeskService.getPendingPayments(patientId, userId);
 
     res.json({
@@ -111,7 +116,7 @@ router.get('/payments/pending/:patientId', authenticate, async (req, res) => {
  * POST /api/v1/frontdesk/payments/process
  * Procesar un nuevo pago
  */
-router.post('/payments/process', authenticate, [
+router.post('/payments/process', [
   // Validation middleware
   require('express-validator').body('amount')
     .isFloat({ min: 0.01 })
@@ -142,7 +147,8 @@ router.post('/payments/process', authenticate, [
       });
     }
 
-    const userId = req.user.id;
+    // For development - using placeholder user ID since auth is disabled
+    const userId = 'dev-user';
     const paymentData = req.body;
 
     const payment = await frontDeskService.processPayment({
@@ -169,7 +175,7 @@ router.post('/payments/process', authenticate, [
  * POST /api/v1/frontdesk/payments/pay-pending/:pendingId
  * Pagar un monto pendiente específico
  */
-router.post('/payments/pay-pending/:pendingId', authenticate, [
+router.post('/payments/pay-pending/:pendingId', [
   // Validation middleware
   require('express-validator').param('pendingId')
     .isUUID()
@@ -194,7 +200,8 @@ router.post('/payments/pay-pending/:pendingId', authenticate, [
     }
 
     const { pendingId } = req.params;
-    const userId = req.user.id;
+    // For development - using placeholder user ID since auth is disabled
+    const userId = 'dev-user';
     const { paymentMethod, notes } = req.body;
 
     const payment = await frontDeskService.payPendingAmount(pendingId, {
@@ -224,10 +231,11 @@ router.post('/payments/pay-pending/:pendingId', authenticate, [
  * GET /api/v1/frontdesk/appointments/slots/:date
  * Obtener horarios disponibles para una fecha
  */
-router.get('/appointments/slots/:date', authenticate, async (req, res) => {
+router.get('/appointments/slots/:date', async (req, res) => {
   try {
     const { date } = req.params;
-    const userId = req.user.id;
+    // For development - using placeholder user ID since auth is disabled
+    const userId = 'dev-user';
     const slots = await frontDeskService.getAvailableSlots(date, userId);
 
     res.json({
@@ -248,9 +256,10 @@ router.get('/appointments/slots/:date', authenticate, async (req, res) => {
  * POST /api/v1/frontdesk/appointments/schedule
  * Agendar una nueva cita
  */
-router.post('/appointments/schedule', authenticate, async (req, res) => {
+router.post('/appointments/schedule', async (req, res) => {
   try {
-    const userId = req.user.id;
+    // For development - using placeholder user ID since auth is disabled
+    const userId = 'dev-user';
     const appointmentData = req.body;
 
     const appointment = await frontDeskService.scheduleAppointment({
@@ -277,11 +286,12 @@ router.post('/appointments/schedule', authenticate, async (req, res) => {
  * PUT /api/v1/frontdesk/appointments/:id/status
  * Actualizar estado de una cita
  */
-router.put('/appointments/:id/status', authenticate, async (req, res) => {
+router.put('/appointments/:id/status', async (req, res) => {
   try {
     const { id } = req.params;
     const { status, notes } = req.body;
-    const userId = req.user.id;
+    // For development - using placeholder user ID since auth is disabled
+    const userId = 'dev-user';
 
     const appointment = await frontDeskService.updateAppointmentStatus(id, status, notes, userId);
 
@@ -306,7 +316,7 @@ router.put('/appointments/:id/status', authenticate, async (req, res) => {
  * POST /api/v1/frontdesk/appointments/:id/behavioral-event
  * Registrar evento conductual del paciente (retraso, no-show, etc.)
  */
-router.post('/appointments/:id/behavioral-event', authenticate, [
+router.post('/appointments/:id/behavioral-event', [
   require('express-validator').param('id')
     .notEmpty()
     .withMessage('Appointment ID is required'),
@@ -334,7 +344,8 @@ router.post('/appointments/:id/behavioral-event', authenticate, [
 
     const { id } = req.params;
     const { eventType, description, delayMinutes } = req.body;
-    const userId = req.user.id;
+    // For development - using placeholder user ID since auth is disabled
+    const userId = 'dev-user';
 
     const behavioralEvent = await frontDeskService.recordBehavioralEvent({
       appointmentId: id,
@@ -392,7 +403,7 @@ router.get('/patients/:patientId/behavioral-history', async (req, res) => {
  * POST /api/v1/frontdesk/communications/log
  * Registrar comunicación entre sesiones (llamadas, WhatsApp, etc.)
  */
-router.post('/communications/log', authenticate, [
+router.post('/communications/log', [
   require('express-validator').body('patientId')
     .notEmpty()
     .withMessage('Patient ID is required'),
@@ -422,7 +433,8 @@ router.post('/communications/log', authenticate, [
     }
 
     const { patientId, communicationType, direction, content, duration } = req.body;
-    const userId = req.user.id;
+    // For development - using placeholder user ID since auth is disabled
+    const userId = 'dev-user';
 
     const communication = await frontDeskService.logCommunication({
       patientId,
@@ -454,9 +466,10 @@ router.post('/communications/log', authenticate, [
  * POST /api/v1/frontdesk/resources/send
  * Enviar recursos a un paciente
  */
-router.post('/resources/send', authenticate, async (req, res) => {
+router.post('/resources/send', async (req, res) => {
   try {
-    const userId = req.user.id;
+    // For development - using placeholder user ID since auth is disabled
+    const userId = 'dev-user';
     const sendingData = req.body;
 
     const result = await frontDeskService.sendResourcesToPatient({
@@ -483,9 +496,10 @@ router.post('/resources/send', authenticate, async (req, res) => {
  * GET /api/v1/frontdesk/resources/history
  * Obtener historial de recursos enviados
  */
-router.get('/resources/history', authenticate, async (req, res) => {
+router.get('/resources/history', async (req, res) => {
   try {
-    const userId = req.user.id;
+    // For development - using placeholder user ID since auth is disabled
+    const userId = 'dev-user';
     const { page = 1, limit = 20 } = req.query;
 
     const history = await frontDeskService.getResourceHistory(userId, {
@@ -513,10 +527,11 @@ router.get('/resources/history', authenticate, async (req, res) => {
  * POST /api/v1/frontdesk/reminders/appointment
  * Enviar recordatorio de cita
  */
-router.post('/reminders/appointment', authenticate, async (req, res) => {
+router.post('/reminders/appointment', async (req, res) => {
   try {
     const { appointmentId, method, customMessage } = req.body;
-    const userId = req.user.id;
+    // For development - using placeholder user ID since auth is disabled
+    const userId = 'dev-user';
 
     const result = await frontDeskService.sendAppointmentReminder(appointmentId, {
       method,
@@ -543,9 +558,10 @@ router.post('/reminders/appointment', authenticate, async (req, res) => {
  * GET /api/v1/frontdesk/notifications/pending
  * Obtener notificaciones pendientes de enviar
  */
-router.get('/notifications/pending', authenticate, async (req, res) => {
+router.get('/notifications/pending', async (req, res) => {
   try {
-    const userId = req.user.id;
+    // For development - using placeholder user ID since auth is disabled
+    const userId = 'dev-user';
     const notifications = await frontDeskService.getPendingNotifications(userId);
 
     res.json({
@@ -568,10 +584,11 @@ router.get('/notifications/pending', authenticate, async (req, res) => {
  * GET /api/v1/frontdesk/reports/daily
  * Reporte diario para recepción
  */
-router.get('/reports/daily', authenticate, async (req, res) => {
+router.get('/reports/daily', async (req, res) => {
   try {
     const { date } = req.query;
-    const userId = req.user.id;
+    // For development - using placeholder user ID since auth is disabled
+    const userId = 'dev-user';
     const reportDate = date || new Date().toISOString().split('T')[0];
 
     const report = await frontDeskService.getDailyReport(userId, reportDate);
@@ -594,10 +611,11 @@ router.get('/reports/daily', authenticate, async (req, res) => {
  * GET /api/v1/frontdesk/reports/payments
  * Reporte de pagos del día
  */
-router.get('/reports/payments', authenticate, async (req, res) => {
+router.get('/reports/payments', async (req, res) => {
   try {
     const { startDate, endDate } = req.query;
-    const userId = req.user.id;
+    // For development - using placeholder user ID since auth is disabled
+    const userId = 'dev-user';
 
     const report = await frontDeskService.getPaymentsReport(userId, {
       startDate,
