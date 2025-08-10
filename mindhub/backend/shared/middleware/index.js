@@ -4,7 +4,14 @@
  * Central export point for all authentication, authorization, and security middleware
  */
 
-// const AuthenticationMiddleware = require('./auth-middleware'); // REMOVED - Using Clerk auth only
+// Import Clerk authentication middleware
+const { 
+  clerkOptionalAuth, 
+  clerkRequiredAuth, 
+  combinedAuth, 
+  requireRole, 
+  requirePermission 
+} = require('./clerk-auth-middleware');
 const SessionManager = require('./session-manager');
 const SecurityMiddleware = require('./security-middleware');
 const rateLimitingMiddleware = require('./rate-limiting');
@@ -21,12 +28,12 @@ const ComprehensiveMiddleware = require('./comprehensive-middleware');
 
 // Initialize middleware instances  
 // const authMiddleware = new AuthenticationMiddleware(); // REMOVED - Using Clerk auth only
-// Auth stubs for Clerk migration - all auth handled by Clerk at API gateway level
+// Clerk-based auth middleware - REQUIRED authentication for production security
 const authMiddleware = {
-  authenticate: () => (req, res, next) => next(),
-  authorize: (roles, permissions) => (req, res, next) => next(),
-  authorizePatientAccess: () => (req, res, next) => next(),
-  rateLimitByRole: () => (req, res, next) => next()
+  authenticate: () => clerkRequiredAuth,
+  authorize: (roles, permissions) => clerkRequiredAuth, // ALWAYS require valid Clerk tokens
+  authorizePatientAccess: () => clerkRequiredAuth,
+  rateLimitByRole: () => (req, res, next) => next() // Keep rate limiting disabled for now
 };
 const sessionManager = new SessionManager();
 const securityMiddleware = new SecurityMiddleware();
@@ -267,12 +274,13 @@ const hubConfigurations = {
  */
 const utils = {
   /**
-   * Create middleware stack for specific role requirements
+   * Create middleware stack for specific role requirements - SECURE Clerk-based
    */
   forRoles: (roles, permissions = []) => {
     return [
-      ...middlewarePresets.protected,
-      authMiddleware.authorize(roles, permissions)
+      clerkRequiredAuth,
+      requireRole(roles),
+      ...(permissions.length > 0 ? [requirePermission(permissions)] : [])
     ];
   },
 
@@ -303,6 +311,20 @@ const utils = {
    */
   custom: (middlewareArray) => {
     return middlewareArray;
+  },
+
+  /**
+   * Optional Clerk authentication - validates token if present, continues if not
+   */
+  withOptionalAuth: () => {
+    return [clerkOptionalAuth];
+  },
+
+  /**
+   * Required Clerk authentication - validates token and requires authentication
+   */
+  withRequiredAuth: () => {
+    return [clerkRequiredAuth];
   }
 };
 

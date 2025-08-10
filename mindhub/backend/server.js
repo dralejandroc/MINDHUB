@@ -78,6 +78,9 @@ const dataValidation = require('./shared/middleware/data-validation');
 const rateLimiting = require('./shared/middleware/rate-limiting');
 const middleware = require('./shared/middleware');
 
+// Import Clerk authentication middleware
+const { clerkOptionalAuth, combinedAuth } = require('./shared/middleware/clerk-auth-middleware');
+
 // Import advanced security middleware - COMMENTED FOR LOCAL DEV
 // const AdvancedDDoSProtection = require('./shared/middleware/advanced-ddos-protection');
 // const GeoRateLimitingMiddleware = require('./shared/middleware/geo-rate-limiting');
@@ -221,6 +224,11 @@ app.use((req, res, next) => {
 app.use(compression());
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+
+// Apply Clerk authentication middleware globally
+console.log('🔐 Applying Clerk authentication middleware...');
+app.use(combinedAuth);
+console.log('✅ Clerk authentication middleware applied');
 
 // Rate limiting with advanced features - DISABLED FOR LOCAL DEV
 // app.use(rateLimiting.apiRateLimit());

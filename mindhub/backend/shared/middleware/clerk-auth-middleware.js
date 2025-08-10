@@ -54,7 +54,7 @@ const clerkOptionalAuth = async (req, res, next) => {
 
 /**
  * Required Clerk authentication middleware
- * Validates token and requires authentication
+ * Validates token, requires authentication, and sets up user context
  * Returns 401 if token is invalid or missing
  */
 const clerkRequiredAuth = async (req, res, next) => {
@@ -79,11 +79,34 @@ const clerkRequiredAuth = async (req, res, next) => {
         secretKey: process.env.CLERK_SECRET_KEY,
       });
 
+      // Get full user data from Clerk
+      const clerkUser = await clerk.users.getUser(verifiedToken.sub);
+      
+      // Find or create user in local database
+      let localUser = await findOrCreateLocalUser(verifiedToken.sub, clerkUser);
+
       req.auth = {
         userId: verifiedToken.sub,
         user: verifiedToken
       };
+
+      // Set up comprehensive user context
+      req.user = {
+        clerkUserId: verifiedToken.sub,
+        clerkUser: clerkUser,
+        id: localUser.id,
+        email: localUser.email || clerkUser.emailAddresses[0]?.emailAddress,
+        name: localUser.name || `${clerkUser.firstName} ${clerkUser.lastName}`.trim(),
+        role: localUser.role || 'professional', // Default to professional for healthcare platform
+        isAuthenticated: true,
+        authProvider: 'clerk',
+        
+        // Healthcare-specific context
+        permissions: getUserPermissions(localUser.role),
+        canAccessPatientData: ['professional', 'admin', 'psychiatrist', 'psychologist', 'nurse'].includes(localUser.role)
+      };
       
+      console.log(`✅ User authenticated: ${req.user.email} (Role: ${req.user.role})`);
       next();
     } catch (error) {
       console.error('Clerk token verification failed:', error);
@@ -219,21 +242,93 @@ const requireRole = (roles) => {
     }
 
     if (!allowedRoles.includes(req.user.role)) {
+      console.warn(`❌ Access denied: User ${req.user.email} with role "${req.user.role}" tried to access resource requiring roles: ${allowedRoles.join(', ')}`);
       return res.status(403).json({
         error: 'Insufficient permissions',
-        message: `This resource requires one of the following roles: ${allowedRoles.join(', ')}`,
+        message: `This resource requires one of the following roles: ${allowedRoles.join(', ')}. Current role: ${req.user.role}`,
         code: 'INSUFFICIENT_ROLE'
       });
     }
 
+    console.log(`✅ Access granted: User ${req.user.email} with role "${req.user.role}" accessing resource`);
     next();
   };
 };
 
 /**
+ * Middleware that requires specific permissions
+ * @param {string|Array} permissions - Required permission(s)
+ */
+const requirePermission = (permissions) => {
+  const requiredPermissions = Array.isArray(permissions) ? permissions : [permissions];
+  
+  return (req, res, next) => {
+    if (!req.user || !req.user.isAuthenticated) {
+      return res.status(401).json({
+        error: 'Authentication required',
+        message: 'This resource requires authentication',
+        code: 'AUTH_REQUIRED'
+      });
+    }
+
+    const userPermissions = req.user.permissions || [];
+    const hasPermission = requiredPermissions.some(permission => 
+      userPermissions.includes(permission)
+    );
+
+    if (!hasPermission) {
+      console.warn(`❌ Permission denied: User ${req.user.email} lacks required permissions: ${requiredPermissions.join(', ')}`);
+      return res.status(403).json({
+        error: 'Insufficient permissions',
+        message: `This resource requires one of the following permissions: ${requiredPermissions.join(', ')}`,
+        code: 'INSUFFICIENT_PERMISSION'
+      });
+    }
+
+    console.log(`✅ Permission granted: User ${req.user.email} has required permissions`);
+    next();
+  };
+};
+
+/**
+ * Get user permissions based on role
+ * @param {string} role - User role
+ * @returns {Array} Array of permissions
+ */
+function getUserPermissions(role) {
+  const rolePermissions = {
+    admin: [
+      'read:all_data', 'write:all_data', 'delete:all_data',
+      'manage:users', 'manage:roles', 'manage:system'
+    ],
+    professional: [
+      'read:patient_data', 'write:patient_data', 'read:assessments', 
+      'write:assessments', 'read:consultations', 'write:consultations'
+    ],
+    psychiatrist: [
+      'read:all_patient_data', 'write:medical_records', 'write:prescriptions',
+      'write:diagnoses', 'read:assessments', 'write:assessments'
+    ],
+    psychologist: [
+      'read:patient_data', 'write:psychological_reports', 'write:clinical_assessments',
+      'read:assessments', 'write:assessments'
+    ],
+    nurse: [
+      'read:patient_basic_data', 'write:care_notes', 'write:vital_signs',
+      'read:basic_assessments'
+    ],
+    patient: [
+      'read:own_data', 'write:own_forms', 'read:own_assessments'
+    ]
+  };
+  
+  return rolePermissions[role] || rolePermissions.professional;
+}
+
+/**
  * Find or create local user record based on Clerk User ID
  * @param {string} clerkUserId - Clerk User ID
- * @param {Object} userContext - Additional user context from header
+ * @param {Object} userContext - Additional user context from Clerk user object
  * @returns {Object} Local user record
  */
 async function findOrCreateLocalUser(clerkUserId, userContext = null) {
@@ -354,9 +449,11 @@ module.exports = {
   clerkAuthWithContext,
   requireAuth,
   requireRole,
+  requirePermission,
   validateApiKey,
   combinedAuth,
   
   // Utility functions
-  findOrCreateLocalUser
+  findOrCreateLocalUser,
+  getUserPermissions
 };

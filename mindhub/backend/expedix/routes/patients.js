@@ -182,7 +182,8 @@ const validatePatient = [
  * List patients with filtering, pagination, and search
  */
 router.get('/',
-  ...middleware.utils.forHub('expedix'), // Now uses public middleware for development
+  ...middleware.utils.withRequiredAuth(), // REQUIRED authentication for production security
+  ...middleware.utils.forRoles(['professional', 'admin', 'psychiatrist', 'psychologist', 'nurse'], ['read:patient_data']), // Role-based authorization
   [
   query('page').optional().isInt({ min: 1 }).withMessage('Page must be a positive integer'),
   query('limit').optional().isInt({ min: 1, max: 100 }).withMessage('Limit must be between 1 and 100'),

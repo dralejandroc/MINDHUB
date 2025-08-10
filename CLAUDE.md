@@ -351,3 +351,4 @@ El **CardBase** es el sistema de navegación por tarjetas que maneja todo el flu
 ## Recordatorios de Desarrollo
 - No hagas commit ni push en github hasta que yo te lo pida. me puedes preguntar, pero no lo hagas sin que me autorice
 - todos los endpoints correctos, olvidate de los anteriores, el /v1 ya no existen. No quiero que vuelvas a cometer este error.
+- Las claves de Clerk para producción están configuradas en los archivos .env (backend) y .env.local (frontend)
