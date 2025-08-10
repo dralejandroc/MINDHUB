@@ -8,11 +8,26 @@ const BACKEND_URL = process.env.BACKEND_URL || 'https://mindhub-production.up.ra
 
 export async function GET(request: NextRequest) {
   try {
+    // Forward authentication headers
+    const headers: HeadersInit = {
+      'Content-Type': 'application/json',
+    };
+
+    // Forward Authorization header (Clerk token)
+    const authHeader = request.headers.get('Authorization');
+    if (authHeader) {
+      headers['Authorization'] = authHeader;
+    }
+
+    // Forward user context
+    const userContextHeader = request.headers.get('X-User-Context');
+    if (userContextHeader) {
+      headers['X-User-Context'] = userContextHeader;
+    }
+
     const response = await fetch(`${BACKEND_URL}/api/v1/frontdesk/stats/today`, {
       method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers,
     });
 
     if (!response.ok) {

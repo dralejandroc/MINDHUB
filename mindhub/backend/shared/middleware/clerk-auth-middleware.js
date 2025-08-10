@@ -11,40 +11,97 @@ const { getPrismaClient } = require('../config/prisma');
 const prisma = getPrismaClient();
 
 /**
- * Optional Clerk authentication middleware
- * Validates token if present, but doesn't require authentication
- * Populates req.user with Clerk user data if token is valid
+ * Manual token verification middleware
+ * Validates Clerk JWT token manually without using ClerkExpress
  */
-const clerkOptionalAuth = ClerkExpressWithAuth({
-  // Enable debug mode in development
-  debug: process.env.NODE_ENV === 'development',
-  
-  // Custom error handler
-  onError: (error) => {
-    console.error('Clerk Auth Error:', error);
-    return null; // Allow request to continue without auth
+const clerkOptionalAuth = async (req, res, next) => {
+  try {
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      // No token provided, continue without auth
+      req.auth = null;
+      return next();
+    }
+
+    const token = authHeader.substring(7);
+    
+    // Verify token using Clerk backend
+    try {
+      const clerk = createClerkClient({
+        secretKey: process.env.CLERK_SECRET_KEY
+      });
+      
+      const verifiedToken = await verifyToken(token, {
+        secretKey: process.env.CLERK_SECRET_KEY,
+      });
+
+      req.auth = {
+        userId: verifiedToken.sub,
+        user: verifiedToken
+      };
+    } catch (error) {
+      console.warn('Clerk token verification failed:', error.message);
+      req.auth = null;
+    }
+
+    next();
+  } catch (error) {
+    console.error('Clerk optional auth error:', error);
+    req.auth = null;
+    next();
   }
-});
+};
 
 /**
  * Required Clerk authentication middleware
  * Validates token and requires authentication
  * Returns 401 if token is invalid or missing
  */
-const clerkRequiredAuth = ClerkExpressRequireAuth({
-  // Enable debug mode in development
-  debug: process.env.NODE_ENV === 'development',
-  
-  // Custom error handler for required auth
-  onError: (error, req, res, next) => {
-    console.error('Clerk Required Auth Error:', error);
-    return res.status(401).json({
-      error: 'Authentication required',
-      message: 'Valid Clerk token is required to access this resource',
-      code: 'CLERK_AUTH_REQUIRED'
+const clerkRequiredAuth = async (req, res, next) => {
+  try {
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return res.status(401).json({
+        error: 'Authentication required',
+        message: 'Authorization header with Bearer token is required',
+        code: 'MISSING_AUTH_HEADER'
+      });
+    }
+
+    const token = authHeader.substring(7);
+    
+    try {
+      const clerk = createClerkClient({
+        secretKey: process.env.CLERK_SECRET_KEY
+      });
+      
+      const verifiedToken = await verifyToken(token, {
+        secretKey: process.env.CLERK_SECRET_KEY,
+      });
+
+      req.auth = {
+        userId: verifiedToken.sub,
+        user: verifiedToken
+      };
+      
+      next();
+    } catch (error) {
+      console.error('Clerk token verification failed:', error);
+      return res.status(401).json({
+        error: 'Authentication failed',
+        message: 'Invalid or expired Clerk token',
+        code: 'CLERK_TOKEN_INVALID'
+      });
+    }
+  } catch (error) {
+    console.error('Clerk required auth error:', error);
+    return res.status(500).json({
+      error: 'Authentication middleware failed',
+      message: 'Internal authentication error',
+      code: 'AUTH_MIDDLEWARE_ERROR'
     });
   }
-});
+};
 
 /**
  * Enhanced middleware that validates Clerk token and enriches with user context
@@ -57,15 +114,7 @@ const clerkRequiredAuth = ClerkExpressRequireAuth({
 const clerkAuthWithContext = async (req, res, next) => {
   try {
     // First apply Clerk authentication
-    clerkOptionalAuth(req, res, async (error) => {
-      if (error) {
-        console.error('Clerk authentication failed:', error);
-        return res.status(401).json({
-          error: 'Authentication failed',
-          message: 'Invalid or expired Clerk token',
-          code: 'CLERK_TOKEN_INVALID'
-        });
-      }
+    await clerkOptionalAuth(req, res, async () => {
 
       // Check if user is authenticated through Clerk
       if (req.auth?.userId) {

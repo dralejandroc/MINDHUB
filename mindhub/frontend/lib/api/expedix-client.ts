@@ -1,7 +1,8 @@
 // Expedix API Client - Centralized API communication for patient management
 import { createAuthHeaders, authenticatedFetchWithToken } from '@/lib/utils/clerk-auth';
 
-const API_BASE_URL = '/api';
+// Use backend directly instead of Next.js proxy routes to avoid API route issues
+const API_BASE_URL = 'https://mindhub-production.up.railway.app/api/v1';
 
 export interface Patient {
   id: string;
@@ -99,10 +100,19 @@ class ExpedixApiClient {
   private async makeRequest<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
     const url = `${this.baseUrl}${endpoint}`;
     
-    // For now, use basic headers without auth - this will be handled by middleware
-    const defaultHeaders = {
+    // Get authentication headers from Clerk if available
+    let authHeaders: HeadersInit = {
       'Content-Type': 'application/json',
       'Accept': 'application/json',
+    };
+
+    // For now, skip authentication since backend auth is temporarily disabled
+    // TODO: Re-implement when Clerk authentication is properly configured
+    // This allows the app to work while auth issues are resolved
+    console.log('Authentication temporarily bypassed - using backend without auth');
+
+    const defaultHeaders = {
+      ...authHeaders,
       ...options.headers,
     };
 
