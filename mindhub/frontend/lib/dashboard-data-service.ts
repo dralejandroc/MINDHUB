@@ -57,9 +57,9 @@ class DashboardDataService {
         consultations,
         scaleApplications
       ] = await Promise.all([
-        this.fetchPatients(),
-        this.fetchConsultations(),
-        this.fetchScaleApplications()
+        this.fetchPatients(authToken),
+        this.fetchConsultations(authToken),
+        this.fetchScaleApplications(authToken)
       ]);
 
       // Calculate totals
@@ -164,16 +164,16 @@ class DashboardDataService {
     }
   }
 
-  private async fetchConsultations(): Promise<any[]> {
+  private async fetchConsultations(authToken?: string): Promise<any[]> {
     try {
       // Try to get consultations directly first
-      const response = await simpleApiClient.getExpedixConsultations();
+      const response = await simpleApiClient.getExpedixConsultations(authToken);
       if (response?.data) {
         return response.data;
       }
       
       // Fallback: extract consultations from patient data
-      const patientsResponse = await simpleApiClient.getExpedixPatients();
+      const patientsResponse = await simpleApiClient.getExpedixPatients(undefined, authToken);
       const allConsultations: any[] = [];
       patientsResponse.data?.forEach((patient: any) => {
         if (patient.consultations && patient.consultations.length > 0) {
@@ -188,11 +188,11 @@ class DashboardDataService {
     }
   }
 
-  private async fetchScaleApplications(): Promise<any[]> {
+  private async fetchScaleApplications(authToken?: string): Promise<any[]> {
     try {
       // Get all scale administrations from all patients to calculate dashboard stats
       // We'll aggregate data from all patients for dashboard metrics
-      const patients = await this.fetchPatients();
+      const patients = await this.fetchPatients(authToken);
       let allAssessments: any[] = [];
       
       // Get assessments for each patient (limited to avoid too many requests)

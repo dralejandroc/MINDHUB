@@ -26,7 +26,7 @@ if (typeof window !== 'undefined') {
 }
 
 // Backend configuration
-const API_BASE_URL = 'https://mindhub-production.up.railway.app/api/v1';
+const API_BASE_URL = 'https://mindhub-production.up.railway.app/api';
 
 export interface ApiResponse<T> {
   success: boolean;

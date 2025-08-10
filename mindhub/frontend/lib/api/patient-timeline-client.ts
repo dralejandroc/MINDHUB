@@ -4,7 +4,7 @@
  */
 
 // Use backend directly instead of Next.js proxy routes to avoid API route issues
-const API_BASE_URL = 'https://mindhub-production.up.railway.app/api/v1';
+const API_BASE_URL = 'https://mindhub-production.up.railway.app/api';
 
 export interface TimelineEvent {
   id: string;
