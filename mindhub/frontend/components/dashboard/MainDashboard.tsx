@@ -75,7 +75,7 @@ export const MainDashboard: React.FC<MainDashboardProps> = ({ user }) => {
       const token = await getToken();
       
       // Use the fixed dashboard data service instead of broken proxy routes
-      const dashboardData = await dashboardDataService.fetchDashboardData(user.id, token);
+      const dashboardData = await dashboardDataService.fetchDashboardData(user.id, token || undefined);
       
       // Convert dashboard data to component format
       setStats({

@@ -82,7 +82,7 @@ export function BeginnerDashboard({ onNavigate }: BeginnerDashboardProps) {
       const token = await getToken();
       
       // Use the new dashboard data service
-      const dashboardData = await dashboardDataService.fetchDashboardData(userId, token);
+      const dashboardData = await dashboardDataService.fetchDashboardData(userId, token || undefined);
       
       // Update dashboard stats with real data
       setWeeklyStats({
