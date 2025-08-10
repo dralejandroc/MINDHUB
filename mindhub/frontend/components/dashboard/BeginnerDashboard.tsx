@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useAuth } from '@clerk/nextjs';
 import { 
   ChevronRightIcon,
   CalendarIcon,
@@ -23,6 +24,7 @@ interface BeginnerDashboardProps {
 }
 
 export function BeginnerDashboard({ onNavigate }: BeginnerDashboardProps) {
+  const { getToken } = useAuth();
   const [currentWeek, setCurrentWeek] = useState(new Date());
   const [weeklyStats, setWeeklyStats] = useState({
     totalPatients: 0,
@@ -76,8 +78,11 @@ export function BeginnerDashboard({ onNavigate }: BeginnerDashboardProps) {
 
   const fetchRealDashboardData = async (userId: string) => {
     try {
+      // Get Clerk auth token
+      const token = await getToken();
+      
       // Use the new dashboard data service
-      const dashboardData = await dashboardDataService.fetchDashboardData(userId);
+      const dashboardData = await dashboardDataService.fetchDashboardData(userId, token);
       
       // Update dashboard stats with real data
       setWeeklyStats({
