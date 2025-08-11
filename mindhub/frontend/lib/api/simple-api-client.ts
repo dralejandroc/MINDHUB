@@ -5,8 +5,8 @@
 
 // This client should be used from components that have access to Clerk context
 
-// Backend configuration - calling backend directly
-const API_BASE_URL = 'https://mindhub-production.up.railway.app/api';
+// Backend configuration - use relative paths via Next.js rewrites
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || '/api';
 
 export interface ApiResponse<T> {
   success: boolean;
