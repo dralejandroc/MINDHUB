@@ -1,7 +1,6 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { useAuth } from '@clerk/nextjs';
 import { 
   ChartBarIcon, 
   UserGroupIcon, 
@@ -54,7 +53,6 @@ interface MainDashboardProps {
 }
 
 export const MainDashboard: React.FC<MainDashboardProps> = ({ user }) => {
-  const { getToken } = useAuth();
   // State management
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [recentActivity, setRecentActivity] = useState<RecentActivity[]>([]);
@@ -71,10 +69,7 @@ export const MainDashboard: React.FC<MainDashboardProps> = ({ user }) => {
     try {
       setLoading(true);
       
-      // Get Clerk auth token
-      const token = await getToken();
-      
-      // Use the fixed dashboard data service with cookie authentication
+      // Use the dashboard data service with cookie authentication (no token needed)
       const dashboardData = await dashboardDataService.fetchDashboardData(user.id);
       
       // Convert dashboard data to component format

@@ -20,31 +20,12 @@ if (!process.env.DATABASE_URL) {
 
 console.log('✅ DATABASE_URL configured');
 
-// Generate Prisma client if needed
-function generatePrismaClient() {
-  return new Promise((resolve, reject) => {
-    console.log('🔧 Generating Prisma client...');
-    
-    const generate = spawn('npx', ['prisma', 'generate'], {
-      stdio: 'inherit',
-      env: process.env,
-      cwd: __dirname
-    });
-
-    generate.on('close', (code) => {
-      if (code === 0) {
-        console.log('✅ Prisma client ready');
-        resolve();
-      } else {
-        console.log('⚠️ Prisma generate failed, but continuing...');
-        resolve(); // Continue anyway
-      }
-    });
-
-    generate.on('error', (error) => {
-      console.log('⚠️ Prisma generate error, but continuing...');
-      resolve(); // Continue anyway
-    });
+// Skip Prisma generation in Railway - assume it's already done in build phase
+function skipPrismaGeneration() {
+  return new Promise((resolve) => {
+    console.log('⏭️ Skipping Prisma generation in production startup');
+    console.log('✅ Assuming Prisma client is ready from build phase');
+    resolve();
   });
 }
 
@@ -54,11 +35,11 @@ function startServer() {
   require('./server.js');
 }
 
-// Main startup
+// Main startup - simplified for Railway
 async function startup() {
   try {
-    // Try to generate Prisma client but don't fail if it doesn't work
-    await generatePrismaClient();
+    // Skip Prisma generation to avoid Railway timeout
+    await skipPrismaGeneration();
     
     // Start server immediately
     startServer();

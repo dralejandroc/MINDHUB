@@ -1,7 +1,8 @@
 /**
- * Clerk JWT Authentication Middleware
+ * Clerk Cookie Authentication Middleware
  * 
- * Validates Clerk tokens and extracts user context for API requests
+ * Validates Clerk session tokens from cookies automatically
+ * No manual Bearer token handling required - Clerk manages everything
  * Integrates with the existing MindHub user system through Prisma
  */
 
@@ -9,41 +10,81 @@ const { createClerkClient, verifyToken } = require('@clerk/backend');
 const { getPrismaClient } = require('../config/prisma');
 
 const prisma = getPrismaClient();
+const clerk = createClerkClient({
+  secretKey: process.env.CLERK_SECRET_KEY
+});
 
 /**
- * Manual token verification middleware
- * Validates Clerk JWT token manually without using ClerkExpress
+ * Extract Clerk session token from cookies
+ * @param {Object} req - Express request object
+ * @returns {string|null} Session token or null
+ */
+function extractSessionFromCookies(req) {
+  // Clerk typically stores session token in __session cookie
+  const cookies = req.headers.cookie;
+  if (!cookies) return null;
+  
+  // Parse cookies to find Clerk session
+  const cookieArray = cookies.split(';');
+  for (let cookie of cookieArray) {
+    const [name, value] = cookie.trim().split('=');
+    if (name === '__session' || name.startsWith('__clerk_')) {
+      return value;
+    }
+  }
+  
+  return null;
+}
+
+/**
+ * Cookie-based optional authentication middleware
+ * Validates Clerk session from cookies automatically
  */
 const clerkOptionalAuth = async (req, res, next) => {
   try {
-    const authHeader = req.headers.authorization;
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      // No token provided, continue without auth
-      req.auth = null;
-      return next();
-    }
-
-    const token = authHeader.substring(7);
+    // Try to get session token from cookies first (preferred method)
+    const sessionToken = extractSessionFromCookies(req);
     
-    // Verify token using Clerk backend
-    try {
-      const clerk = createClerkClient({
-        secretKey: process.env.CLERK_SECRET_KEY
-      });
-      
-      const verifiedToken = await verifyToken(token, {
-        secretKey: process.env.CLERK_SECRET_KEY,
-      });
+    if (sessionToken) {
+      try {
+        const verifiedToken = await verifyToken(sessionToken, {
+          secretKey: process.env.CLERK_SECRET_KEY,
+        });
 
-      req.auth = {
-        userId: verifiedToken.sub,
-        user: verifiedToken
-      };
-    } catch (error) {
-      console.warn('Clerk token verification failed:', error.message);
-      req.auth = null;
+        req.auth = {
+          userId: verifiedToken.sub,
+          user: verifiedToken
+        };
+        console.log('✅ Authenticated via Clerk cookie');
+        return next();
+      } catch (error) {
+        console.warn('Clerk cookie token verification failed:', error.message);
+      }
     }
 
+    // Fallback to Bearer token for API compatibility
+    const authHeader = req.headers.authorization;
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      const token = authHeader.substring(7);
+      
+      try {
+        const verifiedToken = await verifyToken(token, {
+          secretKey: process.env.CLERK_SECRET_KEY,
+        });
+
+        req.auth = {
+          userId: verifiedToken.sub,
+          user: verifiedToken
+        };
+        console.log('✅ Authenticated via Bearer token (fallback)');
+        return next();
+      } catch (error) {
+        console.warn('Clerk Bearer token verification failed:', error.message);
+      }
+    }
+
+    // No authentication found
+    req.auth = null;
     next();
   } catch (error) {
     console.error('Clerk optional auth error:', error);
@@ -53,31 +94,43 @@ const clerkOptionalAuth = async (req, res, next) => {
 };
 
 /**
- * Required Clerk authentication middleware
- * Validates token, requires authentication, and sets up user context
+ * Required Clerk authentication middleware  
+ * Validates session from cookies or Bearer token, requires authentication
  * Returns 401 if token is invalid or missing
  */
 const clerkRequiredAuth = async (req, res, next) => {
   try {
-    const authHeader = req.headers.authorization;
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      return res.status(401).json({
-        error: 'Authentication required',
-        message: 'Authorization header with Bearer token is required',
-        code: 'MISSING_AUTH_HEADER'
-      });
+    let token = null;
+    let authMethod = null;
+
+    // Try cookies first (preferred method)
+    const sessionToken = extractSessionFromCookies(req);
+    if (sessionToken) {
+      token = sessionToken;
+      authMethod = 'cookie';
+    } else {
+      // Fallback to Bearer token
+      const authHeader = req.headers.authorization;
+      if (authHeader && authHeader.startsWith('Bearer ')) {
+        token = authHeader.substring(7);
+        authMethod = 'bearer';
+      }
     }
 
-    const token = authHeader.substring(7);
+    if (!token) {
+      return res.status(401).json({
+        error: 'Authentication required',
+        message: 'No valid session found. Please log in.',
+        code: 'MISSING_AUTHENTICATION'
+      });
+    }
     
     try {
-      const clerk = createClerkClient({
-        secretKey: process.env.CLERK_SECRET_KEY
-      });
-      
       const verifiedToken = await verifyToken(token, {
         secretKey: process.env.CLERK_SECRET_KEY,
       });
+      
+      console.log(`✅ User authenticated via ${authMethod}:`, verifiedToken.sub);
 
       // Try to get role from custom claims first (if configured in Clerk)
       let clerkRole = verifiedToken.role || verifiedToken.org_role || 'member';
@@ -112,7 +165,7 @@ const clerkRequiredAuth = async (req, res, next) => {
         } catch (apiError) {
           console.error('Clerk API call failed:', apiError.message);
           // Continue with default role
-          clerkRole = 'org:member';
+          clerkRole = 'member';
         }
       } else {
         console.log('✅ Using role from custom claims:', clerkRole);
@@ -143,13 +196,13 @@ const clerkRequiredAuth = async (req, res, next) => {
         isAdmin: clerkRole === 'admin' || clerkRole === 'org:admin'
       };
       
-      console.log(`✅ User authenticated: ${req.user.email} (Role: ${req.user.role})`);
+      console.log(`✅ User context set: ${req.user.email} (Role: ${req.user.role})`);
       next();
     } catch (error) {
       console.error('Clerk token verification failed:', error);
       return res.status(401).json({
         error: 'Authentication failed',
-        message: 'Invalid or expired Clerk token',
+        message: 'Invalid or expired session. Please log in again.',
         code: 'CLERK_TOKEN_INVALID'
       });
     }
@@ -166,7 +219,7 @@ const clerkRequiredAuth = async (req, res, next) => {
 /**
  * Enhanced middleware that validates Clerk token and enriches with user context
  * This middleware:
- * 1. Validates the Clerk JWT token
+ * 1. Validates the Clerk JWT token from cookies or headers
  * 2. Extracts user information from both token and X-User-Context header
  * 3. Maps Clerk User ID to local database user record
  * 4. Populates req.user with complete user context
@@ -365,7 +418,7 @@ function getUserPermissions(clerkRole) {
 async function findOrCreateLocalUser(clerkUserId, userContext = null) {
   try {
     // Try to find existing user by Clerk ID
-    let user = await prisma.user.findUnique({
+    let user = await prisma.users.findUnique({
       where: { clerk_user_id: clerkUserId }
     });
 
@@ -385,7 +438,7 @@ async function findOrCreateLocalUser(clerkUserId, userContext = null) {
       if (userContext?.lastName) userData.last_name = userContext.lastName;
       if (userContext?.imageUrl) userData.avatar_url = userContext.imageUrl;
 
-      user = await prisma.user.create({
+      user = await prisma.users.create({
         data: userData
       });
 
@@ -410,7 +463,7 @@ async function findOrCreateLocalUser(clerkUserId, userContext = null) {
         
         if (Object.keys(updateData).length > 0) {
           updateData.updated_at = new Date();
-          user = await prisma.user.update({
+          user = await prisma.users.update({
             where: { id: user.id },
             data: updateData
           });
@@ -458,8 +511,9 @@ const validateApiKey = (req, res, next) => {
 
 /**
  * Combined authentication middleware that supports multiple auth methods
- * 1. Clerk JWT tokens (primary)
- * 2. API keys (for service-to-service)
+ * 1. Clerk cookies (primary)
+ * 2. Clerk JWT tokens (fallback)
+ * 3. API keys (for service-to-service)
  */
 const combinedAuth = async (req, res, next) => {
   // First try API key authentication
@@ -467,7 +521,7 @@ const combinedAuth = async (req, res, next) => {
     return validateApiKey(req, res, next);
   }
 
-  // Then try Clerk authentication
+  // Then try Clerk authentication (cookies + JWT fallback)
   return clerkAuthWithContext(req, res, next);
 };
 
@@ -486,5 +540,6 @@ module.exports = {
   
   // Utility functions
   findOrCreateLocalUser,
-  getUserPermissions
+  getUserPermissions,
+  extractSessionFromCookies
 };

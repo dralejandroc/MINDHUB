@@ -4,6 +4,7 @@
   "description": "MindHub Healthcare Platform - Backend API Services",
   "main": "server.js",
   "scripts": {
+    "build": "npx prisma generate",
     "start": "node start-simple-production.js",
     "start:direct": "node server.js",
     "dev": "nodemon server.js",
