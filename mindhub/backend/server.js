@@ -414,6 +414,11 @@ app.use('/api/clinimetrix', assessmentController);
 
 // Legacy authentication routes removed - using Clerk only
 
+// Admin routes (STRICTLY protected - org:admin only)
+const adminRoutes = require('./admin');
+app.use('/api/admin', adminRoutes);
+console.log('🔐 Admin routes mounted at /api/admin (org:admin only)');
+
 // Admin migrations routes (protected)
 const adminMigrationsRoutes = require('./shared/routes/admin-migrations');
 app.use('/api/admin/migrations', adminMigrationsRoutes);
