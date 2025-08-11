@@ -74,8 +74,8 @@ export const MainDashboard: React.FC<MainDashboardProps> = ({ user }) => {
       // Get Clerk auth token
       const token = await getToken();
       
-      // Use the fixed dashboard data service instead of broken proxy routes
-      const dashboardData = await dashboardDataService.fetchDashboardData(user.id, token || undefined);
+      // Use the fixed dashboard data service with cookie authentication
+      const dashboardData = await dashboardDataService.fetchDashboardData(user.id);
       
       // Convert dashboard data to component format
       setStats({

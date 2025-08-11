@@ -32,14 +32,13 @@ export class SimpleApiClient {
     this.baseUrl = API_BASE_URL;
   }
 
-  private async makeRequest<T>(endpoint: string, options: RequestInit = {}, authToken?: string): Promise<T> {
+  private async makeRequest<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
     const url = `${this.baseUrl}${endpoint}`;
     
-    // Headers with Clerk authentication
+    // Simple headers - backend handles authentication via cookies
     const headers: HeadersInit = {
       'Content-Type': 'application/json',
       'Accept': 'application/json',
-      ...(authToken && { 'Authorization': `Bearer ${authToken}` }),
       ...options.headers,
     };
 
@@ -47,6 +46,7 @@ export class SimpleApiClient {
       const response = await fetch(url, {
         ...options,
         headers,
+        credentials: 'include', // Include cookies for authentication
       });
 
       // Handle non-JSON responses (detect HTML error pages)
@@ -74,20 +74,20 @@ export class SimpleApiClient {
   }
 
   // FrontDesk API methods
-  async getFrontDeskTodayStats(authToken?: string): Promise<ApiResponse<any>> {
-    return this.makeRequest<ApiResponse<any>>('/frontdesk/stats/today', {}, authToken);
+  async getFrontDeskTodayStats(): Promise<ApiResponse<any>> {
+    return this.makeRequest<ApiResponse<any>>('/frontdesk/stats/today');
   }
 
-  async getFrontDeskTodayAppointments(authToken?: string): Promise<ApiResponse<any[]>> {
-    return this.makeRequest<ApiResponse<any[]>>('/frontdesk/appointments/today', {}, authToken);
+  async getFrontDeskTodayAppointments(): Promise<ApiResponse<any[]>> {
+    return this.makeRequest<ApiResponse<any[]>>('/frontdesk/appointments/today');
   }
 
-  async getFrontDeskPendingTasks(authToken?: string): Promise<ApiResponse<any[]>> {
-    return this.makeRequest<ApiResponse<any[]>>('/frontdesk/tasks/pending', {}, authToken);
+  async getFrontDeskPendingTasks(): Promise<ApiResponse<any[]>> {
+    return this.makeRequest<ApiResponse<any[]>>('/frontdesk/tasks/pending');
   }
 
   // Finance API methods
-  async getFinanceIncome(params?: { limit?: number; status?: string; authToken?: string }): Promise<ApiResponse<any[]>> {
+  async getFinanceIncome(params?: { limit?: number; status?: string }): Promise<ApiResponse<any[]>> {
     const queryParams = new URLSearchParams();
     if (params?.limit) queryParams.append('limit', params.limit.toString());
     if (params?.status) queryParams.append('status', params.status);
@@ -95,17 +95,17 @@ export class SimpleApiClient {
     const queryString = queryParams.toString();
     const endpoint = `/finance/income${queryString ? `?${queryString}` : ''}`;
     
-    return this.makeRequest<ApiResponse<any[]>>(endpoint, {}, params?.authToken);
+    return this.makeRequest<ApiResponse<any[]>>(endpoint);
   }
 
   // Expedix API methods  
-  async getExpedixPatients(searchTerm?: string, authToken?: string): Promise<ApiResponse<any[]>> {
+  async getExpedixPatients(searchTerm?: string): Promise<ApiResponse<any[]>> {
     const params = searchTerm ? `?search=${encodeURIComponent(searchTerm)}` : '';
-    return this.makeRequest<ApiResponse<any[]>>(`/expedix/patients${params}`, {}, authToken);
+    return this.makeRequest<ApiResponse<any[]>>(`/expedix/patients${params}`);
   }
 
-  async getExpedixConsultations(authToken?: string): Promise<ApiResponse<any[]>> {
-    return this.makeRequest<ApiResponse<any[]>>('/expedix/consultations', {}, authToken);
+  async getExpedixConsultations(): Promise<ApiResponse<any[]>> {
+    return this.makeRequest<ApiResponse<any[]>>('/expedix/consultations');
   }
 }
 
