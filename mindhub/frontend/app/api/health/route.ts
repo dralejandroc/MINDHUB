@@ -1,10 +1,8 @@
-import { NextRequest, NextResponse } from 'next/server';
-
 // Prevent static generation for this API route
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
-export async function GET(request: NextRequest) {
+export async function GET(request: Request) {
   const backendUrl = process.env.BACKEND_URL || 'https://mindhub-production.up.railway.app';
   
   try {
@@ -18,7 +16,7 @@ export async function GET(request: NextRequest) {
     
     const backendData = await backendResponse.json();
     
-    return NextResponse.json({
+    return new Response(JSON.stringify({
       status: 'ok',
       frontend: {
         status: 'healthy',
@@ -35,9 +33,14 @@ export async function GET(request: NextRequest) {
         NODE_ENV: process.env.NODE_ENV,
       },
       timestamp: new Date().toISOString(),
+    }), {
+      status: 200,
+      headers: {
+        'Content-Type': 'application/json',
+      },
     });
   } catch (error) {
-    return NextResponse.json({
+    return new Response(JSON.stringify({
       status: 'error',
       frontend: {
         status: 'healthy',
@@ -54,6 +57,11 @@ export async function GET(request: NextRequest) {
         NODE_ENV: process.env.NODE_ENV,
       },
       timestamp: new Date().toISOString(),
+    }), {
+      status: 500,
+      headers: {
+        'Content-Type': 'application/json',
+      },
     });
   }
 }
