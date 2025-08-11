@@ -1,11 +1,11 @@
 /**
- * Admin Dashboard Layout - RESTRICTED ACCESS
+ * System Control Panel Layout - RESTRICTED ACCESS
  * 
- * SECURITY: Only org:admin users can access this section
- * DOMAIN: admin.mindhub.cloud (separate from main platform)
+ * SECURITY: Only admin users can access this section at /sys-control
+ * HIDDEN: Uses obscure URL to prevent discovery by unauthorized users
  * 
- * This layout should be deployed to a separate subdomain and is completely
- * hidden from regular platform users
+ * This layout provides administrative functionality and is completely
+ * hidden from regular platform users via non-obvious URL routing
  */
 
 import { redirect } from 'next/navigation';
@@ -67,31 +67,31 @@ export default async function AdminLayout({ children }: AdminLayoutProps) {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex space-x-8 py-3">
             <a
-              href="/admin"
+              href="/sys-control"
               className="text-red-100 hover:text-white px-3 py-2 rounded-md text-sm font-medium"
             >
               📊 Dashboard
             </a>
             <a
-              href="/admin/analytics"
+              href="/sys-control/analytics"
               className="text-red-100 hover:text-white px-3 py-2 rounded-md text-sm font-medium"
             >
               📈 Analytics
             </a>
             <a
-              href="/admin/users"
+              href="/sys-control/users"
               className="text-red-100 hover:text-white px-3 py-2 rounded-md text-sm font-medium"
             >
               👥 Users
             </a>
             <a
-              href="/admin/finance"
+              href="/sys-control/finance"
               className="text-red-100 hover:text-white px-3 py-2 rounded-md text-sm font-medium"
             >
               💰 Finance
             </a>
             <a
-              href="/admin/system"
+              href="/sys-control/system"
               className="text-red-100 hover:text-white px-3 py-2 rounded-md text-sm font-medium"
             >
               ⚙️ System

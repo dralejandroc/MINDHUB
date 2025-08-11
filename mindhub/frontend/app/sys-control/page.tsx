@@ -1,8 +1,8 @@
 /**
- * Admin Dashboard Main Page
+ * System Control Panel - Main Dashboard
  * 
- * SECURITY: Aggregated data only - NO sensitive patient information
- * ACCESS: org:admin users only via admin.mindhub.cloud
+ * SECURITY: Aggregated data only - NO sensitive patient information  
+ * ACCESS: Admin users only via obscured /sys-control URL
  */
 
 'use client';
@@ -60,15 +60,20 @@ export default function AdminDashboard() {
       setLoading(true);
       const token = await getToken();
 
+      // Backend API URL 
+      const apiBaseUrl = process.env.NODE_ENV === 'production' 
+        ? 'https://mindhub-production.up.railway.app'
+        : 'http://localhost:3002';
+
       // Load platform statistics
       const [platformResponse, financeResponse] = await Promise.all([
-        fetch('/api/admin/analytics/platform-stats', {
+        fetch(`${apiBaseUrl}/api/admin/analytics/platform-stats`, {
           headers: {
             'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json',
           },
         }),
-        fetch('/api/admin/analytics/finance-metrics', {
+        fetch(`${apiBaseUrl}/api/admin/analytics/finance-metrics`, {
           headers: {
             'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json',
