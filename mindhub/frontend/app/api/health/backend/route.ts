@@ -4,13 +4,13 @@ import { NextRequest, NextResponse } from 'next/server';
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
-const API_BASE_URL = process.env.BACKEND_URL || 'https://mindhub-production.up.railway.app';
+const BACKEND_URL = process.env.BACKEND_URL || 'https://mindhub-production.up.railway.app';
 
 export async function GET() {
   try {
-    console.log('[HEALTH CHECK] Testing backend connectivity to:', API_BASE_URL);
+    console.log('[HEALTH CHECK] Testing backend connectivity to:', BACKEND_URL);
     
-    const response = await fetch(`${API_BASE_URL}/health`, {
+    const response = await fetch(`${BACKEND_URL}/health`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
@@ -27,7 +27,7 @@ export async function GET() {
     return NextResponse.json({
       success: true,
       backend: {
-        url: API_BASE_URL,
+        url: BACKEND_URL,
         status: response.status,
         statusText: response.statusText,
         headers: Object.fromEntries(response.headers.entries()),
@@ -42,7 +42,7 @@ export async function GET() {
       {
         success: false,
         backend: {
-          url: API_BASE_URL,
+          url: BACKEND_URL,
           error: error instanceof Error ? error.message : 'Unknown error',
           type: error instanceof TypeError ? 'NETWORK_ERROR' : 'UNKNOWN_ERROR',
         },

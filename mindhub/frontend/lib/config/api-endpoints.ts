@@ -16,57 +16,57 @@ export const API_CONFIG = {
   IS_DEVELOPMENT: process.env.NODE_ENV === 'development'
 } as const;
 
-// Frontend API Endpoints (these call the Next.js API routes which proxy to backend)
+// Frontend API Endpoints (relative paths that will be prefixed with base URL)
 export const FRONTEND_ENDPOINTS = {
   // Expedix - Patient Management
   expedix: {
-    patients: '/api/expedix/patients',
-    consultations: '/api/expedix/consultations',
-    patientTimeline: '/api/expedix/patient-timeline'
+    patients: '/expedix/patients',
+    consultations: '/expedix/consultations',
+    patientTimeline: '/expedix/patient-timeline'
   },
   
   // Clinimetrix - Clinical Assessments
   clinimetrix: {
-    templates: '/api/clinimetrix-pro/templates',
-    assessments: '/api/clinimetrix-pro/assessments',
-    patientAssessments: '/api/clinimetrix/patient-assessments'
+    templates: '/clinimetrix-pro/templates',
+    assessments: '/clinimetrix-pro/assessments',
+    patientAssessments: '/clinimetrix/patient-assessments'
   },
   
   // Finance Module
   finance: {
-    income: '/api/finance/income',
-    cashRegister: '/api/finance/cash-register',
-    stats: '/api/finance/stats'
+    income: '/finance/income',
+    cashRegister: '/finance/cash-register',
+    stats: '/finance/stats'
   },
   
   // FrontDesk Module
   frontdesk: {
     tasks: {
-      pending: '/api/frontdesk/tasks/pending'
+      pending: '/frontdesk/tasks/pending'
     },
     stats: {
-      today: '/api/frontdesk/stats/today'
+      today: '/frontdesk/stats/today'
     },
     appointments: {
-      today: '/api/frontdesk/appointments/today'
+      today: '/frontdesk/appointments/today'
     }
   },
   
   // Resources Module
   resources: {
-    base: '/api/resources',
-    documents: '/api/resources/documents',
-    library: '/api/resources/library'
+    base: '/resources',
+    documents: '/resources/documents',
+    library: '/resources/library'
   },
   
   // System Endpoints
   system: {
-    health: '/api/health',
-    feedback: '/api/feedback'
+    health: '/health',
+    feedback: '/feedback'
   }
 } as const;
 
-// Backend API Endpoints (direct calls to Railway backend)
+// Backend API Endpoints (paths for direct backend calls, will be prefixed with backend base URL)
 export const BACKEND_ENDPOINTS = {
   // Expedix
   expedix: {
@@ -116,7 +116,7 @@ export const buildFrontendUrl = (endpoint: string): string => {
 
 // Validation helpers
 export const validateEndpoint = (endpoint: string): boolean => {
-  return endpoint.startsWith('/api/') || endpoint.startsWith('http');
+  return endpoint.startsWith('/') || endpoint.startsWith('http');
 };
 
 // Export default configuration

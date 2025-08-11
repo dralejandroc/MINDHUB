@@ -1,16 +1,36 @@
 import { NextRequest, NextResponse } from 'next/server';
 
+// Force dynamic rendering for this API route
+export const dynamic = 'force-dynamic';
+
+const BACKEND_URL = process.env.BACKEND_URL || 'https://mindhub-production.up.railway.app';
+
 export async function GET(request: NextRequest) {
   try {
     const searchParams = request.nextUrl.searchParams;
     const queryString = searchParams.toString();
-    const backendUrl = `${process.env.BACKEND_URL}/api/clinimetrix-pro${queryString ? `?${queryString}` : ''}`;
+    const backendUrl = `${BACKEND_URL}/api/clinimetrix-pro${queryString ? `?${queryString}` : ''}`;
+
+    // Forward authentication headers
+    const headers: HeadersInit = {
+      'Content-Type': 'application/json',
+    };
+
+    // Forward Authorization header (Clerk token)
+    const authHeader = request.headers.get('Authorization');
+    if (authHeader) {
+      headers['Authorization'] = authHeader;
+    }
+
+    // Forward user context
+    const userContextHeader = request.headers.get('X-User-Context');
+    if (userContextHeader) {
+      headers['X-User-Context'] = userContextHeader;
+    }
 
     const response = await fetch(backendUrl, {
       method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers,
     });
 
     const data = await response.json();
@@ -27,13 +47,28 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const backendUrl = `${process.env.BACKEND_URL}/api/clinimetrix-pro`;
+    const backendUrl = `${BACKEND_URL}/api/clinimetrix-pro`;
+
+    // Forward authentication headers
+    const headers: HeadersInit = {
+      'Content-Type': 'application/json',
+    };
+
+    // Forward Authorization header (Clerk token)
+    const authHeader = request.headers.get('Authorization');
+    if (authHeader) {
+      headers['Authorization'] = authHeader;
+    }
+
+    // Forward user context
+    const userContextHeader = request.headers.get('X-User-Context');
+    if (userContextHeader) {
+      headers['X-User-Context'] = userContextHeader;
+    }
 
     const response = await fetch(backendUrl, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers,
       body: JSON.stringify(body),
     });
 

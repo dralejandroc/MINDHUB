@@ -1,22 +1,52 @@
+import { NextRequest, NextResponse } from 'next/server';
+
 /**
  * ClinimetrixPro Template by ID API Route
  * Proxies requests to get specific template data
  */
 
-export async function GET(request: Request, { params }: { params: { templateId: string } }) {
+// Force dynamic rendering for this API route
+export const dynamic = 'force-dynamic';
+
+const BACKEND_URL = process.env.BACKEND_URL || 'https://mindhub-production.up.railway.app';
+
+export async function GET(request: NextRequest, { params }: { params: { templateId: string } }) {
   try {
     const { templateId } = params;
-    const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3002';
-    const response = await fetch(`${backendUrl}/api/clinimetrix-pro/templates/${templateId}`);
+    
+    // Forward authentication headers
+    const headers: HeadersInit = {
+      'Content-Type': 'application/json',
+    };
+
+    // Forward Authorization header (Clerk token)
+    const authHeader = request.headers.get('Authorization');
+    if (authHeader) {
+      headers['Authorization'] = authHeader;
+    }
+
+    // Forward user context
+    const userContextHeader = request.headers.get('X-User-Context');
+    if (userContextHeader) {
+      headers['X-User-Context'] = userContextHeader;
+    }
+
+    const response = await fetch(`${BACKEND_URL}/api/clinimetrix-pro/templates/${templateId}`, {
+      method: 'GET',
+      headers,
+    });
     
     if (!response.ok) {
-      throw new Error(`Backend responded with ${response.status}`);
+      throw new Error(`Backend responded with status: ${response.status}`);
     }
     
     const data = await response.json();
-    return Response.json(data);
+    return NextResponse.json(data);
   } catch (error) {
-    console.error('Error fetching template:', error);
-    return Response.json({ error: 'Failed to fetch template' }, { status: 500 });
+    console.error('ClinimetrixPro Template API Error:', error);
+    return NextResponse.json(
+      { error: 'Failed to fetch template from ClinimetrixPro API' }, 
+      { status: 500 }
+    );
   }
 }

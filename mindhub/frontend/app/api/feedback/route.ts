@@ -1,28 +1,52 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://mindhub-production.up.railway.app';
+// Prevent static generation for this API route
+export const runtime = 'nodejs';
+export const dynamic = 'force-dynamic';
+
+const BACKEND_URL = process.env.BACKEND_URL || 'https://mindhub-production.up.railway.app';
 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
     
-    const response = await fetch(`${API_BASE_URL}/feedback`, {
+    // Forward authentication headers
+    const headers: HeadersInit = {
+      'Content-Type': 'application/json',
+    };
+
+    // Forward Authorization header (Clerk token)
+    const authHeader = request.headers.get('Authorization');
+    if (authHeader) {
+      headers['Authorization'] = authHeader;
+    }
+
+    // Forward user context
+    const userContextHeader = request.headers.get('X-User-Context');
+    if (userContextHeader) {
+      headers['X-User-Context'] = userContextHeader;
+    }
+    
+    const response = await fetch(`${BACKEND_URL}/api/feedback`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers,
       body: JSON.stringify(body),
     });
 
-    const data = await response.json();
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
 
-    return NextResponse.json(data, {
-      status: response.status,
-    });
+    const data = await response.json();
+    return NextResponse.json(data);
   } catch (error) {
-    console.error('Feedback API error:', error);
+    console.error('Error creating feedback:', error);
     return NextResponse.json(
-      { success: false, message: 'Error interno del servidor' },
+      { 
+        success: false, 
+        error: 'Failed to create feedback',
+        message: error instanceof Error ? error.message : 'Unknown error'
+      },
       { status: 500 }
     );
   }
