@@ -1,8 +1,6 @@
-import { NextRequest, NextResponse } from 'next/server';
-
 const BACKEND_URL = process.env.BACKEND_URL || 'https://mindhub-production.up.railway.app';
 
-export async function GET(request: NextRequest) {
+export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
     const patient_id = searchParams.get('patient_id');
@@ -41,21 +39,28 @@ export async function GET(request: NextRequest) {
     }
 
     const data = await response.json();
-    return NextResponse.json(data);
+    return new Response(JSON.stringify(data), {
+      status: 200,
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
   } catch (error) {
     console.error('Error proxying consultations request:', error);
-    return NextResponse.json(
-      { 
-        success: false, 
-        error: 'Failed to fetch consultations from backend',
-        data: []
-      }, 
-      { status: 500 }
-    );
+    return new Response(JSON.stringify({
+      success: false, 
+      error: 'Failed to fetch consultations from backend',
+      data: []
+    }), {
+      status: 500,
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
   }
 }
 
-export async function POST(request: NextRequest) {
+export async function POST(request: Request) {
   try {
     const body = await request.json();
     
@@ -87,16 +92,23 @@ export async function POST(request: NextRequest) {
     }
 
     const data = await response.json();
-    return NextResponse.json(data);
+    return new Response(JSON.stringify(data), {
+      status: 200,
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
   } catch (error) {
     console.error('Error creating consultation:', error);
-    return NextResponse.json(
-      { 
-        success: false, 
-        error: 'Failed to create consultation',
-        message: error instanceof Error ? error.message : "Unknown error"
-      }, 
-      { status: 500 }
-    );
+    return new Response(JSON.stringify({
+      success: false, 
+      error: 'Failed to create consultation',
+      message: error instanceof Error ? error.message : "Unknown error"
+    }), {
+      status: 500,
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
   }
 }
