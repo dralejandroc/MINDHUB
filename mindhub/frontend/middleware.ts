@@ -17,6 +17,14 @@ const isPublicRoute = createRouteMatcher([
   '/sign-up(.*)',
   '/api/public(.*)',
   '/api/health',
+  '/api/expedix(.*)',
+  '/api/clinimetrix(.*)',
+  '/api/clinimetrix-pro(.*)',
+  '/api/formx(.*)',
+  '/api/agenda(.*)',
+  '/api/resources(.*)',
+  '/api/admin(.*)',
+  '/api/test-backend(.*)',
   '/verify-email(.*)'
 ]);
 
