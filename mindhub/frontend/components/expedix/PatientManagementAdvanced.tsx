@@ -29,7 +29,7 @@ import {
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
-import { expedixApi, type Patient } from '@/lib/api/expedix-client';
+import { useExpedixApi, type Patient } from '@/lib/api/expedix-client';
 import { patientTagsApi, type PatientTag } from '@/lib/api/patient-tags-client';
 
 interface PatientManagementAdvancedProps {
@@ -65,6 +65,9 @@ export default function PatientManagementAdvanced({
   onSettings,
   onChangeView
 }: PatientManagementAdvancedProps) {
+  // Use the authenticated Expedix API hook
+  const expedixApi = useExpedixApi();
+  
   const [viewMode, setViewMode] = useState<ViewMode>('list');
   const [searchTerm, setSearchTerm] = useState('');
   const [patients, setPatients] = useState<EnhancedPatient[]>([]);

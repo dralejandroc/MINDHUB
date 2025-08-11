@@ -97,7 +97,7 @@ class ExpedixApiClient {
     this.baseUrl = API_BASE_URL;
   }
 
-  private async makeRequest<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
+  private async makeRequest<T>(endpoint: string, options: RequestInit = {}, getToken?: () => Promise<string | null>): Promise<T> {
     const url = `${this.baseUrl}${endpoint}`;
     
     // Get authentication headers from Clerk if available
@@ -106,10 +106,24 @@ class ExpedixApiClient {
       'Accept': 'application/json',
     };
 
-    // For now, skip authentication since backend auth is temporarily disabled
-    // TODO: Re-implement when Clerk authentication is properly configured
-    // This allows the app to work while auth issues are resolved
-    console.log('Authentication temporarily bypassed - using backend without auth');
+    // Add Bearer token if getToken function is provided
+    if (getToken) {
+      try {
+        const token = await getToken();
+        if (token) {
+          authHeaders['Authorization'] = `Bearer ${token}`;
+        } else {
+          console.warn('No auth token available for request:', endpoint);
+        }
+      } catch (error) {
+        console.error('Error getting auth token:', error);
+        throw new Error('Authentication required');
+      }
+    } else {
+      // For server-side or non-authenticated requests
+      console.warn('No getToken function provided for:', endpoint);
+      throw new Error('Authorization header with Bearer token is required');
+    }
 
     const defaultHeaders = {
       ...authHeaders,
@@ -135,9 +149,9 @@ class ExpedixApiClient {
   }
 
   // Patient Management
-  async getPatients(searchTerm?: string): Promise<{ data: Patient[]; total: number }> {
+  async getPatients(searchTerm?: string, getToken?: () => Promise<string | null>): Promise<{ data: Patient[]; total: number }> {
     const params = searchTerm ? `?search=${encodeURIComponent(searchTerm)}` : '';
-    const response = await this.makeRequest<{ success: boolean; data: Patient[]; pagination: { total: number } }>(`/expedix/patients${params}`);
+    const response = await this.makeRequest<{ success: boolean; data: Patient[]; pagination: { total: number } }>(`/expedix/patients${params}`, {}, getToken);
     
     return {
       data: response.data || [],
@@ -145,40 +159,40 @@ class ExpedixApiClient {
     };
   }
 
-  async getPatient(id: string): Promise<{ data: Patient }> {
-    const response = await this.makeRequest<{ success: boolean; data: Patient }>(`/expedix/patients/${id}`);
+  async getPatient(id: string, getToken?: () => Promise<string | null>): Promise<{ data: Patient }> {
+    const response = await this.makeRequest<{ success: boolean; data: Patient }>(`/expedix/patients/${id}`, {}, getToken);
     
     return {
       data: response.data
     };
   }
 
-  async createPatient(patientData: Partial<Patient>): Promise<{ data: Patient }> {
+  async createPatient(patientData: Partial<Patient>, getToken?: () => Promise<string | null>): Promise<{ data: Patient }> {
     const response = await this.makeRequest<{ success: boolean; data: Patient }>('/expedix/patients', {
       method: 'POST',
       body: JSON.stringify(patientData),
-    });
+    }, getToken);
     
     return {
       data: response.data
     };
   }
 
-  async updatePatient(id: string, patientData: Partial<Patient>): Promise<{ data: Patient }> {
+  async updatePatient(id: string, patientData: Partial<Patient>, getToken?: () => Promise<string | null>): Promise<{ data: Patient }> {
     const response = await this.makeRequest<{ success: boolean; data: Patient }>(`/expedix/patients/${id}`, {
       method: 'PUT',
       body: JSON.stringify(patientData),
-    });
+    }, getToken);
     
     return {
       data: response.data
     };
   }
 
-  async deletePatient(id: string): Promise<{ success: boolean }> {
+  async deletePatient(id: string, getToken?: () => Promise<string | null>): Promise<{ success: boolean }> {
     return this.makeRequest<{ success: boolean }>(`/expedix/patients/${id}`, {
       method: 'DELETE',
-    });
+    }, getToken);
   }
 
   // Prescription Management
@@ -342,3 +356,31 @@ export const expedixApi = new ExpedixApiClient();
 
 // Named exports for convenience
 export { ExpedixApiClient };
+
+// React Hook for authenticated Expedix API calls
+export function useExpedixApi() {
+  // Import dynamically to avoid server-side issues
+  const { useAuth } = require('@clerk/nextjs');
+  const { getToken } = useAuth();
+  
+  return {
+    // Patient Management
+    getPatients: (searchTerm?: string) => expedixApi.getPatients(searchTerm, getToken),
+    getPatient: (id: string) => expedixApi.getPatient(id, getToken),
+    createPatient: (data: Partial<Patient>) => expedixApi.createPatient(data, getToken),
+    updatePatient: (id: string, data: Partial<Patient>) => expedixApi.updatePatient(id, data, getToken),
+    deletePatient: (id: string) => expedixApi.deletePatient(id, getToken),
+    
+    // Appointments and Prescriptions - need to update these methods to support getToken
+    getAppointments: (patientId?: string) => {
+      // Temporary implementation - these methods need to be updated to support authentication
+      console.warn('getAppointments called but not yet updated for authentication');
+      return Promise.resolve({ data: [] });
+    },
+    getPrescriptions: (patientId: string) => {
+      // Temporary implementation - these methods need to be updated to support authentication
+      console.warn('getPrescriptions called but not yet updated for authentication');
+      return Promise.resolve({ data: [] });
+    },
+  };
+}

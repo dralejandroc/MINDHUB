@@ -5,7 +5,7 @@ import { UserGroupIcon, PlusIcon, MagnifyingGlassIcon, CalendarIcon, ClipboardDo
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
-import { expedixApi, type Patient } from '@/lib/api/expedix-client';
+import { useExpedixApi, type Patient } from '@/lib/api/expedix-client';
 import ResourcesIntegration from './ResourcesIntegration';
 import ExportDropdown from './ExportDropdown';
 
@@ -24,6 +24,9 @@ export default function PatientManagement({
   onClinicalAssessment,
   onSettings
 }: PatientManagementProps) {
+  // Use the authenticated Expedix API hook
+  const expedixApi = useExpedixApi();
+  
   const [searchTerm, setSearchTerm] = useState('');
   const [patients, setPatients] = useState<Patient[]>([]);
   const [loading, setLoading] = useState(true);
@@ -37,11 +40,11 @@ export default function PatientManagement({
     todayPrescriptions: 0
   });
 
-  // Fetch patients from API using the API client
+  // Fetch patients from API using the authenticated API client
   const fetchPatients = async () => {
     try {
       setLoading(true);
-      console.log('🔄 Fetching patients from API...');
+      console.log('🔄 Fetching patients from API with authentication...');
       const response = await expedixApi.getPatients(searchTerm || undefined);
       console.log('📊 API Response:', response);
       console.log('👥 Patients received:', response.data);
@@ -56,20 +59,16 @@ export default function PatientManagement({
     }
   };
 
-  // Fetch dashboard stats
+  // Fetch dashboard stats (temporarily disabled - these methods need to be added to the hook)
   const fetchStats = async () => {
     try {
-      const [todayAppointments, pendingAssessments, todayPrescriptions] = await Promise.all([
-        expedixApi.getTodayAppointments().catch(() => ({ data: [] })),
-        expedixApi.getPendingAssessments().catch(() => ({ data: [] })),
-        expedixApi.getTodayPrescriptions().catch(() => ({ data: [] }))
-      ]);
-
+      // TODO: Add these methods to useExpedixApi hook
+      // For now, just set empty stats to avoid errors
       setStats(prev => ({
         ...prev,
-        todayAppointments: todayAppointments?.data?.length || 0,
-        pendingAssessments: pendingAssessments?.data?.length || 0,
-        todayPrescriptions: todayPrescriptions?.data?.length || 0
+        todayAppointments: 0,
+        pendingAssessments: 0,
+        todayPrescriptions: 0
       }));
     } catch (err) {
       console.error('Error fetching stats:', err);
