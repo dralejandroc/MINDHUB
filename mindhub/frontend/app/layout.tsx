@@ -3,6 +3,7 @@ import type { Metadata } from 'next';
 import { Toaster } from 'react-hot-toast';
 import { SpeedInsights } from '@vercel/speed-insights/next';
 import { ClerkProvider } from '@clerk/nextjs';
+import AuthTokenProvider from '@/components/providers/AuthTokenProvider';
 import './globals.css';
 
 // const inter = Inter({ subsets: ['latin'], variable: '--font-inter' }); // Temporalmente deshabilitado
@@ -100,7 +101,9 @@ export default function RootLayout({
         </head>
         <body className="bg-gray-50 antialiased">
           <div id="root" className="min-h-screen">
-            {children}
+            <AuthTokenProvider>
+              {children}
+            </AuthTokenProvider>
           </div>
         
         {/* Toast notifications */}
