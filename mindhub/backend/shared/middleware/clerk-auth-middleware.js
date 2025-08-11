@@ -79,20 +79,43 @@ const clerkRequiredAuth = async (req, res, next) => {
         secretKey: process.env.CLERK_SECRET_KEY,
       });
 
-      // Get full user data from Clerk
-      const clerkUser = await clerk.users.getUser(verifiedToken.sub);
+      // Try to get role from custom claims first (if configured in Clerk)
+      let clerkRole = verifiedToken.role || verifiedToken.org_role || 'member';
+      let clerkUser = null;
       
-      // Get organization memberships to determine role
-      const orgMemberships = await clerk.users.getOrganizationMembershipList({
-        userId: verifiedToken.sub
-      });
-      
-      // Determine Clerk role (org:admin or org:member)
-      let clerkRole = 'org:member'; // Default to member
-      if (orgMemberships.length > 0) {
-        // Check if user is admin in any organization
-        const isAdmin = orgMemberships.some(membership => membership.role === 'org:admin');
-        clerkRole = isAdmin ? 'org:admin' : 'org:member';
+      // If no custom claims, fall back to API calls
+      if (!verifiedToken.role && !verifiedToken.org_role) {
+        console.log('📞 No custom claims found, falling back to Clerk API calls...');
+        
+        try {
+          // Get full user data from Clerk
+          clerkUser = await clerk.users.getUser(verifiedToken.sub);
+          
+          // Check public_metadata for role first
+          if (clerkUser.publicMetadata?.role) {
+            clerkRole = clerkUser.publicMetadata.role;
+            console.log('✅ Found role in public_metadata:', clerkRole);
+          } else {
+            // Fall back to organization memberships
+            const orgMemberships = await clerk.users.getOrganizationMembershipList({
+              userId: verifiedToken.sub
+            });
+            
+            if (orgMemberships.length > 0) {
+              // Check if user is admin in any organization
+              const isAdmin = orgMemberships.some(membership => membership.role === 'org:admin');
+              clerkRole = isAdmin ? 'admin' : 'member';
+            } else {
+              clerkRole = 'member'; // Default to member
+            }
+          }
+        } catch (apiError) {
+          console.error('Clerk API call failed:', apiError.message);
+          // Continue with default role
+          clerkRole = 'org:member';
+        }
+      } else {
+        console.log('✅ Using role from custom claims:', clerkRole);
       }
       
       // Find or create user in local database
@@ -108,8 +131,8 @@ const clerkRequiredAuth = async (req, res, next) => {
         clerkUserId: verifiedToken.sub,
         clerkUser: clerkUser,
         id: localUser.id,
-        email: localUser.email || clerkUser.emailAddresses[0]?.emailAddress,
-        name: localUser.name || `${clerkUser.firstName} ${clerkUser.lastName}`.trim(),
+        email: localUser.email || verifiedToken.email || (clerkUser && clerkUser.emailAddresses[0]?.emailAddress) || 'unknown@mindhub.com',
+        name: localUser.name || verifiedToken.name || (clerkUser && `${clerkUser.firstName} ${clerkUser.lastName}`.trim()) || 'Unknown User',
         role: clerkRole, // Use Clerk role directly
         isAuthenticated: true,
         authProvider: 'clerk',
@@ -117,7 +140,7 @@ const clerkRequiredAuth = async (req, res, next) => {
         // Simplified permissions based on Clerk roles
         permissions: getUserPermissions(clerkRole),
         canAccessPatientData: true, // Both members and admins can access patient data
-        isAdmin: clerkRole === 'org:admin'
+        isAdmin: clerkRole === 'admin' || clerkRole === 'org:admin'
       };
       
       console.log(`✅ User authenticated: ${req.user.email} (Role: ${req.user.role})`);
@@ -311,9 +334,17 @@ const requirePermission = (permissions) => {
  */
 function getUserPermissions(clerkRole) {
   const rolePermissions = {
+    'admin': [
+      'read:all_data', 'write:all_data', 'delete:all_data',
+      'manage:users', 'manage:system', 'access:admin_panel'
+    ],
     'org:admin': [
       'read:all_data', 'write:all_data', 'delete:all_data',
       'manage:users', 'manage:system', 'access:admin_panel'
+    ],
+    'member': [
+      'read:own_data', 'write:own_data', 'read:own_patients', 
+      'write:own_patients', 'read:own_assessments', 'write:own_assessments'
     ],
     'org:member': [
       'read:own_data', 'write:own_data', 'read:own_patients', 
@@ -322,7 +353,7 @@ function getUserPermissions(clerkRole) {
   };
   
   // Default to member permissions if role not found
-  return rolePermissions[clerkRole] || rolePermissions['org:member'];
+  return rolePermissions[clerkRole] || rolePermissions['member'];
 }
 
 /**

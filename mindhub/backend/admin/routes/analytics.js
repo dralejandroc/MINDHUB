@@ -7,8 +7,6 @@
 
 const express = require('express');
 const { getPrismaClient } = require('../../shared/config/prisma');
-const { requireRole } = require('../../shared/middleware/clerk-auth-middleware');
-const { clerkRequiredAuth } = require('../../shared/middleware/clerk-auth-middleware');
 
 const router = express.Router();
 const prisma = getPrismaClient();
@@ -28,7 +26,6 @@ const adminOnlyStrict = (req, res, next) => {
  * Platform-wide aggregated statistics
  */
 router.get('/platform-stats', 
-  clerkRequiredAuth,
   adminOnlyStrict,
   async (req, res) => {
     try {
@@ -102,7 +99,6 @@ router.get('/platform-stats',
  * User statistics - NO sensitive patient information
  */
 router.get('/users-overview',
-  clerkRequiredAuth,
   adminOnlyStrict,
   async (req, res) => {
     try {
@@ -160,7 +156,6 @@ router.get('/users-overview',
  * Platform usage patterns - Aggregated data only
  */
 router.get('/usage-patterns',
-  clerkRequiredAuth,
   adminOnlyStrict,
   async (req, res) => {
     try {
@@ -221,7 +216,6 @@ router.get('/usage-patterns',
  * Financial metrics - Aggregated data only, NO transaction details
  */
 router.get('/finance-metrics',
-  clerkRequiredAuth,
   adminOnlyStrict,
   async (req, res) => {
     try {

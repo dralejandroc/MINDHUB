@@ -7,7 +7,6 @@
 
 const express = require('express');
 const { getPrismaClient } = require('../../shared/config/prisma');
-const { clerkRequiredAuth } = require('../../shared/middleware/clerk-auth-middleware');
 
 const router = express.Router();
 const prisma = getPrismaClient();
@@ -27,7 +26,6 @@ const adminOnlyStrict = (req, res, next) => {
  * System health check - Technical metrics only
  */
 router.get('/health',
-  clerkRequiredAuth,
   adminOnlyStrict,
   async (req, res) => {
     try {
@@ -75,7 +73,6 @@ router.get('/health',
  * Detailed system status - NO sensitive data
  */
 router.get('/status',
-  clerkRequiredAuth,
   adminOnlyStrict,
   async (req, res) => {
     try {
@@ -136,7 +133,6 @@ router.get('/status',
  * System logs - Filtered to exclude sensitive data
  */
 router.get('/logs',
-  clerkRequiredAuth,
   adminOnlyStrict,
   async (req, res) => {
     try {
