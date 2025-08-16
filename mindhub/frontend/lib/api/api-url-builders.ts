@@ -20,19 +20,19 @@ const API_BASE = '/api'; // Proxy de Next.js
 
 /**
  * createApiUrl - Para uso en CLIENTE (frontend)
- * Construye URL usando el proxy /api de Next.js
+ * HOTFIX: Temporarily bypass broken Vercel proxy, call Railway directly
  * 
  * @param route - Ruta desde API_ROUTES (ej: API_ROUTES.expedix.patients)
- * @returns URL proxy /api para cliente
+ * @returns URL directa a Railway (TEMPORARY)
  * 
  * @example
- * createApiUrl(API_ROUTES.expedix.patients) → '/api/expedix/patients'
- * createApiUrl(API_ROUTES.expedix.patientById('123')) → '/api/expedix/patients/123'
+ * createApiUrl(API_ROUTES.expedix.patients) → 'https://mindhub-production.up.railway.app/api/expedix/patients'
+ * createApiUrl(API_ROUTES.expedix.patientById('123')) → 'https://mindhub-production.up.railway.app/api/expedix/patients/123'
  */
 export function createApiUrl(route: string): string {
-  // Asegurar que la ruta empiece con /
-  const cleanRoute = route.startsWith('/') ? route : `/${route}`;
-  return `${API_BASE}${cleanRoute}`;
+  // HOTFIX: Vercel proxy failing, use direct Railway URL
+  // TODO: Revert to proxy once Vercel issue is resolved
+  return createBackendApiUrl(route);
 }
 
 /**
