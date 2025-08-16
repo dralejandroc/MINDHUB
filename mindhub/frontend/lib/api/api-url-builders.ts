@@ -67,7 +67,8 @@ export function createApiUrlWithParams(
   route: string, 
   params: Record<string, string | number | boolean>
 ): string {
-  const baseUrl = createApiUrl(route);
+  // EMERGENCY BYPASS: Force direct Railway calls
+  const baseUrl = createBackendApiUrl(route);
   const searchParams = new URLSearchParams();
   
   Object.entries(params).forEach(([key, value]) => {
