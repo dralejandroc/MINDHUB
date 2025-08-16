@@ -225,6 +225,24 @@ app.use(compression());
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
+// Middleware to ensure all API responses are JSON
+app.use('/api', (req, res, next) => {
+  // Set Content-Type to application/json for all API routes
+  res.setHeader('Content-Type', 'application/json');
+  
+  // Override res.send to ensure JSON responses
+  const originalSend = res.send;
+  res.send = function(body) {
+    if (typeof body === 'string' && !body.startsWith('{') && !body.startsWith('[')) {
+      // Convert string responses to JSON format
+      body = JSON.stringify({ message: body });
+    }
+    return originalSend.call(this, body);
+  };
+  
+  next();
+});
+
 // Apply Clerk authentication middleware globally
 console.log('🔐 Applying Clerk authentication middleware...');
 app.use(combinedAuth);
@@ -467,7 +485,9 @@ app.use('*', (req, res) => {
 });
 
 // Error handling middleware (must be last)
-// app.use(errorHandler.globalErrorHandler); // Commented for local development
+const ErrorHandlingMiddleware = require('./shared/middleware/error-handling');
+const errorHandlerInstance = new ErrorHandlingMiddleware();
+app.use(errorHandlerInstance.handleError());
 
 // Graceful shutdown
 let server;

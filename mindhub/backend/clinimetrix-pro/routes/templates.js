@@ -18,6 +18,8 @@ const prisma = getPrismaClient();
 // Get all templates catalog (public registry)
 router.get('/catalog', async (req, res) => {
   try {
+    console.log('📋 Getting ClinimetrixPro catalog...');
+    
     const templates = await prisma.clinimetrix_registry.findMany({
       where: { isActive: true, isPublic: true },
       orderBy: [
@@ -27,10 +29,20 @@ router.get('/catalog', async (req, res) => {
       ]
     });
 
-    res.json(templates);
+    console.log(`✅ Found ${templates.length} templates in catalog`);
+    
+    res.json({
+      success: true,
+      data: templates,
+      total: templates.length
+    });
   } catch (error) {
-    console.error('Error getting catalog:', error);
-    res.status(500).json({ error: 'Error retrieving catalog', message: error.message });
+    console.error('❌ Error getting catalog:', error);
+    res.status(500).json({ 
+      success: false,
+      error: 'Error retrieving catalog', 
+      message: error.message 
+    });
   }
 });
 

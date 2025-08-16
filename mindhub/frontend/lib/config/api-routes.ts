@@ -57,6 +57,10 @@ const API_ROUTES = {
     consultationFormById: (formId: string) => `/expedix/forms/forms/${formId}`,
     completeConsultationForm: (formId: string) => `/expedix/forms/forms/${formId}/complete`,
     patientConsultationForms: (patientId: string) => `/expedix/forms/forms/patient/${patientId}`,
+    // Schedule Configuration
+    scheduleConfig: '/expedix/schedule-config',
+    // Agenda
+    agendaAppointments: '/expedix/agenda/appointments',
   },
   clinimetrixPro: {
     // Current-generation system

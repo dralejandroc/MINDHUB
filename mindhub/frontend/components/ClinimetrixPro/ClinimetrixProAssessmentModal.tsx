@@ -4,7 +4,7 @@ import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { clinimetrixProClient } from '@/lib/api/clinimetrix-pro-client';
 import type { ClinimetrixRegistry } from '@/lib/api/clinimetrix-pro-client';
-import { expedixApi } from '@/lib/api/expedix-client';
+import { useExpedixApi } from '@/lib/api/expedix-client';
 import type { Patient as ExpedixPatient } from '@/lib/api/expedix-client';
 
 interface ClinimetrixProAssessmentModalProps {
@@ -142,6 +142,9 @@ export const ClinimetrixProAssessmentModal: React.FC<ClinimetrixProAssessmentMod
   fullscreen = false,
   preSelectedPatient
 }) => {
+  // Use the authenticated Expedix API hook
+  const expedixApi = useExpedixApi();
+  
   // Estados principales
   const [currentCard, setCurrentCard] = useState(0);
   const [templateData, setTemplateData] = useState<TemplateData | null>(null);

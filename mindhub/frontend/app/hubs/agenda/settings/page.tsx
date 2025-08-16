@@ -110,7 +110,7 @@ export default function AgendaSettingsPage() {
 
   const loadSettings = async () => {
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/expedix/schedule-config`);
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/expedix/schedule-config`);
       if (response.ok) {
         const data = await response.json();
         console.log('🔄 Loaded settings from API:', data);
@@ -127,7 +127,7 @@ export default function AgendaSettingsPage() {
     setIsSaving(true);
     try {
       console.log('💾 Saving settings:', settings);
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/expedix/schedule-config`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/expedix/schedule-config`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'

@@ -11,14 +11,16 @@ import {
   UserIcon,
   TagIcon
 } from '@heroicons/react/24/outline';
-import { expedixApi } from '@/lib/api/expedix-client';
-import type { Patient } from '@/lib/api/expedix-client';
+import { useExpedixApi, type Patient } from '@/lib/api/expedix-client';
 
 interface ExpedientsGridProps {
   onSelectPatient: (patient: Patient) => void;
 }
 
 export default function ExpedientsGrid({ onSelectPatient }: ExpedientsGridProps) {
+  // Use the authenticated Expedix API hook
+  const expedixApi = useExpedixApi();
+  
   const [patients, setPatients] = useState<Patient[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
