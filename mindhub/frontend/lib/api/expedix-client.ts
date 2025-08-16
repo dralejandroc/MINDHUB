@@ -1,5 +1,6 @@
 // Expedix API Client - Centralized API communication for patient management
 import { createAuthHeaders, authenticatedFetchWithToken } from '@/lib/utils/clerk-auth';
+import { useAuth } from '@clerk/nextjs';
 
 // Use backend directly instead of Next.js proxy routes to avoid API route issues
 const API_BASE_URL = 'https://mindhub-production.up.railway.app/api';
@@ -97,21 +98,26 @@ class ExpedixApiClient {
     this.baseUrl = API_BASE_URL;
   }
 
-  private async makeRequest<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
+  private async makeRequest<T>(endpoint: string, options: RequestInit = {}, token?: string): Promise<T> {
     const url = `${this.baseUrl}${endpoint}`;
     
-    // Simple headers - backend will handle authentication via cookies
+    // Create authenticated headers with Bearer token
     const defaultHeaders: HeadersInit = {
       'Content-Type': 'application/json',
       'Accept': 'application/json',
       ...options.headers,
     };
 
+    // Add Authorization header if token is provided
+    if (token) {
+      defaultHeaders['Authorization'] = `Bearer ${token}`;
+    }
+
     try {
       const response = await fetch(url, {
         ...options,
         headers: defaultHeaders,
-        credentials: 'include', // Important: Include cookies for authentication
+        credentials: 'include', // Include cookies as fallback
       });
 
       if (!response.ok) {
@@ -131,10 +137,10 @@ class ExpedixApiClient {
     }
   }
 
-  // Patient Management - No authentication parameters needed (handled by cookies)
-  async getPatients(searchTerm?: string): Promise<{ data: Patient[]; total: number }> {
+  // Patient Management - Now with authentication token support
+  async getPatients(searchTerm?: string, token?: string): Promise<{ data: Patient[]; total: number }> {
     const params = searchTerm ? `?search=${encodeURIComponent(searchTerm)}` : '';
-    const response = await this.makeRequest<{ success: boolean; data: Patient[]; pagination: { total: number } }>(`/expedix/patients${params}`);
+    const response = await this.makeRequest<{ success: boolean; data: Patient[]; pagination: { total: number } }>(`/expedix/patients${params}`, {}, token);
     
     return {
       data: response.data || [],
@@ -142,40 +148,40 @@ class ExpedixApiClient {
     };
   }
 
-  async getPatient(id: string): Promise<{ data: Patient }> {
-    const response = await this.makeRequest<{ success: boolean; data: Patient }>(`/expedix/patients/${id}`);
+  async getPatient(id: string, token?: string): Promise<{ data: Patient }> {
+    const response = await this.makeRequest<{ success: boolean; data: Patient }>(`/expedix/patients/${id}`, {}, token);
     
     return {
       data: response.data
     };
   }
 
-  async createPatient(patientData: Partial<Patient>): Promise<{ data: Patient }> {
+  async createPatient(patientData: Partial<Patient>, token?: string): Promise<{ data: Patient }> {
     const response = await this.makeRequest<{ success: boolean; data: Patient }>('/expedix/patients', {
       method: 'POST',
       body: JSON.stringify(patientData),
-    });
+    }, token);
     
     return {
       data: response.data
     };
   }
 
-  async updatePatient(id: string, patientData: Partial<Patient>): Promise<{ data: Patient }> {
+  async updatePatient(id: string, patientData: Partial<Patient>, token?: string): Promise<{ data: Patient }> {
     const response = await this.makeRequest<{ success: boolean; data: Patient }>(`/expedix/patients/${id}`, {
       method: 'PUT',
       body: JSON.stringify(patientData),
-    });
+    }, token);
     
     return {
       data: response.data
     };
   }
 
-  async deletePatient(id: string): Promise<{ success: boolean }> {
+  async deletePatient(id: string, token?: string): Promise<{ success: boolean }> {
     return this.makeRequest<{ success: boolean }>(`/expedix/patients/${id}`, {
       method: 'DELETE',
-    });
+    }, token);
   }
 
   // Prescription Management
@@ -340,16 +346,43 @@ export const expedixApi = new ExpedixApiClient();
 // Named exports for convenience
 export { ExpedixApiClient };
 
-// Simplified React Hook - no authentication handling needed (cookies automatic)
+// Enhanced React Hook with Clerk authentication
 export function useExpedixApi() {
-  // Return direct API client methods - authentication handled by backend cookies
+  const { getToken } = useAuth();
+  
+  // Helper function to get token for API calls
+  const getAuthToken = async () => {
+    try {
+      return await getToken();
+    } catch (error) {
+      console.error('Failed to get auth token:', error);
+      return null;
+    }
+  };
+  
+  // Return API client methods with automatic authentication
   return {
     // Patient Management
-    getPatients: (searchTerm?: string) => expedixApi.getPatients(searchTerm),
-    getPatient: (id: string) => expedixApi.getPatient(id),
-    createPatient: (data: Partial<Patient>) => expedixApi.createPatient(data),
-    updatePatient: (id: string, data: Partial<Patient>) => expedixApi.updatePatient(id, data),
-    deletePatient: (id: string) => expedixApi.deletePatient(id),
+    getPatients: async (searchTerm?: string) => {
+      const token = await getAuthToken();
+      return expedixApi.getPatients(searchTerm, token || undefined);
+    },
+    getPatient: async (id: string) => {
+      const token = await getAuthToken();
+      return expedixApi.getPatient(id, token || undefined);
+    },
+    createPatient: async (data: Partial<Patient>) => {
+      const token = await getAuthToken();
+      return expedixApi.createPatient(data, token || undefined);
+    },
+    updatePatient: async (id: string, data: Partial<Patient>) => {
+      const token = await getAuthToken();
+      return expedixApi.updatePatient(id, data, token || undefined);
+    },
+    deletePatient: async (id: string) => {
+      const token = await getAuthToken();
+      return expedixApi.deletePatient(id, token || undefined);
+    },
     
     // Prescription Management
     getPrescriptions: (patientId: string) => expedixApi.getPrescriptions(patientId),

@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import AuthTestComponent from '@/components/debug/AuthTestComponent';
 
 interface HealthCheck {
   success: boolean;
@@ -151,6 +152,9 @@ export default function DebugPage() {
             This will test the beta registration API with dummy data
           </p>
         </div>
+
+        {/* Authentication Test */}
+        <AuthTestComponent />
 
         {/* PWA Status */}
         <div className="bg-white rounded-lg shadow-sm border p-6">
