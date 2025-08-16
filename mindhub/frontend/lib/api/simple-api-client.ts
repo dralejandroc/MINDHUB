@@ -35,18 +35,34 @@ export class SimpleApiClient {
   private async makeRequest<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
     const url = `${this.baseUrl}${endpoint}`;
     
-    // Simple headers - backend handles authentication via cookies
+    // Get Clerk token for Railway authentication
+    let clerkToken: string | null = null;
+    if (typeof window !== 'undefined' && (window as any).Clerk) {
+      try {
+        // Get token using the mindhub-backend template
+        clerkToken = await (window as any).Clerk.session?.getToken({ template: 'mindhub-backend' });
+      } catch (error) {
+        console.warn('Could not get Clerk token:', error);
+      }
+    }
+    
+    // Headers with JWT token for Railway authentication
     const headers: HeadersInit = {
       'Content-Type': 'application/json',
       'Accept': 'application/json',
       ...options.headers,
     };
+    
+    // Add Authorization header if we have a token
+    if (clerkToken) {
+      headers['Authorization'] = `Bearer ${clerkToken}`;
+    }
 
     try {
       const response = await fetch(url, {
         ...options,
         headers,
-        credentials: 'include', // Include cookies for authentication
+        credentials: 'include', // Still include cookies as fallback
       });
 
       // Handle non-JSON responses (detect HTML error pages)
