@@ -1,4 +1,5 @@
 // API route for consultations proxy
+export const dynamic = 'force-dynamic';
 
 const BACKEND_URL = process.env.BACKEND_URL || 'https://mindhub-production.up.railway.app';
 

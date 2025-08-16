@@ -16,7 +16,7 @@ import {
   AcademicCapIcon,
   BookOpenIcon
 } from '@heroicons/react/24/outline';
-import { expedixApi, Patient } from '@/lib/api/expedix-client';
+import { useExpedixApi, Patient } from '@/lib/api/expedix-client';
 import ResourcesTimeline from './ResourcesTimeline';
 import PatientTimeline from './PatientTimeline';
 import PatientDocuments from './PatientDocuments';
@@ -44,6 +44,7 @@ export default function PatientDashboard({
   onNewConsultation, 
   onClinicalAssessment 
 }: PatientDashboardProps) {
+  const expedixApi = useExpedixApi(); // Use authenticated API client
   const [activeTab, setActiveTab] = useState('timeline');
   const [loading, setLoading] = useState(false);
   const [editingPatient, setEditingPatient] = useState(false);

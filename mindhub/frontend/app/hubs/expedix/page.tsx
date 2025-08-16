@@ -21,7 +21,7 @@ import {
   ClockIcon,
   MagnifyingGlassIcon
 } from '@heroicons/react/24/outline';
-import { expedixApi } from '@/lib/api/expedix-client';
+import { useExpedixApi } from '@/lib/api/expedix-client';
 import type { Patient } from '@/lib/api/expedix-client';
 import { Button } from '@/components/ui/Button';
 
@@ -30,6 +30,7 @@ type DetailView = 'dashboard' | 'consultation' | 'assessment';
 
 export default function ExpedixPage() {
   const searchParams = useSearchParams();
+  const expedixApi = useExpedixApi(); // Use authenticated API client
   const [viewMode, setViewMode] = useState<ViewMode>('cards');
   const [detailView, setDetailView] = useState<DetailView>('dashboard');
   const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null);
