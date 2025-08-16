@@ -22,6 +22,80 @@ const patientController = new PatientController();
 const auditLogger = new AuditLogger();
 
 /**
+ * Helper function to generate incomplete CURP (without homoclave)
+ * Format: AAAA######HXXXXX## (18 digits total, missing 2 final digits)
+ */
+function generateIncompleteCURP(firstName, paternalLastName, maternalLastName, dateOfBirth, gender) {
+  try {
+    // Clean and format names
+    const cleanName = (name) => name ? name.toUpperCase().replace(/[^A-Z]/g, '') : '';
+    
+    const firstNameClean = cleanName(firstName);
+    const paternalClean = cleanName(paternalLastName);
+    const maternalClean = cleanName(maternalLastName);
+    
+    // Get first consonant from first name (skip first letter)
+    const getFirstConsonant = (name) => {
+      const consonants = name.slice(1).match(/[BCDFGHJKLMNPQRSTVWXYZ]/);
+      return consonants ? consonants[0] : 'X';
+    };
+    
+    // Build CURP parts
+    const date = new Date(dateOfBirth);
+    const year = date.getFullYear().toString().slice(-2);
+    const month = (date.getMonth() + 1).toString().padStart(2, '0');
+    const day = date.getDate().toString().padStart(2, '0');
+    
+    // Gender code
+    const genderCode = gender === 'masculine' || gender === 'male' ? 'H' : 'M';
+    
+    // State code (default to Mexico City)
+    const stateCode = 'DF';
+    
+    // Build incomplete CURP (without homoclave)
+    const curp = 
+      paternalClean.charAt(0) + // First letter of paternal surname
+      (paternalClean.match(/[AEIOU]/g) || ['X'])[0] + // First vowel of paternal surname
+      (maternalClean.charAt(0) || 'X') + // First letter of maternal surname
+      (firstNameClean.charAt(0) || 'X') + // First letter of first name
+      year + month + day + // Birth date YYMMDD
+      genderCode + // Gender
+      stateCode + // State
+      getFirstConsonant(paternalClean) + // First consonant of paternal surname
+      getFirstConsonant(maternalClean) + // First consonant of maternal surname
+      getFirstConsonant(firstNameClean); // First consonant of first name
+      // Note: Missing final 2-digit homoclave to prevent exact duplicates
+    
+    return curp;
+  } catch (error) {
+    console.error('Error generating CURP:', error);
+    return null;
+  }
+}
+
+/**
+ * Helper function to generate unique medical record number
+ */
+async function generateMedicalRecordNumber() {
+  const year = new Date().getFullYear();
+  const prefix = 'EXP';
+  
+  // Get the count of patients created this year
+  const prisma = getPrismaClient();
+  const count = await prisma.patients.count({
+    where: {
+      createdAt: {
+        gte: new Date(year, 0, 1),
+        lt: new Date(year + 1, 0, 1)
+      }
+    }
+  });
+  
+  const sequence = (count + 1).toString().padStart(4, '0');
+  return `${prefix}-${year}-${sequence}`;
+}
+
+/**
  * Transform patient data from backend format (camelCase) to frontend format (snake_case)
  */
 const transformPatientToFrontend = (patient) => {
@@ -723,80 +797,6 @@ router.get('/:id/summary',
     });
   }
 });
-
-/**
- * Helper function to generate incomplete CURP (without homoclave)
- * Format: AAAA######HXXXXX## (18 digits total, missing 2 final digits)
- */
-function generateIncompleteCURP(firstName, paternalLastName, maternalLastName, dateOfBirth, gender) {
-  try {
-    // Clean and format names
-    const cleanName = (name) => name ? name.toUpperCase().replace(/[^A-Z]/g, '') : '';
-    
-    const firstNameClean = cleanName(firstName);
-    const paternalClean = cleanName(paternalLastName);
-    const maternalClean = cleanName(maternalLastName);
-    
-    // Get first consonant from first name (skip first letter)
-    const getFirstConsonant = (name) => {
-      const consonants = name.slice(1).match(/[BCDFGHJKLMNPQRSTVWXYZ]/);
-      return consonants ? consonants[0] : 'X';
-    };
-    
-    // Build CURP parts
-    const date = new Date(dateOfBirth);
-    const year = date.getFullYear().toString().slice(-2);
-    const month = (date.getMonth() + 1).toString().padStart(2, '0');
-    const day = date.getDate().toString().padStart(2, '0');
-    
-    // Gender code
-    const genderCode = gender === 'masculine' || gender === 'male' ? 'H' : 'M';
-    
-    // State code (default to Mexico City)
-    const stateCode = 'DF';
-    
-    // Build incomplete CURP (without homoclave)
-    const curp = 
-      paternalClean.charAt(0) + // First letter of paternal surname
-      (paternalClean.match(/[AEIOU]/g) || ['X'])[0] + // First vowel of paternal surname
-      (maternalClean.charAt(0) || 'X') + // First letter of maternal surname
-      (firstNameClean.charAt(0) || 'X') + // First letter of first name
-      year + month + day + // Birth date YYMMDD
-      genderCode + // Gender
-      stateCode + // State
-      getFirstConsonant(paternalClean) + // First consonant of paternal surname
-      getFirstConsonant(maternalClean) + // First consonant of maternal surname
-      getFirstConsonant(firstNameClean); // First consonant of first name
-      // Note: Missing final 2-digit homoclave to prevent exact duplicates
-    
-    return curp;
-  } catch (error) {
-    console.error('Error generating CURP:', error);
-    return null;
-  }
-}
-
-/**
- * Helper function to generate unique medical record number
- */
-async function generateMedicalRecordNumber() {
-  const year = new Date().getFullYear();
-  const prefix = 'EXP';
-  
-  // Get the count of patients created this year
-  const prisma = getPrismaClient();
-  const count = await prisma.patients.count({
-    where: {
-      createdAt: {
-        gte: new Date(year, 0, 1),
-        lt: new Date(year + 1, 0, 1)
-      }
-    }
-  });
-  
-  const sequence = (count + 1).toString().padStart(4, '0');
-  return `${prefix}-${year}-${sequence}`;
-}
 
 /**
  * POST /api/expedix/patients/:id/assessments
