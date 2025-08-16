@@ -3,9 +3,7 @@
 /**
  * Client for ClinimetrixPro Assessment integration with Expedix
  */
-import { API_CONFIG } from '@/lib/config/api-endpoints';
-
-const API_URL = API_CONFIG.BACKEND_URL;
+import { createApiUrl } from './api-url-builders';
 
 export interface AssessmentSaveData {
   assessmentId: string;
@@ -19,135 +17,91 @@ export interface AssessmentSaveData {
       primaryInterpretation?: string;
       [key: string]: any;
     };
-    metadata?: any;
     [key: string]: any;
   };
-  consultationId?: string;
+  responses: Array<{
+    questionId: string;
+    responseValue: any;
+    responseType: string;
+  }>;
+  metadata?: {
+    completionTime?: number;
+    startedAt?: string;
+    completedAt?: string;
+    [key: string]: any;
+  };
 }
 
 export interface PatientAssessment {
   id: string;
-  templateId: string;
+  patientId: string;
   scaleName: string;
-  scaleAbbreviation?: string;
-  category?: string;
-  description?: string;
-  completedAt: string;
-  totalScore?: number;
+  scaleId: string;
+  totalScore: number;
   severityLevel?: string;
   interpretation?: string;
-  metadata?: any;
+  completedAt: string;
+  assessmentData: any;
 }
 
-class ExpedixAssessmentsClient {
-  private baseUrl: string;
+/**
+ * Saves a completed ClinimetrixPro assessment to a patient's record in Expedix
+ */
+export async function saveAssessmentToPatient(
+  patientId: string,
+  assessmentData: AssessmentSaveData
+): Promise<{ success: boolean; data?: any; error?: string }> {
+  try {
+    const response = await fetch(createApiUrl(`/expedix/patients/${patientId}/assessments`), {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(assessmentData),
+    });
 
-  constructor() {
-    this.baseUrl = `${API_URL}/api/expedix/patients`;
-  }
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
 
-  /**
-   * Save ClinimetrixPro assessment results to patient record
-   */
-  async saveAssessmentToPatient(
-    patientId: string, 
-    assessmentData: AssessmentSaveData
-  ): Promise<{
-    success: boolean;
-    message: string;
-    data: {
-      assessmentId: string;
-      patientId: string;
-      scaleName: string;
-      totalScore?: number;
-      severityLevel?: string;
-      consultationLinked: boolean;
-      savedAt: string;
+    const result = await response.json();
+    return { success: true, data: result };
+  } catch (error) {
+    console.error('Error saving assessment to patient:', error);
+    return { 
+      success: false, 
+      error: error instanceof Error ? error.message : 'Unknown error occurred' 
     };
-  }> {
-    try {
-      const response = await fetch(`${this.baseUrl}/${patientId}/assessments`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(assessmentData)
-      });
-
-      const result = await response.json();
-
-      if (!response.ok) {
-        throw new Error(result.error || `HTTP error! status: ${response.status}`);
-      }
-
-      return result;
-    } catch (error) {
-      console.error('Error saving assessment to patient:', error);
-      throw error;
-    }
-  }
-
-  /**
-   * Get all ClinimetrixPro assessments for a patient
-   */
-  async getPatientAssessments(
-    patientId: string,
-    options?: {
-      limit?: number;
-      templateId?: string;
-    }
-  ): Promise<{
-    success: boolean;
-    data: PatientAssessment[];
-    count: number;
-  }> {
-    try {
-      const params = new URLSearchParams();
-      
-      if (options?.limit) {
-        params.append('limit', options.limit.toString());
-      }
-      
-      if (options?.templateId) {
-        params.append('templateId', options.templateId);
-      }
-
-      const url = `${this.baseUrl}/${patientId}/assessments${params.toString() ? `?${params.toString()}` : ''}`;
-      
-      const response = await fetch(url, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-        }
-      });
-
-      const result = await response.json();
-
-      if (!response.ok) {
-        throw new Error(result.error || `HTTP error! status: ${response.status}`);
-      }
-
-      return result;
-    } catch (error) {
-      console.error('Error getting patient assessments:', error);
-      throw error;
-    }
-  }
-
-  /**
-   * Get recent assessments for a patient (shortcut method)
-   */
-  async getRecentAssessments(patientId: string, limit = 10): Promise<PatientAssessment[]> {
-    try {
-      const response = await this.getPatientAssessments(patientId, { limit });
-      return response.data;
-    } catch (error) {
-      console.error('Error getting recent assessments:', error);
-      return [];
-    }
   }
 }
 
-// Export singleton instance
-export const expedixAssessmentsClient = new ExpedixAssessmentsClient();
-export default expedixAssessmentsClient;
+/**
+ * Retrieves all assessments for a specific patient
+ */
+export async function getPatientAssessments(patientId: string): Promise<{
+  success: boolean;
+  data?: PatientAssessment[];
+  error?: string;
+}> {
+  try {
+    const response = await fetch(createApiUrl(`/expedix/patients/${patientId}/assessments`));
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    const result = await response.json();
+    return { success: true, data: result.data || [] };
+  } catch (error) {
+    console.error('Error getting patient assessments:', error);
+    return { 
+      success: false, 
+      error: error instanceof Error ? error.message : 'Unknown error occurred' 
+    };
+  }
+}
+
+export default {
+  saveAssessmentToPatient,
+  getPatientAssessments,
+};

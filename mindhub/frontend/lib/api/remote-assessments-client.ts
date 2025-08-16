@@ -3,7 +3,7 @@
  * Cliente para el sistema de evaluaciones remotas de escalas clínicas
  */
 
-import { apiClient } from './api-config';
+import { createApiUrl } from './api-url-builders';
 
 // Tipos para evaluaciones remotas
 export interface RemoteAssessmentCreate {
@@ -180,10 +180,21 @@ export class RemoteAssessmentsClient {
     try {
       console.log('🚀 Creando evaluación remota:', data);
       
-      const response = await apiClient.post('/clinimetrix/remote-assessments/create', data);
-      
-      console.log('✅ Evaluación remota creada:', response.data.data.id);
-      return response.data;
+      const response = await fetch(createApiUrl('/clinimetrix-pro/remote-assessments/create'), {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data),
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const result = await response.json();
+      console.log('✅ Evaluación remota creada:', result.data.id);
+      return result;
     } catch (error: any) {
       console.error('❌ Error creando evaluación remota:', error);
       
@@ -223,11 +234,16 @@ export class RemoteAssessmentsClient {
       if (options.limit) params.append('limit', options.limit.toString());
       if (options.offset) params.append('offset', options.offset.toString());
       
-      const url = `/clinimetrix/remote-assessments/administrator/${administratorId}${params.toString() ? '?' + params.toString() : ''}`;
-      const response = await apiClient.get(url);
-      
-      console.log(`✅ ${response.data.data.assessments.length} evaluaciones obtenidas`);
-      return response.data;
+      const url = `/clinimetrix-pro/remote-assessments/administrator/${administratorId}${params.toString() ? '?' + params.toString() : ''}`;
+      const response = await fetch(createApiUrl(url));
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const result = await response.json();
+      console.log(`✅ ${result.data.assessments.length} evaluaciones obtenidas`);
+      return result;
     } catch (error: any) {
       console.error('❌ Error obteniendo evaluaciones:', error);
       throw new Error(error.response?.data?.message || 'Error obteniendo evaluaciones remotas');
@@ -242,13 +258,18 @@ export class RemoteAssessmentsClient {
       console.log('📝 Obteniendo plantillas de mensajes');
       
       const url = category 
-        ? `/clinimetrix/remote-assessments/message-templates?category=${category}`
-        : '/clinimetrix/remote-assessments/message-templates';
+        ? `/clinimetrix-pro/remote-assessments/message-templates?category=${category}`
+        : '/clinimetrix-pro/remote-assessments/message-templates';
       
-      const response = await apiClient.get(url);
-      
-      console.log(`✅ ${response.data.data.length} plantillas obtenidas`);
-      return response.data;
+      const response = await fetch(createApiUrl(url));
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const result = await response.json();
+      console.log(`✅ ${result.data.length} plantillas obtenidas`);
+      return result;
     } catch (error: any) {
       console.error('❌ Error obteniendo plantillas:', error);
       throw new Error(error.response?.data?.message || 'Error obteniendo plantillas de mensajes');
@@ -270,7 +291,7 @@ export class PublicRemoteAssessmentsClient {
     try {
       console.log('🔍 Validando token de evaluación remota:', token.substring(0, 8) + '...');
       
-      const response = await fetch(`${this.baseURL}/v1/clinimetrix/remote-assessments/${token}`, {
+      const response = await fetch(`${this.baseURL}/clinimetrix-pro/remote-assessments/${token}`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -311,7 +332,7 @@ export class PublicRemoteAssessmentsClient {
     try {
       console.log('💾 Guardando progreso:', progress.percentageComplete + '%');
       
-      const response = await fetch(`${this.baseURL}/v1/clinimetrix/remote-assessments/${token}/save-progress`, {
+      const response = await fetch(`${this.baseURL}/clinimetrix-pro/remote-assessments/${token}/save-progress`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -340,7 +361,7 @@ export class PublicRemoteAssessmentsClient {
     try {
       console.log('🎯 Completando evaluación remota con', completion.responses.length, 'respuestas');
       
-      const response = await fetch(`${this.baseURL}/v1/clinimetrix/remote-assessments/${token}/complete`, {
+      const response = await fetch(`${this.baseURL}/clinimetrix-pro/remote-assessments/${token}/complete`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
