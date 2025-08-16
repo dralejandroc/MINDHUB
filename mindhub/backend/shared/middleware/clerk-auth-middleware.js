@@ -75,6 +75,8 @@ const clerkOptionalAuth = async (req, res, next) => {
       try {
         const verifiedToken = await verifyToken(token, {
           secretKey: process.env.CLERK_SECRET_KEY,
+          issuer: 'https://clerk.mindhub.cloud',
+          jwksUrl: 'https://clerk.mindhub.cloud/.well-known/jwks.json'
         });
 
         // Use custom claims from mindhub-backend template
