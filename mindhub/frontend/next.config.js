@@ -103,15 +103,9 @@ const nextConfig = {
       },
     ];
   },
-  // Proxy API calls to Railway backend
-  async rewrites() {
-    return [
-      {
-        source: '/api/:path*',
-        destination: `${process.env.BACKEND_URL || 'https://mindhub-production.up.railway.app'}/api/:path*`,
-      },
-    ];
-  },
+  // Note: Frontend has its own API routes at /app/api/ 
+  // No rewrites needed - frontend routes take precedence
+  // Railway backend is called directly from frontend API routes
 };
 
 module.exports = nextConfig;
