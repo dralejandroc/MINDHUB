@@ -54,6 +54,8 @@ export async function GET(request: Request) {
     });
   } catch (error) {
     console.error('Error proxying patients request:', error);
+    console.error('Backend URL:', BACKEND_URL);
+    console.error('Error details:', error instanceof Error ? error.message : error);
     
     // Check if it's an authentication error
     if (error instanceof Error && (error.message.includes('401') || error.message.includes('Authentication'))) {
