@@ -30,9 +30,9 @@ const API_BASE = '/api'; // Proxy de Next.js
  * createApiUrl(API_ROUTES.expedix.patientById('123')) → '/api/expedix/patients/123'
  */
 export function createApiUrl(route: string): string {
-  // Usar proxy de Next.js que maneja autenticación automáticamente
-  const cleanRoute = route.startsWith('/') ? route : `/${route}`;
-  return `${API_BASE}${cleanRoute}`;
+  // EMERGENCY BYPASS: Vercel API routes broken, usar Railway directo
+  // TODO: Revert cuando se resuelva problema de Vercel deployment
+  return createBackendApiUrl(route);
 }
 
 /**
