@@ -41,9 +41,25 @@ export class SimpleApiClient {
       try {
         // Get token using the mindhub-backend template
         clerkToken = await (window as any).Clerk.session?.getToken({ template: 'mindhub-backend' });
+        console.log('[SimpleApiClient] Got Clerk token:', clerkToken ? 'Token obtained' : 'No token');
+        if (clerkToken) {
+          // Decode token to check expiration
+          const tokenParts = clerkToken.split('.');
+          if (tokenParts.length === 3) {
+            const payload = JSON.parse(atob(tokenParts[1]));
+            console.log('[SimpleApiClient] Token claims:', { 
+              user_id: payload.user_id,
+              email: payload.email,
+              exp: new Date(payload.exp * 1000).toISOString(),
+              iat: new Date(payload.iat * 1000).toISOString()
+            });
+          }
+        }
       } catch (error) {
-        console.warn('Could not get Clerk token:', error);
+        console.error('[SimpleApiClient] Could not get Clerk token:', error);
       }
+    } else {
+      console.warn('[SimpleApiClient] Clerk not available');
     }
     
     // Headers with JWT token for Railway authentication
