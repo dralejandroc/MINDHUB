@@ -118,20 +118,29 @@ export default function ClinimetrixScaleSelector({
     
     // Auto-guardar resultados en el expediente del paciente
     try {
-      const { expedixAssessmentsClient } = await import('@/lib/api/expedix-assessments-client');
+      const expedixAssessmentsClient = await import('@/lib/api/expedix-assessments-client');
       
       const assessmentData = {
         assessmentId: results.assessmentId,
         templateId: selectedScale?.templateId || '',
         scaleName: selectedScale?.name || '',
         scaleAbbreviation: selectedScale?.abbreviation,
-        results: results,
-        consultationId: consultationId || undefined
+        results: {
+          totalScore: results.totalScore,
+          severityLevel: results.severityLevel,
+          interpretation: results.interpretation,
+          ...results
+        },
+        responses: results.responses || [],
+        metadata: {
+          completedAt: new Date().toISOString(),
+          consultationId: consultationId || undefined
+        }
       };
 
       console.log('💾 Guardando evaluación en expediente...', assessmentData);
       
-      const saveResult = await expedixAssessmentsClient.saveAssessmentToPatient(
+      const saveResult = await expedixAssessmentsClient.default.saveAssessmentToPatient(
         patient.id, 
         assessmentData
       );

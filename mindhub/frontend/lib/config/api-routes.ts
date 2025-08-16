@@ -100,6 +100,14 @@ const API_ROUTES = {
     documents: '/resources/documents',
     library: '/resources/library',
   },
+  agenda: {
+    waitingList: '/agenda/waiting-list',
+    waitingListById: (id: string) => `/agenda/waiting-list/${id}`,
+    availableSlots: '/agenda/available-slots',
+    scheduleAppointment: '/agenda/schedule-appointment',
+    appointments: '/agenda/appointments',
+    appointmentById: (id: string) => `/agenda/appointments/${id}`,
+  },
 } as const;
 
 export default API_ROUTES;

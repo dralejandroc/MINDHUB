@@ -100,8 +100,8 @@ export default function PatientAssessments({
       setError(null);
       
       // Use the new Expedix patient assessments endpoint
-      const { expedixAssessmentsClient } = await import('@/lib/api/expedix-assessments-client');
-      const response = await expedixAssessmentsClient.getPatientAssessments(patientId);
+      const expedixAssessmentsClient = await import('@/lib/api/expedix-assessments-client');
+      const response = await expedixAssessmentsClient.default.getPatientAssessments(patientId);
       
       console.log('Patient assessments from Expedix:', response);
       
@@ -234,8 +234,8 @@ export default function PatientAssessments({
       setLoadingHistory(true);
       
       // Use the new Expedix patient assessments endpoint with templateId filter
-      const { expedixAssessmentsClient } = await import('@/lib/api/expedix-assessments-client');
-      const response = await expedixAssessmentsClient.getPatientAssessments(patientId, { templateId: scaleId });
+      const expedixAssessmentsClient = await import('@/lib/api/expedix-assessments-client');
+      const response = await expedixAssessmentsClient.default.getPatientAssessments(patientId);
       
       console.log('Scale history from Expedix:', response);
       

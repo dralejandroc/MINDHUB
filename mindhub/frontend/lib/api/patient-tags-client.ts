@@ -89,6 +89,67 @@ class PatientTagsApiClient {
   }
 
   /**
+   * Get tags for a specific patient
+   */
+  async getPatientTags(patientId: string): Promise<{ data: { tags: PatientTag[] } }> {
+    try {
+      return this.makeRequest<{ data: { tags: PatientTag[] } }>(`/expedix/patients/${patientId}/tags`);
+    } catch (error) {
+      console.error('Error getting patient tags:', error);
+      return { data: { tags: [] } };
+    }
+  }
+
+  /**
+   * Get default tags for patient classification
+   */
+  getDefaultTags(): PatientTag[] {
+    // Return a set of default tags that can be used for patient classification
+    const now = new Date().toISOString();
+    return [
+      {
+        id: 'new-patient',
+        name: 'Nuevo Paciente',
+        color: '#dbeafe',
+        textColor: '#1d4ed8',
+        category: 'Status',
+        icon: '👋',
+        description: 'Paciente nuevo en la clínica',
+        isSystemTag: true,
+        usageCount: 0,
+        createdAt: now,
+        updatedAt: now
+      },
+      {
+        id: 'regular-patient',
+        name: 'Paciente Regular',
+        color: '#dcfce7',
+        textColor: '#15803d',
+        category: 'Status',
+        icon: '⭐',
+        description: 'Paciente con consultas regulares',
+        isSystemTag: true,
+        usageCount: 0,
+        createdAt: now,
+        updatedAt: now
+      },
+      {
+        id: 'priority-patient',
+        name: 'Prioritario',
+        color: '#fef3c7',
+        textColor: '#d97706',
+        category: 'Priority',
+        icon: '🔥',
+        description: 'Paciente que requiere atención prioritaria',
+        isSystemTag: true,
+        usageCount: 0,
+        createdAt: now,
+        updatedAt: now
+      }
+    ];
+  }
+
+  /**
    * Create a new custom patient tag
    */
   async createCustomTag(tagData: {
