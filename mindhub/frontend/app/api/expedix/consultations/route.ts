@@ -1,5 +1,4 @@
-// Use nodejs runtime for better Vercel compatibility
-export const runtime = 'nodejs';
+// API route for consultations proxy
 
 const BACKEND_URL = process.env.BACKEND_URL || 'https://mindhub-production.up.railway.app';
 

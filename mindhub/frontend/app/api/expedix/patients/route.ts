@@ -1,5 +1,4 @@
 // Prevent static generation for this API route
-export const runtime = 'nodejs';
 
 const BACKEND_URL = process.env.BACKEND_URL || 'https://mindhub-production.up.railway.app';
 
