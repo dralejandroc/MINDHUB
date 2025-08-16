@@ -15,8 +15,9 @@
 import API_ROUTES from '../config/api-routes';
 
 // Variables de entorno
-const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'https://mindhub-production.up.railway.app';
-const API_BASE = '/api'; // Proxy de Next.js
+// HOTFIX: Hardcoded Railway URL until Vercel env vars propagate correctly
+const BACKEND_URL = 'https://mindhub-production.up.railway.app';
+const API_BASE = '/api'; // Proxy de Next.js (not used with bypass)
 
 /**
  * createApiUrl - Para uso en CLIENTE (frontend)
