@@ -4,7 +4,7 @@
   "installCommand": "npm install",
   "functions": {
     "app/api/**/*.ts": {
-      "runtime": "edge"
+      "runtime": "nodejs18.x"
     }
   },
   "headers": [

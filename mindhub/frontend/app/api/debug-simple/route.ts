@@ -1,6 +1,6 @@
 // Simple debug endpoint - no dependencies  
-// Use edge runtime for better Vercel compatibility
-export const runtime = 'edge';
+// Use nodejs runtime for better Vercel compatibility
+export const runtime = 'nodejs';
 
 export async function GET() {
   try {

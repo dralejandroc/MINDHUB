@@ -1,5 +1,5 @@
-// Use edge runtime for better Vercel compatibility
-export const runtime = 'edge';
+// Use nodejs runtime for better Vercel compatibility
+export const runtime = 'nodejs';
 
 const BACKEND_URL = process.env.BACKEND_URL || 'https://mindhub-production.up.railway.app';
 

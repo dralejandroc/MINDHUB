@@ -1,5 +1,5 @@
 // Version endpoint to verify deployment
-export const runtime = 'edge';
+export const runtime = 'nodejs';
 
 export async function GET() {
   return new Response(JSON.stringify({
