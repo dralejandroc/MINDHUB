@@ -32,6 +32,7 @@ const API_BASE = '/api'; // Proxy de Next.js
 export function createApiUrl(route: string): string {
   // EMERGENCY BYPASS: Vercel API routes broken, usar Railway directo
   // TODO: Revert cuando se resuelva problema de Vercel deployment
+  // NOTE: Authentication handled by ExpedixApiClient using useAuthenticatedFetch
   return createBackendApiUrl(route);
 }
 
