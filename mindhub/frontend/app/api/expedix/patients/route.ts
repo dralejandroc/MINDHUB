@@ -1,11 +1,13 @@
 // Prevent static generation for this API route
+export const dynamic = 'force-dynamic';
 
 const BACKEND_URL = process.env.BACKEND_URL || 'https://mindhub-production.up.railway.app';
 
 export async function GET(request: Request) {
-  console.log('[Patients API] Processing GET request');
-  
   try {
+    console.log('[Patients API] Processing GET request');
+    console.log('[Patients API] Request URL:', request.url);
+    console.log('[Patients API] Backend URL:', BACKEND_URL);
     const { searchParams } = new URL(request.url);
     
     // Forward all query parameters
