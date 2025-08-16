@@ -18,7 +18,7 @@ export function useClerkToken() {
         return null; // Server-side, use server method
       }
 
-      const token = await getToken();
+      const token = await getToken({ template: 'mindhub-backend' });
       return token;
     } catch (error) {
       console.error('Error getting Clerk token:', error);
