@@ -3,6 +3,8 @@
 const BACKEND_URL = process.env.BACKEND_URL || 'https://mindhub-production.up.railway.app';
 
 export async function GET(request: Request) {
+  console.log('[Patients API] Processing GET request');
+  
   try {
     const { searchParams } = new URL(request.url);
     
@@ -17,6 +19,8 @@ export async function GET(request: Request) {
       url += `?${params.toString()}`;
     }
 
+    console.log('[Patients API] Target URL:', url);
+
     // Forward authentication headers
     const headers: HeadersInit = {
       'Content-Type': 'application/json',
@@ -26,24 +30,35 @@ export async function GET(request: Request) {
     const authHeader = request.headers.get('Authorization');
     if (authHeader) {
       headers['Authorization'] = authHeader;
+      console.log('[Patients API] Authorization header found');
+    } else {
+      console.log('[Patients API] No Authorization header found');
     }
 
     // Forward user context
     const userContextHeader = request.headers.get('X-User-Context');
     if (userContextHeader) {
       headers['X-User-Context'] = userContextHeader;
+      console.log('[Patients API] User context header found');
     }
 
+    console.log('[Patients API] Making request to backend...');
     const response = await fetch(url, {
       method: 'GET',
       headers,
     });
 
+    console.log('[Patients API] Backend response status:', response.status);
+
     if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
+      const errorText = await response.text();
+      console.error('[Patients API] Backend error response:', errorText);
+      throw new Error(`HTTP error! status: ${response.status}, body: ${errorText}`);
     }
 
     const data = await response.json();
+    console.log('[Patients API] Successfully retrieved data from backend');
+    
     return new Response(JSON.stringify(data), {
       status: 200,
       headers: {
@@ -51,9 +66,10 @@ export async function GET(request: Request) {
       },
     });
   } catch (error) {
-    console.error('Error proxying patients request:', error);
-    console.error('Backend URL:', BACKEND_URL);
-    console.error('Error details:', error instanceof Error ? error.message : error);
+    console.error('[Patients API] Error proxying patients request:', error);
+    console.error('[Patients API] Backend URL:', BACKEND_URL);
+    console.error('[Patients API] Error details:', error instanceof Error ? error.message : error);
+    console.error('[Patients API] Error stack:', error instanceof Error ? error.stack : 'No stack trace');
     
     // Check if it's an authentication error
     if (error instanceof Error && (error.message.includes('401') || error.message.includes('Authentication'))) {
@@ -74,6 +90,8 @@ export async function GET(request: Request) {
       success: false, 
       error: 'Failed to fetch data from backend',
       message: error instanceof Error ? error.message : 'Unknown error',
+      backend_url: BACKEND_URL,
+      timestamp: new Date().toISOString(),
       data: [],
       pagination: {
         page: 1,

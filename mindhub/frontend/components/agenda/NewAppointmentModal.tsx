@@ -10,6 +10,7 @@ import {
   MagnifyingGlassIcon,
   PlusIcon
 } from '@heroicons/react/24/outline';
+import { createApiUrl } from '@/lib/api/api-url-builders';
 
 interface Patient {
   id: string;
@@ -105,7 +106,7 @@ export default function NewAppointmentModal({ selectedDate, selectedTime, editin
         }
 
         // Load patients
-        const patientsResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/expedix/patients`);
+        const patientsResponse = await fetch(createApiUrl('/expedix/patients'));
         if (patientsResponse.ok) {
           const data = await patientsResponse.json();
           const patientsData = data.data?.map((p: any) => ({

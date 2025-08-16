@@ -28,6 +28,7 @@ import {
 } from '@heroicons/react/24/outline';
 import { Button } from '@/components/ui/Button';
 import toast from 'react-hot-toast';
+import { createApiUrlWithParams, createApiUrl } from '@/lib/api/api-url-builders';
 
 type ViewType = 'calendar' | 'list';
 
@@ -96,7 +97,7 @@ export default function AgendaPage() {
     setLoading(true);
     setError(null);
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/expedix/agenda/appointments`);
+      const response = await fetch(createApiUrl('/expedix/agenda/appointments'));
       if (response.ok) {
         // Trigger refresh in AgendaCalendar by changing key
         setRefreshTrigger(prev => prev + 1);
@@ -148,7 +149,7 @@ export default function AgendaPage() {
     try {
       console.log('🔄 Saving appointment:', appointmentData);
       
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/expedix/agenda/appointments`, {
+      const response = await fetch(createApiUrl('/expedix/agenda/appointments'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(appointmentData)
@@ -185,7 +186,7 @@ export default function AgendaPage() {
     try {
       console.log('🗑️ Deleting appointment:', appointmentId);
       
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/expedix/agenda/appointments/${appointmentId}`, {
+      const response = await fetch(createApiUrl(`/expedix/agenda/appointments/${appointmentId}`), {
         method: 'DELETE',
         headers: { 'Content-Type': 'application/json' }
       });
@@ -237,7 +238,7 @@ export default function AgendaPage() {
     try {
       console.log('🔄 Changing appointment status:', appointmentId, newStatus);
       
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/expedix/agenda/appointments/${appointmentId}/status`, {
+      const response = await fetch(createApiUrl(`/expedix/agenda/appointments/${appointmentId}/status`), {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ status: newStatus })
@@ -323,7 +324,7 @@ export default function AgendaPage() {
     try {
       console.log('💾 Saving to waiting list:', waitingListData);
       
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/expedix/agenda/waiting-list`, {
+      const response = await fetch(createApiUrl('/expedix/agenda/waiting-list'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(waitingListData)
@@ -368,7 +369,7 @@ export default function AgendaPage() {
       try {
         console.log('🔄 Loading daily stats...');
         const today = selectedDate.toISOString().split('T')[0];
-        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/expedix/agenda/daily-stats?date=${today}`);
+        const response = await fetch(createApiUrlWithParams('/expedix/agenda/daily-stats', { date: today }));
         
         if (response.ok) {
           const data = await response.json();
@@ -379,7 +380,7 @@ export default function AgendaPage() {
         }
         
         // Calculate from appointments if no dedicated endpoint
-        const appointmentsResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/expedix/agenda/appointments`);
+        const appointmentsResponse = await fetch(createApiUrl('/expedix/agenda/appointments'));
         if (appointmentsResponse.ok) {
           const appointmentsData = await appointmentsResponse.json();
           if (appointmentsData.success && appointmentsData.data) {

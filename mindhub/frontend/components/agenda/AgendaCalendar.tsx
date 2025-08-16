@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { ChevronLeftIcon, ChevronRightIcon, ClockIcon, UserIcon } from '@heroicons/react/24/outline';
 import { AppointmentTooltip } from './AppointmentTooltip';
+import { createApiUrl } from '@/lib/api/api-url-builders';
 
 interface Appointment {
   id: string;
@@ -53,7 +54,7 @@ export default function AgendaCalendar({ selectedDate, onDateSelect, onNewAppoin
         }
 
         // Cargar citas
-        const appointmentsUrl = `${process.env.NEXT_PUBLIC_API_URL}/api/expedix/agenda/appointments`;
+        const appointmentsUrl = createApiUrl('/expedix/agenda/appointments');
         console.log('🔄 Fetching appointments from:', appointmentsUrl);
         const appointmentsResponse = await fetch(appointmentsUrl);
         console.log('📡 Appointments response status:', appointmentsResponse.status);
