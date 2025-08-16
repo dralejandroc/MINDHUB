@@ -4,7 +4,7 @@
   "installCommand": "npm install",
   "functions": {
     "app/api/**/*.ts": {
-      "runtime": "@vercel/node@1.16.0"
+      "runtime": "edge"
     }
   },
   "headers": [

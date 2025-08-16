@@ -1,3 +1,6 @@
+// Use edge runtime for better Vercel compatibility
+export const runtime = 'edge';
+
 const BACKEND_URL = process.env.BACKEND_URL || 'https://mindhub-production.up.railway.app';
 
 export async function GET(request: Request) {

@@ -1,5 +1,5 @@
 // Expedix API Client - Centralized API communication for patient management
-import { createAuthHeaders, authenticatedFetchWithToken } from '@/lib/utils/clerk-auth';
+import { useAuthenticatedFetch } from '@/lib/utils/clerk-auth';
 import { useAuth } from '@clerk/nextjs';
 import { createApiUrl, createApiUrlWithParams, API_ROUTES, logApiCall } from './api-url-builders';
 import { useAuthenticatedApiCall, AuthenticationError, NetworkError } from '@/lib/utils/auth-retry';
@@ -91,37 +91,35 @@ export interface Document {
 }
 
 class ExpedixApiClient {
-  constructor() {
-    // No necesitamos baseUrl porque las URLs se construyen dinámicamente
+  private authenticatedFetch?: (url: string, options?: RequestInit) => Promise<Response>;
+
+  constructor(authenticatedFetch?: (url: string, options?: RequestInit) => Promise<Response>) {
+    this.authenticatedFetch = authenticatedFetch;
   }
 
-  private async makeRequest<T>(route: string, options: RequestInit = {}, token?: string): Promise<T> {
-    // Usar createApiUrl para construir URL del cliente (proxy /api)
+  private async makeRequest<T>(route: string, options: RequestInit = {}): Promise<T> {
+    // Usar createApiUrl para construir URL del cliente (proxy /api que maneja auth)
     const url = createApiUrl(route);
     
     // Log de la llamada para debugging
     logApiCall(route, options.method || 'GET', 'client');
     
-    // Create authenticated headers with Bearer token
+    // Create default headers
     const defaultHeaders: Record<string, string> = {
       'Content-Type': 'application/json',
       'Accept': 'application/json',
       ...(options.headers as Record<string, string> || {}),
     };
 
-    // Add Authorization header if token is provided
-    if (token) {
-      defaultHeaders['Authorization'] = `Bearer ${token}`;
-      console.log(`[ExpedixAPI] Making authenticated request to ${route} with token: ${token.substring(0, 20)}...`);
-    } else {
-      console.warn(`[ExpedixAPI] Making request to ${route} WITHOUT authentication token - this may cause 401 errors`);
-    }
+    console.log(`[ExpedixAPI] Making request to ${route} via Vercel proxy at ${url}`);
 
     try {
-      const response = await fetch(url, {
+      // Use authenticated fetch if available, otherwise fallback to regular fetch
+      const fetchFunction = this.authenticatedFetch || fetch;
+      const response = await fetchFunction(url, {
         ...options,
         headers: defaultHeaders,
-        credentials: 'include', // Include cookies as fallback
+        credentials: 'include',
       });
 
       console.log(`[ExpedixAPI] Response status for ${route}: ${response.status}`);
@@ -130,12 +128,12 @@ class ExpedixApiClient {
         const errorData = await response.json().catch(() => ({ message: 'Network error' }));
         
         if (response.status === 401) {
-          console.error(`[ExpedixAPI] 401 Unauthorized error on ${route}. Token provided: ${!!token}`);
-          throw new Error('Authentication required. Please log in again.');
+          console.error(`[ExpedixAPI] 401 Unauthorized error on ${route}`);
+          throw new AuthenticationError('Authentication required. Please log in again.', 401);
         }
         
         console.error(`[ExpedixAPI] HTTP error on ${route}:`, errorData);
-        throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
+        throw new NetworkError(errorData.message || `HTTP error! status: ${response.status}`, response.status);
       }
 
       return await response.json();
@@ -145,19 +143,14 @@ class ExpedixApiClient {
     }
   }
 
-  // Patient Management - Now with authentication token support
-  async getPatients(searchTerm?: string, token?: string): Promise<{ data: Patient[]; total: number }> {
-    if (!token) {
-      console.error('[ExpedixAPI] getPatients called without authentication token');
-      throw new Error('Authentication token is required');
-    }
-    
+  // Patient Management - Authentication handled by Vercel proxy
+  async getPatients(searchTerm?: string): Promise<{ data: Patient[]; total: number }> {
     // Usar la ruta base y agregar parámetros si es necesario
     const baseRoute = API_ROUTES.expedix.patients;
     const queryParams = searchTerm ? `?search=${encodeURIComponent(searchTerm)}` : '';
     const fullRoute = `${baseRoute}${queryParams}`;
     
-    const response = await this.makeRequest<{ success: boolean; data: Patient[]; pagination: { total: number } }>(fullRoute, {}, token);
+    const response = await this.makeRequest<{ success: boolean; data: Patient[]; pagination: { total: number } }>(fullRoute);
     
     return {
       data: response.data || [],
@@ -165,91 +158,66 @@ class ExpedixApiClient {
     };
   }
 
-  async getPatient(id: string, token?: string): Promise<{ data: Patient }> {
-    if (!token) {
-      console.error('[ExpedixAPI] getPatient called without authentication token');
-      throw new Error('Authentication token is required');
-    }
-    
-    const response = await this.makeRequest<{ success: boolean; data: Patient }>(API_ROUTES.expedix.patientById(id), {}, token);
+  async getPatient(id: string): Promise<{ data: Patient }> {
+    const response = await this.makeRequest<{ success: boolean; data: Patient }>(API_ROUTES.expedix.patientById(id));
     
     return {
       data: response.data
     };
   }
 
-  async createPatient(patientData: Partial<Patient>, token?: string): Promise<{ data: Patient }> {
-    if (!token) {
-      console.error('[ExpedixAPI] createPatient called without authentication token');
-      throw new Error('Authentication token is required');
-    }
-    
+  async createPatient(patientData: Partial<Patient>): Promise<{ data: Patient }> {
     const response = await this.makeRequest<{ success: boolean; data: Patient }>(API_ROUTES.expedix.patients, {
       method: 'POST',
       body: JSON.stringify(patientData),
-    }, token);
+    });
     
     return {
       data: response.data
     };
   }
 
-  async updatePatient(id: string, patientData: Partial<Patient>, token?: string): Promise<{ data: Patient }> {
-    if (!token) {
-      console.error('[ExpedixAPI] updatePatient called without authentication token');
-      throw new Error('Authentication token is required');
-    }
-    
+  async updatePatient(id: string, patientData: Partial<Patient>): Promise<{ data: Patient }> {
     const response = await this.makeRequest<{ success: boolean; data: Patient }>(API_ROUTES.expedix.patientById(id), {
       method: 'PUT',
       body: JSON.stringify(patientData),
-    }, token);
+    });
     
     return {
       data: response.data
     };
   }
 
-  async deletePatient(id: string, token?: string): Promise<{ success: boolean }> {
-    if (!token) {
-      console.error('[ExpedixAPI] deletePatient called without authentication token');
-      throw new Error('Authentication token is required');
-    }
-    
+  async deletePatient(id: string): Promise<{ success: boolean }> {
     return this.makeRequest<{ success: boolean }>(API_ROUTES.expedix.patientById(id), {
       method: 'DELETE',
-    }, token);
+    });
   }
 
   // Prescription Management
-  async getPrescriptions(patientId: string, token?: string): Promise<{ data: Prescription[] }> {
-    return this.makeRequest<{ data: Prescription[] }>(API_ROUTES.expedix.patientPrescriptions(patientId), {}, token);
+  async getPrescriptions(patientId: string): Promise<{ data: Prescription[] }> {
+    return this.makeRequest<{ data: Prescription[] }>(API_ROUTES.expedix.patientPrescriptions(patientId));
   }
 
-  async createPrescription(prescriptionData: Partial<Prescription>, token?: string): Promise<{ data: Prescription }> {
+  async createPrescription(prescriptionData: Partial<Prescription>): Promise<{ data: Prescription }> {
     return this.makeRequest<{ data: Prescription }>(API_ROUTES.expedix.prescriptions, {
       method: 'POST',
       body: JSON.stringify(prescriptionData),
-    }, token);
+    });
   }
 
-  async generatePrescriptionPDF(prescriptionId: string, token?: string): Promise<Blob> {
+  async generatePrescriptionPDF(prescriptionId: string): Promise<Blob> {
     const url = createApiUrl(`/expedix/prescriptions/${prescriptionId}/pdf`);
-    const headers: Record<string, string> = {};
-    
-    if (token) {
-      headers['Authorization'] = `Bearer ${token}`;
-    }
-    
-    const response = await fetch(url, { headers });
+    const fetchFunction = this.authenticatedFetch || fetch;
+    const response = await fetchFunction(url);
     if (!response.ok) {
       throw new Error('Failed to generate prescription PDF');
     }
     return response.blob();
   }
 
-  async getPatientPrescriptions(patientId: string, token?: string): Promise<{ data: Prescription[] }> {
-    return this.makeRequest<{ data: Prescription[] }>(`/expedix/prescriptions/${patientId}`, {}, token);
+  async getPatientPrescriptions(patientId: string): Promise<{ data: Prescription[] }> {
+    return this.makeRequest<{ data: Prescription[] }>(`/expedix/prescriptions/${patientId}`);
   }
 
   // Appointment Management
@@ -273,17 +241,11 @@ class ExpedixApiClient {
   }
 
   // Document Management
-  async getPatientDocuments(patientId: string, token: string): Promise<{ data: Document[] }> {
-    if (!token) {
-      throw new Error('Authentication token is required');
-    }
-    return this.makeRequest<{ data: Document[] }>(`/expedix/documents/${patientId}`, {}, token);
+  async getPatientDocuments(patientId: string): Promise<{ data: Document[] }> {
+    return this.makeRequest<{ data: Document[] }>(`/expedix/documents/${patientId}`);
   }
 
-  async uploadDocument(patientId: string, file: File, category: string, token: string): Promise<{ data: Document }> {
-    if (!token) {
-      throw new Error('Authentication token is required');
-    }
+  async uploadDocument(patientId: string, file: File, category: string): Promise<{ data: Document }> {
     const formData = new FormData();
     formData.append('file', file);
     formData.append('category', category);
@@ -292,12 +254,13 @@ class ExpedixApiClient {
       method: 'POST',
       body: formData,
       headers: {}, // Remove Content-Type to let browser set it for FormData
-    }, token);
+    });
   }
 
   async downloadDocument(documentId: string): Promise<Blob> {
     const url = createApiUrl(`/expedix/documents/download/${documentId}`);
-    const response = await fetch(url);
+    const fetchFunction = this.authenticatedFetch || fetch;
+    const response = await fetchFunction(url);
     if (!response.ok) {
       throw new Error('Failed to download document');
     }
@@ -305,79 +268,52 @@ class ExpedixApiClient {
   }
 
   // Medical History
-  async getMedicalHistory(patientId: string, token: string): Promise<{ data: any }> {
-    if (!token) {
-      throw new Error('Authentication token is required');
-    }
-    return this.makeRequest<{ data: any }>(`/expedix/medical-history/${patientId}`, {}, token);
+  async getMedicalHistory(patientId: string): Promise<{ data: any }> {
+    return this.makeRequest<{ data: any }>(`/expedix/medical-history/${patientId}`);
   }
 
-  async updateMedicalHistory(patientId: string, historyData: any, token: string): Promise<{ data: any }> {
-    if (!token) {
-      throw new Error('Authentication token is required');
-    }
+  async updateMedicalHistory(patientId: string, historyData: any): Promise<{ data: any }> {
     return this.makeRequest<{ data: any }>(`/expedix/medical-history/${patientId}`, {
       method: 'PUT',
       body: JSON.stringify(historyData),
-    }, token);
+    });
   }
 
   // Analytics & Reports
-  async getPatientStats(token: string): Promise<{ data: any }> {
-    if (!token) {
-      throw new Error('Authentication token is required');
-    }
-    return this.makeRequest<{ data: any }>('/expedix/analytics/patient-stats', {}, token);
+  async getPatientStats(): Promise<{ data: any }> {
+    return this.makeRequest<{ data: any }>('/expedix/analytics/patient-stats');
   }
 
-  async getTodayAppointments(token: string): Promise<{ data: Appointment[] }> {
-    if (!token) {
-      throw new Error('Authentication token is required');
-    }
-    return this.makeRequest<{ data: Appointment[] }>('/expedix/analytics/today-appointments', {}, token);
+  async getTodayAppointments(): Promise<{ data: Appointment[] }> {
+    return this.makeRequest<{ data: Appointment[] }>('/expedix/analytics/today-appointments');
   }
 
-  async getPendingAssessments(token: string): Promise<{ data: any[] }> {
-    if (!token) {
-      throw new Error('Authentication token is required');
-    }
-    return this.makeRequest<{ data: any[] }>('/expedix/analytics/pending-assessments', {}, token);
+  async getPendingAssessments(): Promise<{ data: any[] }> {
+    return this.makeRequest<{ data: any[] }>('/expedix/analytics/pending-assessments');
   }
 
-  async getTodayPrescriptions(token: string): Promise<{ data: Prescription[] }> {
-    if (!token) {
-      throw new Error('Authentication token is required');
-    }
-    return this.makeRequest<{ data: Prescription[] }>('/expedix/analytics/today-prescriptions', {}, token);
+  async getTodayPrescriptions(): Promise<{ data: Prescription[] }> {
+    return this.makeRequest<{ data: Prescription[] }>('/expedix/analytics/today-prescriptions');
   }
 
   // Patient Portal
-  async getPortalAccess(patientId: string, token: string): Promise<{ data: any }> {
-    if (!token) {
-      throw new Error('Authentication token is required');
-    }
-    return this.makeRequest<{ data: any }>(`/expedix/portal/${patientId}/access`, {}, token);
+  async getPortalAccess(patientId: string): Promise<{ data: any }> {
+    return this.makeRequest<{ data: any }>(`/expedix/portal/${patientId}/access`);
   }
 
-  async confirmAppointment(appointmentToken: string, confirmed: boolean, authToken: string): Promise<{ data: any }> {
-    if (!authToken) {
-      throw new Error('Authentication token is required');
-    }
+  async confirmAppointment(appointmentToken: string, confirmed: boolean): Promise<{ data: any }> {
     return this.makeRequest<{ data: any }>('/expedix/portal/confirm-appointment', {
       method: 'POST',
       body: JSON.stringify({ token: appointmentToken, confirmed }),
-    }, authToken);
+    });
   }
 
   // Drug Interactions
-  async checkDrugInteractions(medications: string[], token: string): Promise<{ data: any }> {
-    if (!token) {
-      throw new Error('Authentication token is required');
-    }
+  async checkDrugInteractions(medications: string[]): Promise<{ data: any }> {
     return this.makeRequest<{ data: any }>('/expedix/drug-interactions/check', {
       method: 'POST',
       body: JSON.stringify({ medications }),
-    }, token);
+    });
   }
 
   // Consultation Forms
@@ -424,37 +360,30 @@ export const expedixApi = new ExpedixApiClient();
 // Named exports for convenience
 export { ExpedixApiClient };
 
-// Enhanced React Hook with Clerk authentication and retry logic
+// Enhanced React Hook with Clerk authentication via proxy
 export function useExpedixApi() {
-  const { makeAuthenticatedCall } = useAuthenticatedApiCall();
+  const authenticatedFetch = useAuthenticatedFetch();
   
-  // Return API client methods with automatic authentication
+  // Create API client instance with authenticated fetch
+  const apiClient = new ExpedixApiClient(authenticatedFetch);
+  
+  // Return API client methods with authentication
   return {
-    // Patient Management with automatic retry on auth failures
+    // Patient Management 
     getPatients: async (searchTerm?: string) => {
-      return makeAuthenticatedCall(
-        (token: string) => expedixApi.getPatients(searchTerm, token)
-      );
+      return apiClient.getPatients(searchTerm);
     },
     getPatient: async (id: string) => {
-      return makeAuthenticatedCall(
-        (token: string) => expedixApi.getPatient(id, token)
-      );
+      return apiClient.getPatient(id);
     },
     createPatient: async (data: Partial<Patient>) => {
-      return makeAuthenticatedCall(
-        (token: string) => expedixApi.createPatient(data, token)
-      );
+      return apiClient.createPatient(data);
     },
     updatePatient: async (id: string, data: Partial<Patient>) => {
-      return makeAuthenticatedCall(
-        (token: string) => expedixApi.updatePatient(id, data, token)
-      );
+      return apiClient.updatePatient(id, data);
     },
     deletePatient: async (id: string) => {
-      return makeAuthenticatedCall(
-        (token: string) => expedixApi.deletePatient(id, token)
-      );
+      return apiClient.deletePatient(id);
     },
     
     // Other methods with retry capability (will be implemented as needed)
@@ -484,31 +413,21 @@ export function useExpedixApi() {
     
     // Document Management
     getPatientDocuments: (patientId: string) => {
-      return makeAuthenticatedCall(
-        (token: string) => expedixApi.getPatientDocuments(patientId, token)
-      );
+      return apiClient.getPatientDocuments(patientId);
     },
     
     // Analytics & Reports
     getPatientStats: () => {
-      return makeAuthenticatedCall(
-        (token: string) => expedixApi.getPatientStats(token)
-      );
+      return apiClient.getPatientStats();
     },
     getTodayAppointments: () => {
-      return makeAuthenticatedCall(
-        (token: string) => expedixApi.getTodayAppointments(token)
-      );
+      return apiClient.getTodayAppointments();
     },
     getPendingAssessments: () => {
-      return makeAuthenticatedCall(
-        (token: string) => expedixApi.getPendingAssessments(token)
-      );
+      return apiClient.getPendingAssessments();
     },
     getTodayPrescriptions: () => {
-      return makeAuthenticatedCall(
-        (token: string) => expedixApi.getTodayPrescriptions(token)
-      );
+      return apiClient.getTodayPrescriptions();
     },
   };
 }
