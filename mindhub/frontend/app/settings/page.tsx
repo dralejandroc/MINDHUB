@@ -131,14 +131,13 @@ export default function GeneralSettingsPage() {
 
   const loadConfiguration = async () => {
     try {
-      const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://mindhub-production.up.railway.app';
-      const response = await fetch(`${API_BASE_URL}/api/expedix/clinic-configuration`);
+      const response = await fetch(`/api/expedix/clinic-configuration`);
       if (response.ok) {
         const data = await response.json();
         setConfig(data.data.configuration);
       } else {
         // Load default configuration if none exists
-        const defaultResponse = await fetch(`${API_BASE_URL}/api/expedix/clinic-configuration/default`);
+        const defaultResponse = await fetch(`/api/expedix/clinic-configuration/default`);
         if (defaultResponse.ok) {
           const defaultData = await defaultResponse.json();
           setConfig(defaultData.data);
@@ -157,8 +156,7 @@ export default function GeneralSettingsPage() {
 
     setSaving(true);
     try {
-      const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://mindhub-production.up.railway.app';
-      const response = await fetch(`${API_BASE_URL}/api/expedix/clinic-configuration`, {
+      const response = await fetch(`/api/expedix/clinic-configuration`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

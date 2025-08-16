@@ -2,8 +2,9 @@
  * Patient Tags API Client
  * Handles all operations related to patient tags and categorization
  */
+import { API_CONFIG } from '@/lib/config/api-endpoints';
 
-const API_BASE_URL = '/api';
+const API_BASE_URL = API_CONFIG.BACKEND_URL;
 
 export interface PatientTag {
   id: string;
@@ -32,7 +33,7 @@ class PatientTagsApiClient {
   private baseUrl: string;
 
   constructor() {
-    this.baseUrl = `${API_BASE_URL}/expedix`;
+    this.baseUrl = `${API_BASE_URL}/api/expedix`;
   }
 
   private async makeRequest<T>(endpoint: string, options: RequestInit = {}): Promise<T> {

@@ -102,10 +102,10 @@ class ExpedixApiClient {
     const url = `${this.baseUrl}${endpoint}`;
     
     // Create authenticated headers with Bearer token
-    const defaultHeaders: HeadersInit = {
+    const defaultHeaders: Record<string, string> = {
       'Content-Type': 'application/json',
       'Accept': 'application/json',
-      ...options.headers,
+      ...(options.headers as Record<string, string> || {}),
     };
 
     // Add Authorization header if token is provided

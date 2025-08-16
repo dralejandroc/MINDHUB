@@ -7,8 +7,8 @@
 
 // Note: Authentication is handled by Next.js middleware for API routes
 
-// Use backend directly instead of Next.js proxy routes to avoid API route issues
-const API_BASE_URL = 'https://mindhub-production.up.railway.app/api';
+// Use Next.js API routes as proxies
+const API_BASE_URL = '/api';
 const CLINIMETRIX_PRO_BASE = `${API_BASE_URL}/clinimetrix-pro`;
 
 // TypeScript interfaces for ClinimetrixPro entities

@@ -25,8 +25,8 @@ if (typeof window !== 'undefined') {
   }
 }
 
-// Backend configuration
-const API_BASE_URL = 'https://mindhub-production.up.railway.app/api';
+// Backend configuration - use Next.js API routes as proxies
+const API_BASE_URL = '/api';
 
 export interface ApiResponse<T> {
   success: boolean;

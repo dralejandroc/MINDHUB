@@ -95,7 +95,7 @@ export const usePatients = () => {
         paternal_last_name: patientData.lastName.split(' ')[0] || '',
         maternal_last_name: patientData.lastName.split(' ').slice(1).join(' ') || '',
         birth_date: patientData.birthDate,
-        gender: patientData.gender === 'M' ? 'masculine' : patientData.gender === 'F' ? 'feminine' : 'masculine',
+        gender: (patientData.gender === 'M' ? 'masculine' : patientData.gender === 'F' ? 'feminine' : 'masculine') as 'masculine' | 'feminine',
         email: patientData.email || '',
         cell_phone: patientData.phone || '',
       };

@@ -3,8 +3,9 @@
 /**
  * Client for ClinimetrixPro Assessment integration with Expedix
  */
+import { API_CONFIG } from '@/lib/config/api-endpoints';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3002';
+const API_URL = API_CONFIG.BACKEND_URL;
 
 export interface AssessmentSaveData {
   assessmentId: string;
