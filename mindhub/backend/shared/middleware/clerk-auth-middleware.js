@@ -49,10 +49,15 @@ const clerkOptionalAuth = async (req, res, next) => {
       try {
         const verifiedToken = await verifyToken(sessionToken, {
           secretKey: process.env.CLERK_SECRET_KEY,
+          issuer: 'https://clerk.mindhub.cloud',
+          jwksUrl: 'https://clerk.mindhub.cloud/.well-known/jwks.json'
         });
 
+        // Use custom claims from mindhub-backend template
+        const userId = verifiedToken.user_id || verifiedToken.sub;
+        
         req.auth = {
-          userId: verifiedToken.sub,
+          userId: userId,
           user: verifiedToken
         };
         console.log('✅ Authenticated via Clerk cookie');
@@ -72,8 +77,11 @@ const clerkOptionalAuth = async (req, res, next) => {
           secretKey: process.env.CLERK_SECRET_KEY,
         });
 
+        // Use custom claims from mindhub-backend template
+        const userId = verifiedToken.user_id || verifiedToken.sub;
+
         req.auth = {
-          userId: verifiedToken.sub,
+          userId: userId,
           user: verifiedToken
         };
         console.log('✅ Authenticated via Bearer token (fallback)');
@@ -128,9 +136,18 @@ const clerkRequiredAuth = async (req, res, next) => {
     try {
       const verifiedToken = await verifyToken(token, {
         secretKey: process.env.CLERK_SECRET_KEY,
+        issuer: 'https://clerk.mindhub.cloud',
+        jwksUrl: 'https://clerk.mindhub.cloud/.well-known/jwks.json'
       });
       
-      console.log(`✅ User authenticated via ${authMethod}:`, verifiedToken.sub);
+      // IMPORTANTE: Template 'mindhub-backend' usa claims personalizadas:
+      // - 'user_id' en vez de 'sub'
+      // - 'email' directo en vez de email en sub-object
+      const userId = verifiedToken.user_id || verifiedToken.sub;
+      const userEmail = verifiedToken.email || verifiedToken.email_address;
+      
+      console.log(`✅ User authenticated via ${authMethod}:`, { userId, userEmail });
+      console.log('🔍 Token claims:', Object.keys(verifiedToken));
 
       // Try to get role from custom claims first (if configured in Clerk)
       let clerkRole = verifiedToken.role || verifiedToken.org_role || 'member';
@@ -141,8 +158,8 @@ const clerkRequiredAuth = async (req, res, next) => {
         console.log('📞 No custom claims found, falling back to Clerk API calls...');
         
         try {
-          // Get full user data from Clerk
-          clerkUser = await clerk.users.getUser(verifiedToken.sub);
+          // Get full user data from Clerk using the correct userId
+          clerkUser = await clerk.users.getUser(userId);
           
           // Check public_metadata for role first
           if (clerkUser.publicMetadata?.role) {
@@ -151,7 +168,7 @@ const clerkRequiredAuth = async (req, res, next) => {
           } else {
             // Fall back to organization memberships
             const orgMemberships = await clerk.users.getOrganizationMembershipList({
-              userId: verifiedToken.sub
+              userId: userId
             });
             
             if (orgMemberships.length > 0) {
@@ -172,19 +189,19 @@ const clerkRequiredAuth = async (req, res, next) => {
       }
       
       // Find or create user in local database
-      let localUser = await findOrCreateLocalUser(verifiedToken.sub, clerkUser);
+      let localUser = await findOrCreateLocalUser(userId, clerkUser);
 
       req.auth = {
-        userId: verifiedToken.sub,
+        userId: userId,
         user: verifiedToken
       };
 
       // Set up comprehensive user context
       req.user = {
-        clerkUserId: verifiedToken.sub,
+        clerkUserId: userId,
         clerkUser: clerkUser,
         id: localUser.id,
-        email: localUser.email || verifiedToken.email || (clerkUser && clerkUser.emailAddresses[0]?.emailAddress) || 'unknown@mindhub.com',
+        email: localUser.email || userEmail || (clerkUser && clerkUser.emailAddresses[0]?.emailAddress) || 'unknown@mindhub.com',
         name: localUser.name || verifiedToken.name || (clerkUser && `${clerkUser.firstName} ${clerkUser.lastName}`.trim()) || 'Unknown User',
         role: clerkRole, // Use Clerk role directly
         isAuthenticated: true,
