@@ -234,7 +234,7 @@ class ExpedixApiClient {
   }
 
   async generatePrescriptionPDF(prescriptionId: string, token?: string): Promise<Blob> {
-    const url = createApiUrl(API_ROUTES.expedix.prescriptionPdf(prescriptionId));
+    const url = createApiUrl(`/expedix/prescriptions/${prescriptionId}/pdf`);
     const headers: Record<string, string> = {};
     
     if (token) {
@@ -249,7 +249,7 @@ class ExpedixApiClient {
   }
 
   async getPatientPrescriptions(patientId: string, token?: string): Promise<{ data: Prescription[] }> {
-    return this.makeRequest<{ data: Prescription[] }>(API_ROUTES.expedix.patientPrescriptions(patientId), {}, token);
+    return this.makeRequest<{ data: Prescription[] }>(`/expedix/prescriptions/${patientId}`, {}, token);
   }
 
   // Appointment Management

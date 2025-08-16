@@ -12,7 +12,7 @@
  * - Todas las rutas vienen de shared/config/api-routes.ts
  */
 
-import API_ROUTES from '../../../shared/config/api-routes';
+import API_ROUTES from '../config/api-routes';
 
 // Variables de entorno
 const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'https://mindhub-production.up.railway.app';
