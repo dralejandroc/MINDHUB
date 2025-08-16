@@ -1,6 +1,6 @@
-// Simple debug endpoint - no dependencies
-export const runtime = 'nodejs';
-export const dynamic = 'force-dynamic';
+// Simple debug endpoint - no dependencies  
+// Use edge runtime for better Vercel compatibility
+export const runtime = 'edge';
 
 export async function GET() {
   try {

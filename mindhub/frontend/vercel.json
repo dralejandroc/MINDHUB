@@ -2,6 +2,11 @@
   "buildCommand": "npm run build",
   "outputDirectory": ".next",
   "installCommand": "npm install",
+  "functions": {
+    "app/api/**/*.ts": {
+      "runtime": "@vercel/node@1.16.0"
+    }
+  },
   "headers": [
     {
       "source": "/manifest.json",
