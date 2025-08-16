@@ -6,6 +6,7 @@
 import { useState, useEffect } from 'react';
 import { useExpedixApi, Patient as ExpedixPatient } from '@/lib/api/expedix-client';
 import { useAuth } from '@clerk/nextjs';
+import { useErrorHandling, getDisplayErrorMessage } from '@/lib/utils/auth-retry';
 
 // Legacy Patient interface for backward compatibility
 export interface Patient {
@@ -53,6 +54,7 @@ export const usePatients = () => {
   const [error, setError] = useState<string | null>(null);
   const { isLoaded, isSignedIn } = useAuth();
   const expedixApi = useExpedixApi();
+  const { handleError } = useErrorHandling();
 
   // Load patients from Expedix API
   const loadPatients = async (searchTerm?: string) => {
@@ -60,23 +62,34 @@ export const usePatients = () => {
       setIsLoading(true);
       setError(null);
       
-      if (!isLoaded || !isSignedIn) {
-        setError('Authentication required. Please log in.');
+      if (!isLoaded) {
+        console.log('[usePatients] Clerk not loaded yet, waiting...');
         return;
       }
       
-      console.log('Loading patients:', searchTerm ? `searching for "${searchTerm}"` : 'all patients');
+      if (!isSignedIn) {
+        const errorMsg = 'Authentication required. Please log in.';
+        setError(errorMsg);
+        console.error('[usePatients]', errorMsg);
+        return;
+      }
+      
+      console.log(`[usePatients] Loading patients: ${searchTerm ? `searching for "${searchTerm}"` : 'all patients'}`);
       
       const response = await expedixApi.getPatients(searchTerm);
       const legacyPatients = response.data.map(convertExpedixToLegacy);
       
       setPatients(legacyPatients);
-      console.log(`Successfully loaded ${legacyPatients.length} patients`);
+      console.log(`[usePatients] Successfully loaded ${legacyPatients.length} patients`);
       
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Error loading patients';
-      setError(errorMessage);
-      console.error('Loading patients: Error:', errorMessage);
+      const { displayMessage, shouldReload } = handleError(err, 'loadPatients');
+      setError(displayMessage);
+      
+      // If auth error that requires reload, show specific message
+      if (shouldReload) {
+        setError('Tu sesión ha expirado. Por favor, recarga la página e inicia sesión nuevamente.');
+      }
     } finally {
       setIsLoading(false);
     }
@@ -85,9 +98,15 @@ export const usePatients = () => {
   // Add patient via Expedix API
   const addPatient = async (patientData: Omit<Patient, 'id' | 'age' | 'status' | 'lastVisit'> & { birthDate: string }) => {
     try {
-      if (!isLoaded || !isSignedIn) {
+      if (!isLoaded) {
+        throw new Error('Clerk not loaded yet');
+      }
+      
+      if (!isSignedIn) {
         throw new Error('Authentication required. Please log in.');
       }
+      
+      console.log('[usePatients] Adding new patient:', patientData.firstName, patientData.lastName);
       
       // Convert legacy format to Expedix format
       const expedixData = {
@@ -104,20 +123,27 @@ export const usePatients = () => {
       const newPatient = convertExpedixToLegacy(response.data);
       
       setPatients(prev => [...prev, newPatient]);
+      console.log('[usePatients] Successfully added patient:', newPatient.id);
       return newPatient;
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Error adding patient';
-      setError(errorMessage);
-      throw new Error(errorMessage);
+      const { displayMessage } = handleError(err, 'addPatient');
+      setError(displayMessage);
+      throw new Error(displayMessage);
     }
   };
 
   // Update patient via Expedix API
   const updatePatient = async (id: number | string, updates: Partial<Patient>) => {
     try {
-      if (!isLoaded || !isSignedIn) {
+      if (!isLoaded) {
+        throw new Error('Clerk not loaded yet');
+      }
+      
+      if (!isSignedIn) {
         throw new Error('Authentication required. Please log in.');
       }
+      
+      console.log('[usePatients] Updating patient:', id, updates);
       
       // Convert updates to Expedix format
       const expedixUpdates: any = {};
@@ -140,26 +166,36 @@ export const usePatients = () => {
       setPatients(prev => prev.map(patient => 
         patient.id === id ? updatedPatient : patient
       ));
+      
+      console.log('[usePatients] Successfully updated patient:', id);
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Error updating patient';
-      setError(errorMessage);
-      throw new Error(errorMessage);
+      const { displayMessage } = handleError(err, 'updatePatient');
+      setError(displayMessage);
+      throw new Error(displayMessage);
     }
   };
 
   // Delete patient via Expedix API
   const deletePatient = async (id: number | string) => {
     try {
-      if (!isLoaded || !isSignedIn) {
+      if (!isLoaded) {
+        throw new Error('Clerk not loaded yet');
+      }
+      
+      if (!isSignedIn) {
         throw new Error('Authentication required. Please log in.');
       }
       
+      console.log('[usePatients] Deleting patient:', id);
+      
       await expedixApi.deletePatient(String(id));
       setPatients(prev => prev.filter(patient => patient.id !== id));
+      
+      console.log('[usePatients] Successfully deleted patient:', id);
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Error deleting patient';
-      setError(errorMessage);
-      throw new Error(errorMessage);
+      const { displayMessage } = handleError(err, 'deletePatient');
+      setError(displayMessage);
+      throw new Error(displayMessage);
     }
   };
 
@@ -184,10 +220,15 @@ export const usePatients = () => {
   // Load patients when authentication is ready
   useEffect(() => {
     if (isLoaded && isSignedIn) {
+      console.log('[usePatients] Auth ready, loading patients...');
       loadPatients();
     } else if (isLoaded && !isSignedIn) {
-      setError('Authentication required. Please log in.');
+      const errorMsg = 'Authentication required. Please log in.';
+      console.warn('[usePatients] User not signed in:', errorMsg);
+      setError(errorMsg);
       setIsLoading(false);
+    } else {
+      console.log('[usePatients] Waiting for Clerk to load...');
     }
   }, [isLoaded, isSignedIn]);
 
