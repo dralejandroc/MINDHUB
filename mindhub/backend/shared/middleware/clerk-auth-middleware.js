@@ -49,8 +49,7 @@ const clerkOptionalAuth = async (req, res, next) => {
       try {
         const verifiedToken = await verifyToken(sessionToken, {
           secretKey: process.env.CLERK_SECRET_KEY,
-          issuer: 'https://clerk.mindhub.cloud',
-          jwksUrl: 'https://clerk.mindhub.cloud/.well-known/jwks.json'
+          authorizedParties: ['https://mindhub.cloud', 'https://www.mindhub.cloud']
         });
 
         // Use custom claims from mindhub-backend template
@@ -75,8 +74,7 @@ const clerkOptionalAuth = async (req, res, next) => {
       try {
         const verifiedToken = await verifyToken(token, {
           secretKey: process.env.CLERK_SECRET_KEY,
-          issuer: 'https://clerk.mindhub.cloud',
-          jwksUrl: 'https://clerk.mindhub.cloud/.well-known/jwks.json'
+          authorizedParties: ['https://mindhub.cloud', 'https://www.mindhub.cloud']
         });
 
         // Use custom claims from mindhub-backend template
@@ -138,8 +136,7 @@ const clerkRequiredAuth = async (req, res, next) => {
     try {
       const verifiedToken = await verifyToken(token, {
         secretKey: process.env.CLERK_SECRET_KEY,
-        issuer: 'https://clerk.mindhub.cloud',
-        jwksUrl: 'https://clerk.mindhub.cloud/.well-known/jwks.json'
+        authorizedParties: ['https://mindhub.cloud', 'https://www.mindhub.cloud']
       });
       
       // IMPORTANTE: Template 'mindhub-backend' usa claims personalizadas:
