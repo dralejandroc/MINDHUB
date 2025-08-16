@@ -5,8 +5,8 @@
 
 // This client should be used from components that have access to Clerk context
 
-// Backend configuration - use Next.js API routes as proxies
-const API_BASE_URL = '/api';
+// Backend configuration - HOTFIX: Direct Railway connection until Vercel fixed
+const API_BASE_URL = 'https://mindhub-production.up.railway.app/api';
 
 export interface ApiResponse<T> {
   success: boolean;

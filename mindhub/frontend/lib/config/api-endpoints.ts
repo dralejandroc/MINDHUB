@@ -5,8 +5,8 @@
 
 // Base URLs
 export const API_CONFIG = {
-  // Frontend API routes (proxies to backend)
-  FRONTEND_API_BASE: '/api',
+  // HOTFIX: Direct Railway connection until Vercel fixed
+  FRONTEND_API_BASE: 'https://mindhub-production.up.railway.app/api',
   
   // Backend direct URLs (for server-side calls)
   BACKEND_URL: process.env.BACKEND_URL || process.env.NEXT_PUBLIC_BACKEND_URL || 'https://mindhub-production.up.railway.app',

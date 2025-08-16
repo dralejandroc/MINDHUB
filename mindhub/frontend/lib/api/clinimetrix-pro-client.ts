@@ -7,8 +7,8 @@
 
 // Note: Authentication is handled by Next.js middleware for API routes
 
-// Use Next.js API routes as proxies
-const API_BASE_URL = '/api';
+// HOTFIX: Direct Railway connection until Vercel fixed
+const API_BASE_URL = 'https://mindhub-production.up.railway.app/api';
 const CLINIMETRIX_PRO_BASE = `${API_BASE_URL}/clinimetrix-pro`;
 
 // TypeScript interfaces for ClinimetrixPro entities
