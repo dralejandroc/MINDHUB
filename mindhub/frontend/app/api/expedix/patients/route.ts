@@ -1,6 +1,5 @@
 // Prevent static generation for this API route
-export const runtime = 'nodejs';
-export const dynamic = 'force-dynamic';
+export const runtime = 'edge';
 
 const BACKEND_URL = process.env.BACKEND_URL || 'https://mindhub-production.up.railway.app';
 

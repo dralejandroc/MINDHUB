@@ -1,6 +1,5 @@
 // Version endpoint to verify deployment
-export const runtime = 'nodejs';
-export const dynamic = 'force-dynamic';
+export const runtime = 'edge';
 
 export async function GET() {
   return new Response(JSON.stringify({
