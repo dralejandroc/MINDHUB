@@ -1,0 +1,7 @@
+# Ignore everything except backend
+*
+!mindhub/
+!mindhub/backend/
+!mindhub/backend/**
+!package.json
+!vercel.json
