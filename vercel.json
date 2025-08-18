@@ -12,6 +12,5 @@
       "dest": "mindhub/backend/server.js"
     }
   ],
-  "installCommand": "ls -la && ls -la mindhub && cd mindhub/backend && npm install",
-  "buildCommand": "cd mindhub/backend && npm run generate:clean"
+  "buildCommand": "npm run build"
 }

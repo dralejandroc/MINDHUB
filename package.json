@@ -3,11 +3,12 @@
   "version": "1.0.0",
   "description": "MindHub Backend - Root configuration for Vercel",
   "scripts": {
-    "build": "cd mindhub/backend && npm install && npm run build",
+    "build": "echo 'Debugging directory structure...' && ls -la && echo 'Checking mindhub directory...' && ls -la mindhub && echo 'Installing backend...' && cd mindhub/backend && npm install && npm run generate:clean",
     "start": "cd mindhub/backend && npm start",
-    "install:backend": "cd mindhub/backend && npm install"
+    "dev": "cd mindhub/backend && npm run dev"
   },
   "engines": {
     "node": ">=18.0.0"
-  }
+  },
+  "dependencies": {}
 }
