@@ -1,13 +1,15 @@
 import { NextRequest } from 'next/server';
-// import { auth } from '@clerk/nextjs/server';
+// import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
+// import { cookies } from 'next/headers';
 
 const BACKEND_URL = process.env.BACKEND_URL || 'https://mindhub-production.up.railway.app';
 
 export async function GET(request: NextRequest) {
   try {
     // Get authentication
-    // const { getToken } = await auth();
-    // const token = await getToken();
+    // const supabase = createRouteHandlerClient({ cookies });
+    // const { data: { session } } = await supabase.auth.getSession();
+    // const token = session?.access_token;
 
     // if (!token) {
     //   return Response.json({ error: 'Authentication required' }, { status: 401 });
@@ -41,8 +43,9 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     // Get authentication
-    // const { getToken } = await auth();
-    // const token = await getToken();
+    // const supabase = createRouteHandlerClient({ cookies });
+    // const { data: { session } } = await supabase.auth.getSession();
+    // const token = session?.access_token;
 
     // if (!token) {
     //   return Response.json({ error: 'Authentication required' }, { status: 401 });

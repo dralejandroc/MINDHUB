@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-// // import { useAuth, useUser } from '@clerk/nextjs';
+// // import { useAuth, useUser } from '@supabase/nextjs';
 import { useExpedixApi } from '@/lib/api/expedix-client';
 
 interface TestResult {
@@ -42,25 +42,25 @@ export default function AuthTestComponent() {
     setIsRunning(true);
     setResults([]);
 
-    // Test 1: Check Clerk authentication status
-    updateResult('Clerk Auth Status', 'pending', 'Checking authentication...');
+    // Test 1: Check Auth authentication status
+    updateResult('Auth Auth Status', 'pending', 'Checking authentication...');
     try {
       if (!isLoaded) {
-        updateResult('Clerk Auth Status', 'error', 'Clerk not loaded');
+        updateResult('Auth Auth Status', 'error', 'Auth not loaded');
         return;
       }
       if (!isSignedIn) {
-        updateResult('Clerk Auth Status', 'error', 'User not signed in');
+        updateResult('Auth Auth Status', 'error', 'User not signed in');
         return;
       }
-      updateResult('Clerk Auth Status', 'success', `User signed in: ${user?.emailAddresses?.[0]?.emailAddress}`);
+      updateResult('Auth Auth Status', 'success', `User signed in: ${user?.emailAddresses?.[0]?.emailAddress}`);
     } catch (error) {
-      updateResult('Clerk Auth Status', 'error', `Error: ${error}`);
+      updateResult('Auth Auth Status', 'error', `Error: ${error}`);
       return;
     }
 
-    // Test 2: Get Clerk token
-    updateResult('Token Generation', 'pending', 'Getting Clerk token...');
+    // Test 2: Get Auth token
+    updateResult('Token Generation', 'pending', 'Getting Auth token...');
     let token: string | null = null;
     try {
       token = await getToken();
@@ -132,7 +132,7 @@ export default function AuthTestComponent() {
       
       <div className="mb-4">
         <p className="text-sm text-gray-600">
-          This component tests the complete authentication flow from Clerk to the backend API.
+          This component tests the complete authentication flow from Auth to the backend API.
         </p>
       </div>
 
@@ -150,7 +150,7 @@ export default function AuthTestComponent() {
       <div className="mb-4 p-3 bg-gray-50 rounded">
         <h3 className="font-medium mb-2">Current Status:</h3>
         <ul className="text-sm space-y-1">
-          <li>Clerk Loaded: {isLoaded ? '✅' : '❌'}</li>
+          <li>Auth Loaded: {isLoaded ? '✅' : '❌'}</li>
           <li>User Signed In: {isSignedIn ? '✅' : '❌'}</li>
           <li>User Email: {user?.emailAddresses?.[0]?.emailAddress || 'N/A'}</li>
         </ul>

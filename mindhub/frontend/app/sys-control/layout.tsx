@@ -9,7 +9,8 @@
  */
 
 import { redirect } from 'next/navigation';
-// import { auth } from '@clerk/nextjs/server';
+// import { createServerComponentClient } from '@supabase/auth-helpers-nextjs';
+// import { cookies } from 'next/headers';
 
 interface AdminLayoutProps {
   children: React.ReactNode;
@@ -19,10 +20,11 @@ interface AdminLayoutProps {
  * Server-side admin authentication check
  */
 async function checkAdminAccess() {
-  // const { userId } = await auth();
+  // const supabase = createServerComponentClient({ cookies });
+  // const { data: { session } } = await supabase.auth.getSession();
   
-  // if (!userId) {
-  //   redirect('/sign-in');
+  // if (!session) {
+  //   redirect('/auth/sign-in');
   // }
 
   try {

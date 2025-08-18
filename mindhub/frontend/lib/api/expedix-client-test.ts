@@ -1,6 +1,5 @@
 // TEMPORARY TEST VERSION - Use working endpoints
-import { useAuthenticatedFetch } from '@/lib/utils/clerk-auth';
-// import { useAuth } from '@clerk/nextjs';
+import { useAuthenticatedFetch } from '@/lib/utils/supabase-auth';
 import { createApiUrl } from './api-url-builders';
 
 export interface Patient {

@@ -8,7 +8,7 @@ export default function ClientWrapper({ children }: { children: React.ReactNode 
 
   useEffect(() => {
     // This component now only wraps children without legacy auth checks
-    // Authentication is handled by Clerk
+    // Authentication is handled by Auth
   }, [router]);
 
   return <>{children}</>;

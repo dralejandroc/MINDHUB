@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
-// // import { useClerk } from '@clerk/nextjs';
+// // import { useAuth } from '@supabase/nextjs';
 import {
   UserGroupIcon,
   DocumentChartBarIcon,

@@ -1,6 +1,6 @@
 'use client';
 
-// // import { useUser } from '@clerk/nextjs';
+// import { useAuth } from '@/hooks/useAuth';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { redirect } from 'next/navigation';
 
@@ -9,7 +9,7 @@ interface ProtectedLayoutProps {
 }
 
 export function ProtectedLayout({ children }: ProtectedLayoutProps) {
-  // const { isLoaded, isSignedIn } = useUser();
+  // const { isLoaded, isSignedIn } = useAuth();
   
   // Mock values for now - replace with Supabase Auth later
   const isLoaded = true;

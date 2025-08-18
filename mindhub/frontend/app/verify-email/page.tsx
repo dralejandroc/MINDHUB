@@ -19,12 +19,12 @@ function VerifyEmailContent() {
   const token = searchParams?.get('token');
 
   useEffect(() => {
-    // Since we migrated to Clerk auth, email verification is handled by Clerk
+    // Since we migrated to Auth auth, email verification is handled by Auth
     // This page is now just a redirect to inform users about the new system
     setStatus('success');
     setResult({ 
       success: true, 
-      message: 'El sistema de autenticación ha sido actualizado. Ahora usamos Clerk para la verificación de email.' 
+      message: 'El sistema de autenticación ha sido actualizado. Ahora usamos Auth para la verificación de email.' 
     });
   }, [token]);
 

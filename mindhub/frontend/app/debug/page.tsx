@@ -59,9 +59,9 @@ export default function DebugPage() {
       expectations: 'Test expectations'
     };
 
-    // Beta registration test removed - using Clerk authentication only
+    // Beta registration test removed - using Auth authentication only
     console.log('Beta registration test disabled - legacy auth system removed');
-    return { success: false, message: 'Beta registration disabled - using Clerk auth only' };
+    return { success: false, message: 'Beta registration disabled - using Auth auth only' };
   };
 
   return (

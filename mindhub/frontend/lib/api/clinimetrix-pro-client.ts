@@ -349,14 +349,14 @@ export class ClinimetrixProClient {
   }
 
   private async makeRequest<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
-    // Get Clerk token for Railway authentication
-    let clerkToken: string | null = null;
-    if (typeof window !== 'undefined' && (window as any).Clerk) {
+    // Get Auth token for Railway authentication
+    let supabaseToken: string | null = null;
+    if (typeof window !== 'undefined' && (window as any).Auth) {
       try {
         // Get token using the mindhub-backend template
-        clerkToken = await (window as any).Clerk.session?.getToken({ template: 'mindhub-backend' });
+        supabaseToken = await (window as any).Auth.session?.getToken({ template: 'mindhub-backend' });
       } catch (error) {
-        console.warn('Could not get Clerk token:', error);
+        console.warn('Could not get Auth token:', error);
       }
     }
     
@@ -367,8 +367,8 @@ export class ClinimetrixProClient {
     };
     
     // Add Authorization header if we have a token
-    if (clerkToken) {
-      headers['Authorization'] = `Bearer ${clerkToken}`;
+    if (supabaseToken) {
+      headers['Authorization'] = `Bearer ${supabaseToken}`;
     }
     
     const response = await fetch(`${this.baseUrl}${endpoint}`, {

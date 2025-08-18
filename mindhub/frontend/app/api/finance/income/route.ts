@@ -26,7 +26,7 @@ export async function GET(request: NextRequest) {
       'Content-Type': 'application/json',
     };
 
-    // Forward Authorization header (Clerk token)
+    // Forward Authorization header (Auth token)
     const authHeader = request.headers.get('Authorization');
     if (authHeader) {
       headers['Authorization'] = authHeader;
@@ -77,7 +77,7 @@ export async function POST(request: NextRequest) {
       'Content-Type': 'application/json',
     };
 
-    // Forward Authorization header (Clerk token)
+    // Forward Authorization header (Auth token)
     const authHeader = request.headers.get('Authorization');
     if (authHeader) {
       headers['Authorization'] = authHeader;

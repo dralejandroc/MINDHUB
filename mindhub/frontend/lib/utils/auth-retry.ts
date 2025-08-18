@@ -1,9 +1,10 @@
 /**
  * Authentication Retry Utilities
  * Sistema de retry para llamadas de API que fallan por problemas de autenticación
+ * Updated to use Supabase Auth instead of Auth
  */
 
-// import { useAuth } from '@clerk/nextjs';
+import { supabase } from '@/lib/supabase/client';
 
 export interface RetryConfig {
   maxRetries: number;
@@ -51,13 +52,21 @@ export function isRetryableError(error: any): boolean {
 }
 
 /**
- * Hook para realizar llamadas de API con retry automático
+ * Hook para realizar llamadas de API con retry automático usando Supabase
  */
 export function useAuthenticatedApiCall() {
-  // const { getToken, isLoaded, isSignedIn } = useAuth(); // TODO: Replace with Supabase auth
-  const getToken = (): Promise<string | null> => Promise.resolve('temp-token'); // Temporary placeholder
-  const isLoaded = true;
-  const isSignedIn = true;
+  const getToken = async (): Promise<string | null> => {
+    const { data: { session } } = await supabase.auth.getSession();
+    return session?.access_token || null;
+  };
+  
+  const checkAuthState = async () => {
+    const { data: { session } } = await supabase.auth.getSession();
+    return {
+      isLoaded: true, // Supabase is always loaded
+      isSignedIn: !!session?.access_token,
+    };
+  };
 
   const makeAuthenticatedCall = async <T>(
     apiCall: (token: string) => Promise<T>,
@@ -68,9 +77,11 @@ export function useAuthenticatedApiCall() {
 
     for (let attempt = 0; attempt <= finalConfig.maxRetries; attempt++) {
       try {
-        // Verificar estado de autenticación
+        // Verificar estado de autenticación con Supabase
+        const { isLoaded, isSignedIn } = await checkAuthState();
+        
         if (!isLoaded) {
-          throw new AuthenticationError('Clerk is not loaded yet');
+          throw new AuthenticationError('Supabase Auth is not loaded yet');
         }
 
         if (!isSignedIn) {

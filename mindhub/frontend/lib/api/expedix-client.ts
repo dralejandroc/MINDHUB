@@ -1,6 +1,5 @@
 // Expedix API Client - Centralized API communication for patient management
-import { useAuthenticatedFetch } from '@/lib/utils/clerk-auth';
-// import { useAuth } from '@clerk/nextjs';
+import { useAuthenticatedFetch } from '@/lib/utils/supabase-auth';
 import { createApiUrl, createApiUrlWithParams, API_ROUTES, logApiCall } from './api-url-builders';
 import { useAuthenticatedApiCall, AuthenticationError, NetworkError } from '@/lib/utils/auth-retry';
 
@@ -360,7 +359,7 @@ export const expedixApi = new ExpedixApiClient();
 // Named exports for convenience
 export { ExpedixApiClient };
 
-// Enhanced React Hook with Clerk authentication via proxy
+// Enhanced React Hook with Auth authentication via proxy
 export function useExpedixApi() {
   const authenticatedFetch = useAuthenticatedFetch();
   

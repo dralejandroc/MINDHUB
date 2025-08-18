@@ -8,7 +8,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-// // import { useAuth } from '@clerk/nextjs';
+// import { useAuth } from '@/hooks/useAuth';
 
 interface PlatformStats {
   totalUsers: number;
@@ -45,7 +45,7 @@ interface FinanceMetrics {
 }
 
 export default function AdminDashboard() {
-  // const { getToken } = useAuth();
+  // const { getAccessToken } = useAuth();
   const [platformStats, setPlatformStats] = useState<PlatformStats | null>(null);
   const [financeMetrics, setFinanceMetrics] = useState<FinanceMetrics | null>(null);
   const [loading, setLoading] = useState(true);
@@ -58,7 +58,7 @@ export default function AdminDashboard() {
   const loadDashboardData = async () => {
     try {
       setLoading(true);
-      // const token = await getToken();
+      // const token = await getAccessToken();
 
       // Backend API URL 
       const apiBaseUrl = process.env.NODE_ENV === 'production' 

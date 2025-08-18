@@ -19,7 +19,7 @@ export async function GET(request: NextRequest, { params }: { params: { template
       'Content-Type': 'application/json',
     };
 
-    // Forward Authorization header (Clerk token)
+    // Forward Authorization header (Auth token)
     const authHeader = request.headers.get('Authorization');
     if (authHeader) {
       headers['Authorization'] = authHeader;

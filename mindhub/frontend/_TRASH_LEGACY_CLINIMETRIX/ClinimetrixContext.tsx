@@ -6,7 +6,7 @@
 'use client';
 
 import React, { createContext, useContext, useReducer, useEffect, ReactNode } from 'react';
-// import { useAuth } from '../hooks/useAuth'; // DISABLED - using Clerk now
+// import { useAuth } from '../hooks/useAuth'; // DISABLED - using Auth now
 import { ClinimetrixApiClient, createClinimetrixApiClient, ApiClientContextType } from '../lib/clinimetrix/api/ClinimetrixApiClient';
 import {
   ClinicalScale,
@@ -263,7 +263,7 @@ export interface ClinimetrixProviderProps {
 
 export function ClinimetrixProvider({ children, apiBaseUrl }: ClinimetrixProviderProps) {
   const [state, dispatch] = useReducer(clinimetrixReducer, initialState);
-  // const { authState } = useAuth(); // DISABLED - using Clerk now
+  // const { authState } = useAuth(); // DISABLED - using Auth now
   const authState = { isAuthenticated: false, user: null }; // Placeholder
   const userLoading = authState.isLoading;
 

@@ -13,7 +13,7 @@ export default function DashboardPage() {
       if (!isSignedIn) {
         redirect('/sign-in');
       } else {
-        // Has Clerk auth, redirect to app
+        // Has Auth auth, redirect to app
         redirect('/app');
       }
     }

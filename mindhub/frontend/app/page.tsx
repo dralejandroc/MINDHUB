@@ -16,8 +16,8 @@ export default function LandingPage() {
   const [showBetaModal, setShowBetaModal] = useState(false);
   
   useEffect(() => {
-    // Check if user is already logged in via Clerk
-    // This will be handled automatically by Clerk middleware
+    // Check if user is already logged in via Auth
+    // This will be handled automatically by Auth middleware
   }, [router]);
 
   return (

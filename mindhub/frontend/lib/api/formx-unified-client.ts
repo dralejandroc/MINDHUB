@@ -109,10 +109,10 @@ export interface FormXPatientForm {
 // =====================================================================
 
 const getAuthHeaders = () => {
-  // TODO: Integrar con Clerk cuando esté disponible
+  // TODO: Integrar con Auth cuando esté disponible
   return {
     'Content-Type': 'application/json',
-    // 'Authorization': `Bearer ${clerkToken}` // Se agregará cuando Clerk esté integrado
+    // 'Authorization': `Bearer ${supabaseToken}` // Se agregará cuando Auth esté integrado
   };
 };
 

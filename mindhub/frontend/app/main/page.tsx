@@ -10,7 +10,7 @@ export default function MainPage() {
 
   useEffect(() => {
     if (isLoaded) {
-      // Check authentication (Clerk only)
+      // Check authentication (Auth only)
       if (!isSignedIn) {
         redirect('/sign-in');
       } else {

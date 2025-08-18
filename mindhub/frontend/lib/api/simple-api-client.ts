@@ -1,9 +1,9 @@
 /**
- * Simple API Client - Direct backend communication with Clerk authentication
- * This client handles Clerk token authentication for direct backend calls
+ * Simple API Client - Direct backend communication with Supabase authentication
+ * This client handles Supabase token authentication for direct backend calls
  */
 
-// This client should be used from components that have access to Clerk context
+// This client should be used from components that have access to Supabase context
 
 // Backend configuration - HOTFIX: Direct Railway connection until Vercel fixed
 const API_BASE_URL = 'https://mindhub-production.up.railway.app/api';
@@ -35,34 +35,27 @@ export class SimpleApiClient {
   private async makeRequest<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
     const url = `${this.baseUrl}${endpoint}`;
     
-    // Get Clerk token for Railway authentication
-    let clerkToken: string | null = null;
-    if (typeof window !== 'undefined' && (window as any).Clerk) {
+    // Get Supabase token for authentication
+    let supabaseToken: string | null = null;
+    if (typeof window !== 'undefined') {
       try {
-        // Get token using the mindhub-backend template
-        clerkToken = await (window as any).Clerk.session?.getToken({ template: 'mindhub-backend' });
-        console.log('[SimpleApiClient] Got Clerk token:', clerkToken ? 'Token obtained' : 'No token');
-        if (clerkToken) {
-          // Decode token to check expiration
-          const tokenParts = clerkToken.split('.');
-          if (tokenParts.length === 3) {
-            const payload = JSON.parse(atob(tokenParts[1]));
-            console.log('[SimpleApiClient] Token claims:', { 
-              user_id: payload.user_id,
-              email: payload.email,
-              exp: new Date(payload.exp * 1000).toISOString(),
-              iat: new Date(payload.iat * 1000).toISOString()
-            });
-          }
-        }
+        // Get token from Supabase client
+        const { createClient } = await import('@supabase/supabase-js');
+        const supabase = createClient(
+          process.env.NEXT_PUBLIC_SUPABASE_URL!, 
+          process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+        );
+        const { data: { session } } = await supabase.auth.getSession();
+        supabaseToken = session?.access_token || null;
+        console.log('[SimpleApiClient] Got Supabase token:', supabaseToken ? 'Token obtained' : 'No token');
       } catch (error) {
-        console.error('[SimpleApiClient] Could not get Clerk token:', error);
+        console.error('[SimpleApiClient] Could not get Supabase token:', error);
       }
     } else {
-      console.warn('[SimpleApiClient] Clerk not available');
+      console.warn('[SimpleApiClient] Supabase not available on server side');
     }
     
-    // Headers with JWT token for Railway authentication
+    // Headers with JWT token for backend authentication
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',
       'Accept': 'application/json',
@@ -70,8 +63,8 @@ export class SimpleApiClient {
     };
     
     // Add Authorization header if we have a token
-    if (clerkToken) {
-      headers['Authorization'] = `Bearer ${clerkToken}`;
+    if (supabaseToken) {
+      headers['Authorization'] = `Bearer ${supabaseToken}`;
     }
 
     try {

@@ -24,7 +24,7 @@ const API_BASE = '/api'; // Proxy de Next.js (not used with bypass)
  * Usa el proxy de Next.js (/api) que maneja autenticación automáticamente
  * 
  * @param route - Ruta desde API_ROUTES (ej: API_ROUTES.expedix.patients)
- * @returns URL proxy de Next.js con forwarding automático de tokens Clerk
+ * @returns URL proxy de Next.js con forwarding automático de tokens Auth
  * 
  * @example
  * createApiUrl(API_ROUTES.expedix.patients) → '/api/expedix/patients'

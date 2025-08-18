@@ -1,11 +1,11 @@
 /**
  * Patient Management Hook for MindHub
- * Integrated with Expedix API and Clerk authentication
+ * Integrated with Expedix API and Auth authentication
  */
 
 import { useState, useEffect } from 'react';
 import { useExpedixApi, Patient as ExpedixPatient } from '@/lib/api/expedix-client';
-// import { useAuth } from '@clerk/nextjs';
+// Updated to use Supabase Auth
 import { useErrorHandling, getDisplayErrorMessage } from '@/lib/utils/auth-retry';
 
 // Legacy Patient interface for backward compatibility
@@ -65,7 +65,7 @@ export const usePatients = () => {
       setError(null);
       
       if (!isLoaded) {
-        console.log('[usePatients] Clerk not loaded yet, waiting...');
+        console.log('[usePatients] Auth not loaded yet, waiting...');
         return;
       }
       
@@ -101,7 +101,7 @@ export const usePatients = () => {
   const addPatient = async (patientData: Omit<Patient, 'id' | 'age' | 'status' | 'lastVisit'> & { birthDate: string }) => {
     try {
       if (!isLoaded) {
-        throw new Error('Clerk not loaded yet');
+        throw new Error('Auth not loaded yet');
       }
       
       if (!isSignedIn) {
@@ -138,7 +138,7 @@ export const usePatients = () => {
   const updatePatient = async (id: number | string, updates: Partial<Patient>) => {
     try {
       if (!isLoaded) {
-        throw new Error('Clerk not loaded yet');
+        throw new Error('Auth not loaded yet');
       }
       
       if (!isSignedIn) {
@@ -181,7 +181,7 @@ export const usePatients = () => {
   const deletePatient = async (id: number | string) => {
     try {
       if (!isLoaded) {
-        throw new Error('Clerk not loaded yet');
+        throw new Error('Auth not loaded yet');
       }
       
       if (!isSignedIn) {
@@ -230,7 +230,7 @@ export const usePatients = () => {
       setError(errorMsg);
       setIsLoading(false);
     } else {
-      console.log('[usePatients] Waiting for Clerk to load...');
+      console.log('[usePatients] Waiting for Auth to load...');
     }
   }, [isLoaded, isSignedIn]);
 
