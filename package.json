@@ -3,7 +3,8 @@
   "version": "1.0.0",
   "description": "MindHub Backend - Root configuration for Vercel",
   "scripts": {
-    "build": "echo 'Debugging directory structure...' && ls -la && echo 'Checking mindhub directory...' && ls -la mindhub && echo 'Installing backend...' && cd mindhub/backend && npm install && npm run generate:clean",
+    "install": "echo 'Installing backend dependencies...' && cd mindhub/backend && npm install",
+    "build": "echo 'Building backend...' && cd mindhub/backend && npm run generate:clean",
     "start": "cd mindhub/backend && npm start",
     "dev": "cd mindhub/backend && npm run dev"
   },

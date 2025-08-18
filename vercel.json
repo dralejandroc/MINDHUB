@@ -11,6 +11,5 @@
       "src": "/(.*)",
       "dest": "mindhub/backend/server.js"
     }
-  ],
-  "buildCommand": "npm run build"
+  ]
 }
