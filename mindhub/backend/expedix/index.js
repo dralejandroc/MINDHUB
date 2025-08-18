@@ -8,12 +8,12 @@
 const express = require('express');
 
 // ===================================================================
-// AUTH MIDDLEWARE COMPLETELY REMOVED - USING CLERK AUTHENTICATION
+// AUTH MIDDLEWARE COMPLETELY REMOVED - USING SUPABASE AUTHENTICATION
 // ===================================================================
 // Railway deployment fix: These are stub functions to prevent import errors
-// All authentication is now handled by Clerk through the API gateway
-const requireAuth = (req, res, next) => next(); // STUB - Auth via Clerk
-const checkPermissions = (permission) => (req, res, next) => next(); // STUB - Auth via Clerk
+// All authentication is now handled by Supabase through the API gateway
+const requireAuth = (req, res, next) => next(); // STUB - Auth via Supabase
+const checkPermissions = (permission) => (req, res, next) => next(); // STUB - Auth via Supabase
 
 // Simple logger for now
 const logger = {
@@ -46,7 +46,7 @@ const exportRoutes = require('./routes/export');
 const importRoutes = require('./routes/import');
 const patientImportRoutes = require('./routes/patient-import');
 const patientTimelineRoutes = require('./routes/patient-timeline');
-// const authRoutes = require('./routes/auth'); // Removed - using Clerk auth only
+// const authRoutes = require('./routes/auth'); // Removed - using Supabase auth only
 const appointmentLogsRoutes = require('./routes/appointment-logs');
 
 // Simple test endpoint without any middleware
@@ -155,7 +155,7 @@ router.use('/export', exportRoutes);
 router.use('/import', importRoutes);
 router.use('/patient-import', patientImportRoutes);
 router.use('/patient-timeline', patientTimelineRoutes);
-// router.use('/auth', authRoutes); // Removed - using Clerk auth only
+// router.use('/auth', authRoutes); // Removed - using Supabase auth only
 router.use('/appointment-logs', appointmentLogsRoutes);
 
 // Hub-specific error handler

@@ -5,7 +5,7 @@
 
 const express = require('express');
 const router = express.Router();
-// Authentication handled by Clerk - middleware temporarily disabled for development
+// Authentication handled by Supabase - middleware temporarily disabled for development
 // const { authenticate } = require('../../shared/middleware');
 const FrontDeskService = require('../services/FrontDeskService');
 

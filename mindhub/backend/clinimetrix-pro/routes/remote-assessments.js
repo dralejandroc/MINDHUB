@@ -6,7 +6,7 @@
 const express = require('express');
 const { getPrismaClient } = require('../../shared/config/prisma');
 const crypto = require('crypto');
-// const { combinedAuth, requireAuth } = require('../../shared/middleware/clerk-auth-middleware');
+// const { supabaseAuth } = require('../../shared/middleware/supabase-auth-middleware');
 
 const router = express.Router();
 const prisma = getPrismaClient();

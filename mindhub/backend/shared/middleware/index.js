@@ -4,14 +4,12 @@
  * Central export point for all authentication, authorization, and security middleware
  */
 
-// Import Clerk authentication middleware
+// Import Supabase authentication middleware
 const { 
-  clerkOptionalAuth, 
-  clerkRequiredAuth, 
-  combinedAuth, 
+  supabaseAuth,
   requireRole, 
   requirePermission 
-} = require('./clerk-auth-middleware');
+} = require('./supabase-auth-middleware');
 const SessionManager = require('./session-manager');
 const SecurityMiddleware = require('./security-middleware');
 const rateLimitingMiddleware = require('./rate-limiting');
@@ -27,12 +25,12 @@ const PerformanceMonitoringMiddleware = require('./performance-monitoring');
 const ComprehensiveMiddleware = require('./comprehensive-middleware');
 
 // Initialize middleware instances  
-// const authMiddleware = new AuthenticationMiddleware(); // REMOVED - Using Clerk auth only
-// Clerk-based auth middleware - REQUIRED authentication for production security
+// const authMiddleware = new AuthenticationMiddleware(); // REMOVED - Using Supabase auth only
+// Supabase-based auth middleware - REQUIRED authentication for production security
 const authMiddleware = {
-  authenticate: () => clerkRequiredAuth,
-  authorize: (roles, permissions) => clerkRequiredAuth, // ALWAYS require valid Clerk tokens
-  authorizePatientAccess: () => clerkRequiredAuth,
+  authenticate: () => supabaseAuth,
+  authorize: (roles, permissions) => supabaseAuth, // ALWAYS require valid Supabase tokens
+  authorizePatientAccess: () => supabaseAuth,
   rateLimitByRole: () => (req, res, next) => next() // Keep rate limiting disabled for now
 };
 const sessionManager = new SessionManager();
@@ -274,11 +272,11 @@ const hubConfigurations = {
  */
 const utils = {
   /**
-   * Create middleware stack for specific role requirements - SECURE Clerk-based
+   * Create middleware stack for specific role requirements - SECURE Supabase-based
    */
   forRoles: (roles, permissions = []) => {
     return [
-      clerkRequiredAuth,
+      supabaseAuth,
       requireRole(roles),
       ...(permissions.length > 0 ? [requirePermission(permissions)] : [])
     ];
@@ -314,17 +312,17 @@ const utils = {
   },
 
   /**
-   * Optional Clerk authentication - validates token if present, continues if not
+   * Optional Supabase authentication - validates token if present, continues if not
    */
   withOptionalAuth: () => {
-    return [clerkOptionalAuth];
+    return [supabaseAuth];
   },
 
   /**
-   * Required Clerk authentication - validates token and requires authentication
+   * Required Supabase authentication - validates token and requires authentication
    */
   withRequiredAuth: () => {
-    return [clerkRequiredAuth];
+    return [supabaseAuth];
   },
 
   /**
@@ -332,16 +330,16 @@ const utils = {
    */
   adminOnly: () => {
     return [
-      clerkRequiredAuth,
+      supabaseAuth,
       requireRole(['org:admin'])
     ];
   },
 
   /**
-   * Member or Admin access - requires valid Clerk token (default for most routes)
+   * Member or Admin access - requires valid Supabase token (default for most routes)
    */
   memberOrAdmin: () => {
-    return [clerkRequiredAuth];
+    return [supabaseAuth];
   }
 };
 

@@ -14,7 +14,7 @@ console.log('✅ Trust proxy enabled');
 console.log('✅ CORS configured for production');
 
 module.exports = {
-  version: '1.0.0-post-clerk-migration',
+  version: '1.0.0-post-supabase-migration',
   deployedAt: new Date().toISOString(),
   authMigration: 'completed',
   fixes: [

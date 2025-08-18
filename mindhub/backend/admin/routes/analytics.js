@@ -116,7 +116,7 @@ router.get('/users-overview',
         FROM users u
         LEFT JOIN patients p ON p.createdBy = u.id
         LEFT JOIN clinimetrix_assessments ca ON ca.userId = u.id
-        WHERE u.clerk_user_id IS NOT NULL
+        WHERE u.id IS NOT NULL
         GROUP BY u.id, u.name, u.email, u.role, u.createdAt, u.lastLoginAt
         ORDER BY u.createdAt DESC
       `;

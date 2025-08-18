@@ -9,14 +9,13 @@ const express = require('express');
 const { body, param, query, validationResult } = require('express-validator');
 const mysql = require('../../shared/config/mysql');
 const { v4: uuidv4 } = require('uuid');
-const { combinedAuth, requireAuth } = require('../../shared/middleware/clerk-auth-middleware');
+const { supabaseAuth } = require('../../shared/middleware/supabase-auth-middleware');
 
 const router = express.Router();
 
 // Authentication middleware temporarily disabled to match main router
-// TODO: Re-enable when Clerk authentication is properly configured
-// router.use(combinedAuth);
-// router.use(requireAuth);
+// TODO: Re-enable when Supabase authentication is properly configured
+// router.use(supabaseAuth);
 
 /**
  * Validation middleware for patient data

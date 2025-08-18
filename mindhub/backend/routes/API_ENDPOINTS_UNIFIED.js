@@ -38,7 +38,7 @@ router.get('/health', (req, res) => {
       clinimetrix_pro: 'active',
       formx: 'active',
       database: 'connected',
-      auth: 'clerk'
+      auth: 'supabase'
     }
   });
 });

@@ -8,17 +8,17 @@
  */
 
 const express = require('express');
-const { clerkRequiredAuth } = require('../shared/middleware/clerk-auth-middleware');
+const { supabaseAuth } = require('../shared/middleware/supabase-auth-middleware');
 const analyticsRoutes = require('./routes/analytics');
 const systemRoutes = require('./routes/system');
 
 const router = express.Router();
 
 /**
- * Apply Clerk Required Auth to ALL admin routes
+ * Apply Supabase Auth to ALL admin routes
  * This ensures proper token validation before role checking
  */
-router.use('*', clerkRequiredAuth);
+router.use('*', supabaseAuth);
 
 /**
  * Global admin check - Hide admin functionality from non-admin users
@@ -55,7 +55,7 @@ router.get('/', (req, res) => {
       role: req.user.role,
       name: req.user.name,
       isAdmin: req.user.isAdmin,
-      clerkUserId: req.user.clerkUserId
+      userId: req.user.id
     },
     availableEndpoints: [
       'GET /analytics/platform-stats',

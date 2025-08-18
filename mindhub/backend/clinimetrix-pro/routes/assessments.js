@@ -6,16 +6,15 @@
 const express = require('express');
 const { getPrismaClient } = require('../../shared/config/prisma');
 const ScoringEngine = require('../services/ScoringEngine');
-// const { combinedAuth, requireAuth } = require('../../shared/middleware/clerk-auth-middleware');
+// const { supabaseAuth } = require('../../shared/middleware/supabase-auth-middleware');
 
 const router = express.Router();
 const prisma = getPrismaClient();
 const scoringEngine = new ScoringEngine();
 
-// Apply Clerk authentication middleware to all routes
+// Apply Supabase authentication middleware to all routes
 // TEMPORARILY DISABLED FOR TESTING
-// router.use(combinedAuth);
-// router.use(requireAuth);
+// router.use(supabaseAuth);
 
 // Create new assessment
 router.post('/new', async (req, res) => {

@@ -95,7 +95,7 @@ async function runTests() {
 // Add retry capability for authentication-required endpoints
 async function testWithAuth() {
   console.log('🔐 Note: Some endpoints may require authentication.');
-  console.log('    For full testing, ensure Clerk auth is properly configured.');
+  console.log('    For full testing, ensure Supabase auth is properly configured.');
   console.log('');
   
   await runTests();

@@ -5,15 +5,14 @@
 
 const express = require('express');
 const { getPrismaClient } = require('../../shared/config/prisma');
-// const { combinedAuth, requireAuth } = require('../../shared/middleware/clerk-auth-middleware');
+// const { supabaseAuth } = require('../../shared/middleware/supabase-auth-middleware');
 
 const router = express.Router();
 const prisma = getPrismaClient();
 
-// Apply Clerk authentication middleware to all routes
+// Apply Supabase authentication middleware to all routes
 // TEMPORARILY DISABLED FOR TESTING
-// router.use(combinedAuth);
-// router.use(requireAuth);
+// router.use(supabaseAuth);
 
 // Get all templates catalog (public registry)
 router.get('/catalog', async (req, res) => {

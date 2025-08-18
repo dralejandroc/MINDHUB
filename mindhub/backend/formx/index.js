@@ -7,10 +7,10 @@
 
 const express = require('express');
 
-// Auth middleware removed - using Clerk authentication through API gateway
+// Auth middleware removed - using Supabase authentication through API gateway
 // These are stub functions to prevent errors during migration
-const requireAuth = (req, res, next) => next(); // Auth handled by Clerk at API gateway level
-const checkPermissions = (permission) => (req, res, next) => next(); // Permissions handled by Clerk
+const requireAuth = (req, res, next) => next(); // Auth handled by Supabase at API gateway level
+const checkPermissions = (permission) => (req, res, next) => next(); // Permissions handled by Supabase
 
 // Simple logger for now
 const logger = {
