@@ -1,7 +1,15 @@
-# Ignore everything except backend
-*
-!mindhub/
-!mindhub/backend/
-!mindhub/backend/**
-!package.json
-!vercel.json
+# Only include necessary files for backend deployment
+node_modules/
+.git/
+.claude/
+.cursor/
+Formularios-ejemplo-paraplantillasdefaultFORMX/
+data-export/
+logs/
+scripts/
+supabase/
+*.md
+!CLAUDE.md
+!SUPABASE_CREDENTIALS.md
+imagenes/
+analysis/
