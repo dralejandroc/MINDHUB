@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { PageHeader } from '@/components/layout/PageHeader';
 import ExpedientsGrid from '@/components/expedix/ExpedientsGrid';
@@ -28,7 +28,7 @@ import { Button } from '@/components/ui/Button';
 type ViewMode = 'list' | 'cards' | 'timeline' | 'expedient';
 type DetailView = 'dashboard' | 'consultation' | 'assessment';
 
-export default function ExpedixPage() {
+function ExpedixContent() {
   const searchParams = useSearchParams();
   const expedixApi = useExpedixApi(); // Use authenticated API client
   const [viewMode, setViewMode] = useState<ViewMode>('cards');
@@ -327,5 +327,19 @@ export default function ExpedixPage() {
         onSuccess={handlePatientCreated}
       />
     </div>
+  );
+}
+
+// Main component with Suspense boundary
+export default function ExpedixPage() {
+  return (
+    <Suspense fallback={
+      <div className="flex items-center justify-center py-8">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+        <span className="ml-3 text-gray-600">Cargando...</span>
+      </div>
+    }>
+      <ExpedixContent />
+    </Suspense>
   );
 }

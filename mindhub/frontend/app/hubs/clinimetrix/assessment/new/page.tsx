@@ -1,13 +1,13 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Alert } from '@/components/ui/Alert';
 import { ClinimetrixRenderer } from '@/components/ClinimetrixPro/ClinimetrixRenderer';
 import { clinimetrixProClient } from '@/lib/api/clinimetrix-pro-client';
 import type { TemplateData } from '@/lib/api/clinimetrix-pro-client';
 
-export default function NewAssessmentPage() {
+function NewAssessmentContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const templateId = searchParams?.get('templateId');
@@ -128,5 +128,23 @@ export default function NewAssessmentPage() {
         )}
       </div>
     </div>
+  );
+}
+
+// Main component with Suspense boundary
+export default function NewAssessmentPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen gradient-background p-6">
+        <div className="max-w-4xl mx-auto">
+          <div className="animate-pulse space-y-4">
+            <div className="h-8 bg-primary-200 rounded-lg w-64"></div>
+            <div className="h-96 bg-white rounded-2xl"></div>
+          </div>
+        </div>
+      </div>
+    }>
+      <NewAssessmentContent />
+    </Suspense>
   );
 }
