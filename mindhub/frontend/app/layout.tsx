@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 // import { Inter } from 'next/font/google'; // Temporalmente deshabilitado para evitar problemas de conectividad
 import { Toaster } from 'react-hot-toast';
 import { SpeedInsights } from '@vercel/speed-insights/next';
-import { ClerkProvider } from '@clerk/nextjs';
+import { AuthProvider } from '@/lib/providers/AuthProvider';
 import './globals.css';
 
 // const inter = Inter({ subsets: ['latin'], variable: '--font-inter' }); // Temporalmente deshabilitado
@@ -73,8 +73,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <ClerkProvider>
-      <html lang="en" className="font-sans">
+    <html lang="en" className="font-sans">
         <head>
           {/* Security headers */}
           <meta httpEquiv="X-Content-Type-Options" content="nosniff" />
@@ -99,9 +98,11 @@ export default function RootLayout({
           {/* Preconnect to external services - Google Fonts temporarily disabled */}
         </head>
         <body className="bg-gray-50 antialiased">
-          <div id="root" className="min-h-screen">
-            {children}
-          </div>
+          <AuthProvider>
+            <div id="root" className="min-h-screen">
+              {children}
+            </div>
+          </AuthProvider>
         
         {/* Toast notifications */}
         <Toaster
@@ -172,6 +173,5 @@ export default function RootLayout({
           <div id="feedback-portal" />
         </body>
       </html>
-    </ClerkProvider>
   );
 }

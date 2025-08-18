@@ -1,92 +1,118 @@
-import { NextRequest, NextResponse } from 'next/server';
-
-// Force dynamic rendering for this API route
+// Prevent static generation for this API route
 export const dynamic = 'force-dynamic';
 
-const BACKEND_URL = process.env.BACKEND_URL || 'https://mindhub-production.up.railway.app';
+import { 
+  createSupabaseServer, 
+  getAuthenticatedUser, 
+  createAuthResponse, 
+  createErrorResponse, 
+  createSuccessResponse 
+} from '@/lib/supabase/server'
 
-export async function GET(request: NextRequest) {
+/**
+ * ClinimetrixPro Assessments API Route
+ * Now uses Supabase directly instead of Railway backend
+ */
+
+export async function GET(request: Request) {
   try {
-    const searchParams = request.nextUrl.searchParams;
-    const queryString = searchParams.toString();
-    const backendUrl = `${BACKEND_URL}/api/clinimetrix-pro/assessments${queryString ? `?${queryString}` : ''}`;
+    console.log('[clinimetrix_assessments API] Processing GET request with Supabase');
+    const { searchParams } = new URL(request.url);
+    
+    const user = await getAuthenticatedUser()
+    if (!user) {
+      return createAuthResponse()
+    }
+    
+    const supabase = createSupabaseServer()
 
-    // Forward authentication headers
-    const headers: HeadersInit = {
-      'Content-Type': 'application/json',
-    };
+    // Parse query parameters
+    const page = parseInt(searchParams.get('page') || '1');
+    const limit = parseInt(searchParams.get('limit') || '20');
+    const search = searchParams.get('search') || '';
+    const offset = (page - 1) * limit;
 
-    // Forward Authorization header (Clerk token)
-    const authHeader = request.headers.get('Authorization');
-    if (authHeader) {
-      headers['Authorization'] = authHeader;
+    // Build query
+    let query = supabase
+      .from('clinimetrix_assessments')
+      .select('*', { count: 'exact' })
+      .order('created_at', { ascending: false });
+
+    // Add search filter if applicable
+    if (search) {
+      // Customize search fields based on table
+      query = query.or(`name.ilike.%${search}%`);
     }
 
-    // Forward user context
-    const userContextHeader = request.headers.get('X-User-Context');
-    if (userContextHeader) {
-      headers['X-User-Context'] = userContextHeader;
+    // Add pagination
+    query = query.range(offset, offset + limit - 1);
+
+    const { data, error, count } = await query;
+
+    if (error) {
+      console.error('[clinimetrix_assessments API] Supabase error:', error);
+      throw new Error(error.message);
     }
 
-    const response = await fetch(backendUrl, {
-      method: 'GET',
-      headers,
-    });
+    const total = count || 0;
+    const pages = Math.ceil(total / limit);
 
-    if (!response.ok) {
-      throw new Error(`Backend responded with status: ${response.status}`);
-    }
+    console.log(`[clinimetrix_assessments API] Successfully retrieved ${data?.length || 0} records`);
+    
+    return createSuccessResponse({
+      data: data || [],
+      pagination: {
+        page,
+        limit,
+        total,
+        pages
+      }
+    }, 'ClinimetrixPro Assessments retrieved successfully');
 
-    const data = await response.json();
-    return NextResponse.json(data);
   } catch (error) {
-    console.error('Clinimetrix Pro Assessments API Error:', error);
-    return NextResponse.json(
-      { error: 'Failed to fetch assessments from Clinimetrix Pro API' },
-      { status: 500 }
-    );
+    console.error('[clinimetrix_assessments API] Error:', error);
+    return createErrorResponse('Failed to fetch clinimetrix_assessments', error as Error);
   }
 }
 
-export async function POST(request: NextRequest) {
+export async function POST(request: Request) {
   try {
+    console.log('[clinimetrix_assessments API] Processing POST request with Supabase');
     const body = await request.json();
-    const backendUrl = `${BACKEND_URL}/api/clinimetrix-pro/assessments`;
+    
+    const user = await getAuthenticatedUser()
+    if (!user) {
+      return createAuthResponse()
+    }
+    
+    const supabase = createSupabaseServer()
 
-    // Forward authentication headers
-    const headers: HeadersInit = {
-      'Content-Type': 'application/json',
+    // Prepare data
+    const data = {
+      ...body,
+      created_by: user.id,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
     };
 
-    // Forward Authorization header (Clerk token)
-    const authHeader = request.headers.get('Authorization');
-    if (authHeader) {
-      headers['Authorization'] = authHeader;
+    // Insert record
+    const { data: record, error } = await supabase
+      .from('clinimetrix_assessments')
+      .insert([data])
+      .select()
+      .single();
+
+    if (error) {
+      console.error('[clinimetrix_assessments API] Supabase error:', error);
+      throw new Error(error.message);
     }
 
-    // Forward user context
-    const userContextHeader = request.headers.get('X-User-Context');
-    if (userContextHeader) {
-      headers['X-User-Context'] = userContextHeader;
-    }
+    console.log('[clinimetrix_assessments API] Successfully created record:', record.id);
 
-    const response = await fetch(backendUrl, {
-      method: 'POST',
-      headers,
-      body: JSON.stringify(body),
-    });
+    return createSuccessResponse(record, 'ClinimetrixPro Assessments created successfully', 201);
 
-    if (!response.ok) {
-      throw new Error(`Backend responded with status: ${response.status}`);
-    }
-
-    const data = await response.json();
-    return NextResponse.json(data);
   } catch (error) {
-    console.error('Clinimetrix Pro Assessments API Error:', error);
-    return NextResponse.json(
-      { error: 'Failed to post assessment to Clinimetrix Pro API' },
-      { status: 500 }
-    );
+    console.error('[clinimetrix_assessments API] Error creating record:', error);
+    return createErrorResponse('Failed to create clinimetrix_assessments', error as Error);
   }
 }

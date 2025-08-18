@@ -1,50 +1,104 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { createServerClient } from '@supabase/ssr'
+import { cookies } from 'next/headers'
 
 /**
  * ClinimetrixPro Templates Catalog API Route
- * Proxies requests to the backend ClinimetrixPro API
+ * Now uses Supabase directly instead of Railway backend
  */
 
 // Force dynamic rendering for this API route
 export const dynamic = 'force-dynamic';
 
-const BACKEND_URL = process.env.BACKEND_URL || 'https://mindhub-production.up.railway.app';
+function createSupabaseServer() {
+  const cookieStore = cookies()
+  
+  return createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!,
+    {
+      cookies: {
+        get(name: string) {
+          return cookieStore.get(name)?.value
+        },
+      },
+    }
+  )
+}
 
 export async function GET(request: NextRequest) {
   try {
-    // Forward authentication headers
-    const headers: HeadersInit = {
-      'Content-Type': 'application/json',
-    };
-
-    // Forward Authorization header (Clerk token)
-    const authHeader = request.headers.get('Authorization');
-    if (authHeader) {
-      headers['Authorization'] = authHeader;
+    console.log('[ClinimetrixPro Catalog] Processing GET request with Supabase');
+    
+    const supabase = createSupabaseServer()
+    
+    // Get current user session
+    const { data: { session }, error: sessionError } = await supabase.auth.getSession()
+    
+    if (sessionError || !session) {
+      return NextResponse.json({
+        success: false,
+        error: 'Authentication required',
+        message: 'Please log in to access this resource',
+        code: 'AUTHENTICATION_REQUIRED'
+      }, { status: 401 });
     }
 
-    // Forward user context
-    const userContextHeader = request.headers.get('X-User-Context');
-    if (userContextHeader) {
-      headers['X-User-Context'] = userContextHeader;
+    // Get templates catalog from Supabase
+    const { data: registry, error } = await supabase
+      .from('clinimetrix_registry')
+      .select(`
+        id,
+        template_id,
+        abbreviation,
+        name,
+        category,
+        subcategory,
+        description,
+        version,
+        language,
+        authors,
+        year,
+        administration_mode,
+        estimated_duration_minutes,
+        target_population,
+        total_items,
+        score_range_min,
+        score_range_max,
+        is_public,
+        is_featured,
+        tags,
+        is_active,
+        created_at,
+        updated_at
+      `)
+      .eq('is_active', true)
+      .eq('is_public', true)
+      .order('is_featured', { ascending: false })
+      .order('name', { ascending: true });
+
+    if (error) {
+      console.error('[ClinimetrixPro Catalog] Supabase error:', error);
+      throw new Error(error.message);
     }
 
-    const response = await fetch(`${BACKEND_URL}/api/clinimetrix-pro/templates/catalog`, {
-      method: 'GET',
-      headers,
+    console.log(`[ClinimetrixPro Catalog] Successfully retrieved ${registry?.length || 0} templates`);
+
+    return NextResponse.json({
+      success: true,
+      data: registry || [],
+      message: 'Templates catalog retrieved successfully',
+      timestamp: new Date().toISOString()
     });
-    
-    if (!response.ok) {
-      throw new Error(`Backend responded with status: ${response.status}`);
-    }
-    
-    const data = await response.json();
-    return NextResponse.json(data);
+
   } catch (error) {
-    console.error('ClinimetrixPro Templates Catalog API Error:', error);
-    return NextResponse.json(
-      { error: 'Failed to fetch templates catalog from ClinimetrixPro API' }, 
-      { status: 500 }
-    );
+    console.error('[ClinimetrixPro Catalog] Error:', error);
+    return NextResponse.json({
+      success: false,
+      error: 'Failed to fetch templates catalog',
+      message: error instanceof Error ? error.message : 'Unknown error',
+      timestamp: new Date().toISOString(),
+      data: []
+    }, { status: 500 });
   }
 }

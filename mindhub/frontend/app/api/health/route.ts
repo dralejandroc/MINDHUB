@@ -1,67 +1,44 @@
 // Prevent static generation for this API route
-export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
-export async function GET(request: Request) {
-  const backendUrl = process.env.BACKEND_URL || 'https://mindhub-production.up.railway.app';
-  
+import { createSupabaseServer } from '@/lib/supabase/server'
+
+export async function GET() {
   try {
-    // Check backend health
-    const backendResponse = await fetch(`${backendUrl}/health`, {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    });
+    const supabase = createSupabaseServer()
     
-    const backendData = await backendResponse.json();
+    // Test database connection
+    const { data, error } = await supabase
+      .from('clinic_configurations')
+      .select('id')
+      .limit(1);
+    
+    if (error) {
+      throw new Error(`Database error: ${error.message}`);
+    }
     
     return new Response(JSON.stringify({
-      status: 'ok',
-      frontend: {
-        status: 'healthy',
-        url: process.env.NEXT_PUBLIC_APP_URL || 'https://mindhub.cloud',
-      },
-      backend: {
-        status: backendResponse.ok ? 'healthy' : 'unhealthy',
-        url: backendUrl,
-        response: backendData,
-      },
-      environment: {
-        NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL,
-        BACKEND_URL: process.env.BACKEND_URL,
-        NODE_ENV: process.env.NODE_ENV,
-      },
+      status: 'healthy',
+      database: 'connected',
       timestamp: new Date().toISOString(),
+      version: '2.0.0',
+      migration: 'supabase'
     }), {
       status: 200,
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers: { 'Content-Type': 'application/json' }
     });
+    
   } catch (error) {
+    console.error('Health check failed:', error);
+    
     return new Response(JSON.stringify({
-      status: 'error',
-      frontend: {
-        status: 'healthy',
-        url: process.env.NEXT_PUBLIC_APP_URL || 'https://mindhub.cloud',
-      },
-      backend: {
-        status: 'unreachable',
-        url: backendUrl,
-        error: error instanceof Error ? error.message : 'Unknown error',
-      },
-      environment: {
-        NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL,
-        BACKEND_URL: process.env.BACKEND_URL,
-        NODE_ENV: process.env.NODE_ENV,
-      },
-      timestamp: new Date().toISOString(),
+      status: 'unhealthy',
+      database: 'disconnected',
+      error: error instanceof Error ? error.message : 'Unknown error',
+      timestamp: new Date().toISOString()
     }), {
       status: 500,
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers: { 'Content-Type': 'application/json' }
     });
   }
 }

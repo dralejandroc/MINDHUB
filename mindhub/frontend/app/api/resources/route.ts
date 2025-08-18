@@ -1,130 +1,118 @@
-import { NextRequest, NextResponse } from 'next/server';
-
 // Prevent static generation for this API route
-export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
-const BACKEND_URL = process.env.BACKEND_URL || 'https://mindhub-production.up.railway.app';
+import { 
+  createSupabaseServer, 
+  getAuthenticatedUser, 
+  createAuthResponse, 
+  createErrorResponse, 
+  createSuccessResponse 
+} from '@/lib/supabase/server'
 
-export async function GET(request: NextRequest) {
+/**
+ * Resources Management API Route
+ * Now uses Supabase directly instead of Railway backend
+ */
+
+export async function GET(request: Request) {
   try {
+    console.log('[resources API] Processing GET request with Supabase');
     const { searchParams } = new URL(request.url);
     
-    // Forward all query parameters
-    const params = new URLSearchParams();
-    searchParams.forEach((value, key) => {
-      params.append(key, value);
-    });
+    const user = await getAuthenticatedUser()
+    if (!user) {
+      return createAuthResponse()
+    }
     
-    let url = `${BACKEND_URL}/api/resources`;
-    if (params.toString()) {
-      url += `?${params.toString()}`;
+    const supabase = createSupabaseServer()
+
+    // Parse query parameters
+    const page = parseInt(searchParams.get('page') || '1');
+    const limit = parseInt(searchParams.get('limit') || '20');
+    const search = searchParams.get('search') || '';
+    const offset = (page - 1) * limit;
+
+    // Build query
+    let query = supabase
+      .from('resources')
+      .select('*', { count: 'exact' })
+      .order('created_at', { ascending: false });
+
+    // Add search filter if applicable
+    if (search) {
+      // Customize search fields based on table
+      query = query.or(`name.ilike.%${search}%`);
     }
 
-    // Forward authentication headers
-    const headers: HeadersInit = {
-      'Content-Type': 'application/json',
-    };
+    // Add pagination
+    query = query.range(offset, offset + limit - 1);
 
-    // Forward Authorization header (Clerk token)
-    const authHeader = request.headers.get('Authorization');
-    if (authHeader) {
-      headers['Authorization'] = authHeader;
+    const { data, error, count } = await query;
+
+    if (error) {
+      console.error('[resources API] Supabase error:', error);
+      throw new Error(error.message);
     }
 
-    // Forward user context
-    const userContextHeader = request.headers.get('X-User-Context');
-    if (userContextHeader) {
-      headers['X-User-Context'] = userContextHeader;
-    }
+    const total = count || 0;
+    const pages = Math.ceil(total / limit);
 
-    const response = await fetch(url, {
-      method: 'GET',
-      headers,
-    });
+    console.log(`[resources API] Successfully retrieved ${data?.length || 0} records`);
+    
+    return createSuccessResponse({
+      data: data || [],
+      pagination: {
+        page,
+        limit,
+        total,
+        pages
+      }
+    }, 'Resources Management retrieved successfully');
 
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
-    }
-
-    const data = await response.json();
-    return NextResponse.json(data);
   } catch (error) {
-    console.error('Error proxying resources request:', error);
-    return NextResponse.json(
-      { 
-        success: false, 
-        error: 'Failed to fetch resources from backend',
-        data: [
-          {
-            id: '1',
-            title: 'Técnicas de Relajación',
-            category: 'Ansiedad',
-            type: 'document',
-            description: 'Guía práctica para manejar la ansiedad'
-          },
-          {
-            id: '2',
-            title: 'Ejercicios de Respiración',
-            category: 'Bienestar',
-            type: 'video',
-            description: 'Video tutorial con ejercicios de respiración'
-          }
-        ],
-        pagination: {
-          page: 1,
-          limit: 20,
-          total: 2,
-          pages: 1
-        }
-      }, 
-      { status: 500 }
-    );
+    console.error('[resources API] Error:', error);
+    return createErrorResponse('Failed to fetch resources', error as Error);
   }
 }
 
-export async function POST(request: NextRequest) {
+export async function POST(request: Request) {
   try {
+    console.log('[resources API] Processing POST request with Supabase');
     const body = await request.json();
     
-    // Forward authentication headers
-    const headers: HeadersInit = {
-      'Content-Type': 'application/json',
-    };
-
-    // Forward Authorization header (Clerk token)
-    const authHeader = request.headers.get('Authorization');
-    if (authHeader) {
-      headers['Authorization'] = authHeader;
-    }
-
-    // Forward user context
-    const userContextHeader = request.headers.get('X-User-Context');
-    if (userContextHeader) {
-      headers['X-User-Context'] = userContextHeader;
+    const user = await getAuthenticatedUser()
+    if (!user) {
+      return createAuthResponse()
     }
     
-    const response = await fetch(`${BACKEND_URL}/api/resources`, {
-      method: 'POST',
-      headers,
-      body: JSON.stringify(body),
-    });
+    const supabase = createSupabaseServer()
 
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
+    // Prepare data
+    const data = {
+      ...body,
+      created_by: user.id,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    };
+
+    // Insert record
+    const { data: record, error } = await supabase
+      .from('resources')
+      .insert([data])
+      .select()
+      .single();
+
+    if (error) {
+      console.error('[resources API] Supabase error:', error);
+      throw new Error(error.message);
     }
 
-    const data = await response.json();
-    return NextResponse.json(data);
+    console.log('[resources API] Successfully created record:', record.id);
+
+    return createSuccessResponse(record, 'Resources Management created successfully', 201);
+
   } catch (error) {
-    console.error('Error creating resource:', error);
-    return NextResponse.json(
-      { 
-        success: false, 
-        error: 'Failed to create resource',
-        message: error instanceof Error ? error.message : "Unknown error"
-      }, 
-      { status: 500 }
-    );
+    console.error('[resources API] Error creating record:', error);
+    return createErrorResponse('Failed to create resources', error as Error);
   }
 }

@@ -1,117 +1,118 @@
-// API route for consultations proxy
+// Prevent static generation for this API route
 export const dynamic = 'force-dynamic';
 
-const BACKEND_URL = process.env.BACKEND_URL || 'https://mindhub-production.up.railway.app';
+import { 
+  createSupabaseServer, 
+  getAuthenticatedUser, 
+  createAuthResponse, 
+  createErrorResponse, 
+  createSuccessResponse 
+} from '@/lib/supabase/server'
+
+/**
+ * Consultations Management API Route
+ * Now uses Supabase directly instead of Railway backend
+ */
 
 export async function GET(request: Request) {
   try {
+    console.log('[consultations API] Processing GET request with Supabase');
     const { searchParams } = new URL(request.url);
-    const patient_id = searchParams.get('patient_id');
-    const page = searchParams.get('page') || '1';
-    const limit = searchParams.get('limit') || '20';
     
-    let url = `${BACKEND_URL}/api/expedix/consultations?page=${page}&limit=${limit}`;
-    if (patient_id) {
-      url += `&patient_id=${encodeURIComponent(patient_id)}`;
+    const user = await getAuthenticatedUser()
+    if (!user) {
+      return createAuthResponse()
+    }
+    
+    const supabase = createSupabaseServer()
+
+    // Parse query parameters
+    const page = parseInt(searchParams.get('page') || '1');
+    const limit = parseInt(searchParams.get('limit') || '20');
+    const search = searchParams.get('search') || '';
+    const offset = (page - 1) * limit;
+
+    // Build query
+    let query = supabase
+      .from('consultations')
+      .select('*', { count: 'exact' })
+      .order('created_at', { ascending: false });
+
+    // Add search filter if applicable
+    if (search) {
+      // Customize search fields based on table
+      query = query.or(`name.ilike.%${search}%`);
     }
 
-    // Forward authentication headers
-    const headers: HeadersInit = {
-      'Content-Type': 'application/json',
-    };
+    // Add pagination
+    query = query.range(offset, offset + limit - 1);
 
-    // Forward Authorization header (Clerk token)
-    const authHeader = request.headers.get('Authorization');
-    if (authHeader) {
-      headers['Authorization'] = authHeader;
+    const { data, error, count } = await query;
+
+    if (error) {
+      console.error('[consultations API] Supabase error:', error);
+      throw new Error(error.message);
     }
 
-    // Forward user context
-    const userContextHeader = request.headers.get('X-User-Context');
-    if (userContextHeader) {
-      headers['X-User-Context'] = userContextHeader;
-    }
+    const total = count || 0;
+    const pages = Math.ceil(total / limit);
 
-    const response = await fetch(url, {
-      method: 'GET',
-      headers,
-    });
+    console.log(`[consultations API] Successfully retrieved ${data?.length || 0} records`);
+    
+    return createSuccessResponse({
+      data: data || [],
+      pagination: {
+        page,
+        limit,
+        total,
+        pages
+      }
+    }, 'Consultations Management retrieved successfully');
 
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
-    }
-
-    const data = await response.json();
-    return new Response(JSON.stringify(data), {
-      status: 200,
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    });
   } catch (error) {
-    console.error('Error proxying consultations request:', error);
-    return new Response(JSON.stringify({
-      success: false, 
-      error: 'Failed to fetch consultations from backend',
-      data: []
-    }), {
-      status: 500,
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    });
+    console.error('[consultations API] Error:', error);
+    return createErrorResponse('Failed to fetch consultations', error as Error);
   }
 }
 
 export async function POST(request: Request) {
   try {
+    console.log('[consultations API] Processing POST request with Supabase');
     const body = await request.json();
     
-    // Forward authentication headers
-    const headers: HeadersInit = {
-      'Content-Type': 'application/json',
-    };
-
-    // Forward Authorization header (Clerk token)
-    const authHeader = request.headers.get('Authorization');
-    if (authHeader) {
-      headers['Authorization'] = authHeader;
-    }
-
-    // Forward user context
-    const userContextHeader = request.headers.get('X-User-Context');
-    if (userContextHeader) {
-      headers['X-User-Context'] = userContextHeader;
+    const user = await getAuthenticatedUser()
+    if (!user) {
+      return createAuthResponse()
     }
     
-    const response = await fetch(`${BACKEND_URL}/api/expedix/consultations`, {
-      method: 'POST',
-      headers,
-      body: JSON.stringify(body),
-    });
+    const supabase = createSupabaseServer()
 
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
+    // Prepare data
+    const data = {
+      ...body,
+      created_by: user.id,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    };
+
+    // Insert record
+    const { data: record, error } = await supabase
+      .from('consultations')
+      .insert([data])
+      .select()
+      .single();
+
+    if (error) {
+      console.error('[consultations API] Supabase error:', error);
+      throw new Error(error.message);
     }
 
-    const data = await response.json();
-    return new Response(JSON.stringify(data), {
-      status: 200,
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    });
+    console.log('[consultations API] Successfully created record:', record.id);
+
+    return createSuccessResponse(record, 'Consultations Management created successfully', 201);
+
   } catch (error) {
-    console.error('Error creating consultation:', error);
-    return new Response(JSON.stringify({
-      success: false, 
-      error: 'Failed to create consultation',
-      message: error instanceof Error ? error.message : "Unknown error"
-    }), {
-      status: 500,
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    });
+    console.error('[consultations API] Error creating record:', error);
+    return createErrorResponse('Failed to create consultations', error as Error);
   }
 }

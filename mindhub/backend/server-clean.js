@@ -24,7 +24,7 @@ console.log('✅ Unified API endpoints loaded');
 
 // Middleware compartido
 const errorHandler = require('./shared/middleware/error-handling');
-// Supabase Auth se maneja directamente en las rutas que lo requieran
+const { clerkOptionalAuth, combinedAuth } = require('./shared/middleware/clerk-auth-middleware');
 
 const app = express();
 const PORT = process.env.PORT || 3002;
@@ -126,12 +126,12 @@ app.use('/api', (req, res, next) => {
 });
 
 // =====================================================================
-// AUTENTICACIÓN SUPABASE
+// AUTENTICACIÓN CLERK
 // =====================================================================
 
-console.log('🔐 Supabase Auth configurado');
-// Supabase Auth se verifica en cada endpoint que lo requiera
-// usando el token JWT del header Authorization
+console.log('🔐 Applying Clerk authentication middleware...');
+app.use(combinedAuth);
+console.log('✅ Clerk authentication middleware applied');
 
 // =====================================================================
 // ENDPOINTS PRINCIPALES
@@ -159,7 +159,7 @@ app.get('/', (req, res) => {
       }
     },
     database: 'PostgreSQL',
-    authentication: 'Supabase Auth',
+    authentication: 'Clerk',
     architecture: 'Unified APIs - No Legacy Code'
   });
 });
@@ -175,7 +175,7 @@ app.get('/health', (req, res) => {
       clinimetrix_pro: 'active',
       formx: 'active',
       database: 'connected',
-      auth: 'supabase'
+      auth: 'clerk'
     },
     architecture: 'clean'
   });
@@ -306,7 +306,7 @@ server = app.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT}`);
   console.log(`🏥 Version: 2.0.0 (Clean Architecture)`);
   console.log(`🗄️  Database: PostgreSQL`);
-  console.log(`🔐 Authentication: Supabase Auth`);
+  console.log(`🔐 Authentication: Clerk`);
   
   if (process.env.NODE_ENV === 'production') {
     console.log(`🌍 Production URL: https://mindhub.cloud`);

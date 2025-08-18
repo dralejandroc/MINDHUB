@@ -1,0 +1,1616 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../generated/prisma"
+  // Force regeneration for Railway deployment  
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model appointment_behavioral_logs {
+  id             String                                 @id
+  appointment_id String?
+  patient_id     String
+  event_type     appointment_behavioral_logs_event_type
+  description    String?                                @db.Text
+  delay_minutes  Int?
+  recorded_by    String
+  recorded_at    DateTime                               @default(now()) @db.DateTime(0)
+  created_at     DateTime                               @default(now()) @db.DateTime(0)
+  updated_at     DateTime                               @default(now()) @db.DateTime(0)
+
+  @@index([appointment_id], map: "idx_appointment_id")
+  @@index([event_type], map: "idx_event_type")
+  @@index([patient_id], map: "idx_patient_id")
+  @@index([recorded_at], map: "idx_recorded_at")
+}
+
+model appointment_changes {
+  id                      String                          @id
+  original_appointment_id String
+  patient_id              String
+  change_type             appointment_changes_change_type
+  reason                  String?                         @db.Text
+  advance_notice_hours    Int?
+  requested_new_date      DateTime?                       @db.DateTime(0)
+  recorded_by             String
+  change_date             DateTime                        @default(now()) @db.DateTime(0)
+  created_at              DateTime                        @default(now()) @db.DateTime(0)
+  updated_at              DateTime                        @default(now()) @db.DateTime(0)
+
+  @@index([change_date], map: "idx_change_date")
+  @@index([change_type], map: "idx_change_type")
+  @@index([original_appointment_id], map: "idx_original_appointment")
+  @@index([patient_id], map: "idx_patient_id")
+}
+
+model appointment_logs {
+  id             String   @id @db.VarChar(255)
+  appointment_id String?  @db.VarChar(255)
+  patient_id     String   @db.VarChar(255)
+  user_id        String   @db.VarChar(255)
+  user_name      String   @db.VarChar(255)
+  action         String   @db.VarChar(50)
+  previous_data  String?  @db.Text
+  new_data       String?  @db.Text
+  changes        String?  @db.Text
+  reason         String?  @db.Text
+  created_at     DateTime @default(now()) @db.DateTime(0)
+
+  @@index([action], map: "idx_action")
+  @@index([appointment_id], map: "idx_appointment_id")
+  @@index([created_at], map: "idx_created_at")
+  @@index([patient_id], map: "idx_patient_id")
+  @@index([user_id], map: "idx_user_id")
+}
+
+model assessment_tokens {
+  id        String    @id
+  token     String    @unique
+  patientId String
+  scaleId   String
+  createdBy String
+  expiresAt DateTime
+  isUsed    Boolean   @default(false)
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+  users     users     @relation(fields: [createdBy], references: [id])
+  patients  patients  @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  scales    scales    @relation(fields: [scaleId], references: [id])
+
+  @@index([createdBy], map: "assessment_tokens_createdBy_fkey")
+  @@index([patientId], map: "assessment_tokens_patientId_fkey")
+  @@index([scaleId], map: "assessment_tokens_scaleId_fkey")
+}
+
+model auth_sessions {
+  id           String   @id
+  userId       String
+  token        String   @unique
+  refreshToken String?  @unique
+  expiresAt    DateTime
+  createdAt    DateTime @default(now())
+
+  @@index([token])
+  @@index([userId])
+}
+
+model beta_registrations {
+  id               String   @id
+  email            String   @unique
+  name             String?
+  professionalType String?
+  city             String?
+  country          String?
+  howDidYouHear    String?
+  yearsOfPractice  String?
+  specialization   String?
+  expectations     String?  @db.Text
+  registeredAt     DateTime @default(now())
+  inviteCode       String?
+  hasJoined        Boolean  @default(false)
+}
+
+model cash_cut_payment_breakdown {
+  id                 String             @id
+  cashCutId          String
+  paymentMethod      String
+  amount             Decimal            @db.Decimal(10, 2)
+  transactionCount   Int                @default(0)
+  cash_register_cuts cash_register_cuts @relation(fields: [cashCutId], references: [id], onDelete: Cascade)
+
+  @@unique([cashCutId, paymentMethod])
+}
+
+model cash_cut_professional_breakdown {
+  id                 String             @id
+  cashCutId          String
+  professionalId     String
+  totalIncome        Decimal            @db.Decimal(10, 2)
+  professionalAmount Decimal            @db.Decimal(10, 2)
+  clinicAmount       Decimal            @db.Decimal(10, 2)
+  commissionRate     Decimal            @db.Decimal(5, 2)
+  serviceCount       Int                @default(0)
+  cash_register_cuts cash_register_cuts @relation(fields: [cashCutId], references: [id], onDelete: Cascade)
+  users              users              @relation(fields: [professionalId], references: [id])
+
+  @@unique([cashCutId, professionalId])
+  @@index([professionalId], map: "cash_cut_professional_breakdown_professionalId_fkey")
+}
+
+model cash_register_cuts {
+  id                                        String                            @id
+  cutNumber                                 Int
+  cutType                                   String
+  startDate                                 DateTime
+  endDate                                   DateTime
+  totalIncome                               Decimal                           @db.Decimal(10, 2)
+  totalDiscounts                            Decimal                           @default(0.00) @db.Decimal(10, 2)
+  totalCourtesies                           Decimal                           @default(0.00) @db.Decimal(10, 2)
+  netIncome                                 Decimal                           @db.Decimal(10, 2)
+  status                                    String                            @default("open")
+  notes                                     String?
+  createdBy                                 String
+  closedBy                                  String?
+  closedAt                                  DateTime?
+  createdAt                                 DateTime                          @default(now())
+  updatedAt                                 DateTime
+  cash_cut_payment_breakdown                cash_cut_payment_breakdown[]
+  cash_cut_professional_breakdown           cash_cut_professional_breakdown[]
+  users_cash_register_cuts_closedByTousers  users?                            @relation("cash_register_cuts_closedByTousers", fields: [closedBy], references: [id])
+  users_cash_register_cuts_createdByTousers users                             @relation("cash_register_cuts_createdByTousers", fields: [createdBy], references: [id])
+
+  @@index([closedBy], map: "cash_register_cuts_closedBy_fkey")
+  @@index([createdBy], map: "cash_register_cuts_createdBy_fkey")
+}
+
+model clinic_configurations {
+  id            String   @id
+  configuration Json
+  createdBy     String?
+  updatedBy     String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime
+}
+
+model clinimetrix_assessments {
+  id                    String                         @id
+  templateId            String
+  patientId             String?
+  administratorId       String
+  status                clinimetrix_assessments_status @default(pending)
+  startedAt             DateTime?
+  completedAt           DateTime?
+  responses             Json?
+  scores                Json?
+  interpretation        Json?
+  notes                 String?                        @db.Text
+  sessionData           Json?
+  metadata              Json?
+  createdAt             DateTime                       @default(now())
+  updatedAt             DateTime                       @updatedAt
+  users                 users                          @relation(fields: [administratorId], references: [id], map: "clinimetrix_assessments_administrator_fkey")
+  patients              patients?                      @relation(fields: [patientId], references: [id], map: "clinimetrix_assessments_patient_fkey")
+  clinimetrix_registry  clinimetrix_registry           @relation(fields: [templateId], references: [templateId], map: "clinimetrix_assessments_registry_fkey")
+  clinimetrix_templates clinimetrix_templates          @relation(fields: [templateId], references: [id], map: "clinimetrix_assessments_template_fkey")
+
+  @@index([administratorId])
+  @@index([createdAt])
+  @@index([patientId])
+  @@index([status])
+  @@index([templateId])
+}
+
+model clinimetrix_registry {
+  id                       String                    @id
+  templateId               String                    @unique
+  abbreviation             String
+  name                     String
+  category                 String
+  subcategory              String?
+  description              String                    @db.Text
+  version                  String
+  language                 String
+  authors                  String                    @db.Text
+  year                     String
+  administrationMode       String
+  estimatedDurationMinutes Int
+  targetPopulation         Json
+  totalItems               Int
+  scoreRangeMin            Int
+  scoreRangeMax            Int
+  psychometricProperties   Json?
+  clinicalValidation       Json?
+  isPublic                 Boolean                   @default(true)
+  isFeatured               Boolean                   @default(false)
+  tags                     Json?
+  lastValidated            DateTime
+  isActive                 Boolean                   @default(true)
+  createdAt                DateTime                  @default(now())
+  updatedAt                DateTime
+  clinimetrix_assessments  clinimetrix_assessments[]
+  clinimetrix_templates    clinimetrix_templates     @relation(fields: [templateId], references: [id], onDelete: Cascade)
+
+  @@index([abbreviation])
+  @@index([category])
+  @@index([isPublic, isActive])
+}
+
+model clinimetrix_templates {
+  id                      String                    @id
+  templateData            Json
+  version                 String
+  isActive                Boolean                   @default(true)
+  createdAt               DateTime                  @default(now())
+  updatedAt               DateTime
+  clinimetrix_assessments clinimetrix_assessments[]
+  clinimetrix_registry    clinimetrix_registry?
+  clinimetrix_remote_assessments clinimetrix_remote_assessments[]
+}
+
+model clinimetrix_remote_assessments {
+  id                    String                                    @id
+  token                 String                                    @unique
+  templateId            String
+  patientId             String?
+  patientEmail          String
+  patientName           String
+  administratorId       String
+  status                clinimetrix_remote_assessments_status    @default(pending)
+  message               String?                                   @db.Text
+  reminderEnabled       Boolean                                   @default(true)
+  assessmentId          String?
+  expiresAt             DateTime
+  startedAt             DateTime?
+  completedAt           DateTime?
+  responses             Json?
+  results               Json?
+  metadata              Json?
+  createdAt             DateTime                                  @default(now())
+  updatedAt             DateTime                                  @updatedAt
+  clinimetrix_templates clinimetrix_templates                    @relation(fields: [templateId], references: [id])
+  patients              patients?                                @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  
+  @@index([token])
+  @@index([templateId])
+  @@index([patientId])
+  @@index([administratorId])
+  @@index([status])
+  @@index([expiresAt])
+}
+
+model consultations {
+  id               String    @id
+  patientId        String
+  consultantId     String
+  consultationDate DateTime
+  reason           String?   @db.Text
+  notes            String?   @db.LongText
+  diagnosis        String?   @db.Text
+  treatmentPlan    String?   @db.Text
+  status           String    @default("scheduled")
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime
+  users            users     @relation(fields: [consultantId], references: [id])
+  patients         patients  @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  incomes          incomes[]
+
+  @@index([consultantId], map: "consultations_consultantId_fkey")
+  @@index([patientId], map: "consultations_patientId_fkey")
+}
+
+model discount_plans {
+  id                     String                 @id
+  configId               String
+  name                   String
+  description            String?
+  discountType           String
+  discountValue          Decimal                @db.Decimal(10, 2)
+  currency               String                 @default("MXN")
+  isActive               Boolean                @default(true)
+  validUntil             DateTime?
+  createdAt              DateTime               @default(now())
+  updatedAt              DateTime
+  finance_configurations finance_configurations @relation(fields: [configId], references: [id], onDelete: Cascade)
+  patient_discounts      patient_discounts[]
+
+  @@index([configId], map: "discount_plans_configId_fkey")
+}
+
+model expenses {
+  id            String    @id
+  amount        Decimal   @db.Decimal(10, 2)
+  category      String
+  paymentMethod String
+  currency      String    @default("MXN")
+  vendor        String?
+  description   String
+  notes         String?
+  reference     String?
+  status        String    @default("confirmed")
+  expenseDate   DateTime  @default(now())
+  dueDate       DateTime?
+  createdBy     String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime
+  users         users?    @relation(fields: [createdBy], references: [id])
+
+  @@index([createdBy], map: "expenses_createdBy_fkey")
+}
+
+model finance_configurations {
+  id              String           @id
+  clinicId        String?
+  isAutomatic     Boolean          @default(false)
+  defaultCurrency String           @default("MXN")
+  taxRate         Decimal?         @db.Decimal(5, 2)
+  invoicePrefix   String?
+  invoiceCounter  Int              @default(1)
+  paymentTerms    String?
+  notes           String?
+  isActive        Boolean          @default(true)
+  createdBy       String?
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime
+  discount_plans  discount_plans[]
+  users           users?           @relation(fields: [createdBy], references: [id])
+  services        services[]
+
+  @@index([createdBy], map: "finance_configurations_createdBy_fkey")
+}
+
+model financial_goals {
+  id            String    @id
+  title         String
+  description   String?
+  targetAmount  Decimal   @db.Decimal(10, 2)
+  currentAmount Decimal   @default(0.00) @db.Decimal(10, 2)
+  currency      String    @default("MXN")
+  category      String
+  targetDate    DateTime?
+  status        String    @default("active")
+  createdBy     String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime
+  users         users?    @relation(fields: [createdBy], references: [id])
+
+  @@index([createdBy], map: "financial_goals_createdBy_fkey")
+}
+
+model form_analytics {
+  id           Int       @id @default(autoincrement())
+  form_id      String    @db.VarChar(100)
+  metric_name  String    @db.VarChar(100)
+  metric_value Decimal   @db.Decimal(10, 2)
+  period_start DateTime  @db.Date
+  period_end   DateTime  @db.Date
+  created_at   DateTime? @default(now()) @db.Timestamp(0)
+
+  @@index([form_id], map: "idx_form_id")
+  @@index([metric_name], map: "idx_metric_name")
+  @@index([period_start, period_end], map: "idx_period")
+}
+
+model form_assignments {
+  id                    String                   @id @db.VarChar(100)
+  form_id               String                   @db.VarChar(100)
+  patient_id            String                   @db.VarChar(36)
+  token                 String                   @unique(map: "token") @db.VarChar(128)
+  assigned_by           String                   @db.VarChar(36)
+  assigned_at           DateTime?                @default(now()) @db.Timestamp(0)
+  expires_at            DateTime                 @db.Timestamp(0)
+  status                form_assignments_status? @default(pending)
+  message               String?                  @db.Text
+  reminders_sent        Int?                     @default(0)
+  max_reminders         Int?                     @default(3)
+  completion_percentage Int?                     @default(0)
+  completed_at          DateTime?                @db.Timestamp(0)
+  reminder_schedule     Json?
+
+  @@index([assigned_at], map: "idx_assigned_at")
+  @@index([expires_at], map: "idx_expires_at")
+  @@index([form_id], map: "idx_form_id")
+  @@index([patient_id], map: "idx_patient_id")
+  @@index([status], map: "idx_status")
+  @@index([token], map: "idx_token")
+}
+
+model form_categories {
+  id          String    @id @db.VarChar(36)
+  name        String    @db.VarChar(255)
+  description String?   @db.Text
+  icon        String?   @db.VarChar(100)
+  color       String?   @db.VarChar(7)
+  sort_order  Int?      @default(0)
+  is_active   Boolean?  @default(true)
+  created_at  DateTime? @default(now()) @db.Timestamp(0)
+}
+
+model form_instances {
+  id             String         @id
+  templateId     String
+  name           String
+  data           String
+  status         String         @default("draft")
+  submittedAt    DateTime?
+  submittedBy    String?
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime
+  form_templates form_templates @relation(fields: [templateId], references: [id])
+
+  @@index([templateId], map: "form_instances_templateId_fkey")
+}
+
+model form_submissions {
+  id                      String    @id @db.VarChar(100)
+  assignment_id           String    @db.VarChar(100)
+  form_id                 String    @db.VarChar(100)
+  patient_id              String    @db.VarChar(36)
+  responses               Json
+  submitted_at            DateTime? @default(now()) @db.Timestamp(0)
+  submission_time_seconds Int?
+  completion_percentage   Int?      @default(100)
+  ip_address              String?   @db.VarChar(45)
+  user_agent              String?   @db.Text
+  signature_data          String?   @db.Text
+
+  @@index([assignment_id], map: "idx_assignment_id")
+  @@index([form_id], map: "idx_form_id")
+  @@index([patient_id], map: "idx_patient_id")
+  @@index([submitted_at], map: "idx_submitted_at")
+}
+
+model form_templates {
+  id             String           @id
+  name           String
+  slug           String           @unique
+  description    String?
+  schema         String
+  isActive       Boolean          @default(true)
+  version        String           @default("1.0")
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime
+  form_instances form_instances[]
+}
+
+model forms {
+  id           String    @id @db.VarChar(100)
+  title        String    @db.VarChar(500)
+  description  String?   @db.Text
+  structure    Json
+  settings     Json?
+  category     String?   @db.VarChar(100)
+  created_by   String    @db.VarChar(36)
+  created_at   DateTime? @default(now()) @db.Timestamp(0)
+  updated_at   DateTime? @default(now()) @db.Timestamp(0)
+  is_active    Boolean?  @default(true)
+  version      Int?      @default(1)
+  usage_count  Int?      @default(0)
+  last_used_at DateTime? @db.Timestamp(0)
+
+  @@index([is_active], map: "idx_active")
+  @@index([category], map: "idx_category")
+  @@index([created_at], map: "idx_created_at")
+  @@index([created_by], map: "idx_created_by")
+}
+
+model incomes {
+  id                 String         @id
+  amount             Decimal        @db.Decimal(10, 2)
+  source             String
+  paymentMethod      String
+  currency           String         @default("MXN")
+  patientId          String?
+  consultationId     String?
+  professionalId     String?
+  description        String?
+  concept            String?
+  notes              String?
+  reference          String?
+  status             String         @default("confirmed")
+  receivedDate       DateTime       @default(now())
+  dueDate            DateTime?
+  createdAt          DateTime       @default(now())
+  updatedAt          DateTime
+  discountAmount     Decimal?       @db.Decimal(10, 2)
+  originalAmount     Decimal?       @db.Decimal(10, 2)
+  serviceId          String?
+  clinicAmount       Decimal?       @db.Decimal(10, 2)
+  commissionRate     Decimal?       @db.Decimal(5, 2)
+  discountPercentage Decimal?       @db.Decimal(5, 2)
+  isCourtesy         Boolean        @default(false)
+  professionalAmount Decimal?       @db.Decimal(10, 2)
+  consultations      consultations? @relation(fields: [consultationId], references: [id])
+  patients           patients?      @relation(fields: [patientId], references: [id])
+  users              users?         @relation(fields: [professionalId], references: [id])
+  services           services?      @relation(fields: [serviceId], references: [id])
+
+  @@index([consultationId], map: "incomes_consultationId_fkey")
+  @@index([patientId], map: "incomes_patientId_fkey")
+  @@index([professionalId], map: "incomes_professionalId_fkey")
+  @@index([serviceId], map: "incomes_serviceId_fkey")
+}
+
+model item_responses {
+  id                    String                @id
+  administrationId      String
+  scaleItemId           String
+  responseValue         String
+  responseText          String?
+  score                 Float?
+  wasSkipped            Boolean               @default(false)
+  responseTime          Int?
+  createdAt             DateTime              @default(now())
+  scale_administrations scale_administrations @relation(fields: [administrationId], references: [id], onDelete: Cascade)
+  scale_items           scale_items           @relation(fields: [scaleItemId], references: [id])
+
+  @@unique([administrationId, scaleItemId])
+  @@index([scaleItemId], map: "item_responses_scaleItemId_fkey")
+}
+
+model medical_history {
+  id          String    @id
+  patientId   String
+  condition   String
+  diagnosedAt DateTime?
+  status      String    @default("active")
+  notes       String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime
+  patients    patients  @relation(fields: [patientId], references: [id], onDelete: Cascade)
+
+  @@index([patientId], map: "medical_history_patientId_fkey")
+}
+
+model medications {
+  id            String          @id
+  name          String
+  genericName   String?
+  category      String
+  dosageForm    String
+  strength      String?
+  manufacturer  String?
+  isActive      Boolean         @default(true)
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime
+  prescriptions prescriptions[]
+}
+
+model organizations {
+  id               String             @id
+  name             String
+  type             organizations_type @default(CLINIC)
+  maxUsers         Int                @default(15)
+  isActive         Boolean            @default(true)
+  isBetaOrg        Boolean            @default(true)
+  createdAt        DateTime           @default(now())
+  updatedAt        DateTime
+  subscriptionPlan String?
+  users            users[]
+}
+
+model patient_alerts {
+  id              String    @id @db.VarChar(255)
+  patient_id      String    @db.VarChar(255)
+  type            String    @db.VarChar(100)
+  severity        String    @db.VarChar(20)
+  message         String    @db.Text
+  metadata        String?   @db.Text
+  is_active       Boolean   @default(true)
+  acknowledged_by String?   @db.VarChar(255)
+  acknowledged_at DateTime? @db.DateTime(0)
+  created_at      DateTime  @default(now()) @db.DateTime(0)
+
+  @@index([created_at], map: "idx_created_at")
+  @@index([is_active], map: "idx_is_active")
+  @@index([patient_id], map: "idx_patient_id")
+  @@index([severity], map: "idx_severity")
+  @@index([type], map: "idx_type")
+}
+
+model patient_communications {
+  id                 String                                    @id
+  patient_id         String
+  communication_type patient_communications_communication_type
+  direction          patient_communications_direction
+  content            String?                                   @db.Text
+  duration           Int?
+  recorded_by        String
+  communication_date DateTime                                  @default(now()) @db.DateTime(0)
+  created_at         DateTime                                  @default(now()) @db.DateTime(0)
+  updated_at         DateTime                                  @default(now()) @db.DateTime(0)
+
+  @@index([communication_date], map: "idx_communication_date")
+  @@index([communication_type], map: "idx_communication_type")
+  @@index([direction], map: "idx_direction")
+  @@index([patient_id], map: "idx_patient_id")
+}
+
+model patient_discounts {
+  id             String         @id
+  patientId      String
+  discountPlanId String
+  customValue    Decimal?       @db.Decimal(10, 2)
+  notes          String?
+  isActive       Boolean        @default(true)
+  assignedAt     DateTime       @default(now())
+  validUntil     DateTime?
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime
+  discount_plans discount_plans @relation(fields: [discountPlanId], references: [id], onDelete: Cascade)
+  patients       patients       @relation(fields: [patientId], references: [id], onDelete: Cascade)
+
+  @@unique([patientId, discountPlanId])
+  @@index([discountPlanId], map: "patient_discounts_discountPlanId_fkey")
+}
+
+model patient_documents {
+  id           String    @id
+  patientId    String
+  title        String
+  type         String    @default("resource")
+  filePath     String
+  fileName     String?
+  fileSize     Int?
+  mimeType     String?
+  metadata     Json?
+  isEncrypted  Boolean   @default(false)
+  uploadedById String
+  viewedAt     DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime
+  patients     patients  @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  users        users     @relation(fields: [uploadedById], references: [id])
+
+  @@index([patientId], map: "patient_documents_patientId_fkey")
+  @@index([uploadedById], map: "patient_documents_uploadedById_fkey")
+}
+
+model patient_services {
+  id          String   @id
+  patientId   String
+  serviceId   String
+  customPrice Decimal? @db.Decimal(10, 2)
+  notes       String?
+  isActive    Boolean  @default(true)
+  assignedAt  DateTime @default(now())
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime
+  patients    patients @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  services    services @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+
+  @@unique([patientId, serviceId])
+  @@index([serviceId], map: "patient_services_serviceId_fkey")
+}
+
+model patient_tag_assignments {
+  id                                              String       @id
+  patientId                                       String
+  tagId                                           String
+  assignedBy                                      String?
+  assignedAt                                      DateTime     @default(now())
+  isActive                                        Boolean      @default(true)
+  reason                                          String?
+  removedBy                                       String?
+  removedAt                                       DateTime?
+  removalReason                                   String?
+  users_patient_tag_assignments_assignedByTousers users?       @relation("patient_tag_assignments_assignedByTousers", fields: [assignedBy], references: [id])
+  patients                                        patients     @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  users_patient_tag_assignments_removedByTousers  users?       @relation("patient_tag_assignments_removedByTousers", fields: [removedBy], references: [id])
+  patient_tags                                    patient_tags @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@unique([patientId, tagId])
+  @@index([assignedBy], map: "patient_tag_assignments_assignedBy_fkey")
+  @@index([removedBy], map: "patient_tag_assignments_removedBy_fkey")
+  @@index([tagId], map: "patient_tag_assignments_tagId_fkey")
+}
+
+model patient_tags {
+  id                      String                    @id
+  name                    String
+  color                   String
+  textColor               String?
+  category                String
+  icon                    String?
+  description             String?
+  isSystemTag             Boolean                   @default(false)
+  isCustom                Boolean                   @default(true)
+  isActive                Boolean                   @default(true)
+  createdBy               String?
+  createdAt               DateTime                  @default(now())
+  updatedAt               DateTime
+  patient_tag_assignments patient_tag_assignments[]
+  users                   users?                    @relation(fields: [createdBy], references: [id])
+
+  @@unique([name, category])
+  @@index([createdBy], map: "patient_tags_createdBy_fkey")
+}
+
+model patients {
+  id                            String                          @id
+  firstName                     String
+  lastName                      String
+  paternalLastName              String?
+  maternalLastName              String?
+  dateOfBirth                   DateTime
+  gender                        String
+  email                         String?
+  phone                         String?
+  address                       String?
+  city                          String?
+  state                         String?
+  postalCode                    String?
+  curp                          String?                         @unique
+  rfc                           String?
+  bloodType                     String?
+  allergies                     String?
+  emergencyContact              String?
+  emergencyContactName          String?
+  emergencyContactPhone         String?
+  consentToTreatment            Boolean                         @default(true)
+  consentToDataProcessing       Boolean                         @default(true)
+  isActive                      Boolean                         @default(true)
+  createdBy                     String?
+  createdAt                     DateTime                        @default(now())
+  updatedAt                     DateTime
+  clinicId                      String?                         @db.VarChar(255)
+  assessment_tokens             assessment_tokens[]
+  clinimetrix_assessments       clinimetrix_assessments[]
+  clinimetrix_remote_assessments clinimetrix_remote_assessments[]
+  consultations                 consultations[]
+  incomes                       incomes[]
+  medical_history               medical_history[]
+  patient_discounts             patient_discounts[]
+  patient_documents             patient_documents[]
+  patient_services              patient_services[]
+  patient_tag_assignments       patient_tag_assignments[]
+  users                         users?                          @relation(fields: [createdBy], references: [id])
+  prescriptions                 prescriptions[]
+  remote_assessments            remote_assessments[]
+  resource_patient_distribution resource_patient_distribution[]
+  scale_administrations         scale_administrations[]
+  waiting_list                  waiting_list[]
+
+  @@index([createdBy], map: "patients_createdBy_fkey")
+}
+
+model permissions {
+  id               String             @id
+  name             String             @unique
+  description      String?
+  resource         String
+  action           String
+  createdAt        DateTime           @default(now())
+  updatedAt        DateTime
+  role_permissions role_permissions[]
+}
+
+model prescriptions {
+  id           String      @id
+  patientId    String
+  medicationId String
+  dosage       String
+  frequency    String
+  startDate    DateTime
+  endDate      DateTime?
+  status       String      @default("active")
+  prescribedBy String
+  notes        String?
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime
+  medications  medications @relation(fields: [medicationId], references: [id])
+  patients     patients    @relation(fields: [patientId], references: [id], onDelete: Cascade)
+
+  @@index([medicationId], map: "prescriptions_medicationId_fkey")
+  @@index([patientId], map: "prescriptions_patientId_fkey")
+}
+
+model professional_contracts {
+  id             String    @id
+  professionalId String
+  clinicId       String?
+  contractType   String
+  commissionRate Decimal?  @db.Decimal(5, 2)
+  fixedAmount    Decimal?  @db.Decimal(10, 2)
+  hourlyRate     Decimal?  @db.Decimal(10, 2)
+  monthlyRate    Decimal?  @db.Decimal(10, 2)
+  isActive       Boolean   @default(true)
+  startDate      DateTime  @default(now())
+  endDate        DateTime?
+  notes          String?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime
+  users          users     @relation(fields: [professionalId], references: [id])
+
+  @@index([professionalId], map: "professional_contracts_professionalId_fkey")
+}
+
+model remote_assessment_access_log {
+  id                 String                                  @id
+  remoteAssessmentId String
+  accessedAt         DateTime                                @default(now())
+  ipAddress          String?
+  userAgent          String?                                 @db.Text
+  deviceType         remote_assessment_access_log_deviceType @default(unknown)
+  browser            String?
+  operatingSystem    String?
+  countryCode        String?
+  city               String?
+  action             remote_assessment_access_log_action     @default(view)
+  metadata           Json?
+  remote_assessments remote_assessments                      @relation(fields: [remoteAssessmentId], references: [id], onDelete: Cascade)
+
+  @@index([accessedAt])
+  @@index([remoteAssessmentId])
+}
+
+model remote_assessment_message_templates {
+  id              String                                       @id
+  name            String
+  category        remote_assessment_message_templates_category @default(custom)
+  messageTemplate String                                       @db.Text
+  createdBy       String
+  isActive        Boolean                                      @default(true)
+  createdAt       DateTime                                     @default(now())
+  users           users                                        @relation(fields: [createdBy], references: [id])
+
+  @@index([category])
+  @@index([createdBy])
+}
+
+model remote_assessment_progress {
+  id                 String             @id
+  remoteAssessmentId String             @unique
+  responses          Json
+  currentItemIndex   Int                @default(0)
+  totalItems         Int
+  percentageComplete Decimal            @default(0.00) @db.Decimal(5, 2)
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime
+  remote_assessments remote_assessments @relation(fields: [remoteAssessmentId], references: [id], onDelete: Cascade)
+}
+
+model remote_assessments {
+  id                                              String                            @id
+  token                                           String                            @unique
+  scaleId                                         String
+  patientId                                       String
+  administratorId                                 String
+  createdAt                                       DateTime                          @default(now())
+  expiresAt                                       DateTime
+  accessedAt                                      DateTime?
+  completedAt                                     DateTime?
+  status                                          remote_assessments_status         @default(pending)
+  patientEmail                                    String?
+  patientPhone                                    String?
+  customMessage                                   String?                           @db.Text
+  privacyNoticeId                                 String?
+  expirationDays                                  Int                               @default(7)
+  reminderEnabled                                 Boolean                           @default(true)
+  reminderSentAt                                  DateTime?
+  reminderCount                                   Int                               @default(0)
+  deliveryMethod                                  remote_assessments_deliveryMethod @default(copy_link)
+  createdBy                                       String
+  updatedAt                                       DateTime
+  remote_assessment_access_log                    remote_assessment_access_log[]
+  remote_assessment_progress                      remote_assessment_progress?
+  users_remote_assessments_administratorIdTousers users                             @relation("remote_assessments_administratorIdTousers", fields: [administratorId], references: [id])
+  users_remote_assessments_createdByTousers       users                             @relation("remote_assessments_createdByTousers", fields: [createdBy], references: [id])
+  patients                                        patients                          @relation(fields: [patientId], references: [id])
+  scales                                          scales                            @relation(fields: [scaleId], references: [id])
+
+  @@index([administratorId])
+  @@index([createdBy], map: "remote_assessments_createdBy_fkey")
+  @@index([expiresAt])
+  @@index([patientId])
+  @@index([scaleId], map: "remote_assessments_scaleId_fkey")
+  @@index([status])
+  @@index([token])
+}
+
+model resource_access_logs {
+  id               String                      @id @default(dbgenerated("(uuid())")) @db.VarChar(36)
+  resource_send_id String                      @db.VarChar(36)
+  accessed_at      DateTime?                   @default(now()) @db.Timestamp(0)
+  ip_address       String?                     @db.VarChar(45)
+  user_agent       String?                     @db.Text
+  action           resource_access_logs_action
+  resource_sends   resource_sends              @relation(fields: [resource_send_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "resource_access_logs_ibfk_1")
+
+  @@index([accessed_at], map: "idx_accessed")
+  @@index([resource_send_id], map: "idx_send")
+}
+
+model resource_categories {
+  id                          String                        @id
+  name                        String
+  slug                        String                        @unique
+  description                 String?
+  isActive                    Boolean                       @default(true)
+  createdAt                   DateTime                      @default(now())
+  updatedAt                   DateTime
+  resource_category_relations resource_category_relations[]
+}
+
+model resource_category_relations {
+  id                  String              @id
+  resourceId          String
+  categoryId          String
+  resource_categories resource_categories @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  resources           resources           @relation(fields: [resourceId], references: [id], onDelete: Cascade)
+
+  @@unique([resourceId, categoryId])
+  @@index([categoryId], map: "resource_category_relations_categoryId_fkey")
+}
+
+model resource_collections {
+  id          String    @id @default(dbgenerated("(uuid())")) @db.VarChar(36)
+  user_id     String    @db.VarChar(36)
+  name        String    @db.VarChar(255)
+  description String?   @db.Text
+  is_public   Boolean?  @default(false)
+  created_at  DateTime? @default(now()) @db.Timestamp(0)
+  updated_at  DateTime? @default(now()) @db.Timestamp(0)
+
+  @@index([user_id], map: "idx_user")
+}
+
+model resource_email_templates {
+  id             String           @id @default(dbgenerated("(uuid())")) @db.VarChar(36)
+  user_id        String           @db.VarChar(36)
+  name           String           @db.VarChar(255)
+  subject        String           @db.VarChar(500)
+  body_html      String           @db.Text
+  body_text      String?          @db.Text
+  is_default     Boolean?         @default(false)
+  created_at     DateTime?        @default(now()) @db.Timestamp(0)
+  updated_at     DateTime?        @default(now()) @db.Timestamp(0)
+  resource_sends resource_sends[]
+
+  @@index([user_id], map: "idx_user")
+}
+
+model resource_patient_distribution {
+  id         String    @id
+  resourceId String
+  patientId  String
+  sentVia    String    @default("expedix")
+  sentDate   DateTime  @default(now())
+  viewedDate DateTime?
+  message    String?
+  sentById   String
+  patients   patients  @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  resources  resources @relation(fields: [resourceId], references: [id], onDelete: Cascade)
+  users      users     @relation(fields: [sentById], references: [id])
+
+  @@index([patientId], map: "resource_patient_distribution_patientId_fkey")
+  @@index([resourceId], map: "resource_patient_distribution_resourceId_fkey")
+  @@index([sentById], map: "resource_patient_distribution_sentById_fkey")
+}
+
+model resource_sends {
+  id                       String                          @id @default(dbgenerated("(uuid())")) @db.VarChar(36)
+  resource_id              String                          @db.VarChar(36)
+  patient_id               String                          @db.VarChar(36)
+  sent_by                  String                          @db.VarChar(36)
+  sent_at                  DateTime?                       @default(now()) @db.Timestamp(0)
+  send_method              resource_sends_send_method
+  email_template_id        String?                         @db.VarChar(36)
+  watermark_applied        Boolean?                        @default(false)
+  watermark_template_id    String?                         @db.VarChar(36)
+  customizations_json      Json?
+  delivery_status          resource_sends_delivery_status? @default(sent)
+  delivered_at             DateTime?                       @db.Timestamp(0)
+  viewed_at                DateTime?                       @db.Timestamp(0)
+  download_count           Int?                            @default(0)
+  notes                    String?                         @db.Text
+  resource_access_logs     resource_access_logs[]
+  resource_email_templates resource_email_templates?       @relation(fields: [email_template_id], references: [id], onUpdate: NoAction, map: "resource_sends_ibfk_1")
+  watermark_templates      watermark_templates?            @relation(fields: [watermark_template_id], references: [id], onUpdate: NoAction, map: "resource_sends_ibfk_2")
+
+  @@index([email_template_id], map: "email_template_id")
+  @@index([patient_id], map: "idx_patient")
+  @@index([resource_id], map: "idx_resource")
+  @@index([sent_at], map: "idx_sent_date")
+  @@index([delivery_status], map: "idx_status")
+  @@index([watermark_template_id], map: "watermark_template_id")
+}
+
+model resource_tag_relations {
+  id            String        @id
+  resourceId    String
+  tagId         String
+  resources     resources     @relation(fields: [resourceId], references: [id], onDelete: Cascade)
+  resource_tags resource_tags @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@unique([resourceId, tagId])
+  @@index([tagId], map: "resource_tag_relations_tagId_fkey")
+}
+
+model resource_tags {
+  id                     String                   @id
+  name                   String                   @unique
+  color                  String?
+  isActive               Boolean                  @default(true)
+  createdAt              DateTime                 @default(now())
+  updatedAt              DateTime
+  resource_tag_relations resource_tag_relations[]
+}
+
+model resources {
+  id                            String                          @id
+  title                         String
+  slug                          String?                         @unique
+  content                       String?
+  excerpt                       String?
+  type                          String                          @default("article")
+  url                           String?
+  filePath                      String?
+  fileName                      String?
+  fileSize                      Int?
+  mimeType                      String?
+  metadata                      Json?
+  status                        String                          @default("draft")
+  featuredAt                    DateTime?
+  publishedAt                   DateTime?
+  lastAccessedAt                DateTime?
+  createdById                   String?
+  createdAt                     DateTime                        @default(now())
+  updatedAt                     DateTime
+  resource_category_relations   resource_category_relations[]
+  resource_patient_distribution resource_patient_distribution[]
+  resource_tag_relations        resource_tag_relations[]
+  users                         users?                          @relation(fields: [createdById], references: [id])
+
+  @@index([createdById], map: "resources_createdById_fkey")
+}
+
+model role_permissions {
+  id           String      @id
+  roleId       String
+  permissionId String
+  permissions  permissions @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+  roles        roles       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+
+  @@unique([roleId, permissionId])
+  @@index([permissionId], map: "role_permissions_permissionId_fkey")
+}
+
+model roles {
+  id               String             @id
+  name             String             @unique
+  description      String?
+  isActive         Boolean            @default(true)
+  createdAt        DateTime           @default(now())
+  updatedAt        DateTime
+  role_permissions role_permissions[]
+  user_roles       user_roles[]
+}
+
+model scale_administrations {
+  id                    String                  @id
+  patientId             String
+  scaleId               String
+  administratorId       String
+  administrationDate    DateTime                @default(now())
+  administrationType    String
+  status                String                  @default("completed")
+  totalScore            Float?
+  rawScore              Float?
+  percentileScore       Float?
+  tScore                Float?
+  zScore                Float?
+  severity              String?
+  interpretation        String?
+  notes                 String?
+  completionTime        Int?
+  startedAt             DateTime?
+  completedAt           DateTime?
+  createdAt             DateTime                @default(now())
+  updatedAt             DateTime
+  item_responses        item_responses[]
+  users                 users                   @relation(fields: [administratorId], references: [id])
+  patients              patients                @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  scales                scales                  @relation(fields: [scaleId], references: [id])
+  scale_subscale_scores scale_subscale_scores[]
+
+  @@index([administratorId], map: "scale_administrations_administratorId_fkey")
+  @@index([patientId], map: "scale_administrations_patientId_fkey")
+  @@index([scaleId], map: "scale_administrations_scaleId_fkey")
+}
+
+model scale_documentation {
+  id                        String   @id
+  scale_id                  String
+  bibliography              String?  @db.Text
+  sources_consulted         Json?
+  implementation_notes      String?  @db.Text
+  psychometric_properties   Json?
+  clinical_considerations   String?  @db.Text
+  special_items_notes       Json?
+  version_notes             String?  @db.Text
+  target_population_details String?  @db.Text
+  clinical_interpretation   String?  @db.Text
+  created_at                DateTime @default(now()) @db.DateTime(0)
+  updated_at                DateTime @default(now()) @db.DateTime(0)
+  scales                    scales   @relation(fields: [scale_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "scale_documentation_ibfk_1")
+
+  @@index([created_at], map: "idx_created_at")
+  @@index([scale_id], map: "idx_scale_id")
+}
+
+model scale_interpretation_rules {
+  id                   String   @id
+  scale_id             String
+  min_score            Int
+  max_score            Int
+  severity_level       String
+  interpretation_label String
+  color_code           String?
+  description          String?  @db.Text
+  recommendations      String?  @db.Text
+  is_active            Boolean  @default(true)
+  created_at           DateTime @default(now())
+  updated_at           DateTime
+  scales               scales   @relation(fields: [scale_id], references: [id], onDelete: Cascade)
+
+  @@index([scale_id], map: "scale_interpretation_rules_scale_id_fkey")
+}
+
+model scale_item_specific_options {
+  id            String      @id
+  item_id       String
+  option_value  String
+  option_label  String      @db.Text
+  score_value   Int
+  display_order Int         @default(0)
+  is_active     Boolean     @default(true)
+  metadata      Json?
+  created_at    DateTime    @default(now())
+  updated_at    DateTime    @default(now())
+  scale_items   scale_items @relation(fields: [item_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "scale_item_specific_options_ibfk_1")
+
+  @@index([is_active], map: "idx_item_specific_options_active")
+  @@index([item_id], map: "idx_item_specific_options_item_id")
+  @@index([display_order], map: "idx_item_specific_options_order")
+}
+
+model scale_items {
+  id                          String                        @id
+  scale_id                    String
+  item_number                 Int
+  item_text                   String?                       @db.Text
+  item_code                   String?
+  subscale                    String?
+  response_group              String?
+  reverse_scored              Boolean                       @default(false)
+  is_active                   Boolean                       @default(true)
+  created_at                  DateTime                      @default(now())
+  updated_at                  DateTime
+  question_type               String?                       @default("likert")
+  alert_trigger               Boolean?                      @default(false)
+  alert_condition             String?
+  help_text                   String?                       @db.Text
+  required                    Boolean?                      @default(true)
+  metadata                    Json?
+  item_responses              item_responses[]
+  scale_item_specific_options scale_item_specific_options[]
+  scales                      scales                        @relation(fields: [scale_id], references: [id], onDelete: Cascade)
+
+  @@unique([scale_id, item_number])
+  @@index([scale_id, response_group], map: "idx_scale_items_response_group")
+}
+
+model scale_response_groups {
+  id            String   @id
+  scale_id      String
+  group_key     String
+  name          String
+  description   String?  @db.Text
+  display_order Int      @default(0)
+  is_active     Boolean  @default(true)
+  created_at    DateTime @default(now())
+  updated_at    DateTime
+
+  @@unique([scale_id, group_key], map: "uk_scale_group")
+  @@index([scale_id], map: "idx_scale_response_groups_scale")
+}
+
+model scale_response_options {
+  id             String   @id
+  scale_id       String
+  response_group String?
+  option_value   String
+  option_label   String
+  score_value    Int
+  display_order  Int      @default(0)
+  is_active      Boolean  @default(true)
+  created_at     DateTime @default(now())
+  updated_at     DateTime
+  option_type    String?  @default("standard")
+  metadata       Json?
+  scales         scales   @relation(fields: [scale_id], references: [id], onDelete: Cascade)
+
+  @@index([scale_id, response_group], map: "idx_scale_response_options_group")
+  @@index([scale_id], map: "scale_response_options_scale_id_fkey")
+}
+
+model scale_subscale_scores {
+  id                    String                @id
+  administration_id     String
+  subscale_id           String
+  subscale_name         String
+  score                 Float
+  raw_score             Float?
+  percentile_score      Float?
+  t_score               Float?
+  interpretation        String?
+  severity              String?
+  created_at            DateTime              @default(now())
+  updated_at            DateTime
+  scale_administrations scale_administrations @relation(fields: [administration_id], references: [id], onDelete: Cascade)
+  scale_subscales       scale_subscales       @relation(fields: [subscale_id], references: [id])
+
+  @@unique([administration_id, subscale_id])
+  @@index([administration_id], map: "idx_subscale_scores_administration")
+  @@index([subscale_id], map: "idx_subscale_scores_subscale")
+}
+
+model scale_subscales {
+  id                         String                  @id
+  scale_id                   String
+  subscale_name              String
+  subscale_code              String?
+  min_score                  Int                     @default(0)
+  max_score                  Int?
+  description                String?                 @db.Text
+  is_active                  Boolean                 @default(true)
+  created_at                 DateTime                @default(now())
+  updated_at                 DateTime
+  items                      Json?
+  referencias_bibliograficas String?                 @db.Text
+  indice_cronbach            Decimal?                @db.Decimal(3, 2)
+  scale_subscale_scores      scale_subscale_scores[]
+  scales                     scales                  @relation(fields: [scale_id], references: [id], onDelete: Cascade)
+
+  @@index([scale_id], map: "scale_subscales_scale_id_fkey")
+}
+
+model scales {
+  id                         String                       @id
+  name                       String
+  abbreviation               String                       @unique
+  version                    String?                      @default("1.0")
+  category                   String
+  subcategory                String?
+  description                String?                      @db.Text
+  author                     String?
+  publication_year           Int?
+  estimated_duration_minutes Int?
+  administration_mode        String?
+  target_population          String?                      @db.Text
+  total_items                Int
+  scoring_method             String?
+  score_range_min            Int?
+  score_range_max            Int?
+  instructions_professional  String?                      @db.Text
+  instructions_patient       String?                      @db.Text
+  is_active                  Boolean                      @default(true)
+  created_at                 DateTime                     @default(now())
+  updated_at                 DateTime
+  tags                       Json?
+  assessment_tokens          assessment_tokens[]
+  remote_assessments         remote_assessments[]
+  scale_administrations      scale_administrations[]
+  scale_documentation        scale_documentation[]
+  scale_interpretation_rules scale_interpretation_rules[]
+  scale_items                scale_items[]
+  scale_response_options     scale_response_options[]
+  scale_subscales            scale_subscales[]
+  user_favorite_scales       user_favorite_scales[]
+}
+
+model schedule_configurations {
+  id                         String   @id
+  userId                     String   @unique
+  workingHoursStart          String
+  workingHoursEnd            String
+  lunchBreakEnabled          Boolean  @default(false)
+  lunchBreakStart            String?
+  lunchBreakEnd              String?
+  workingDays                Json
+  defaultAppointmentDuration Int      @default(60)
+  consultationTypes          Json
+  blockedDates               Json
+  maxDailyAppointments       Int      @default(20)
+  bufferTime                 Int      @default(0)
+  reminders                  Json
+  createdAt                  DateTime @default(now())
+  updatedAt                  DateTime @default(now())
+}
+
+model services {
+  id                     String                 @id
+  configId               String
+  name                   String
+  description            String?
+  code                   String?
+  basePrice              Decimal                @db.Decimal(10, 2)
+  currency               String                 @default("MXN")
+  duration               Int?
+  category               String
+  isActive               Boolean                @default(true)
+  createdAt              DateTime               @default(now())
+  updatedAt              DateTime
+  incomes                incomes[]
+  patient_services       patient_services[]
+  finance_configurations finance_configurations @relation(fields: [configId], references: [id], onDelete: Cascade)
+
+  @@index([configId], map: "services_configId_fkey")
+}
+
+model user_favorite_scales {
+  id         String   @id
+  user_id    String
+  scale_id   String
+  created_at DateTime @default(now())
+  updated_at DateTime @default(now())
+  scales     scales   @relation(fields: [scale_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "user_favorite_scales_ibfk_1")
+
+  @@unique([user_id, scale_id], map: "unique_user_scale")
+  @@index([scale_id], map: "idx_scale_favorites")
+  @@index([user_id], map: "idx_user_favorites")
+}
+
+model user_roles {
+  id        String   @id
+  userId    String
+  roleId    String
+  createdAt DateTime @default(now())
+  roles     roles    @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  users     users    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, roleId])
+  @@index([roleId], map: "user_roles_roleId_fkey")
+}
+
+model user_storage_quota {
+  id               String   @id
+  userId           String   @unique
+  planType         String   @default("basic")
+  maxStorageBytes  BigInt
+  usedStorageBytes BigInt   @default(0)
+  lastCleanupDate  DateTime @default(now())
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime
+  users            users    @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model users {
+  id                                                                String                                @id
+  auth0Id                                                           String?                               @unique
+  clerk_user_id                                                     String?                               @unique
+  email                                                             String                                @unique
+  password                                                          String?
+  name                                                              String?
+  first_name                                                        String?
+  last_name                                                         String?
+  avatar_url                                                        String?
+  picture                                                           String?
+  organizationId                                                    String?
+  accountType                                                       users_accountType                     @default(INDIVIDUAL)
+  role                                                              String?                               @default("user")
+  isActive                                                          Boolean                               @default(true)
+  isBetaUser                                                        Boolean                               @default(true)
+  emailVerified                                                     Boolean                               @default(false)
+  emailVerificationToken                                            String?                               @unique
+  emailVerifiedAt                                                   DateTime?
+  createdAt                                                         DateTime                              @default(now())
+  updatedAt                                                         DateTime
+  lastLoginAt                                                       DateTime?
+  assessment_tokens                                                 assessment_tokens[]
+  cash_cut_professional_breakdown                                   cash_cut_professional_breakdown[]
+  cash_register_cuts_cash_register_cuts_closedByTousers             cash_register_cuts[]                  @relation("cash_register_cuts_closedByTousers")
+  cash_register_cuts_cash_register_cuts_createdByTousers            cash_register_cuts[]                  @relation("cash_register_cuts_createdByTousers")
+  clinimetrix_assessments                                           clinimetrix_assessments[]
+  consultations                                                     consultations[]
+  expenses                                                          expenses[]
+  finance_configurations                                            finance_configurations[]
+  financial_goals                                                   financial_goals[]
+  incomes                                                           incomes[]
+  patient_documents                                                 patient_documents[]
+  patient_tag_assignments_patient_tag_assignments_assignedByTousers patient_tag_assignments[]             @relation("patient_tag_assignments_assignedByTousers")
+  patient_tag_assignments_patient_tag_assignments_removedByTousers  patient_tag_assignments[]             @relation("patient_tag_assignments_removedByTousers")
+  patient_tags                                                      patient_tags[]
+  patients                                                          patients[]
+  professional_contracts                                            professional_contracts[]
+  remote_assessment_message_templates                               remote_assessment_message_templates[]
+  remote_assessments_remote_assessments_administratorIdTousers      remote_assessments[]                  @relation("remote_assessments_administratorIdTousers")
+  remote_assessments_remote_assessments_createdByTousers            remote_assessments[]                  @relation("remote_assessments_createdByTousers")
+  resource_patient_distribution                                     resource_patient_distribution[]
+  resources                                                         resources[]
+  scale_administrations                                             scale_administrations[]
+  user_roles                                                        user_roles[]
+  user_storage_quota                                                user_storage_quota?
+  organizations                                                     organizations?                        @relation(fields: [organizationId], references: [id])
+
+  @@index([organizationId], map: "users_organizationId_fkey")
+}
+
+model waiting_list {
+  id              String    @id
+  patientId       String
+  appointmentType String
+  preferredDates  Json
+  preferredTimes  Json
+  priority        String    @default("media")
+  notes           String?   @db.Text
+  status          String    @default("waiting")
+  contactAttempts Int       @default(0)
+  lastContactDate DateTime?
+  scheduledDate   DateTime?
+  createdBy       String    @default("user-dr-alejandro")
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @default(now())
+  patients        patients  @relation(fields: [patientId], references: [id])
+
+  @@index([patientId])
+  @@index([priority])
+  @@index([status])
+}
+
+model watermark_templates {
+  id             String                        @id @default(dbgenerated("(uuid())")) @db.VarChar(36)
+  user_id        String                        @db.VarChar(36)
+  name           String                        @db.VarChar(255)
+  type           watermark_templates_type
+  logo_path      String?                       @db.VarChar(500)
+  text_content   String?                       @db.VarChar(500)
+  position       watermark_templates_position? @default(bottom_right)
+  opacity        Decimal?                      @default(0.50) @db.Decimal(3, 2)
+  font_size      Int?                          @default(12)
+  font_color     String?                       @default("#000000") @db.VarChar(7)
+  settings_json  Json?
+  is_default     Boolean?                      @default(false)
+  created_at     DateTime?                     @default(now()) @db.Timestamp(0)
+  updated_at     DateTime?                     @default(now()) @db.Timestamp(0)
+  resource_sends resource_sends[]
+
+  @@index([user_id, is_default], map: "idx_user_default")
+}
+
+enum organizations_type {
+  CLINIC
+  HOSPITAL
+  CONSULTORIO
+}
+
+enum patient_communications_communication_type {
+  phone_call
+  whatsapp
+  email
+  in_person
+}
+
+enum remote_assessment_message_templates_category {
+  followup
+  initial
+  pre_appointment
+  post_appointment
+  custom
+}
+
+enum appointment_behavioral_logs_event_type {
+  late_arrival
+  no_show
+  cancelled_last_minute
+  early_arrival
+  communication_issue
+  payment_delay
+}
+
+enum appointment_changes_change_type {
+  reschedule
+  cancellation
+  no_show
+}
+
+enum patient_communications_direction {
+  incoming
+  outgoing
+}
+
+enum watermark_templates_type {
+  text
+  image
+  combined
+}
+
+enum clinimetrix_assessments_status {
+  pending
+  in_progress
+  completed
+  cancelled
+  expired
+}
+
+enum clinimetrix_remote_assessments_status {
+  pending
+  in_progress
+  completed
+  cancelled
+  expired
+}
+
+enum remote_assessment_access_log_deviceType {
+  mobile
+  tablet
+  desktop
+  unknown
+}
+
+enum resource_access_logs_action {
+  view
+  download
+  print
+}
+
+enum resource_sends_send_method {
+  email
+  download
+  patient_portal @map("patient-portal")
+}
+
+enum watermark_templates_position {
+  top_left      @map("top-left")
+  top_center    @map("top-center")
+  top_right     @map("top-right")
+  center
+  bottom_left   @map("bottom-left")
+  bottom_center @map("bottom-center")
+  bottom_right  @map("bottom-right")
+}
+
+enum form_assignments_status {
+  pending
+  in_progress
+  completed
+  expired
+}
+
+enum users_accountType {
+  INDIVIDUAL
+  CLINIC
+}
+
+enum remote_assessments_status {
+  pending
+  accessed
+  in_progress
+  completed
+  expired
+}
+
+enum remote_assessment_access_log_action {
+  view
+  start
+  save_progress
+  complete
+  expire
+}
+
+enum resource_sends_delivery_status {
+  pending
+  sent
+  delivered
+  failed
+}
+
+enum remote_assessments_deliveryMethod {
+  email
+  sms
+  whatsapp
+  copy_link
+}

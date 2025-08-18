@@ -14,12 +14,12 @@ datasource db {
 }
 
 // =====================================================================
-// USUARIOS Y AUTENTICACIÓN (SUPABASE AUTH)
+// USUARIOS Y AUTENTICACIÓN (CLERK ÚNICAMENTE)
 // =====================================================================
 
 model users {
   id             String   @id @default(uuid()) @db.Uuid
-  supabaseUserId String   @unique  // ID de usuario de Supabase Auth
+  clerkUserId    String   @unique
   email          String   @unique
   firstName      String?
   lastName       String?
@@ -28,7 +28,7 @@ model users {
   licenseNumber  String?
   specialization String?
   isActive       Boolean  @default(true)
-  emailVerified  Boolean  @default(true) // Supabase maneja la verificación
+  emailVerified  Boolean  @default(false)
   lastLoginAt    DateTime?
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
@@ -41,7 +41,7 @@ model users {
   formTemplatesCreated       form_templates[]                @relation("TemplateCreatedBy")
   patientFormAssignments     patient_form_assignments[]      @relation("FormAssignedBy")
 
-  @@index([supabaseUserId])
+  @@index([clerkUserId])
   @@index([email])
   @@index([isActive])
 }

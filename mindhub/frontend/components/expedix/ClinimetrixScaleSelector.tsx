@@ -11,8 +11,8 @@ import {
   HeartIcon
 } from '@heroicons/react/24/outline';
 import { StarIcon as StarSolidIcon } from '@heroicons/react/24/solid';
-import { clinimetrixProClient } from '@/lib/api/clinimetrix-pro-client';
-import type { ClinimetrixRegistry } from '@/lib/api/clinimetrix-pro-client';
+import { unifiedClinimetrixClient } from '@/lib/api/unified-clinimetrix-client';
+import type { ClinimetrixRegistry } from '@/lib/api/unified-clinimetrix-client';
 import { ClinimetrixProAssessmentModal } from '@/components/ClinimetrixPro/ClinimetrixProAssessmentModal';
 import { Button } from '@/components/ui/Button';
 
@@ -57,7 +57,7 @@ export default function ClinimetrixScaleSelector({
   const loadScales = async () => {
     try {
       setLoading(true);
-      const scalesData = await clinimetrixProClient.getTemplateCatalog();
+      const scalesData = await unifiedClinimetrixClient.getTemplateCatalog();
       setScales(scalesData);
     } catch (error) {
       console.error('Error loading scales:', error);
@@ -108,9 +108,47 @@ export default function ClinimetrixScaleSelector({
     setFilteredScales(filtered);
   };
 
-  const handleSelectScale = (scale: ClinimetrixRegistry) => {
-    setSelectedScale(scale);
-    setShowAssessment(true);
+  const handleSelectScale = async (scale: ClinimetrixRegistry) => {
+    try {
+      setSelectedScale(scale);
+      
+      console.log(`🚀 Iniciando evaluación ${scale.abbreviation} para ${patient.first_name}...`);
+      
+      // Create return URL with patient context
+      const returnUrl = `${window.location.origin}/hubs/expedix/patients/${patient.id}`;
+      
+      // Use unified client with Django-first strategy
+      const result = await unifiedClinimetrixClient.startAssessment(
+        patient, 
+        scale.abbreviation || scale.templateId, 
+        returnUrl,
+        {
+          useDjangoFirst: true,
+          fallbackToReact: true,
+          onFallback: () => {
+            console.log('🔄 Fallback activado: usando React Assessment Modal...');
+            setShowAssessment(true);
+          }
+        }
+      );
+      
+      if (result.method === 'django') {
+        // Django redirection handled by client, nothing to do here
+        console.log('✅ Redirigiendo a Django focused_take...');
+      } else if (result.method === 'react') {
+        // React modal will be shown by onFallback callback
+        console.log('✅ Usando React Assessment Modal...');
+      }
+      
+    } catch (error) {
+      console.error('❌ Error starting assessment:', error);
+      
+      // Reset selection on error
+      setSelectedScale(null);
+      
+      // Show user-friendly error
+      alert(`No se pudo iniciar la evaluación: ${error instanceof Error ? error.message : 'Error desconocido'}`);
+    }
   };
 
   const handleAssessmentComplete = async (results: any) => {

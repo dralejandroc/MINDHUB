@@ -2,7 +2,7 @@
 
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { useAuth } from '@/hooks/useAuth';
+import { useAuth } from '@/lib/providers/AuthProvider';
 import { UnifiedSidebar } from '@/components/layout/UnifiedSidebar';
 import { DashboardSwitcher } from '@/components/dashboard/DashboardSwitcher';
 import { StartPageHandler } from '@/components/layout/StartPageHandler';
@@ -10,19 +10,19 @@ import { UserMetricsProvider } from '@/contexts/UserMetricsContext';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 
 export default function AppHome() {
-  const { isLoaded, isSignedIn, user } = useAuth();
+  const { user, loading } = useAuth();
   const router = useRouter();
 
   useEffect(() => {
-    if (isLoaded && !isSignedIn) {
-      // Redirect to sign-in if not authenticated with Clerk
-      router.push('/sign-in');
+    if (!loading && !user) {
+      // Redirect to sign-in if not authenticated with Supabase
+      router.push('/auth/sign-in');
     }
-  }, [isLoaded, isSignedIn, router]);
+  }, [loading, user, router]);
 
   // Reset dashboard config if it's broken
   useEffect(() => {
-    if (isSignedIn) {
+    if (user) {
       const dashboardConfig = localStorage.getItem('userMetrics');
       if (dashboardConfig) {
         try {
@@ -37,9 +37,9 @@ export default function AppHome() {
         }
       }
     }
-  }, [isSignedIn]);
+  }, [user]);
 
-  if (!isLoaded) {
+  if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <LoadingSpinner size="lg" />
@@ -47,8 +47,8 @@ export default function AppHome() {
     );
   }
 
-  // If not signed in with Clerk, show loading
-  if (!isSignedIn) {
+  // If not signed in with Supabase, show loading
+  if (!user) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <LoadingSpinner size="lg" />

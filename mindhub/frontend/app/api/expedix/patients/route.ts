@@ -1,180 +1,151 @@
 // Prevent static generation for this API route
 export const dynamic = 'force-dynamic';
 
-const BACKEND_URL = process.env.BACKEND_URL || 'https://mindhub-production.up.railway.app';
+import { 
+  createSupabaseServer, 
+  getAuthenticatedUser, 
+  createAuthResponse, 
+  createErrorResponse, 
+  createSuccessResponse 
+} from '@/lib/supabase/server'
 
 export async function GET(request: Request) {
   try {
-    console.log('[Patients API] Processing GET request');
-    console.log('[Patients API] Request URL:', request.url);
-    console.log('[Patients API] Backend URL:', BACKEND_URL);
+    console.log('[Patients API] Processing GET request with Supabase');
     const { searchParams } = new URL(request.url);
     
-    // Forward all query parameters
-    const params = new URLSearchParams();
-    searchParams.forEach((value, key) => {
-      params.append(key, value);
-    });
-    
-    let url = `${BACKEND_URL}/api/expedix/patients`;
-    if (params.toString()) {
-      url += `?${params.toString()}`;
-    }
-
-    console.log('[Patients API] Target URL:', url);
-
-    // Forward authentication headers
-    const headers: HeadersInit = {
-      'Content-Type': 'application/json',
-    };
-
-    // Forward Authorization header (Clerk token)
-    const authHeader = request.headers.get('Authorization');
-    if (authHeader) {
-      headers['Authorization'] = authHeader;
-      console.log('[Patients API] Authorization header found');
-    } else {
-      console.log('[Patients API] No Authorization header found');
-    }
-
-    // Forward user context
-    const userContextHeader = request.headers.get('X-User-Context');
-    if (userContextHeader) {
-      headers['X-User-Context'] = userContextHeader;
-      console.log('[Patients API] User context header found');
-    }
-
-    console.log('[Patients API] Making request to backend...');
-    const response = await fetch(url, {
-      method: 'GET',
-      headers,
-    });
-
-    console.log('[Patients API] Backend response status:', response.status);
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error('[Patients API] Backend error response:', errorText);
-      throw new Error(`HTTP error! status: ${response.status}, body: ${errorText}`);
-    }
-
-    const data = await response.json();
-    console.log('[Patients API] Successfully retrieved data from backend');
-    
-    return new Response(JSON.stringify(data), {
-      status: 200,
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    });
-  } catch (error) {
-    console.error('[Patients API] Error proxying patients request:', error);
-    console.error('[Patients API] Backend URL:', BACKEND_URL);
-    console.error('[Patients API] Error details:', error instanceof Error ? error.message : error);
-    console.error('[Patients API] Error stack:', error instanceof Error ? error.stack : 'No stack trace');
-    
-    // Check if it's an authentication error
-    if (error instanceof Error && (error.message.includes('401') || error.message.includes('Authentication'))) {
-      return new Response(JSON.stringify({
-        success: false, 
-        error: 'Authentication required',
-        message: 'Please log in to access this resource',
-        code: 'AUTHENTICATION_REQUIRED'
-      }), {
-        status: 401,
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
+    const user = await getAuthenticatedUser()
+    if (!user) {
+      return createAuthResponse()
     }
     
-    return new Response(JSON.stringify({
-      success: false, 
-      error: 'Failed to fetch data from backend',
-      message: error instanceof Error ? error.message : 'Unknown error',
-      backend_url: BACKEND_URL,
-      timestamp: new Date().toISOString(),
-      data: [],
+    const supabase = createSupabaseServer()
+
+    // Parse query parameters
+    const page = parseInt(searchParams.get('page') || '1');
+    const limit = parseInt(searchParams.get('limit') || '20');
+    const search = searchParams.get('search') || '';
+    const offset = (page - 1) * limit;
+
+    // Build query
+    let query = supabase
+      .from('patients')
+      .select('*', { count: 'exact' })
+      .order('created_at', { ascending: false });
+
+    // Add search filter
+    if (search) {
+      query = query.or(`first_name.ilike.%${search}%,last_name.ilike.%${search}%,email.ilike.%${search}%`);
+    }
+
+    // Add pagination
+    query = query.range(offset, offset + limit - 1);
+
+    const { data: patients, error, count } = await query;
+
+    if (error) {
+      console.error('[Patients API] Supabase error:', error);
+      throw new Error(error.message);
+    }
+
+    const total = count || 0;
+    const pages = Math.ceil(total / limit);
+
+    console.log(`[Patients API] Successfully retrieved ${patients?.length || 0} patients`);
+    
+    return createSuccessResponse({
+      data: patients || [],
       pagination: {
-        page: 1,
-        limit: 20,
-        total: 0,
-        pages: 0
+        page,
+        limit,
+        total,
+        pages
       }
-    }), {
-      status: 500,
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    });
+    }, 'Patients retrieved successfully');
+
+  } catch (error) {
+    console.error('[Patients API] Error:', error);
+    return createErrorResponse('Failed to fetch patients', error as Error);
   }
 }
 
 export async function POST(request: Request) {
   try {
+    console.log('[Patients API] Processing POST request with Supabase');
     const body = await request.json();
     
-    // Forward authentication headers
-    const headers: HeadersInit = {
-      'Content-Type': 'application/json',
-    };
-
-    // Forward Authorization header (Clerk token)
-    const authHeader = request.headers.get('Authorization');
-    if (authHeader) {
-      headers['Authorization'] = authHeader;
-    }
-
-    // Forward user context
-    const userContextHeader = request.headers.get('X-User-Context');
-    if (userContextHeader) {
-      headers['X-User-Context'] = userContextHeader;
-    }
+    const supabase = createSupabaseServer()
     
-    const response = await fetch(`${BACKEND_URL}/api/expedix/patients`, {
-      method: 'POST',
-      headers,
-      body: JSON.stringify(body),
-    });
-
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
-    }
-
-    const data = await response.json();
-    return new Response(JSON.stringify(data), {
-      status: 200,
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    });
-  } catch (error) {
-    console.error('Error creating patient:', error);
+    // Get current user session
+    const { data: { session }, error: sessionError } = await supabase.auth.getSession()
     
-    // Check if it's an authentication error
-    if (error instanceof Error && (error.message.includes('401') || error.message.includes('Authentication'))) {
+    if (sessionError || !session) {
       return new Response(JSON.stringify({
-        success: false, 
+        success: false,
         error: 'Authentication required',
         message: 'Please log in to access this resource',
         code: 'AUTHENTICATION_REQUIRED'
       }), {
         status: 401,
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' }
       });
     }
+
+    // Validate required fields
+    if (!body.first_name) {
+      return new Response(JSON.stringify({
+        success: false,
+        error: 'Validation error',
+        message: 'First name is required'
+      }), {
+        status: 400,
+        headers: { 'Content-Type': 'application/json' }
+      });
+    }
+
+    // Prepare patient data
+    const patientData = {
+      ...body,
+      created_by: session.user.id,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    };
+
+    // Insert patient
+    const { data: patient, error } = await supabase
+      .from('patients')
+      .insert([patientData])
+      .select()
+      .single();
+
+    if (error) {
+      console.error('[Patients API] Supabase error:', error);
+      throw new Error(error.message);
+    }
+
+    console.log('[Patients API] Successfully created patient:', patient.id);
+
+    return new Response(JSON.stringify({
+      success: true,
+      data: patient,
+      message: 'Patient created successfully',
+      timestamp: new Date().toISOString()
+    }), {
+      status: 201,
+      headers: { 'Content-Type': 'application/json' }
+    });
+
+  } catch (error) {
+    console.error('[Patients API] Error creating patient:', error);
     
     return new Response(JSON.stringify({
       success: false, 
       error: 'Failed to create patient',
-      message: error instanceof Error ? error.message : "Unknown error"
+      message: error instanceof Error ? error.message : "Unknown error",
+      timestamp: new Date().toISOString()
     }), {
       status: 500,
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers: { 'Content-Type': 'application/json' }
     });
   }
 }
