@@ -72,13 +72,13 @@ export async function middleware(req: NextRequest) {
   // Update CSP to include Supabase domains
   res.headers.set('Content-Security-Policy', 
     "default-src 'self' https://*.supabase.co https://mindhub.cloud; " +
-    "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://*.supabase.co; " +
+    "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://*.supabase.co https://mindhub.cloud; " +
     "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; " +
     "font-src 'self' https://fonts.gstatic.com; " +
     "img-src 'self' data: https://*.supabase.co; " +
-    "connect-src 'self' https://*.supabase.co https://mindhub.cloud https://www.mindhub.cloud http://localhost:*; " +
+    "connect-src 'self' https://*.supabase.co https://jvbcpldzoyicefdtnwkd.supabase.co https://mindhub.cloud https://www.mindhub.cloud http://localhost:* ws://localhost:*; " +
     "frame-src 'self' https://*.supabase.co; " +
-    "worker-src 'self' blob:"
+    "worker-src 'self' blob: 'unsafe-inline'"
   )
   
   // Get the session

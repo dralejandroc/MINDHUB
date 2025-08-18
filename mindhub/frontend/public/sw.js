@@ -81,10 +81,9 @@ self.addEventListener('fetch', (event) => {
     return;
   }
   
-  // Skip Clerk domains - let Clerk handle its own requests
-  if (requestUrl.hostname.includes('clerk.accounts.dev') ||
-      requestUrl.hostname === 'clerk.mindhub.cloud' ||
-      requestUrl.hostname === 'accounts.mindhub.cloud') {
+  // Skip Supabase auth domains - let Supabase handle its own requests
+  if (requestUrl.hostname.includes('supabase.co') ||
+      requestUrl.pathname.startsWith('/auth/v1/')) {
     return;
   }
   

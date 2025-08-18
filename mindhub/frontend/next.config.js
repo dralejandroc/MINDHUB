@@ -72,6 +72,10 @@ const nextConfig = {
             key: 'Service-Worker-Allowed',
             value: '/',
           },
+          {
+            key: 'Content-Security-Policy',
+            value: "default-src 'self' https://*.supabase.co https://mindhub.cloud; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://*.supabase.co https://mindhub.cloud; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https://*.supabase.co; connect-src 'self' https://*.supabase.co https://jvbcpldzoyicefdtnwkd.supabase.co https://mindhub.cloud https://www.mindhub.cloud http://localhost:* ws://localhost:*; frame-src 'self' https://*.supabase.co; worker-src 'self' blob: 'unsafe-inline'"
+          },
         ],
       },
       {
