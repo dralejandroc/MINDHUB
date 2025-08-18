@@ -1,0 +1,1271 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ assessment.scale.abbreviation }} - {{ assessment.scale.name }}</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #0891b2 0%, #164e63 100%);
+            min-height: 100vh;
+            padding: 20px;
+            color: #333;
+            overflow-x: hidden;
+            font-size: 0.7rem; /* 30% más pequeña */
+        }
+
+        .container {
+            max-width: 700px;
+            margin: 0 auto;
+            position: relative;
+        }
+
+        .card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 40px 30px;
+            margin: 20px 0;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            display: none;
+            animation: fadeIn 0.5s ease-in-out;
+        }
+
+        .card.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        h1 {
+            color: #0891b2;
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 2rem;
+            font-weight: 300;
+        }
+
+        h2 {
+            color: #164e63;
+            margin-bottom: 20px;
+            font-size: 1.5rem;
+            font-weight: 400;
+        }
+
+        .scale-header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .patient-info {
+            background: rgba(8, 145, 178, 0.1);
+            padding: 15px;
+            border-radius: 15px;
+            margin-bottom: 20px;
+            text-align: center;
+            font-size: 0.95rem;
+            color: #164e63;
+        }
+
+        .instructions {
+            background: rgba(8, 145, 178, 0.1);
+            padding: 25px;
+            border-radius: 15px;
+            margin-bottom: 30px;
+            border-left: 4px solid #0891b2;
+            font-size: 1.1rem;
+            line-height: 1.6;
+            color: #164e63;
+        }
+
+        .question-header {
+            background: linear-gradient(135deg, #0891b2, #164e63);
+            color: white;
+            padding: 20px 25px;
+            border-radius: 15px;
+            margin-bottom: 25px;
+            text-align: center;
+            font-weight: 500;
+        }
+
+        .question-number {
+            font-size: 0.9rem;
+            opacity: 0.9;
+            margin-bottom: 8px;
+        }
+
+        .question-text {
+            font-size: 1.2rem;
+            line-height: 1.4;
+        }
+
+        .options {
+            display: grid;
+            gap: 10px;
+            margin-top: 25px;
+        }
+
+        .option {
+            background: rgba(255, 255, 255, 0.8);
+            border: 2px solid rgba(8, 145, 178, 0.2);
+            border-radius: 12px;
+            padding: 15px 20px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 1.0rem;
+            position: relative;
+        }
+
+        .option:hover {
+            border-color: #0891b2;
+            background: rgba(255, 255, 255, 1);
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(8, 145, 178, 0.2);
+        }
+
+        .option.selected {
+            background: linear-gradient(135deg, #0891b2, #164e63);
+            color: white;
+            border-color: #0891b2;
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(8, 145, 178, 0.3);
+        }
+
+        .option-value {
+            display: none; /* Hide numeric values to avoid bias */
+        }
+
+        .option.selected .option-value {
+            display: none; /* Hide numeric values to avoid bias */
+        }
+
+        .start-btn, .results-btn, .action-btn {
+            background: linear-gradient(135deg, #0891b2, #164e63);
+            color: white;
+            border: none;
+            padding: 18px 35px;
+            border-radius: 50px;
+            font-size: 1.2rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin: 20px auto;
+            display: block;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .start-btn:hover, .results-btn:hover, .action-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 25px rgba(8, 145, 178, 0.4);
+        }
+
+        .back-btn {
+            background: rgba(255, 255, 255, 0.9);
+            color: #0891b2;
+            border: 2px solid #0891b2;
+            padding: 12px 20px;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 500;
+            backdrop-filter: blur(10px);
+            font-size: 0.9rem;
+        }
+
+        .back-btn:hover {
+            background: #0891b2;
+            color: white;
+            transform: translateY(-2px);
+        }
+
+        .help-btn {
+            background: rgba(255, 255, 255, 0.9);
+            color: #0891b2;
+            border: 2px solid #0891b2;
+            padding: 10px;
+            border-radius: 50%;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: bold;
+            backdrop-filter: blur(10px);
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+        }
+
+        .help-btn:hover {
+            background: #0891b2;
+            color: white;
+            transform: scale(1.1);
+        }
+
+        .question-controls {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .help-popup {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 2000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .help-popup-content {
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            max-width: 500px;
+            width: 100%;
+            max-height: 80vh;
+            overflow-y: auto;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+            position: relative;
+        }
+
+        .help-popup-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #f1f5f9;
+            padding-bottom: 15px;
+        }
+
+        .help-popup-title {
+            color: #0891b2;
+            font-size: 1.3rem;
+            font-weight: 600;
+        }
+
+        .help-close-btn {
+            background: none;
+            border: none;
+            font-size: 1.8rem;
+            cursor: pointer;
+            color: #64748b;
+            transition: color 0.3s ease;
+            padding: 5px;
+            line-height: 1;
+        }
+
+        .help-close-btn:hover {
+            color: #ef4444;
+        }
+
+        .help-popup-body {
+            line-height: 1.6;
+            color: #374151;
+            font-size: 1rem;
+        }
+
+        [x-cloak] {
+            display: none !important;
+        }
+
+        .progress-bar {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            height: 4px;
+            background: linear-gradient(90deg, #0891b2, #164e63);
+            transition: width 0.3s ease;
+            z-index: 1000;
+            width: 0%;
+        }
+
+        .results-container {
+            text-align: center;
+        }
+
+        .score-display {
+            background: linear-gradient(135deg, #0891b2, #164e63);
+            color: white;
+            padding: 30px;
+            border-radius: 20px;
+            margin: 25px 0;
+            font-size: 1.5rem;
+        }
+
+        .interpretation {
+            margin: 25px 0;
+            padding: 25px;
+            border-radius: 15px;
+            font-size: 1.1rem;
+            line-height: 1.6;
+        }
+
+        .level-minimal {
+            background: rgba(34, 197, 94, 0.1);
+            border-left: 4px solid #22c55e;
+            color: #166534;
+        }
+
+        .level-mild {
+            background: rgba(234, 179, 8, 0.1);
+            border-left: 4px solid #eab308;
+            color: #713f12;
+        }
+
+        .level-moderate {
+            background: rgba(249, 115, 22, 0.1);
+            border-left: 4px solid #f97316;
+            color: #9a3412;
+        }
+
+        .level-severe {
+            background: rgba(239, 68, 68, 0.1);
+            border-left: 4px solid #ef4444;
+            color: #991b1b;
+        }
+
+        .alerts {
+            background: rgba(239, 68, 68, 0.1);
+            border: 2px solid #ef4444;
+            border-radius: 15px;
+            padding: 20px;
+            margin: 20px 0;
+            color: #991b1b;
+        }
+
+        .alerts h3 {
+            color: #dc2626;
+            margin-bottom: 15px;
+        }
+
+        .technical-info {
+            background: rgba(8, 145, 178, 0.1);
+            padding: 20px;
+            border-radius: 15px;
+            margin: 20px 0;
+            font-size: 0.95rem;
+            color: #164e63;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-top: 30px;
+        }
+
+        .action-btn {
+            margin: 5px;
+            padding: 12px 25px;
+            font-size: 1rem;
+        }
+
+        .completed-message {
+            text-align: center;
+            font-size: 1.3rem;
+            line-height: 1.6;
+            color: #0891b2;
+            margin: 30px 0;
+        }
+
+        .loading-spinner {
+            text-align: center;
+            padding: 40px;
+        }
+
+        .spinner {
+            display: inline-block;
+            width: 40px;
+            height: 40px;
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #0891b2;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .error-message {
+            background: rgba(239, 68, 68, 0.1);
+            border: 2px solid #ef4444;
+            border-radius: 15px;
+            padding: 25px;
+            text-align: center;
+            color: #991b1b;
+        }
+
+        @media (max-width: 600px) {
+            body {
+                padding: 10px;
+            }
+            
+            .card {
+                padding: 25px 20px;
+                margin: 10px 0;
+            }
+            
+            h1 {
+                font-size: 1.8rem;
+            }
+            
+            .question-text {
+                font-size: 1.1rem;
+            }
+            
+            .option {
+                padding: 18px 20px;
+                font-size: 1rem;
+            }
+            
+            .start-btn, .results-btn {
+                padding: 15px 30px;
+                font-size: 1.1rem;
+            }
+            
+            .back-btn {
+                bottom: 60px;
+                right: 15px;
+                padding: 12px 18px;
+            }
+            
+            .action-buttons {
+                flex-direction: column;
+                align-items: center;
+            }
+            
+            .action-btn {
+                width: 100%;
+                max-width: 250px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container" x-data="focusedAssessment()" x-init="init()">
+        
+        <!-- Loading State -->
+        <div x-show="loading" class="card active">
+            <div class="loading-spinner">
+                <div class="spinner"></div>
+                <p style="margin-top: 20px;">Cargando evaluación...</p>
+            </div>
+        </div>
+
+        <!-- Error State -->
+        <div x-show="error" class="card active">
+            <div class="error-message">
+                <h3>Error al cargar la evaluación</h3>
+                <p x-text="errorMessage"></p>
+                <button class="start-btn" @click="retry()">Reintentar</button>
+            </div>
+        </div>
+
+        <!-- Professional Instructions Card -->
+        <div x-show="!loading && !error && currentCard === -1" class="card active">
+            <div class="scale-header">
+                <h1 x-text="scaleData?.metadata?.abbreviation || '{{ assessment.scale.abbreviation }}'">{{ assessment.scale.abbreviation }}</h1>
+                <h2 x-text="scaleData?.metadata?.name || '{{ assessment.scale.name }}'">{{ assessment.scale.name }}</h2>
+            </div>
+            
+            <div class="patient-info">
+                <strong>Paciente:</strong> {{ assessment.patient.get_full_name }}
+                <br><strong>Profesional:</strong> {{ user.get_full_name }}
+                <br><strong>Fecha:</strong> <span x-text="new Date().toLocaleDateString('es-ES')"></span>
+            </div>
+            
+            <div class="instructions">
+                <strong>📋 Instrucciones para el Profesional:</strong><br>
+                <div x-html="getProfessionalInstructions()" x-show="scaleData"></div>
+                
+                <!-- Quick Settings for Assessment -->
+                <div style="margin-top: 20px; padding: 15px; background: rgba(255, 255, 255, 0.9); border-radius: 10px; border: 1px solid rgba(8, 145, 178, 0.2);">
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px;">
+                        <div>
+                            <label style="font-size: 0.8rem; font-weight: 600; color: #164e63; display: block; margin-bottom: 4px;">Modalidad:</label>
+                            <select style="width: 100%; padding: 4px 8px; border: 1px solid #ccc; border-radius: 6px; font-size: 0.8rem;">
+                                <option value="self">Autoaplicada</option>
+                                <option value="interviewer">Heteroaplicada</option>
+                                <option value="mixed">Mixta</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label style="font-size: 0.8rem; font-weight: 600; color: #164e63; display: block; margin-bottom: 4px;">Contexto:</label>
+                            <select style="width: 100%; padding: 4px 8px; border: 1px solid #ccc; border-radius: 6px; font-size: 0.8rem;">
+                                <option value="screening">Screening</option>
+                                <option value="diagnostic">Diagnóstico</option>
+                                <option value="follow_up">Seguimiento</option>
+                                <option value="research">Investigación</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div>
+                        <label style="font-size: 0.8rem; font-weight: 600; color: #164e63; display: block; margin-bottom: 4px;">Notas adicionales:</label>
+                        <textarea style="width: 100%; padding: 4px 8px; border: 1px solid #ccc; border-radius: 6px; font-size: 0.8rem; resize: vertical;" 
+                                  rows="2" placeholder="Observaciones, contexto clínico, etc..."></textarea>
+                    </div>
+                </div>
+            </div>
+            
+            <div style="text-align: center; margin: 20px 0; padding: 15px; background: rgba(8, 145, 178, 0.1); border-radius: 10px;">
+                <strong>Tiempo estimado:</strong> <span x-text="(scaleData?.metadata?.estimatedDurationMinutes || '{{ assessment.scale.estimated_duration_minutes }}') + ' minutos'"></span>
+                <br><strong>Total de preguntas:</strong> <span x-text="getTotalQuestions()"></span>
+                <br><strong>Modalidad:</strong> <span x-text="administrationMode === 'remote' ? 'Dispositivo Secundario' : 'Mismo Dispositivo'"></span>
+            </div>
+
+            <!-- Device Selection -->
+            <div class="device-selection" style="margin: 20px 0;">
+                <h4 style="margin-bottom: 10px; color: #164e63;">Método de Aplicación:</h4>
+                <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                    <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; padding: 10px; border: 2px solid #ccc; border-radius: 10px; background: white;" 
+                           :class="administrationMode === 'local' ? 'border-primary-500 bg-primary-50' : ''">
+                        <input type="radio" x-model="administrationMode" value="local" name="admin_mode">
+                        <span>💻 Mismo dispositivo</span>
+                    </label>
+                    <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; padding: 10px; border: 2px solid #ccc; border-radius: 10px; background: white;"
+                           :class="administrationMode === 'remote' ? 'border-primary-500 bg-primary-50' : ''">
+                        <input type="radio" x-model="administrationMode" value="remote" name="admin_mode">
+                        <span>📱 Dispositivo secundario</span>
+                    </label>
+                </div>
+            </div>
+            
+            <div class="flex gap-4 justify-center">
+                <button x-show="administrationMode === 'local'" class="start-btn" @click="currentCard = 0">
+                    ▶️ Continuar en este dispositivo
+                </button>
+                <button x-show="administrationMode === 'remote'" class="start-btn" @click="generateRemoteLink()">
+                    📤 Generar enlace para dispositivo secundario
+                </button>
+            </div>
+        </div>
+
+        <!-- Remote Link Generated Card -->
+        <div x-show="!loading && !error && currentCard === -0.5" class="card active">
+            <div class="scale-header">
+                <h2 style="color: #0891b2;">🔗 Enlace Generado para Dispositivo Secundario</h2>
+            </div>
+            
+            <div style="background: #f8fafc; padding: 20px; border-radius: 10px; margin: 20px 0;">
+                <p style="margin-bottom: 15px;"><strong>Comparta este enlace con el dispositivo del paciente:</strong></p>
+                <div style="background: white; padding: 15px; border-radius: 8px; border: 2px dashed #0891b2; text-align: center;">
+                    <div id="remote-link" x-text="remoteLink" style="font-family: monospace; word-break: break-all; color: #0891b2; font-weight: bold;"></div>
+                </div>
+                <div style="margin-top: 15px; display: flex; gap: 10px; justify-content: center;">
+                    <button @click="copyRemoteLink()" class="btn" style="background: #0891b2; color: white; padding: 10px 20px; border: none; border-radius: 8px; cursor: pointer;">
+                        📋 Copiar enlace
+                    </button>
+                    <button @click="generateQR()" class="btn" style="background: #29A98C; color: white; padding: 10px 20px; border: none; border-radius: 8px; cursor: pointer;">
+                        📱 Mostrar QR
+                    </button>
+                </div>
+            </div>
+            
+            <div style="text-align: center; margin: 20px 0;">
+                <p style="color: #64748b; margin-bottom: 15px;">El paciente completará la evaluación en su dispositivo y los resultados se mostrarán automáticamente aquí.</p>
+                <div x-show="waitingForResults" style="display: flex; align-items: center; justify-content: center; gap: 10px;">
+                    <div class="spinner" style="width: 20px; height: 20px;"></div>
+                    <span>Esperando resultados del paciente...</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Patient Instructions Card -->
+        <div x-show="!loading && !error && currentCard === 0" class="card active">
+            <div class="scale-header">
+                <h1 x-text="scaleData?.metadata?.abbreviation || '{{ assessment.scale.abbreviation }}'">{{ assessment.scale.abbreviation }}</h1>
+                <h2 x-text="scaleData?.metadata?.name || '{{ assessment.scale.name }}'">{{ assessment.scale.name }}</h2>
+            </div>
+            
+            <div class="patient-info" x-show="!isRemoteDevice">
+                <strong>Paciente:</strong> {{ assessment.patient.get_full_name }}
+                <br><strong>Fecha:</strong> <span x-text="new Date().toLocaleDateString('es-ES')"></span>
+            </div>
+            
+            <div class="instructions" x-html="getPatientInstructions()" x-show="scaleData">
+            </div>
+            
+            <div style="text-align: center; margin: 20px 0; font-size: 1rem; color: #64748b;" x-show="scaleData">
+                <strong>Tiempo estimado:</strong> <span x-text="(scaleData?.metadata?.estimatedDurationMinutes || '{{ assessment.scale.estimated_duration_minutes }}') + ' minutos'"></span>
+                <br><strong>Total de preguntas:</strong> <span x-text="getTotalQuestions()"></span>
+            </div>
+            
+            <button class="start-btn" @click="startAssessment()">Comenzar Evaluación</button>
+        </div>
+
+        <!-- Question Cards -->
+        <div x-show="!loading && !error && currentCard > 0 && currentCard <= questions.length" class="card active">
+            <!-- Question Controls -->
+            <div class="question-controls">
+                <button x-show="showBackButton" class="back-btn" @click="goBack()">← Regresar</button>
+                <div></div> <!-- Spacer -->
+                <button class="help-btn" @click="showHelp(getCurrentQuestion())" title="Ayuda">?</button>
+            </div>
+            
+            <div class="question-header">
+                <div class="question-number" x-text="`Pregunta ${currentCard} de ${questions.length}`"></div>
+                <div class="question-text" x-text="getCurrentQuestion()?.text || ''"></div>
+            </div>
+            <div class="options">
+                <!-- Use computed property to show options for current question only -->
+                <template x-for="(option, optIndex) in (getCurrentQuestion()?.options || [])" :key="`${currentCard}-${optIndex}`">
+                    <div class="option" 
+                         :class="responses[currentCard] === option.value ? 'selected' : ''"
+                         @click="selectOption(currentCard, option.value, option.text)">
+                        <span class="option-value" x-text="option.value"></span>
+                        <span x-text="option.text"></span>
+                    </div>
+                </template>
+            </div>
+        </div>
+
+        <!-- Help Popup -->
+        <div x-show="helpVisible" x-transition:enter="transition ease-out duration-300" 
+             x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100"
+             x-transition:leave="transition ease-in duration-200" 
+             x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0"
+             class="help-popup" @click="closeHelp()">
+            <div class="help-popup-content" @click.stop>
+                <div class="help-popup-header">
+                    <div class="help-popup-title">💡 Ayuda</div>
+                    <button class="help-close-btn" @click="closeHelp()">×</button>
+                </div>
+                <div class="help-popup-body" x-html="currentHelpText"></div>
+            </div>
+        </div>
+
+        <!-- Completion Card -->
+        <div x-show="currentCard === 'completed'" class="card active">
+            <div class="completed-message">
+                <h2>✅ Evaluación completada</h2>
+                <p>Muchas gracias por completar el cuestionario.</p>
+                <p x-show="!isRemoteDevice"><strong>Los resultados se están procesando...</strong></p>
+                <p x-show="isRemoteDevice"><strong>Sus respuestas han sido enviadas a su profesional de salud.</strong></p>
+            </div>
+            <div class="action-buttons">
+                <button x-show="!isRemoteDevice" class="action-btn" @click="viewResults()">📊 Ver Resultados</button>
+                <button x-show="!isRemoteDevice" class="action-btn" @click="returnToDashboard()">🏠 Volver al Dashboard</button>
+                <button x-show="isRemoteDevice" class="action-btn" @click="sendResultsToDoctor()">📤 Enviar resultados a su médico</button>
+                <div x-show="isRemoteDevice && resultsSent" style="margin-top: 20px; padding: 15px; background: rgba(34, 197, 94, 0.1); border-radius: 10px; color: #166534;">
+                    <strong>✓ Resultados enviados exitosamente</strong>
+                    <p>Su médico ha recibido los resultados de la evaluación.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Results Card -->
+        <div x-show="currentCard === 'results'" class="card active">
+            <div class="results-container">
+                <h2 x-text="`Resultados ${scaleData?.metadata?.abbreviation || '{{ assessment.scale.abbreviation }}'}`"></h2>
+                
+                <div class="score-display">
+                    <div>Puntuación Total: <strong x-text="`${totalScore}/${getMaxScore()}`"></strong></div>
+                    <div style="font-size: 1rem; margin-top: 10px; opacity: 0.9;" x-show="functionalScore !== null">
+                        Impacto funcional: <span x-text="functionalScore"></span>
+                    </div>
+                </div>
+                
+                <div class="interpretation" :class="interpretationClass" x-show="interpretation">
+                    <h3 x-text="interpretation?.label"></h3>
+                    <p><strong>Descripción:</strong> <span x-text="interpretation?.description"></span></p>
+                    <p><strong>Recomendaciones:</strong> <span x-text="interpretation?.recommendations"></span></p>
+                </div>
+                
+                <div class="alerts" x-show="alerts && alerts.length > 0">
+                    <h3>Alertas Clínicas</h3>
+                    <template x-for="alert in (alerts || [])" :key="alert.type + alert.title">
+                        <p><strong x-text="alert.title"></strong><br><span x-text="alert.message"></span></p>
+                    </template>
+                </div>
+                
+                <div class="technical-info">
+                    <strong>Información técnica:</strong><br>
+                    • <span x-text="`${scaleData?.metadata?.abbreviation || '{{ assessment.scale.abbreviation }}'} (${scaleData?.metadata?.name || '{{ assessment.scale.name }}'})`"></span><br>
+                    • <span x-text="`Rango de puntuación: 0-${getMaxScore()} puntos`"></span><br>
+                    • Puntos de corte validados clínicamente<br>
+                    • <span x-text="`Duración: ${completedAt && startedAt ? Math.round((completedAt - startedAt) / 60000) : 'N/A'} minutos`"></span>
+                </div>
+                
+                <div class="action-buttons">
+                    <button class="action-btn" @click="downloadResults()">📄 Descargar PDF</button>
+                    <a href="/assessments/{{ assessment.id }}/results/" class="action-btn">📊 Ver Detalles</a>
+                    <button class="action-btn" @click="returnToDashboard()">🏠 Dashboard</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Progress Bar -->
+    <div class="progress-bar" :style="`width: ${progressPercentage}%`"></div>
+
+    <script>
+        function focusedAssessment() {
+            return {
+                // Assessment data
+                assessmentId: '{{ assessment.id }}',
+                scaleData: null,
+                questions: [],
+                
+                // Progress tracking
+                currentCard: -1, // Start with professional instructions
+                responses: {},
+                totalScore: 0,
+                functionalScore: null,
+                
+                // States
+                loading: true,
+                error: false,
+                errorMessage: '',
+                
+                // Help system
+                helpVisible: false,
+                currentHelpText: '',
+                
+                // Device management
+                administrationMode: 'local', // 'local' or 'remote'
+                isRemoteDevice: false,
+                remoteLink: '',
+                waitingForResults: false,
+                resultsSent: false,
+                
+                // Timing
+                startedAt: null,
+                completedAt: null,
+                
+                // Results
+                interpretation: null,
+                interpretationClass: '',
+                alerts: [],
+                
+                // Computed properties
+                get progressPercentage() {
+                    if (this.currentCard === 0) return 0;
+                    if (this.currentCard === 'completed' || this.currentCard === 'results') return 100;
+                    return Math.min((this.currentCard / this.questions.length) * 100, 100);
+                },
+                
+                get showBackButton() {
+                    return this.currentCard > 0 && 
+                           this.currentCard !== 'completed' && 
+                           this.currentCard !== 'results' &&
+                           typeof this.currentCard === 'number';
+                },
+                
+                init() {
+                    console.log('Initializing focused assessment:', this.assessmentId);
+                    console.log('Initial state:', {
+                        loading: this.loading,
+                        error: this.error,
+                        scaleData: this.scaleData,
+                        questions: this.questions,
+                        alerts: this.alerts
+                    });
+                    
+                    // Check if this is a remote device access
+                    const urlParams = new URLSearchParams(window.location.search);
+                    if (urlParams.get('mode') === 'remote') {
+                        this.isRemoteDevice = true;
+                        this.currentCard = 0; // Skip professional instructions for remote device
+                    }
+                    
+                    this.loadScaleData();
+                },
+                
+                async loadScaleData() {
+                    try {
+                        // Get the JSON file path from the server
+                        const pathResponse = await fetch(`/assessments/api/${this.assessmentId}/scale-data-path/`);
+                        if (!pathResponse.ok) throw new Error('Could not get scale data path');
+                        
+                        const pathData = await pathResponse.json();
+                        const jsonPath = pathData.json_file_path;
+                        
+                        if (!jsonPath) {
+                            throw new Error('No JSON file configured for this scale');
+                        }
+                        
+                        // Load the actual scale data
+                        const response = await fetch(`/${jsonPath}`);
+                        if (!response.ok) throw new Error('Scale data file not found');
+                        
+                        this.scaleData = await response.json();
+                        this.buildQuestionsList();
+                        this.loadProgress();
+                        this.loading = false;
+                        
+                        console.log('Scale data loaded:', this.scaleData);
+                    } catch (error) {
+                        console.error('Error loading scale data:', error);
+                        this.error = true;
+                        this.errorMessage = 'No se pudo cargar la información de la escala: ' + error.message;
+                        this.loading = false;
+                    }
+                },
+                
+                buildQuestionsList() {
+                    this.questions = [];
+                    
+                    if (!this.scaleData?.structure?.sections) {
+                        console.error('No sections found in scale data');
+                        return;
+                    }
+                    
+                    for (const section of this.scaleData.structure.sections) {
+                        if (!section.items || !Array.isArray(section.items)) continue;
+                        
+                        for (const item of section.items) {
+                            const options = [];
+                            
+                            if (item.responseGroup && this.scaleData.responseGroups) {
+                                const responseGroup = this.scaleData.responseGroups[item.responseGroup];
+                                if (responseGroup && Array.isArray(responseGroup)) {
+                                    options.push(...responseGroup.map(opt => ({
+                                        value: opt.value,
+                                        text: opt.label
+                                    })));
+                                }
+                            }
+                            
+                            this.questions.push({
+                                number: item.number,
+                                text: item.text,
+                                options: options,
+                                metadata: item.metadata || {}
+                            });
+                        }
+                    }
+                    
+                    console.log('Built questions list:', this.questions);
+                },
+                
+                async loadProgress() {
+                    try {
+                        const response = await fetch(`/assessments/api/${this.assessmentId}/progress/`);
+                        if (response.ok) {
+                            const data = await response.json();
+                            this.responses = data.responses || {};
+                            
+                            // Restore position if there are existing responses
+                            if (Object.keys(this.responses).length > 0) {
+                                const maxResponse = Math.max(...Object.keys(this.responses).map(Number));
+                                this.currentCard = Math.min(maxResponse, this.questions.length);
+                            }
+                        }
+                    } catch (error) {
+                        console.log('No previous progress found, starting fresh');
+                    }
+                },
+                
+                startAssessment() {
+                    this.currentCard = 1;
+                    this.startedAt = new Date();
+                    this.updateProgress();
+                },
+                
+                async selectOption(questionNumber, value, text) {
+                    this.responses[questionNumber] = value;
+                    
+                    // Visual feedback delay
+                    await new Promise(resolve => setTimeout(resolve, 300));
+                    
+                    // Save response to backend
+                    try {
+                        await fetch(`/assessments/api/${this.assessmentId}/response/`, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                            },
+                            body: JSON.stringify({
+                                item_number: questionNumber,
+                                response_value: value,
+                                response_label: text
+                            })
+                        });
+                    } catch (error) {
+                        console.error('Error saving response:', error);
+                    }
+                    
+                    // Auto-advance
+                    if (questionNumber < this.questions.length) {
+                        this.currentCard = questionNumber + 1;
+                        this.updateProgress();
+                    } else {
+                        // Assessment completed
+                        await this.completeAssessment();
+                    }
+                },
+                
+                async completeAssessment() {
+                    this.completedAt = new Date();
+                    this.currentCard = 'completed';
+                    this.calculateResults();
+                    
+                    try {
+                        const response = await fetch(`/assessments/api/${this.assessmentId}/complete/`, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                            }
+                        });
+                        
+                        if (response.ok) {
+                            console.log('Assessment completed successfully');
+                        }
+                    } catch (error) {
+                        console.error('Error completing assessment:', error);
+                    }
+                },
+                
+                calculateResults() {
+                    // Calculate total score (excluding functional question if present)
+                    this.totalScore = 0;
+                    const mainQuestions = this.questions.filter(q => 
+                        !q.metadata.isFunctional && 
+                        q.number <= 9 // Typically main questions are 1-9
+                    );
+                    
+                    for (const question of mainQuestions) {
+                        if (this.responses[question.number] !== undefined) {
+                            this.totalScore += this.responses[question.number];
+                        }
+                    }
+                    
+                    // Check for functional question (typically question 10)
+                    const functionalQuestion = this.questions.find(q => q.number === 10);
+                    if (functionalQuestion && this.responses[10] !== undefined) {
+                        this.functionalScore = this.responses[10];
+                    }
+                    
+                    // Get interpretation
+                    this.getInterpretation();
+                    this.checkAlerts();
+                },
+                
+                getInterpretation() {
+                    if (!this.scaleData?.interpretation?.rules) return;
+                    
+                    for (const rule of this.scaleData.interpretation.rules) {
+                        if (this.totalScore >= rule.minScore && this.totalScore <= rule.maxScore) {
+                            this.interpretation = {
+                                label: rule.label,
+                                description: rule.clinicalInterpretation || rule.label,
+                                recommendations: rule.professionalRecommendations?.treatment || 'Consulte con un profesional.'
+                            };
+                            
+                            // Set CSS class based on severity
+                            const severityMap = {
+                                'minimal': 'level-minimal',
+                                'mild': 'level-mild', 
+                                'moderate': 'level-moderate',
+                                'severe': 'level-severe',
+                                'very_severe': 'level-severe'
+                            };
+                            this.interpretationClass = severityMap[rule.severity] || 'level-minimal';
+                            break;
+                        }
+                    }
+                },
+                
+                checkAlerts() {
+                    this.alerts = [];
+                    
+                    // Check for critical items (like suicidal ideation)
+                    for (const question of this.questions) {
+                        if (question.metadata.alertTrigger && this.responses[question.number] >= 1) {
+                            this.alerts.push({
+                                type: 'critical',
+                                title: '⚠️ ALERTA CRÍTICA',
+                                message: `Pregunta ${question.number} requiere atención inmediata.`
+                            });
+                        }
+                    }
+                    
+                    // Check functional impairment
+                    if (this.functionalScore >= 2) {
+                        this.alerts.push({
+                            type: 'functional',
+                            title: '📋 Deterioro Funcional',
+                            message: 'Se reportan dificultades significativas en el funcionamiento diario.'
+                        });
+                    }
+                },
+                
+                goBack() {
+                    if (this.currentCard > 1) {
+                        this.currentCard--;
+                        this.updateProgress();
+                    } else if (this.currentCard === 1) {
+                        this.currentCard = 0;
+                        this.updateProgress();
+                    }
+                },
+                
+                async updateProgress() {
+                    try {
+                        await fetch(`/assessments/api/${this.assessmentId}/progress/`, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                            },
+                            body: JSON.stringify({
+                                current_item: typeof this.currentCard === 'number' ? this.currentCard : this.questions.length,
+                                status: this.currentCard === 'completed' ? 'completed' : 'in_progress'
+                            })
+                        });
+                    } catch (error) {
+                        console.error('Error updating progress:', error);
+                    }
+                },
+                
+                viewResults() {
+                    this.currentCard = 'results';
+                },
+                
+                returnToDashboard() {
+                    window.location.href = '/';
+                },
+                
+                downloadResults() {
+                    // Generate and download results
+                    const content = this.generateResultsText();
+                    const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `${this.scaleData?.metadata?.abbreviation || 'Assessment'}_${new Date().toISOString().split('T')[0]}.txt`;
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    window.URL.revokeObjectURL(url);
+                },
+                
+                generateResultsText() {
+                    const now = new Date();
+                    return `
+${this.scaleData?.metadata?.name || 'Evaluación Psicométrica'}
+${'='.repeat(50)}
+
+Fecha: ${now.toLocaleDateString('es-ES')}
+Hora: ${now.toLocaleTimeString('es-ES')}
+Paciente: {{ assessment.patient.get_full_name }}
+
+PUNTUACIÓN TOTAL: ${this.totalScore}/${this.getMaxScore()}
+${this.functionalScore !== null ? `Impacto funcional: ${this.functionalScore}` : ''}
+
+INTERPRETACIÓN:
+${this.interpretation?.label || 'No disponible'}
+
+${this.interpretation?.description || ''}
+
+RECOMENDACIONES:
+${this.interpretation?.recommendations || ''}
+
+${this.alerts.length > 0 ? `
+ALERTAS CLÍNICAS:
+${this.alerts.map(alert => `• ${alert.title}: ${alert.message}`).join('\n')}
+` : ''}
+
+DETALLE DE RESPUESTAS:
+${this.questions.map((q, i) => {
+    const response = this.responses[q.number];
+    const option = q.options.find(opt => opt.value === response);
+    return `${q.number}. ${q.text}\n   Respuesta: ${option?.text || 'No respondida'} (${response || 'N/A'})`;
+}).join('\n\n')}
+
+Información técnica:
+• ${this.scaleData?.metadata?.abbreviation || 'N/A'} (${this.scaleData?.metadata?.name || 'N/A'})
+• Rango de puntuación: 0-${this.getMaxScore()} puntos
+• Duración: ${this.completedAt && this.startedAt ? Math.round((this.completedAt - this.startedAt) / 60000) : 'N/A'} minutos
+                    `;
+                },
+                
+                // Helper functions
+                getCurrentQuestion() {
+                    if (!this.questions || this.currentCard <= 0 || this.currentCard > this.questions.length) {
+                        return null;
+                    }
+                    return this.questions[this.currentCard - 1];
+                },
+                
+                getProfessionalInstructions() {
+                    if (!this.scaleData) return 'Cargando instrucciones...';
+                    
+                    return this.scaleData?.metadata?.helpText?.instructions?.professional || 
+                           this.scaleData?.metadata?.helpText?.general ||
+                           'Instrumento para evaluación clínica. Revise las respuestas del paciente.';
+                },
+                
+                getPatientInstructions() {
+                    if (!this.scaleData) return 'Cargando instrucciones...';
+                    
+                    return this.scaleData?.metadata?.helpText?.instructions?.patient || 
+                           this.scaleData?.metadata?.helpText?.general ||
+                           'Por favor responda todas las preguntas de manera honesta.';
+                },
+                
+                getTotalQuestions() {
+                    return this.questions ? this.questions.length : 0;
+                },
+                
+                getMaxScore() {
+                    if (!this.questions || this.questions.length === 0) return 27; // Default fallback
+                    
+                    try {
+                        return this.questions
+                            .filter(q => q.metadata && !q.metadata.isFunctional && q.number <= 9)
+                            .reduce((sum, q) => {
+                                if (!q.options || q.options.length === 0) return sum;
+                                return sum + Math.max(...q.options.map(opt => opt.value || 0));
+                            }, 0);
+                    } catch (error) {
+                        console.error('Error calculating max score:', error);
+                        return 27; // Fallback
+                    }
+                },
+                
+                // Help system methods
+                showHelp(question) {
+                    const helpText = question.metadata?.helpText || 
+                                   'No hay información de ayuda disponible para esta pregunta.';
+                    
+                    this.currentHelpText = `
+                        <h4 style="color: #0891b2; margin-bottom: 15px; font-size: 1.1rem;">
+                            ${question.text}
+                        </h4>
+                        <p style="margin-bottom: 15px;">
+                            ${helpText}
+                        </p>
+                        <div style="background: #f8fafc; padding: 15px; border-radius: 10px; font-size: 0.9rem; color: #64748b;">
+                            <strong>Tip:</strong> Esta información está diseñada para ayudarle a entender mejor la pregunta. 
+                            Responda según su experiencia personal.
+                        </div>
+                    `;
+                    
+                    this.helpVisible = true;
+                },
+                
+                closeHelp() {
+                    this.helpVisible = false;
+                    this.currentHelpText = '';
+                },
+                
+                // Remote device functions
+                generateRemoteLink() {
+                    const baseUrl = window.location.origin;
+                    this.remoteLink = `${baseUrl}/assessments/${this.assessmentId}/take/?mode=remote`;
+                    this.currentCard = -0.5;
+                    this.waitingForResults = true;
+                    this.startResultsPolling();
+                },
+                
+                copyRemoteLink() {
+                    navigator.clipboard.writeText(this.remoteLink).then(() => {
+                        alert('Enlace copiado al portapapeles');
+                    });
+                },
+                
+                generateQR() {
+                    // Simple QR generation - in production you'd use a QR library
+                    const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(this.remoteLink)}`;
+                    window.open(qrUrl, '_blank');
+                },
+                
+                async sendResultsToDoctor() {
+                    try {
+                        // Send completion notification to the professional device
+                        await fetch(`/assessments/api/${this.assessmentId}/notify-completion/`, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                            },
+                            body: JSON.stringify({
+                                completed_by_remote: true
+                            })
+                        });
+                        
+                        this.resultsSent = true;
+                    } catch (error) {
+                        console.error('Error sending results:', error);
+                        alert('Error al enviar resultados. Inténtelo de nuevo.');
+                    }
+                },
+                
+                startResultsPolling() {
+                    // Poll every 5 seconds to check if remote assessment is completed
+                    const pollInterval = setInterval(async () => {
+                        try {
+                            const response = await fetch(`/assessments/api/${this.assessmentId}/status/`);
+                            const data = await response.json();
+                            
+                            if (data.status === 'completed') {
+                                clearInterval(pollInterval);
+                                this.waitingForResults = false;
+                                this.currentCard = 'results';
+                                await this.loadResultsData();
+                            }
+                        } catch (error) {
+                            console.error('Error polling results:', error);
+                        }
+                    }, 5000);
+                },
+                
+                async loadResultsData() {
+                    try {
+                        const response = await fetch(`/assessments/api/${this.assessmentId}/results/`);
+                        const data = await response.json();
+                        
+                        this.totalScore = data.total_score;
+                        this.interpretation = {
+                            label: data.interpretation,
+                            description: data.interpretation,
+                            recommendations: 'Consulte los detalles completos en el sistema.'
+                        };
+                        this.interpretationClass = 'level-' + data.severity_level;
+                    } catch (error) {
+                        console.error('Error loading results:', error);
+                    }
+                },
+                
+                retry() {
+                    this.error = false;
+                    this.loading = true;
+                    this.loadScaleData();
+                }
+            }
+        }
+    </script>
+    <script src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
+
+    <!-- CSRF Token for AJAX -->
+    {% csrf_token %}
+</body>
+</html>

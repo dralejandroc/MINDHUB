@@ -1,0 +1,406 @@
+{% extends 'base/mindhub_base.html' %}
+
+{% block title %}Evaluación - ClinimetrixPro{% endblock %}
+
+{% block extra_css %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+{% endblock %}
+
+{% block content %}
+<div class="animate-fade-in" x-data="assessmentDetailData()" x-init="init()">
+    <!-- Compact Header -->
+    <div class="compact-header">
+        <div class="flex items-center justify-between">
+            <div>
+                <h1 class="text-xl font-bold text-primary-800">{{ object.scale.abbreviation }}</h1>
+                <p class="text-sm text-gray-600">{{ object.patient.get_full_name }}</p>
+            </div>
+            <div class="flex gap-2">
+                <a href="{% url 'assessments:list' %}" class="btn btn-ghost btn-xs">
+                    <i data-lucide="arrow-left" class="w-3 h-3"></i>
+                    Volver
+                </a>
+                {% if object.status == 'completed' %}
+                    <a href="{% url 'assessments:results' object.pk %}" class="btn btn-primary btn-xs">
+                        <i data-lucide="eye" class="w-3 h-3"></i>
+                        Resultados
+                    </a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Compact Content -->
+    <div class="compact-details">
+        <!-- Quick Info Grid -->
+        <div class="quick-info-grid">
+            <div class="info-card">
+                <div class="info-icon">
+                    <i data-lucide="calendar" class="w-4 h-4 text-primary-600"></i>
+                </div>
+                <div class="info-content">
+                    <div class="info-label">Fecha</div>
+                    <div class="info-value">{{ object.created_at|date:"d/m/Y" }}</div>
+                </div>
+            </div>
+            
+            <div class="info-card">
+                <div class="info-icon">
+                    <i data-lucide="activity" class="w-4 h-4 text-secondary-600"></i>
+                </div>
+                <div class="info-content">
+                    <div class="info-label">Estado</div>
+                    <div class="info-value status-{{ object.status }}">{{ object.get_status_display }}</div>
+                </div>
+            </div>
+            
+            <div class="info-card">
+                <div class="info-icon">
+                    <i data-lucide="settings" class="w-4 h-4 text-accent-600"></i>
+                </div>
+                <div class="info-content">
+                    <div class="info-label">Modalidad</div>
+                    <div class="info-value">{{ object.get_mode_display }}</div>
+                </div>
+            </div>
+            
+            <div class="info-card">
+                <div class="info-icon">
+                    <i data-lucide="bar-chart-3" class="w-4 h-4 text-primary-600"></i>
+                </div>
+                <div class="info-content">
+                    <div class="info-label">Progreso</div>
+                    <div class="info-value">{{ object.progress_percentage|floatformat:0 }}%</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Historical Chart Section -->
+        <div class="chart-section" x-show="historicalData.length > 0">
+            <div class="chart-header">
+                <h3 class="chart-title">
+                    <i data-lucide="trending-up" class="w-4 h-4"></i>
+                    Historial de Evaluaciones - {{ object.scale.abbreviation }}
+                </h3>
+                <p class="chart-subtitle">Evolución de puntuaciones en el tiempo</p>
+            </div>
+            <div class="chart-container">
+                <canvas id="historyChart" width="400" height="200"></canvas>
+            </div>
+        </div>
+
+        <!-- Current Results (if completed) -->
+        <div x-show="currentResults" class="current-results">
+            <div class="results-header">
+                <h3 class="results-title">
+                    <i data-lucide="target" class="w-4 h-4"></i>
+                    Resultado Actual
+                </h3>
+            </div>
+            <div class="results-content">
+                <div class="score-display">
+                    <div class="score-circle" :style="`background: linear-gradient(135deg, ${currentResults?.severity_color || '#6b7280'}, ${adjustColor(currentResults?.severity_color || '#6b7280', -20)})`">
+                        <span class="score-number" x-text="currentResults?.total_score"></span>
+                    </div>
+                    <div class="score-info">
+                        <div class="interpretation" x-text="currentResults?.interpretation"></div>
+                        <div class="severity" x-text="currentResults?.severity_level"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- No History Message -->
+        <div x-show="historicalData.length === 0" class="no-history">
+            <div class="no-history-icon">
+                <i data-lucide="bar-chart-3" class="w-8 h-8 text-gray-400"></i>
+            </div>
+            <p class="no-history-text">No hay historial de evaluaciones previas para esta escala</p>
+        </div>
+    </div>
+</div>
+
+<script>
+function assessmentDetailData() {
+    return {
+        assessmentId: '{{ object.id }}',
+        patientId: '{{ object.patient.id }}',
+        scaleId: '{{ object.scale.id }}',
+        historicalData: [],
+        currentResults: null,
+        chart: null,
+        
+        async init() {
+            console.log('Loading assessment detail data');
+            await this.loadHistoricalData();
+            await this.loadCurrentResults();
+            this.createChart();
+        },
+        
+        async loadHistoricalData() {
+            try {
+                const response = await fetch(`/assessments/api/patient/${this.patientId}/scale/${this.scaleId}/history/`);
+                if (response.ok) {
+                    this.historicalData = await response.json();
+                    console.log('Historical data loaded:', this.historicalData);
+                }
+            } catch (error) {
+                console.error('Error loading historical data:', error);
+            }
+        },
+        
+        async loadCurrentResults() {
+            {% if object.status == 'completed' %}
+            try {
+                const response = await fetch(`/assessments/api/${this.assessmentId}/results/`);
+                if (response.ok) {
+                    this.currentResults = await response.json();
+                    console.log('Current results loaded:', this.currentResults);
+                }
+            } catch (error) {
+                console.error('Error loading current results:', error);
+            }
+            {% endif %}
+        },
+        
+        createChart() {
+            if (this.historicalData.length === 0) return;
+            
+            const ctx = document.getElementById('historyChart');
+            if (!ctx) return;
+            
+            const data = this.historicalData.map(item => ({
+                x: new Date(item.completed_at),
+                y: item.total_score
+            }));
+            
+            this.chart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    datasets: [{
+                        label: 'Puntuación Total',
+                        data: data,
+                        borderColor: '#0891b2',
+                        backgroundColor: 'rgba(8, 145, 178, 0.1)',
+                        fill: true,
+                        tension: 0.3,
+                        pointBackgroundColor: '#0891b2',
+                        pointBorderColor: '#ffffff',
+                        pointBorderWidth: 2,
+                        pointRadius: 5
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    },
+                    scales: {
+                        x: {
+                            type: 'time',
+                            time: {
+                                unit: 'day',
+                                displayFormats: {
+                                    day: 'DD/MM'
+                                }
+                            },
+                            grid: {
+                                display: false
+                            }
+                        },
+                        y: {
+                            beginAtZero: true,
+                            grid: {
+                                color: 'rgba(0, 0, 0, 0.1)'
+                            }
+                        }
+                    }
+                }
+            });
+        },
+        
+        adjustColor(color, percent) {
+            const num = parseInt(color.replace('#', ''), 16);
+            const amt = Math.round(2.55 * percent);
+            const R = (num >> 16) + amt;
+            const G = (num >> 8 & 0x00FF) + amt;
+            const B = (num & 0x0000FF) + amt;
+            return '#' + (0x1000000 + (R < 255 ? R < 1 ? 0 : R : 255) * 0x10000 +
+                (G < 255 ? G < 1 ? 0 : G : 255) * 0x100 +
+                (B < 255 ? B < 1 ? 0 : B : 255)).toString(16).slice(1);
+        }
+    }
+}
+</script>
+
+<style>
+.compact-header {
+    background: white;
+    padding: 16px 20px;
+    border-radius: 12px;
+    border: 1px solid #e5e7eb;
+    margin-bottom: 16px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.compact-details {
+    display: grid;
+    gap: 16px;
+}
+
+.quick-info-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 12px;
+}
+
+.info-card {
+    background: white;
+    padding: 12px;
+    border-radius: 8px;
+    border: 1px solid #e5e7eb;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.info-icon {
+    width: 32px;
+    height: 32px;
+    background: #f0fdfa;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.info-content {
+    flex: 1;
+}
+
+.info-label {
+    font-size: 0.75rem;
+    font-weight: 500;
+    color: #6b7280;
+    text-transform: uppercase;
+    letter-spacing: 0.025em;
+}
+
+.info-value {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: #1f2937;
+    margin-top: 2px;
+}
+
+.chart-section {
+    background: white;
+    padding: 20px;
+    border-radius: 12px;
+    border: 1px solid #e5e7eb;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.chart-header {
+    margin-bottom: 16px;
+}
+
+.chart-title {
+    font-size: 1rem;
+    font-weight: 600;
+    color: #1f2937;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.chart-subtitle {
+    font-size: 0.875rem;
+    color: #6b7280;
+    margin-top: 4px;
+}
+
+.chart-container {
+    height: 200px;
+    position: relative;
+}
+
+.current-results {
+    background: white;
+    padding: 20px;
+    border-radius: 12px;
+    border: 1px solid #e5e7eb;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.results-header {
+    margin-bottom: 16px;
+}
+
+.results-title {
+    font-size: 1rem;
+    font-weight: 600;
+    color: #1f2937;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.score-display {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+.score-circle {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-weight: bold;
+}
+
+.score-number {
+    font-size: 1.25rem;
+}
+
+.score-info {
+    flex: 1;
+}
+
+.interpretation {
+    font-size: 1rem;
+    font-weight: 600;
+    color: #1f2937;
+}
+
+.severity {
+    font-size: 0.875rem;
+    color: #6b7280;
+    margin-top: 2px;
+}
+
+.no-history {
+    background: white;
+    padding: 40px;
+    border-radius: 12px;
+    border: 1px solid #e5e7eb;
+    text-align: center;
+}
+
+.no-history-icon {
+    margin-bottom: 12px;
+}
+
+.no-history-text {
+    color: #6b7280;
+    font-size: 0.875rem;
+}
+</style>
+{% endblock %}

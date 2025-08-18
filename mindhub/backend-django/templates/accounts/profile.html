@@ -1,0 +1,75 @@
+{% extends 'base/base.html' %}
+
+{% block title %}Mi Perfil - ClinimetrixPro{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="page-header">
+        <h1 class="page-title">Mi Perfil</h1>
+        <div class="page-actions">
+            <a href="{% url 'accounts:profile_edit' %}" class="btn btn-primary">Editar perfil</a>
+        </div>
+    </div>
+
+    <div class="grid grid-2">
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title">Información personal</h3>
+            </div>
+            <div class="card-content">
+                <div class="profile-info">
+                    <div class="info-group">
+                        <label>Nombre completo</label>
+                        <span>{{ user.get_full_name }}</span>
+                    </div>
+                    <div class="info-group">
+                        <label>Email</label>
+                        <span>{{ user.email }}</span>
+                    </div>
+                    <div class="info-group">
+                        <label>Teléfono</label>
+                        <span>{{ user.phone|default:"No especificado" }}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title">Información profesional</h3>
+            </div>
+            <div class="card-content">
+                <div class="profile-info">
+                    <div class="info-group">
+                        <label>Tipo de usuario</label>
+                        <span>{{ user.get_user_type_display }}</span>
+                    </div>
+                    <div class="info-group">
+                        <label>Especialización</label>
+                        <span>{{ user.get_specialization_display|default:"No especificada" }}</span>
+                    </div>
+                    <div class="info-group">
+                        <label>Cédula profesional</label>
+                        <span>{{ user.professional_license|default:"No especificada" }}</span>
+                    </div>
+                    <div class="info-group">
+                        <label>Institución</label>
+                        <span>{{ user.institution|default:"No especificada" }}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {% if user.bio %}
+        <div class="section">
+            <h2 class="section-title">Biografía profesional</h2>
+            <div class="card">
+                <div class="card-content">
+                    <p>{{ user.bio }}</p>
+                </div>
+            </div>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

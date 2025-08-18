@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="es" x-data="themeData()" :data-theme="theme">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}ClinimetrixPro{% endblock %}</title>
+    
+    {% load static %}
+    <link rel="stylesheet" href="{% static 'css/theme.css' %}">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Alpine.js -->
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+    <!-- Navigation -->
+    {% if user.is_authenticated %}
+        <nav class="navbar">
+            <div class="container">
+                <div class="navbar-brand">
+                    <a href="{% url 'core:dashboard' %}" class="brand-link">
+                        <span class="brand-logo">📊</span>
+                        <span class="brand-text">ClinimetrixPro</span>
+                    </a>
+                </div>
+                
+                <div class="navbar-menu">
+                    <div class="navbar-nav">
+                        <a href="{% url 'core:dashboard' %}" class="nav-link">
+                            <span class="nav-icon">🏠</span>
+                            Dashboard
+                        </a>
+                        <a href="{% url 'scales:catalog' %}" class="nav-link">
+                            <span class="nav-icon">📋</span>
+                            Escalas
+                        </a>
+                        <a href="{% url 'assessments:list' %}" class="nav-link">
+                            <span class="nav-icon">📝</span>
+                            Evaluaciones
+                        </a>
+                        <a href="{% url 'assessments:patient_list' %}" class="nav-link">
+                            <span class="nav-icon">👥</span>
+                            Pacientes
+                        </a>
+                    </div>
+                    
+                    <div class="navbar-user">
+                        <!-- Theme Toggle -->
+                        <button @click="toggleTheme()" class="theme-toggle" type="button" :title="theme === 'light' ? 'Cambiar a modo oscuro' : 'Cambiar a modo claro'">
+                            <span x-show="theme === 'light'">🌙</span>
+                            <span x-show="theme === 'dark'">☀️</span>
+                        </button>
+                        
+                        <!-- User Dropdown -->
+                        <div class="dropdown" x-data="{ open: false }">
+                            <button @click="open = !open" class="dropdown-toggle" type="button">
+                                <span class="user-avatar">{{ user.first_name.0|default:user.username.0 }}{{ user.last_name.0 }}</span>
+                                <span class="user-name">{{ user.get_full_name|default:user.username }}</span>
+                            </button>
+                            <div class="dropdown-menu" x-show="open" @click.away="open = false" x-transition>
+                                <a href="{% url 'accounts:profile' %}" class="dropdown-item">👤 Perfil</a>
+                                <a href="{% url 'core:settings' %}" class="dropdown-item">⚙️ Configuraciones</a>
+                                <a href="{% url 'admin:index' %}" class="dropdown-item">🛠️ Administración</a>
+                                <div class="dropdown-divider"></div>
+                                <a href="{% url 'account_logout' %}" class="dropdown-item">🚪 Cerrar sesión</a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </nav>
+    {% endif %}
+
+    <!-- Main Content -->
+    <main class="main-content">
+        {% if messages %}
+            <div class="container">
+                {% for message in messages %}
+                    <div class="alert alert-{{ message.tags }} alert-dismissible">
+                        {{ message }}
+                        <button type="button" class="alert-close" onclick="this.parentElement.remove()">×</button>
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+
+        {% block content %}{% endblock %}
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-section">
+                    <h4>ClinimetrixPro</h4>
+                    <p>Plataforma profesional de evaluación psicométrica</p>
+                </div>
+                <div class="footer-section">
+                    <h5>Recursos</h5>
+                    <ul>
+                        <li><a href="#">Documentación</a></li>
+                        <li><a href="#">Soporte técnico</a></li>
+                        <li><a href="#">API</a></li>
+                    </ul>
+                </div>
+                <div class="footer-section">
+                    <h5>Legal</h5>
+                    <ul>
+                        <li><a href="#">Términos de uso</a></li>
+                        <li><a href="#">Política de privacidad</a></li>
+                        <li><a href="#">Cumplimiento HIPAA</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2024 ClinimetrixPro. Todos los derechos reservados.</p>
+            </div>
+        </div>
+    </footer>
+
+    {% block extra_js %}{% endblock %}
+    
+    <script>
+        // Alpine.js Theme Data
+        function themeData() {
+            return {
+                theme: localStorage.getItem('theme') || 
+                       (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'),
+                
+                init() {
+                    this.updateTheme();
+                    // Listen for system theme changes
+                    window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e) => {
+                        if (!localStorage.getItem('theme')) {
+                            this.theme = e.matches ? 'dark' : 'light';
+                            this.updateTheme();
+                        }
+                    });
+                },
+                
+                toggleTheme() {
+                    this.theme = this.theme === 'light' ? 'dark' : 'light';
+                    this.updateTheme();
+                },
+                
+                updateTheme() {
+                    localStorage.setItem('theme', this.theme);
+                    document.documentElement.setAttribute('data-theme', this.theme);
+                }
+            }
+        }
+        
+        // Global Alpine.js functions
+        document.addEventListener('alpine:init', () => {
+            // Global utilities
+            Alpine.data('modal', () => ({
+                open: false,
+                
+                openModal() {
+                    this.open = true;
+                    document.body.style.overflow = 'hidden';
+                },
+                
+                closeModal() {
+                    this.open = false;
+                    document.body.style.overflow = '';
+                },
+                
+                init() {
+                    // Close modal on escape key
+                    document.addEventListener('keydown', (e) => {
+                        if (e.key === 'Escape' && this.open) {
+                            this.closeModal();
+                        }
+                    });
+                }
+            }));
+            
+            Alpine.data('notification', () => ({
+                show: false,
+                message: '',
+                type: 'info',
+                
+                showNotification(message, type = 'info', duration = 3000) {
+                    this.message = message;
+                    this.type = type;
+                    this.show = true;
+                    
+                    setTimeout(() => {
+                        this.show = false;
+                    }, duration);
+                }
+            }));
+        });
+        
+        // Auto-dismiss alerts
+        document.addEventListener('DOMContentLoaded', function() {
+            const alerts = document.querySelectorAll('.alert');
+            alerts.forEach(alert => {
+                const closeBtn = alert.querySelector('.alert-close');
+                if (closeBtn) {
+                    closeBtn.addEventListener('click', () => {
+                        alert.style.animation = 'slideUp 0.3s ease-out reverse';
+                        setTimeout(() => alert.remove(), 300);
+                    });
+                }
+                
+                // Auto-dismiss after 5 seconds
+                setTimeout(() => {
+                    if (alert.parentNode) {
+                        alert.style.animation = 'slideUp 0.3s ease-out reverse';
+                        setTimeout(() => alert.remove(), 300);
+                    }
+                }, 5000);
+            });
+        });
+    </script>
+</body>
+</html>

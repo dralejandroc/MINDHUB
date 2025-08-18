@@ -1,0 +1,400 @@
+{% extends 'base/mindhub_base.html' %}
+
+{% block title %}Resultados {{ assessment.scale.abbreviation }} - MindHub{% endblock %}
+
+{% block extra_css %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+{% endblock %}
+
+{% block content %}
+<div class="animate-fade-in" x-data="resultsData()" x-init="init()">
+    
+    <!-- Header de página -->
+    <div class="page-header">
+        <h1 class="page-title">Resultados de Evaluación</h1>
+        <p class="page-description">{{ assessment.scale.abbreviation }} - {{ assessment.scale.name }}</p>
+    </div>
+
+    <!-- Loading State -->
+    <div x-show="loading" class="section">
+        <div class="card">
+            <div class="card-content text-center py-12">
+                <div class="spinner w-8 h-8 mx-auto mb-4"></div>
+                <p class="text-gray-600">Cargando resultados...</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Results Content -->
+    <div x-show="!loading && results" class="section">
+        
+        <!-- Summary Card -->
+        <div class="card mb-6">
+            <div class="card-header">
+                <h3 class="card-title">📊 Resumen de Resultados</h3>
+            </div>
+            <div class="card-content">
+                <div class="grid grid-1 md:grid-3 gap-6">
+                    <!-- Patient Info -->
+                    <div class="text-center">
+                        <div class="text-2xl mb-2">👤</div>
+                        <h4 class="font-medium text-dark-green">Paciente</h4>
+                        <p class="text-sm text-gray-600" x-text="results?.patient_name"></p>
+                    </div>
+                    
+                    <!-- Completion Date -->
+                    <div class="text-center">
+                        <div class="text-2xl mb-2">📅</div>
+                        <h4 class="font-medium text-dark-green">Fecha de Evaluación</h4>
+                        <p class="text-sm text-gray-600" x-text="formatDate(results?.completed_at)"></p>
+                    </div>
+                    
+                    <!-- Duration -->
+                    <div class="text-center">
+                        <div class="text-2xl mb-2">⏱️</div>
+                        <h4 class="font-medium text-dark-green">Duración</h4>
+                        <p class="text-sm text-gray-600" x-text="formatDuration(results?.duration_minutes)"></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Score Card -->
+        <div class="card mb-6">
+            <div class="card-header">
+                <h3 class="card-title">🎯 Puntuación y Interpretación</h3>
+            </div>
+            <div class="card-content">
+                <div class="text-center mb-6">
+                    <!-- Score Display -->
+                    <div class="inline-flex items-center justify-center w-24 h-24 rounded-full mb-4"
+                         :style="`background: linear-gradient(135deg, ${results?.severity_color || '#6b7280'}, ${adjustColor(results?.severity_color || '#6b7280', -20)})`">
+                        <span class="text-2xl font-bold text-white" x-text="results?.total_score"></span>
+                    </div>
+                    
+                    <!-- Interpretation -->
+                    <h3 class="text-xl font-semibold text-dark-green mb-2" x-text="results?.interpretation"></h3>
+                    <p class="text-gray-600">Nivel de severidad: <span class="font-medium" x-text="results?.severity_level"></span></p>
+                </div>
+                
+                <!-- Score Range Visualization -->
+                <div class="bg-gray-100 p-4 rounded-xl">
+                    <div class="flex justify-between text-xs text-gray-600 mb-2">
+                        <span>Puntuación obtenida</span>
+                        <span x-text="`${results?.total_score} puntos`"></span>
+                    </div>
+                    <div class="w-full bg-gray-200 rounded-full h-3 relative">
+                        <div class="absolute inset-0 bg-gradient-to-r from-green-400 via-yellow-400 via-orange-400 to-red-500 rounded-full"></div>
+                        <div class="absolute top-0 w-2 h-3 bg-white border-2 border-gray-700 rounded-full transform -translate-x-1"
+                             :style="`left: ${getScorePosition(results?.total_score)}%`"></div>
+                    </div>
+                    <div class="flex justify-between text-xs text-gray-500 mt-1">
+                        <span>Mínimo</span>
+                        <span>Máximo</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Clinical Recommendations -->
+        <div class="card mb-6" x-show="getClinicalRecommendations(results?.severity_level)">
+            <div class="card-header">
+                <h3 class="card-title">💡 Recomendaciones Clínicas</h3>
+            </div>
+            <div class="card-content">
+                <div class="bg-primary-50 border-l-4 border-primary-400 p-4 rounded">
+                    <div class="flex items-start gap-3">
+                        <div class="text-primary-600 text-xl">ℹ️</div>
+                        <div>
+                            <p class="text-sm text-primary-800 leading-relaxed" x-html="getClinicalRecommendations(results?.severity_level)"></p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Detailed Responses -->
+        <div class="card">
+            <div class="card-header">
+                <div class="flex justify-between items-center">
+                    <h3 class="card-title">📝 Respuestas Detalladas</h3>
+                    <button @click="showDetails = !showDetails" class="btn btn-ghost btn-sm">
+                        <span x-show="!showDetails">Mostrar detalles</span>
+                        <span x-show="showDetails">Ocultar detalles</span>
+                    </button>
+                </div>
+            </div>
+            <div x-show="showDetails" x-transition class="card-content">
+                <div class="space-y-3">
+                    <template x-for="response in results?.responses" :key="response.item_number">
+                        <div class="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
+                            <div>
+                                <span class="text-sm font-medium text-dark-green" x-text="`Pregunta ${response.item_number}`"></span>
+                                <p class="text-xs text-gray-600" x-text="response.response_label"></p>
+                            </div>
+                            <div class="text-right">
+                                <span class="text-sm font-bold text-primary-600" x-text="`${response.response_value} pts`"></span>
+                            </div>
+                        </div>
+                    </template>
+                </div>
+                
+                <div class="mt-6 pt-4 border-t border-gray-200">
+                    <div class="flex justify-between items-center">
+                        <span class="font-medium text-dark-green">Puntuación Total:</span>
+                        <span class="text-lg font-bold text-primary-600" x-text="`${results?.total_score} puntos`"></span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Actions -->
+    <div x-show="!loading" class="section">
+        <div class="flex flex-col md:flex-row gap-4 justify-center">
+            <a href="{% url 'assessments:list' %}" class="btn btn-outline hover-lift">
+                📋 Ver todas las evaluaciones
+            </a>
+            <button @click="printResults()" class="btn btn-secondary hover-lift">
+                🖨️ Imprimir resultados
+            </button>
+            <button @click="downloadPDF()" class="btn btn-primary hover-lift">
+                📄 Descargar PDF
+            </button>
+        </div>
+    </div>
+
+    <!-- Error State -->
+    <div x-show="error" class="section">
+        <div class="card">
+            <div class="card-content text-center py-12">
+                <div class="text-4xl mb-4">⚠️</div>
+                <h3 class="text-lg font-medium text-gray-900 mb-2">Error al cargar resultados</h3>
+                <p class="text-gray-500 mb-4" x-text="errorMessage"></p>
+                <button @click="retryLoad()" class="btn btn-primary hover-lift">Reintentar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function resultsData() {
+    return {
+        // Assessment data
+        assessmentId: '{{ assessment.id }}',
+        results: null,
+        
+        // UI State
+        loading: true,
+        error: false,
+        errorMessage: '',
+        showDetails: false,
+        
+        async init() {
+            console.log('Loading results for assessment:', this.assessmentId);
+            await this.loadResults();
+        },
+        
+        async loadResults() {
+            try {
+                const response = await fetch(`/assessments/api/${this.assessmentId}/results/`);
+                
+                if (!response.ok) {
+                    throw new Error('Results not found or not calculated yet');
+                }
+                
+                this.results = await response.json();
+                this.loading = false;
+                
+                console.log('Results loaded:', this.results);
+                
+            } catch (error) {
+                console.error('Error loading results:', error);
+                this.error = true;
+                this.errorMessage = 'No se pudieron cargar los resultados.';
+                this.loading = false;
+            }
+        },
+        
+        formatDate(dateString) {
+            if (!dateString) return 'No disponible';
+            const date = new Date(dateString);
+            return date.toLocaleDateString('es-ES', {
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+        },
+        
+        formatDuration(minutes) {
+            if (!minutes) return 'No disponible';
+            const mins = Math.round(minutes);
+            return mins === 1 ? '1 minuto' : `${mins} minutos`;
+        },
+        
+        getScorePosition(score) {
+            // Simplified position calculation (assuming 0-60 range for most scales)
+            const maxScore = 60;
+            return Math.min((score / maxScore) * 100, 100);
+        },
+        
+        adjustColor(color, percent) {
+            // Simple color adjustment for gradient
+            const num = parseInt(color.replace('#', ''), 16);
+            const amt = Math.round(2.55 * percent);
+            const R = (num >> 16) + amt;
+            const G = (num >> 8 & 0x00FF) + amt;
+            const B = (num & 0x0000FF) + amt;
+            return '#' + (0x1000000 + (R < 255 ? R < 1 ? 0 : R : 255) * 0x10000 +
+                (G < 255 ? G < 1 ? 0 : G : 255) * 0x100 +
+                (B < 255 ? B < 1 ? 0 : B : 255)).toString(16).slice(1);
+        },
+        
+        getClinicalRecommendations(severityLevel) {
+            const recommendations = {
+                'mínimo': 'Los resultados sugieren ausencia de síntomas significativos. Se recomienda mantener hábitos saludables y monitoreo preventivo.',
+                'leve': 'Se observan síntomas leves. Se recomienda seguimiento clínico y consideración de intervenciones psicoeducativas.',
+                'moderado': 'Los resultados indican síntomas moderados. Se recomienda evaluación clínica detallada y consideración de tratamiento psicológico.',
+                'moderadamente severo': 'Se detectan síntomas moderadamente severos. Se recomienda atención especializada y evaluación para tratamiento intensivo.',
+                'severo': 'Los resultados muestran síntomas severos. Se requiere atención inmediata de salud mental y consideración de tratamiento intensivo.',
+                'unknown': 'Consulte con un profesional de salud mental para interpretación detallada.'
+            };
+            
+            return recommendations[severityLevel?.toLowerCase()] || recommendations['unknown'];
+        },
+        
+        printResults() {
+            window.print();
+        },
+        
+        async downloadPDF() {
+            try {
+                // Create PDF with similar styling to the results card
+                const { jsPDF } = window.jspdf;
+                const doc = new jsPDF();
+                
+                // Header
+                doc.setFillColor(8, 145, 178);
+                doc.rect(0, 0, 210, 30, 'F');
+                
+                doc.setTextColor(255, 255, 255);
+                doc.setFontSize(20);
+                doc.setFont(undefined, 'bold');
+                doc.text('REPORTE DE EVALUACIÓN PSICOMÉTRICA', 105, 20, { align: 'center' });
+                
+                // Reset colors
+                doc.setTextColor(0, 0, 0);
+                doc.setFontSize(12);
+                doc.setFont(undefined, 'normal');
+                
+                let yPos = 45;
+                
+                // Scale info
+                doc.setFontSize(16);
+                doc.setFont(undefined, 'bold');
+                doc.text(`${this.results.scale_name} (${this.results.scale_abbreviation})`, 20, yPos);
+                yPos += 15;
+                
+                // Patient info section
+                doc.setFillColor(240, 240, 240);
+                doc.rect(15, yPos - 5, 180, 25, 'F');
+                
+                doc.setFontSize(14);
+                doc.setFont(undefined, 'bold');
+                doc.text('INFORMACIÓN DEL PACIENTE', 20, yPos + 5);
+                
+                doc.setFontSize(11);
+                doc.setFont(undefined, 'normal');
+                doc.text(`Paciente: ${this.results.patient_name}`, 20, yPos + 12);
+                doc.text(`Fecha: ${this.formatDate(this.results.completed_at)}`, 20, yPos + 19);
+                doc.text(`Duración: ${this.formatDuration(this.results.duration_minutes)}`, 120, yPos + 19);
+                
+                yPos += 35;
+                
+                // Results section
+                doc.setFillColor(240, 253, 250);
+                doc.rect(15, yPos - 5, 180, 40, 'F');
+                
+                doc.setFontSize(14);
+                doc.setFont(undefined, 'bold');
+                doc.setTextColor(8, 145, 178);
+                doc.text('RESULTADOS', 20, yPos + 5);
+                
+                doc.setTextColor(0, 0, 0);
+                doc.setFontSize(24);
+                doc.setFont(undefined, 'bold');
+                doc.text(`${this.results.total_score} puntos`, 20, yPos + 18);
+                
+                doc.setFontSize(12);
+                doc.setFont(undefined, 'normal');
+                doc.text(`Interpretación: ${this.results.interpretation}`, 20, yPos + 25);
+                doc.text(`Nivel de severidad: ${this.results.severity_level}`, 20, yPos + 32);
+                
+                yPos += 50;
+                
+                // Clinical recommendations if available
+                const recommendations = this.getClinicalRecommendations(this.results.severity_level);
+                if (recommendations) {
+                    doc.setFillColor(255, 248, 238);
+                    doc.rect(15, yPos - 5, 180, 30, 'F');
+                    
+                    doc.setFontSize(14);
+                    doc.setFont(undefined, 'bold');
+                    doc.setTextColor(234, 88, 12);
+                    doc.text('RECOMENDACIONES CLÍNICAS', 20, yPos + 5);
+                    
+                    doc.setTextColor(0, 0, 0);
+                    doc.setFontSize(10);
+                    doc.setFont(undefined, 'normal');
+                    const splitRecommendations = doc.splitTextToSize(recommendations, 170);
+                    doc.text(splitRecommendations, 20, yPos + 15);
+                    
+                    yPos += 40;
+                }
+                
+                // Footer
+                doc.setFontSize(8);
+                doc.setTextColor(150, 150, 150);
+                doc.text('Generado por ClinimetrixPro', 20, 280);
+                doc.text(`Fecha de generación: ${new Date().toLocaleDateString('es-ES')}`, 20, 285);
+                
+                // Save the PDF
+                const fileName = `${this.results.scale_abbreviation}_${this.results.patient_name.replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}.pdf`;
+                doc.save(fileName);
+                
+            } catch (error) {
+                console.error('Error generating PDF:', error);
+                alert('Error al generar el PDF. Por favor, intente nuevamente.');
+            }
+        },
+        
+        async retryLoad() {
+            this.error = false;
+            this.loading = true;
+            await this.loadResults();
+        }
+    }
+}
+</script>
+
+<!-- Print Styles -->
+<style>
+@media print {
+    .no-print {
+        display: none !important;
+    }
+    
+    .card {
+        box-shadow: none;
+        border: 1px solid #e5e7eb;
+        break-inside: avoid;
+    }
+    
+    .page-header {
+        margin-bottom: 2rem;
+    }
+}
+</style>
+{% endblock content %}

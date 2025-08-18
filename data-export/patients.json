@@ -1,0 +1,28 @@
+[
+  {
+    "id": "patient-1",
+    "first_name": "María José",
+    "last_name": "García",
+    "paternal_last_name": "Sánchez",
+    "maternal_last_name": "López",
+    "email": "maria.garcia@example.com",
+    "phone": "+52 55 1234 5678",
+    "date_of_birth": "1985-03-15",
+    "gender": "female",
+    "created_by": "user-admin-1",
+    "created_at": "2025-08-17T06:47:43.181Z"
+  },
+  {
+    "id": "patient-2",
+    "first_name": "Roberto",
+    "last_name": "Méndez",
+    "paternal_last_name": "Ruiz",
+    "maternal_last_name": "Hernández",
+    "email": "roberto.mendez@example.com",
+    "phone": "+52 55 9876 5432",
+    "date_of_birth": "1978-11-22",
+    "gender": "male",
+    "created_by": "user-admin-1",
+    "created_at": "2025-08-17T06:47:43.181Z"
+  }
+]

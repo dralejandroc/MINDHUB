@@ -1,0 +1,118 @@
+{% extends 'base/mindhub_base.html' %}
+
+{% block title %}Evaluaciones - MindHub{% endblock %}
+
+{% block content %}
+<div class="animate-fade-in">
+    <!-- Header de página -->
+    <div class="page-header">
+        <h1 class="page-title">Evaluaciones - Clinimetrix</h1>
+        <p class="page-description">Gestiona las evaluaciones psicométricas de tus pacientes</p>
+    </div>
+
+    <div class="section">
+        <div class="flex justify-between items-center mb-6">
+            <h2 class="section-title">Todas las evaluaciones</h2>
+            <a href="{% url 'scales:catalog' %}" class="btn btn-primary hover-lift">
+                <i data-lucide="plus-circle" class="w-4 h-4"></i>
+                Nueva evaluación
+            </a>
+        </div>
+
+        {% if assessments %}
+            <!-- Vista de lista compacta -->
+            <div class="assessments-list-container">
+                <div class="assessments-list-header">
+                    <div class="list-header-cell">Escala</div>
+                    <div class="list-header-cell">Paciente</div>
+                    <div class="list-header-cell">Estado</div>
+                    <div class="list-header-cell">Fecha</div>
+                    <div class="list-header-cell">Acciones</div>
+                </div>
+                
+                {% for assessment in assessments %}
+                    <div class="assessment-list-item hover-lift">
+                        <!-- Escala -->
+                        <div class="list-cell list-cell-scale">
+                            <div class="scale-info">
+                                <h4 class="scale-abbreviation">{{ assessment.scale.abbreviation }}</h4>
+                                <p class="scale-name">{{ assessment.scale.name|truncatewords:6 }}</p>
+                            </div>
+                        </div>
+                        
+                        <!-- Paciente -->
+                        <div class="list-cell list-cell-patient">
+                            <div class="patient-info">
+                                <i data-lucide="user" class="patient-icon"></i>
+                                <span class="patient-name">{{ assessment.patient.get_full_name }}</span>
+                            </div>
+                        </div>
+                        
+                        <!-- Estado -->
+                        <div class="list-cell list-cell-status">
+                            <span class="status-badge status-{{ assessment.status }}">
+                                {% if assessment.status == 'not_started' %}
+                                    <i data-lucide="clock" class="status-icon"></i>
+                                    No iniciada
+                                {% elif assessment.status == 'in_progress' %}
+                                    <i data-lucide="play" class="status-icon"></i>
+                                    En progreso
+                                {% elif assessment.status == 'completed' %}
+                                    <i data-lucide="check-circle" class="status-icon"></i>
+                                    Completada
+                                {% elif assessment.status == 'cancelled' %}
+                                    <i data-lucide="x-circle" class="status-icon"></i>
+                                    Cancelada
+                                {% endif %}
+                            </span>
+                        </div>
+                        
+                        <!-- Fecha -->
+                        <div class="list-cell list-cell-date">
+                            <div class="date-info">
+                                <i data-lucide="calendar" class="date-icon"></i>
+                                <span class="date-text">{{ assessment.created_at|date:"d/m/Y" }}</span>
+                                <span class="time-text">{{ assessment.created_at|time:"H:i" }}</span>
+                            </div>
+                        </div>
+                        
+                        <!-- Acciones -->
+                        <div class="list-cell list-cell-actions">
+                            <div class="action-buttons">
+                                <a href="{% url 'assessments:detail' assessment.pk %}" 
+                                   class="btn-action btn-action-view" 
+                                   title="Ver detalles">
+                                    <i data-lucide="eye" class="w-4 h-4"></i>
+                                </a>
+                                
+                                {% if assessment.status == 'not_started' or assessment.status == 'in_progress' %}
+                                    <a href="{% url 'assessments:take' assessment.pk %}" 
+                                       class="btn-action btn-action-continue" 
+                                       title="Continuar evaluación">
+                                        <i data-lucide="play" class="w-4 h-4"></i>
+                                    </a>
+                                {% else %}
+                                    <a href="{% url 'assessments:results' assessment.pk %}" 
+                                       class="btn-action btn-action-results" 
+                                       title="Ver resultados">
+                                        <i data-lucide="bar-chart-3" class="w-4 h-4"></i>
+                                    </a>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="empty-state">
+                <div class="empty-icon">
+                    <i data-lucide="clipboard-list" class="w-12 h-12 mx-auto opacity-50"></i>
+                </div>
+                <h3>No hay evaluaciones aún</h3>
+                <p>Comienza creando tu primera evaluación psicométrica.</p>
+                <a href="{% url 'scales:catalog' %}" class="btn btn-primary hover-lift">Explorar escalas</a>
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

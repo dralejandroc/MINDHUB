@@ -1,0 +1,288 @@
+{% extends 'base/mindhub_base.html' %}
+
+{% block title %}Dashboard - MindHub{% endblock %}
+
+{% block content %}
+<div class="animate-fade-in" x-data="dashboardData()" x-init="init()">
+    <!-- Header de página -->
+    <div class="page-header">
+        <h1 class="page-title">Dashboard</h1>
+        <p class="page-description">Bienvenido, {{ user.get_full_name|default:user.username }}</p>
+        <div class="mt-4 text-sm text-gray-600">
+            <span x-text="getCurrentDateTime()"></span>
+        </div>
+    </div>
+
+    <!-- Statistics Cards -->
+    <div class="section">
+        <div class="grid grid-1 md:grid-2 lg:grid-4 gap-6">
+            <div class="card hover-lift transition-all duration-300" x-show="loaded" x-transition>
+                <div class="card-content text-center">
+                    <div class="w-16 h-16 bg-gradient-primary rounded-full flex items-center justify-center text-white text-2xl mx-auto mb-4">📊</div>
+                    <div class="text-3xl font-bold text-dark-green mb-2">{{ total_scales }}</div>
+                    <div class="text-sm text-gray-600">Escalas disponibles</div>
+                </div>
+            </div>
+            
+            <div class="card hover-lift transition-all duration-300" x-show="loaded" x-transition>
+                <div class="card-content text-center">
+                    <div class="w-16 h-16 bg-gradient-secondary rounded-full flex items-center justify-center text-white text-2xl mx-auto mb-4">📝</div>
+                    <div class="text-3xl font-bold text-dark-green mb-2" x-text="stats.totalAssessments">{{ my_assessments }}</div>
+                    <div class="text-sm text-gray-600">Evaluaciones totales</div>
+                </div>
+            </div>
+            
+            <div class="card hover-lift transition-all duration-300" x-show="loaded" x-transition>
+                <div class="card-content text-center">
+                    <div class="w-16 h-16 bg-gradient-accent rounded-full flex items-center justify-center text-white text-2xl mx-auto mb-4">⏳</div>
+                    <div class="text-3xl font-bold text-dark-green mb-2" x-text="stats.pendingAssessments">{{ pending_assessments }}</div>
+                    <div class="text-sm text-gray-600">Pendientes</div>
+                </div>
+            </div>
+            
+            <div class="card hover-lift transition-all duration-300" x-show="loaded" x-transition>
+                <div class="card-content text-center">
+                    <div class="w-16 h-16 bg-gradient-to-br from-purple-500 to-pink-500 rounded-full flex items-center justify-center text-white text-2xl mx-auto mb-4">👥</div>
+                    <div class="text-3xl font-bold text-dark-green mb-2" x-text="stats.totalPatients">{{ my_patients }}</div>
+                    <div class="text-sm text-gray-600">Pacientes</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="section">
+        <h2 class="section-title">🚀 Acciones rápidas</h2>
+        <div class="grid grid-1 md:grid-3 gap-6">
+            <div class="card hover-lift transition-all duration-300 group cursor-pointer" 
+                 onclick="window.location.href='{% url 'scales:catalog' %}'">
+                <div class="card-header">
+                    <div class="flex items-center gap-3">
+                        <div class="w-12 h-12 bg-gradient-primary rounded-lg flex items-center justify-center text-white text-xl">🔬</div>
+                        <h3 class="card-title text-dark-green">Nueva evaluación</h3>
+                    </div>
+                </div>
+                <div class="card-content">
+                    <p class="text-gray-600 leading-relaxed">Crear una nueva evaluación psicométrica para un paciente</p>
+                </div>
+                <div class="card-footer">
+                    <div class="btn btn-primary w-full group-hover:scale-105 transition-transform">
+                        Explorar escalas →
+                    </div>
+                </div>
+            </div>
+            
+            <div class="card hover-lift transition-all duration-300 group cursor-pointer" 
+                 onclick="window.location.href='{% url 'assessments:patient_create' %}'">
+                <div class="card-header">
+                    <div class="flex items-center gap-3">
+                        <div class="w-12 h-12 bg-gradient-secondary rounded-lg flex items-center justify-center text-white text-xl">👤</div>
+                        <h3 class="card-title text-dark-green">Nuevo paciente</h3>
+                    </div>
+                </div>
+                <div class="card-content">
+                    <p class="text-gray-600 leading-relaxed">Registrar un nuevo paciente en el sistema</p>
+                </div>
+                <div class="card-footer">
+                    <div class="btn btn-secondary w-full group-hover:scale-105 transition-transform">
+                        Registrar paciente +
+                    </div>
+                </div>
+            </div>
+            
+            <div class="card hover-lift transition-all duration-300 group cursor-pointer" 
+                 onclick="window.location.href='{% url 'assessments:list' %}'">
+                <div class="card-header">
+                    <div class="flex items-center gap-3">
+                        <div class="w-12 h-12 bg-gradient-accent rounded-lg flex items-center justify-center text-white text-xl">📊</div>
+                        <h3 class="card-title text-dark-green">Ver resultados</h3>
+                    </div>
+                </div>
+                <div class="card-content">
+                    <p class="text-gray-600 leading-relaxed">Revisar evaluaciones completadas y generar reportes</p>
+                </div>
+                <div class="card-footer">
+                    <div class="btn btn-outline w-full group-hover:scale-105 transition-transform">
+                        Ver evaluaciones 📈
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Activity -->
+    <div class="grid grid-1 lg:grid-2 gap-8">
+        <div class="section">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">📋 Evaluaciones recientes</h3>
+                </div>
+                <div class="card-content">
+                    <div class="space-y-3">
+                        {% for assessment in recent_assessments %}
+                            <div class="flex items-center justify-between p-4 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors">
+                                <div class="flex-1">
+                                    <div class="font-medium text-dark-green">{{ assessment.scale.abbreviation }} - {{ assessment.patient.get_full_name }}</div>
+                                    <div class="flex items-center gap-3 mt-1">
+                                        <span class="badge badge-{{ assessment.status }} text-xs">{{ assessment.get_status_display }}</span>
+                                        <span class="text-xs text-gray-500">{{ assessment.created_at|date:"d/m/Y" }}</span>
+                                    </div>
+                                </div>
+                                <div class="flex gap-2">
+                                    <a href="{% url 'assessments:detail' assessment.pk %}" class="btn btn-sm btn-ghost">Ver</a>
+                                    {% if assessment.status == 'completed' %}
+                                        <a href="{% url 'assessments:results' assessment.pk %}" class="btn btn-sm btn-primary">Resultados</a>
+                                    {% elif assessment.status == 'in_progress' %}
+                                        <a href="{% url 'assessments:take' assessment.pk %}" class="btn btn-sm btn-secondary">Continuar</a>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        {% empty %}
+                            <div class="text-center py-8">
+                                <div class="text-6xl mb-4">📝</div>
+                                <p class="text-gray-600 mb-4">No hay evaluaciones recientes</p>
+                                <a href="{% url 'scales:catalog' %}" class="btn btn-primary">Crear primera evaluación</a>
+                            </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="section">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">⭐ Escalas populares</h3>
+                </div>
+                <div class="card-content">
+                    <div class="space-y-4">
+                        {% for scale in popular_scales %}
+                            <div class="border border-gray-200 rounded-xl p-4 hover:shadow-md transition-shadow">
+                                <div class="flex justify-between items-start mb-2">
+                                    <h4 class="font-medium text-dark-green">{{ scale.abbreviation }}</h4>
+                                    <span class="bg-primary-100 text-primary-700 text-xs px-2 py-1 rounded-full">
+                                        {{ scale.assessment_count }} uso{{ scale.assessment_count|pluralize:"s" }}
+                                    </span>
+                                </div>
+                                <p class="text-sm text-gray-600 mb-3">{{ scale.name }}</p>
+                                <div class="flex justify-between items-center">
+                                    <div class="flex gap-4 text-xs text-gray-500">
+                                        <span>{{ scale.estimated_duration_minutes }} min</span>
+                                        <span>{{ scale.total_items }} ítems</span>
+                                    </div>
+                                    <a href="{% url 'scales:detail' scale.pk %}" class="btn btn-sm btn-outline">Ver detalles</a>
+                                </div>
+                            </div>
+                        {% empty %}
+                            <div class="text-center py-8">
+                                <div class="text-6xl mb-4">📊</div>
+                                <p class="text-gray-600">No hay escalas disponibles</p>
+                            </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Analytics and Charts -->
+    <div class="section">
+        <div class="card">
+            <div class="card-header">
+                <div class="flex justify-between items-center">
+                    <h3 class="card-title">📈 Resumen de actividad</h3>
+                    <div class="flex gap-2">
+                        <button @click="analyticsView = 'week'" :class="analyticsView === 'week' ? 'btn btn-sm btn-primary' : 'btn btn-sm btn-ghost'">7 días</button>
+                        <button @click="analyticsView = 'month'" :class="analyticsView === 'month' ? 'btn btn-sm btn-primary' : 'btn btn-sm btn-ghost'">30 días</button>
+                    </div>
+                </div>
+            </div>
+            <div class="card-content">
+                <div class="grid grid-1 md:grid-3 gap-6 mb-6">
+                    <!-- Analytics Cards -->
+                    <div class="text-center p-4 bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl">
+                        <div class="text-2xl font-bold text-blue-600 mb-1" x-text="analytics.assessmentsCompleted">12</div>
+                        <div class="text-sm text-blue-700">Evaluaciones completadas</div>
+                        <div class="text-xs text-blue-600 mt-1">+15% vs período anterior</div>
+                    </div>
+                    
+                    <div class="text-center p-4 bg-gradient-to-br from-green-50 to-green-100 rounded-xl">
+                        <div class="text-2xl font-bold text-green-600 mb-1" x-text="analytics.averageTime">8.5</div>
+                        <div class="text-sm text-green-700">Tiempo promedio (min)</div>
+                        <div class="text-xs text-green-600 mt-1">-5% vs período anterior</div>
+                    </div>
+                    
+                    <div class="text-center p-4 bg-gradient-to-br from-purple-50 to-purple-100 rounded-xl">
+                        <div class="text-2xl font-bold text-purple-600 mb-1" x-text="analytics.newPatients">5</div>
+                        <div class="text-sm text-purple-700">Nuevos pacientes</div>
+                        <div class="text-xs text-purple-600 mt-1">+25% vs período anterior</div>
+                    </div>
+                </div>
+                
+                <!-- Simple Chart Placeholder -->
+                <div class="bg-gray-50 rounded-xl p-6 text-center">
+                    <div class="text-gray-500 mb-4">
+                        <svg class="w-16 h-16 mx-auto mb-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z"></path>
+                        </svg>
+                        <h4 class="font-medium text-gray-700">Gráfico de tendencias</h4>
+                        <p class="text-sm text-gray-600">Próximamente: análisis visual de rendimiento</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function dashboardData() {
+    return {
+        loaded: false,
+        analyticsView: 'week',
+        stats: {
+            totalAssessments: {{ my_assessments }},
+            pendingAssessments: {{ pending_assessments }},
+            totalPatients: {{ my_patients }}
+        },
+        analytics: {
+            assessmentsCompleted: 12,
+            averageTime: 8.5,
+            newPatients: 5
+        },
+        
+        init() {
+            // Animate statistics cards on load
+            setTimeout(() => {
+                this.loaded = true;
+            }, 200);
+            
+            // Load real-time stats if needed
+            this.loadRealtimeStats();
+        },
+        
+        getCurrentDateTime() {
+            const now = new Date();
+            return now.toLocaleDateString('es-ES', {
+                weekday: 'long',
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+        },
+        
+        async loadRealtimeStats() {
+            try {
+                // Placeholder for real-time stats API
+                // const response = await fetch('/api/dashboard/stats/');
+                // const data = await response.json();
+                // this.stats = { ...this.stats, ...data };
+            } catch (error) {
+                console.log('Real-time stats not available');
+            }
+        }
+    }
+}
+</script>
+{% endblock %}

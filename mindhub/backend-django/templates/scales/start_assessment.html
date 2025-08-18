@@ -1,0 +1,206 @@
+{% extends 'base/mindhub_base.html' %}
+
+{% block title %}Nueva Evaluación {{ scale.abbreviation }} - MindHub{% endblock %}
+
+{% block content %}
+<div class="animate-fade-in" x-data="startAssessmentData()" x-init="init()">
+    
+    <!-- Header de página -->
+    <div class="page-header">
+        <h1 class="page-title">Nueva Evaluación</h1>
+        <p class="page-description">{{ scale.abbreviation }} - {{ scale.name }}</p>
+    </div>
+
+    <!-- Progress Indicator -->
+    <div class="card mb-6">
+        <div class="card-content">
+            <div class="flex items-center justify-center gap-4">
+                <div class="flex items-center gap-2">
+                    <div class="w-8 h-8 bg-primary-500 text-white rounded-full flex items-center justify-center text-sm font-medium">
+                        1
+                    </div>
+                    <span class="text-sm font-medium text-primary-700">Configuración</span>
+                </div>
+                <div class="flex-1 h-0.5 bg-gray-200"></div>
+                <div class="flex items-center gap-2">
+                    <div class="w-8 h-8 bg-gray-200 text-gray-500 rounded-full flex items-center justify-center text-sm font-medium">
+                        2
+                    </div>
+                    <span class="text-sm text-gray-500">Evaluación</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scale Information -->
+    <div class="card mb-6">
+        <div class="card-header">
+            <h3 class="card-title">📋 Información de la Escala</h3>
+        </div>
+        <div class="card-content">
+            <div class="grid grid-1 md:grid-3 gap-6">
+                <div class="text-center">
+                    <div class="text-2xl mb-2">📊</div>
+                    <h4 class="font-medium text-dark-green">Total de Preguntas</h4>
+                    <p class="text-sm text-gray-600">{{ scale.total_items }} ítems</p>
+                </div>
+                <div class="text-center">
+                    <div class="text-2xl mb-2">⏱️</div>
+                    <h4 class="font-medium text-dark-green">Duración Estimada</h4>
+                    <p class="text-sm text-gray-600">{{ scale.estimated_duration_minutes }} minutos</p>
+                </div>
+                <div class="text-center">
+                    <div class="text-2xl mb-2">👥</div>
+                    <h4 class="font-medium text-dark-green">Población</h4>
+                    <p class="text-sm text-gray-600">{{ scale.get_population_display }}</p>
+                </div>
+            </div>
+            
+            {% if scale.description %}
+            <div class="mt-6 pt-6 border-t border-gray-200">
+                <h4 class="font-medium text-dark-green mb-2">Descripción</h4>
+                <p class="text-sm text-gray-600 leading-relaxed">{{ scale.description }}</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Assessment Form -->
+    <div class="card">
+        <div class="card-header">
+            <h3 class="card-title">🎯 Configurar Evaluación</h3>
+        </div>
+        <div class="card-content">
+            <form method="post" x-data="{ submitting: false }" @submit="submitting = true">
+                {% csrf_token %}
+                
+                <div class="space-y-6">
+                    
+                    <!-- Patient Selection -->
+                    <div class="form-group">
+                        <label for="id_patient" class="form-label">Paciente *</label>
+                        <select name="patient" id="id_patient" required class="form-control" x-model="selectedPatient">
+                            <option value="">Seleccionar paciente...</option>
+                            {% for patient in form.patient.field.queryset %}
+                                <option value="{{ patient.pk }}" {% if patient.pk|stringformat:"s" == request.GET.patient %}selected{% endif %}>
+                                    {{ patient.get_full_name }} 
+                                    {% if patient.date_of_birth %}
+                                        ({{ patient.get_age }} años)
+                                    {% endif %}
+                                </option>
+                            {% endfor %}
+                        </select>
+                        <div class="mt-2">
+                            <a href="{% url 'assessments:patient_create' %}?next={% url 'scales:start_assessment' scale.pk %}" 
+                               class="text-sm text-primary-600 hover:text-primary-700">
+                                + Crear nuevo paciente
+                            </a>
+                        </div>
+                    </div>
+
+                    <!-- Assessment Mode -->
+                    <div class="form-group">
+                        <label for="id_mode" class="form-label">Modalidad de Aplicación</label>
+                        <select name="mode" id="id_mode" class="form-control">
+                            <option value="self" selected>Autoaplicada (El paciente responde solo)</option>
+                            <option value="interviewer">Heteroaplicada (Aplicada por el clínico)</option>
+                            <option value="mixed">Mixta (Combinación de ambas)</option>
+                        </select>
+                    </div>
+
+                    <!-- Assessment Reason -->
+                    <div class="form-group">
+                        <label for="id_assessment_reason" class="form-label">Motivo de la Evaluación</label>
+                        <textarea name="assessment_reason" 
+                                  id="id_assessment_reason" 
+                                  rows="3" 
+                                  class="form-control" 
+                                  placeholder="Describe el motivo o contexto clínico de esta evaluación..."></textarea>
+                    </div>
+
+                    <!-- Instructions -->
+                    <div class="form-group">
+                        <label for="id_instructions" class="form-label">Instrucciones Especiales</label>
+                        <textarea name="instructions" 
+                                  id="id_instructions" 
+                                  rows="2" 
+                                  class="form-control" 
+                                  placeholder="Instrucciones adicionales para el paciente (opcional)..."></textarea>
+                    </div>
+
+                    <!-- Important Information -->
+                    {% if scale.requires_training != 'minimal' %}
+                    <div class="bg-orange-50 border-l-4 border-orange-400 p-4 rounded">
+                        <div class="flex items-start gap-3">
+                            <div class="text-orange-600 text-lg">⚠️</div>
+                            <div>
+                                <h4 class="text-sm font-medium text-orange-800">Advertencia Importante</h4>
+                                <p class="text-sm text-orange-700 mt-1">
+                                    Esta escala requiere <strong>{{ scale.get_requires_training_display|lower }}</strong> entrenamiento 
+                                    para su correcta administración e interpretación.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    {% if scale.indication %}
+                    <div class="bg-primary-50 border-l-4 border-primary-400 p-4 rounded">
+                        <div class="flex items-start gap-3">
+                            <div class="text-primary-600 text-lg">ℹ️</div>
+                            <div>
+                                <h4 class="text-sm font-medium text-primary-800">Indicaciones Clínicas</h4>
+                                <p class="text-sm text-primary-700 mt-1">{{ scale.indication }}</p>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+
+                <!-- Form Actions -->
+                <div class="flex flex-col md:flex-row gap-4 pt-6 mt-6 border-t border-gray-200">
+                    <a href="{% url 'scales:detail' scale.pk %}" class="btn btn-outline hover-lift">
+                        ← Volver a detalles
+                    </a>
+                    <div class="flex-1"></div>
+                    <button type="submit" 
+                            class="btn btn-primary hover-lift" 
+                            :disabled="submitting || !selectedPatient"
+                            :class="(submitting || !selectedPatient) ? 'opacity-50 cursor-not-allowed' : ''">
+                        <span x-show="!submitting">🚀 Crear Evaluación</span>
+                        <span x-show="submitting" class="flex items-center gap-2">
+                            <div class="spinner w-4 h-4"></div>
+                            Creando...
+                        </span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Quick Patient Preview -->
+    <div x-show="selectedPatient" x-transition class="card mt-6">
+        <div class="card-header">
+            <h3 class="card-title">👤 Información del Paciente</h3>
+        </div>
+        <div class="card-content">
+            <div class="text-sm text-gray-600">
+                <p>Se creará una nueva evaluación para el paciente seleccionado.</p>
+                <p class="mt-2">Una vez creada, podrás comenzar inmediatamente la aplicación de la escala.</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function startAssessmentData() {
+    return {
+        selectedPatient: '{{ request.GET.patient|default:"" }}',
+        
+        init() {
+            console.log('Start assessment form loaded');
+        }
+    }
+}
+</script>
+{% endblock content %}

@@ -1,0 +1,74 @@
+{% extends 'base/mindhub_base.html' %}
+
+{% block title %}Nuevo Paciente - MindHub{% endblock %}
+
+{% block content %}
+<div class="animate-fade-in">
+    <div class="page-header">
+        <h1 class="page-title">Nuevo Paciente</h1>
+        <p class="page-description">Registra la información básica del paciente</p>
+    </div>
+
+    <div class="card">
+        <div class="card-header">
+            <h3 class="card-title">Información del paciente</h3>
+        </div>
+        <div class="card-content">
+            <form method="post" x-data="{ submitting: false }">
+                {% csrf_token %}
+                
+                <div class="grid grid-2">
+                    <div class="form-group">
+                        <label for="id_first_name" class="form-label">Nombre *</label>
+                        <input type="text" name="first_name" id="id_first_name" required class="form-control" placeholder="Nombre del paciente">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="id_last_name" class="form-label">Apellidos *</label>
+                        <input type="text" name="last_name" id="id_last_name" required class="form-control" placeholder="Apellidos del paciente">
+                    </div>
+                </div>
+                
+                <div class="grid grid-3">
+                    <div class="form-group">
+                        <label for="id_date_of_birth" class="form-label">Fecha de nacimiento</label>
+                        <input type="date" name="date_of_birth" id="id_date_of_birth" class="form-control">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="id_gender" class="form-label">Género</label>
+                        <select name="gender" id="id_gender" class="form-control">
+                            <option value="">Seleccionar</option>
+                            <option value="M">Masculino</option>
+                            <option value="F">Femenino</option>
+                            <option value="O">Otro</option>
+                            <option value="N">Prefiero no decir</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="id_phone" class="form-label">Teléfono</label>
+                        <input type="tel" name="phone" id="id_phone" class="form-control" placeholder="Número de teléfono">
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="id_email" class="form-label">Email</label>
+                    <input type="email" name="email" id="id_email" class="form-control" placeholder="correo@ejemplo.com">
+                </div>
+                
+                <div class="flex gap-4 pt-4">
+                    <a href="{% url 'assessments:patient_list' %}" class="btn btn-outline hover-lift">Cancelar</a>
+                    <button type="submit" class="btn btn-primary hover-lift" :disabled="submitting" @click="submitting = true">
+                        <span x-show="!submitting">👤 Crear paciente</span>
+                        <span x-show="submitting" class="flex items-center gap-2">
+                            <div class="spinner w-4 h-4"></div>
+                            Guardando...
+                        </span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

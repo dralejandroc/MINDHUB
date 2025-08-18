@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Simple</title>
+    <script src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
+</head>
+<body>
+    <div x-data="{ 
+        loading: false, 
+        currentCard: 0,
+        scaleData: null,
+        questions: [],
+        alerts: [],
+        assessmentId: '{{ assessment.id }}',
+        
+        init() {
+            console.log('Inicializando...', this.assessmentId);
+            this.loading = false;
+        },
+        
+        getMaxScore() { 
+            return 27; 
+        },
+        
+        getTotalQuestions() { 
+            return this.questions.length || 0; 
+        },
+        
+        getInstructions() { 
+            return 'Instrucciones de prueba'; 
+        }
+    }" x-init="init()">
+        
+        <h1>Test de Alpine.js</h1>
+        <p>Assessment ID: <span x-text="assessmentId"></span></p>
+        <p>Loading: <span x-text="loading"></span></p>
+        <p>Current Card: <span x-text="currentCard"></span></p>
+        <p>Max Score: <span x-text="getMaxScore()"></span></p>
+        <p>Total Questions: <span x-text="getTotalQuestions()"></span></p>
+        <p>Instructions: <span x-text="getInstructions()"></span></p>
+        <p>Alerts Length: <span x-text="alerts.length"></span></p>
+        
+    </div>
+</body>
+</html>

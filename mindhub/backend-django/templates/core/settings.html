@@ -1,0 +1,537 @@
+{% extends 'base/mindhub_base.html' %}
+
+{% block title %}Configuración Profesional - ClinimetrixPro{% endblock %}
+
+{% block content %}
+<div class="animate-fade-in" x-data="settingsData()">
+    <!-- Header -->
+    <div class="page-header">
+        <h1 class="page-title">Configuración Profesional</h1>
+        <p class="page-description">Administra tu perfil médico, credenciales y preferencias del sistema</p>
+    </div>
+
+    <!-- Settings Navigation -->
+    <div class="settings-nav-compact">
+        <button @click="activeTab = 'profile'" 
+                :class="{ 'active': activeTab === 'profile' }" 
+                class="settings-nav-btn">
+            <i data-lucide="user" class="w-4 h-4"></i>
+            <span>Perfil Médico</span>
+        </button>
+        <button @click="activeTab = 'preferences'" 
+                :class="{ 'active': activeTab === 'preferences' }" 
+                class="settings-nav-btn">
+            <i data-lucide="settings" class="w-4 h-4"></i>
+            <span>Preferencias</span>
+        </button>
+        <button @click="activeTab = 'security'" 
+                :class="{ 'active': activeTab === 'security' }" 
+                class="settings-nav-btn">
+            <i data-lucide="shield" class="w-4 h-4"></i>
+            <span>Seguridad</span>
+        </button>
+        <button @click="activeTab = 'devices'" 
+                :class="{ 'active': activeTab === 'devices' }" 
+                class="settings-nav-btn">
+            <i data-lucide="tablet" class="w-4 h-4"></i>
+            <span>Dispositivos</span>
+        </button>
+    </div>
+
+    <!-- Profile Tab -->
+    <div x-show="activeTab === 'profile'" x-transition class="section">
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title">Información Profesional</h3>
+                <p class="text-xs text-gray-600">Completa tu perfil para verificación profesional</p>
+            </div>
+            <div class="card-content">
+                <form id="profileForm" @submit.prevent="saveProfile()">
+                    
+                    <!-- Información Personal -->
+                    <div class="settings-form-grid mb-6">
+                        <div class="form-group compact">
+                            <label class="form-label">Nombre Completo *</label>
+                            <input type="text" class="form-control-compact" 
+                                   value="{{ user.get_full_name }}" readonly
+                                   x-model="profile.full_name">
+                        </div>
+                        <div class="form-group compact">
+                            <label class="form-label">Correo Electrónico *</label>
+                            <input type="email" class="form-control-compact" 
+                                   value="{{ user.email }}" readonly
+                                   x-model="profile.email">
+                        </div>
+                        <div class="form-group compact">
+                            <label class="form-label">Fecha de Nacimiento</label>
+                            <input type="date" class="form-control-compact" 
+                                   x-model="profile.date_of_birth">
+                        </div>
+                        <div class="form-group compact">
+                            <label class="form-label">Teléfono Celular *</label>
+                            <input type="tel" class="form-control-compact" 
+                                   placeholder="+52 55 1234 5678"
+                                   x-model="profile.mobile_phone">
+                        </div>
+                        <div class="form-group compact">
+                            <label class="form-label">Ciudad de Residencia *</label>
+                            <input type="text" class="form-control-compact" 
+                                   placeholder="Ciudad, Estado/País"
+                                   x-model="profile.city">
+                        </div>
+                        <div class="form-group compact">
+                            <label class="form-label">Profesión *</label>
+                            <input type="text" class="form-control-compact" 
+                                   placeholder="Ej: Médico, Psicólogo, Psiquiatra"
+                                   x-model="profile.profession_type">
+                        </div>
+                    </div>
+
+                    <!-- Credenciales Profesionales -->
+                    <div class="mb-6 p-4 bg-amber-50 border border-amber-200 rounded-xl">
+                        <h4 class="font-medium text-amber-800 mb-3">Credenciales Profesionales (Requerido)</h4>
+                        <div class="settings-form-grid">
+                            <div class="form-group compact">
+                                <label class="form-label">Cédula Profesional *</label>
+                                <input type="text" class="form-control-compact" 
+                                       placeholder="Número de cédula profesional"
+                                       x-model="profile.professional_id">
+                                <small class="text-xs text-gray-600">Médico, Psicólogo o profesión relacionada</small>
+                            </div>
+                            <div class="form-group compact">
+                                <label class="form-label">Cédula de Especialidad</label>
+                                <input type="text" class="form-control-compact" 
+                                       placeholder="Si aplica"
+                                       x-model="profile.specialty_id">
+                                <small class="text-xs text-gray-600">Opcional</small>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Ámbito de Trabajo -->
+                    <div class="form-group mb-6">
+                        <label class="form-label">Ámbito de Trabajo * (Seleccione todas las que apliquen)</label>
+                        <div class="checkbox-grid-compact">
+                            <label class="checkbox-option-compact">
+                                <input type="checkbox" value="public" 
+                                       x-model="profile.work_environment">
+                                <span class="text-sm">Sector Público</span>
+                            </label>
+                            <label class="checkbox-option-compact">
+                                <input type="checkbox" value="private" 
+                                       x-model="profile.work_environment">
+                                <span class="text-sm">Sector Privado</span>
+                            </label>
+                            <label class="checkbox-option-compact">
+                                <input type="checkbox" value="student" 
+                                       x-model="profile.work_environment">
+                                <span class="text-sm">Estudiante</span>
+                            </label>
+                            <label class="checkbox-option-compact">
+                                <input type="checkbox" value="researcher" 
+                                       x-model="profile.work_environment">
+                                <span class="text-sm">Investigador</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Institución -->
+                    <div class="form-group compact mb-6">
+                        <label class="form-label">Nombre de la Institución</label>
+                        <input type="text" class="form-control-compact" 
+                               placeholder="Hospital, Universidad, Clínica, etc. (Opcional)"
+                               x-model="profile.institution_name">
+                    </div>
+
+                    <!-- Descubrimiento -->
+                    <div class="form-group compact mb-6">
+                        <label class="form-label">¿Cómo encontró ClinimetrixPro? *</label>
+                        <select class="form-control-compact" x-model="profile.discovery_source">
+                            <option value="">Seleccione una opción</option>
+                            <option value="google">Google/Búsqueda web</option>
+                            <option value="colleague">Recomendación de colega</option>
+                            <option value="social_media">Redes sociales</option>
+                            <option value="conference">Conferencia/Congreso</option>
+                            <option value="university">Universidad/Institución educativa</option>
+                            <option value="publication">Publicación científica</option>
+                            <option value="other">Otro</option>
+                        </select>
+                        <div x-show="profile.discovery_source === 'other'" class="mt-2">
+                            <input type="text" class="form-control-compact" 
+                                   placeholder="Especifique..."
+                                   x-model="profile.discovery_other">
+                        </div>
+                    </div>
+
+                    <!-- Consentimientos -->
+                    <div class="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-xl">
+                        <h4 class="font-medium text-blue-800 mb-3">Consentimientos</h4>
+                        <div class="space-y-3">
+                            <label class="flex items-start gap-3 cursor-pointer">
+                                <input type="checkbox" class="mt-1" 
+                                       x-model="profile.data_processing_consent">
+                                <span class="text-sm">
+                                    <strong>Acepto el procesamiento de mis datos</strong> para fines de verificación profesional y uso de la plataforma ClinimetrixPro * 
+                                    <a href="/privacy" target="_blank" class="text-primary-600 underline">Ver Aviso de Privacidad</a>
+                                </span>
+                            </label>
+                            <label class="flex items-start gap-3 cursor-pointer">
+                                <input type="checkbox" class="mt-1" 
+                                       x-model="profile.marketing_consent">
+                                <span class="text-sm">
+                                    Acepto recibir comunicaciones sobre actualizaciones, nuevas funcionalidades y contenido educativo
+                                </span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="flex justify-end gap-3">
+                        <button type="button" class="btn btn-solid-secondary">
+                            Cancelar
+                        </button>
+                        <button type="submit" class="btn btn-solid-primary" 
+                                :disabled="!profile.data_processing_consent">
+                            Guardar Perfil
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Preferences Tab -->
+    <div x-show="activeTab === 'preferences'" x-transition class="section">
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title">Preferencias del Sistema</h3>
+            </div>
+            <div class="card-content">
+                <form @submit.prevent="savePreferences()">
+                    
+                    <!-- Página de Entrada -->
+                    <div class="form-group compact mb-6">
+                        <label class="form-label">Página de Entrada Predeterminada</label>
+                        <select class="form-control-compact" x-model="preferences.default_landing_page">
+                            <option value="dashboard">Dashboard</option>
+                            <option value="patients">Lista de Pacientes</option>
+                            <option value="scales">Catálogo de Escalas</option>
+                            <option value="assessments">Evaluaciones</option>
+                        </select>
+                        <small class="text-xs text-gray-600">Página que verás al iniciar sesión</small>
+                    </div>
+
+                    <!-- Tema -->
+                    <div class="form-group mb-6">
+                        <label class="form-label">Tema de la Interfaz</label>
+                        <div class="grid grid-2 md:grid-4 gap-3 mt-2">
+                            <label class="flex items-center gap-2 p-3 border rounded-lg cursor-pointer hover:bg-gray-50"
+                                   :class="{ 'border-primary-500 bg-primary-50': preferences.theme_preference === 'auto' }">
+                                <input type="radio" value="auto" x-model="preferences.theme_preference">
+                                <i data-lucide="monitor" class="w-4 h-4"></i>
+                                <span class="text-sm">Automático</span>
+                            </label>
+                            <label class="flex items-center gap-2 p-3 border rounded-lg cursor-pointer hover:bg-gray-50"
+                                   :class="{ 'border-primary-500 bg-primary-50': preferences.theme_preference === 'light' }">
+                                <input type="radio" value="light" x-model="preferences.theme_preference">
+                                <i data-lucide="sun" class="w-4 h-4"></i>
+                                <span class="text-sm">Claro</span>
+                            </label>
+                            <label class="flex items-center gap-2 p-3 border rounded-lg cursor-pointer hover:bg-gray-50"
+                                   :class="{ 'border-primary-500 bg-primary-50': preferences.theme_preference === 'dark' }">
+                                <input type="radio" value="dark" x-model="preferences.theme_preference">
+                                <i data-lucide="moon" class="w-4 h-4"></i>
+                                <span class="text-sm">Oscuro</span>
+                            </label>
+                            <label class="flex items-center gap-2 p-3 border rounded-lg cursor-pointer hover:bg-gray-50"
+                                   :class="{ 'border-primary-500 bg-primary-50': preferences.theme_preference === 'disabled' }">
+                                <input type="radio" value="disabled" x-model="preferences.theme_preference">
+                                <i data-lucide="x-circle" class="w-4 h-4"></i>
+                                <span class="text-sm">Desactivar</span>
+                            </label>
+                        </div>
+                        <small class="text-xs text-gray-600">Automático usa la configuración de tu sistema operativo</small>
+                    </div>
+
+                    <div class="flex justify-end">
+                        <button type="submit" class="btn btn-solid-primary">
+                            Guardar Preferencias
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Security Tab -->
+    <div x-show="activeTab === 'security'" x-transition class="section">
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title">Seguridad y Contraseña</h3>
+            </div>
+            <div class="card-content">
+                <div class="grid grid-1 md:grid-2 gap-6">
+                    <div>
+                        <h4 class="font-medium mb-3">Cambiar Contraseña</h4>
+                        <form @submit.prevent="changePassword()">
+                            <div class="form-group compact">
+                                <label class="form-label">Contraseña Actual</label>
+                                <input type="password" class="form-control-compact" x-model="security.current_password">
+                            </div>
+                            <div class="form-group compact">
+                                <label class="form-label">Nueva Contraseña</label>
+                                <input type="password" class="form-control-compact" x-model="security.new_password">
+                            </div>
+                            <div class="form-group compact">
+                                <label class="form-label">Confirmar Nueva Contraseña</label>
+                                <input type="password" class="form-control-compact" x-model="security.confirm_password">
+                            </div>
+                            <button type="submit" class="btn btn-solid-primary">
+                                Cambiar Contraseña
+                            </button>
+                        </form>
+                    </div>
+                    
+                    <div>
+                        <h4 class="font-medium mb-3">Estado de Verificación</h4>
+                        <div class="space-y-3">
+                            {% if user.medical_profile.profile_complete %}
+                            <div class="flex items-center gap-2 text-green-600">
+                                <i data-lucide="check-circle" class="w-4 h-4"></i>
+                                <span class="text-sm">Perfil completo</span>
+                            </div>
+                            {% else %}
+                            <div class="flex items-center gap-2 text-amber-600">
+                                <i data-lucide="alert-circle" class="w-4 h-4"></i>
+                                <span class="text-sm">Perfil incompleto</span>
+                            </div>
+                            {% endif %}
+                            
+                            {% if user.medical_profile.credentials_verified %}
+                            <div class="flex items-center gap-2 text-green-600">
+                                <i data-lucide="shield-check" class="w-4 h-4"></i>
+                                <span class="text-sm">Credenciales verificadas</span>
+                            </div>
+                            {% else %}
+                            <div class="flex items-center gap-2 text-amber-600">
+                                <i data-lucide="clock" class="w-4 h-4"></i>
+                                <span class="text-sm">Credenciales en revisión</span>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Devices Tab -->
+    <div x-show="activeTab === 'devices'" x-transition class="section">
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title">Dispositivos Secundarios</h3>
+                <p class="text-xs text-gray-600">Tablets y dispositivos para evaluaciones en consultorio</p>
+            </div>
+            <div class="card-content">
+                <div class="flex justify-between items-center mb-4">
+                    <span class="text-sm text-gray-600">{{ user.secondary_devices.count }} dispositivos registrados</span>
+                    <button @click="showAddDevice = true" class="btn btn-primary btn-sm">
+                        Agregar Dispositivo
+                    </button>
+                </div>
+                
+                <!-- Device List -->
+                <div class="space-y-3">
+                    {% for device in user.secondary_devices.all %}
+                    <div class="flex items-center justify-between p-4 border rounded-lg">
+                        <div>
+                            <h4 class="font-medium">{{ device.name }}</h4>
+                            <p class="text-sm text-gray-600">{{ device.description|default:"Sin descripción" }}</p>
+                            {% if device.is_session_valid %}
+                                <span class="text-xs text-green-600">Activo hasta {{ device.session_expires_at|date:"H:i" }}</span>
+                            {% else %}
+                                <span class="text-xs text-gray-500">Inactivo</span>
+                            {% endif %}
+                        </div>
+                        <div class="flex gap-2">
+                            {% if device.is_session_valid %}
+                                <button @click="endSession('{{ device.id }}')" class="btn btn-solid-secondary btn-sm">
+                                    Terminar
+                                </button>
+                            {% else %}
+                                <button @click="startSession('{{ device.id }}')" class="btn btn-solid-secondary btn-sm">
+                                    Activar
+                                </button>
+                            {% endif %}
+                            <button @click="deleteDevice('{{ device.id }}')" class="btn btn-solid-accent btn-sm">
+                                Eliminar
+                            </button>
+                        </div>
+                    </div>
+                    {% empty %}
+                    <div class="text-center py-8">
+                        <i data-lucide="tablet" class="w-12 h-12 text-gray-400 mx-auto mb-3"></i>
+                        <p class="text-gray-600">No hay dispositivos registrados</p>
+                        <button @click="showAddDevice = true" class="btn btn-primary btn-sm mt-3">
+                            Agregar Primer Dispositivo
+                        </button>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Device Modal -->
+    <div x-show="showAddDevice" 
+         x-transition:enter="transition ease-out duration-300"
+         x-transition:enter-start="opacity-0 transform scale-95"
+         x-transition:enter-end="opacity-100 transform scale-100"
+         class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50"
+         @click.self="showAddDevice = false">
+        <div class="bg-white rounded-xl p-6 max-w-md w-full mx-4">
+            <h3 class="font-medium mb-4">Agregar Dispositivo Secundario</h3>
+            <form @submit.prevent="addDevice()">
+                <div class="form-group compact">
+                    <label class="form-label">Nombre del dispositivo</label>
+                    <input type="text" class="form-control-compact" 
+                           x-model="newDevice.name" placeholder="Ej: Tablet Consultorio 1">
+                </div>
+                <div class="form-group compact">
+                    <label class="form-label">Descripción</label>
+                    <input type="text" class="form-control-compact" 
+                           x-model="newDevice.description" placeholder="Opcional">
+                </div>
+                <div class="form-group compact">
+                    <label class="form-label">Tipo</label>
+                    <select class="form-control-compact" x-model="newDevice.device_type">
+                        <option value="tablet">Tablet</option>
+                        <option value="laptop">Laptop</option>
+                        <option value="desktop">PC</option>
+                        <option value="other">Otro</option>
+                    </select>
+                </div>
+                <div class="flex justify-end gap-3 mt-6">
+                    <button type="button" @click="showAddDevice = false" class="btn btn-solid-secondary">
+                        Cancelar
+                    </button>
+                    <button type="submit" class="btn btn-solid-primary">
+                        Agregar
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+function settingsData() {
+    return {
+        activeTab: 'profile',
+        showAddDevice: false,
+        
+        profile: {
+            full_name: '{{ user.get_full_name }}',
+            email: '{{ user.email }}',
+            date_of_birth: '{% if user.medical_profile.date_of_birth %}{{ user.medical_profile.date_of_birth|date:"Y-m-d" }}{% endif %}',
+            mobile_phone: '{{ user.medical_profile.mobile_phone|default:"" }}',
+            city: '{{ user.medical_profile.city|default:"" }}',
+            profession_type: '{{ user.medical_profile.profession_type|default:"" }}',
+            professional_id: '{{ user.medical_profile.professional_id|default:"" }}',
+            specialty_id: '{{ user.medical_profile.specialty_id|default:"" }}',
+            work_environment: {{ user.medical_profile.work_environment|default:"[]" }},
+            institution_name: '{{ user.medical_profile.institution_name|default:"" }}',
+            discovery_source: '{{ user.medical_profile.discovery_source|default:"" }}',
+            discovery_other: '{{ user.medical_profile.discovery_other|default:"" }}',
+            data_processing_consent: {{ user.medical_profile.data_processing_consent|yesno:"true,false" }},
+            marketing_consent: {{ user.medical_profile.marketing_consent|yesno:"true,false" }}
+        },
+        
+        preferences: {
+            theme_preference: '{{ user.medical_profile.theme_preference|default:"auto" }}',
+            default_landing_page: '{{ user.medical_profile.default_landing_page|default:"dashboard" }}'
+        },
+        
+        security: {
+            current_password: '',
+            new_password: '',
+            confirm_password: ''
+        },
+        
+        newDevice: {
+            name: '',
+            description: '',
+            device_type: 'tablet'
+        },
+        
+        async saveProfile() {
+            try {
+                const response = await fetch('{% url "core:save_profile" %}', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': '{{ csrf_token }}'
+                    },
+                    body: JSON.stringify(this.profile)
+                });
+                
+                const data = await response.json();
+                if (data.success) {
+                    alert('Perfil guardado exitosamente');
+                    location.reload();
+                } else {
+                    alert('Error: ' + data.error);
+                }
+            } catch (error) {
+                alert('Error de conexión');
+            }
+        },
+        
+        async savePreferences() {
+            try {
+                const response = await fetch('{% url "core:save_preferences" %}', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': '{{ csrf_token }}'
+                    },
+                    body: JSON.stringify(this.preferences)
+                });
+                
+                const data = await response.json();
+                if (data.success) {
+                    alert('Preferencias guardadas');
+                } else {
+                    alert('Error: ' + data.error);
+                }
+            } catch (error) {
+                alert('Error de conexión');
+            }
+        },
+        
+        async addDevice() {
+            try {
+                const response = await fetch('{% url "core:add_device" %}', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': '{{ csrf_token }}'
+                    },
+                    body: JSON.stringify(this.newDevice)
+                });
+                
+                const data = await response.json();
+                if (data.success) {
+                    this.showAddDevice = false;
+                    this.newDevice = { name: '', description: '', device_type: 'tablet' };
+                    location.reload();
+                } else {
+                    alert('Error: ' + data.error);
+                }
+            } catch (error) {
+                alert('Error de conexión');
+            }
+        }
+    }
+}
+</script>
+{% endblock %}

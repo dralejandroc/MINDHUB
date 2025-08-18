@@ -1,0 +1,440 @@
+{% extends 'base/mindhub_base.html' %}
+
+{% block title %}Evaluación {{ assessment.scale.abbreviation }} - MindHub{% endblock %}
+
+{% block content %}
+<div class="animate-fade-in" x-data="assessmentData()" x-init="init()">
+    
+    <!-- Header de página -->
+    <div class="page-header">
+        <h1 class="page-title">{{ assessment.scale.abbreviation }} - {{ assessment.scale.name }}</h1>
+        <p class="page-description">Paciente: {{ assessment.patient.get_full_name }}</p>
+    </div>
+
+    <!-- Progress Indicator Steps -->
+    <div class="card mb-6">
+        <div class="card-content">
+            <div class="flex items-center justify-center gap-4 mb-4">
+                <div class="flex items-center gap-2">
+                    <div class="w-8 h-8 bg-green-500 text-white rounded-full flex items-center justify-center text-sm font-medium">
+                        &#10003;
+                    </div>
+                    <span class="text-sm font-medium text-green-700">Configuración</span>
+                </div>
+                <div class="flex-1 h-0.5 bg-green-300"></div>
+                <div class="flex items-center gap-2">
+                    <div class="w-8 h-8 bg-primary-500 text-white rounded-full flex items-center justify-center text-sm font-medium">
+                        2
+                    </div>
+                    <span class="text-sm font-medium text-primary-700">Evaluación</span>
+                </div>
+            </div>
+            
+            <!-- Question Progress Bar -->
+            <div class="mt-4">
+                <div class="flex justify-between text-sm text-gray-600 mb-2">
+                    <span>Progreso de preguntas</span>
+                    <span x-text="`${currentItem} / ${totalItems}`"></span>
+                </div>
+                <div class="w-full bg-gray-200 rounded-full h-3">
+                    <div class="bg-gradient-primary h-3 rounded-full transition-all duration-500 ease-out"
+                         :style="`width: ${progressPercentage}%`"></div>
+                </div>
+                <div class="text-xs text-gray-500 mt-1" x-text="`${Math.round(progressPercentage)}% completado`"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Loading State -->
+    <div x-show="loading" class="section">
+        <div class="card">
+            <div class="card-content text-center py-12">
+                <div class="spinner w-8 h-8 mx-auto mb-4"></div>
+                <p class="text-gray-600">Cargando evaluación...</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Assessment Content -->
+    <div x-show="!loading && scaleData" class="section">
+        
+        <!-- Instructions (only show at start) -->
+        <div x-show="currentItem === 0" class="card mb-6">
+            <div class="card-header">
+                <h3 class="card-title">📋 Instrucciones</h3>
+            </div>
+            <div class="card-content">
+                <p class="text-gray-700 leading-relaxed mb-4" x-text="getInstructions()"></p>
+                <div class="bg-primary-50 border-l-4 border-primary-400 p-4">
+                    <p class="text-sm text-primary-700">
+                        <strong>Tiempo estimado:</strong> <span x-text="scaleData?.metadata?.estimatedDurationMinutes || {{ assessment.scale.estimated_duration_minutes }}"></span> minutos
+                        <br><strong>Total de preguntas:</strong> <span x-text="getTotalItems()"></span>
+                    </p>
+                </div>
+            </div>
+            <div class="card-footer">
+                <button @click="startAssessment()" class="btn btn-primary hover-lift">
+                    ▶️ Comenzar evaluación
+                </button>
+            </div>
+        </div>
+
+        <!-- Current Question -->
+        <div x-show="currentItem > 0 && currentItem <= totalItems" class="card">
+            <div class="card-header">
+                <div class="flex justify-between items-center">
+                    <h3 class="card-title" x-text="`Pregunta ${currentItem}`"></h3>
+                    <span class="text-xs text-gray-500" x-text="`${currentItem} de ${totalItems}`"></span>
+                </div>
+            </div>
+            
+            <div class="card-content">
+                <!-- Question Text -->
+                <div class="mb-6">
+                    <h4 class="text-lg font-medium text-dark-green mb-2" x-text="currentQuestion?.text"></h4>
+                </div>
+                
+                <!-- Answer Options -->
+                <div class="space-y-3" x-show="currentQuestion && currentQuestion.options">
+                    <template x-for="option in (currentQuestion?.options || [])" :key="option.value">
+                        <label class="block">
+                            <div class="card-like cursor-pointer transition-all duration-200 hover:bg-primary-50 hover:border-primary-300 p-4 border rounded-xl"
+                                 :class="responses[currentItem] === option.value ? 'bg-primary-100 border-primary-400' : 'bg-white border-gray-200'">
+                                <div class="flex items-start gap-3">
+                                    <input type="radio" 
+                                           :name="`question_${currentItem}`"
+                                           :value="option.value"
+                                           x-model="responses[currentItem]"
+                                           @change="recordResponse(currentItem, option.value, option.text)"
+                                           class="mt-1 text-primary-600 focus:ring-primary-500">
+                                    <div class="flex-1">
+                                        <span class="text-sm font-medium text-dark-green" x-text="option.text"></span>
+                                    </div>
+                                </div>
+                            </div>
+                        </label>
+                    </template>
+                </div>
+            </div>
+            
+            <div class="card-footer">
+                <div class="flex justify-between gap-4">
+                    <button @click="previousQuestion()" 
+                            x-show="currentItem > 1"
+                            class="btn btn-outline hover-lift">
+                        ← Anterior
+                    </button>
+                    <div class="flex-1"></div>
+                    <button @click="nextQuestion()" 
+                            :disabled="!responses[currentItem]"
+                            class="btn btn-primary hover-lift"
+                            :class="responses[currentItem] ? '' : 'opacity-50 cursor-not-allowed'">
+                        <span x-show="currentItem < totalItems">Siguiente →</span>
+                        <span x-show="currentItem === totalItems">Finalizar &#10003;</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Completion Screen -->
+        <div x-show="currentItem > totalItems" class="card">
+            <div class="card-content text-center py-12">
+                <div class="text-6xl mb-4">✅</div>
+                <h3 class="text-xl font-semibold text-dark-green mb-4">¡Evaluación completada!</h3>
+                <p class="text-gray-600 mb-6">Gracias por completar la evaluación. Los resultados están siendo procesados.</p>
+                
+                <div x-show="calculating" class="mb-6">
+                    <div class="spinner w-6 h-6 mx-auto mb-2"></div>
+                    <p class="text-sm text-gray-500">Calculando resultados...</p>
+                </div>
+                
+                <div x-show="!calculating" class="flex gap-4 justify-center">
+                    <a href="{% url 'assessments:list' %}" class="btn btn-outline hover-lift">
+                        📋 Ver todas las evaluaciones
+                    </a>
+                    <button @click="viewResults()" class="btn btn-primary hover-lift">
+                        📊 Ver resultados
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Error State -->
+    <div x-show="error" class="section">
+        <div class="card">
+            <div class="card-content text-center py-12">
+                <div class="text-4xl mb-4">⚠️</div>
+                <h3 class="text-lg font-medium text-gray-900 mb-2">Error al cargar la evaluación</h3>
+                <p class="text-gray-500 mb-4" x-text="errorMessage"></p>
+                <button @click="retryLoad()" class="btn btn-primary hover-lift">Reintentar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function assessmentData() {
+    return {
+        // Assessment data
+        assessmentId: '{{ assessment.id }}',
+        scaleAbbreviation: '{{ assessment.scale.abbreviation }}',
+        scaleData: null,
+        
+        // Progress tracking
+        currentItem: 0,
+        totalItems: {{ assessment.scale.total_items }},
+        responses: {},
+        
+        // States
+        loading: true,
+        calculating: false,
+        error: false,
+        errorMessage: '',
+        
+        // Computed properties
+        get progressPercentage() {
+            return this.totalItems > 0 ? (this.currentItem / this.totalItems) * 100 : 0;
+        },
+        
+        get currentQuestion() {
+            try {
+                if (!this.scaleData?.structure?.sections || this.currentItem <= 0) {
+                    console.log('No sections or invalid currentItem');
+                    return null;
+                }
+                
+                // Find the question in the sections
+                let questionIndex = 0;
+                for (const section of this.scaleData.structure.sections) {
+                    if (!section.items || !Array.isArray(section.items)) continue;
+                    
+                    for (const item of section.items) {
+                        questionIndex++;
+                        if (questionIndex === this.currentItem) {
+                            console.log('Found current item:', item);
+                            
+                            // Get response options
+                            let options = [];
+                            console.log('Item responseGroup:', item.responseGroup);
+                            console.log('Available responseGroups:', Object.keys(this.scaleData.responseGroups || {}));
+                            
+                            if (item.responseGroup && this.scaleData.responseGroups) {
+                                const responseGroup = this.scaleData.responseGroups[item.responseGroup];
+                                console.log('Found responseGroup:', responseGroup);
+                                
+                                if (responseGroup && Array.isArray(responseGroup)) {
+                                    options = responseGroup.map(opt => ({
+                                        value: opt.value,
+                                        text: opt.label
+                                    }));
+                                    console.log('Mapped options:', options);
+                                } else {
+                                    console.warn('ResponseGroup is not an array:', responseGroup);
+                                }
+                            } else {
+                                console.warn('Missing responseGroup or responseGroups data');
+                            }
+                            
+                            // Fallback options if none found
+                            if (options.length === 0) {
+                                options = [
+                                    { value: 0, text: 'Para nada' },
+                                    { value: 1, text: 'Varios días' },
+                                    { value: 2, text: 'Más de la mitad de los días' },
+                                    { value: 3, text: 'Casi todos los días' }
+                                ];
+                            }
+                            
+                            return {
+                                text: item.text || 'Pregunta sin texto',
+                                options: options,
+                                helpText: item.metadata?.helpText || ''
+                            };
+                        }
+                    }
+                }
+                
+                console.log('Question not found for index:', this.currentItem);
+                return null;
+            } catch (error) {
+                console.error('Error getting current question:', error);
+                return null;
+            }
+        },
+        
+        async init() {
+            console.log('Initializing assessment:', this.assessmentId);
+            await this.loadScaleData();
+            await this.loadProgress();
+        },
+        
+        async loadScaleData() {
+            try {
+                // Get the JSON file path from the server
+                const pathResponse = await fetch(`/assessments/api/${this.assessmentId}/scale-data-path/`);
+                if (!pathResponse.ok) throw new Error('Could not get scale data path');
+                
+                const pathData = await pathResponse.json();
+                const jsonPath = pathData.json_file_path;
+                
+                if (!jsonPath) {
+                    throw new Error('No JSON file configured for this scale');
+                }
+                
+                // Load the actual scale data
+                const response = await fetch(`/${jsonPath}`);
+                if (!response.ok) throw new Error('Scale data file not found');
+                
+                this.scaleData = await response.json();
+                this.totalItems = this.getTotalItems();
+                this.loading = false;
+                
+                console.log('Scale data loaded:', this.scaleData);
+            } catch (error) {
+                console.error('Error loading scale data:', error);
+                this.error = true;
+                this.errorMessage = 'No se pudo cargar la información de la escala: ' + error.message;
+                this.loading = false;
+            }
+        },
+        
+        async loadProgress() {
+            try {
+                const response = await fetch(`/assessments/api/${this.assessmentId}/progress/`);
+                if (response.ok) {
+                    const data = await response.json();
+                    this.currentItem = data.current_item || 0;
+                    this.responses = data.responses || {};
+                }
+            } catch (error) {
+                console.log('No previous progress found, starting fresh');
+            }
+        },
+        
+        startAssessment() {
+            this.currentItem = 1;
+            this.updateProgress();
+        },
+        
+        async recordResponse(itemNumber, value, text) {
+            this.responses[itemNumber] = value;
+            
+            // Save response to backend
+            try {
+                await fetch(`/assessments/api/${this.assessmentId}/response/`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                    },
+                    body: JSON.stringify({
+                        item_number: itemNumber,
+                        response_value: value,
+                        response_label: text
+                    })
+                });
+            } catch (error) {
+                console.error('Error saving response:', error);
+            }
+        },
+        
+        async nextQuestion() {
+            if (!this.responses[this.currentItem]) return;
+            
+            this.currentItem++;
+            await this.updateProgress();
+            
+            if (this.currentItem > this.totalItems) {
+                await this.completeAssessment();
+            }
+        },
+        
+        async previousQuestion() {
+            if (this.currentItem > 1) {
+                this.currentItem--;
+                await this.updateProgress();
+            }
+        },
+        
+        async updateProgress() {
+            try {
+                await fetch(`/assessments/api/${this.assessmentId}/progress/`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                    },
+                    body: JSON.stringify({
+                        current_item: this.currentItem,
+                        status: this.currentItem > this.totalItems ? 'completed' : 'in_progress'
+                    })
+                });
+            } catch (error) {
+                console.error('Error updating progress:', error);
+            }
+        },
+        
+        async completeAssessment() {
+            this.calculating = true;
+            
+            try {
+                const response = await fetch(`/assessments/api/${this.assessmentId}/complete/`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                    }
+                });
+                
+                if (response.ok) {
+                    console.log('Assessment completed successfully');
+                } else {
+                    throw new Error('Failed to complete assessment');
+                }
+            } catch (error) {
+                console.error('Error completing assessment:', error);
+            } finally {
+                this.calculating = false;
+            }
+        },
+        
+        viewResults() {
+            window.location.href = `/assessments/${this.assessmentId}/results/`;
+        },
+        
+        async retryLoad() {
+            this.error = false;
+            this.loading = true;
+            await this.loadScaleData();
+        },
+        
+        // Helper functions for new JSON structure
+        getTotalItems() {
+            if (!this.scaleData?.structure?.sections) return {{ assessment.scale.total_items }};
+            
+            let total = 0;
+            for (const section of this.scaleData.structure.sections) {
+                total += section.items?.length || 0;
+            }
+            return total;
+        },
+        
+        getInstructions() {
+            return this.scaleData?.metadata?.helpText?.instructions?.patient || 
+                   this.scaleData?.metadata?.helpText?.general ||
+                   'Por favor responde todas las preguntas de manera honesta.';
+        },
+        
+        // This function is no longer needed since we handle it in currentQuestion
+        // Keeping it for backward compatibility
+        getResponseOptions(responseGroup) {
+            return [];
+        }
+    }
+}
+</script>
+
+<!-- CSRF Token for AJAX -->
+{% csrf_token %}
+{% endblock content %}

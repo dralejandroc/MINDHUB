@@ -1,0 +1,477 @@
+{% extends 'base/mindhub_base.html' %}
+
+{% block title %}{{ scale.abbreviation }} - MindHub{% endblock %}
+
+{% block content %}
+<div class="animate-fade-in">
+    
+    <!-- Header de página -->
+    <div class="page-header">
+        {% if json_metadata %}
+            <h1 class="page-title">{{ json_metadata.name }}</h1>
+            <h2 class="page-subtitle">{{ json_metadata.abbreviation }}</h2>
+        {% else %}
+            <h1 class="page-title">{{ scale.name }}</h1>
+            <h2 class="page-subtitle">{{ scale.abbreviation }}</h2>
+        {% endif %}
+        <p class="page-description">Información detallada de la escala psicométrica</p>
+    </div>
+
+    <div class="grid grid-1 lg:grid-3 gap-6">
+        
+        <!-- Main Info Column -->
+        <div class="lg:col-span-2 space-y-6">
+            
+            <!-- Basic Information -->
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">📋 Información General</h3>
+                </div>
+                <div class="card-content">
+                    <div class="space-y-4">
+                        <div>
+                            <h4 class="text-sm font-medium text-dark-green mb-2">Descripción</h4>
+                            <p class="text-sm text-gray-600 leading-relaxed">
+                                {% if json_metadata.description %}
+                                    {{ json_metadata.description }}
+                                {% else %}
+                                    {{ scale.description|default:"ND (no disponible)" }}
+                                {% endif %}
+                            </p>
+                        </div>
+                        
+                        <div>
+                            <h4 class="text-sm font-medium text-dark-green mb-2">Propósito</h4>
+                            <p class="text-sm text-gray-600 leading-relaxed">
+                                {% if json_documentation.purpose %}
+                                    {{ json_documentation.purpose }}
+                                {% else %}
+                                    ND (no disponible)
+                                {% endif %}
+                            </p>
+                        </div>
+                        
+                        <div class="grid grid-2 gap-4">
+                            <div>
+                                <h4 class="text-sm font-medium text-dark-green mb-1">Autores</h4>
+                                <p class="text-sm text-gray-600">
+                                    {% if json_metadata.authors %}
+                                        {% for author in json_metadata.authors %}
+                                            {{ author }}{% if not forloop.last %}, {% endif %}
+                                        {% endfor %}
+                                    {% else %}
+                                        ND (no disponible)
+                                    {% endif %}
+                                </p>
+                            </div>
+                            <div>
+                                <h4 class="text-sm font-medium text-dark-green mb-1">Año de Publicación</h4>
+                                <p class="text-sm text-gray-600">
+                                    {% if json_metadata.year %}
+                                        {{ json_metadata.year }}
+                                    {% else %}
+                                        ND (no disponible)
+                                    {% endif %}
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Psychometric Properties -->
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">📊 Propiedades Psicométricas</h3>
+                </div>
+                <div class="card-content">
+                    <div class="space-y-4">
+                        <div>
+                            <h4 class="text-sm font-medium text-dark-green mb-2">Utilidad Clínica</h4>
+                            <p class="text-sm text-gray-600 leading-relaxed">
+                                {% if json_documentation.clinicalUtility %}
+                                    {{ json_documentation.clinicalUtility }}
+                                {% else %}
+                                    ND (no disponible)
+                                {% endif %}
+                            </p>
+                        </div>
+                        
+                        <div>
+                            <h4 class="text-sm font-medium text-dark-green mb-2">Marco Teórico</h4>
+                            <p class="text-sm text-gray-600 leading-relaxed">
+                                {% if json_documentation.theoreticalFramework %}
+                                    {{ json_documentation.theoreticalFramework }}
+                                {% else %}
+                                    ND (no disponible)
+                                {% endif %}
+                            </p>
+                        </div>
+                        
+                        {% if json_psychometric %}
+                        <div>
+                            <h4 class="text-sm font-medium text-dark-green mb-2">Propiedades Psicométricas</h4>
+                            {% if json_reliability %}
+                            <div class="mb-3">
+                                <h5 class="text-xs font-medium text-gray-700 mb-1">Confiabilidad</h5>
+                                <div class="grid grid-2 md:grid-4 gap-2">
+                                    {% if json_reliability.cronbachAlpha %}
+                                    <div class="text-center p-2 bg-primary-50 rounded">
+                                        <div class="text-sm font-bold text-primary-600">{{ json_reliability.cronbachAlpha }}</div>
+                                        <div class="text-xs text-gray-600">Alfa de Cronbach</div>
+                                    </div>
+                                    {% endif %}
+                                    {% if json_reliability.testRetest %}
+                                    <div class="text-center p-2 bg-purple-50 rounded">
+                                        <div class="text-sm font-bold text-purple-600">{{ json_reliability.testRetest }}</div>
+                                        <div class="text-xs text-gray-600">Test-Retest</div>
+                                    </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            {% endif %}
+                        </div>
+                        {% else %}
+                        <div>
+                            <h4 class="text-sm font-medium text-dark-green mb-2">Propiedades Psicométricas</h4>
+                            <p class="text-sm text-gray-600">ND (no disponible)</p>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Validation Section -->
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">✅ Validación</h3>
+                </div>
+                <div class="card-content">
+                    <div class="space-y-4">
+                        {% if json_validity %}
+                        <div class="grid grid-2 gap-4">
+                            <div>
+                                <h4 class="text-sm font-medium text-dark-green mb-1">Validez de Constructo</h4>
+                                <p class="text-sm text-gray-600">
+                                    {% if json_validity.construct %}
+                                        {{ json_validity.construct }}
+                                    {% else %}
+                                        ND (no disponible)
+                                    {% endif %}
+                                </p>
+                            </div>
+                            <div>
+                                <h4 class="text-sm font-medium text-dark-green mb-1">Validez de Criterio</h4>
+                                <p class="text-sm text-gray-600">
+                                    {% if json_validity.criterion %}
+                                        {{ json_validity.criterion }}
+                                    {% else %}
+                                        ND (no disponible)
+                                    {% endif %}
+                                </p>
+                            </div>
+                            <div>
+                                <h4 class="text-sm font-medium text-dark-green mb-1">Validez Discriminante</h4>
+                                <p class="text-sm text-gray-600">
+                                    {% if json_validity.discriminant %}
+                                        {{ json_validity.discriminant }}
+                                    {% else %}
+                                        ND (no disponible)
+                                    {% endif %}
+                                </p>
+                            </div>
+                            <div>
+                                <h4 class="text-sm font-medium text-dark-green mb-1">Cambio Mínimo Detectable</h4>
+                                <p class="text-sm text-gray-600">
+                                    {% if json_psychometric.minimumDetectableChange %}
+                                        {{ json_psychometric.minimumDetectableChange }}
+                                    {% else %}
+                                        ND (no disponible)
+                                    {% endif %}
+                                </p>
+                            </div>
+                        </div>
+                        
+                        <div class="grid grid-2 gap-4">
+                            <div class="text-center p-3 bg-emerald-50 rounded-lg">
+                                <div class="text-lg font-bold text-emerald-600">
+                                    {% if json_validity.sensitivity %}
+                                        {{ json_validity.sensitivity }}
+                                    {% else %}
+                                        ND
+                                    {% endif %}
+                                </div>
+                                <div class="text-xs text-gray-600">Sensibilidad</div>
+                            </div>
+                            <div class="text-center p-3 bg-orange-50 rounded-lg">
+                                <div class="text-lg font-bold text-orange-600">
+                                    {% if json_validity.specificity %}
+                                        {{ json_validity.specificity }}
+                                    {% else %}
+                                        ND
+                                    {% endif %}
+                                </div>
+                                <div class="text-xs text-gray-600">Especificidad</div>
+                            </div>
+                        </div>
+                        {% else %}
+                        <p class="text-sm text-gray-600">ND (no disponible)</p>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Recent Assessments -->
+            {% if recent_assessments %}
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">📈 Evaluaciones Recientes</h3>
+                </div>
+                <div class="card-content">
+                    <div class="space-y-3">
+                        {% for assessment in recent_assessments %}
+                        <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                            <div>
+                                <p class="text-sm font-medium text-dark-green">{{ assessment.patient.get_full_name }}</p>
+                                <p class="text-xs text-gray-600">{{ assessment.created_at|date:"d/m/Y H:i" }}</p>
+                            </div>
+                            <div class="flex gap-2">
+                                <span class="text-xs font-medium bg-primary-100 text-primary-700 px-2 py-1 rounded-full">
+                                    {{ assessment.get_status_display }}
+                                </span>
+                                <a href="{% url 'assessments:detail' assessment.pk %}" class="btn btn-ghost btn-sm">
+                                    Ver →
+                                </a>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Sidebar -->
+        <div class="space-y-6">
+            
+            <!-- Quick Stats -->
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">📊 Estadísticas</h3>
+                </div>
+                <div class="card-content space-y-4">
+                    <div class="flex justify-between items-center">
+                        <span class="text-sm text-gray-600">Total de ítems</span>
+                        <span class="font-medium text-dark-green">
+                            {% if json_structure.totalItems %}
+                                {{ json_structure.totalItems }}
+                            {% else %}
+                                {{ scale.total_items|default:"ND" }}
+                            {% endif %}
+                        </span>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <span class="text-sm text-gray-600">Duración estimada</span>
+                        <span class="font-medium text-dark-green">
+                            {% if json_metadata.estimatedDurationMinutes %}
+                                {{ json_metadata.estimatedDurationMinutes }} min
+                            {% else %}
+                                {{ scale.estimated_duration_minutes|default:"ND" }} min
+                            {% endif %}
+                        </span>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <span class="text-sm text-gray-600">Grupos de edad</span>
+                        <span class="font-medium text-dark-green">
+                            {% if json_target_population.ageGroups %}
+                                {% for age_group in json_target_population.ageGroups %}
+                                    {{ age_group|title }}{% if not forloop.last %}, {% endif %}
+                                {% endfor %}
+                            {% else %}
+                                ND (no disponible)
+                            {% endif %}
+                        </span>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <span class="text-sm text-gray-600">Demografía</span>
+                        <span class="font-medium text-dark-green">
+                            {% if json_target_population.demographics %}
+                                {{ json_target_population.demographics }}
+                            {% else %}
+                                ND (no disponible)
+                            {% endif %}
+                        </span>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <span class="text-sm text-gray-600">Modo de administración</span>
+                        <span class="font-medium text-dark-green">
+                            {% if json_metadata.administrationMode %}
+                                {% if json_metadata.administrationMode == "auto" %}
+                                    Autoaplicada
+                                {% elif json_metadata.administrationMode == "hetero" %}
+                                    Heteroaplicada
+                                {% elif json_metadata.administrationMode == "both" %}
+                                    Ambas
+                                {% else %}
+                                    {{ json_metadata.administrationMode }}
+                                {% endif %}
+                            {% else %}
+                                ND (no disponible)
+                            {% endif %}
+                        </span>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <span class="text-sm text-gray-600">Categoría</span>
+                        <span class="font-medium text-dark-green">
+                            {% if json_metadata.category %}
+                                {{ json_metadata.category }}
+                            {% else %}
+                                {{ scale.category.name|default:"ND" }}
+                            {% endif %}
+                        </span>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <span class="text-sm text-gray-600">Subcategoría</span>
+                        <span class="font-medium text-dark-green">
+                            {% if json_metadata.subcategory %}
+                                {{ json_metadata.subcategory }}
+                            {% else %}
+                                ND (no disponible)
+                            {% endif %}
+                        </span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quick Assessment Setup -->
+            <div class="card" x-data="quickAssessmentData()">
+                <div class="card-header">
+                    <h3 class="card-title">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="inline w-4 h-4 mr-2">
+                            <path d="M12 5v14m7-7H5"></path>
+                        </svg>
+                        Nueva Evaluación
+                    </h3>
+                </div>
+                <div class="card-content space-y-4">
+                    <form id="quick-assessment-form" method="post" action="{% url 'scales:start_assessment' scale.pk %}" @submit="submitting = true">
+                        {% csrf_token %}
+                        
+                        <!-- Patient Selection -->
+                        <div class="form-group-compact">
+                            <label class="form-label-compact">Paciente</label>
+                            <select name="patient" required class="form-control-compact" x-model="selectedPatient">
+                                <option value="">Seleccionar...</option>
+                                {% for patient in patients %}
+                                    <option value="{{ patient.pk }}">
+                                        {{ patient.get_full_name }}
+                                        {% if patient.date_of_birth %}({{ patient.get_age }} años){% endif %}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        
+                        <!-- Mode Selection -->
+                        <div class="form-group-compact">
+                            <label class="form-label-compact">Modalidad</label>
+                            <select name="mode" class="form-control-compact">
+                                <option value="self" selected>Autoaplicada</option>
+                                <option value="interviewer">Heteroaplicada</option>
+                                <option value="mixed">Mixta</option>
+                            </select>
+                        </div>
+                        
+                        <!-- Assessment Reason -->
+                        <div class="form-group-compact">
+                            <label class="form-label-compact">Motivo (opcional)</label>
+                            <textarea name="assessment_reason" rows="2" class="form-control-compact" 
+                                      placeholder="Breve descripción del motivo..."></textarea>
+                        </div>
+                        
+                        <!-- Instructions -->
+                        <div class="form-group-compact">
+                            <label class="form-label-compact">Notas (opcional)</label>
+                            <textarea name="instructions" rows="2" class="form-control-compact" 
+                                      placeholder="Instrucciones adicionales..."></textarea>
+                        </div>
+                        
+                        <!-- Actions -->
+                        <div class="space-y-2">
+                            <button type="submit" 
+                                    class="btn btn-primary btn-sm w-full hover-lift" 
+                                    :disabled="submitting || !selectedPatient"
+                                    :class="(submitting || !selectedPatient) ? 'opacity-50 cursor-not-allowed' : ''">
+                                <span x-show="!submitting">🚀 Comenzar Evaluación</span>
+                                <span x-show="submitting" class="flex items-center justify-center gap-2">
+                                    <div class="spinner w-4 h-4"></div>
+                                    Iniciando...
+                                </span>
+                            </button>
+                            
+                            <a href="{% url 'assessments:patient_create' %}?next={% url 'scales:detail' scale.pk %}" 
+                               class="btn btn-ghost btn-xs w-full text-center">
+                                + Crear nuevo paciente
+                            </a>
+                        </div>
+                    </form>
+                    
+                    <hr class="border-gray-200">
+                    
+                    <a href="{% url 'scales:catalog' %}" class="btn btn-ghost btn-sm inline-flex items-center justify-center hover-lift w-full">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-4 h-4 mr-2">
+                            <path d="M19 12H5m7-7l-7 7 7 7"></path>
+                        </svg>
+                        Volver al catálogo
+                    </a>
+                </div>
+            </div>
+
+            <!-- Requirements -->
+            {% if scale.requires_training != 'minimal' %}
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">⚠️ Requisitos</h3>
+                </div>
+                <div class="card-content">
+                    <div class="bg-orange-50 border-l-4 border-orange-400 p-3">
+                        <p class="text-sm text-orange-800">
+                            <strong>Entrenamiento requerido:</strong> {{ scale.get_requires_training_display }}
+                        </p>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Copyright Info -->
+            {% if scale.copyright_info %}
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">©️ Información Legal</h3>
+                </div>
+                <div class="card-content">
+                    <p class="text-xs text-gray-600">{{ scale.copyright_info }}</p>
+                    {% if scale.license_required %}
+                    <div class="mt-2 text-xs text-orange-600">
+                        ⚠️ Requiere licencia para uso comercial
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<script>
+function quickAssessmentData() {
+    return {
+        selectedPatient: '',
+        submitting: false,
+        
+        init() {
+            console.log('Quick assessment form loaded');
+        }
+    }
+}
+</script>
+{% endblock content %}

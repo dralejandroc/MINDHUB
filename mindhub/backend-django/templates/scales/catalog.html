@@ -1,0 +1,220 @@
+{% extends 'base/base.html' %}
+
+{% block title %}Catálogo de Escalas - ClinimetrixPro{% endblock %}
+
+{% block extra_js %}
+<script>
+    function catalogFilters() {
+        return {
+            search: '{{ search_query }}',
+            category: '{{ selected_category }}',
+            population: '{{ selected_population }}',
+            loading: false,
+            
+            init() {
+                // Initialize filters from URL parameters
+                console.log('Catalog filters initialized');
+            },
+            
+            updateResults() {
+                this.loading = true;
+                // Simulate loading delay for demo
+                setTimeout(() => {
+                    this.loading = false;
+                }, 500);
+            },
+            
+            clearFilters() {
+                this.search = '';
+                this.category = '';
+                this.population = '';
+                this.updateResults();
+            }
+        }
+    }
+</script>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="page-header">
+        <h1 class="page-title">Catálogo de Escalas Psicométricas</h1>
+        <p class="page-description">Explora nuestra colección de instrumentos de evaluación validados</p>
+    </div>
+
+    <!-- Search and Filters -->
+    <div class="section" x-data="catalogFilters()">
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title">🔍 Filtros de búsqueda</h3>
+            </div>
+            <div class="card-content">
+                <form method="get">
+                    <div class="grid grid-4">
+                        <div class="form-group">
+                            <label for="search" class="form-label">Buscar escalas</label>
+                            <input type="text" 
+                                   id="search" 
+                                   name="search" 
+                                   class="form-control" 
+                                   placeholder="Nombre, abreviación o descripción..." 
+                                   value="{{ search_query }}"
+                                   x-model="search"
+                                   @input.debounce.300ms="updateResults()">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="category" class="form-label">Categoría</label>
+                            <select id="category" name="category" class="form-control" x-model="category" @change="updateResults()">
+                                <option value="">Todas las categorías</option>
+                                {% for cat in categories %}
+                                    <option value="{{ cat.name }}" 
+                                            {% if cat.name == selected_category %}selected{% endif %}>
+                                        {{ cat.name }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="population" class="form-label">Población</label>
+                            <select id="population" name="population" class="form-control" x-model="population" @change="updateResults()">
+                                <option value="">Todas las poblaciones</option>
+                                <option value="adult" {% if selected_population == 'adult' %}selected{% endif %}>Adultos</option>
+                                <option value="adolescent" {% if selected_population == 'adolescent' %}selected{% endif %}>Adolescentes</option>
+                                <option value="child" {% if selected_population == 'child' %}selected{% endif %}>Niños</option>
+                                <option value="elderly" {% if selected_population == 'elderly' %}selected{% endif %}>Adultos mayores</option>
+                                <option value="all" {% if selected_population == 'all' %}selected{% endif %}>Todas las edades</option>
+                            </select>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label class="form-label">&nbsp;</label>
+                            <div class="flex gap-2">
+                                <button type="submit" class="btn btn-primary">
+                                    <span x-show="!loading">🔍 Filtrar</span>
+                                    <span x-show="loading" class="spinner"></span>
+                                </button>
+                                <a href="{% url 'scales:catalog' %}" class="btn btn-outline" @click="clearFilters()">
+                                    ✖️ Limpiar
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Results -->
+    <div class="section">
+        <div class="section-header">
+            <h2 class="section-title">
+                {% if search_query or selected_category or selected_population %}
+                    Resultados de búsqueda
+                {% else %}
+                    Todas las escalas
+                {% endif %}
+                <span class="section-count">({{ scales|length }})</span>
+            </h2>
+        </div>
+
+        {% if scales %}
+            <div class="grid grid-auto" x-data="{ animateCards: false }" x-init="setTimeout(() => animateCards = true, 200)">
+                {% for scale in scales %}
+                    <div class="scale-card" 
+                         x-show="animateCards" 
+                         x-transition.delay.{{ forloop.counter0|add:"00" }}ms
+                         x-data="{ expanded: false }">
+                        <div class="scale-header">
+                            <div class="scale-category" style="background-color: {{ scale.category.color|default:'#6B7280' }}20; color: {{ scale.category.color|default:'#6B7280' }}">
+                                {{ scale.category.name|default:"Sin categoría" }}
+                            </div>
+                            <h3 class="scale-title">{{ scale.abbreviation }}</h3>
+                            <p class="scale-subtitle">{{ scale.name }}</p>
+                        </div>
+                        
+                        <div class="scale-description">
+                            <p x-show="!expanded">{{ scale.description|truncatewords:15 }}</p>
+                            <p x-show="expanded" x-transition>{{ scale.description }}</p>
+                            {% if scale.description|wordcount > 15 %}
+                                <button @click="expanded = !expanded" class="btn btn-sm btn-ghost mt-2">
+                                    <span x-show="!expanded">Ver más ↓</span>
+                                    <span x-show="expanded">Ver menos ↑</span>
+                                </button>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="scale-meta">
+                            <div class="meta-item">
+                                <span class="meta-label">⏱️ Duración</span>
+                                <span class="meta-value">{{ scale.estimated_duration_minutes }} min</span>
+                            </div>
+                            <div class="meta-item">
+                                <span class="meta-label">📝 Ítems</span>
+                                <span class="meta-value">{{ scale.total_items }}</span>
+                            </div>
+                            <div class="meta-item">
+                                <span class="meta-label">👥 Población</span>
+                                <span class="meta-value">{{ scale.get_population_display }}</span>
+                            </div>
+                            <div class="meta-item">
+                                <span class="meta-label">📋 Aplicación</span>
+                                <span class="meta-value">{{ scale.get_application_type_display }}</span>
+                            </div>
+                        </div>
+                        
+                        {% if scale.reliability_alpha %}
+                            <div class="reliability-indicator">
+                                <span class="reliability-label">📊 Confiabilidad (α)</span>
+                                <span class="reliability-value">{{ scale.reliability_alpha|floatformat:2 }}</span>
+                            </div>
+                        {% endif %}
+                        
+                        <div class="scale-actions">
+                            <a href="{% url 'scales:detail' scale.pk %}" class="btn btn-outline">
+                                👁️ Ver detalles
+                            </a>
+                            <a href="{% url 'scales:start_assessment' scale.pk %}" class="btn btn-primary">
+                                ✨ Crear evaluación
+                            </a>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+
+            <!-- Pagination -->
+            {% if is_paginated %}
+                <div class="pagination-container">
+                    <nav class="pagination">
+                        {% if page_obj.has_previous %}
+                            <a href="?page=1{% if search_query %}&search={{ search_query }}{% endif %}{% if selected_category %}&category={{ selected_category }}{% endif %}{% if selected_population %}&population={{ selected_population }}{% endif %}" 
+                               class="pagination-link">Primera</a>
+                            <a href="?page={{ page_obj.previous_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}{% if selected_category %}&category={{ selected_category }}{% endif %}{% if selected_population %}&population={{ selected_population }}{% endif %}" 
+                               class="pagination-link">Anterior</a>
+                        {% endif %}
+
+                        <span class="pagination-info">
+                            Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}
+                        </span>
+
+                        {% if page_obj.has_next %}
+                            <a href="?page={{ page_obj.next_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}{% if selected_category %}&category={{ selected_category }}{% endif %}{% if selected_population %}&population={{ selected_population }}{% endif %}" 
+                               class="pagination-link">Siguiente</a>
+                            <a href="?page={{ page_obj.paginator.num_pages }}{% if search_query %}&search={{ search_query }}{% endif %}{% if selected_category %}&category={{ selected_category }}{% endif %}{% if selected_population %}&population={{ selected_population }}{% endif %}" 
+                               class="pagination-link">Última</a>
+                        {% endif %}
+                    </nav>
+                </div>
+            {% endif %}
+        {% else %}
+            <div class="empty-state">
+                <div class="empty-icon">🔍</div>
+                <h3>No se encontraron escalas</h3>
+                <p>Intenta ajustar los filtros de búsqueda para encontrar escalas que coincidan con tus criterios.</p>
+                <a href="{% url 'scales:catalog' %}" class="btn btn-primary">Ver todas las escalas</a>
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

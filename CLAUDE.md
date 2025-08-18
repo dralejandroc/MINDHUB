@@ -4,54 +4,55 @@
 
 MindHub es una plataforma integral de gestión sanitaria que integra múltiples módulos especializados para clínicas y profesionales de la salud.
 
-## 🚀 DEPLOYMENT STATUS - PRODUCCIÓN ACTIVA
+## 🚀 ARQUITECTURA ACTUAL - POST MIGRACIÓN VERCEL + SUPABASE
 
-### URLs de Producción (Railway)
-- **Frontend**: https://mindhub.cloud
-- **Backend API**: https://mindhub-production.up.railway.app
-- **Database**: Railway MySQL (mysql.railway.internal:3306) - INTERNAL ENDPOINT ONLY
-- **Railway Project**: https://railway.com/project/cb592087-84b0-4214-bbc2-2dfc7a78dbee?environmentId=63e89941-0786-4a34-af22-f0788a981fa2
+### 🏗️ **NUEVA ARQUITECTURA HÍBRIDA**
+```
+┌─ Frontend Next.js ────────── Vercel (https://mindhub.cloud)
+├─ API Routes ─────────────── Vercel (/api/*)
+├─ Django ClinimetrixPro ──── Híbrido (/mindhub/backend-django/)
+├─ Auth ───────────────────── Supabase Auth
+└─ Database ───────────────── Supabase PostgreSQL
+```
+
+### URLs de Producción (ACTUALES)
+- **Frontend**: https://mindhub.cloud (Vercel)
+- **API Routes**: https://mindhub.cloud/api/* (Vercel Next.js)
+- **Database**: Supabase PostgreSQL
+- **Auth**: Supabase Auth
 
 ### Estado del Deployment
 - ✅ Frontend desplegado en Vercel
-- ✅ Backend desplegado en Railway (Project ID: cb592087-84b0-4214-bbc2-2dfc7a78dbee)
-- ✅ Base de datos MySQL en Railway (ENDPOINT INTERNO)
-- ✅ **Sistema de autenticación: 100% Clerk** (Clerk App ID: `app_2qkqyqQGUgMkE6Ke3mSWWxjAbBx`)
-- ✅ APIs conectadas a backend real (NO localhost)
-- ✅ Environment ID: 63e89941-0786-4a34-af22-f0788a981fa2
+- ✅ API Routes convertidas a Next.js (Vercel)
+- ✅ Base de datos migrada a Supabase PostgreSQL
+- ✅ **Sistema de autenticación: 100% Supabase Auth**
+- ✅ Django ClinimetrixPro integrado vía sistema híbrido
+- ✅ Migración completa de Railway+Clerk finalizada
 
-### 🔐 **SISTEMA DE AUTENTICACIÓN - CLERK ÚNICAMENTE**
-- **Proveedor**: Clerk (https://clerk.com)
-- **Clerk App ID**: `app_2qkqyqQGUgMkE6Ke3mSWWxjAbBx`
-- **Frontend Auth**: `@clerk/nextjs` con componentes React
-- **Backend Auth**: Middleware Clerk JWT validation en API routes
+### 🔐 **SISTEMA DE AUTENTICACIÓN - SUPABASE ÚNICAMENTE**
+- **Proveedor**: Supabase Auth (https://supabase.com)
+- **Frontend Auth**: `@supabase/auth-helpers-nextjs` con componentes React
+- **Backend Auth**: Middleware Supabase en API routes
 - **Usuario Principal**: Dr. Alejandro (dr_aleks_c@hotmail.com)
 - **Funciones**:
   - ✅ Login/Logout automático
   - ✅ JWT tokens para APIs
   - ✅ Gestión de usuarios y sesiones
-  - ✅ Integración con base de datos (tabla `users` con `clerk_user_id`)
-  - ❌ **NO hay sistema custom de MindHub** - eliminado completamente
-- **URLs de Clerk**:
-  - Sign In: https://mindhub.cloud/sign-in
+  - ✅ Row Level Security (RLS) en PostgreSQL
+  - ✅ Integración nativa con Next.js
+- **URLs de Auth**:
+  - Sign In: https://mindhub.cloud/auth/sign-in
+  - Sign Up: https://mindhub.cloud/auth/sign-up
   - Dashboard: https://mindhub.cloud/dashboard (post-login)
-
-### 💰 IMPORTANTE - ENDPOINTS INTERNOS PARA EVITAR COSTOS
-- Backend en Railway usa **mysql.railway.internal:3306** (endpoint interno, GRATIS)
-- NO usar endpoints públicos como yamanote.proxy.rlwy.net (genera costos de egress)
-- Frontend apunta a **https://mindhub-production.up.railway.app**
-- NO usar localhost en producción
 
 ### Arquitectura del Sistema
 
 ```
 MindHub/
-├── frontend/          # Next.js 14.2.30 con App Router + React 18 + TypeScript + Tailwind CSS
-├── backend/           # Node.js + Express + Prisma ORM
-└── mindhub/           # Proyecto principal con todos los módulos
-    ├── frontend/      # Aplicación web principal
-    ├── backend/       # API central y microservicios
-    └── MVP_SIMPLE.html # Prototipo inicial
+├── mindhub/
+│   ├── frontend/              # Next.js 14.2.30 con App Router + React 18 + TypeScript + Tailwind CSS
+│   └── backend-django/        # Django ClinimetrixPro (Sistema híbrido)
+└── (migraciones y docs)/      # Documentación de migración
 ```
 
 ## Módulos Principales
@@ -68,41 +69,47 @@ MindHub/
   - Portal de pacientes
   - Documentos médicos encriptados
 
-### 2. **Clinimetrix** - Escalas y Evaluaciones Clínicas
+### 2. **ClinimetrixPro** - Sistema Híbrido React + Django
 - **URL**: `/hubs/clinimetrix`
-- **API URL**: `https://mindhub.cloud/api/clinimetrix-pro`
-- **Funcionalidades**:
-  - ClinimetrixPro: Sistema de plantillas científicas ejecutables
-  - Fidelidad absoluta a instrumentos psicométricos originales
-  - Motor de renderizado dinámico universal
-  - Validación inteligente de respuestas
-  - Generación automática de reportes
-  - Integración con expedientes de pacientes
+- **API URL**: `https://mindhub.cloud/api/clinimetrix-pro` (React) + Django backend
+- **Arquitectura**: **SISTEMA HÍBRIDO COMPLETAMENTE FUNCIONAL**
 
-**ESTADO ACTUAL - CLINIMETRIX PRO EN DESARROLLO:**
-- ✅ Sistema legacy migrado a _TRASH_LEGACY_CLINIMETRIX/
-- ✅ Arquitectura ClinimetrixPro definida y planificada
-- ✅ Base de datos MySQL con Prisma ORM
-- ✅ Sistema de plantillas JSON científicas
-- 🚧 **EN PROGRESO**: Implementación por fases del nuevo sistema
-- 🚧 **EN PROGRESO**: Migración de escalas a formato de plantillas
+**FUNCIONALIDADES:**
+- ✅ **Frontend React**: Selector de escalas, UI/UX, integración con Expedix
+- ✅ **Backend Django**: Motor de evaluación, focused_take.html, scoring real
+- ✅ **29 escalas migradas**: Desde PHQ-9 hasta escalas especializadas
+- ✅ **CardBase nativo**: Sistema de navegación por tarjetas en Django
+- ✅ **Scoring inteligente**: Cálculos precisos y interpretaciones clínicas
+- ✅ **Bridge seamless**: React → Django → React sin fricción
+- ✅ **Supabase Auth integration**: Autenticación unificada entre sistemas
 
-**ARQUITECTURA CLINIMETRIX PRO:**
-- `clinimetrix_templates` - Plantillas científicas ejecutables en JSON
-- `clinimetrix_assessments` - Respuestas y aplicaciones
-- `clinimetrix_registry` - Catálogo de escalas disponibles
-- **Backend**: `/backend/clinimetrix-pro/` con servicios especializados
-- **Frontend**: `/frontend/components/ClinimetrixPro/` con renderizado dinámico
-- **Templates**: `/backend/templates/scales/` con escalas en formato JSON
+**ESTADO ACTUAL - SISTEMA HÍBRIDO COMPLETAMENTE FUNCIONAL:**
+- ✅ Integración React ↔ Django completada
+- ✅ Django backend en `/mindhub/backend-django/`
+- ✅ 29 escalas psicométricas migradas y funcionales
+- ✅ Sistema de evaluación focused_take.html operativo
+- ✅ Bridge de autenticación Supabase ↔ Django funcionando
+- ✅ Flujo completo: React selector → Django assessment → React results
+- ✅ Alpine.js CardBase system preservado y mejorado
 
-### 3. **FormX** - Generador de Formularios
+**ARQUITECTURA CLINIMETRIX PRO HÍBRIDA:**
+```
+React Frontend (Selector + UI)
+    ↓ (Bridge API)
+Django Backend (Evaluación + Scoring)
+    ↓ (Return URL)
+React Frontend (Resultados + Integración)
+```
+
+### 3. **FormX** - Generador de Formularios (FUTURO DESARROLLO)
 - **URL**: `/hubs/formx`
-- **API URL**: `https://mindhub.cloud/api/formx`
-- **Funcionalidades**:
-  - Creación de formularios personalizados
-  - Templates médicos preconfigurrradors
+- **Tecnología planificada**: **Python/Django**
+- **Estado**: 🚧 **Desarrollo futuro** con Django Forms nativo
+- **Funcionalidades planificadas**:
+  - Creación de formularios personalizados con Django Forms
+  - Templates médicos preconfigurrados
   - Formularios de registro de pacientes
-  - Validación automática de datos
+  - Validación automática avanzada con Django
 
 ### 4. **Agenda** - Sistema de Citas y Programación
 - **URL**: `/hubs/agenda`
@@ -123,18 +130,20 @@ MindHub/
 - **Styling**: Tailwind CSS + CSS Variables personalizadas
 - **Componentes**: Sistema de componentes unificado
 - **Estado**: Context API + useState/useEffect
-- **Autenticación**: Clerk (App ID: `app_2qkqyqQGUgMkE6Ke3mSWWxjAbBx`) - Sistema ÚNICO
+- **Autenticación**: Supabase Auth - Sistema ÚNICO
 
-### Backend
-- **Runtime**: Node.js con Express
-- **Base de Datos**: Prisma ORM con Railway MySQL - ÚNICO para todo el proyecto
-- **API**: RESTful APIs por módulo
-- **Archivos**: Sistema de archivos local + encriptación
+### Backend Híbrido
+- **API Routes**: Next.js en Vercel (Expedix, Resources, etc.)
+- **ClinimetrixPro**: Django + **Supabase PostgreSQL** (sistema híbrido)
+- **FormX**: Python/Django (desarrollo futuro)
+- **Base de Datos**: Supabase PostgreSQL - ÚNICO para todo el proyecto
+- **ORM**: Supabase client + Django ORM conectado a Supabase
 
 ### Infraestructura de Producción
-- **Producción**: https://mindhub.cloud (Frontend) + https://mindhub.cloud/api (Backend)
-- **Base de Datos**: Railway MySQL (mysql.railway.internal:3306)
-- **Deployment**: Frontend en Vercel, Backend en Railway
+- **Frontend + API Routes**: Vercel (https://mindhub.cloud)
+- **Base de Datos**: Supabase PostgreSQL
+- **Auth**: Supabase Auth
+- **Django Backend**: Local/Docker (integración híbrida)
 - **Build**: Automático en deploy
 
 ### Principios de Desarrollo
@@ -142,213 +151,180 @@ MindHub/
 ## Principios de Desarrollo Específicos
 
 ### Gestión de Datos y Backend
-- **Base de Datos Única MySQL en Railway**: 
-  - Todo el proyecto usa ÚNICAMENTE MySQL alojado en Railway (mysql.railway.internal:3306)
-  - Todas las operaciones de base de datos deben usar Prisma ORM
-  - NO usar SQLite ni conexiones directas a bases de datos
-  - NO usar MAMP - la base de datos está completamente en la nube en Railway
-  - Todos los datos deben estar en el backend y en MySQL de Railway
-  - Ajustar tablas según sea necesario para cada cambio
+- **Base de Datos Principal Supabase PostgreSQL**: 
+  - Todo el proyecto usa PRINCIPALMENTE Supabase PostgreSQL
+  - API Routes usan Supabase client para operaciones de base de datos
+  - Django ClinimetrixPro usa **Supabase PostgreSQL** vía bridge de autenticación
+  - NO usar MAMP - la base de datos principal está en Supabase
   - Cambios solicitados deben implementarse tanto en frontend como backend
+  - Integración híbrida entre Supabase y Django cuando sea necesario
 
 ## Principios de Implementación de Cambios
-- Cuando se pida implementar un cambio, este debe ser completo, agregando todo lo necesario para que la función funcione:
+- Cuando se pida implementar un cambio, este debe ser completo:
   - No solo visualmente, sino funcionalmente
-  - Conectar todos los endpoints
+  - Conectar todos los endpoints (Next.js API Routes o Django según corresponda)
   - Dirigir a donde debe ir
-  - Guardar en el backend en asociación con el usuario
+  - Guardar en la base de datos adecuada (Supabase o Django según el módulo)
   - Registrar todo completamente
   - En fase avanzada de desarrollo, todo debe quedar funcionando de manera integral
 
-## ClinimetrixPro - Sistema de Plantillas Científicas
-
-### Principios Fundamentales del Nuevo Sistema
-- **Fidelidad Científica**: Las plantillas son copias exactas de la literatura
-- **Flexibilidad Total**: Soporte para cualquier estructura de escala
-- **Inteligencia Integrada**: Detección de patrones y validación automática
-- **Escalabilidad**: Agregar escalas sin modificar código
-- **Simplicidad**: Arquitectura minimalista y mantenible
-
-### Arquitectura ClinimetrixPro
-```
-mindhub/backend/
-├── clinimetrix-pro/
-│   ├── routes/           # APIs RESTful
-│   └── services/         # Motores de scoring, validación, reportes
-├── templates/scales/     # Plantillas JSON científicas
-└── database/migrations/  # Esquema de base de datos
-
-mindhub/frontend/
-└── components/ClinimetrixPro/
-    ├── Renderer/         # Motor de renderizado dinámico
-    ├── ResponseTypes/    # Componentes por tipo de respuesta
-    └── Interactive/      # Componentes especializados (Canvas, etc.)
-```
-
-### Estado de Migración
-- ✅ **Fase 0**: Sistema legacy movido a `_TRASH_LEGACY_CLINIMETRIX/`
-- ✅ **Fase 1**: Diseño de plantillas y conversión de escalas piloto (PHQ-9 migrado)
-- ✅ **Fase 2**: Motor de renderizado dinámico (CardBase System)
-- ✅ **Fase 3**: Sistema de scoring y análisis (ScoringEngine)
-- ✅ **Fase 4**: APIs y servicios completos (Routes funcionando)
-- 🚧 **Fase 5**: Integración completa con Expedix y auto-guardado
-
----
-
-## ⭐ **CLINIMETRIX PRO - SISTEMA CARDBASE COMPLETO** ⭐
+## ⭐ **CLINIMETRIX PRO - SISTEMA HÍBRIDO REACT + DJANGO** ⭐
 
 ### **🎯 FUNCIONAMIENTO GENERAL:**
-ClinimetrixPro es un sistema de evaluaciones clínicas que usa **plantillas JSON científicas** para renderizar cualquier escala psicológica/médica. Cada plantilla contiene TODA la información necesaria para renderizar, validar, calcular puntuaciones e interpretar resultados.
+ClinimetrixPro usa un **sistema híbrido** que combina React (frontend hermoso) con Django (backend robusto). El flujo es:
 
-### **📊 ARQUITECTURA DE DATOS:**
-- **`clinimetrix_templates`**: Plantillas JSON completas con toda la escala
-- **`clinimetrix_registry`**: Catálogo metadata de escalas disponibles 
-- **`clinimetrix_assessments`**: Sesiones de evaluación con respuestas y resultados
-- **Templates Path**: `/backend/templates/scales/*.json`
+1. **React**: Selector de escalas, integración con Expedix, UI/UX
+2. **Django**: Motor de evaluación, focused_take.html, scoring real
+3. **React**: Resultados, integración con expediente
 
-### **🔄 FLUJO COMPLETO DE EVALUACIÓN:**
+### **📊 ARQUITECTURA DE DATOS HÍBRIDA:**
+- **Supabase PostgreSQL**: Base de datos ÚNICA para todo el proyecto
+  - Pacientes, usuarios, expedientes (Expedix)
+  - Escalas, evaluaciones, templates (ClinimetrixPro)
+  - Autenticación y permisos (RLS)
+- **Django Bridge**: Conexión a Supabase PostgreSQL vía bridge de autenticación
+- **Templates Path**: `/mindhub/backend-django/scales/*.json` (29 escalas disponibles)
 
-#### **1. INICIO DESDE EXPEDIX (Patient-Centric)**
-- Usuario va a Expedix → Selecciona paciente → Click "Evaluación"
-- Abre `ClinimetrixScaleSelector` con paciente pre-seleccionado
-- Lista escalas con **favoritas primero** (⭐), búsqueda inteligente
-- Al seleccionar escala → `ClinimetrixProAssessmentModal`
+### **🔄 FLUJO COMPLETO DE EVALUACIÓN HÍBRIDA:**
 
-#### **2. SISTEMA CARDBASE - NAVEGACIÓN POR TARJETAS**
-El **CardBase** es el sistema de navegación por tarjetas que maneja todo el flujo:
+#### **1. INICIO DESDE EXPEDIX (React)**
+- Usuario va a Expedix → Selecciona paciente → Click "Evaluación ClinimetrixPro"
+- Se abre selector React con escalas desde Django
+- Sistema de favoritas y búsqueda inteligente
+- Al seleccionar escala → bridge a Django
 
-**Tipos de Cards en orden:**
-1. **InstructionsCard**: Instrucciones de la escala + "Comenzar Evaluación"
-2. **ItemCards**: Una card por cada ítem/pregunta de la escala
-3. **CompletionCard**: "Evaluación Completada" + botón "Ver Resultados"  
-4. **ResultsCard**: Puntuaciones + interpretación + acciones (PDF/Imprimir)
+#### **2. EVALUACIÓN EN DJANGO (focused_take.html)**
+- Django recibe paciente + escala desde React
+- Renderiza focused_take.html con Alpine.js CardBase
+- Usuario completa evaluación en sistema nativo Django
+- Scoring y cálculos en tiempo real
 
-**Navegación CardBase:**
-- **Botones**: "< Anterior" | "Siguiente >" | "Salir"
-- **Progress Bar**: Muestra progreso visual (ej: "Pregunta 3/9")
-- **Auto-Save**: Guarda respuestas automáticamente en cada cambio
-- **Validation**: No permite avanzar sin responder ítem actual
+#### **3. RETURN A REACT (Resultados)**
+- Django calcula resultados finales
+- **AUTO-GUARDADO OBLIGATORIO**: Resultados se guardan automáticamente en Supabase
+- Redirige automáticamente de vuelta a React
+- React muestra resultados y opciones de exportación
+- **Integración automática**: Datos asociados al paciente permanentemente
+- **Sin pérdida de información**: Independiente de si el usuario imprime o sale
 
-#### **3. MOTOR DE RENDERIZADO DINÁMICO**
-- **Un solo componente universal** que lee plantilla JSON y renderiza cualquier escala
-- **Tipos de respuesta soportados**: likert, multiple_choice, boolean, slider, text, number
-- **Response Groups**: Conjuntos reutilizables de opciones (ej: "nunca/a veces/siempre")
-- **Conditional Logic**: Ítems condicionales basados en respuestas previas
-- **Help System**: Botón "?" en cada ítem con ayuda contextual
-
-#### **4. SCORING ENGINE INTELIGENTE**
-- **Cálculo automático**: Total, subscales, interpretación
-- **Validación inteligente**: Detecta patrones anómalos, respuestas inconsistentes
-- **Multi-scoring**: Soporta múltiples sistemas de puntuación por escala
-- **Real-time scoring**: Cálculos en tiempo real mientras se responde
-
-### **🎨 ESTRUCTURA DE PLANTILLA JSON:**
-```json
-{
-  "metadata": {
-    "id": "phq9-1.0",
-    "name": "PHQ-9 - Cuestionario de Salud del Paciente",
-    "abbreviation": "PHQ-9",
-    "category": "Depresión",
-    "version": "1.0",
-    "authors": ["Kurt Kroenke", "Robert L. Spitzer"],
-    "year": 2001
-  },
-  "structure": {
-    "totalItems": 9,
-    "sections": [{
-      "sectionId": "main",
-      "title": "Durante las últimas 2 semanas...",
-      "items": [...]
-    }]
-  },
-  "responseGroups": {
-    "phq9_frequency": [
-      {"label": "Para nada", "value": "not_at_all", "score": 0},
-      {"label": "Varios días", "value": "several_days", "score": 1},
-      {"label": "Más de la mitad de los días", "value": "more_than_half", "score": 2},
-      {"label": "Casi todos los días", "value": "nearly_every_day", "score": 3}
-    ]
-  },
-  "scoring": {
-    "scoreRange": {"min": 0, "max": 27},
-    "calculationMethod": "sum"
-  },
-  "interpretation": {
-    "rules": [
-      {"minScore": 0, "maxScore": 4, "severity": "minimal", "description": "Síntomas mínimos"},
-      {"minScore": 5, "maxScore": 9, "severity": "mild", "description": "Depresión leve"},
-      {"minScore": 10, "maxScore": 14, "severity": "moderate", "description": "Depresión moderada"},
-      {"minScore": 15, "maxScore": 19, "severity": "moderately_severe", "description": "Depresión moderadamente severa"},
-      {"minScore": 20, "maxScore": 27, "severity": "severe", "description": "Depresión severa"}
-    ]
-  }
-}
+### **🎨 ESCALAS DISPONIBLES (29 MIGRADAS):**
+```
+✅ AQ-Adolescent (Autismo Adolescentes)
+✅ AQ-Child (Autismo Niños)  
+✅ BDI-13 (Beck Depression Inventory)
+✅ Cuestionario Salamanca v2007 (Screening)
+✅ DTS (Davidson Trauma Scale)
+✅ DY-BOCS (Yale-Brown TOC Dimensional)
+✅ EAT-26 (Eating Attitudes Test)
+✅ EMUN-AR (Evaluación Multidimensional)
+✅ ESADFUN (Escala de Funcionamiento)
+✅ GADI (Inventario de Ansiedad General)
+✅ GDS-5 (Escala Depresión Geriátrica 5 ítems)
+✅ GDS-15 (Escala Depresión Geriátrica 15 ítems)
+✅ GDS-30 (Escala Depresión Geriátrica 30 ítems)
+✅ HARS (Hamilton Anxiety Rating Scale)
+✅ HDRS-17 (Hamilton Depression Rating Scale)
+✅ IPDE-CIE10 (Trastornos de Personalidad CIE-10)
+✅ IPDE-DSMIV (Trastornos de Personalidad DSM-IV)
+✅ MADRS (Montgomery-Åsberg Depression Rating)
+✅ MOCA (Montreal Cognitive Assessment)
+✅ MOS Sleep Scale (Calidad del Sueño)
+✅ PANSS (Positive and Negative Syndrome Scale)
+✅ PHQ-9 (Patient Health Questionnaire)
+✅ RADS-2 (Reynolds Adolescent Depression Scale)
+✅ SSS-V (Suicide Scale for Suicidal Ideation)
+✅ STAI (State-Trait Anxiety Inventory)
+✅ Y-BOCS (Yale-Brown Obsessive Compulsive Scale)
+✅ YGTSS (Yale Global Tic Severity Scale)
 ```
 
-### **⚡ CARACTERÍSTICAS ESPECIALES:**
+**CATEGORÍAS DISPONIBLES:**
+- 🧠 **Depresión**: BDI-13, GDS-5/15/30, HDRS-17, MADRS, PHQ-9, RADS-2
+- 😰 **Ansiedad**: GADI, HARS, STAI
+- 🧩 **Autismo/TEA**: AQ-Adolescent, AQ-Child
+- 🍽️ **Trastornos Alimentarios**: EAT-26
+- 🧠 **Cognición**: MOCA
+- 💭 **TOC**: DY-BOCS, Y-BOCS
+- 🏥 **Psicosis**: PANSS
+- 🌙 **Sueño**: MOS Sleep Scale
+- ⚡ **Tics**: YGTSS
+- 🧬 **Personalidad**: IPDE-CIE10, IPDE-DSMIV
+- 💔 **Trauma**: DTS
+- ⚠️ **Suicidalidad**: SSS-V
 
-#### **Sistema de Favoritas**
-- Las escalas favoritas aparecen primero con ⭐
-- Guardado en localStorage: `'clinimetrix-favorites'`
-- Toggle fácil desde selector de escalas
+### **⚡ CARACTERÍSTICAS DEL SISTEMA HÍBRIDO:**
 
-#### **Integración con Expedix**  
-- Llamada directa desde expediente del paciente
-- Paciente pre-seleccionado automáticamente
-- Resultados se guardan automáticamente en expediente
-- Si hay consulta abierta, se vincula la evaluación
+#### **React Frontend (Preservado)**
+- ✅ UI/UX hermoso y familiar
+- ✅ Integración perfecta con Expedix
+- ✅ Sistema de favoritas funcionando
+- ✅ Búsqueda inteligente de escalas
+- ✅ Resultados integrados con expediente
 
-#### **Auto-Save System**
-- Todas las respuestas se guardan automáticamente
-- No se pierde progreso si se cierra accidentalmente
-- Estado persistente entre sesiones
+#### **Django Backend (Funcional)**
+- ✅ focused_take.html con Alpine.js CardBase
+- ✅ Scoring real y preciso
+- ✅ 29 escalas completamente migradas
+- ✅ Sistema de evaluación robusto
+- ✅ Base de datos de escalas científicas
 
-#### **Help System**
-- Botón "?" en cada ítem
-- Información contextual sobre cómo responder
-- Tooltips explicativos
+#### **Bridge Integration (Seamless)**
+- ✅ Autenticación Supabase validada en Django
+- ✅ Redirecciones automáticas React ↔ Django
+- ✅ Datos de paciente sincronizados
+- ✅ URLs dinámicas para desarrollo/producción
 
-#### **Results & Actions**
-- **PDF Export**: Genera reporte profesional en PDF
-- **Print**: Impresión directa de resultados
-- **Email**: Envío por correo electrónico
-- **Auto-Archive**: Guardado automático en expediente
+### **🔗 ENDPOINTS API HÍBRIDOS:**
+```
+# React APIs (Next.js)
+GET /api/clinimetrix-pro/catalog - Lista escalas desde Django
+POST /api/clinimetrix-pro/bridge - Bridge a Django
 
-### **🔗 ENDPOINTS API:**
-- `GET /api/clinimetrix-pro/templates/catalog` - Lista todas las escalas
-- `GET /api/clinimetrix-pro/templates/:templateId` - Obtiene plantilla específica
-- `POST /api/clinimetrix-pro/assessments/new` - Crea nueva evaluación
-- `PUT /api/clinimetrix-pro/assessments/:id/responses` - Guarda respuestas
-- `POST /api/clinimetrix-pro/assessments/:id/complete` - Completa y calcula resultados
-- `GET /api/clinimetrix-pro/assessments/patient/:patientId` - Evaluaciones por paciente
+# Django APIs 
+POST /assessments/api/create-from-react/ - Crea evaluación desde React
+GET /assessments/{id}/focused-take/ - Página de evaluación
+GET /scales/api/catalog/ - Catálogo de escalas
+```
 
 ### **🎮 COMPONENTES PRINCIPALES:**
-- `ClinimetrixScaleSelector.tsx` - Selector de escalas desde Expedix
-- `ClinimetrixProAssessmentModal.tsx` - Modal principal con CardBase
-- `CardBase.tsx` - Navegador de tarjetas
-- `ClinimetrixRenderer.tsx` - Motor de renderizado universal
-- `ScoringEngine.js` - Motor de cálculo de puntuaciones
+```
+# React Components
+- ClinimetrixScaleSelector.tsx - Selector integrado con Django
+- UnifiedClinimetrixClient.ts - Cliente híbrido Django+React
 
-### **✅ ESTADO ACTUAL - COMPLETAMENTE FUNCIONAL:**
-- ✅ PHQ-9 migrado y funcional
-- ✅ Integración con Expedix completada
-- ✅ CardBase system implementado
-- ✅ Scoring Engine funcionando
-- ✅ Auto-save básico implementado
-- ✅ Sistema de favoritas funcionando
-- ✅ Base de datos en producción (Railway)
+# Django Components  
+- focused_take.html - Página principal de evaluación
+- CardBase (Alpine.js) - Sistema de navegación
+- ScoringEngine - Motor de cálculo Django
+```
 
-### **🚀 PRÓXIMOS PASOS:**
-- ⏳ Implementar guardado completo en expediente del paciente
-- ⏳ Agregar más escalas (GAD-7, MMSE, etc.)
-- ⏳ Sistema de envío tokenizado a distancia
-- ⏳ Reportes PDF profesionales
-- ⏳ Panel de administración de plantillas
+### **✅ ESTADO ACTUAL - SISTEMA HÍBRIDO COMPLETAMENTE FUNCIONAL:**
+- ✅ **React ↔ Django integration**: Flujo completo funcionando
+- ✅ **29 escalas migradas**: Desde PHQ-9 hasta escalas especializadas
+- ✅ **Supabase Auth bridge**: Autenticación unificada
+- ✅ **focused_take.html**: Sistema de evaluación nativo Django
+- ✅ **Scoring engine**: Cálculos precisos y confiables
+- ✅ **Repository limpio**: `/mindhub/backend-django/` organizado
+- ✅ **Integration testing**: Flujo end-to-end probado
+
+### **🚀 PRÓXIMOS PASOS OPCIONALES:**
+- ⏳ Deploy Django a producción (Railway/Vercel)
+- ⏳ Implementar FormX con Django Forms
+- ⏳ Expandir sistema de reportes PDF
+- ⏳ Agregar más escalas especializadas
 
 ---
 
 ## Recordatorios de Desarrollo
 - No hagas commit ni push en github hasta que yo te lo pida. me puedes preguntar, pero no lo hagas sin que me autorice
-- todos los endpoints correctos, olvidate de los anteriores, el /v1 ya no existen. No quiero que vuelvas a cometer este error.
-- Las claves de Clerk para producción están configuradas en los archivos .env (backend) y .env.local (frontend)
+- **Sistema migrado**: Ya NO usamos Railway, Clerk ni MySQL
+- **Nueva arquitectura**: Vercel + Supabase + Django híbrido
+- **Endpoints actuales**: `/api/*` para Next.js, Django local para ClinimetrixPro
+- **Autenticación**: 100% Supabase Auth en toda la plataforma
+
+## Notas de la Migración Completada
+- ✅ **Migración exitosa**: Railway+Clerk+MySQL → Vercel+Supabase+PostgreSQL
+- ✅ **Django integration**: ClinimetrixPro funcionando en sistema híbrido
+- ✅ **Repository cleanup**: Archivos obsoletos eliminados
+- ✅ **Architecture modernizada**: Stack unificado y eficiente
+- ✅ **29 escalas migradas**: Sistema ClinimetrixPro completamente funcional

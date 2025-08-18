@@ -1,0 +1,719 @@
+{% extends 'base/base.html' %}
+
+{% block title %}{{ object.get_full_name }} - ClinimetrixPro{% endblock %}
+
+{% block content %}
+<div class="container" style="margin-top: 2rem;">
+    <!-- Patient Header -->
+    <div class="page-header">
+        <h1 class="page-title">
+            <span class="patient-icon">👤</span>
+            {{ object.get_full_name }}
+        </h1>
+        <p class="page-description">Perfil del paciente y seguimiento longitudinal</p>
+    </div>
+
+    <!-- Navigation Tabs -->
+    <div x-data="{ activeTab: 'info' }" class="patient-tabs-container">
+        
+        <div class="patient-tabs">
+            <button @click="activeTab = 'info'" 
+                    :class="{ 'active': activeTab === 'info' }" 
+                    class="tab-button">
+                📋 Información
+            </button>
+            <button @click="activeTab = 'assessments'" 
+                    :class="{ 'active': activeTab === 'assessments' }" 
+                    class="tab-button">
+                📊 Evaluaciones
+            </button>
+            <button @click="activeTab = 'scheduling'" 
+                    :class="{ 'active': activeTab === 'scheduling' }" 
+                    class="tab-button">
+                📅 Programación
+            </button>
+            <button @click="activeTab = 'remote'" 
+                    :class="{ 'active': activeTab === 'remote' }" 
+                    class="tab-button">
+                🔗 Enlaces Remotos
+            </button>
+        </div>
+
+        <!-- Patient Info Tab -->
+        <div x-show="activeTab === 'info'" class="tab-content">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">Información Personal</h3>
+                </div>
+                <div class="card-body">
+                    <div class="patient-info-grid">
+                        <div class="info-section">
+                            <h4>Datos Básicos</h4>
+                            <div class="info-item">
+                                <label>Nombre completo</label>
+                                <span>{{ object.get_full_name }}</span>
+                            </div>
+                            <div class="info-item">
+                                <label>Email</label>
+                                <span>{{ object.email|default:"No especificado" }}</span>
+                            </div>
+                            <div class="info-item">
+                                <label>Teléfono</label>
+                                <span>{{ object.phone|default:"No especificado" }}</span>
+                            </div>
+                            <div class="info-item">
+                                <label>Edad</label>
+                                <span>{{ object.age|default:"No especificada" }}</span>
+                            </div>
+                            <div class="info-item">
+                                <label>Género</label>
+                                <span>{{ object.get_gender_display|default:"No especificado" }}</span>
+                            </div>
+                        </div>
+                        
+                        <div class="info-section">
+                            <h4>Información Clínica</h4>
+                            <div class="info-item">
+                                <label>Historial médico</label>
+                                <span>{{ object.medical_record|default:"No especificado" }}</span>
+                            </div>
+                            <div class="info-item">
+                                <label>Diagnóstico</label>
+                                <span>{{ object.diagnosis|default:"Pendiente" }}</span>
+                            </div>
+                            <div class="info-item">
+                                <label>Clínico asignado</label>
+                                <span>{{ object.assigned_clinician.get_full_name|default:"No asignado" }}</span>
+                            </div>
+                            <div class="info-item">
+                                <label>Próxima consulta</label>
+                                <span>{{ object.next_consultation_date|default:"No programada" }}</span>
+                            </div>
+                            <div class="info-item">
+                                <label>Estado</label>
+                                <span class="status-badge {% if object.is_active %}active{% else %}inactive{% endif %}">
+                                    {{ object.is_active|yesno:"Activo,Inactivo" }}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-footer">
+                    <a href="{% url 'assessments:patient_list' %}" class="btn btn-outline">← Volver a Pacientes</a>
+                    <button class="btn btn-primary">Editar Información</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Assessments History Tab -->
+        <div x-show="activeTab === 'assessments'" class="tab-content">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">Historial de Evaluaciones</h3>
+                    <div class="card-actions">
+                        <a href="{% url 'scales:catalog' %}?patient={{ object.id }}" class="btn btn-primary">
+                            ➕ Nueva Evaluación
+                        </a>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="assessments-timeline">
+                        {% for assessment in object.assessments.all %}
+                        <div class="timeline-item">
+                            <div class="timeline-date">
+                                {{ assessment.created_at|date:"d M Y" }}
+                            </div>
+                            <div class="timeline-content">
+                                <h4>{{ assessment.scale.name }}</h4>
+                                <div class="assessment-meta">
+                                    <span class="status-badge {{ assessment.status }}">
+                                        {{ assessment.get_status_display }}
+                                    </span>
+                                    {% if assessment.scoring_result %}
+                                    <span class="score-badge">
+                                        Puntuación: {{ assessment.scoring_result.total_score }}
+                                    </span>
+                                    {% endif %}
+                                </div>
+                                <p class="assessment-context">{{ assessment.clinical_context|truncatewords:20 }}</p>
+                                <div class="assessment-actions">
+                                    <a href="{% url 'assessments:detail' assessment.id %}" class="btn btn-sm btn-outline">Ver Detalles</a>
+                                    {% if assessment.is_completed %}
+                                    <a href="{% url 'assessments:results' assessment.id %}" class="btn btn-sm btn-success">Ver Resultados</a>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        {% empty %}
+                        <div class="empty-state">
+                            <p>Este paciente no tiene evaluaciones registradas.</p>
+                            <a href="{% url 'scales:catalog' %}?patient={{ object.id }}" class="btn btn-primary">
+                                Crear Primera Evaluación
+                            </a>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Scheduling Tab -->
+        <div x-show="activeTab === 'scheduling'" class="tab-content">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">Evaluaciones Programadas</h3>
+                    <div class="card-actions">
+                        <button onclick="showScheduleModal()" class="btn btn-success">
+                            📅 Programar Evaluación
+                        </button>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="scheduled-assessments">
+                        {% for scheduled in object.scheduled_assessments.all %}
+                        <div class="scheduled-item">
+                            <div class="scheduled-info">
+                                <h4>{{ scheduled.title }}</h4>
+                                <p>{{ scheduled.description }}</p>
+                                <div class="scheduled-meta">
+                                    <span class="frequency">🔄 {{ scheduled.get_frequency_display }}</span>
+                                    <span class="next-due">📅 Próxima: {{ scheduled.next_due_date }}</span>
+                                    <span class="status-badge {{ scheduled.status }}">{{ scheduled.get_status_display }}</span>
+                                </div>
+                                <div class="scale-info">
+                                    <strong>Escala:</strong> {{ scheduled.scale.name }} ({{ scheduled.scale.abbreviation }})
+                                </div>
+                            </div>
+                            <div class="scheduled-actions">
+                                {% if scheduled.is_due %}
+                                <button onclick="createAssessmentFromScheduled('{{ scheduled.id }}')" class="btn btn-sm btn-primary">
+                                    ⚡ Generar Evaluación
+                                </button>
+                                {% endif %}
+                                <button onclick="editScheduled('{{ scheduled.id }}')" class="btn btn-sm btn-outline">
+                                    ✏️ Editar
+                                </button>
+                                <button onclick="pauseScheduled('{{ scheduled.id }}')" class="btn btn-sm btn-warning">
+                                    ⏸️ {% if scheduled.status == 'active' %}Pausar{% else %}Reanudar{% endif %}
+                                </button>
+                                <button onclick="deleteScheduled('{{ scheduled.id }}')" class="btn btn-sm btn-danger">
+                                    🗑️ Eliminar
+                                </button>
+                            </div>
+                        </div>
+                        {% empty %}
+                        <div class="empty-state">
+                            <p>No hay evaluaciones programadas para este paciente.</p>
+                            <p class="text-muted">
+                                Programa evaluaciones recurrentes para seguimiento longitudinal automático.
+                            </p>
+                            <button onclick="showScheduleModal()" class="btn btn-success">
+                                Programar Primera Evaluación
+                            </button>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Remote Links Tab -->
+        <div x-show="activeTab === 'remote'" class="tab-content">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">Enlaces de Evaluación Remota</h3>
+                    <div class="card-actions">
+                        <button onclick="showRemoteLinkModal()" class="btn btn-primary">
+                            🔗 Generar Enlace
+                        </button>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="remote-links">
+                        {% for link in object.remote_links.all %}
+                        <div class="remote-link-item">
+                            <div class="link-info">
+                                <h4>{{ link.scale.name }}</h4>
+                                <p>{{ link.clinical_context|default:"Sin contexto específico" }}</p>
+                                <div class="link-meta">
+                                    <span class="expires">⏰ Expira: {{ link.expires_at|date:"d M Y H:i" }}</span>
+                                    <span class="uses">🔢 Usos: {{ link.uses_count }}/{{ link.max_uses }}</span>
+                                    <span class="status-badge {% if link.can_be_used %}active{% else %}expired{% endif %}">
+                                        {% if link.can_be_used %}Activo{% else %}Expirado{% endif %}
+                                    </span>
+                                </div>
+                                {% if link.can_be_used %}
+                                <div class="link-url">
+                                    <input type="text" readonly 
+                                           value="{{ request.build_absolute_uri }}{% url 'assessments:remote_take' link.token %}"
+                                           class="link-input" id="link-{{ link.id }}">
+                                    <button onclick="copyLink('{{ link.id }}')" class="btn btn-sm btn-outline">
+                                        📋 Copiar
+                                    </button>
+                                </div>
+                                {% endif %}
+                            </div>
+                            <div class="link-actions">
+                                {% if link.can_be_used %}
+                                <button onclick="sendLinkWhatsApp('{{ link.id }}')" class="btn btn-sm btn-success">
+                                    📱 WhatsApp
+                                </button>
+                                <button onclick="sendLinkEmail('{{ link.id }}')" class="btn btn-sm btn-info">
+                                    📧 Email
+                                </button>
+                                {% endif %}
+                                <button onclick="deactivateLink('{{ link.id }}')" class="btn btn-sm btn-danger">
+                                    🚫 Desactivar
+                                </button>
+                            </div>
+                        </div>
+                        {% empty %}
+                        <div class="empty-state">
+                            <p>No hay enlaces remotos generados para este paciente.</p>
+                            <p class="text-muted">
+                                Genera enlaces para que el paciente complete evaluaciones desde casa.
+                            </p>
+                            <button onclick="showRemoteLinkModal()" class="btn btn-primary">
+                                Generar Primer Enlace
+                            </button>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Schedule Assessment Modal -->
+<div id="scheduleModal" class="modal" style="display: none;">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3>Programar Evaluación Recurrente</h3>
+            <button onclick="closeModal('scheduleModal')" class="modal-close">&times;</button>
+        </div>
+        <div class="modal-body">
+            <form id="scheduleForm">
+                <div class="form-group">
+                    <label>Título de la programación</label>
+                    <input type="text" name="title" placeholder="ej. Seguimiento PHQ-9 semanal" required>
+                </div>
+                <div class="form-group">
+                    <label>Descripción</label>
+                    <textarea name="description" placeholder="Propósito del seguimiento longitudinal"></textarea>
+                </div>
+                <div class="form-group">
+                    <label>Escala psicométrica</label>
+                    <select name="scale_id" required>
+                        <option value="">Selecciona una escala...</option>
+                        <!-- Las opciones se cargarán dinámicamente -->
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Frecuencia</label>
+                    <select name="frequency" onchange="toggleCustomFrequency(this)" required>
+                        <option value="weekly">Semanal</option>
+                        <option value="biweekly">Quincenal</option>
+                        <option value="monthly">Mensual</option>
+                        <option value="quarterly">Trimestral</option>
+                        <option value="custom">Personalizado</option>
+                    </select>
+                </div>
+                <div class="form-group" id="customFrequencyGroup" style="display: none;">
+                    <label>Días entre evaluaciones</label>
+                    <input type="number" name="frequency_days" min="1" max="365">
+                </div>
+                <div class="form-group">
+                    <label>Fecha de inicio</label>
+                    <input type="date" name="start_date" required>
+                </div>
+                <div class="form-group">
+                    <label>Fecha límite (opcional)</label>
+                    <input type="date" name="end_date">
+                </div>
+                <div class="form-group">
+                    <label>Próxima consulta programada (opcional)</label>
+                    <input type="date" name="next_consultation_date">
+                    <small>Si se especifica, las evaluaciones se pausarán después de esta fecha</small>
+                </div>
+                <div class="form-group">
+                    <label>
+                        <input type="checkbox" name="send_remote_link" checked>
+                        Generar enlaces remotos automáticamente
+                    </label>
+                </div>
+            </form>
+        </div>
+        <div class="modal-footer">
+            <button onclick="submitSchedule()" class="btn btn-success">Programar Evaluaciones</button>
+            <button onclick="closeModal('scheduleModal')" class="btn btn-outline">Cancelar</button>
+        </div>
+    </div>
+</div>
+
+<!-- Remote Link Modal -->
+<div id="remoteLinkModal" class="modal" style="display: none;">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3>Generar Enlace Remoto</h3>
+            <button onclick="closeModal('remoteLinkModal')" class="modal-close">&times;</button>
+        </div>
+        <div class="modal-body">
+            <form id="remoteLinkForm">
+                <div class="form-group">
+                    <label>Escala a evaluar</label>
+                    <select name="scale_id" required>
+                        <option value="">Selecciona una escala...</option>
+                        <!-- Opciones dinámicas -->
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Contexto clínico</label>
+                    <textarea name="clinical_context" placeholder="Motivo de la evaluación, síntomas a monitorear, etc."></textarea>
+                </div>
+                <div class="form-group">
+                    <label>Instrucciones especiales</label>
+                    <textarea name="instructions" placeholder="Instrucciones adicionales para el paciente"></textarea>
+                </div>
+                <div class="form-group">
+                    <label>Válido hasta</label>
+                    <input type="datetime-local" name="expires_at" required>
+                </div>
+                <div class="form-group">
+                    <label>Máximo número de usos</label>
+                    <input type="number" name="max_uses" value="1" min="1" max="5">
+                </div>
+            </form>
+        </div>
+        <div class="modal-footer">
+            <button onclick="generateRemoteLink()" class="btn btn-primary">Generar Enlace</button>
+            <button onclick="closeModal('remoteLinkModal')" class="btn btn-outline">Cancelar</button>
+        </div>
+    </div>
+</div>
+
+<style>
+/* Patient Detail Styles */
+.patient-tabs-container {
+    margin-top: 2rem;
+}
+
+.patient-tabs {
+    display: flex;
+    border-bottom: 2px solid var(--border-color);
+    margin-bottom: 2rem;
+    gap: 1rem;
+}
+
+.tab-button {
+    background: none;
+    border: none;
+    padding: 1rem 1.5rem;
+    cursor: pointer;
+    border-bottom: 3px solid transparent;
+    color: var(--text-secondary);
+    font-weight: 500;
+    transition: all 0.3s ease;
+}
+
+.tab-button:hover {
+    color: var(--text-primary);
+    background: var(--bg-secondary);
+}
+
+.tab-button.active {
+    color: var(--primary-color);
+    border-bottom-color: var(--primary-color);
+}
+
+.tab-content {
+    animation: fadeIn 0.3s ease;
+}
+
+.patient-info-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 2rem;
+}
+
+.info-section h4 {
+    margin-bottom: 1rem;
+    color: var(--text-primary);
+    border-bottom: 1px solid var(--border-color);
+    padding-bottom: 0.5rem;
+}
+
+.info-item {
+    display: flex;
+    justify-content: space-between;
+    padding: 0.5rem 0;
+    border-bottom: 1px dotted var(--border-color-light);
+}
+
+.info-item label {
+    font-weight: 500;
+    color: var(--text-secondary);
+}
+
+.info-item span {
+    color: var(--text-primary);
+}
+
+.assessments-timeline {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+.timeline-item {
+    display: flex;
+    gap: 1rem;
+    padding: 1.5rem;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    background: var(--bg-secondary);
+}
+
+.timeline-date {
+    min-width: 80px;
+    font-weight: 500;
+    color: var(--text-secondary);
+    text-align: center;
+}
+
+.timeline-content {
+    flex: 1;
+}
+
+.timeline-content h4 {
+    margin: 0 0 0.5rem 0;
+    color: var(--text-primary);
+}
+
+.assessment-meta {
+    display: flex;
+    gap: 1rem;
+    margin: 0.5rem 0;
+}
+
+.assessment-actions {
+    margin-top: 1rem;
+    display: flex;
+    gap: 0.5rem;
+}
+
+.scheduled-assessments, .remote-links {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+.scheduled-item, .remote-link-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    padding: 1.5rem;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    background: var(--bg-secondary);
+}
+
+.scheduled-info, .link-info {
+    flex: 1;
+}
+
+.scheduled-meta, .link-meta {
+    display: flex;
+    gap: 1rem;
+    margin: 0.5rem 0;
+    flex-wrap: wrap;
+}
+
+.scheduled-actions, .link-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    min-width: 120px;
+}
+
+.link-url {
+    display: flex;
+    gap: 0.5rem;
+    margin-top: 1rem;
+}
+
+.link-input {
+    flex: 1;
+    padding: 0.5rem;
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    font-family: monospace;
+    font-size: 0.9rem;
+}
+
+.status-badge {
+    padding: 0.25rem 0.75rem;
+    border-radius: 12px;
+    font-size: 0.8rem;
+    font-weight: 500;
+}
+
+.status-badge.active {
+    background: #d4edda;
+    color: #155724;
+}
+
+.status-badge.completed {
+    background: #d1ecf1;
+    color: #0c5460;
+}
+
+.status-badge.in_progress {
+    background: #fff3cd;
+    color: #856404;
+}
+
+.status-badge.expired, .status-badge.inactive {
+    background: #f8d7da;
+    color: #721c24;
+}
+
+.score-badge {
+    background: var(--primary-color);
+    color: white;
+    padding: 0.25rem 0.75rem;
+    border-radius: 12px;
+    font-size: 0.8rem;
+    font-weight: 500;
+}
+
+.empty-state {
+    text-align: center;
+    padding: 3rem;
+    color: var(--text-secondary);
+}
+</style>
+
+<script>
+// Patient Detail JavaScript Functions
+
+function showScheduleModal() {
+    // Load scales for dropdown
+    loadScalesForSelect('scheduleForm');
+    document.getElementById('scheduleModal').style.display = 'flex';
+}
+
+function showRemoteLinkModal() {
+    // Load scales for dropdown
+    loadScalesForSelect('remoteLinkForm');
+    document.getElementById('remoteLinkModal').style.display = 'flex';
+}
+
+function closeModal(modalId) {
+    document.getElementById(modalId).style.display = 'none';
+}
+
+function loadScalesForSelect(formId) {
+    fetch('/scales/api/active/')
+    .then(response => response.json())
+    .then(scales => {
+        const form = document.getElementById(formId);
+        const scaleSelect = form.querySelector('select[name="scale_id"]');
+        scaleSelect.innerHTML = '<option value="">Selecciona una escala...</option>';
+        
+        scales.forEach(scale => {
+            scaleSelect.innerHTML += `<option value="${scale.id}">${scale.name} (${scale.abbreviation})</option>`;
+        });
+    });
+}
+
+function toggleCustomFrequency(select) {
+    const customGroup = document.getElementById('customFrequencyGroup');
+    if (select.value === 'custom') {
+        customGroup.style.display = 'block';
+    } else {
+        customGroup.style.display = 'none';
+    }
+}
+
+function submitSchedule() {
+    const form = document.getElementById('scheduleForm');
+    const formData = new FormData(form);
+    formData.append('patient_id', '{{ object.id }}');
+    
+    fetch('/assessments/schedule/create/', {
+        method: 'POST',
+        body: formData,
+        headers: {
+            'X-CSRFToken': '{{ csrf_token }}'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            location.reload();
+        } else {
+            alert('Error: ' + data.error);
+        }
+    });
+}
+
+function generateRemoteLink() {
+    const form = document.getElementById('remoteLinkForm');
+    const formData = new FormData(form);
+    formData.append('patient_id', '{{ object.id }}');
+    
+    fetch('/assessments/remote-link/create/', {
+        method: 'POST',
+        body: formData,
+        headers: {
+            'X-CSRFToken': '{{ csrf_token }}'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            location.reload();
+        } else {
+            alert('Error: ' + data.error);
+        }
+    });
+}
+
+function copyLink(linkId) {
+    const linkInput = document.getElementById('link-' + linkId);
+    linkInput.select();
+    document.execCommand('copy');
+    
+    // Show feedback
+    const button = event.target;
+    const originalText = button.textContent;
+    button.textContent = '✅ Copiado';
+    setTimeout(() => {
+        button.textContent = originalText;
+    }, 2000);
+}
+
+function sendLinkWhatsApp(linkId) {
+    const linkInput = document.getElementById('link-' + linkId);
+    const url = linkInput.value;
+    const message = `Hola, te comparto un enlace para completar tu evaluación psicométrica: ${url}`;
+    const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(message)}`;
+    window.open(whatsappUrl, '_blank');
+}
+
+function sendLinkEmail(linkId) {
+    const linkInput = document.getElementById('link-' + linkId);
+    const url = linkInput.value;
+    const subject = 'Evaluación Psicométrica - ClinimetrixPro';
+    const body = `Estimado/a paciente,\n\nTe comparto el enlace para completar tu evaluación psicométrica:\n\n${url}\n\nSaludos cordiales,\nEquipo ClinimetrixPro`;
+    const mailtoUrl = `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+    window.open(mailtoUrl);
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+</script>
+{% endblock %}

@@ -1,0 +1,160 @@
+{% extends 'base/mindhub_base.html' %}
+
+{% block title %}ClinimetrixPro - Plataforma Profesional de Evaluación Psicométrica{% endblock %}
+
+{% block content %}
+<div class="animate-fade-in">
+    <!-- Hero Section -->
+    <div class="page-header text-center mb-12">
+        <h1 class="text-4xl font-bold mb-6 gradient-primary bg-clip-text text-transparent">
+            ClinimetrixPro
+        </h1>
+        <p class="text-xl text-gray-600 mb-8 max-w-3xl mx-auto">
+            Plataforma profesional de evaluación psicométrica diseñada para clínicos, psicólogos e investigadores que buscan herramientas precisas y confiables para la evaluación clínica.
+        </p>
+        
+        {% if not user.is_authenticated %}
+            <div class="flex gap-4 justify-center">
+                <a href="{% url 'account_login' %}" class="btn btn-solid-primary btn-lg hover-lift">Iniciar Sesión</a>
+                <a href="{% url 'account_signup' %}" class="btn btn-solid-secondary btn-lg hover-lift">Registrarse</a>
+            </div>
+        {% else %}
+            <div class="flex justify-center">
+                <a href="{% url 'core:dashboard' %}" class="btn btn-solid-primary btn-lg hover-lift">Ir al Dashboard</a>
+            </div>
+        {% endif %}
+    </div>
+
+    <!-- Características Principales -->
+    <div class="section">
+        <h2 class="section-title text-center">¿Por qué elegir ClinimetrixPro?</h2>
+        
+        <div class="grid grid-1 md:grid-3 gap-6 mb-12">
+            <div class="card hover-lift">
+                <div class="card-header text-center">
+                    <div class="text-3xl mb-3">📊</div>
+                    <h3 class="card-title text-lg">Instrumentos Validados</h3>
+                </div>
+                <div class="card-content">
+                    <p class="text-gray-600 text-center text-sm">
+                        Más de 50 escalas psicométricas validadas científicamente, incluyendo PHQ-9, GAD-7, Beck Depression Inventory, y muchas más.
+                    </p>
+                </div>
+            </div>
+            
+            <div class="card hover-lift">
+                <div class="card-header text-center">
+                    <div class="text-3xl mb-3">🔒</div>
+                    <h3 class="card-title text-lg">Seguridad Garantizada</h3>
+                </div>
+                <div class="card-content">
+                    <p class="text-gray-600 text-center text-sm">
+                        Cumplimiento total con estándares HIPAA y GDPR. Encriptación de extremo a extremo para proteger la información de tus pacientes.
+                    </p>
+                </div>
+            </div>
+            
+            <div class="card hover-lift">
+                <div class="card-header text-center">
+                    <div class="text-3xl mb-3">📈</div>
+                    <h3 class="card-title text-lg">Análisis Inteligente</h3>
+                </div>
+                <div class="card-content">
+                    <p class="text-gray-600 text-center text-sm">
+                        Interpretación automática de resultados, gráficos de progreso longitudinal y recomendaciones basadas en evidencia.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Funcionalidades Avanzadas -->
+    <div class="section">
+        <h2 class="section-title text-center">Funcionalidades Profesionales</h2>
+        
+        <div class="grid grid-1 md:grid-2 gap-6 mb-12">
+            <div class="card card-emerald hover-lift">
+                <div class="card-header card-header-emerald">
+                    <h3 class="card-title">Evaluaciones Remotas</h3>
+                </div>
+                <div class="card-content">
+                    <ul class="text-sm text-gray-600 space-y-2">
+                        <li>• Enlaces seguros para que pacientes completen evaluaciones desde casa</li>
+                        <li>• Programación automática de seguimientos longitudinales</li>
+                        <li>• Recordatorios automáticos por email</li>
+                        <li>• Sincronización en tiempo real de resultados</li>
+                    </ul>
+                </div>
+            </div>
+            
+            <div class="card card-purple hover-lift">
+                <div class="card-header card-header-purple">
+                    <h3 class="card-title">Gestión de Pacientes</h3>
+                </div>
+                <div class="card-content">
+                    <ul class="text-sm text-gray-600 space-y-2">
+                        <li>• Perfiles completos con historial clínico</li>
+                        <li>• Timeline de evaluaciones y progreso</li>
+                        <li>• Demografía y estadísticas avanzadas</li>
+                        <li>• Exportación de reportes profesionales</li>
+                    </ul>
+                </div>
+            </div>
+            
+            <div class="card card-orange hover-lift">
+                <div class="card-header card-header-orange">
+                    <h3 class="card-title">Dispositivos Secundarios</h3>
+                </div>
+                <div class="card-content">
+                    <ul class="text-sm text-gray-600 space-y-2">
+                        <li>• Tablets dedicadas para sala de espera</li>
+                        <li>• Sesiones seguras con tokens temporales</li>
+                        <li>• Interfaz optimizada para touch</li>
+                        <li>• Sincronización automática de datos</li>
+                    </ul>
+                </div>
+            </div>
+            
+            <div class="card hover-lift">
+                <div class="card-header">
+                    <h3 class="card-title">Escalas Disponibles</h3>
+                </div>
+                <div class="card-content">
+                    <ul class="text-sm text-gray-600 space-y-1">
+                        <li>• PHQ-9 (Depresión)</li>
+                        <li>• GAD-7 (Ansiedad)</li>
+                        <li>• Beck Depression/Anxiety Inventory</li>
+                        <li>• MMSE (Cognitivo)</li>
+                        <li>• Hamilton Rating Scales</li>
+                        <li>• Y muchas más...</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- CTA Final -->
+    {% if not user.is_authenticated %}
+    <div class="section text-center">
+        <div class="card max-w-2xl mx-auto">
+            <div class="card-content">
+                <h2 class="text-2xl font-bold mb-4 text-primary-600">
+                    ¿Listo para modernizar tu práctica clínica?
+                </h2>
+                <p class="text-gray-600 mb-6">
+                    Únete a miles de profesionales que ya confían en ClinimetrixPro para sus evaluaciones psicométricas.
+                </p>
+                <div class="flex gap-4 justify-center">
+                    <a href="{% url 'account_signup' %}" class="btn btn-solid-primary hover-lift">
+                        Comenzar Prueba Gratuita
+                    </a>
+                    <a href="{% url 'account_login' %}" class="btn btn-solid-secondary hover-lift">
+                        Iniciar Sesión
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

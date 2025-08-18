@@ -1,0 +1,262 @@
+{% extends 'base/mindhub_base.html' %}
+
+{% block title %}Dashboard - MindHub{% endblock %}
+
+{% block content %}
+<div class="animate-fade-in" x-data="dashboardData()">
+    
+    <!-- Header de página -->
+    <div class="page-header mb-4">
+        <h1 class="page-title">Dashboard - Bienvenido Dr. {{ user.get_full_name }}</h1>
+        <p class="page-description">Sistema profesional de evaluación psicométrica</p>
+    </div>
+
+    <!-- Stats Grid con Acciones Rápidas -->
+    <div class="dashboard-top-section mb-4">
+        <div class="stats-and-actions">
+            <!-- Stats Grid -->
+            <div class="grid grid-2 md:grid-4 gap-2">
+                <!-- Stat Card - Escalas -->
+                <div class="gradient-primary text-white relative overflow-hidden rounded-xl shadow-primary hover-lift">
+                    <div class="p-3 text-center relative z-10">
+                        <i data-lucide="clipboard-list" class="w-5 h-5 mx-auto mb-2 opacity-80"></i>
+                        <div class="text-lg font-bold mb-1" x-text="stats.activePatients">{{ total_scales }}</div>
+                        <div class="text-white/90 font-medium" style="font-size: 10px;">Escalas Disponibles</div>
+                    </div>
+                </div>
+                
+                <!-- Stat Card - Evaluaciones -->
+                <div class="gradient-secondary text-white relative overflow-hidden rounded-xl shadow-secondary hover-lift">
+                    <div class="p-3 text-center relative z-10">
+                        <i data-lucide="file-text" class="w-5 h-5 mx-auto mb-2 opacity-80"></i>
+                        <div class="text-lg font-bold mb-1" x-text="stats.evaluations">{{ my_assessments }}</div>
+                        <div class="text-white/90 font-medium" style="font-size: 10px;">Evaluaciones Totales</div>
+                    </div>
+                </div>
+                
+                <!-- Stat Card - Pendientes -->
+                <div class="gradient-accent text-white relative overflow-hidden rounded-xl shadow-accent hover-lift">
+                    <div class="p-3 text-center relative z-10">
+                        <i data-lucide="clock" class="w-5 h-5 mx-auto mb-2 opacity-80"></i>
+                        <div class="text-lg font-bold mb-1" x-text="stats.pending">{{ pending_assessments }}</div>
+                        <div class="text-white/90 font-medium" style="font-size: 10px;">Pendientes</div>
+                    </div>
+                </div>
+                
+                <!-- Stat Card - Pacientes -->
+                <div class="gradient-purple text-white relative overflow-hidden rounded-xl shadow-purple hover-lift">
+                    <div class="p-3 text-center relative z-10">
+                        <i data-lucide="users" class="w-5 h-5 mx-auto mb-2 opacity-80"></i>
+                        <div class="text-lg font-bold mb-1" x-text="stats.patients">{{ my_patients }}</div>
+                        <div class="text-white/90 font-medium" style="font-size: 10px;">Pacientes</div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Quick Actions Horizontal -->
+            <div class="quick-actions-horizontal">
+                <a href="{% url 'assessments:patient_create' %}" class="btn btn-solid-secondary btn-sm hover-lift">
+                    <i data-lucide="user-plus" class="w-4 h-4"></i>
+                    Nuevo Paciente
+                </a>
+                <a href="{% url 'scales:catalog' %}" class="btn btn-solid-primary btn-sm hover-lift">
+                    <i data-lucide="clipboard-list" class="w-4 h-4"></i>
+                    Nueva Evaluación
+                </a>
+                <a href="{% url 'assessments:list' %}" class="btn btn-solid-accent btn-sm hover-lift">
+                    <i data-lucide="calendar" class="w-4 h-4"></i>
+                    Ver Evaluaciones
+                </a>
+            </div>
+        </div>
+    </div>
+
+    
+    <!-- Demografía de Pacientes y Acciones -->
+    <div class="section">
+        <div class="dashboard-insights-container">
+            <!-- Panel Izquierdo: Demografía -->
+            <div class="insights-panel">
+                <h2 class="section-title">Demografía de Pacientes</h2>
+                <div class="insights-grid">
+                    <!-- Distribución por Género -->
+                    <div class="insight-card hover-lift" x-data="genderStats()">
+                        <div class="insight-header">
+                            <i data-lucide="users" class="w-4 h-4 text-primary-600"></i>
+                            <h3 class="insight-title">Distribución por Género</h3>
+                        </div>
+                        <div class="insight-content">
+                            <div class="gender-stats">
+                                <div class="stat-row">
+                                    <span class="stat-label">Femenino</span>
+                                    <span class="stat-value text-pink-600" x-text="female + ' (' + Math.round(female/total*100) + '%)'">
+                                        {{ female_count }} ({{ female_percentage }}%)
+                                    </span>
+                                </div>
+                                <div class="stat-row">
+                                    <span class="stat-label">Masculino</span>
+                                    <span class="stat-value text-blue-600" x-text="male + ' (' + Math.round(male/total*100) + '%)'">
+                                        {{ male_count }} ({{ male_percentage }}%)
+                                    </span>
+                                </div>
+                            </div>
+                            <div class="progress-bar mt-3">
+                                <div class="progress-fill" :style="'width: ' + (female/total*100) + '%'"></div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Grupos de Edad -->
+                    <div class="insight-card hover-lift" x-data="ageStats()">
+                        <div class="insight-header">
+                            <i data-lucide="bar-chart-2" class="w-4 h-4 text-secondary-600"></i>
+                            <h3 class="insight-title">Grupos de Edad</h3>
+                        </div>
+                        <div class="insight-content">
+                            <div class="age-distribution">
+                                <div class="age-item">
+                                    <span class="age-range">18-30</span>
+                                    <span class="age-count text-green-600" x-text="age18_30">{{ age_18_30 }}</span>
+                                </div>
+                                <div class="age-item">
+                                    <span class="age-range">31-50</span>
+                                    <span class="age-count text-blue-600" x-text="age31_50">{{ age_31_50 }}</span>
+                                </div>
+                                <div class="age-item">
+                                    <span class="age-range">51-70</span>
+                                    <span class="age-count text-orange-600" x-text="age51_70">{{ age_51_70 }}</span>
+                                </div>
+                                <div class="age-item">
+                                    <span class="age-range">70+</span>
+                                    <span class="age-count text-red-600" x-text="age70_plus">{{ age_70_plus }}</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Panel Derecho: Actividad y Acciones -->
+            <div class="activity-panel">
+                <!-- Actividad Reciente -->
+                <div class="activity-card hover-lift">
+                    <div class="activity-header">
+                        <i data-lucide="activity" class="w-4 h-4 text-accent-600"></i>
+                        <h3 class="activity-title">Actividad Reciente</h3>
+                    </div>
+                    <div class="activity-content">
+                        <div class="activity-stat">
+                            <span class="activity-period">Última semana</span>
+                            <span class="activity-value text-primary-600">{{ recent_assessments }}</span>
+                        </div>
+                        <div class="activity-stat">
+                            <span class="activity-period">Este mes</span>
+                            <span class="activity-value text-secondary-600">{{ monthly_assessments }}</span>
+                        </div>
+                        <div class="activity-stat">
+                            <span class="activity-period">Promedio diario</span>
+                            <span class="activity-value text-accent-600">{{ daily_average }}</span>
+                        </div>
+                    </div>
+                </div>
+                
+            </div>
+        </div>
+    </div>
+
+    <!-- Favoritos -->
+    <div class="section">
+        <h2 class="section-title">Favoritos</h2>
+        
+        <div class="favorites-grid">
+            {% for scale in popular_scales %}
+                <div class="card hover-lift">
+                    <div class="card-header">
+                        <div class="flex items-center justify-between">
+                            <h3 class="card-title">{{ scale.abbreviation }} - {{ scale.name }}</h3>
+                            <span class="text-xs text-primary-600 font-medium">{{ scale.assessment_count }} uso{{ scale.assessment_count|pluralize:"s" }}</span>
+                        </div>
+                    </div>
+                    <div class="card-content">
+                        <p class="text-sm text-gray-600 mb-3">{{ scale.description|truncatewords:15 }}</p>
+                        <div class="flex gap-4 text-xs text-gray-500">
+                            <span class="flex items-center gap-1">
+                                <i data-lucide="clock" class="w-3 h-3"></i>
+                                {{ scale.estimated_duration_minutes }} min
+                            </span>
+                            <span class="flex items-center gap-1">
+                                <i data-lucide="list" class="w-3 h-3"></i>
+                                {{ scale.total_items }} ítems
+                            </span>
+                            {% if scale.reliability_alpha %}
+                                <span class="flex items-center gap-1">
+                                    <i data-lucide="bar-chart-3" class="w-3 h-3"></i>
+                                    α={{ scale.reliability_alpha|floatformat:2 }}
+                                </span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="card-footer">
+                        <div class="flex gap-2">
+                            <a href="{% url 'scales:detail' scale.pk %}" class="btn btn-solid-secondary btn-sm flex-1 hover-lift">
+                                <i data-lucide="eye" class="w-4 h-4"></i>
+                                Ver detalles
+                            </a>
+                            <a href="{% url 'scales:start_assessment' scale.pk %}" class="btn btn-solid-primary btn-sm flex-1 hover-lift">
+                                <i data-lucide="play" class="w-4 h-4"></i>
+                                Usar escala
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            {% empty %}
+                <div class="empty-state">
+                    <div class="empty-icon">
+                        <i data-lucide="bar-chart-3" class="w-12 h-12 mx-auto opacity-50"></i>
+                    </div>
+                    <h3>No hay escalas disponibles</h3>
+                    <p>Agrega escalas psicométricas para comenzar a evaluar pacientes.</p>
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+<script>
+function dashboardData() {
+    return {
+        stats: {
+            activePatients: {{ total_scales }},
+            evaluations: {{ my_assessments }},
+            pending: {{ pending_assessments }},
+            patients: {{ my_patients }}
+        },
+        
+        init() {
+            console.log('Dashboard MindHub cargado');
+        }
+    }
+}
+
+function genderStats() {
+    return {
+        female: {{ female_count|default:0 }},
+        male: {{ male_count|default:0 }},
+        total: {{ my_patients|default:1 }},
+        
+        init() {
+            if (this.total === 0) this.total = 1; // Evitar división por cero
+        }
+    }
+}
+
+function ageStats() {
+    return {
+        age18_30: {{ age_18_30|default:0 }},
+        age31_50: {{ age_31_50|default:0 }},
+        age51_70: {{ age_51_70|default:0 }},
+        age70_plus: {{ age_70_plus|default:0 }}
+    }
+}
+</script>
+{% endblock content %}

@@ -1,0 +1,648 @@
+<!DOCTYPE html>
+<html lang="es" x-data="themeData()" :data-theme="theme">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ assessment.scale.name }} - ClinimetrixPro</title>
+    
+    {% load static %}
+    <link rel="stylesheet" href="{% static 'css/theme.css' %}">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Alpine.js -->
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+</head>
+<body>
+    <!-- Remote Assessment Header -->
+    <div class="remote-header">
+        <div class="container">
+            <div class="remote-brand">
+                <span class="brand-logo">📊</span>
+                <span class="brand-text">ClinimetrixPro</span>
+            </div>
+            <div class="remote-info">
+                <span class="patient-name">{{ assessment.patient.get_full_name }}</span>
+                <span class="assessment-type">{{ assessment.scale.name }}</span>
+            </div>
+        </div>
+    </div>
+
+    <main class="main-content">
+        <div class="container" style="margin-top: 2rem;">
+            
+            <!-- Welcome Card (for remote users) -->
+            {% if instructions or remote_link.instructions %}
+            <div class="card welcome-card" style="margin-bottom: 2rem;">
+                <div class="card-header">
+                    <h2 class="card-title">Bienvenido/a</h2>
+                </div>
+                <div class="card-body">
+                    <p>Estimado/a {{ assessment.patient.first_name }}, va a completar la evaluación <strong>{{ assessment.scale.name }}</strong>.</p>
+                    {% if remote_link.instructions %}
+                    <div class="instructions-section">
+                        <h4>Instrucciones especiales:</h4>
+                        <p>{{ remote_link.instructions|linebreaks }}</p>
+                    </div>
+                    {% endif %}
+                    {% if assessment.clinical_context %}
+                    <div class="context-section">
+                        <h4>Contexto clínico:</h4>
+                        <p>{{ assessment.clinical_context|linebreaks }}</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Assessment Interface -->
+            <div x-data="focusedAssessment()" x-init="init()" class="focused-assessment-container">
+                
+                <!-- Progress Header -->
+                <div class="progress-container">
+                    <div class="progress-bar">
+                        <div class="progress-fill" :style="{ width: progressPercentage + '%' }"></div>
+                    </div>
+                    <div class="progress-text">
+                        <span x-text="`Pregunta ${currentItem} de ${totalItems}`"></span>
+                        <span x-text="`${progressPercentage}%`"></span>
+                    </div>
+                </div>
+
+                <!-- Question Container -->
+                <div class="question-container">
+                    <!-- Loading State -->
+                    <div x-show="isLoading" class="loading-state">
+                        <div class="loading-spinner"></div>
+                        <p>Cargando evaluación...</p>
+                    </div>
+
+                    <!-- Question Card -->
+                    <div x-show="!isLoading && !isCompleted" class="question-card">
+                        <div class="question-header">
+                            <span class="question-number" x-text="`${currentItem}`"></span>
+                            <h2 class="question-text" x-text="currentQuestion.text"></h2>
+                        </div>
+                        
+                        <div class="question-body">
+                            <!-- Instructions -->
+                            <div x-show="currentQuestion.instructions" class="question-instructions">
+                                <p x-text="currentQuestion.instructions"></p>
+                            </div>
+
+                            <!-- Options -->
+                            <div class="options-container">
+                                <template x-for="option in currentQuestion.options" :key="option.value">
+                                    <label class="option-label">
+                                        <input type="radio" 
+                                               :name="`question-${currentItem}`"
+                                               :value="option.value"
+                                               x-model="selectedAnswer"
+                                               @change="selectAnswer(option.value, option.label)">
+                                        <span class="option-content">
+                                            <span class="option-value" x-text="option.value"></span>
+                                            <span class="option-text" x-text="option.label"></span>
+                                        </span>
+                                    </label>
+                                </template>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Completion Card -->
+                    <div x-show="isCompleted" class="completion-card">
+                        <div class="completion-icon">✅</div>
+                        <h2>¡Evaluación Completada!</h2>
+                        <p>Gracias por completar la evaluación <strong x-text="assessmentData.scale_name"></strong>.</p>
+                        <p class="completion-message">
+                            Sus respuestas han sido registradas exitosamente. 
+                            Su profesional de la salud revisará los resultados.
+                        </p>
+                        <div class="completion-info">
+                            <small>Evaluación completada en <span x-text="formatDuration(completionTime)"></span></small>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Navigation -->
+                <div x-show="!isLoading && !isCompleted" class="navigation-container">
+                    <button @click="previousQuestion()" 
+                            :disabled="currentItem <= 1"
+                            class="btn btn-outline">
+                        ← Anterior
+                    </button>
+                    
+                    <button @click="nextQuestion()" 
+                            :disabled="!selectedAnswer"
+                            class="btn btn-primary">
+                        <span x-show="currentItem < totalItems">Siguiente →</span>
+                        <span x-show="currentItem >= totalItems">Finalizar</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <style>
+        /* Remote Assessment Styles */
+        .remote-header {
+            background: var(--primary-color);
+            color: white;
+            padding: 1rem 0;
+            margin-bottom: 0;
+        }
+
+        .remote-header .container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .remote-brand {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-weight: 600;
+            font-size: 1.25rem;
+        }
+
+        .remote-info {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            text-align: right;
+        }
+
+        .patient-name {
+            font-weight: 600;
+            font-size: 1.1rem;
+        }
+
+        .assessment-type {
+            font-size: 0.9rem;
+            opacity: 0.9;
+        }
+
+        .welcome-card {
+            border: 2px solid var(--primary-color);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+
+        .instructions-section, .context-section {
+            margin-top: 1rem;
+            padding: 1rem;
+            background: var(--bg-secondary);
+            border-radius: 6px;
+        }
+
+        .instructions-section h4, .context-section h4 {
+            margin: 0 0 0.5rem 0;
+            color: var(--text-primary);
+        }
+
+        /* Focused Assessment Styles */
+        .focused-assessment-container {
+            max-width: 800px;
+            margin: 0 auto;
+            font-size: 0.9em; /* 30% smaller font size */
+        }
+
+        .progress-container {
+            margin-bottom: 2rem;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: var(--border-color);
+            border-radius: 4px;
+            overflow: hidden;
+            margin-bottom: 1rem;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(135deg, var(--primary-color), var(--success-color));
+            transition: width 0.3s ease;
+        }
+
+        .progress-text {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            font-weight: 500;
+        }
+
+        .question-container {
+            margin-bottom: 2rem;
+            min-height: 400px;
+            position: relative;
+        }
+
+        .loading-state {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 300px;
+            text-align: center;
+        }
+
+        .loading-spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid var(--border-color);
+            border-top: 4px solid var(--primary-color);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-bottom: 1rem;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .question-card {
+            background: var(--bg-primary);
+            border: 2px solid var(--border-color);
+            border-radius: 12px;
+            padding: 2rem;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            animation: slideIn 0.3s ease-out;
+        }
+
+        .question-header {
+            display: flex;
+            align-items: flex-start;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .question-number {
+            background: var(--primary-color);
+            color: white;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            font-size: 1.1rem;
+            flex-shrink: 0;
+        }
+
+        .question-text {
+            margin: 0;
+            color: var(--text-primary);
+            font-size: 1.25rem;
+            font-weight: 600;
+            line-height: 1.4;
+        }
+
+        .question-instructions {
+            margin-bottom: 1.5rem;
+            padding: 1rem;
+            background: var(--bg-secondary);
+            border-radius: 8px;
+            border-left: 4px solid var(--primary-color);
+        }
+
+        .question-instructions p {
+            margin: 0;
+            color: var(--text-secondary);
+            font-style: italic;
+        }
+
+        .options-container {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .option-label {
+            display: flex;
+            align-items: center;
+            padding: 1rem;
+            border: 2px solid var(--border-color);
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            background: var(--bg-secondary);
+        }
+
+        .option-label:hover {
+            border-color: var(--primary-color);
+            background: var(--bg-hover);
+        }
+
+        .option-label:has(input:checked) {
+            border-color: var(--primary-color);
+            background: var(--primary-light);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .option-label input[type="radio"] {
+            margin-right: 1rem;
+            width: 18px;
+            height: 18px;
+            accent-color: var(--primary-color);
+        }
+
+        .option-content {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            flex: 1;
+        }
+
+        .option-value {
+            background: var(--primary-color);
+            color: white;
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-weight: 600;
+            font-size: 0.9rem;
+            min-width: 30px;
+            text-align: center;
+        }
+
+        .option-text {
+            color: var(--text-primary);
+            font-weight: 500;
+        }
+
+        .completion-card {
+            text-align: center;
+            padding: 3rem 2rem;
+            background: var(--bg-primary);
+            border: 2px solid var(--success-color);
+            border-radius: 12px;
+            animation: slideIn 0.5s ease-out;
+        }
+
+        .completion-icon {
+            font-size: 4rem;
+            margin-bottom: 1rem;
+        }
+
+        .completion-card h2 {
+            color: var(--success-color);
+            margin-bottom: 1rem;
+        }
+
+        .completion-message {
+            font-size: 1.1rem;
+            color: var(--text-secondary);
+            margin: 1.5rem 0;
+        }
+
+        .completion-info {
+            padding-top: 1rem;
+            border-top: 1px solid var(--border-color);
+            color: var(--text-muted);
+        }
+
+        .navigation-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1.5rem 0;
+            border-top: 1px solid var(--border-color);
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @media (max-width: 768px) {
+            .focused-assessment-container {
+                font-size: 0.85em;
+            }
+            
+            .question-card {
+                padding: 1.5rem;
+            }
+            
+            .remote-info {
+                font-size: 0.9rem;
+            }
+            
+            .navigation-container {
+                flex-direction: column;
+                gap: 1rem;
+            }
+        }
+    </style>
+
+    <script>
+        // Alpine.js Theme Data (simplified for remote)
+        function themeData() {
+            return {
+                theme: 'light',
+                init() {
+                    this.updateTheme();
+                },
+                updateTheme() {
+                    document.documentElement.setAttribute('data-theme', this.theme);
+                }
+            }
+        }
+
+        // Focused Assessment Alpine.js Component
+        function focusedAssessment() {
+            return {
+                assessmentId: '{{ assessment.id }}',
+                assessmentData: {},
+                scaleData: {},
+                currentItem: 1,
+                totalItems: {{ assessment.total_items }},
+                selectedAnswer: null,
+                responses: {},
+                isLoading: true,
+                isCompleted: false,
+                startTime: null,
+                completionTime: 0,
+                
+                get progressPercentage() {
+                    return Math.round((this.currentItem / this.totalItems) * 100);
+                },
+                
+                get currentQuestion() {
+                    if (!this.scaleData.items) return {};
+                    return this.scaleData.items[this.currentItem - 1] || {};
+                },
+                
+                async init() {
+                    this.startTime = new Date();
+                    await this.loadAssessmentData();
+                    await this.loadScaleData();
+                    await this.loadProgress();
+                    this.isLoading = false;
+                },
+                
+                async loadAssessmentData() {
+                    try {
+                        const response = await fetch(`/assessments/api/${this.assessmentId}/status/`);
+                        this.assessmentData = await response.json();
+                        
+                        if (this.assessmentData.status === 'completed') {
+                            this.isCompleted = true;
+                        }
+                    } catch (error) {
+                        console.error('Error loading assessment:', error);
+                    }
+                },
+                
+                async loadScaleData() {
+                    try {
+                        const response = await fetch(`/assessments/api/${this.assessmentId}/scale-data-path/`);
+                        const pathData = await response.json();
+                        
+                        const scaleResponse = await fetch(pathData.json_file_path);
+                        this.scaleData = await scaleResponse.json();
+                    } catch (error) {
+                        console.error('Error loading scale data:', error);
+                    }
+                },
+                
+                async loadProgress() {
+                    try {
+                        const response = await fetch(`/assessments/api/${this.assessmentId}/progress/`);
+                        const progressData = await response.json();
+                        
+                        this.currentItem = progressData.current_item;
+                        this.responses = progressData.responses;
+                        
+                        // Set selected answer if we have a response for current item
+                        this.selectedAnswer = this.responses[this.currentItem] || null;
+                        
+                        if (progressData.status === 'completed') {
+                            this.isCompleted = true;
+                        }
+                    } catch (error) {
+                        console.error('Error loading progress:', error);
+                    }
+                },
+                
+                selectAnswer(value, label) {
+                    this.selectedAnswer = value;
+                },
+                
+                async saveResponse() {
+                    if (!this.selectedAnswer) return;
+                    
+                    try {
+                        const response = await fetch(`/assessments/api/${this.assessmentId}/response/`, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'X-CSRFToken': '{{ csrf_token }}'
+                            },
+                            body: JSON.stringify({
+                                item_number: this.currentItem,
+                                response_value: this.selectedAnswer,
+                                response_label: this.currentQuestion.options.find(opt => opt.value == this.selectedAnswer)?.label || ''
+                            })
+                        });
+                        
+                        if (response.ok) {
+                            this.responses[this.currentItem] = this.selectedAnswer;
+                        }
+                    } catch (error) {
+                        console.error('Error saving response:', error);
+                    }
+                },
+                
+                async updateProgress() {
+                    try {
+                        await fetch(`/assessments/api/${this.assessmentId}/progress/`, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'X-CSRFToken': '{{ csrf_token }}'
+                            },
+                            body: JSON.stringify({
+                                current_item: this.currentItem
+                            })
+                        });
+                    } catch (error) {
+                        console.error('Error updating progress:', error);
+                    }
+                },
+                
+                async nextQuestion() {
+                    if (!this.selectedAnswer) return;
+                    
+                    await this.saveResponse();
+                    
+                    if (this.currentItem >= this.totalItems) {
+                        await this.completeAssessment();
+                    } else {
+                        this.currentItem++;
+                        this.selectedAnswer = this.responses[this.currentItem] || null;
+                        await this.updateProgress();
+                    }
+                },
+                
+                async previousQuestion() {
+                    if (this.currentItem <= 1) return;
+                    
+                    this.currentItem--;
+                    this.selectedAnswer = this.responses[this.currentItem] || null;
+                    await this.updateProgress();
+                },
+                
+                async completeAssessment() {
+                    try {
+                        const response = await fetch(`/assessments/api/${this.assessmentId}/complete/`, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'X-CSRFToken': '{{ csrf_token }}'
+                            },
+                            body: JSON.stringify({
+                                completed_by_remote: true
+                            })
+                        });
+                        
+                        if (response.ok) {
+                            this.completionTime = (new Date() - this.startTime) / 1000 / 60; // minutes
+                            this.isCompleted = true;
+                            
+                            // Notify completion for remote assessment
+                            await fetch(`/assessments/api/${this.assessmentId}/notify-completion/`, {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                    'X-CSRFToken': '{{ csrf_token }}'
+                                },
+                                body: JSON.stringify({
+                                    completed_by_remote: true
+                                })
+                            });
+                        }
+                    } catch (error) {
+                        console.error('Error completing assessment:', error);
+                    }
+                },
+                
+                formatDuration(minutes) {
+                    if (minutes < 1) return '< 1 minuto';
+                    return `${Math.round(minutes)} minuto${Math.round(minutes) !== 1 ? 's' : ''}`;
+                }
+            }
+        }
+    </script>
+</body>
+</html>
