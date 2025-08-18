@@ -8,7 +8,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useAuth } from '@clerk/nextjs';
+// import { useAuth } from '@clerk/nextjs';
 
 interface PlatformStats {
   totalUsers: number;
@@ -45,7 +45,7 @@ interface FinanceMetrics {
 }
 
 export default function AdminDashboard() {
-  const { getToken } = useAuth();
+  // const { getToken } = useAuth();
   const [platformStats, setPlatformStats] = useState<PlatformStats | null>(null);
   const [financeMetrics, setFinanceMetrics] = useState<FinanceMetrics | null>(null);
   const [loading, setLoading] = useState(true);

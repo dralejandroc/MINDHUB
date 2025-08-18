@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
-import { MobileFormRenderer } from '@/components/formx/MobileFormRenderer';
+// import { MobileFormRenderer } from '@/components/formx/MobileFormRenderer';
 import { 
   ExclamationTriangleIcon, 
   CheckCircleIcon,
@@ -333,12 +333,19 @@ export default function PatientFormPage() {
     );
   }
 
-  // Mobile optimized view
+  // Mobile optimized view - Temporarily disabled
   return (
-    <MobileFormRenderer
-      formData={formData}
-      onSubmit={handleSubmit}
-      onSave={handleSaveDraft}
-    />
+    <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+      <div className="bg-white rounded-xl shadow-lg p-8 max-w-md w-full text-center">
+        <DocumentTextIcon className="h-16 w-16 text-blue-500 mx-auto mb-4" />
+        <h1 className="text-xl font-semibold text-gray-900 mb-2">FormX Mobile</h1>
+        <p className="text-gray-600 mb-6">
+          El sistema de formularios móviles será habilitado próximamente.
+        </p>
+        <p className="text-sm text-gray-500">
+          Formulario: {formData.title}
+        </p>
+      </div>
+    </div>
   );
 }
