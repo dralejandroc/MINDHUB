@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import { XMarkIcon, PaperAirplaneIcon, UserIcon } from '@heroicons/react/24/outline';
 import { Button } from '@/components/ui/Button';
-import { PatientSelectorModal } from '../formx/PatientSelectorModal';
+// import { PatientSelectorModal } from '../formx/PatientSelectorModal';
 import toast from 'react-hot-toast';
 
 interface SendResourceModalProps {
@@ -170,7 +170,7 @@ export const SendResourceModal: React.FC<SendResourceModalProps> = ({
 
       {/* Patient Selector Modal */}
       {showPatientSelector && (
-        <PatientSelectorModal
+//         <PatientSelectorModal
           isOpen={showPatientSelector}
           onClose={() => setShowPatientSelector(false)}
           onSelectPatient={(patient) => {

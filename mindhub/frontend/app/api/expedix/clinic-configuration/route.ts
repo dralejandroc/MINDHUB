@@ -1,5 +1,5 @@
 import { NextRequest } from 'next/server';
-import { auth } from '@clerk/nextjs/server';
+// import { auth } from '@clerk/nextjs/server';
 
 const BACKEND_URL = process.env.BACKEND_URL || 'https://mindhub-production.up.railway.app';
 

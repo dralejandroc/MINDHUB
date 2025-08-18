@@ -3,7 +3,7 @@
  * Utilities for getting Clerk session tokens and user data
  */
 
-import { useAuth, useUser } from '@clerk/nextjs';
+// import { useAuth, useUser } from '@clerk/nextjs';
 
 /**
  * Hook to get Clerk session token for API calls (client-side)

@@ -3,7 +3,7 @@
  * Sistema de retry para llamadas de API que fallan por problemas de autenticación
  */
 
-import { useAuth } from '@clerk/nextjs';
+// import { useAuth } from '@clerk/nextjs';
 
 export interface RetryConfig {
   maxRetries: number;

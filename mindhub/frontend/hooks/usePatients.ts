@@ -5,7 +5,7 @@
 
 import { useState, useEffect } from 'react';
 import { useExpedixApi, Patient as ExpedixPatient } from '@/lib/api/expedix-client';
-import { useAuth } from '@clerk/nextjs';
+// import { useAuth } from '@clerk/nextjs';
 import { useErrorHandling, getDisplayErrorMessage } from '@/lib/utils/auth-retry';
 
 // Legacy Patient interface for backward compatibility

@@ -1,6 +1,6 @@
 'use client';
 
-import { useUser, useClerk } from '@clerk/nextjs';
+// import { useUser, useClerk } from '@clerk/nextjs';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 
 export function UserProfile() {
