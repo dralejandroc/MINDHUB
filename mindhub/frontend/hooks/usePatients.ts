@@ -52,7 +52,9 @@ export const usePatients = () => {
   const [patients, setPatients] = useState<Patient[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const { isLoaded, isSignedIn } = useAuth();
+  // const { isLoaded, isSignedIn } = useAuth(); // TODO: Replace with Supabase auth
+  const isLoaded = true;
+  const isSignedIn = true;
   const expedixApi = useExpedixApi();
   const { handleError } = useErrorHandling();
 

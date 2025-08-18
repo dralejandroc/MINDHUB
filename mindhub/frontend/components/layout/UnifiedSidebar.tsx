@@ -95,21 +95,23 @@ export function UnifiedSidebar({ children }: UnifiedSidebarProps) {
     setSidebarOpen(false); // Also close mobile sidebar when navigating
   }, [pathname]);
 
-  // Get user from Clerk only
+  // Get user from Supabase Auth
   const { user } = useAuth();
-  // const { signOut } = useClerk();
   
   const displayUser = {
-    name: user?.fullName || user?.firstName || 'Usuario',
-    email: user?.emailAddresses?.[0]?.emailAddress || '',
-    role: 'professional'
+    name: user?.user_metadata?.first_name ? 
+      `${user.user_metadata.first_name} ${user.user_metadata.last_name}`.trim() :
+      user?.email?.split('@')[0] || 'Usuario',
+    email: user?.email || '',
+    role: user?.user_metadata?.role || 'professional'
   };
 
   const handleLogout = async () => {
     if (confirm('¿Estás seguro que deseas cerrar sesión?')) {
       try {
-        // Use Clerk's signOut
-        // await signOut();
+        // Use Supabase signOut
+        const { signOut } = await import('@/lib/supabase/client');
+        await signOut();
         // Clear any non-auth local storage if needed
         localStorage.removeItem('userMetrics');
         window.location.href = '/sign-in';

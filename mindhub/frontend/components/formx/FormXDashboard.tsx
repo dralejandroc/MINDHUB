@@ -21,12 +21,16 @@ interface FormXDashboardProps {
 
 export function FormXDashboard({ onNavigate }: FormXDashboardProps) {
   const [stats, setStats] = useState<FormXStats>({
+    totalTemplates: 0,
     total_templates: 0,
-    active_templates: 0,
+    activeTemplates: 0,
+    totalSubmissions: 0,
     total_submissions: 0,
     processed_submissions: 0,
     synced_submissions: 0,
-    total_documents: 0,
+    pendingAssignments: 0,
+    completedToday: 0,
+    averageCompletionTime: 0,
     recent_submissions: 0,
     processing_rate: 0,
     sync_rate: 0
@@ -241,11 +245,11 @@ export function FormXDashboard({ onNavigate }: FormXDashboardProps) {
           <div className="grid grid-cols-2 gap-4">
             <div className="flex justify-between">
               <span className="text-sm text-gray-600">Tasa de procesamiento:</span>
-              <span className="text-sm font-medium text-gray-900">{stats.processing_rate.toFixed(1)}%</span>
+              <span className="text-sm font-medium text-gray-900">{(stats.processing_rate || 0).toFixed(1)}%</span>
             </div>
             <div className="flex justify-between">
               <span className="text-sm text-gray-600">Tasa de sincronización:</span>
-              <span className="text-sm font-medium text-gray-900">{stats.sync_rate.toFixed(1)}%</span>
+              <span className="text-sm font-medium text-gray-900">{(stats.sync_rate || 0).toFixed(1)}%</span>
             </div>
           </div>
         </div>

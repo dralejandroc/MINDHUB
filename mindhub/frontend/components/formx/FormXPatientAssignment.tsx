@@ -76,6 +76,10 @@ export function FormXPatientAssignment({ template, onComplete, onCancel }: FormX
         setPatients([
           {
             id: '1',
+            first_name: 'María',
+            last_name: 'González',
+            paternal_last_name: 'González',
+            maternal_last_name: 'López',
             firstName: 'María',
             lastName: 'González',
             paternalLastName: 'González',
@@ -87,6 +91,10 @@ export function FormXPatientAssignment({ template, onComplete, onCancel }: FormX
           },
           {
             id: '2',
+            first_name: 'Carlos',
+            last_name: 'Rodríguez',
+            paternal_last_name: 'Rodríguez',
+            maternal_last_name: 'Martínez',
             firstName: 'Carlos',
             lastName: 'Rodríguez',
             paternalLastName: 'Rodríguez',
@@ -98,6 +106,10 @@ export function FormXPatientAssignment({ template, onComplete, onCancel }: FormX
           },
           {
             id: '3',
+            first_name: 'Ana',
+            last_name: 'Sánchez',
+            paternal_last_name: 'Sánchez',
+            maternal_last_name: 'García',
             firstName: 'Ana',
             lastName: 'Sánchez',
             paternalLastName: 'Sánchez',

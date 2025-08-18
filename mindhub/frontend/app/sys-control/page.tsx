@@ -58,7 +58,7 @@ export default function AdminDashboard() {
   const loadDashboardData = async () => {
     try {
       setLoading(true);
-      const token = await getToken();
+      // const token = await getToken();
 
       // Backend API URL 
       const apiBaseUrl = process.env.NODE_ENV === 'production' 
@@ -69,13 +69,13 @@ export default function AdminDashboard() {
       const [platformResponse, financeResponse] = await Promise.all([
         fetch(`${apiBaseUrl}/api/admin/analytics/platform-stats`, {
           headers: {
-            'Authorization': `Bearer ${token}`,
+            // 'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json',
           },
         }),
         fetch(`${apiBaseUrl}/api/admin/analytics/finance-metrics`, {
           headers: {
-            'Authorization': `Bearer ${token}`,
+            // 'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json',
           },
         })

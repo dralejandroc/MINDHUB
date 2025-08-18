@@ -10,7 +10,7 @@
  * This must be used within React components
  */
 export function useClerkToken() {
-  const { getToken } = useAuth();
+  // const { getToken } = useAuth(); // TODO: Replace with Supabase auth
   
   return async (): Promise<string | null> => {
     try {
@@ -18,8 +18,9 @@ export function useClerkToken() {
         return null; // Server-side, use server method
       }
 
-      const token = await getToken({ template: 'mindhub-backend' });
-      return token;
+      // const token = await getToken({ template: 'mindhub-backend' });
+      // return token;
+      return null; // Temporary - TODO: Implement Supabase token
     } catch (error) {
       console.error('Error getting Clerk token:', error);
       return null;
@@ -32,7 +33,8 @@ export function useClerkToken() {
  * This must be used within React components
  */
 export function useClerkUser() {
-  const { user } = useUser();
+  // const { user } = useUser(); // TODO: Replace with Supabase auth
+  const user: any = null; // Temporary - TODO: Implement Supabase user
   
   if (!user) return null;
   

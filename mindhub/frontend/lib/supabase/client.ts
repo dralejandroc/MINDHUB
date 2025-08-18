@@ -16,6 +16,9 @@ if (!supabaseUrl || !supabaseAnonKey) {
 // Create a single supabase client for interacting with your database
 export const supabase = createBrowserClient(supabaseUrl, supabaseAnonKey)
 
+// Export createClient function for compatibility
+export const createClient = () => supabase
+
 // Helper functions for auth
 export const signIn = async (email: string, password: string) => {
   const { data, error } = await supabase.auth.signInWithPassword({

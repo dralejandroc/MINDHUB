@@ -54,7 +54,10 @@ export function isRetryableError(error: any): boolean {
  * Hook para realizar llamadas de API con retry automático
  */
 export function useAuthenticatedApiCall() {
-  const { getToken, isLoaded, isSignedIn } = useAuth();
+  // const { getToken, isLoaded, isSignedIn } = useAuth(); // TODO: Replace with Supabase auth
+  const getToken = (): Promise<string | null> => Promise.resolve('temp-token'); // Temporary placeholder
+  const isLoaded = true;
+  const isSignedIn = true;
 
   const makeAuthenticatedCall = async <T>(
     apiCall: (token: string) => Promise<T>,
@@ -80,7 +83,7 @@ export function useAuthenticatedApiCall() {
           throw new AuthenticationError('Failed to get authentication token');
         }
 
-        console.log(`[AuthRetry] Attempt ${attempt + 1}/${finalConfig.maxRetries + 1} with token: ${token.substring(0, 20)}...`);
+        console.log(`[AuthRetry] Attempt ${attempt + 1}/${finalConfig.maxRetries + 1} with token: ${token ? token.substring(0, 20) : 'null'}...`);
 
         // Realizar la llamada
         const result = await apiCall(token);

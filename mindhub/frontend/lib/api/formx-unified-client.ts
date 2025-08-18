@@ -20,10 +20,27 @@ const getFormXBaseUrl = () => {
 // TIPOS ÚNICOS PARA FORMX
 // =====================================================================
 
+export interface FormXField {
+  id?: string;
+  field_name: string;
+  field_type: string;
+  label: string;
+  help_text?: string;
+  placeholder?: string;
+  required: boolean;
+  order: number;
+  choices?: string[];
+  expedix_field?: string;
+}
+
 export interface FormXTemplate {
   id: string;
   name: string;
   description: string;
+  form_type: string;
+  integration_type: string;
+  auto_sync_expedix: boolean;
+  mobile_optimized: boolean;
   formType: string;
   category: string;
   structure: any;
@@ -33,8 +50,35 @@ export interface FormXTemplate {
   requiresAuth: boolean;
   isActive: boolean;
   version: string;
+  fields?: FormXField[];
+  total_fields?: number;
+  total_submissions?: number;
   createdAt: string;
   updatedAt: string;
+}
+
+export interface FormXStats {
+  totalTemplates: number;
+  total_templates?: number; // Alias for compatibility
+  activeTemplates: number;
+  totalSubmissions: number;
+  total_submissions?: number; // Alias for compatibility
+  pendingAssignments: number;
+  completedToday: number;
+  averageCompletionTime: number;
+  processed_submissions?: number;
+  synced_submissions?: number;
+  recent_submissions?: number;
+  processing_rate?: number;
+  sync_rate?: number;
+}
+
+export interface FormXCatalogResponse {
+  templates: FormXTemplate[];
+  total: number;
+  page?: number;
+  pageSize?: number;
+  categories?: Array<{ key: string; name: string; }>;
 }
 
 export interface FormXAssignment {

@@ -102,7 +102,8 @@ class ExpedixApiClientTest {
 
 // Export test hook
 export function useExpedixApiTest() {
-  const { getToken } = useAuth();
+  // const { getToken } = useAuth(); // TODO: Replace with Supabase auth
+  const getToken = () => Promise.resolve(null);
   const authenticatedFetch = useAuthenticatedFetch();
   
   // Create API client instance with authenticated fetch

@@ -88,7 +88,7 @@ export function FormXTemplates({ onCreateNew, onEditTemplate, onAssignTemplate }
     }
   };
 
-  const filteredTemplates = catalog.templates.filter(template => {
+  const filteredTemplates = catalog.templates.filter((template: any) => {
     const matchesSearch = template.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          template.description.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesCategory = !selectedCategory || template.form_type === selectedCategory;
@@ -168,7 +168,7 @@ export function FormXTemplates({ onCreateNew, onEditTemplate, onAssignTemplate }
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-emerald-500"
             >
               <option value="">Todas las categorías</option>
-              {catalog.categories.map(category => (
+              {(catalog.categories || []).map((category: any) => (
                 <option key={category.key} value={category.key}>
                   {category.name}
                 </option>
@@ -212,7 +212,7 @@ export function FormXTemplates({ onCreateNew, onEditTemplate, onAssignTemplate }
         </Card>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredTemplates.map((template) => (
+          {filteredTemplates.map((template: any) => (
             <Card key={template.id} className="p-6 hover:shadow-lg transition-shadow">
               <div className="flex items-start justify-between mb-4">
                 <div className="flex-1">
@@ -233,7 +233,7 @@ export function FormXTemplates({ onCreateNew, onEditTemplate, onAssignTemplate }
                 <div className="flex items-center justify-between text-sm">
                   <span className="text-gray-600">Tipo:</span>
                   <span className="font-medium capitalize">
-                    {catalog.categories.find(c => c.key === template.form_type)?.name || template.form_type}
+                    {(catalog.categories || []).find((c: any) => c.key === template.form_type)?.name || template.form_type}
                   </span>
                 </div>
                 

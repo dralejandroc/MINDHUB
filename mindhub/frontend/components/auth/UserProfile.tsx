@@ -1,11 +1,11 @@
 'use client';
 
-// import { useUser, useClerk } from '@clerk/nextjs';
+import { useAuth } from '@/hooks/useAuth';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
+import { signOut } from '@/lib/supabase/client';
 
 export function UserProfile() {
-  const { isLoaded, isSignedIn, user } = useUser();
-  const { signOut } = useClerk();
+  const { isLoaded, isSignedIn, user } = useAuth();
 
   if (!isLoaded) {
     return <LoadingSpinner size="sm" />;
@@ -15,15 +15,20 @@ export function UserProfile() {
     return null;
   }
 
-  const handleSignOut = () => {
-    signOut();
+  const handleSignOut = async () => {
+    await signOut();
+    window.location.href = '/sign-in';
   };
+
+  const displayName = user.user_metadata?.first_name ? 
+    `${user.user_metadata.first_name} ${user.user_metadata.last_name}`.trim() :
+    user.email?.split('@')[0] || 'Usuario';
 
   return (
     <div className="flex items-center space-x-4">
       <div className="text-right">
-        <p className="text-sm font-medium text-gray-900">{user.fullName}</p>
-        <p className="text-xs text-gray-500">{user.emailAddresses[0]?.emailAddress}</p>
+        <p className="text-sm font-medium text-gray-900">{displayName}</p>
+        <p className="text-xs text-gray-500">{user.email}</p>
       </div>
       <button
         onClick={handleSignOut}
