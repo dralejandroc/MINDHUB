@@ -97,7 +97,7 @@ export function UnifiedSidebar({ children }: UnifiedSidebarProps) {
 
   // Get user from Clerk only
   const { user } = useAuth();
-  const { signOut } = useClerk();
+  // const { signOut } = useClerk();
   
   const displayUser = {
     name: user?.fullName || user?.firstName || 'Usuario',
@@ -109,7 +109,7 @@ export function UnifiedSidebar({ children }: UnifiedSidebarProps) {
     if (confirm('¿Estás seguro que deseas cerrar sesión?')) {
       try {
         // Use Clerk's signOut
-        await signOut();
+        // await signOut();
         // Clear any non-auth local storage if needed
         localStorage.removeItem('userMetrics');
         window.location.href = '/sign-in';

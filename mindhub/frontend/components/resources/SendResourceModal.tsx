@@ -169,8 +169,8 @@ export const SendResourceModal: React.FC<SendResourceModalProps> = ({
       </div>
 
       {/* Patient Selector Modal */}
-      {showPatientSelector && (
-//         <PatientSelectorModal
+      {/* {showPatientSelector && (
+        <PatientSelectorModal
           isOpen={showPatientSelector}
           onClose={() => setShowPatientSelector(false)}
           onSelectPatient={(patient) => {
@@ -180,7 +180,7 @@ export const SendResourceModal: React.FC<SendResourceModalProps> = ({
           formId={resource?.id}
           formTitle={`Recurso: ${resource?.title}`}
         />
-      )}
+      )} */}
     </>
   );
 };

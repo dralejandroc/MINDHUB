@@ -9,7 +9,11 @@ interface ProtectedLayoutProps {
 }
 
 export function ProtectedLayout({ children }: ProtectedLayoutProps) {
-  const { isLoaded, isSignedIn } = useUser();
+  // const { isLoaded, isSignedIn } = useUser();
+  
+  // Mock values for now - replace with Supabase Auth later
+  const isLoaded = true;
+  const isSignedIn = true;
 
   if (!isLoaded) {
     return (

@@ -12,11 +12,17 @@ interface TestResult {
 }
 
 export default function AuthTestComponent() {
-  const { isLoaded, isSignedIn, getToken } = useAuth();
-  const { user } = useUser();
+  // const { isLoaded, isSignedIn, getToken } = useAuth();
+  // const { user } = useUser();
   const expedixApi = useExpedixApi();
   const [results, setResults] = useState<TestResult[]>([]);
   const [isRunning, setIsRunning] = useState(false);
+  
+  // Mock values for now
+  const isLoaded = true;
+  const isSignedIn = true;
+  const user = { emailAddresses: [{ emailAddress: 'demo@mindhub.com' }] };
+  const getToken = async () => 'mock-token';
 
   const updateResult = (test: string, status: TestResult['status'], message: string, data?: any) => {
     setResults(prev => {
