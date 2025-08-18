@@ -9,20 +9,9 @@
   "routes": [
     {
       "src": "/(.*)",
-      "dest": "/mindhub/backend/server.js",
-      "headers": {
-        "Access-Control-Allow-Origin": "https://mindhub-frontend.vercel.app",
-        "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
-        "Access-Control-Allow-Headers": "Content-Type, Authorization"
-      }
+      "dest": "mindhub/backend/server.js"
     }
   ],
-  "functions": {
-    "mindhub/backend/server.js": {
-      "maxDuration": 30
-    }
-  },
   "installCommand": "cd mindhub/backend && npm install",
-  "buildCommand": "cd mindhub/backend && npm run build",
-  "outputDirectory": "mindhub/backend"
+  "buildCommand": "cd mindhub/backend && npm run generate:clean"
 }
