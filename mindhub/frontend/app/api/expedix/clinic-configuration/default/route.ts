@@ -6,18 +6,18 @@ const BACKEND_URL = process.env.BACKEND_URL || 'https://mindhub-production.up.ra
 export async function GET(request: NextRequest) {
   try {
     // Get authentication
-    const { getToken } = await auth();
-    const token = await getToken();
+    // const { getToken } = await auth();
+    // const token = await getToken();
 
-    if (!token) {
-      return Response.json({ error: 'Authentication required' }, { status: 401 });
-    }
+    // if (!token) {
+    //   return Response.json({ error: 'Authentication required' }, { status: 401 });
+    // }
 
     // Forward request to backend
     const response = await fetch(`${BACKEND_URL}/api/expedix/clinic-configuration/default`, {
       method: 'GET',
       headers: {
-        'Authorization': `Bearer ${token}`,
+        // 'Authorization': `Bearer ${token}`,
         'Content-Type': 'application/json',
       },
     });

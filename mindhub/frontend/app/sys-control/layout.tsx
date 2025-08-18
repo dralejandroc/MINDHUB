@@ -19,17 +19,17 @@ interface AdminLayoutProps {
  * Server-side admin authentication check
  */
 async function checkAdminAccess() {
-  const { userId } = await auth();
+  // const { userId } = await auth();
   
-  if (!userId) {
-    redirect('/sign-in');
-  }
+  // if (!userId) {
+  //   redirect('/sign-in');
+  // }
 
   try {
     // For now, we'll check role via the API or use a simpler method
     // since we're implementing role checking in the backend middleware
     
-    // TODO: Replace with proper role checking once Clerk custom claims are configured
+    // TODO: Replace with proper role checking once Supabase Auth is configured
     // For now, allow access and let backend handle role validation
     return true;
     
