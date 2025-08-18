@@ -23,8 +23,8 @@ export default function FormXPage() {
   const [currentView, setCurrentView] = useState<FormXView>('dashboard');
   const [navigationData, setNavigationData] = useState<NavigationData>({});
 
-  const handleNavigate = (view: FormXView, data?: NavigationData) => {
-    setCurrentView(view);
+  const handleNavigate = (view: string, data?: any) => {
+    setCurrentView(view as FormXView);
     setNavigationData(data || {});
   };
 
