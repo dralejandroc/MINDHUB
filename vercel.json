@@ -11,5 +11,7 @@
       "src": "/(.*)",
       "dest": "mindhub/backend/server.js"
     }
-  ]
+  ],
+  "installCommand": "cd mindhub/backend && npm install",
+  "buildCommand": "cd mindhub/backend && npm run generate:clean"
 }
