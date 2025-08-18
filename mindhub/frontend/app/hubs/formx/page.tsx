@@ -10,7 +10,7 @@ import {
   FormXTemplates, 
   FormXPatientAssignment 
 } from '@/components/formx';
-import { FormXTemplate } from '@/lib/api/formx-django-client';
+import { FormXTemplate } from '@/lib/api/formx-unified-client';
 
 type FormXView = 'dashboard' | 'form-builder' | 'templates' | 'assign-form' | 'responses' | 'assignments';
 

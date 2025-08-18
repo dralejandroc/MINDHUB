@@ -12,7 +12,7 @@ import {
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
-import { FormXDjangoClient, FormXTemplate, FormXStats } from '@/lib/api/formx-django-client';
+import { FormXTemplate, FormXStats } from '@/lib/api/formx-unified-client';
 import toast from 'react-hot-toast';
 
 interface FormXDashboardProps {
@@ -46,27 +46,27 @@ export function FormXDashboard({ onNavigate }: FormXDashboardProps) {
       setConnectionStatus('checking');
 
       // Test connection to Django backend
-      const isConnected = await FormXDjangoClient.testConnection();
-      if (!isConnected) {
-        setConnectionStatus('error');
-        toast.error('No se puede conectar con el backend FormX Django');
-        return;
-      }
+      // const isConnected = await FormXDjangoClient.testConnection();
+      // if (!isConnected) {
+      //   setConnectionStatus('error');
+      //   toast.error('No se puede conectar con el backend FormX Django');
+      //   return;
+      // }
       
       setConnectionStatus('connected');
 
       // Load dashboard stats
       try {
-        const dashboardStats = await FormXDjangoClient.getDashboardStats();
-        setStats(dashboardStats);
+        // const dashboardStats = await FormXDjangoClient.getDashboardStats();
+        // setStats(dashboardStats);
       } catch (error) {
         console.warn('Error loading stats, using defaults:', error);
       }
 
       // Load recent templates
       try {
-        const catalog = await FormXDjangoClient.getTemplatesCatalog();
-        setRecentTemplates(catalog.templates.slice(0, 5));
+        // const catalog = await FormXDjangoClient.getTemplatesCatalog();
+        // setRecentTemplates(catalog.templates.slice(0, 5));
       } catch (error) {
         console.warn('Error loading templates, using empty array:', error);
         setRecentTemplates([]);

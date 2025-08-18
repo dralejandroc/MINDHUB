@@ -17,7 +17,7 @@ import {
 } from '@heroicons/react/24/outline';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
-import { FormXDjangoClient } from '@/lib/api/formx-django-client';
+// import { FormXDjangoClient } from '@/lib/api/formx-django-client';
 import toast from 'react-hot-toast';
 
 interface PredefinedTemplate {

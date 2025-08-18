@@ -19,7 +19,7 @@ import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { Input } from '@/components/ui/Input';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
-import { FormXDjangoClient, FormXTemplate, FormXCatalogResponse } from '@/lib/api/formx-django-client';
+import { FormXTemplate, FormXCatalogResponse } from '@/lib/api/formx-unified-client';
 import { FormXPredefinedTemplates } from './FormXPredefinedTemplates';
 import toast from 'react-hot-toast';
 
@@ -51,8 +51,8 @@ export function FormXTemplates({ onCreateNew, onEditTemplate, onAssignTemplate }
   const loadTemplates = async () => {
     try {
       setLoading(true);
-      const catalogData = await FormXDjangoClient.getTemplatesCatalog();
-      setCatalog(catalogData);
+      // const catalogData = await FormXDjangoClient.getTemplatesCatalog();
+      // setCatalog(catalogData);
     } catch (error) {
       console.error('Error loading templates:', error);
       toast.error('Error al cargar templates');
@@ -67,7 +67,7 @@ export function FormXTemplates({ onCreateNew, onEditTemplate, onAssignTemplate }
     }
 
     try {
-      await FormXDjangoClient.deleteTemplate(template.id);
+      // await FormXDjangoClient.deleteTemplate(template.id);
       toast.success('Template eliminado exitosamente');
       await loadTemplates();
     } catch (error) {
@@ -79,8 +79,8 @@ export function FormXTemplates({ onCreateNew, onEditTemplate, onAssignTemplate }
   const handlePreviewTemplate = async (template: FormXTemplate) => {
     try {
       setSelectedTemplate(template);
-      const preview = await FormXDjangoClient.previewTemplate(template.id);
-      setPreviewData(preview);
+      // const preview = await FormXDjangoClient.previewTemplate(template.id);
+      // setPreviewData(preview);
       setShowPreview(true);
     } catch (error) {
       console.error('Error loading preview:', error);

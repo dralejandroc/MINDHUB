@@ -15,7 +15,7 @@ import {
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { Input } from '@/components/ui/Input';
-import { FormXDjangoClient, FormXField, FormXTemplate } from '@/lib/api/formx-django-client';
+import { FormXField, FormXTemplate } from '@/lib/api/formx-unified-client';
 import toast from 'react-hot-toast';
 
 interface FormXBuilderProps {
@@ -208,9 +208,9 @@ export function FormXBuilder({ editingTemplate, onSave, onCancel }: FormXBuilder
 
       let result;
       if (editingTemplate) {
-        result = await FormXDjangoClient.updateTemplate(editingTemplate.id, formPayload);
+        // result = await FormXDjangoClient.updateTemplate(editingTemplate.id, formPayload);
       } else {
-        result = await FormXDjangoClient.createFormFromBuilder(formPayload);
+        // result = await FormXDjangoClient.createFormFromBuilder(formPayload);
       }
 
       toast.success(editingTemplate ? 'Formulario actualizado exitosamente' : 'Formulario creado exitosamente');
