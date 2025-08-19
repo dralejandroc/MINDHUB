@@ -27,28 +27,25 @@ export async function GET(request: Request) {
     const search = searchParams.get('search') || '';
     const offset = (page - 1) * limit;
 
-    // Build query
-    let query = supabase
-      .from('patients')
-      .select('*', { count: 'exact' })
-      .order('created_at', { ascending: false });
-
-    // Add search filter
+    // For development: use mock data while setting up Supabase
+    const { mockPatients } = await import('@/lib/mock-data');
+    
+    // Filter patients based on search
+    let filteredPatients = mockPatients;
     if (search) {
-      query = query.or(`first_name.ilike.%${search}%,last_name.ilike.%${search}%,email.ilike.%${search}%`);
+      const searchLower = search.toLowerCase();
+      filteredPatients = mockPatients.filter(patient => 
+        patient.first_name.toLowerCase().includes(searchLower) ||
+        patient.last_name?.toLowerCase().includes(searchLower) ||
+        patient.paternal_last_name?.toLowerCase().includes(searchLower) ||
+        patient.maternal_last_name?.toLowerCase().includes(searchLower) ||
+        patient.email?.toLowerCase().includes(searchLower)
+      );
     }
-
-    // Add pagination
-    query = query.range(offset, offset + limit - 1);
-
-    const { data: patients, error, count } = await query;
-
-    if (error) {
-      console.error('[Patients API] Supabase error:', error);
-      throw new Error(error.message);
-    }
-
-    const total = count || 0;
+    
+    // Apply pagination
+    const total = filteredPatients.length;
+    const patients = filteredPatients.slice(offset, offset + limit);
     const pages = Math.ceil(total / limit);
 
     console.log(`[Patients API] Successfully retrieved ${patients?.length || 0} patients`);

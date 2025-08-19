@@ -38,7 +38,8 @@ next-env.d.ts
 # Supabase credentials - NEVER commit these
 *supabase*.key
 *supabase*.secret
-*SUPABASE*
+.env.supabase
+.env.SUPABASE
 
 # IDE
 .vscode/

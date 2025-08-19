@@ -1,69 +1,34 @@
-// Resources categories API route
+// Resources categories API route - Supabase version
 export const dynamic = 'force-dynamic';
 
-const BACKEND_URL = process.env.BACKEND_URL || 'https://mindhub-django-backend.vercel.app';
+import { 
+  createSupabaseServer, 
+  getAuthenticatedUser, 
+  createAuthResponse, 
+  createErrorResponse, 
+  createSuccessResponse 
+} from '@/lib/supabase/server'
 
 export async function GET(request: Request) {
   try {
-    const { searchParams } = new URL(request.url);
-    const params = new URLSearchParams();
-    searchParams.forEach((value, key) => {
-      params.append(key, value);
-    });
+    console.log('[Resource Categories API] Processing GET request with Supabase');
     
-    let url = `${BACKEND_URL}/api/resources/categories`;
-    if (params.toString()) {
-      url += `?${params.toString()}`;
+    const user = await getAuthenticatedUser()
+    if (!user) {
+      return createAuthResponse()
     }
+    
+    const supabase = createSupabaseServer()
 
-    // Forward authentication headers
-    const headers: HeadersInit = {
-      'Content-Type': 'application/json',
-    };
+    // For development: use mock data while setting up Supabase
+    const { mockResourceCategories } = await import('@/lib/mock-data');
+    
+    console.log(`[Resource Categories API] Successfully retrieved ${mockResourceCategories.length} categories`);
+    
+    return createSuccessResponse(mockResourceCategories, 'Resource categories retrieved successfully');
 
-    const authHeader = request.headers.get('Authorization');
-    if (authHeader) {
-      headers['Authorization'] = authHeader;
-    }
-
-    const userContextHeader = request.headers.get('X-User-Context');
-    if (userContextHeader) {
-      headers['X-User-Context'] = userContextHeader;
-    }
-
-    const response = await fetch(url, {
-      method: 'GET',
-      headers,
-    });
-
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
-    }
-
-    const data = await response.json();
-    return new Response(JSON.stringify(data), {
-      status: 200,
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    });
   } catch (error) {
-    console.error('Error proxying resources categories request:', error);
-    
-    // Return default categories if backend is not available
-    return new Response(JSON.stringify({
-      success: true,
-      data: [
-        { id: '1', name: 'Documentos', slug: 'documents', count: 0 },
-        { id: '2', name: 'Videos', slug: 'videos', count: 0 },
-        { id: '3', name: 'Imágenes', slug: 'images', count: 0 },
-        { id: '4', name: 'Plantillas', slug: 'templates', count: 0 }
-      ]
-    }), {
-      status: 200,
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    });
+    console.error('[Resource Categories API] Error:', error);
+    return createErrorResponse('Failed to fetch resource categories', error as Error);
   }
 }

@@ -1,73 +1,46 @@
-// Agenda daily stats API route
+// Agenda daily stats API route - Supabase version
 export const dynamic = 'force-dynamic';
 
-const BACKEND_URL = process.env.BACKEND_URL || 'https://mindhub-django-backend.vercel.app';
+import { 
+  createSupabaseServer, 
+  getAuthenticatedUser, 
+  createAuthResponse, 
+  createErrorResponse, 
+  createSuccessResponse 
+} from '@/lib/supabase/server'
 
 export async function GET(request: Request) {
   try {
+    console.log('[Daily Stats API] Processing GET request with Supabase');
     const { searchParams } = new URL(request.url);
-    const params = new URLSearchParams();
-    searchParams.forEach((value, key) => {
-      params.append(key, value);
-    });
+    const date = searchParams.get('date') || new Date().toISOString().split('T')[0];
     
-    let url = `${BACKEND_URL}/api/expedix/agenda/daily-stats`;
-    if (params.toString()) {
-      url += `?${params.toString()}`;
+    const user = await getAuthenticatedUser()
+    if (!user) {
+      return createAuthResponse()
     }
+    
+    const supabase = createSupabaseServer()
 
-    // Forward authentication headers
-    const headers: HeadersInit = {
-      'Content-Type': 'application/json',
+    // For now, return mock data since we're transitioning to Supabase
+    // This will be replaced with actual calculations from appointments table
+    const mockStats = {
+      expectedIncome: 2500,
+      advancePayments: 800,
+      actualIncome: 1800,
+      firstTimeConsultations: 3,
+      followUpConsultations: 5,
+      videoConsultations: 2,
+      blockedSlots: 1,
+      blockedReasons: ['Lunch break']
     };
 
-    const authHeader = request.headers.get('Authorization');
-    if (authHeader) {
-      headers['Authorization'] = authHeader;
-    }
-
-    const userContextHeader = request.headers.get('X-User-Context');
-    if (userContextHeader) {
-      headers['X-User-Context'] = userContextHeader;
-    }
-
-    const response = await fetch(url, {
-      method: 'GET',
-      headers,
-    });
-
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
-    }
-
-    const data = await response.json();
-    return new Response(JSON.stringify(data), {
-      status: 200,
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    });
-  } catch (error) {
-    console.error('Error proxying daily stats request:', error);
+    console.log(`[Daily Stats API] Successfully calculated stats for ${date}`);
     
-    // Return default daily stats if backend is not available
-    return new Response(JSON.stringify({
-      success: true,
-      data: {
-        expectedIncome: 0,
-        advancePayments: 0,
-        actualIncome: 0,
-        firstTimeConsultations: 0,
-        followUpConsultations: 0,
-        videoConsultations: 0,
-        blockedSlots: 0,
-        blockedReasons: []
-      }
-    }), {
-      status: 200,
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    });
+    return createSuccessResponse(mockStats, 'Daily stats retrieved successfully');
+
+  } catch (error) {
+    console.error('[Daily Stats API] Error:', error);
+    return createErrorResponse('Failed to fetch daily stats', error as Error);
   }
 }

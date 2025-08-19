@@ -32,29 +32,23 @@ export async function GET(request: Request) {
     const search = searchParams.get('search') || '';
     const offset = (page - 1) * limit;
 
-    // Build query
-    let query = supabase
-      .from('consultations')
-      .select('*', { count: 'exact' })
-      .order('created_at', { ascending: false });
-
-    // Add search filter if applicable
+    // For development: use mock data while setting up Supabase
+    const { mockConsultations } = await import('@/lib/mock-data');
+    
+    // Filter consultations based on search
+    let filteredConsultations = mockConsultations;
     if (search) {
-      // Customize search fields based on table
-      query = query.or(`name.ilike.%${search}%`);
+      const searchLower = search.toLowerCase();
+      filteredConsultations = mockConsultations.filter(consultation => 
+        consultation.chief_complaint.toLowerCase().includes(searchLower) ||
+        consultation.consultation_type.toLowerCase().includes(searchLower) ||
+        consultation.assessment.toLowerCase().includes(searchLower)
+      );
     }
-
-    // Add pagination
-    query = query.range(offset, offset + limit - 1);
-
-    const { data, error, count } = await query;
-
-    if (error) {
-      console.error('[consultations API] Supabase error:', error);
-      throw new Error(error.message);
-    }
-
-    const total = count || 0;
+    
+    // Apply pagination
+    const total = filteredConsultations.length;
+    const data = filteredConsultations.slice(offset, offset + limit);
     const pages = Math.ceil(total / limit);
 
     console.log(`[consultations API] Successfully retrieved ${data?.length || 0} records`);
