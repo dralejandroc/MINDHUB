@@ -1,6 +1,3 @@
-// Force dynamic runtime for this API route
-export const dynamic = 'force-dynamic'
-
 // Zero environment variables API
 export async function GET() {
   const consultations = [
