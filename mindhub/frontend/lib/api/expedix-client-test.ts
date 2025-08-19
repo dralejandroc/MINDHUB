@@ -1,5 +1,5 @@
 // TEMPORARY TEST VERSION - Use working endpoints
-import { useAuthenticatedFetch } from '../utils/supabase-auth';
+import { useAuthenticatedFetch } from './supabase-auth';
 import { createApiUrl } from './api-url-builders';
 
 export interface Patient {

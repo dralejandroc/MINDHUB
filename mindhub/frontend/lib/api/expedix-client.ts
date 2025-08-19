@@ -1,7 +1,7 @@
 // Expedix API Client - Centralized API communication for patient management
-import { useAuthenticatedFetch } from '../utils/supabase-auth';
+import { useAuthenticatedFetch } from './supabase-auth';
 import { createApiUrl, createApiUrlWithParams, API_ROUTES, logApiCall } from './api-url-builders';
-import { useAuthenticatedApiCall, AuthenticationError, NetworkError } from '../utils/auth-retry';
+import { useAuthenticatedApiCall, AuthenticationError, NetworkError } from './auth-retry';
 
 export interface Patient {
   id: string;

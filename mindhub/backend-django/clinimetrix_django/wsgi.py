@@ -1,16 +1,18 @@
 """
 WSGI config for clinimetrix_django project.
-
-It exposes the WSGI callable as a module-level variable named ``application``.
-
-For more information on this file, see
-https://docs.djangoproject.com/en/5.2/howto/deployment/wsgi/
+Optimized for Vercel deployment.
 """
 
 import os
-
 from django.core.wsgi import get_wsgi_application
 
-os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'clinimetrix_django.settings')
+# Use Vercel-specific settings if deployed on Vercel
+if os.environ.get('VERCEL_ENV'):
+    os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'clinimetrix_django.settings_vercel')
+else:
+    os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'clinimetrix_django.settings')
 
 application = get_wsgi_application()
+
+# Vercel handler
+app = application
