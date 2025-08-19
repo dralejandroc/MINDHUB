@@ -32,6 +32,9 @@ requests==2.31.0
 # JSON Processing
 jsonschema==4.21.1
 
+# Django Filters
+django-filter==23.5
+
 # Forms (para FormX futuro)
 django-crispy-forms==2.1
 crispy-bootstrap5==2023.10
