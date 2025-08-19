@@ -1,159 +1,39 @@
 # ====================================
-# DJANGO CORE
+# REQUIREMENTS MÍNIMOS PARA VERCEL
 # ====================================
+# Solo los paquetes esenciales para que funcione
+
+# Django Core
 Django==4.2.11
 djangorestframework==3.15.0
 django-cors-headers==4.3.1
-django-environ==0.11.2
 python-decouple==3.8
 
-# ====================================
-# DATABASE
-# ====================================
+# Database
 psycopg2-binary==2.9.9
 dj-database-url==2.1.0
 
-# ====================================
-# SUPABASE INTEGRATION
-# ====================================
+# Supabase
 supabase==2.3.4
-gotrue==2.1.0
-realtime==1.0.2
-storage3==0.7.0
-postgrest==0.13.0
 
-# ====================================
-# AUTHENTICATION & SECURITY
-# ====================================
-django-allauth==0.61.1
-django-guardian==2.4.0
+# Security
 PyJWT==2.8.0
-cryptography==42.0.5
 
-# ====================================
-# API & DOCUMENTATION
-# ====================================
-drf-spectacular==0.27.1
-django-filter==23.5
-drf-yasg==1.21.7
+# Production
+whitenoise==6.6.0
+gunicorn==21.2.0
 
-# ====================================
-# DATA PROCESSING
-# ====================================
-pandas==2.2.0
-numpy==1.26.3
-scipy==1.12.0
-
-# ====================================
-# UTILITIES
-# ====================================
+# Utilities
 python-dateutil==2.8.2
 pytz==2024.1
 requests==2.31.0
-python-dotenv==1.0.1
-Unidecode==1.3.8
 
-# ====================================
-# PRODUCTION & DEPLOYMENT
-# ====================================
-whitenoise==6.6.0
-gunicorn==21.2.0
-uvicorn==0.27.0
-daphne==4.1.0
+# JSON Processing
+jsonschema==4.21.1
 
-# ====================================
-# STATIC FILES & MEDIA
-# ====================================
-Pillow==10.2.0
-django-storages==1.14.2
-boto3==1.34.34
-
-# ====================================
-# FORM HANDLING (FormX)
-# ====================================
+# Forms (para FormX futuro)
 django-crispy-forms==2.1
 crispy-bootstrap5==2023.10
-django-formtools==2.5
-django-widget-tweaks==1.5.0
 
-# ====================================
-# CLINIMETRIX SPECIFIC
-# ====================================
-jsonschema==4.21.1
-python-json-logger==2.0.7
-django-nested-admin==4.0.2
-
-# ====================================
-# MONITORING & DEBUGGING
-# ====================================
-sentry-sdk==1.40.5
-django-debug-toolbar==4.2.0
-django-extensions==3.2.3
-
-# ====================================
-# CACHING (Optional)
-# ====================================
-django-redis==5.4.0
-redis==5.0.1
-hiredis==2.3.2
-
-# ====================================
-# ASYNC SUPPORT
-# ====================================
-channels==4.0.0
-channels-redis==4.1.0
-asgiref==3.7.2
-
-# ====================================
-# TESTING (Development)
-# ====================================
-pytest==8.0.0
-pytest-django==4.8.0
-pytest-cov==4.1.0
-factory-boy==3.3.0
-faker==22.6.0
-
-# ====================================
-# CODE QUALITY (Development)
-# ====================================
-black==24.1.1
-flake8==7.0.0
-isort==5.13.2
-mypy==1.8.0
-pylint==3.0.3
-
-# ====================================
-# VERCEL SPECIFIC
-# ====================================
+# Vercel
 vercel==0.2.1
-
-# ====================================
-# EMAIL (Optional)
-# ====================================
-django-ses==3.5.2
-sendgrid==6.11.0
-
-# ====================================
-# SCHEDULED TASKS (Optional)
-# ====================================
-celery==5.3.6
-django-celery-beat==2.5.0
-django-celery-results==2.5.1
-
-# ====================================
-# SEARCH (Optional)
-# ====================================
-django-haystack==3.2.1
-elasticsearch==8.12.0
-
-# ====================================
-# ADMIN ENHANCEMENTS
-# ====================================
-django-admin-interface==0.28.6
-django-import-export==3.3.6
-
-# ====================================
-# SECURITY EXTRAS
-# ====================================
-django-ratelimit==4.1.0
-django-csp==3.7

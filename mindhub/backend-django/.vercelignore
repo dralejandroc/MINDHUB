@@ -1,0 +1,57 @@
+# Ignore Node.js files
+package.json
+package-lock.json
+node_modules/
+yarn.lock
+
+# Ignore Python development files
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+env/
+venv/
+.venv/
+.env.local
+.env.development
+.env.test
+
+# Ignore Django development files
+db.sqlite3
+*.log
+media/
+staticfiles/
+
+# Ignore development tools
+.git/
+.gitignore
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Ignore documentation
+README*.md
+docs/
+*.md
+
+# Ignore IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Keep only essential files for production
+!requirements.txt
+!manage.py
+!clinimetrix_django/
+!accounts/
+!assessments/
+!clinimetrix_core/
+!formx/
+!middleware/
+!psychometric_scales/
+!scales/
+!static/
+!templates/
+!vercel.json
