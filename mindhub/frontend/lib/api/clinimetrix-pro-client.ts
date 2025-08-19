@@ -7,9 +7,13 @@
 
 // Note: Authentication is handled by Next.js middleware for API routes
 
-// ClinimetrixPro uses Django backend
-const API_BASE_URL = 'https://mindhub-django-backend.vercel.app';
-const CLINIMETRIX_PRO_BASE = `${API_BASE_URL}/clinimetrix-pro`;
+// ClinimetrixPro uses local Next.js API routes
+const API_BASE_URL = typeof window !== 'undefined' 
+  ? window.location.origin 
+  : process.env.NODE_ENV === 'production' 
+    ? 'https://mindhub.cloud' 
+    : 'http://localhost:3000';
+const CLINIMETRIX_PRO_BASE = `${API_BASE_URL}/api/clinimetrix-pro`;
 
 // TypeScript interfaces for ClinimetrixPro entities
 
@@ -391,7 +395,13 @@ export class ClinimetrixProClient {
    * Get all templates from the public catalog
    */
   async getTemplateCatalog(): Promise<ClinimetrixRegistry[]> {
-    return this.makeRequest<ClinimetrixRegistry[]>('/templates/catalog');
+    const response = await this.makeRequest<{
+      success: boolean;
+      data: ClinimetrixRegistry[];
+      message: string;
+      timestamp: string;
+    }>('/templates/catalog');
+    return response.data;
   }
 
   /**

@@ -7,8 +7,7 @@ import { cookies } from 'next/headers'
  * Now uses Supabase directly instead of Railway backend
  */
 
-// Force dynamic rendering for this API route
-export const dynamic = 'force-dynamic';
+// Remove dynamic export to avoid build issues
 
 function createSupabaseServer() {
   const cookieStore = cookies()
