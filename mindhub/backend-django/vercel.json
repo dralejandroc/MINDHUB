@@ -28,7 +28,7 @@
     "PYTHONPATH": "/var/task"
   },
   "installCommand": "pip install -r requirements.txt",
-  "buildCommand": "",
+  "buildCommand": "python manage.py collectstatic --noinput",
   "devCommand": "python manage.py runserver",
   "outputDirectory": ".",
   "framework": null
