@@ -30,39 +30,18 @@ function isPublicRoute(pathname: string): boolean {
 }
 
 export async function middleware(req: NextRequest) {
+  // CRITICAL: Skip ALL API routes - they handle their own auth
+  if (req.nextUrl.pathname.startsWith('/api/')) {
+    return NextResponse.next()
+  }
+  
   let res = NextResponse.next({
     request: {
       headers: req.headers,
     },
   })
-
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        get(name: string) {
-          return req.cookies.get(name)?.value
-        },
-        set(name: string, value: string, options: any) {
-          res.cookies.set({
-            name,
-            value,
-            ...options,
-          })
-        },
-        remove(name: string, options: any) {
-          res.cookies.set({
-            name,
-            value: '',
-            ...options,
-          })
-        },
-      },
-    }
-  )
   
-  // Add security headers
+  // Add security headers for non-API routes
   res.headers.set('X-Content-Type-Options', 'nosniff')
   res.headers.set('X-Frame-Options', 'DENY')
   res.headers.set('X-XSS-Protection', '1; mode=block')
@@ -80,23 +59,61 @@ export async function middleware(req: NextRequest) {
     "frame-src 'self' https://*.supabase.co; " +
     "worker-src 'self' blob: 'unsafe-inline'"
   )
-  
-  // Get the session
-  const { data: { session } } = await supabase.auth.getSession()
-  
-  // Check if route requires authentication
-  if (isProtectedRoute(req.nextUrl.pathname)) {
-    if (!session) {
-      // Redirect to sign-in if not authenticated
-      const redirectUrl = new URL('/auth/sign-in', req.url)
-      redirectUrl.searchParams.set('redirectTo', req.nextUrl.pathname)
-      return NextResponse.redirect(redirectUrl)
+
+  // Only handle auth for page routes, not API routes
+  try {
+    const supabase = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        cookies: {
+          get(name: string) {
+            return req.cookies.get(name)?.value
+          },
+          set(name: string, value: string, options: any) {
+            res.cookies.set({
+              name,
+              value,
+              ...options,
+            })
+          },
+          remove(name: string, options: any) {
+            res.cookies.set({
+              name,
+              value: '',
+              ...options,
+            })
+          },
+        },
+      }
+    )
+    
+    // Get the session with error handling
+    const { data: { session }, error } = await supabase.auth.getSession()
+    
+    if (error) {
+      console.warn('[Middleware] Supabase session error:', error)
+      // Continue without session if there's an error
     }
-  }
-  
-  // If user is logged in and trying to access auth pages, redirect to app
-  if (session && req.nextUrl.pathname.startsWith('/auth/')) {
-    return NextResponse.redirect(new URL('/app', req.url))
+    
+    // Check if route requires authentication
+    if (isProtectedRoute(req.nextUrl.pathname)) {
+      if (!session) {
+        // Redirect to sign-in if not authenticated
+        const redirectUrl = new URL('/auth/sign-in', req.url)
+        redirectUrl.searchParams.set('redirectTo', req.nextUrl.pathname)
+        return NextResponse.redirect(redirectUrl)
+      }
+    }
+    
+    // If user is logged in and trying to access auth pages, redirect to app
+    if (session && req.nextUrl.pathname.startsWith('/auth/')) {
+      return NextResponse.redirect(new URL('/app', req.url))
+    }
+    
+  } catch (error) {
+    console.warn('[Middleware] Auth check failed:', error)
+    // Continue with request even if auth fails
   }
   
   return res
