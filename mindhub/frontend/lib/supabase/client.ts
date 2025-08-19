@@ -4,6 +4,7 @@
  */
 
 import { createBrowserClient } from '@supabase/ssr'
+import { handleSupabaseAuthError } from './cleanup'
 
 // Environment variables
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
@@ -21,11 +22,21 @@ export const createClient = () => supabase
 
 // Helper functions for auth
 export const signIn = async (email: string, password: string) => {
-  const { data, error } = await supabase.auth.signInWithPassword({
-    email,
-    password,
-  })
-  return { data, error }
+  try {
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    })
+    
+    if (error) {
+      handleSupabaseAuthError(error)
+    }
+    
+    return { data, error }
+  } catch (error) {
+    handleSupabaseAuthError(error)
+    throw error
+  }
 }
 
 export const signUp = async (email: string, password: string, metadata?: any) => {
