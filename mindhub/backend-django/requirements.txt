@@ -36,5 +36,8 @@ jsonschema==4.21.1
 django-crispy-forms==2.1
 crispy-bootstrap5==2023.10
 
+# Development tools
+django-extensions==3.2.3
+
 # Vercel
 vercel==0.2.1
