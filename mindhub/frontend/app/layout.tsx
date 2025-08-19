@@ -3,6 +3,7 @@ import type { Metadata } from 'next';
 import { Toaster } from 'react-hot-toast';
 import { SpeedInsights } from '@vercel/speed-insights/next';
 import { AuthProvider } from '@/lib/providers/AuthProvider';
+import StartupCleanup from '@/components/StartupCleanup';
 import './globals.css';
 
 // const inter = Inter({ subsets: ['latin'], variable: '--font-inter' }); // Temporalmente deshabilitado
@@ -98,6 +99,7 @@ export default function RootLayout({
           {/* Preconnect to external services - Google Fonts temporarily disabled */}
         </head>
         <body className="bg-gray-50 antialiased">
+          <StartupCleanup />
           <AuthProvider>
             <div id="root" className="min-h-screen">
               {children}
