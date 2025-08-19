@@ -38,6 +38,7 @@ crispy-bootstrap5==2023.10
 
 # Authentication
 django-allauth==0.61.1
+django-guardian==2.4.0
 
 # Development tools
 django-extensions==3.2.3
