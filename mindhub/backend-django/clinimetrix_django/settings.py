@@ -237,11 +237,12 @@ LOGGING = {
             'class': 'logging.StreamHandler',
             'formatter': 'verbose'
         },
-        'file': {
-            'class': 'logging.FileHandler',
-            'filename': BASE_DIR / 'logs' / 'clinimetrix.log',
-            'formatter': 'verbose',
-        },
+        # File logging disabled for Vercel (read-only filesystem)
+        # 'file': {
+        #     'class': 'logging.FileHandler',
+        #     'filename': BASE_DIR / 'logs' / 'clinimetrix.log',
+        #     'formatter': 'verbose',
+        # },
     },
     'root': {
         'handlers': ['console'],
@@ -261,8 +262,8 @@ LOGGING = {
     },
 }
 
-# Create logs directory
-os.makedirs(BASE_DIR / 'logs', exist_ok=True)
+# Logs directory - disabled for Vercel (read-only filesystem)
+# os.makedirs(BASE_DIR / 'logs', exist_ok=True)
 
 # Celery Configuration
 CELERY_BROKER_URL = env('CELERY_BROKER_URL', default='redis://localhost:6379/0')
