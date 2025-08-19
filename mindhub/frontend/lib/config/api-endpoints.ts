@@ -5,11 +5,11 @@
 
 // Base URLs
 export const API_CONFIG = {
-  // HOTFIX: Direct Railway connection until Vercel fixed
-  FRONTEND_API_BASE: 'https://mindhub-production.up.railway.app/api',
+  // NEW: Django backend on Vercel
+  FRONTEND_API_BASE: '/api', // Use local Next.js API routes
   
   // Backend direct URLs (for server-side calls)
-  BACKEND_URL: process.env.BACKEND_URL || process.env.NEXT_PUBLIC_BACKEND_URL || 'https://mindhub-production.up.railway.app',
+  BACKEND_URL: process.env.BACKEND_URL || process.env.NEXT_PUBLIC_BACKEND_URL || 'https://mindhub-django-backend.vercel.app',
   
   // Environment info
   IS_PRODUCTION: process.env.NODE_ENV === 'production',

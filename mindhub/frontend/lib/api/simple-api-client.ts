@@ -5,8 +5,8 @@
 
 // This client should be used from components that have access to Supabase context
 
-// Backend configuration - HOTFIX: Direct Railway connection until Vercel fixed
-const API_BASE_URL = 'https://mindhub-production.up.railway.app/api';
+// Backend configuration - Next.js API Routes for Expedix and other services
+const API_BASE_URL = '/api';
 
 export interface ApiResponse<T> {
   success: boolean;

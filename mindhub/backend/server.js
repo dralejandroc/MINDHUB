@@ -51,7 +51,7 @@ app.use(helmet({
         "'self'", 
         "https://mindhub.cloud", 
         "https://www.mindhub.cloud", 
-        "https://mindhub-production.up.railway.app",
+        "https://mindhub-django-backend.vercel.app",
         "http://localhost:*"
       ],
     },

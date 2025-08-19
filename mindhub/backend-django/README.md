@@ -43,7 +43,7 @@ MindHub/
 ## 🗃️ Base de Datos
 
 - **Desarrollo**: SQLite (`db.sqlite3`)
-- **Producción**: MySQL en Railway
+- **Producción**: PostgreSQL en Supabase
 - **Migradas**: 40 escalas con metadata completa
 - **Management Commands**: Migración automática de JSON templates
 

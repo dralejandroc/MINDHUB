@@ -2,7 +2,7 @@ import { NextRequest } from 'next/server';
 // import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
 // import { cookies } from 'next/headers';
 
-const BACKEND_URL = process.env.BACKEND_URL || 'https://mindhub-production.up.railway.app';
+const BACKEND_URL = process.env.BACKEND_URL || 'https://mindhub-django-backend.vercel.app';
 
 export async function GET(request: NextRequest) {
   try {

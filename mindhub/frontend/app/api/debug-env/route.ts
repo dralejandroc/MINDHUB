@@ -14,7 +14,7 @@ export async function GET() {
         VERCEL_ENV: process.env.VERCEL_ENV,
         VERCEL_URL: process.env.VERCEL_URL
       },
-      computed_backend: process.env.BACKEND_URL || 'https://mindhub-production.up.railway.app',
+      computed_backend: process.env.BACKEND_URL || 'https://mindhub-django-backend.vercel.app',
       timestamp: new Date().toISOString()
     }), {
       status: 200,

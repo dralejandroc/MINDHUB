@@ -60,10 +60,8 @@ export default function AdminDashboard() {
       setLoading(true);
       // const token = await getAccessToken();
 
-      // Backend API URL 
-      const apiBaseUrl = process.env.NODE_ENV === 'production' 
-        ? 'https://mindhub-production.up.railway.app'
-        : 'http://localhost:3002';
+      // Backend API URL - Use Next.js API Routes
+      const apiBaseUrl = '';
 
       // Load platform statistics
       const [platformResponse, financeResponse] = await Promise.all([

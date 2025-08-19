@@ -6,10 +6,10 @@
 
 import { toast } from 'react-hot-toast';
 
-// Base URL for Node.js FormX APIs  
+// Base URL for Django FormX APIs  
 const getFormXBaseUrl = () => {
-  const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://mindhub-production.up.railway.app';
-  return `${apiUrl}/api/formx`;
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://mindhub-django-backend.vercel.app';
+  return `${apiUrl}/formx`;
 };
 
 // Types matching Django FormX models

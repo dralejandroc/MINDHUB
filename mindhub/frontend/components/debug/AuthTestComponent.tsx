@@ -80,7 +80,7 @@ export default function AuthTestComponent() {
     // Test 3: Test direct backend call with token
     updateResult('Direct Backend Call', 'pending', 'Testing direct backend API call...');
     try {
-      const response = await fetch('https://mindhub-production.up.railway.app/api/expedix/patients', {
+      const response = await fetch('/api/expedix/patients', {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'

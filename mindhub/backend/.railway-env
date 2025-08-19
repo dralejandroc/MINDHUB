@@ -1,5 +1,0 @@
-# Variables para Railway
-PORT=8080
-NODE_ENV=production
-FRONTEND_URL=https://mindhub.cloud
-JWT_SECRET=mindhub-secret-key-2025

@@ -3,21 +3,21 @@
  * 
  * ARQUITECTURA:
  * - createApiUrl(): Cliente → usa /api proxy de Next.js
- * - createBackendApiUrl(): Servidor → directo a Railway
+ * - createBackendApiUrl(): Servidor → directo a Django en Vercel
  * - createApiUrlWithParams(): URLs con parámetros de query
  * 
  * IMPORTANTE:
- * - Cliente nunca ve URLs de Railway directamente
- * - Servidor accede directo a Railway para mejor performance
+ * - Cliente usa proxy de Next.js para CORS y auth
+ * - Servidor accede directo a Django backend en Vercel
  * - Todas las rutas vienen de shared/config/api-routes.ts
  */
 
 import API_ROUTES from '../config/api-routes';
 
 // Variables de entorno
-// HOTFIX: Hardcoded Railway URL until Vercel env vars propagate correctly
-const BACKEND_URL = 'https://mindhub-production.up.railway.app';
-const API_BASE = '/api'; // Proxy de Next.js (not used with bypass)
+// NEW: Django backend on Vercel
+const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL || process.env.BACKEND_URL || 'https://mindhub-django-backend.vercel.app';
+const API_BASE = '/api'; // Proxy de Next.js
 
 /**
  * createApiUrl - Para uso en CLIENTE (frontend)
@@ -31,26 +31,26 @@ const API_BASE = '/api'; // Proxy de Next.js (not used with bypass)
  * createApiUrl(API_ROUTES.expedix.patientById('123')) → '/api/expedix/patients/123'
  */
 export function createApiUrl(route: string): string {
-  // EMERGENCY BYPASS: Vercel API routes broken, usar Railway directo
-  // TODO: Revert cuando se resuelva problema de Vercel deployment
-  // NOTE: Authentication handled by ExpedixApiClient using useAuthenticatedFetch
-  return createBackendApiUrl(route);
+  // Use Next.js API routes proxy for now (they forward to Django backend)
+  // This maintains authentication flow and provides proper CORS handling
+  const cleanRoute = route.startsWith('/') ? route : `/${route}`;
+  return `${API_BASE}${cleanRoute}`;
 }
 
 /**
  * createBackendApiUrl - Para uso en SERVIDOR (API routes, SSR)
- * Construye URL directa al backend de Railway
+ * Construye URL directa al backend Django en Vercel
  * 
  * @param route - Ruta desde API_ROUTES
- * @returns URL directa a Railway
+ * @returns URL directa a Django backend
  * 
  * @example
- * createBackendApiUrl(API_ROUTES.expedix.patients) → 'https://mindhub-production.up.railway.app/api/expedix/patients'
+ * createBackendApiUrl(API_ROUTES.expedix.patients) → 'https://mindhub-django-backend.vercel.app/api/expedix/patients'
  */
 export function createBackendApiUrl(route: string): string {
   // Asegurar que la ruta empiece con /
   const cleanRoute = route.startsWith('/') ? route : `/${route}`;
-  return `${BACKEND_URL}/api${cleanRoute}`;
+  return `${BACKEND_URL}${cleanRoute}`;
 }
 
 /**
@@ -69,8 +69,8 @@ export function createApiUrlWithParams(
   route: string, 
   params: Record<string, string | number | boolean>
 ): string {
-  // EMERGENCY BYPASS: Force direct Railway calls
-  const baseUrl = createBackendApiUrl(route);
+  // Use client API URL with parameters
+  const baseUrl = createApiUrl(route);
   const searchParams = new URLSearchParams();
   
   Object.entries(params).forEach(([key, value]) => {
@@ -85,11 +85,11 @@ export function createApiUrlWithParams(
 
 /**
  * createBackendApiUrlWithParams - Para URLs de servidor con parámetros
- * Construye URL directa a Railway con parámetros
+ * Construye URL directa a Django backend con parámetros
  * 
  * @param route - Ruta base desde API_ROUTES
  * @param params - Objeto con parámetros de query
- * @returns URL directa a Railway con parámetros
+ * @returns URL directa a Django backend con parámetros
  */
 export function createBackendApiUrlWithParams(
   route: string,
@@ -147,14 +147,14 @@ export { API_ROUTES };
  * Ejemplos de uso:
  * 
  * // En componente React (cliente):
- * const url = createApiUrl(API_ROUTES.expedix.patients);
+ * const url = createApiUrl(API_ROUTES.expedix.patients); // → '/api/expedix/patients'
  * 
  * // En API route (servidor):
- * const url = createBackendApiUrl(API_ROUTES.expedix.patients);
+ * const url = createBackendApiUrl(API_ROUTES.expedix.patients); // → 'https://mindhub-django-backend.vercel.app/expedix/patients'
  * 
  * // Con parámetros:
- * const url = createApiUrlWithParams(API_ROUTES.expedix.patients, { search: 'juan' });
+ * const url = createApiUrlWithParams(API_ROUTES.expedix.patients, { search: 'juan' }); // → '/api/expedix/patients?search=juan'
  * 
  * // Con ID dinámico:
- * const url = createApiUrl(API_ROUTES.expedix.patientById('123'));
+ * const url = createApiUrl(API_ROUTES.expedix.patientById('123')); // → '/api/expedix/patients/123'
  */

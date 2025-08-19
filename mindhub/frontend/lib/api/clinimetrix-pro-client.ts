@@ -7,8 +7,8 @@
 
 // Note: Authentication is handled by Next.js middleware for API routes
 
-// HOTFIX: Direct Railway connection until Vercel fixed
-const API_BASE_URL = 'https://mindhub-production.up.railway.app/api';
+// ClinimetrixPro uses Django backend
+const API_BASE_URL = 'https://mindhub-django-backend.vercel.app';
 const CLINIMETRIX_PRO_BASE = `${API_BASE_URL}/clinimetrix-pro`;
 
 // TypeScript interfaces for ClinimetrixPro entities

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 
 // Internal backend URL for migration
-const BACKEND_URL = process.env.BACKEND_URL || 'https://mindhub-production.up.railway.app';
+const BACKEND_URL = process.env.BACKEND_URL || 'https://mindhub-django-backend.vercel.app';
 
 export async function POST(request: NextRequest) {
   try {

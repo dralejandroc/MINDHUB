@@ -1,7 +1,7 @@
 // Appointment status update API route
 export const dynamic = 'force-dynamic';
 
-const BACKEND_URL = process.env.BACKEND_URL || 'https://mindhub-production.up.railway.app';
+const BACKEND_URL = process.env.BACKEND_URL || 'https://mindhub-django-backend.vercel.app';
 
 export async function PATCH(request: Request, { params }: { params: { id: string } }) {
   try {

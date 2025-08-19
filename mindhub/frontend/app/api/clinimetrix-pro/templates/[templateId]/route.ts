@@ -8,7 +8,7 @@ import { NextRequest, NextResponse } from 'next/server';
 // Force dynamic rendering for this API route
 export const dynamic = 'force-dynamic';
 
-const BACKEND_URL = process.env.BACKEND_URL || 'https://mindhub-production.up.railway.app';
+const BACKEND_URL = process.env.BACKEND_URL || 'https://mindhub-django-backend.vercel.app';
 
 export async function GET(request: NextRequest, { params }: { params: { templateId: string } }) {
   try {

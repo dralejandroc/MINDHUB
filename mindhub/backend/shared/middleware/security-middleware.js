@@ -90,9 +90,8 @@ class SecurityMiddleware {
             "'self'",
             "https://mindhub.cloud",
             "https://www.mindhub.cloud", 
-            "https://api.mindhub.com",
-            "https://mindhub-production.up.railway.app",
-            "https://*.auth0.com",
+            "https://mindhub-django-backend.vercel.app",
+            "https://*.supabase.co",
             "https://api.stripe.com",
             "https://maps.googleapis.com",
             "http://localhost:*"

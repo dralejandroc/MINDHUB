@@ -1,24 +1,45 @@
 /**
  * =====================================================================
- * MINDHUB - ENDPOINTS ÚNICOS Y CONSOLIDADOS
+ * MINDHUB - ENDPOINTS ÚNICOS Y CONSOLIDADOS (POST-MIGRACIÓN VERCEL)
  * FUENTE DE VERDAD PARA TODAS LAS APIs
  * =====================================================================
  * 
- * Este archivo define TODOS los endpoints del sistema MindHub
- * de manera única y consistente. NO debe haber duplicados.
+ * Este archivo define TODOS los endpoints del sistema MindHub 
+ * después de la migración completa a Vercel + Supabase + Django.
+ * 
+ * ARQUITECTURA ACTUAL:
+ * - Frontend: Next.js en Vercel (https://mindhub.cloud)
+ * - API Routes: Next.js en Vercel (/api/*)
+ * - Backend Django: Vercel (https://mindhub-django-backend.vercel.app)
+ * - Database: Supabase PostgreSQL
+ * - Auth: Supabase Auth (SIN Clerk)
+ * 
+ * ❌ OBSOLETO: Railway, Clerk, MySQL
+ * ✅ ACTUAL: Vercel, Supabase, PostgreSQL, Django híbrido
  */
 
 const express = require('express');
 const router = express.Router();
 
 // =====================================================================
-// CONFIGURACIÓN BASE
+// CONFIGURACIÓN BASE - NUEVA ARQUITECTURA VERCEL + SUPABASE
 // =====================================================================
 
-const API_VERSION = 'v2.0';
-const BASE_URL = process.env.NODE_ENV === 'production' 
-  ? 'https://mindhub-production.up.railway.app'
-  : 'http://localhost:3002';
+const API_VERSION = 'v3.0-post-migration';
+
+// URLs de producción actuales
+const FRONTEND_URL = process.env.NODE_ENV === 'production' 
+  ? 'https://mindhub.cloud'
+  : 'http://localhost:3000';
+
+const DJANGO_BACKEND_URL = process.env.NODE_ENV === 'production'
+  ? 'https://mindhub-django-backend.vercel.app'
+  : 'http://localhost:8000';
+
+// Base URL para API Routes de Next.js
+const API_ROUTES_BASE = process.env.NODE_ENV === 'production'
+  ? 'https://mindhub.cloud/api'
+  : 'http://localhost:3000/api';
 
 // =====================================================================
 // HEALTH CHECK Y INFORMACIÓN DEL SISTEMA
@@ -26,52 +47,94 @@ const BASE_URL = process.env.NODE_ENV === 'production'
 
 /**
  * GET /api/health
- * Health check general del sistema
+ * Health check general del sistema - ARQUITECTURA NUEVA
  */
 router.get('/health', (req, res) => {
   res.json({
     status: 'healthy',
     version: API_VERSION,
     timestamp: new Date().toISOString(),
+    architecture: {
+      frontend: 'Next.js on Vercel',
+      backend: 'Django on Vercel (hybrid)',
+      database: 'Supabase PostgreSQL',
+      auth: 'Supabase Auth',
+      deployment: 'Vercel',
+      legacy_removed: ['Railway', 'Clerk', 'MySQL']
+    },
     services: {
       expedix: 'active',
-      clinimetrix_pro: 'active',
-      formx: 'active',
-      database: 'connected',
-      auth: 'supabase'
+      clinimetrix_pro: 'active - hybrid React+Django',
+      formx: 'planned - Django forms',
+      agenda: 'active',
+      database: 'supabase-postgresql',
+      auth: 'supabase-auth'
+    },
+    urls: {
+      frontend: FRONTEND_URL,
+      django_backend: DJANGO_BACKEND_URL,
+      api_routes: API_ROUTES_BASE
     }
   });
 });
 
 /**
  * GET /api/
- * Información general de la API
+ * Información general de la API - POST-MIGRACIÓN VERCEL
  */
 router.get('/', (req, res) => {
   res.json({
     name: 'MindHub Healthcare Platform API',
     version: API_VERSION,
-    description: 'Unified API for mental healthcare management',
+    description: 'Unified API for mental healthcare management - Vercel + Supabase architecture',
+    migration_status: 'COMPLETED - Railway/Clerk/MySQL removed, Vercel/Supabase/PostgreSQL active',
+    architecture: {
+      type: 'Hybrid React + Django',
+      frontend: 'Next.js on Vercel (https://mindhub.cloud)',
+      api_routes: 'Next.js API Routes on Vercel (/api/*)',
+      backend: 'Django on Vercel (ClinimetrixPro hybrid)',
+      database: 'Supabase PostgreSQL',
+      auth: 'Supabase Auth'
+    },
     endpoints: {
-      // Expedix endpoints
+      // Expedix endpoints - via Next.js API Routes
       expedix: {
-        base: '/api/expedix',
-        patients: '/api/expedix/patients',
-        consultations: '/api/expedix/consultations',
-        medical_history: '/api/expedix/medical-history'
+        base: `${API_ROUTES_BASE}/expedix`,
+        patients: `${API_ROUTES_BASE}/expedix/patients`,
+        consultations: `${API_ROUTES_BASE}/expedix/consultations`,
+        medical_history: `${API_ROUTES_BASE}/expedix/medical-history`,
+        prescriptions: `${API_ROUTES_BASE}/expedix/prescriptions`,
+        appointments: `${API_ROUTES_BASE}/expedix/appointments`
       },
-      // ClinimetrixPro endpoints
+      // ClinimetrixPro endpoints - HÍBRIDO React + Django
       clinimetrix: {
-        base: '/api/clinimetrix-pro',
-        templates: '/api/clinimetrix-pro/templates',
-        assessments: '/api/clinimetrix-pro/assessments',
-        remote_assessments: '/api/clinimetrix-pro/remote-assessments'
+        base: `${API_ROUTES_BASE}/clinimetrix-pro`,
+        selector: `${FRONTEND_URL}/hubs/clinimetrix`, // React UI
+        templates: `${API_ROUTES_BASE}/clinimetrix-pro/templates`,
+        assessments: `${DJANGO_BACKEND_URL}/assessments/`, // Django backend
+        focused_take: `${DJANGO_BACKEND_URL}/assessments/{id}/focused-take/`, // Django evaluation
+        bridge: `${API_ROUTES_BASE}/clinimetrix-pro/bridge`, // React <-> Django bridge
+        catalog: `${DJANGO_BACKEND_URL}/scales/api/catalog/` // Django catalog
       },
-      // FormX endpoints
+      // FormX endpoints - PLANIFICADO para Django
       formx: {
-        base: '/api/formx',
-        templates: '/api/formx/templates',
-        assignments: '/api/formx/assignments'
+        base: `${DJANGO_BACKEND_URL}/formx/`,
+        templates: `${DJANGO_BACKEND_URL}/formx/templates/`,
+        assignments: `${DJANGO_BACKEND_URL}/formx/assignments/`,
+        status: 'planned - Django forms implementation'
+      },
+      // Agenda endpoints - via Next.js API Routes
+      agenda: {
+        base: `${API_ROUTES_BASE}/agenda`,
+        appointments: `${API_ROUTES_BASE}/agenda/appointments`,
+        daily_stats: `${API_ROUTES_BASE}/agenda/daily-stats`,
+        waiting_list: `${API_ROUTES_BASE}/agenda/waiting-list`
+      },
+      // System endpoints
+      system: {
+        health: `${API_ROUTES_BASE}/health`,
+        version: `${API_ROUTES_BASE}/version`,
+        auth: 'Supabase Auth - https://jvbcpldzoyicefdtnwkd.supabase.co'
       }
     }
   });
@@ -189,7 +252,7 @@ clinimetrixRouter.post('/remote-assessments', async (req, res) => {
   // Implementar lógica
   res.status(201).json({ 
     accessToken: 'remote-token',
-    link: `${BASE_URL}/assessment/remote-token`
+    link: `${DJANGO_BACKEND_URL}/assessment/remote-token`
   });
 });
 
@@ -241,7 +304,7 @@ formxRouter.post('/assignments', async (req, res) => {
   res.status(201).json({
     assignmentId: 'new-assignment-id',
     accessToken: 'form-token',
-    link: `${BASE_URL}/form/form-token`
+    link: `${DJANGO_BACKEND_URL}/form/form-token`
   });
 });
 
@@ -326,50 +389,103 @@ router.use('*', (req, res) => {
 module.exports = router;
 
 // =====================================================================
-// DOCUMENTACIÓN DE ENDPOINTS
+// DOCUMENTACIÓN DE ENDPOINTS - POST-MIGRACIÓN VERCEL + SUPABASE
 // =====================================================================
 
 /*
 
-EXPEDIX ENDPOINTS:
-==================
-GET    /api/expedix/patients                     - Listar pacientes
-POST   /api/expedix/patients                     - Crear paciente
-GET    /api/expedix/patients/:id                 - Obtener paciente
-PUT    /api/expedix/patients/:id                 - Actualizar paciente
-DELETE /api/expedix/patients/:id                 - Eliminar paciente
-GET    /api/expedix/patients/:id/medical-history - Historial médico
-POST   /api/expedix/patients/:id/medical-history - Agregar historial
-GET    /api/expedix/patients/:id/consultations   - Consultas del paciente
-POST   /api/expedix/patients/:id/consultations   - Nueva consulta
-GET    /api/expedix/consultations/:id            - Obtener consulta
-PUT    /api/expedix/consultations/:id            - Actualizar consulta
+🚀 ARQUITECTURA NUEVA (POST-MIGRACIÓN):
+=======================================
+✅ Frontend: Next.js en Vercel (https://mindhub.cloud)
+✅ API Routes: Next.js en Vercel (/api/*)
+✅ Backend Django: Vercel (https://mindhub-django-backend.vercel.app)
+✅ Database: Supabase PostgreSQL
+✅ Auth: Supabase Auth
 
-CLINIMETRIX PRO ENDPOINTS:
-==========================
-GET    /api/clinimetrix-pro/templates/catalog    - Catálogo de escalas
-GET    /api/clinimetrix-pro/templates/:id        - Obtener template
-POST   /api/clinimetrix-pro/assessments          - Nueva evaluación
-GET    /api/clinimetrix-pro/assessments/:id      - Obtener evaluación
-PUT    /api/clinimetrix-pro/assessments/:id/responses - Guardar respuestas
-POST   /api/clinimetrix-pro/assessments/:id/complete  - Completar evaluación
-GET    /api/clinimetrix-pro/patients/:id/assessments  - Evaluaciones del paciente
-POST   /api/clinimetrix-pro/remote-assessments   - Crear evaluación remota
-GET    /api/clinimetrix-pro/remote-assessments/:token - Obtener evaluación remota
-POST   /api/clinimetrix-pro/remote-assessments/:token/submit - Enviar evaluación
+❌ REMOVIDO: Railway, Clerk, MySQL
 
-FORMX ENDPOINTS:
-================
-GET    /api/formx/templates                      - Listar templates
-POST   /api/formx/templates                      - Crear template
-GET    /api/formx/templates/:id                  - Obtener template
-PUT    /api/formx/templates/:id                  - Actualizar template
-DELETE /api/formx/templates/:id                  - Eliminar template
-POST   /api/formx/assignments                    - Asignar formulario
-GET    /api/formx/assignments/:id                - Obtener asignación
-GET    /api/formx/patients/:id/assignments       - Asignaciones del paciente
-GET    /api/formx/form/:token                    - Formulario público
-POST   /api/formx/form/:token/submit             - Enviar formulario
-POST   /api/formx/assignments/:id/sync-expedix   - Sincronizar con Expedix
+🔄 EXPEDIX ENDPOINTS (Next.js API Routes):
+==========================================
+GET    https://mindhub.cloud/api/expedix/patients                     - Listar pacientes
+POST   https://mindhub.cloud/api/expedix/patients                     - Crear paciente
+GET    https://mindhub.cloud/api/expedix/patients/:id                 - Obtener paciente
+PUT    https://mindhub.cloud/api/expedix/patients/:id                 - Actualizar paciente
+DELETE https://mindhub.cloud/api/expedix/patients/:id                 - Eliminar paciente
+GET    https://mindhub.cloud/api/expedix/patients/:id/medical-history - Historial médico
+POST   https://mindhub.cloud/api/expedix/patients/:id/medical-history - Agregar historial
+GET    https://mindhub.cloud/api/expedix/patients/:id/consultations   - Consultas del paciente
+POST   https://mindhub.cloud/api/expedix/patients/:id/consultations   - Nueva consulta
+GET    https://mindhub.cloud/api/expedix/consultations/:id            - Obtener consulta
+PUT    https://mindhub.cloud/api/expedix/consultations/:id            - Actualizar consulta
+GET    https://mindhub.cloud/api/expedix/prescriptions                - Listar recetas
+POST   https://mindhub.cloud/api/expedix/prescriptions                - Crear receta
+GET    https://mindhub.cloud/api/expedix/appointments                 - Listar citas
+POST   https://mindhub.cloud/api/expedix/appointments                 - Crear cita
+
+🧠 CLINIMETRIX PRO ENDPOINTS (HÍBRIDO React + Django):
+======================================================
+✨ FLUJO HÍBRIDO:
+1. React UI: https://mindhub.cloud/hubs/clinimetrix (Selector + integración Expedix)
+2. Django Backend: https://mindhub-django-backend.vercel.app (Evaluación + scoring)
+3. React Results: https://mindhub.cloud/hubs/clinimetrix (Resultados + exportación)
+
+📋 ENDPOINTS ESPECÍFICOS:
+GET    https://mindhub.cloud/api/clinimetrix-pro/catalog              - Catálogo desde Django
+POST   https://mindhub.cloud/api/clinimetrix-pro/bridge               - Bridge React → Django
+GET    https://mindhub-django-backend.vercel.app/scales/api/catalog/  - Catálogo Django directo
+GET    https://mindhub-django-backend.vercel.app/assessments/{id}/focused-take/ - Evaluación Django
+POST   https://mindhub-django-backend.vercel.app/assessments/api/create-from-react/ - Crear desde React
+GET    https://mindhub.cloud/api/clinimetrix-pro/templates            - Templates disponibles
+POST   https://mindhub.cloud/api/clinimetrix-pro/assessments          - Nueva evaluación
+GET    https://mindhub.cloud/api/clinimetrix-pro/patients/:id/assessments - Evaluaciones del paciente
+
+🌟 ESCALAS DISPONIBLES (29 migradas):
+AQ-Adolescent, AQ-Child, BDI-13, Cuestionario Salamanca v2007, DTS, DY-BOCS, EAT-26, EMUN-AR, 
+ESADFUN, GADI, GDS-5, GDS-15, GDS-30, HARS, HDRS-17, IPDE-CIE10, IPDE-DSMIV, MADRS, MOCA, 
+MOS Sleep Scale, PANSS, PHQ-9, RADS-2, SSS-V, STAI, Y-BOCS, YGTSS
+
+📝 FORMX ENDPOINTS (PLANIFICADO - Django Forms):
+================================================
+GET    https://mindhub-django-backend.vercel.app/formx/templates/     - Listar templates (Django)
+POST   https://mindhub-django-backend.vercel.app/formx/templates/     - Crear template (Django)
+GET    https://mindhub-django-backend.vercel.app/formx/templates/:id  - Obtener template (Django)
+PUT    https://mindhub-django-backend.vercel.app/formx/templates/:id  - Actualizar template (Django)
+DELETE https://mindhub-django-backend.vercel.app/formx/templates/:id  - Eliminar template (Django)
+POST   https://mindhub-django-backend.vercel.app/formx/assignments/   - Asignar formulario (Django)
+GET    https://mindhub-django-backend.vercel.app/formx/assignments/:id - Obtener asignación (Django)
+GET    https://mindhub-django-backend.vercel.app/formx/form/:token    - Formulario público (Django)
+POST   https://mindhub-django-backend.vercel.app/formx/form/:token/submit - Enviar formulario (Django)
+
+📅 AGENDA ENDPOINTS (Next.js API Routes):
+=========================================
+GET    https://mindhub.cloud/api/agenda/appointments                  - Listar citas
+POST   https://mindhub.cloud/api/agenda/appointments                  - Crear cita
+GET    https://mindhub.cloud/api/agenda/appointments/:id              - Obtener cita
+PUT    https://mindhub.cloud/api/agenda/appointments/:id              - Actualizar cita
+GET    https://mindhub.cloud/api/agenda/daily-stats                   - Estadísticas diarias
+GET    https://mindhub.cloud/api/agenda/waiting-list                  - Lista de espera
+
+🔧 SYSTEM ENDPOINTS:
+===================
+GET    https://mindhub.cloud/api/health                               - Health check completo
+GET    https://mindhub.cloud/api/version                              - Información de versión
+GET    https://mindhub.cloud/api/                                     - Información general API
+
+🔐 AUTHENTICATION (Supabase Auth):
+==================================
+- Auth Provider: Supabase (https://jvbcpldzoyicefdtnwkd.supabase.co)
+- Sign In: https://mindhub.cloud/auth/sign-in
+- Sign Up: https://mindhub.cloud/auth/sign-up
+- Dashboard: https://mindhub.cloud/dashboard
+- Tokens: JWT via Supabase
+- RLS: Row Level Security en PostgreSQL
+
+💾 DATABASE (Supabase PostgreSQL):
+==================================
+- Provider: Supabase PostgreSQL
+- URL: Configurado vía variables de entorno
+- Tables: patients, users, clinimetrix_*, formx_*, agenda_*
+- Security: Row Level Security (RLS)
+- Backup: Automático vía Supabase
 
 */

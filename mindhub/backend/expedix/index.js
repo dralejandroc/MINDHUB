@@ -8,10 +8,9 @@
 const express = require('express');
 
 // ===================================================================
-// AUTH MIDDLEWARE COMPLETELY REMOVED - USING SUPABASE AUTHENTICATION
+// AUTH MIDDLEWARE - USING SUPABASE AUTHENTICATION
 // ===================================================================
-// Railway deployment fix: These are stub functions to prevent import errors
-// All authentication is now handled by Supabase through the API gateway
+// These are stub functions - All authentication is handled by Supabase
 const requireAuth = (req, res, next) => next(); // STUB - Auth via Supabase
 const checkPermissions = (permission) => (req, res, next) => next(); // STUB - Auth via Supabase
 
