@@ -7,6 +7,7 @@ MindHub es una plataforma integral de gestión sanitaria que integra múltiples 
 ## 🚀 ARQUITECTURA ACTUAL - POST MIGRACIÓN VERCEL + SUPABASE
 
 ### 🏗️ **NUEVA ARQUITECTURA HÍBRIDA**
+
 ```
 ┌─ Frontend Next.js ────────── Vercel (https://mindhub.cloud)
 ├─ API Routes ─────────────── Vercel (/api/*)
@@ -16,20 +17,22 @@ MindHub es una plataforma integral de gestión sanitaria que integra múltiples 
 ```
 
 ### URLs de Producción (ACTUALES)
+
 - **Frontend**: https://mindhub.cloud (Vercel)
 - **API Routes**: https://mindhub.cloud/api/* (Vercel Next.js)
 - **Database**: Supabase PostgreSQL
 - **Auth**: Supabase Auth
 
 ### Estado del Deployment
+
 - ✅ Frontend desplegado en Vercel
 - ✅ API Routes convertidas a Next.js (Vercel)
 - ✅ Base de datos migrada a Supabase PostgreSQL
 - ✅ **Sistema de autenticación: 100% Supabase Auth**
 - ✅ Django ClinimetrixPro integrado vía sistema híbrido
-- ✅ Migración completa de Railway+Clerk finalizada
 
 ### 🔐 **SISTEMA DE AUTENTICACIÓN - SUPABASE ÚNICAMENTE**
+
 - **Proveedor**: Supabase Auth (https://supabase.com)
 - **Frontend Auth**: `@supabase/auth-helpers-nextjs` con componentes React
 - **Backend Auth**: Middleware Supabase en API routes
@@ -58,6 +61,7 @@ MindHub/
 ## Módulos Principales
 
 ### 1. **Expedix** - Gestión de Pacientes y Expedientes Médicos
+
 - **URL**: `/hubs/expedix`
 - **API URL**: `https://mindhub.cloud/api/expedix`
 - **Funcionalidades**:
@@ -70,11 +74,13 @@ MindHub/
   - Documentos médicos encriptados
 
 ### 2. **ClinimetrixPro** - Sistema Híbrido React + Django
+
 - **URL**: `/hubs/clinimetrix`
 - **API URL**: `https://mindhub.cloud/api/clinimetrix-pro` (React) + Django backend
 - **Arquitectura**: **SISTEMA HÍBRIDO COMPLETAMENTE FUNCIONAL**
 
 **FUNCIONALIDADES:**
+
 - ✅ **Frontend React**: Selector de escalas, UI/UX, integración con Expedix
 - ✅ **Backend Django**: Motor de evaluación, focused_take.html, scoring real
 - ✅ **29 escalas migradas**: Desde PHQ-9 hasta escalas especializadas
@@ -84,6 +90,7 @@ MindHub/
 - ✅ **Supabase Auth integration**: Autenticación unificada entre sistemas
 
 **ESTADO ACTUAL - SISTEMA HÍBRIDO COMPLETAMENTE FUNCIONAL:**
+
 - ✅ Integración React ↔ Django completada
 - ✅ Django backend en `/mindhub/backend-django/`
 - ✅ 29 escalas psicométricas migradas y funcionales
@@ -93,6 +100,7 @@ MindHub/
 - ✅ Alpine.js CardBase system preservado y mejorado
 
 **ARQUITECTURA CLINIMETRIX PRO HÍBRIDA:**
+
 ```
 React Frontend (Selector + UI)
     ↓ (Bridge API)
@@ -102,6 +110,7 @@ React Frontend (Resultados + Integración)
 ```
 
 ### 3. **FormX** - Generador de Formularios (FUTURO DESARROLLO)
+
 - **URL**: `/hubs/formx`
 - **Tecnología planificada**: **Python/Django**
 - **Estado**: 🚧 **Desarrollo futuro** con Django Forms nativo
@@ -112,6 +121,7 @@ React Frontend (Resultados + Integración)
   - Validación automática avanzada con Django
 
 ### 4. **Agenda** - Sistema de Citas y Programación
+
 - **URL**: `/hubs/agenda`
 - **Funcionalidades**:
   - Programación de citas médicas
@@ -123,6 +133,7 @@ React Frontend (Resultados + Integración)
 ## Stack Tecnológico
 
 ### Frontend
+
 - **Hosting**: Vercel - Auto deploy desde GitHub `main` branch
 - **URL Producción**: https://mindhub.cloud
 - **Framework**: Next.js 14.2.30 con App Router
@@ -133,6 +144,7 @@ React Frontend (Resultados + Integración)
 - **Autenticación**: Supabase Auth - Sistema ÚNICO
 
 ### Backend Híbrido
+
 - **API Routes**: Next.js en Vercel (Expedix, Resources, etc.)
 - **ClinimetrixPro**: Django + **Supabase PostgreSQL** (sistema híbrido)
 - **FormX**: Python/Django (desarrollo futuro)
@@ -140,6 +152,7 @@ React Frontend (Resultados + Integración)
 - **ORM**: Supabase client + Django ORM conectado a Supabase
 
 ### Infraestructura de Producción
+
 - **Frontend + API Routes**: Vercel (https://mindhub.cloud)
 - **Base de Datos**: Supabase PostgreSQL
 - **Auth**: Supabase Auth
@@ -151,7 +164,8 @@ React Frontend (Resultados + Integración)
 ## Principios de Desarrollo Específicos
 
 ### Gestión de Datos y Backend
-- **Base de Datos Principal Supabase PostgreSQL**: 
+
+- **Base de Datos Principal Supabase PostgreSQL**:
   - Todo el proyecto usa PRINCIPALMENTE Supabase PostgreSQL
   - API Routes usan Supabase client para operaciones de base de datos
   - Django ClinimetrixPro usa **Supabase PostgreSQL** vía bridge de autenticación
@@ -160,6 +174,7 @@ React Frontend (Resultados + Integración)
   - Integración híbrida entre Supabase y Django cuando sea necesario
 
 ## Principios de Implementación de Cambios
+
 - Cuando se pida implementar un cambio, este debe ser completo:
   - No solo visualmente, sino funcionalmente
   - Conectar todos los endpoints (Next.js API Routes o Django según corresponda)
@@ -171,6 +186,7 @@ React Frontend (Resultados + Integración)
 ## ⭐ **CLINIMETRIX PRO - SISTEMA HÍBRIDO REACT + DJANGO** ⭐
 
 ### **🎯 FUNCIONAMIENTO GENERAL:**
+
 ClinimetrixPro usa un **sistema híbrido** que combina React (frontend hermoso) con Django (backend robusto). El flujo es:
 
 1. **React**: Selector de escalas, integración con Expedix, UI/UX
@@ -178,6 +194,7 @@ ClinimetrixPro usa un **sistema híbrido** que combina React (frontend hermoso) 
 3. **React**: Resultados, integración con expediente
 
 ### **📊 ARQUITECTURA DE DATOS HÍBRIDA:**
+
 - **Supabase PostgreSQL**: Base de datos ÚNICA para todo el proyecto
   - Pacientes, usuarios, expedientes (Expedix)
   - Escalas, evaluaciones, templates (ClinimetrixPro)
@@ -188,18 +205,21 @@ ClinimetrixPro usa un **sistema híbrido** que combina React (frontend hermoso) 
 ### **🔄 FLUJO COMPLETO DE EVALUACIÓN HÍBRIDA:**
 
 #### **1. INICIO DESDE EXPEDIX (React)**
+
 - Usuario va a Expedix → Selecciona paciente → Click "Evaluación ClinimetrixPro"
 - Se abre selector React con escalas desde Django
 - Sistema de favoritas y búsqueda inteligente
 - Al seleccionar escala → bridge a Django
 
 #### **2. EVALUACIÓN EN DJANGO (focused_take.html)**
+
 - Django recibe paciente + escala desde React
 - Renderiza focused_take.html con Alpine.js CardBase
 - Usuario completa evaluación en sistema nativo Django
 - Scoring y cálculos en tiempo real
 
 #### **3. RETURN A REACT (Resultados)**
+
 - Django calcula resultados finales
 - **AUTO-GUARDADO OBLIGATORIO**: Resultados se guardan automáticamente en Supabase
 - Redirige automáticamente de vuelta a React
@@ -208,9 +228,10 @@ ClinimetrixPro usa un **sistema híbrido** que combina React (frontend hermoso) 
 - **Sin pérdida de información**: Independiente de si el usuario imprime o sale
 
 ### **🎨 ESCALAS DISPONIBLES (29 MIGRADAS):**
+
 ```
 ✅ AQ-Adolescent (Autismo Adolescentes)
-✅ AQ-Child (Autismo Niños)  
+✅ AQ-Child (Autismo Niños)
 ✅ BDI-13 (Beck Depression Inventory)
 ✅ Cuestionario Salamanca v2007 (Screening)
 ✅ DTS (Davidson Trauma Scale)
@@ -239,6 +260,7 @@ ClinimetrixPro usa un **sistema híbrido** que combina React (frontend hermoso) 
 ```
 
 **CATEGORÍAS DISPONIBLES:**
+
 - 🧠 **Depresión**: BDI-13, GDS-5/15/30, HDRS-17, MADRS, PHQ-9, RADS-2
 - 😰 **Ansiedad**: GADI, HARS, STAI
 - 🧩 **Autismo/TEA**: AQ-Adolescent, AQ-Child
@@ -255,6 +277,7 @@ ClinimetrixPro usa un **sistema híbrido** que combina React (frontend hermoso) 
 ### **⚡ CARACTERÍSTICAS DEL SISTEMA HÍBRIDO:**
 
 #### **React Frontend (Preservado)**
+
 - ✅ UI/UX hermoso y familiar
 - ✅ Integración perfecta con Expedix
 - ✅ Sistema de favoritas funcionando
@@ -262,6 +285,7 @@ ClinimetrixPro usa un **sistema híbrido** que combina React (frontend hermoso) 
 - ✅ Resultados integrados con expediente
 
 #### **Django Backend (Funcional)**
+
 - ✅ focused_take.html con Alpine.js CardBase
 - ✅ Scoring real y preciso
 - ✅ 29 escalas completamente migradas
@@ -269,36 +293,40 @@ ClinimetrixPro usa un **sistema híbrido** que combina React (frontend hermoso) 
 - ✅ Base de datos de escalas científicas
 
 #### **Bridge Integration (Seamless)**
+
 - ✅ Autenticación Supabase validada en Django
 - ✅ Redirecciones automáticas React ↔ Django
 - ✅ Datos de paciente sincronizados
 - ✅ URLs dinámicas para desarrollo/producción
 
 ### **🔗 ENDPOINTS API HÍBRIDOS:**
+
 ```
 # React APIs (Next.js)
 GET /api/clinimetrix-pro/catalog - Lista escalas desde Django
 POST /api/clinimetrix-pro/bridge - Bridge a Django
 
-# Django APIs 
+# Django APIs
 POST /assessments/api/create-from-react/ - Crea evaluación desde React
 GET /assessments/{id}/focused-take/ - Página de evaluación
 GET /scales/api/catalog/ - Catálogo de escalas
 ```
 
 ### **🎮 COMPONENTES PRINCIPALES:**
+
 ```
 # React Components
 - ClinimetrixScaleSelector.tsx - Selector integrado con Django
 - UnifiedClinimetrixClient.ts - Cliente híbrido Django+React
 
-# Django Components  
+# Django Components
 - focused_take.html - Página principal de evaluación
 - CardBase (Alpine.js) - Sistema de navegación
 - ScoringEngine - Motor de cálculo Django
 ```
 
 ### **✅ ESTADO ACTUAL - SISTEMA HÍBRIDO COMPLETAMENTE FUNCIONAL:**
+
 - ✅ **React ↔ Django integration**: Flujo completo funcionando
 - ✅ **29 escalas migradas**: Desde PHQ-9 hasta escalas especializadas
 - ✅ **Supabase Auth bridge**: Autenticación unificada
@@ -308,7 +336,8 @@ GET /scales/api/catalog/ - Catálogo de escalas
 - ✅ **Integration testing**: Flujo end-to-end probado
 
 ### **🚀 PRÓXIMOS PASOS OPCIONALES:**
-- ⏳ Deploy Django a producción (Railway/Vercel)
+
+- ⏳ Deploy Django a producción (Vercel)
 - ⏳ Implementar FormX con Django Forms
 - ⏳ Expandir sistema de reportes PDF
 - ⏳ Agregar más escalas especializadas
@@ -316,6 +345,7 @@ GET /scales/api/catalog/ - Catálogo de escalas
 ---
 
 ## Recordatorios de Desarrollo
+
 - No hagas commit ni push en github hasta que yo te lo pida. me puedes preguntar, pero no lo hagas sin que me autorice
 - **Sistema migrado**: Ya NO usamos Railway, Clerk ni MySQL
 - **Nueva arquitectura**: Vercel + Supabase + Django híbrido
@@ -323,6 +353,7 @@ GET /scales/api/catalog/ - Catálogo de escalas
 - **Autenticación**: 100% Supabase Auth en toda la plataforma
 
 ## Notas de la Migración Completada
+
 - ✅ **Migración exitosa**: Railway+Clerk+MySQL → Vercel+Supabase+PostgreSQL
 - ✅ **Django integration**: ClinimetrixPro funcionando en sistema híbrido
 - ✅ **Repository cleanup**: Archivos obsoletos eliminados
