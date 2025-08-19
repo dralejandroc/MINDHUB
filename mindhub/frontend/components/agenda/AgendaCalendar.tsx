@@ -257,10 +257,10 @@ export default function AgendaCalendar({ selectedDate, onDateSelect, onNewAppoin
   const getAppointmentsForDate = (date: Date) => {
     const dateKey = formatDateKey(date);
     const dayAppointments = appointments[dateKey] || [];
-    if (dayAppointments.length > 0) {
+    if ((dayAppointments || []).length > 0) {
       console.log(`🗓️ Found ${dayAppointments.length} appointments for ${dateKey}:`, dayAppointments);
     }
-    return dayAppointments;
+    return dayAppointments || [];
   };
 
   const getStatusIndicatorColor = (status: Appointment['status']) => {
@@ -302,7 +302,7 @@ export default function AgendaCalendar({ selectedDate, onDateSelect, onNewAppoin
   const monthName = currentMonth.toLocaleDateString('es-ES', { month: 'long', year: 'numeric' });
   const weekDays = getDaysInWeek(selectedDate);
   const weekRange = viewType === 'week' 
-    ? `${weekDays[0].toLocaleDateString('es-ES', { day: 'numeric', month: 'short' })} - ${weekDays[weekDays.length - 1].toLocaleDateString('es-ES', { day: 'numeric', month: 'short' })}`
+    ? `${(weekDays || [])[0]?.toLocaleDateString('es-ES', { day: 'numeric', month: 'short' })} - ${(weekDays || [])[(weekDays || []).length - 1]?.toLocaleDateString('es-ES', { day: 'numeric', month: 'short' })}`
     : monthName;
 
   return (
@@ -362,7 +362,7 @@ export default function AgendaCalendar({ selectedDate, onDateSelect, onNewAppoin
         {viewType === 'month' ? (
           <>
             {/* Días de la semana */}
-            <div className={`grid gap-1 mb-2 grid-cols-${days.length}`}>
+            <div className={`grid gap-1 mb-2 grid-cols-${(days || []).length || 7}`}>
               {(() => {
                 const workingDays = scheduleConfig?.workingDays || ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
                 const dayLabels = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
@@ -383,13 +383,13 @@ export default function AgendaCalendar({ selectedDate, onDateSelect, onNewAppoin
             </div>
 
             {/* Días del mes */}
-            <div className={`grid gap-1 grid-cols-${Math.min(days.length, 7)}`}>
-              {days.map((day, index) => {
+            <div className={`grid gap-1 grid-cols-${Math.min((days || []).length || 7, 7)}`}>
+              {(days || []).map((day, index) => {
                 const dayAppointments = getAppointmentsForDate(day);
                 const isCurrentMonth = isSameMonth(day, currentMonth);
                 const isTodayDate = isToday(day);
                 const isSelectedDate = isSelected(day);
-                const hasBlockedTime = dayAppointments.some(apt => apt.type === 'blocked');
+                const hasBlockedTime = (dayAppointments || []).some(apt => apt.type === 'blocked');
 
                 return (
                   <button
@@ -409,14 +409,14 @@ export default function AgendaCalendar({ selectedDate, onDateSelect, onNewAppoin
                     }}
                   >
                     <span className="text-sm mb-1">{day.getDate()}</span>
-                    {dayAppointments.length > 0 && isCurrentMonth && (
+                    {(dayAppointments || []).length > 0 && isCurrentMonth && (
                       <>
                         {/* Número de citas */}
                         <div className={`
                           w-6 h-6 rounded-full flex items-center justify-center text-xs font-medium text-white
-                          ${hasBlockedTime ? 'bg-gray-500' : dayAppointments.length > 5 ? 'bg-red-500' : dayAppointments.length > 2 ? 'bg-orange-500' : 'bg-green-500'}
+                          ${hasBlockedTime ? 'bg-gray-500' : (dayAppointments || []).length > 5 ? 'bg-red-500' : (dayAppointments || []).length > 2 ? 'bg-orange-500' : 'bg-green-500'}
                         `}>
-                          {dayAppointments.filter(apt => apt.type !== 'blocked').length}
+                          {(dayAppointments || []).filter(apt => apt.type !== 'blocked').length}
                         </div>
                         
                         {/* Indicador de bloqueo si existe */}
@@ -436,7 +436,7 @@ export default function AgendaCalendar({ selectedDate, onDateSelect, onNewAppoin
             <div className="grid grid-cols-7 gap-0.5 text-xs">
               {/* Header con horas */}
               <div className="p-1"></div>
-              {days.map((day, index) => (
+              {(days || []).map((day, index) => (
                 <div 
                   key={index}
                   className="p-1 text-center border-b"
@@ -484,7 +484,7 @@ export default function AgendaCalendar({ selectedDate, onDateSelect, onNewAppoin
                       >
                         🍽️ Comida
                       </div>
-                      {days.map((day, dayIndex) => (
+                      {(days || []).map((day, dayIndex) => (
                         <div
                           key={`${dayIndex}-lunch`}
                           className="p-1 border-b border-r min-h-[25px] text-center cursor-not-allowed"
@@ -525,7 +525,7 @@ export default function AgendaCalendar({ selectedDate, onDateSelect, onNewAppoin
                     >
                       {timeSlot}
                     </div>
-                    {days.map((day, dayIndex) => {
+                    {(days || []).map((day, dayIndex) => {
                       const dayKey = formatDateKey(day);
                       const dayAppointments = appointments[dayKey] || [];
                       

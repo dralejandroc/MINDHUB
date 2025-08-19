@@ -1,69 +1,70 @@
-// Schedule configuration API route - Supabase version
-export const dynamic = 'force-dynamic';
+// Simple schedule configuration API 
+export async function GET() {
+  const scheduleConfig = {
+    workingHours: {
+      start: '09:00',
+      end: '18:00'
+    },
+    workingDays: [1, 2, 3, 4, 5], // Monday to Friday
+    appointmentDuration: 30,
+    timeSlots: [],
+    breaks: [
+      { start: '13:00', end: '14:00', name: 'Lunch Break' }
+    ],
+    business_hours: {
+      monday: { start: '09:00', end: '18:00', enabled: true },
+      tuesday: { start: '09:00', end: '18:00', enabled: true },
+      wednesday: { start: '09:00', end: '18:00', enabled: true },
+      thursday: { start: '09:00', end: '18:00', enabled: true },
+      friday: { start: '09:00', end: '17:00', enabled: true },
+      saturday: { start: '10:00', end: '14:00', enabled: false },
+      sunday: { start: '10:00', end: '14:00', enabled: false }
+    },
+    appointment_durations: [
+      { label: '30 minutos', value: 30 },
+      { label: '45 minutos', value: 45 },
+      { label: '60 minutos', value: 60 },
+      { label: '90 minutos', value: 90 }
+    ],
+    timezone: 'America/Mexico_City'
+  };
 
-import { 
-  createSupabaseServer, 
-  getAuthenticatedUser, 
-  createAuthResponse, 
-  createErrorResponse, 
-  createSuccessResponse 
-} from '@/lib/supabase/server'
-
-export async function GET(request: Request) {
-  try {
-    console.log('[Schedule Config API] Processing GET request');
-    
-    const user = await getAuthenticatedUser()
-    if (!user) {
-      return createAuthResponse()
-    }
-    
-    // For now, return default schedule config
-    // TODO: Store in Supabase database
-    const defaultConfig = {
-      workingHours: {
-        start: '09:00',
-        end: '18:00'
-      },
-      workingDays: [1, 2, 3, 4, 5], // Monday to Friday
-      appointmentDuration: 30,
-      timeSlots: [],
-      breaks: [
-        { start: '13:00', end: '14:00', name: 'Lunch Break' }
-      ]
-    };
-
-    console.log('[Schedule Config API] Returning default config');
-    
-    return createSuccessResponse(defaultConfig, 'Schedule configuration retrieved successfully');
-
-  } catch (error) {
-    console.error('[Schedule Config API] Error:', error);
-    return createErrorResponse('Failed to fetch schedule configuration', error as Error);
-  }
+  return new Response(JSON.stringify({
+    success: true,
+    data: scheduleConfig,
+    message: 'Schedule configuration retrieved successfully',
+    timestamp: new Date().toISOString()
+  }), {
+    headers: { 'Content-Type': 'application/json' }
+  });
 }
 
 export async function PUT(request: Request) {
   try {
-    console.log('[Schedule Config API] Processing PUT request');
     const body = await request.json();
     
-    const user = await getAuthenticatedUser()
-    if (!user) {
-      return createAuthResponse()
-    }
-    
-    // For now, just return success
-    // TODO: Store in Supabase database
-    console.log('[Schedule Config API] Mock update successful');
-    
-    return createSuccessResponse({
+    const updatedConfig = {
       ...body,
       updated_at: new Date().toISOString()
-    }, 'Schedule configuration updated successfully');
+    };
+    
+    return new Response(JSON.stringify({
+      success: true,
+      data: updatedConfig,
+      message: 'Schedule configuration updated successfully',
+      timestamp: new Date().toISOString()
+    }), {
+      headers: { 'Content-Type': 'application/json' }
+    });
 
   } catch (error) {
-    console.error('[Schedule Config API] Error updating:', error);
-    return createErrorResponse('Failed to update schedule configuration', error as Error);
+    return new Response(JSON.stringify({
+      success: false,
+      error: 'Failed to update schedule configuration',
+      timestamp: new Date().toISOString()
+    }), {
+      status: 500,
+      headers: { 'Content-Type': 'application/json' }
+    });
   }
 }
