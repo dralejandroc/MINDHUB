@@ -1,8 +1,6 @@
 // Schedule configuration API route - connects to Django backend
 export const dynamic = 'force-dynamic';
 
-const BACKEND_URL = process.env.BACKEND_URL || 'https://mindhub-django-backend.vercel.app';
-
 export async function GET(request: Request) {
   try {
     console.log('[SCHEDULE CONFIG API] Processing GET request');

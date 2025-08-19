@@ -31,11 +31,10 @@ const nextConfig = {
   compress: true,
   poweredByHeader: false,
   generateEtags: true,
-  // Exclude API routes from static generation to prevent build timeouts
+  // Configure experimental features for better performance
   experimental: {
-    outputFileTracingExcludes: {
-      '/api/**/*': ['**/*'],
-    },
+    // Remove the aggressive file exclusion that was breaking API route bundling
+    serverComponentsExternalPackages: ['sharp', 'canvas'],
   },
   // Configure build settings
   generateBuildId: async () => {
