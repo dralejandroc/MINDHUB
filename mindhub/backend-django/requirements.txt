@@ -35,6 +35,9 @@ jsonschema==4.21.1
 # Django Filters
 django-filter==23.5
 
+# API Documentation
+drf-spectacular==0.27.1
+
 # Forms (para FormX futuro)
 django-crispy-forms==2.1
 crispy-bootstrap5==2023.10
