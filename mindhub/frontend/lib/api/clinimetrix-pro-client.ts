@@ -386,7 +386,12 @@ export class ClinimetrixProClient {
       throw new Error(`API Error: ${errorData.message || response.statusText}`);
     }
 
-    return response.json();
+    const result = await response.json();
+    
+    // Log the response for debugging
+    console.log('ClinimetrixPro API response:', result);
+    
+    return result;
   }
 
   // Template Management Methods
@@ -395,13 +400,20 @@ export class ClinimetrixProClient {
    * Get all templates from the public catalog
    */
   async getTemplateCatalog(): Promise<ClinimetrixRegistry[]> {
-    const response = await this.makeRequest<{
-      success: boolean;
-      data: ClinimetrixRegistry[];
-      message: string;
-      timestamp: string;
-    }>('/templates/catalog');
-    return response.data;
+    try {
+      const response = await this.makeRequest<{
+        success: boolean;
+        data: ClinimetrixRegistry[];
+        message: string;
+        timestamp: string;
+      }>('/templates/catalog');
+      
+      // Ensure we return an array even if data is undefined
+      return response.data || [];
+    } catch (error) {
+      console.warn('Failed to fetch catalog, returning empty array:', error);
+      return [];
+    }
   }
 
   /**
