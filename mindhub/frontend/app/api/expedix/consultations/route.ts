@@ -48,7 +48,7 @@ export async function GET(request: Request) {
     }
 
     // Use mock data for now
-    let mockConsultations;
+    let mockConsultations: any[] = [];
     try {
       const mockData = await import('@/lib/mock-data');
       mockConsultations = mockData.mockConsultations || [];
