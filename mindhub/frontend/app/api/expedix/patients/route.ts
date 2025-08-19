@@ -1,8 +1,8 @@
-// Expedix patients API route - connects to Django backend
+// Expedix patients API route - connects to MindHub backend
 export const dynamic = 'force-dynamic';
 
 export async function GET(request: Request) {
-  const BACKEND_URL = process.env.BACKEND_URL || 'https://mindhub-django-backend.vercel.app';
+  const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL || 'https://mindhub-backend.vercel.app';
   
   try {
     // Extract query parameters
