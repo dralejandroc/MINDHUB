@@ -1,118 +1,195 @@
-// Prevent static generation for this API route
+// ClinimetrixPro assessments API route - connects DIRECTLY to Supabase
+import { supabaseAdmin, getAuthenticatedUser, createResponse, createErrorResponse } from '@/lib/supabase/admin'
+
 export const dynamic = 'force-dynamic';
-
-import { 
-  createSupabaseServer, 
-  getAuthenticatedUser, 
-  createAuthResponse, 
-  createErrorResponse, 
-  createSuccessResponse 
-} from '@/lib/supabase/server'
-
-/**
- * ClinimetrixPro Assessments API Route
- * Now uses Supabase directly instead of Railway backend
- */
 
 export async function GET(request: Request) {
   try {
-    console.log('[clinimetrix_assessments API] Processing GET request with Supabase');
-    const { searchParams } = new URL(request.url);
+    console.log('[CLINIMETRIX ASSESSMENTS API] Processing GET request - Supabase Direct Connection');
     
-    const user = await getAuthenticatedUser()
-    if (!user) {
-      return createAuthResponse()
+    // Verify authentication
+    const { user, error: authError } = await getAuthenticatedUser(request);
+    if (authError || !user) {
+      return createErrorResponse('Unauthorized', 'Valid authentication required', 401);
     }
-    
-    const supabase = createSupabaseServer()
 
-    // Parse query parameters
-    const page = parseInt(searchParams.get('page') || '1');
-    const limit = parseInt(searchParams.get('limit') || '20');
-    const search = searchParams.get('search') || '';
-    const offset = (page - 1) * limit;
+    console.log('[CLINIMETRIX ASSESSMENTS API] Authenticated user:', user.id);
 
-    // Build query
-    let query = supabase
+    // Extract query parameters
+    const url = new URL(request.url);
+    const searchParams = url.searchParams;
+    const search = searchParams.get('search');
+    const limit = parseInt(searchParams.get('limit') || '10');
+    const offset = parseInt(searchParams.get('offset') || '0');
+    const status = searchParams.get('status');
+    const patientId = searchParams.get('patient_id');
+    const templateId = searchParams.get('template_id');
+
+    console.log('[CLINIMETRIX ASSESSMENTS API] Query params:', { search, limit, offset, status, patientId, templateId });
+
+    // Build Supabase query for assessments
+    let query = supabaseAdmin
       .from('clinimetrix_assessments')
-      .select('*', { count: 'exact' })
-      .order('created_at', { ascending: false });
+      .select(`
+        *,
+        patients!inner(
+          id,
+          first_name,
+          last_name,
+          paternal_last_name,
+          maternal_last_name,
+          email
+        ),
+        clinimetrix_templates!inner(
+          id,
+          template_data
+        )
+      `, { count: 'exact' })
+      .order('created_at', { ascending: false })
+      .range(offset, offset + limit - 1);
 
-    // Add search filter if applicable
-    if (search) {
-      // Customize search fields based on table
-      query = query.or(`name.ilike.%${search}%`);
+    // Apply filters
+    if (status) {
+      query = query.eq('status', status);
     }
 
-    // Add pagination
-    query = query.range(offset, offset + limit - 1);
+    if (patientId) {
+      query = query.eq('patient_id', patientId);
+    }
 
-    const { data, error, count } = await query;
+    if (templateId) {
+      query = query.eq('template_id', templateId);
+    }
+
+    // Apply search if provided
+    if (search) {
+      query = query.or(`notes.ilike.%${search}%,administered_by.ilike.%${search}%`);
+    }
+
+    // Execute query
+    const { data: assessments, error, count } = await query;
 
     if (error) {
-      console.error('[clinimetrix_assessments API] Supabase error:', error);
-      throw new Error(error.message);
+      console.error('[CLINIMETRIX ASSESSMENTS API] Supabase error:', error);
+      throw new Error(`Database error: ${error.message}`);
     }
 
-    const total = count || 0;
-    const pages = Math.ceil(total / limit);
+    console.log('[CLINIMETRIX ASSESSMENTS API] Successfully fetched assessments:', count, 'total');
 
-    console.log(`[clinimetrix_assessments API] Successfully retrieved ${data?.length || 0} records`);
-    
-    return createSuccessResponse({
-      data: data || [],
-      pagination: {
-        page,
-        limit,
-        total,
-        pages
-      }
-    }, 'ClinimetrixPro Assessments retrieved successfully');
+    // Transform data to include template metadata
+    const transformedAssessments = assessments.map(assessment => ({
+      ...assessment,
+      template_name: assessment.clinimetrix_templates?.template_data?.metadata?.name || 'Unknown Template',
+      template_abbreviation: assessment.clinimetrix_templates?.template_data?.metadata?.abbreviation || 'N/A',
+      patient_full_name: `${assessment.patients.first_name} ${assessment.patients.paternal_last_name} ${assessment.patients.maternal_last_name || ''}`.trim()
+    }));
+
+    return createResponse({
+      success: true,
+      data: transformedAssessments,
+      total: count,
+      limit,
+      offset,
+      search,
+      status,
+      patient_id: patientId,
+      template_id: templateId
+    });
 
   } catch (error) {
-    console.error('[clinimetrix_assessments API] Error:', error);
-    return createErrorResponse('Failed to fetch clinimetrix_assessments', error as Error);
+    console.error('[CLINIMETRIX ASSESSMENTS API] Error:', error);
+    return createErrorResponse(
+      'Failed to fetch assessments',
+      error instanceof Error ? error.message : 'Unknown error',
+      500
+    );
   }
 }
 
 export async function POST(request: Request) {
   try {
-    console.log('[clinimetrix_assessments API] Processing POST request with Supabase');
-    const body = await request.json();
+    console.log('[CLINIMETRIX ASSESSMENTS API] Processing POST request - Supabase Direct Connection');
     
-    const user = await getAuthenticatedUser()
-    if (!user) {
-      return createAuthResponse()
+    // Verify authentication
+    const { user, error: authError } = await getAuthenticatedUser(request);
+    if (authError || !user) {
+      return createErrorResponse('Unauthorized', 'Valid authentication required', 401);
     }
-    
-    const supabase = createSupabaseServer()
 
-    // Prepare data
-    const data = {
+    console.log('[CLINIMETRIX ASSESSMENTS API] Authenticated user:', user.id);
+
+    // Get request body
+    const body = await request.json();
+    console.log('[CLINIMETRIX ASSESSMENTS API] Creating assessment with data:', Object.keys(body));
+
+    // Validate required fields
+    if (!body.patient_id || !body.template_id) {
+      return createErrorResponse('Validation error', 'patient_id and template_id are required', 400);
+    }
+
+    // Prepare assessment data
+    const assessmentData = {
       ...body,
-      created_by: user.id,
+      administered_by: user.id,
+      status: body.status || 'in_progress',
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString()
     };
 
-    // Insert record
-    const { data: record, error } = await supabase
+    // Insert assessment into Supabase
+    const { data: assessment, error } = await supabaseAdmin
       .from('clinimetrix_assessments')
-      .insert([data])
-      .select()
+      .insert(assessmentData)
+      .select(`
+        *,
+        patients!inner(
+          id,
+          first_name,
+          last_name,
+          paternal_last_name,
+          maternal_last_name,
+          email
+        ),
+        clinimetrix_templates!inner(
+          id,
+          template_data
+        )
+      `)
       .single();
 
     if (error) {
-      console.error('[clinimetrix_assessments API] Supabase error:', error);
-      throw new Error(error.message);
+      console.error('[CLINIMETRIX ASSESSMENTS API] Supabase insert error:', error);
+      
+      // Handle specific errors
+      if (error.code === '23503') { // Foreign key violation
+        return createErrorResponse('Invalid data', 'Patient or template not found', 400);
+      }
+      
+      throw new Error(`Database error: ${error.message}`);
     }
 
-    console.log('[clinimetrix_assessments API] Successfully created record:', record.id);
+    console.log('[CLINIMETRIX ASSESSMENTS API] Successfully created assessment:', assessment.id);
 
-    return createSuccessResponse(record, 'ClinimetrixPro Assessments created successfully', 201);
+    // Transform response
+    const transformedAssessment = {
+      ...assessment,
+      template_name: assessment.clinimetrix_templates?.template_data?.metadata?.name || 'Unknown Template',
+      template_abbreviation: assessment.clinimetrix_templates?.template_data?.metadata?.abbreviation || 'N/A',
+      patient_full_name: `${assessment.patients.first_name} ${assessment.patients.paternal_last_name} ${assessment.patients.maternal_last_name || ''}`.trim()
+    };
+
+    return createResponse({
+      success: true,
+      data: transformedAssessment,
+      message: 'Assessment created successfully'
+    }, 201);
 
   } catch (error) {
-    console.error('[clinimetrix_assessments API] Error creating record:', error);
-    return createErrorResponse('Failed to create clinimetrix_assessments', error as Error);
+    console.error('[CLINIMETRIX ASSESSMENTS API] Error:', error);
+    return createErrorResponse(
+      'Failed to create assessment',
+      error instanceof Error ? error.message : 'Unknown error',
+      500
+    );
   }
 }
