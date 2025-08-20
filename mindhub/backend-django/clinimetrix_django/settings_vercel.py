@@ -25,10 +25,10 @@ DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
         'NAME': os.environ.get('DB_NAME', 'postgres'),
-        'USER': os.environ.get('DB_USER', 'postgres'),
-        'PASSWORD': os.environ.get('DB_PASSWORD', ''),
-        'HOST': os.environ.get('DB_HOST', ''),
-        'PORT': os.environ.get('DB_PORT', '5432'),
+        'USER': os.environ.get('DB_USER', 'postgres.jvbcpldzoyicefdtnwkd'),
+        'PASSWORD': os.environ.get('DB_PASSWORD', 'Aa123456!'),
+        'HOST': os.environ.get('DB_HOST', 'aws-0-us-west-1.pooler.supabase.com'),
+        'PORT': os.environ.get('DB_PORT', '6543'),
         'OPTIONS': {
             'sslmode': 'require',
         },
@@ -85,9 +85,9 @@ CORS_ALLOWED_HEADERS = [
 ]
 
 # Supabase integration for production
-SUPABASE_URL = os.environ.get('SUPABASE_URL', '')
-SUPABASE_ANON_KEY = os.environ.get('SUPABASE_ANON_KEY', '')
-SUPABASE_SERVICE_ROLE_KEY = os.environ.get('SUPABASE_SERVICE_ROLE_KEY', '')
+SUPABASE_URL = os.environ.get('SUPABASE_URL', 'https://jvbcpldzoyicefdtnwkd.supabase.co')
+SUPABASE_ANON_KEY = os.environ.get('SUPABASE_ANON_KEY', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp2YmNwbGR6b3lpY2VmZHRud2tkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTU0MDE0NzAsImV4cCI6MjA3MDk3NzQ3MH0.X4DoFvbOPy5x7Y0p2OFnEJp38pquPGLBq4CdNmt-waI')
+SUPABASE_SERVICE_ROLE_KEY = os.environ.get('SUPABASE_SERVICE_ROLE_KEY', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp2YmNwbGR6b3lpY2VmZHRud2tkIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1NTQwMTQ3MCwiZXhwIjoyMDcwOTc3NDcwfQ.-iooltGuYeGqXVh7pgRhH_Oo_R64VtHIssbE3u_y0WQ')
 
 # React frontend URL
 REACT_FRONTEND_URL = os.environ.get('REACT_FRONTEND_URL', 'https://mindhub.cloud')
