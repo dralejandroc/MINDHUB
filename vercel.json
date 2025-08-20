@@ -1,17 +1,11 @@
 {
+  "_comment": "Legacy backend deployment DISABLED - migrated to Next.js serverless architecture",
+  "_status": "DEPRECATED - All APIs now in /mindhub/frontend/app/api/",
+  "_migration_date": "2025-08-20",
+  "_current_deployment": "Only Next.js frontend deploys at /mindhub/frontend/",
   "version": 2,
-  "builds": [
-    {
-      "src": "server.js",
-      "use": "@vercel/node"
-    }
-  ],
-  "routes": [
-    {
-      "src": "/(.*)",
-      "dest": "server.js"
-    }
-  ],
-  "installCommand": "npm install",
-  "buildCommand": "npm run generate:clean"
+  "builds": [],
+  "routes": [],
+  "installCommand": "echo 'Legacy deployment disabled - using Next.js frontend only'",
+  "buildCommand": "echo 'Build skipped - using serverless architecture'"
 }

@@ -115,7 +115,7 @@
         },
         {
           "key": "Content-Security-Policy",
-          "value": "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self' https://mindhub.cloud https://www.mindhub.cloud https://mindhub-backend.vercel.app https://mindhub-django-backend.vercel.app https://*.supabase.co http://localhost:* ws://localhost:*"
+          "value": "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self' https://mindhub.cloud https://www.mindhub.cloud https://mindhub-django-backend.vercel.app https://*.supabase.co http://localhost:* ws://localhost:*"
         }
       ]
     }
