@@ -20,10 +20,9 @@ export const useAuthenticatedFetch = () => {
     let token: string;
     
     if (error || !session?.access_token) {
-      // DEVELOPMENT FALLBACK: Use service role key when no valid JWT
-      console.warn('[AUTH] No valid JWT found, using service role key for development');
-      token = process.env.NEXT_PUBLIC_SUPABASE_SERVICE_ROLE_KEY || 
-              'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp2YmNwbGR6b3lpY2VmZHRud2tkIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1NTQwMTQ3MCwiZXhwIjoyMDcwOTc3NDcwfQ.-iooltGuYeGqXVh7pgRhH_Oo_R64VtHIssbE3u_y0WQ';
+      // No valid JWT - user needs to login
+      console.error('[AUTH] No valid JWT found - user must be authenticated');
+      throw new Error('Authentication required. Please log in.');
     } else {
       token = session.access_token;
     }
