@@ -4,38 +4,42 @@
 
 MindHub es una plataforma integral de gestión sanitaria que integra múltiples módulos especializados para clínicas y profesionales de la salud.
 
-## 🚀 ARQUITECTURA ACTUAL - POST MIGRACIÓN VERCEL + SUPABASE
+## 🚀 ARQUITECTURA ACTUAL - POST MIGRACIÓN COMPLETA A DJANGO
 
-### 🏗️ **NUEVA ARQUITECTURA HÍBRIDA**
+### 🏗️ **ARQUITECTURA DJANGO FULL-STACK**
 
 ```
-┌─ Frontend Next.js ────────── Vercel (https://mindhub.cloud)
-├─ API Routes ─────────────── Vercel (/api/*)
-├─ Django ClinimetrixPro ──── Híbrido (/mindhub/backend-django/)
-├─ Auth ───────────────────── Supabase Auth
-└─ Database ───────────────── Supabase PostgreSQL
+┌─ Frontend React/Next.js ──── Vercel (https://mindhub.cloud)
+├─ API Proxy Routes ────────── Next.js (/api/*/django/)
+├─ Django Backend ──────────── Django REST API (/backend-django/)
+├─ Auth Middleware ─────────── Supabase JWT validation
+├─ Database ────────────────── Supabase PostgreSQL 
+└─ Authentication ──────────── Supabase Auth
 ```
 
 ### URLs de Producción (ACTUALES)
 
 - **Frontend**: https://mindhub.cloud (Vercel)
-- **API Routes**: https://mindhub.cloud/api/* (Vercel Next.js)
+- **Backend Django**: https://mindhub-django-backend.vercel.app
+- **API Proxy**: https://mindhub.cloud/api/*/django/ (Next.js → Django)
 - **Database**: Supabase PostgreSQL
 - **Auth**: Supabase Auth
 
 ### Estado del Deployment
 
-- ✅ Frontend desplegado en Vercel
-- ✅ API Routes convertidas a Next.js (Vercel)
-- ✅ Base de datos migrada a Supabase PostgreSQL
-- ✅ **Sistema de autenticación: 100% Supabase Auth**
-- ✅ Django ClinimetrixPro integrado vía sistema híbrido
+- ✅ **Backend completamente migrado a Django**
+- ✅ **Node.js backend movido a legacy-backend**
+- ✅ Django REST Framework con autenticación Supabase
+- ✅ API proxy routes para integración seamless
+- ✅ Sistema híbrido React + Django completamente funcional
+- ✅ Todos los módulos (Expedix, Agenda, Resources) en Django
+- ✅ Base de datos Supabase PostgreSQL integrada
 
 ### 🔐 **SISTEMA DE AUTENTICACIÓN - SUPABASE ÚNICAMENTE**
 
 - **Proveedor**: Supabase Auth (https://supabase.com)
 - **Frontend Auth**: `@supabase/auth-helpers-nextjs` con componentes React
-- **Backend Auth**: Middleware Supabase en API routes
+- **Backend Auth**: Middleware Supabase en Django REST API
 - **Usuario Principal**: Dr. Alejandro (dr_aleks_c@hotmail.com)
 - **Funciones**:
   - ✅ Login/Logout automático
@@ -51,27 +55,45 @@ MindHub es una plataforma integral de gestión sanitaria que integra múltiples 
 ### Arquitectura del Sistema
 
 ```
-MindHub/
+MindHub-Pro/
 ├── mindhub/
-│   ├── frontend/              # Next.js 14.2.30 con App Router + React 18 + TypeScript + Tailwind CSS
-│   └── backend-django/        # Django ClinimetrixPro (Sistema híbrido)
-└── (migraciones y docs)/      # Documentación de migración
+│   ├── frontend/              # Next.js 14.2.30 + React 18 + TypeScript + Tailwind CSS
+│   └── backend-django/        # Django REST API - Backend Principal
+└── legacy-backend/            # Node.js backend (DEPRECATED - no usar)
 ```
+
+### Stack Tecnológico Actual
+
+**Frontend (React/Next.js):**
+- Next.js 14.2.30 con App Router
+- React 18 con TypeScript
+- Tailwind CSS + shadcn/ui components
+- Supabase client para auth y operaciones directas
+- API proxy routes para Django integration
+
+**Backend (Django REST):**
+- Django 5.0.2 + Django REST Framework
+- PostgreSQL vía Supabase connection
+- Supabase JWT authentication middleware
+- CORS configurado para frontend integration
+- Modelos Django para todos los módulos (Expedix, Agenda, Resources, ClinimetrixPro)
 
 ## Módulos Principales
 
 ### 1. **Expedix** - Gestión de Pacientes y Expedientes Médicos
 
-- **URL**: `/hubs/expedix`
-- **API URL**: `https://mindhub.cloud/api/expedix`
+- **Frontend URL**: `/hubs/expedix`
+- **Django API**: `https://mindhub-django-backend.vercel.app/api/expedix/`
+- **Proxy API**: `https://mindhub.cloud/api/expedix/django/`
+- **Estado**: ✅ **MIGRADO COMPLETAMENTE A DJANGO**
 - **Funcionalidades**:
-  - Gestión completa de pacientes (CRUD)
-  - Expedientes médicos digitales
-  - Sistema de consultas médicas
-  - Generación de recetas digitales
-  - Historial médico completo
-  - Portal de pacientes
-  - Documentos médicos encriptados
+  - Gestión completa de pacientes (CRUD) - Django models
+  - Expedientes médicos digitales - Django serializers
+  - Sistema de consultas médicas - Django views
+  - Generación de recetas digitales - Django business logic
+  - Historial médico completo - Django relationships
+  - Portal de pacientes - Django authentication
+  - Documentos médicos encriptados - Django security
 
 ### 2. **ClinimetrixPro** - Sistema Híbrido React + Django
 
@@ -109,26 +131,42 @@ Django Backend (Evaluación + Scoring)
 React Frontend (Resultados + Integración)
 ```
 
-### 3. **FormX** - Generador de Formularios (FUTURO DESARROLLO)
+### 3. **Agenda** - Sistema de Citas y Programación
 
-- **URL**: `/hubs/formx`
-- **Tecnología planificada**: **Python/Django**
-- **Estado**: 🚧 **Desarrollo futuro** con Django Forms nativo
-- **Funcionalidades planificadas**:
+- **Frontend URL**: `/hubs/agenda`
+- **Django API**: `https://mindhub-django-backend.vercel.app/api/agenda/`
+- **Proxy API**: `https://mindhub.cloud/api/agenda/django/`
+- **Estado**: ✅ **MIGRADO COMPLETAMENTE A DJANGO**
+- **Funcionalidades**:
+  - Programación de citas médicas - Django scheduling models
+  - Gestión de horarios - Django provider schedules
+  - Notificaciones automáticas - Django signals
+  - Lista de espera - Django waiting list system
+  - Confirmación de citas - Django appointment workflow
+
+### 4. **Resources** - Gestión de Recursos Médicos
+
+- **Frontend URL**: `/hubs/resources`
+- **Django API**: `https://mindhub-django-backend.vercel.app/api/resources/`
+- **Proxy API**: `https://mindhub.cloud/api/resources/django/`
+- **Estado**: ✅ **MIGRADO COMPLETAMENTE A DJANGO**
+- **Funcionalidades**:
+  - Biblioteca de recursos médicos - Django resource models
+  - Gestión de categorías - Django taxonomy system
+  - Plantillas de documentos - Django template engine
+  - Sistema de marcas de agua - Django watermarking
+  - Envío de recursos a pacientes - Django email integration
+
+### 5. **FormX** - Generador de Formularios
+
+- **Frontend URL**: `/hubs/formx`
+- **Django API**: `https://mindhub-django-backend.vercel.app/formx/`
+- **Estado**: ✅ **BASE DJANGO IMPLEMENTADA**
+- **Funcionalidades**:
   - Creación de formularios personalizados con Django Forms
   - Templates médicos preconfigurrados
   - Formularios de registro de pacientes
   - Validación automática avanzada con Django
-
-### 4. **Agenda** - Sistema de Citas y Programación
-
-- **URL**: `/hubs/agenda`
-- **Funcionalidades**:
-  - Programación de citas médicas
-  - Gestión de horarios
-  - Notificaciones automáticas
-  - Lista de espera
-  - Confirmación de citas
 
 ## Stack Tecnológico
 
@@ -347,15 +385,17 @@ GET /scales/api/catalog/ - Catálogo de escalas
 ## Recordatorios de Desarrollo
 
 - No hagas commit ni push en github hasta que yo te lo pida. me puedes preguntar, pero no lo hagas sin que me autorice
-- **Sistema migrado**: Ya NO usamos Railway, Clerk ni MySQL
-- **Nueva arquitectura**: Vercel + Supabase + Django híbrido
-- **Endpoints actuales**: `/api/*` para Next.js, Django local para ClinimetrixPro
-- **Autenticación**: 100% Supabase Auth en toda la plataforma
+- **Arquitectura actual**: Vercel Frontend + Django REST API + Supabase PostgreSQL
+- **Backend principal**: Django REST Framework en `/mindhub/backend-django/`
+- **Frontend**: React/Next.js en `/mindhub/frontend/` 
+- **Autenticación**: 100% Supabase Auth con JWT validation en Django
+- **Base de datos**: Supabase PostgreSQL para todo el proyecto
 
-## Notas de la Migración Completada
+## Migración Node.js → Django Completada
 
-- ✅ **Migración exitosa**: Railway+Clerk+MySQL → Vercel+Supabase+PostgreSQL
-- ✅ **Django integration**: ClinimetrixPro funcionando en sistema híbrido
-- ✅ **Repository cleanup**: Archivos obsoletos eliminados
-- ✅ **Architecture modernizada**: Stack unificado y eficiente
-- ✅ **29 escalas migradas**: Sistema ClinimetrixPro completamente funcional
+- ✅ **Backend Django**: Todos los módulos migrados (Expedix, Agenda, Resources, ClinimetrixPro)
+- ✅ **Node.js deprecado**: Backend anterior movido a `/legacy-backend/`
+- ✅ **API unificada**: Django REST Framework con endpoints `/api/*`
+- ✅ **Proxy integration**: Frontend proxy routes hacia Django backend
+- ✅ **Autenticación integrada**: Supabase JWT middleware en Django
+- ✅ **Deploy ready**: Configuración Vercel para Django backend completa

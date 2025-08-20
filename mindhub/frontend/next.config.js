@@ -9,8 +9,9 @@ const nextConfig = {
     ignoreDuringBuilds: false,
   },
   env: {
-    NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL || 'https://mindhub-django-backend.vercel.app',
-    BACKEND_URL: process.env.BACKEND_URL || 'https://mindhub-django-backend.vercel.app',
+    NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000',
+    BACKEND_URL: process.env.BACKEND_URL || process.env.NEXT_PUBLIC_DJANGO_API_URL || 'http://localhost:8000',
+    NEXT_PUBLIC_DJANGO_API_URL: process.env.NEXT_PUBLIC_DJANGO_API_URL || 'http://localhost:8000',
   },
   // Force webpack to resolve @ paths correctly
   webpack: (config, { buildId, dev, isServer, defaultLoaders, webpack }) => {

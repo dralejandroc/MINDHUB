@@ -18,11 +18,21 @@ urlpatterns = [
     
     # Core functionality
     path('', include('clinimetrix_core.urls')),
+    path('api/scales/', include('psychometric_scales.urls')),        # ✅ CAMBIAR con prefijo api
+    path('api/assessments/', include('assessments.urls')),           # ✅ CAMBIAR con prefijo api
+    path('api/clinimetrix-pro/', include('assessments.urls')),       # ✅ AGREGAR alias
+    
+    # Legacy paths (mantener por compatibilidad)
     path('scales/', include('psychometric_scales.urls')),
     path('assessments/', include('assessments.urls')),
     
     # FormX - Dynamic Form Builder
     path('formx/', include('formx.urls')),
+    
+    # MindHub Core Modules
+    path('api/expedix/', include('expedix.urls')),  # Expedix - Patient Management
+    path('api/agenda/', include('agenda.urls')),    # Agenda - Appointment System
+    path('api/resources/', include('resources.urls')),  # Resources - Medical Resources
 ]
 
 # Serve media files in development

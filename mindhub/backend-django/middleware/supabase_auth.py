@@ -46,7 +46,10 @@ class SupabaseAuthMiddleware(MiddlewareMixin):
         """
         # Only validate auth for specific bridge endpoints  
         bridge_paths = [
-            # '/assessments/api/create-from-react/',  # Temporarily disabled for testing
+            '/assessments/api/create-from-react/',  # ✅ ACTIVAR validación
+            '/api/expedix/',                        # ✅ AGREGAR validación
+            '/api/agenda/',                         # ✅ AGREGAR validación  
+            '/api/resources/',                      # ✅ AGREGAR validación
         ]
         
         return any(request.path.startswith(path) for path in bridge_paths)

@@ -1,5 +1,26 @@
 {
   "version": 2,
-  "builds": [],
-  "routes": []
+  "builds": [
+    {
+      "src": "mindhub/frontend/package.json",
+      "use": "@vercel/next"
+    }
+  ],
+  "routes": [
+    {
+      "handle": "filesystem"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "/mindhub/frontend/$1"
+    }
+  ],
+  "functions": {
+    "mindhub/frontend/app/**/*.ts": {
+      "runtime": "@vercel/node"
+    },
+    "mindhub/frontend/app/**/*.js": {
+      "runtime": "@vercel/node"
+    }
+  }
 }

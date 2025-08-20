@@ -52,6 +52,9 @@ LOCAL_APPS = [
     'assessments',
     'accounts',
     'formx',  # FormX - Dynamic Form Builder & Document Management
+    'expedix',  # Expedix - Patient Management System
+    'agenda',  # Agenda - Appointment Scheduling System
+    'resources',  # Resources - Medical Resources Management
 ]
 
 INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS
@@ -187,9 +190,15 @@ SPECTACULAR_SETTINGS = {
 # CORS settings
 CORS_ALLOW_ALL_ORIGINS = DEBUG
 CORS_ALLOWED_ORIGINS = [
-    "http://localhost:3000",
-    "http://127.0.0.1:3000",
-    "https://mindhub.cloud",  # Production frontend
+    "http://localhost:3002",      # ✅ Frontend principal - puerto 3002  
+    "http://127.0.0.1:3002",      # ✅ Frontend principal - puerto 3002
+    "http://localhost:3000",      # ✅ Frontend alternativo - puerto 3000
+    "http://127.0.0.1:3000",      # ✅ Frontend alternativo - puerto 3000
+    "https://mindhub.cloud",      # ✅ Producción principal
+    "https://www.mindhub.cloud",  # ✅ Producción con www
+    "https://mindhub.vercel.app", # ✅ Vercel preview URLs
+    "http://localhost:8000",      # ✅ Django self-requests
+    "http://127.0.0.1:8000",      # ✅ Django self-requests
 ]
 
 # Additional CORS settings for API integration
@@ -204,6 +213,11 @@ CORS_ALLOWED_HEADERS = [
     'user-agent',
     'x-csrftoken',
     'x-requested-with',
+    'x-user-context',     # ✅ Frontend user context
+    'x-client-info',      # ✅ Supabase client info
+    'x-supabase-auth',    # ✅ Supabase authentication
+    'cache-control',      # ✅ API caching headers
+    'pragma',             # ✅ HTTP/1.0 cache control
 ]
 
 # Security settings for production
@@ -250,12 +264,12 @@ LOGGING = {
     },
     'loggers': {
         'django': {
-            'handlers': ['console', 'file'],
+            'handlers': ['console'],
             'level': env('LOG_LEVEL', default='INFO'),
             'propagate': False,
         },
         'clinimetrix': {
-            'handlers': ['console', 'file'],
+            'handlers': ['console'],
             'level': 'DEBUG',
             'propagate': False,
         },
