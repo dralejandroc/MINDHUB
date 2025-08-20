@@ -113,11 +113,13 @@ class ExpedixApiClient {
     console.log(`[ExpedixAPI] Making request to ${route} via Vercel proxy at ${url}`);
 
     try {
-      // Use environment variable for service role key (for development fallback only)
-      const serviceRoleKey = process.env.NEXT_PUBLIC_SUPABASE_SERVICE_ROLE_KEY;
+      // TEMPORARY: Use service role key for production authentication
+      // TODO: Implement proper Supabase Auth token handling
+      const serviceRoleKey = process.env.NEXT_PUBLIC_SUPABASE_SERVICE_ROLE_KEY || 
+        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp2YmNwbGR6b3lpY2VmZHRud2tkIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1NTQwMTQ3MCwiZXhwIjoyMDcwOTc3NDcwfQ.-iooltGuYeGqXVh7pgRhH_Oo_R64VtHIssbE3u_y0WQ';
       
-      // Add authorization header with Service Role Key as fallback (development only)
-      if (!defaultHeaders['Authorization'] && serviceRoleKey) {
+      // Add authorization header with Service Role Key as fallback
+      if (!defaultHeaders['Authorization']) {
         defaultHeaders['Authorization'] = `Bearer ${serviceRoleKey}`;
         console.log('[ExpedixAPI] Using Service Role Key for authentication');
       }

@@ -2,7 +2,7 @@
 export const dynamic = 'force-dynamic';
 
 export async function GET(request: Request) {
-  const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL || 'https://mindhub-backend.vercel.app';
+  const BACKEND_URL = process.env.NEXT_PUBLIC_DJANGO_API_URL || 'https://mindhub-django-backend.vercel.app';
   
   try {
     const url = new URL(request.url);
@@ -54,7 +54,7 @@ export async function GET(request: Request) {
 }
 
 export async function PUT(request: Request) {
-  const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL || 'https://mindhub-backend.vercel.app';
+  const BACKEND_URL = process.env.NEXT_PUBLIC_DJANGO_API_URL || 'https://mindhub-django-backend.vercel.app';
   
   try {
     const body = await request.json();
