@@ -24,23 +24,20 @@ try {
 
 const winston = require('winston');
 
-// Configure logger
+// Configure logger - Vercel-compatible (no file system writes)
 const logger = winston.createLogger({
-  level: process.env.LOG_LEVEL || 'error', // Changed to error level
+  level: process.env.LOG_LEVEL || 'error',
   format: winston.format.combine(
     winston.format.timestamp(),
     winston.format.errors({ stack: true }),
     winston.format.json()
   ),
   transports: [
-    new winston.transports.File({ 
-      filename: 'logs/database.log',
-      maxsize: 5242880, // 5MB
-      maxFiles: 2
-    }),
+    // Only console transport for Vercel (serverless environment)
     new winston.transports.Console({
       format: winston.format.simple()
     })
+    // File transport removed - not compatible with Vercel serverless
   ]
 });
 

@@ -12,7 +12,7 @@ const winston = require('winston');
 const { v4: uuidv4 } = require('uuid');
 const multer = require('multer');
 
-// Configure logger
+// Configure logger - Vercel-compatible (no file system writes)
 const logger = winston.createLogger({
   level: process.env.LOG_LEVEL || 'info',
   format: winston.format.combine(
@@ -21,10 +21,11 @@ const logger = winston.createLogger({
     winston.format.json()
   ),
   transports: [
-    new winston.transports.File({ filename: 'logs/storage.log' }),
+    // Only console transport for Vercel (serverless environment)
     new winston.transports.Console({
       format: winston.format.simple()
     })
+    // File transport removed - not compatible with Vercel serverless
   ]
 });
 
