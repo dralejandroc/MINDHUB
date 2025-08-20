@@ -1,11 +1,14 @@
-// Expedix patients API route - connects DIRECTLY to Supabase
-import { supabaseAdmin, getAuthenticatedUser, createResponse, createErrorResponse } from '@/lib/supabase/admin'
+// Expedix patients API route - PROXY to Django Backend
+import { getAuthenticatedUser, createResponse, createErrorResponse } from '@/lib/supabase/admin'
 
 export const dynamic = 'force-dynamic';
 
+// Django backend URL
+const DJANGO_BACKEND_URL = process.env.BACKEND_URL || process.env.NEXT_PUBLIC_DJANGO_API_URL || 'https://django-backend-cpqgh0qwj-mind-hub.vercel.app';
+
 export async function GET(request: Request) {
   try {
-    console.log('[PATIENTS API] Processing GET request - Supabase Direct Connection');
+    console.log('[PATIENTS API] Processing GET request - Django Backend Proxy');
     
     // Verify authentication
     const { user, error: authError } = await getAuthenticatedUser(request);
@@ -13,59 +16,52 @@ export async function GET(request: Request) {
       return createErrorResponse('Unauthorized', 'Valid authentication required', 401);
     }
 
-    console.log('[PATIENTS API] Authenticated user:', user.id);
+    console.log('[PATIENTS API] Authenticated user:', user.id, '- Proxying to Django backend');
 
-    // Extract query parameters
+    // Extract query parameters from original request
     const url = new URL(request.url);
-    const searchParams = url.searchParams;
-    const search = searchParams.get('search');
-    const limit = parseInt(searchParams.get('limit') || '10');
-    const offset = parseInt(searchParams.get('offset') || '0');
-    const status = searchParams.get('status') || 'active';
+    const queryString = url.search; // Preserva todos los query parameters
 
-    console.log('[PATIENTS API] Query params:', { search, limit, offset, status });
+    // Build Django backend URL
+    const djangoUrl = `${DJANGO_BACKEND_URL}/api/expedix/patients${queryString}`;
+    console.log('[PATIENTS API] Proxying to Django:', djangoUrl);
 
-    // Build Supabase query
-    let query = supabaseAdmin
-      .from('patients')
-      .select('*', { count: 'exact' })
-      .order('created_at', { ascending: false })
-      .range(offset, offset + limit - 1);
-
-    // Apply filters
-    if (status === 'active') {
-      query = query.eq('is_active', true);
-    } else if (status === 'inactive') {
-      query = query.eq('is_active', false);
-    }
-
-    // Apply search if provided
-    if (search) {
-      query = query.or(`first_name.ilike.%${search}%,last_name.ilike.%${search}%,email.ilike.%${search}%,paternal_last_name.ilike.%${search}%,maternal_last_name.ilike.%${search}%`);
-    }
-
-    // Execute query
-    const { data: patients, error, count } = await query;
-
-    if (error) {
-      console.error('[PATIENTS API] Supabase error:', error);
-      throw new Error(`Database error: ${error.message}`);
-    }
-
-    console.log('[PATIENTS API] Successfully fetched patients:', count, 'total');
-
-    return createResponse({
-      success: true,
-      data: patients,
-      total: count,
-      limit,
-      offset,
-      search,
-      status
+    // Get auth token from request 
+    const authHeader = request.headers.get('Authorization');
+    
+    // Forward request to Django backend
+    const djangoResponse = await fetch(djangoUrl, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': authHeader || `Bearer ${user.id}`, // Forward auth or use user ID
+        'X-User-ID': user.id,
+        'X-User-Email': user.email || '',
+      }
     });
 
+    console.log('[PATIENTS API] Django response status:', djangoResponse.status);
+
+    if (!djangoResponse.ok) {
+      const errorText = await djangoResponse.text();
+      console.error('[PATIENTS API] Django backend error:', errorText);
+      
+      return createErrorResponse(
+        'Backend error',
+        `Django backend responded with ${djangoResponse.status}`,
+        djangoResponse.status
+      );
+    }
+
+    // Get response data from Django
+    const responseData = await djangoResponse.json();
+    console.log('[PATIENTS API] Successfully proxied to Django, patients returned:', responseData.data?.length || 0);
+
+    // Return Django response as-is
+    return createResponse(responseData);
+
   } catch (error) {
-    console.error('[PATIENTS API] Error:', error);
+    console.error('[PATIENTS API] Proxy error:', error);
     return createErrorResponse(
       'Failed to fetch patients',
       error instanceof Error ? error.message : 'Unknown error',
@@ -76,7 +72,7 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   try {
-    console.log('[PATIENTS API] Processing POST request - Supabase Direct Connection');
+    console.log('[PATIENTS API] Processing POST request - Django Backend Proxy');
     
     // Verify authentication
     const { user, error: authError } = await getAuthenticatedUser(request);
@@ -84,54 +80,53 @@ export async function POST(request: Request) {
       return createErrorResponse('Unauthorized', 'Valid authentication required', 401);
     }
 
-    console.log('[PATIENTS API] Authenticated user:', user.id);
+    console.log('[PATIENTS API] Authenticated user:', user.id, '- Proxying POST to Django backend');
 
     // Get request body
     const body = await request.json();
     console.log('[PATIENTS API] Creating patient with data:', Object.keys(body));
 
-    // Validate required fields
-    if (!body.first_name || !body.last_name) {
-      return createErrorResponse('Validation error', 'first_name and last_name are required', 400);
+    // Build Django backend URL
+    const djangoUrl = `${DJANGO_BACKEND_URL}/api/expedix/patients`;
+    console.log('[PATIENTS API] Proxying POST to Django:', djangoUrl);
+
+    // Get auth token from request 
+    const authHeader = request.headers.get('Authorization');
+    
+    // Forward request to Django backend
+    const djangoResponse = await fetch(djangoUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': authHeader || `Bearer ${user.id}`, // Forward auth or use user ID
+        'X-User-ID': user.id,
+        'X-User-Email': user.email || '',
+      },
+      body: JSON.stringify(body)
+    });
+
+    console.log('[PATIENTS API] Django POST response status:', djangoResponse.status);
+
+    if (!djangoResponse.ok) {
+      const errorText = await djangoResponse.text();
+      console.error('[PATIENTS API] Django backend POST error:', errorText);
+      
+      return createErrorResponse(
+        'Backend error',
+        `Django backend responded with ${djangoResponse.status}`,
+        djangoResponse.status
+      );
     }
 
-    // Prepare patient data
-    const patientData = {
-      ...body,
-      assigned_professional_id: user.id,
-      is_active: true,
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString()
-    };
+    // Get response data from Django
+    const responseData = await djangoResponse.json();
+    console.log('[PATIENTS API] Successfully proxied POST to Django, patient created:', responseData.data?.id || 'unknown');
 
-    // Insert patient into Supabase
-    const { data: patient, error } = await supabaseAdmin
-      .from('patients')
-      .insert(patientData)
-      .select()
-      .single();
-
-    if (error) {
-      console.error('[PATIENTS API] Supabase insert error:', error);
-      
-      // Handle specific errors
-      if (error.code === '23505') { // Unique constraint violation
-        return createErrorResponse('Duplicate data', 'Patient with this email already exists', 409);
-      }
-      
-      throw new Error(`Database error: ${error.message}`);
-    }
-
-    console.log('[PATIENTS API] Successfully created patient:', patient.id);
-
-    return createResponse({
-      success: true,
-      data: patient,
-      message: 'Patient created successfully'
-    }, 201);
+    // Return Django response as-is
+    return createResponse(responseData, djangoResponse.status);
 
   } catch (error) {
-    console.error('[PATIENTS API] Error:', error);
+    console.error('[PATIENTS API] Proxy POST error:', error);
     return createErrorResponse(
       'Failed to create patient',
       error instanceof Error ? error.message : 'Unknown error',
