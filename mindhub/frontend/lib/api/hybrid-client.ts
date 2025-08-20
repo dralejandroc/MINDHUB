@@ -126,7 +126,7 @@ class HybridApiClient {
     request: ApiRequest
   ): Promise<ApiResponse> {
     try {
-      let query
+      let query: any;
 
       switch (request.method) {
         case 'GET':
