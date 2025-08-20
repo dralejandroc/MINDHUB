@@ -26,8 +26,8 @@ DATABASES = {
         'ENGINE': 'django.db.backends.postgresql',
         'NAME': os.environ.get('DB_NAME', 'postgres'),
         'USER': os.environ.get('DB_USER', 'postgres.jvbcpldzoyicefdtnwkd'),
-        'PASSWORD': os.environ.get('DB_PASSWORD', 'Aa123456!'),
-        'HOST': os.environ.get('DB_HOST', 'aws-0-us-west-1.pooler.supabase.com'),
+        'PASSWORD': os.environ.get('DB_PASSWORD', '53AlfaCoca.'),
+        'HOST': os.environ.get('DB_HOST', 'aws-1-us-west-1.pooler.supabase.com'),
         'PORT': os.environ.get('DB_PORT', '6543'),
         'OPTIONS': {
             'sslmode': 'require',
