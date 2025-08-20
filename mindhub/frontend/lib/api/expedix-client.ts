@@ -113,7 +113,7 @@ class ExpedixApiClient {
     console.log(`[ExpedixAPI] Making request to ${route} via Vercel proxy at ${url}`);
 
     try {
-      // Get user session token if available
+      // ALWAYS get user session token, regardless of authenticatedFetch
       if (typeof window !== 'undefined' && !defaultHeaders['Authorization']) {
         // Try to get session from Supabase
         const { supabase } = await import('@/lib/supabase/client');
@@ -130,9 +130,9 @@ class ExpedixApiClient {
         }
       }
       
-      // Use authenticated fetch if available, otherwise fallback to regular fetch
-      const fetchFunction = this.authenticatedFetch || fetch;
-      const response = await fetchFunction(url, {
+      // Don't use authenticatedFetch if it's going to throw errors
+      // Just use regular fetch with our headers
+      const response = await fetch(url, {
         ...options,
         headers: defaultHeaders,
         credentials: 'include',
