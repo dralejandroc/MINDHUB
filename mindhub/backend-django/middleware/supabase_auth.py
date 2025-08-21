@@ -78,6 +78,7 @@ class SupabaseAuthMiddleware(MiddlewareMixin):
             # Get or create Django user
             django_user = self.get_or_create_django_user(user_data)
             if not django_user:
+                logger.error(f'Failed to create Django user for Supabase data: {user_data}')
                 return {
                     'valid': False,
                     'error': 'Could not create user session'
@@ -133,6 +134,8 @@ class SupabaseAuthMiddleware(MiddlewareMixin):
                             'last_name': ''
                         }
                     }
+                else:
+                    logger.warning(f'Service role key provided but missing proxy headers: proxy_auth={proxy_auth}, user_id={user_id}, user_email={user_email}')
                 elif settings.DEBUG:
                     logger.info('Using service role key for development authentication')
                     # Return mock user for service role key in development
