@@ -62,15 +62,22 @@ export default function DayOverview({ stats, onRefresh }: DayOverviewProps) {
       const appointmentsData = await appointmentsRes.json();
       const tasksData = await tasksRes.json();
 
-      if (appointmentsData.success) {
+      if (appointmentsData.success && Array.isArray(appointmentsData.data)) {
         setAppointments(appointmentsData.data);
+      } else {
+        setAppointments([]);
       }
 
-      if (tasksData.success) {
+      if (tasksData.success && Array.isArray(tasksData.data)) {
         setPendingTasks(tasksData.data);
+      } else {
+        setPendingTasks([]);
       }
     } catch (error) {
       console.error('Error loading todays data:', error);
+      // Set empty arrays as fallback
+      setAppointments([]);
+      setPendingTasks([]);
     } finally {
       setLoading(false);
     }
@@ -200,7 +207,7 @@ export default function DayOverview({ stats, onRefresh }: DayOverviewProps) {
                         </span>
                         
                         <span className="text-sm font-semibold text-green-600">
-                          ${appointment.amount.toLocaleString()}
+                          ${typeof appointment.amount === 'number' ? appointment.amount.toLocaleString() : '0'}
                         </span>
                       </div>
                     </div>

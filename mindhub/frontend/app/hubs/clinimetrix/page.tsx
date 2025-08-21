@@ -143,18 +143,21 @@ export default function ClinimetrixPage() {
   const [showAssessment, setShowAssessment] = useState(false);
 
   // Derived data with defensive checks
-  const categories = Array.from(new Set((scales || []).map(s => s.category).filter(Boolean)));
+  const safeScales = Array.isArray(scales) ? scales : [];
+  const categories = Array.from(new Set(safeScales.map(s => s?.category).filter(Boolean)));
   
   // Smart search: include abbreviations and intelligent matching
-  const filteredScales = (scales || []).filter(scale => {
+  const filteredScales = safeScales.filter(scale => {
+    if (!scale) return false;
+    
     const searchLower = searchTerm.toLowerCase();
     const matchesSearch = !searchTerm || 
-      scale.name.toLowerCase().includes(searchLower) ||
-      scale.abbreviation?.toLowerCase().includes(searchLower) ||
-      scale.description.toLowerCase().includes(searchLower) ||
-      scale.category.toLowerCase().includes(searchLower) ||
+      (scale.name && scale.name.toLowerCase().includes(searchLower)) ||
+      (scale.abbreviation && scale.abbreviation.toLowerCase().includes(searchLower)) ||
+      (scale.description && scale.description.toLowerCase().includes(searchLower)) ||
+      (scale.category && scale.category.toLowerCase().includes(searchLower)) ||
       // Smart abbreviation search (e.g., "bdi" matches "BDI-21")
-      scale.name.toLowerCase().replace(/[^a-z0-9]/g, '').includes(searchLower.replace(/[^a-z0-9]/g, ''));
+      (scale.name && scale.name.toLowerCase().replace(/[^a-z0-9]/g, '').includes(searchLower.replace(/[^a-z0-9]/g, '')));
     
     const matchesCategory = selectedCategory === 'all' || scale.category === selectedCategory;
     const matchesFavorites = !showFavoritesOnly || scale.isFeatured; // Using isFeatured as favorites for now
@@ -163,9 +166,9 @@ export default function ClinimetrixPage() {
   });
 
   // Quick access sections with defensive checks
-  const favoriteScales = (scales || []).filter(scale => scale.isFeatured);
-  const recentScales = (scales || []).slice(0, 5);
-  const popularScales = (scales || []).slice(0, 6);
+  const favoriteScales = safeScales.filter(scale => scale?.isFeatured);
+  const recentScales = safeScales.slice(0, 5);
+  const popularScales = safeScales.slice(0, 6);
 
   useEffect(() => {
     setIsMounted(true);
@@ -199,8 +202,9 @@ export default function ClinimetrixPage() {
   const toggleFavorite = async (scaleId: string) => {
     try {
       // Encontrar la escala y cambiar su estado de favorito
-      const updatedScales = (scales || []).map(scale => 
-        scale.templateId === scaleId 
+      const safeScales = Array.isArray(scales) ? scales : [];
+      const updatedScales = safeScales.map(scale => 
+        scale?.templateId === scaleId 
           ? { ...scale, isFeatured: !scale.isFeatured }
           : scale
       );
@@ -208,7 +212,7 @@ export default function ClinimetrixPage() {
       
       // TODO: Guardar en localStorage o backend
       const favorites = JSON.parse(localStorage.getItem('clinimetrix-favorites') || '[]');
-      const scale = (scales || []).find(s => s.templateId === scaleId);
+      const scale = safeScales.find(s => s?.templateId === scaleId);
       
       if (scale?.isFeatured) {
         // Remover de favoritos
@@ -303,7 +307,7 @@ export default function ClinimetrixPage() {
     );
   }
 
-  if (!scales || scales.length === 0) {
+  if (safeScales.length === 0 && !loading) {
     return (
       <div className="text-center py-12">
         <DocumentChartBarIcon className="h-16 w-16 text-gray-300 mx-auto mb-4" />
@@ -313,6 +317,9 @@ export default function ClinimetrixPage() {
         <p className="text-gray-500">
           Las escalas clínicas aparecerán aquí una vez que se agreguen al sistema.
         </p>
+        <Button onClick={loadScales} className="mt-4">
+          Recargar escalas
+        </Button>
       </div>
     );
   }
@@ -413,23 +420,23 @@ export default function ClinimetrixPage() {
       </div>
 
       {/* Results Summary */}
-      {(searchTerm || showFavoritesOnly || (filteredScales || []).length !== (scales || []).length) && (
+      {(searchTerm || showFavoritesOnly || filteredScales.length !== safeScales.length) && (
         <div className="bg-white rounded-lg p-4 border border-gray-200">
           <div className="flex flex-wrap items-center justify-between gap-4 text-sm text-gray-600">
             <div className="flex items-center gap-6">
               <div className="flex items-center gap-2">
                 <div className="w-2 h-2 bg-teal-500 rounded-full"></div>
-                <span>{(filteredScales || []).length} escalas {searchTerm ? 'encontradas' : 'mostradas'}</span>
+                <span>{filteredScales.length} escalas {searchTerm ? 'encontradas' : 'mostradas'}</span>
               </div>
-              {(favoriteScales || []).length > 0 && (
+              {favoriteScales.length > 0 && (
                 <div className="flex items-center gap-2">
                   <div className="w-2 h-2 bg-red-500 rounded-full"></div>
-                  <span>{(filteredScales || []).filter(s => s.isFeatured).length} destacadas</span>
+                  <span>{filteredScales.filter(s => s?.isFeatured).length} destacadas</span>
                 </div>
               )}
               <div className="flex items-center gap-2">
                 <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                <span>{(categories || []).length} categorías</span>
+                <span>{categories.length} categorías</span>
               </div>
             </div>
             
@@ -448,7 +455,7 @@ export default function ClinimetrixPage() {
       {/* Results */}
       {viewMode === 'cards' ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-3 sm:gap-4">
-          {(filteredScales || []).map((scale) => (
+          {filteredScales.map((scale) => scale && (
             <ScaleCard 
               key={scale.templateId} 
               scale={scale} 
@@ -459,7 +466,7 @@ export default function ClinimetrixPage() {
         </div>
       ) : (
         <div className="space-y-3">
-          {(filteredScales || []).map((scale) => (
+          {filteredScales.map((scale) => scale && (
             <ScaleListItem 
               key={scale.templateId} 
               scale={scale} 
@@ -470,7 +477,7 @@ export default function ClinimetrixPage() {
         </div>
       )}
 
-      {(filteredScales || []).length === 0 && (searchTerm || selectedCategory !== 'all' || showFavoritesOnly) && (
+      {filteredScales.length === 0 && (searchTerm || selectedCategory !== 'all' || showFavoritesOnly) && (
         <div className="text-center py-16 space-y-4">
           <div className="mx-auto w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center">
             <DocumentTextIcon className="h-8 w-8 text-gray-400" />

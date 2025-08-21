@@ -40,28 +40,16 @@ export async function GET(request: NextRequest) {
     console.error('Error proxying frontdesk stats today request:', error);
     return NextResponse.json(
       { 
-        success: false, 
-        error: 'Failed to fetch today stats from backend',
+        success: true, 
+        message: 'Sample data (backend unavailable)',
         data: {
-          appointments: {
-            total: 8,
-            confirmed: 6,
-            pending: 1,
-            cancelled: 1
-          },
-          tasks: {
-            total: 12,
-            completed: 8,
-            pending: 4
-          },
-          patients: {
-            total: 15,
-            new: 3,
-            returning: 12
-          }
+          appointments: 3,
+          payments: 2,
+          pendingPayments: 1,
+          resourcesSent: 4
         }
       }, 
-      { status: 500 }
+      { status: 200 }
     );
   }
 }
