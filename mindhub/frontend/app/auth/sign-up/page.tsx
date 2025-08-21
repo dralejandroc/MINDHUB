@@ -4,6 +4,8 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { signUp } from '@/lib/supabase/client'
 import { toast } from 'react-hot-toast'
+import { Building2, User } from 'lucide-react'
+import Link from 'next/link'
 
 export default function SignUpPage() {
   const [email, setEmail] = useState('')
@@ -68,6 +70,24 @@ export default function SignUpPage() {
             <p className="text-gray-600 text-center mt-2">
               Únete a la plataforma profesional
             </p>
+          </div>
+
+          {/* Account Type Selection */}
+          <div className="mb-6 grid grid-cols-2 gap-4">
+            <Link href="/auth/sign-up" className="block">
+              <div className="border-2 border-blue-200 rounded-lg p-4 text-center hover:border-blue-400 transition-colors bg-blue-50">
+                <User className="w-8 h-8 text-blue-600 mx-auto mb-2" />
+                <h3 className="font-semibold text-blue-800">Usuario Individual</h3>
+                <p className="text-sm text-blue-600">Profesional independiente</p>
+              </div>
+            </Link>
+            <Link href="/auth/clinic-signup" className="block">
+              <div className="border-2 border-gray-200 rounded-lg p-4 text-center hover:border-blue-400 transition-colors">
+                <Building2 className="w-8 h-8 text-gray-600 mx-auto mb-2" />
+                <h3 className="font-semibold text-gray-800">Registrar Clínica</h3>
+                <p className="text-sm text-gray-600">Equipo médico</p>
+              </div>
+            </Link>
           </div>
 
           <form onSubmit={handleSignUp} className="space-y-6">

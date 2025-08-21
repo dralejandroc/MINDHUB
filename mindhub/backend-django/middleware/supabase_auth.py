@@ -40,13 +40,28 @@ class SupabaseAuthMiddleware(MiddlewareMixin):
             request.authenticated_user_email = auth_result['supabase_data'].get('email')
             
             # Clinic-aware context: determine if user works individually or in a clinic
-            # If user has clinic_id → filter by clinic_id (multiple users, shared data)
-            # If user has no clinic_id → filter by user_id (individual practice)
+            # Extract clinic_id from Supabase profile data
             user_metadata = auth_result['supabase_data'].get('user_metadata', {})
-            request.user_clinic_id = user_metadata.get('clinic_id')  # None for individual users
-            request.is_clinic_user = bool(request.user_clinic_id)
+            request.user_clinic_id = user_metadata.get('clinic_id')  # From user metadata
             
-            logger.info(f'User auth context: email={request.authenticated_user_email}, clinic_id={request.user_clinic_id}, is_clinic={request.is_clinic_user}')
+            # If no clinic_id in metadata, check database
+            if not request.user_clinic_id:
+                try:
+                    from clinics.models import ClinicProfile
+                    clinic_profile = ClinicProfile.objects.filter(
+                        id=request.supabase_user_id,
+                        clinic_id__isnull=False
+                    ).first()
+                    if clinic_profile:
+                        request.user_clinic_id = str(clinic_profile.clinic_id)
+                        request.user_clinic_role = clinic_profile.clinic_role
+                except Exception as e:
+                    logger.warning(f'Could not fetch clinic profile: {e}')
+            
+            request.is_clinic_user = bool(request.user_clinic_id)
+            request.user_clinic_role = getattr(request, 'user_clinic_role', 'professional')
+            
+            logger.info(f'User auth context: email={request.authenticated_user_email}, clinic_id={request.user_clinic_id}, is_clinic={request.is_clinic_user}, role={request.user_clinic_role}')
         
         response = self.get_response(request)
         return response
@@ -61,6 +76,7 @@ class SupabaseAuthMiddleware(MiddlewareMixin):
             '/api/expedix/',                        # ✅ AGREGAR validación
             '/api/agenda/',                         # ✅ AGREGAR validación  
             '/api/resources/',                      # ✅ AGREGAR validación
+            '/api/clinics/',                        # ✅ AGREGAR validación clinic management
         ]
         
         return any(request.path.startswith(path) for path in bridge_paths)

@@ -29,6 +29,7 @@ urlpatterns = [
     path('api/expedix/', include('expedix.urls')),  # Expedix - Patient Management
     path('api/agenda/', include('agenda.urls')),    # Agenda - Appointment System
     path('api/resources/', include('resources.urls')),  # Resources - Medical Resources
+    path('api/clinics/', include('clinics.urls')),  # Clinics - Multi-user Management
     path('api/frontdesk/', include('assessments.frontdesk_urls')),  # FrontDesk endpoints
 ]
 

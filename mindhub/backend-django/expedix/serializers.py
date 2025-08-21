@@ -28,13 +28,17 @@ class PatientSerializer(serializers.ModelSerializer):
     class Meta:
         model = Patient
         fields = [
-            'id', 'first_name', 'last_name', 'paternal_last_name', 'maternal_last_name',
-            'email', 'phone', 'date_of_birth', 'gender', 'address', 'city', 'state',
-            'postal_code', 'country', 'emergency_contact_name', 'emergency_contact_phone',
-            'emergency_contact_relationship', 'insurance_provider', 'insurance_number',
-            'allergies', 'current_medications', 'chronic_conditions', 'notes',
-            'medical_record_number', 'curp', 'rfc', 'blood_type', 'patient_category', 'clinic_id',
-            'is_active', 'created_at', 'updated_at',
+            # Basic information - MATCHES DATABASE_TRUTH.md
+            'id', 'first_name', 'last_name', 'email', 'phone', 'date_of_birth', 'gender',
+            # Location
+            'address', 'city', 'state', 'postal_code', 
+            # Mexican specific fields
+            'curp', 'rfc', 'medical_record_number', 'blood_type',
+            # Critical association fields
+            'created_by', 'clinic_id', 'assigned_professional_id',
+            # Status and metadata
+            'patient_category', 'is_active', 'created_at', 'updated_at',
+            # Computed fields
             'full_name', 'age'
         ]
         read_only_fields = ['id', 'created_at', 'updated_at', 'full_name', 'age']
@@ -46,12 +50,17 @@ class PatientCreateSerializer(serializers.ModelSerializer):
     class Meta:
         model = Patient
         fields = [
-            'first_name', 'last_name', 'paternal_last_name', 'maternal_last_name',
-            'email', 'phone', 'date_of_birth', 'gender', 'address', 'city', 'state',
-            'postal_code', 'country', 'emergency_contact_name', 'emergency_contact_phone',
-            'emergency_contact_relationship', 'insurance_provider', 'insurance_number',
-            'allergies', 'current_medications', 'chronic_conditions', 'notes',
-            'medical_record_number', 'curp', 'rfc', 'blood_type', 'patient_category', 'clinic_id'
+            # Required fields for creation - MATCHES DATABASE_TRUTH.md
+            'first_name', 'last_name', 'email', 'phone', 'date_of_birth', 'gender',
+            # Location information
+            'address', 'city', 'state', 'postal_code',
+            # Mexican specific fields
+            'curp', 'rfc', 'medical_record_number', 'blood_type',
+            # Professional assignment (optional)
+            'assigned_professional_id',
+            # Category
+            'patient_category'
+            # Note: created_by and clinic_id are set automatically in views
         ]
 
     def validate_email(self, value):

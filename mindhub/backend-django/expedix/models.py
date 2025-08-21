@@ -47,58 +47,55 @@ class Patient(models.Model):
     ]
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    first_name = models.CharField(max_length=100)
-    last_name = models.CharField(max_length=100, blank=True, null=True)
-    paternal_last_name = models.CharField(max_length=100, blank=True, null=True)
-    maternal_last_name = models.CharField(max_length=100, blank=True, null=True)
-    email = models.EmailField(unique=True, validators=[EmailValidator()])
-    phone = models.CharField(max_length=20, blank=True, null=True)
-    date_of_birth = models.DateField(blank=True, null=True)
-    gender = models.CharField(max_length=20, choices=GENDER_CHOICES, blank=True, null=True)
-    address = models.TextField(blank=True, null=True)
-    city = models.CharField(max_length=100, blank=True, null=True)
-    state = models.CharField(max_length=100, blank=True, null=True)
-    postal_code = models.CharField(max_length=10, blank=True, null=True)  # Changed from zip_code to postal_code
-    country = models.CharField(max_length=100, default='México')
-    emergency_contact_name = models.CharField(max_length=100, blank=True, null=True)
-    emergency_contact_phone = models.CharField(max_length=20, blank=True, null=True)
-    emergency_contact_relationship = models.CharField(max_length=50, blank=True, null=True)
-    insurance_provider = models.CharField(max_length=100, blank=True, null=True)
-    insurance_number = models.CharField(max_length=100, blank=True, null=True)
-    allergies = models.TextField(blank=True, null=True)
-    current_medications = models.TextField(blank=True, null=True)
-    chronic_conditions = models.TextField(blank=True, null=True)
-    notes = models.TextField(blank=True, null=True)
     
-    # Additional fields from Supabase schema
-    medical_record_number = models.CharField(max_length=50, blank=True, null=True)
-    curp = models.CharField(max_length=18, blank=True, null=True)  # CURP mexicano
-    rfc = models.CharField(max_length=13, blank=True, null=True)   # RFC mexicano
-    blood_type = models.CharField(max_length=10, blank=True, null=True)
-    patient_category = models.CharField(max_length=50, blank=True, null=True)
-    clinic_id = models.UUIDField(blank=True, null=True)
+    # Personal information - MATCHES DATABASE_TRUTH.md exactly
+    first_name = models.CharField(max_length=100)  # VARCHAR(100) NOT NULL
+    last_name = models.CharField(max_length=100)   # VARCHAR(100) NOT NULL  
+    email = models.CharField(max_length=100, blank=True, null=True)  # VARCHAR(100) - not unique, not required
+    phone = models.CharField(max_length=20, blank=True, null=True)        # VARCHAR(20)
+    date_of_birth = models.DateField(blank=True, null=True)             # DATE
+    gender = models.CharField(max_length=20, blank=True, null=True)     # VARCHAR(20)
     
+    # Location information - MATCHES DATABASE_TRUTH.md
+    address = models.TextField(blank=True, null=True)                   # TEXT
+    city = models.CharField(max_length=100, blank=True, null=True)      # VARCHAR(100)
+    state = models.CharField(max_length=100, blank=True, null=True)     # VARCHAR(100)
+    postal_code = models.CharField(max_length=10, blank=True, null=True) # VARCHAR(10)
+    
+    # Mexican specific fields
+    curp = models.CharField(max_length=18, blank=True, null=True)  # CURP único
+    rfc = models.CharField(max_length=13, blank=True, null=True)   # RFC
+    medical_record_number = models.CharField(max_length=50, blank=True, null=True)  # Número expediente
+    blood_type = models.CharField(max_length=5, blank=True, null=True)  # Tipo sangre
+    
+    # Critical association fields - MATCHES DATABASE_TRUTH.md
+    created_by = models.UUIDField(blank=True, null=True)  # Supabase user ID del creador
+    clinic_id = models.UUIDField(blank=True, null=True)   # NULL = paciente individual
+    assigned_professional_id = models.UUIDField(blank=True, null=True)  # Profesional asignado
+    
+    # Estado
+    patient_category = models.CharField(max_length=50, default='general', blank=True, null=True)
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
-    # Removed created_by foreign key as users table doesn't exist in Supabase
 
     class Meta:
         db_table = 'patients'
+        managed = False  # Use existing Supabase table
         indexes = [
-            models.Index(fields=['email']),
+            models.Index(fields=['created_by']),           # Critical for individual user filtering
+            models.Index(fields=['clinic_id']),            # Critical for clinic filtering  
+            models.Index(fields=['assigned_professional_id']), # Professional assignment
             models.Index(fields=['is_active']),
-            models.Index(fields=['created_at']),
             models.Index(fields=['medical_record_number']),
-            models.Index(fields=['clinic_id']),
         ]
 
     def __str__(self):
-        return f"{self.first_name} {self.paternal_last_name} {self.maternal_last_name}".strip()
+        return f"{self.first_name} {self.last_name}".strip()
 
     @property
     def full_name(self):
-        return f"{self.first_name} {self.paternal_last_name} {self.maternal_last_name}".strip()
+        return f"{self.first_name} {self.last_name}".strip()
 
     @property
     def age(self):

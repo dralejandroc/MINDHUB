@@ -54,6 +54,7 @@ LOCAL_APPS = [
     'expedix',  # Expedix - Patient Management System
     'agenda',  # Agenda - Appointment Scheduling System
     'resources',  # Resources - Medical Resources Management
+    'clinics',  # Clinics - Multi-user Clinic Management System
 ]
 
 INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS

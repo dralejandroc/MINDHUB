@@ -7,6 +7,7 @@ from rest_framework import viewsets, status, filters
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
+from rest_framework.exceptions import ValidationError
 from django_filters.rest_framework import DjangoFilterBackend
 from django.db.models import Q, Count
 from django.utils import timezone
@@ -51,29 +52,54 @@ class PatientViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         """
-        Filter patients based on user context:
-        - Clinic users: see all patients in their clinic (clinic_id)
-        - Individual users: see all patients (handled by RLS in production)
+        Filter patients based on user context - MATCHES DATABASE_TRUTH.md exactly:
+        - Individual users: Only see patients where created_by = user_id AND clinic_id IS NULL
+        - Clinic users: See all patients where clinic_id = user_clinic_id
         """
         queryset = self.queryset
         
-        # Apply clinic-specific filtering if user belongs to a clinic
+        # Apply filtering based on DATABASE_TRUTH.md access patterns
         if hasattr(self.request, 'is_clinic_user') and self.request.is_clinic_user:
+            # Clinic user: see all patients in their clinic
             if self.request.user_clinic_id:
                 logger.info(f'Filtering patients for clinic: {self.request.user_clinic_id}')
                 queryset = queryset.filter(clinic_id=self.request.user_clinic_id)
+            else:
+                # Clinic user without clinic_id - no access
+                queryset = queryset.none()
         else:
-            # Individual users see all patients (RLS handles filtering in production)
-            logger.info(f'Individual user access - showing all patients (RLS filtering in production)')
+            # Individual user: only see own patients (created_by = user_id AND clinic_id IS NULL)
+            if hasattr(self.request, 'supabase_user_id') and self.request.supabase_user_id:
+                logger.info(f'Filtering patients for individual user: {self.request.supabase_user_id}')
+                queryset = queryset.filter(
+                    created_by=self.request.supabase_user_id,
+                    clinic_id__isnull=True
+                )
+            else:
+                # No authenticated user - no access
+                queryset = queryset.none()
             
         return queryset
 
     def perform_create(self, serializer):
-        # Save patient with clinic context if available
-        if hasattr(self.request, 'user_clinic_id') and self.request.user_clinic_id:
-            serializer.save(clinic_id=self.request.user_clinic_id)
+        """Create patient with proper association - MATCHES DATABASE_TRUTH.md"""
+        # Always set created_by to current user
+        data = {'created_by': self.request.supabase_user_id}
+        
+        # Set clinic association based on user type
+        if hasattr(self.request, 'is_clinic_user') and self.request.is_clinic_user:
+            # Clinic user: patient belongs to clinic
+            if self.request.user_clinic_id:
+                data['clinic_id'] = self.request.user_clinic_id
+                logger.info(f'Creating patient for clinic: {self.request.user_clinic_id}')
+            else:
+                raise ValidationError('Clinic user must have clinic_id')
         else:
-            serializer.save()
+            # Individual user: patient has clinic_id = NULL (individual patient)
+            data['clinic_id'] = None
+            logger.info(f'Creating individual patient for user: {self.request.supabase_user_id}')
+        
+        serializer.save(**data)
 
     @action(detail=False, methods=['get'])
     def search(self, request):

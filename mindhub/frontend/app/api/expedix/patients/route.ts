@@ -59,7 +59,10 @@ export async function GET(request: Request) {
 
     // Get response data from Django
     const responseData = await djangoResponse.json();
-    console.log('[PATIENTS API] Successfully proxied to Django, patients returned:', responseData.data?.length || 0);
+    
+    // Django REST Framework returns { count, results } format
+    const patientCount = responseData.results?.length || responseData.count || 0;
+    console.log('[PATIENTS API] Successfully proxied to Django, patients returned:', patientCount);
 
     // Return Django response as-is
     return createResponse(responseData);
@@ -128,7 +131,7 @@ export async function POST(request: Request) {
 
     // Get response data from Django
     const responseData = await djangoResponse.json();
-    console.log('[PATIENTS API] Successfully proxied POST to Django, patient created:', responseData.data?.id || 'unknown');
+    console.log('[PATIENTS API] Successfully proxied POST to Django, patient created:', responseData.id || 'unknown');
 
     // Return Django response as-is
     return createResponse(responseData, djangoResponse.status);
