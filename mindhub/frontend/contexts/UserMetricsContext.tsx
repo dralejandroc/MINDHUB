@@ -4,6 +4,7 @@ import React, { createContext, useContext, useEffect, useState } from 'react';
 import { UserMetricsManager } from '@/lib/user-metrics';
 import { UserPreferences, DashboardConfig, AdminDashboardSettings } from '@/types/user-metrics';
 import { dashboardDataService, DashboardData } from '@/lib/dashboard-data-service';
+import { useAuth } from '@/lib/providers/AuthProvider';
 
 interface UserMetricsContextType {
   preferences: UserPreferences;
@@ -36,6 +37,7 @@ interface UserMetricsContextType {
 const UserMetricsContext = createContext<UserMetricsContextType | undefined>(undefined);
 
 export function UserMetricsProvider({ children }: { children: React.ReactNode }) {
+  const { user, session, loading: authLoading } = useAuth();
   const [metricsManager] = useState(() => UserMetricsManager.getInstance());
   const [preferences, setPreferences] = useState<UserPreferences>(() => metricsManager.getUserPreferences());
   const [dashboardMode, setDashboardMode] = useState<'beginner' | 'advanced'>(() => metricsManager.getDashboardMode());
@@ -50,25 +52,40 @@ export function UserMetricsProvider({ children }: { children: React.ReactNode })
   };
 
   const refreshDashboardData = async () => {
+    // Only fetch dashboard data if user is authenticated
+    if (!user || !session || authLoading) {
+      console.log('[UserMetrics] Skipping dashboard data fetch - user not authenticated');
+      return;
+    }
+
     setIsLoadingDashboardData(true);
     try {
+      console.log('[UserMetrics] Fetching dashboard data for authenticated user:', user.id);
       // Force refresh to get latest data
       const data = await dashboardDataService.forceRefresh();
       setRealDashboardData(data);
-      console.log('Dashboard data refreshed:', data);
+      console.log('[UserMetrics] Dashboard data refreshed:', data);
     } catch (error) {
-      console.error('Error fetching dashboard data:', error);
+      console.error('[UserMetrics] Error fetching dashboard data:', error);
     } finally {
       setIsLoadingDashboardData(false);
     }
   };
 
-  // Record login on mount and fetch dashboard data
+  // Record login on mount and fetch dashboard data only when authenticated
   useEffect(() => {
-    metricsManager.recordLogin();
-    refreshPreferences();
-    refreshDashboardData();
-  }, [metricsManager]);
+    if (!authLoading) {
+      if (user && session) {
+        console.log('[UserMetrics] User authenticated, recording login and fetching data');
+        metricsManager.recordLogin();
+        refreshPreferences();
+        refreshDashboardData();
+      } else {
+        console.log('[UserMetrics] User not authenticated, skipping data fetch');
+        refreshPreferences(); // Still refresh preferences (local data)
+      }
+    }
+  }, [user, session, authLoading, metricsManager]);
 
   const recordLogin = () => {
     metricsManager.recordLogin();

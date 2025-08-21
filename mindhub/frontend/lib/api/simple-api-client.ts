@@ -45,11 +45,14 @@ export class SimpleApiClient {
         console.log('[SimpleApiClient] Session check:', { 
           hasSession: !!session, 
           hasToken: !!supabaseToken,
-          userId: session?.user?.id || 'no-user'
+          userId: session?.user?.id || 'no-user',
+          tokenPreview: supabaseToken ? `${supabaseToken.substring(0, 20)}...` : 'none'
         });
         
         if (!supabaseToken) {
           console.warn('[SimpleApiClient] No valid session found. User may need to login.');
+          // Don't proceed with the request if there's no valid session
+          throw new Error('Authentication required - please sign in');
         }
       } catch (error) {
         console.error('[SimpleApiClient] Could not get Supabase token:', error);
