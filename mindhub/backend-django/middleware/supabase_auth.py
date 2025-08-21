@@ -1,18 +1,15 @@
 """
 Supabase Authentication Middleware for Django
 Handles JWT token validation from React frontend
+Django acts as stateless API - no local user creation needed
 """
-import jwt
 import requests
-import json
 from django.http import JsonResponse
-from django.contrib.auth import get_user_model
 from django.conf import settings
 from django.utils.deprecation import MiddlewareMixin
 import logging
 
 logger = logging.getLogger(__name__)
-User = get_user_model()
 
 
 class SupabaseAuthMiddleware(MiddlewareMixin):
@@ -34,8 +31,9 @@ class SupabaseAuthMiddleware(MiddlewareMixin):
                     'error': auth_result['error']
                 }, status=401)
             
-            # Set authenticated user
+            # Set authenticated user data (Supabase user, not Django user)
             request.user = auth_result['user']
+            request.supabase_user = auth_result['supabase_data']
         
         response = self.get_response(request)
         return response
@@ -75,18 +73,13 @@ class SupabaseAuthMiddleware(MiddlewareMixin):
                     'error': 'Invalid or expired token'
                 }
             
-            # Get or create Django user
-            django_user = self.get_or_create_django_user(user_data)
-            if not django_user:
-                logger.error(f'Failed to create Django user for Supabase data: {user_data}')
-                return {
-                    'valid': False,
-                    'error': 'Could not create user session'
-                }
+            # Don't create Django users - just pass Supabase user data
+            # Django acts as a stateless API that trusts Supabase authentication
+            logger.info(f'User authenticated via Supabase: {user_data.get("email")}')
             
             return {
                 'valid': True,
-                'user': django_user,
+                'user': user_data,  # Pass Supabase user data directly
                 'supabase_data': user_data
             }
             
@@ -174,51 +167,6 @@ class SupabaseAuthMiddleware(MiddlewareMixin):
             logger.error(f'Unexpected error validating with Supabase: {str(e)}')
             return None
     
-    def get_or_create_django_user(self, supabase_user_data):
-        """
-        Get or create Django user from Supabase user data
-        """
-        try:
-            email = supabase_user_data.get('email')
-            if not email:
-                logger.warning('No email in Supabase user data')
-                return None
-            
-            # Get user metadata
-            user_metadata = supabase_user_data.get('user_metadata', {})
-            
-            # First try to get existing user by email
-            try:
-                user = User.objects.get(email=email)
-                logger.info(f'Found existing Django user: {email}')
-                return user
-            except User.DoesNotExist:
-                pass
-            
-            # Generate unique username from email if needed
-            username = email.split('@')[0]
-            base_username = username
-            counter = 1
-            while User.objects.filter(username=username).exists():
-                username = f"{base_username}_{counter}"
-                counter += 1
-            
-            # Create new user
-            user = User.objects.create(
-                username=username,
-                email=email,
-                first_name=user_metadata.get('first_name', ''),
-                last_name=user_metadata.get('last_name', ''),
-                is_active=True,
-            )
-            
-            logger.info(f'Created new Django user from Supabase: {email}')
-            return user
-            
-        except Exception as e:
-            logger.error(f'Error creating Django user: {str(e)}')
-            return None
-
 
 class SupabaseOptionalAuthMiddleware(MiddlewareMixin):
     """
