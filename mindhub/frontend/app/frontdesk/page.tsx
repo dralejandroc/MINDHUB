@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useAuth } from '@/lib/providers/AuthProvider';
 import { 
   ClipboardDocumentListIcon,
   CurrencyDollarIcon,
@@ -22,6 +23,7 @@ import DayOverview from '@/components/frontdesk/DayOverview';
 import { simpleApiClient } from '@/lib/api/simple-api-client';
 
 export default function FrontDeskPage() {
+  const { user, session, loading: authLoading } = useAuth();
   const [activeModule, setActiveModule] = useState('overview');
   const [todaysStats, setTodaysStats] = useState({
     appointments: 0,
@@ -32,18 +34,33 @@ export default function FrontDeskPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    loadTodaysStats();
-  }, []);
+    // Only load stats if user is authenticated
+    if (user && session && !authLoading) {
+      loadTodaysStats();
+    } else if (!authLoading && !user) {
+      // User is not authenticated, set loading to false
+      setLoading(false);
+    }
+  }, [user, session, authLoading]);
 
   const loadTodaysStats = async () => {
+    // Don't make API calls if user is not authenticated
+    if (!user || !session) {
+      console.warn('[FrontDesk] Cannot load stats: User not authenticated');
+      setLoading(false);
+      return;
+    }
+
     try {
       setLoading(true);
+      console.log('[FrontDesk] Loading stats for authenticated user:', user.id);
       const response = await simpleApiClient.getFrontDeskTodayStats();
       if (response.success) {
         setTodaysStats(response.data);
+        console.log('[FrontDesk] Stats loaded successfully');
       }
     } catch (error) {
-      console.error('Error loading today stats:', error);
+      console.error('[FrontDesk] Error loading today stats:', error);
       // Set default values on error to prevent UI issues
       setTodaysStats({
         appointments: 0,
@@ -101,6 +118,36 @@ export default function FrontDeskPage() {
         return <DayOverview stats={todaysStats} onRefresh={loadTodaysStats} />;
     }
   };
+
+  // Show loading while auth is being determined
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Verificando autenticación...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Show login prompt if user is not authenticated
+  if (!user || !session) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <ClipboardDocumentListIcon className="h-16 w-16 text-gray-400 mx-auto mb-4" />
+          <h2 className="text-xl font-semibold text-gray-900 mb-2">Acceso Restringido</h2>
+          <p className="text-gray-600 mb-4">Necesitas iniciar sesión para acceder al FrontDesk</p>
+          <Link href="/auth/sign-in">
+            <Button className="bg-blue-600 hover:bg-blue-700">
+              Iniciar Sesión
+            </Button>
+          </Link>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">
