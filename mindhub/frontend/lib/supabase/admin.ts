@@ -56,11 +56,36 @@ export async function getAuthenticatedUser(request: Request) {
   try {
     // Verify JWT token with Supabase
     console.log('[AUTH] Verifying JWT token with Supabase...')
+    
+    // First try with admin client
     const { data: { user }, error } = await supabaseAdmin.auth.getUser(token)
     
     if (error) {
-      console.error('[AUTH] Supabase auth error:', error.message)
-      return { user: null, error: `Supabase error: ${error.message}` }
+      console.error('[AUTH] Supabase admin auth error:', error.message)
+      console.log('[AUTH] Attempting alternative verification...')
+      
+      // For user tokens, we might need to use a different approach
+      // Try to decode the JWT and validate it manually
+      try {
+        // Create a regular client to verify user tokens
+        const { createClient } = await import('@supabase/supabase-js')
+        const regularClient = createClient(supabaseUrl, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'fallback-anon-key')
+        
+        // Set the session with the token and try to get user
+        const { data: { user: regularUser }, error: regularError } = await regularClient.auth.getUser(token)
+        
+        if (regularError || !regularUser) {
+          console.error('[AUTH] Regular client also failed:', regularError?.message)
+          return { user: null, error: `Auth failed: ${error.message}` }
+        }
+        
+        console.log('[AUTH] User verified with regular client:', regularUser.email)
+        return { user: regularUser, error: null }
+        
+      } catch (fallbackError) {
+        console.error('[AUTH] Fallback verification failed:', fallbackError)
+        return { user: null, error: `Supabase error: ${error.message}` }
+      }
     }
     
     if (!user) {
@@ -68,7 +93,7 @@ export async function getAuthenticatedUser(request: Request) {
       return { user: null, error: 'Invalid token - no user found' }
     }
 
-    console.log('[AUTH] User authenticated successfully:', user.email)
+    console.log('[AUTH] User authenticated successfully with admin client:', user.email)
     return { user, error: null }
   } catch (error) {
     console.error('[AUTH] Token verification exception:', error)

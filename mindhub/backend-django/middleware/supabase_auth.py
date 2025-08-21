@@ -110,18 +110,35 @@ class SupabaseAuthMiddleware(MiddlewareMixin):
         Validate token with Supabase API
         """
         try:
-            # Check if it's a service role key (development/testing)
-            if hasattr(settings, 'SUPABASE_SERVICE_ROLE_KEY') and token == settings.SUPABASE_SERVICE_ROLE_KEY and settings.DEBUG:
-                logger.info('Using service role key for development authentication')
-                # Return mock user for service role key
-                return {
-                    'id': 'a2733be9-6292-4381-a594-6fa386052052',  # Admin user ID
-                    'email': 'dr_aleks_c@hotmail.com',
-                    'user_metadata': {
-                        'first_name': 'Dr. Alejandro',
-                        'last_name': 'Constante'
+            # Check if it's a service role key from trusted proxy
+            # Allow service role key from Next.js proxy that has already validated the user
+            if hasattr(settings, 'SUPABASE_SERVICE_ROLE_KEY') and token == settings.SUPABASE_SERVICE_ROLE_KEY:
+                # Check if this is from a pre-authenticated proxy
+                proxy_auth = request.META.get('HTTP_X_PROXY_AUTH')
+                user_id = request.META.get('HTTP_X_USER_ID')
+                user_email = request.META.get('HTTP_X_USER_EMAIL')
+                
+                if proxy_auth == 'verified' and user_id and user_email:
+                    logger.info(f'Using service role key from pre-authenticated proxy for user: {user_email}')
+                    return {
+                        'id': user_id,
+                        'email': user_email,
+                        'user_metadata': {
+                            'first_name': user_email.split('@')[0],  # Extract name from email
+                            'last_name': ''
+                        }
                     }
-                }
+                elif settings.DEBUG:
+                    logger.info('Using service role key for development authentication')
+                    # Return mock user for service role key in development
+                    return {
+                        'id': 'a2733be9-6292-4381-a594-6fa386052052',  # Admin user ID
+                        'email': 'dr_aleks_c@hotmail.com',
+                        'user_metadata': {
+                            'first_name': 'Dr. Alejandro',
+                            'last_name': 'Constante'
+                        }
+                    }
             
             # Make request to Supabase to validate token
             headers = {

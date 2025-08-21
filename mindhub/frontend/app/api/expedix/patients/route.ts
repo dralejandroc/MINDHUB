@@ -29,14 +29,18 @@ export async function GET(request: Request) {
     // Get auth token from request 
     const authHeader = request.headers.get('Authorization');
     
-    // Forward request to Django backend
+    // Forward request to Django backend with service role key for internal auth
+    // Since we've already validated the user in Next.js, we can use service role for Django
+    const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp2YmNwbGR6b3lpY2VmZHRud2tkIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1NTQwMTQ3MCwiZXhwIjoyMDcwOTc3NDcwfQ.-iooltGuYeGqXVh7pgRhH_Oo_R64VtHIssbE3u_y0WQ';
+    
     const djangoResponse = await fetch(djangoUrl, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': authHeader || `Bearer ${user.id}`, // Forward auth or use user ID
+        'Authorization': `Bearer ${serviceRoleKey}`, // Use service role for Django auth
         'X-User-ID': user.id,
         'X-User-Email': user.email || '',
+        'X-Proxy-Auth': 'verified', // Indicate this request is pre-authenticated
       }
     });
 
@@ -93,14 +97,18 @@ export async function POST(request: Request) {
     // Get auth token from request 
     const authHeader = request.headers.get('Authorization');
     
-    // Forward request to Django backend
+    // Forward request to Django backend with service role key for internal auth
+    // Since we've already validated the user in Next.js, we can use service role for Django
+    const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp2YmNwbGR6b3lpY2VmZHRud2tkIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1NTQwMTQ3MCwiZXhwIjoyMDcwOTc3NDcwfQ.-iooltGuYeGqXVh7pgRhH_Oo_R64VtHIssbE3u_y0WQ';
+    
     const djangoResponse = await fetch(djangoUrl, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': authHeader || `Bearer ${user.id}`, // Forward auth or use user ID
+        'Authorization': `Bearer ${serviceRoleKey}`, // Use service role for Django auth
         'X-User-ID': user.id,
         'X-User-Email': user.email || '',
+        'X-Proxy-Auth': 'verified', // Indicate this request is pre-authenticated
       },
       body: JSON.stringify(body)
     });
