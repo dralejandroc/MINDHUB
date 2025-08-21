@@ -13,6 +13,9 @@ from django.utils import timezone
 from datetime import datetime, timedelta, time
 import uuid
 
+# Import Supabase authentication
+from expedix.authentication import SupabaseProxyAuthentication
+
 from .models import (
     Appointment, AppointmentHistory, AppointmentConfirmation,
     ProviderSchedule, ScheduleBlock, WaitingList
@@ -33,6 +36,7 @@ class AppointmentViewSet(viewsets.ModelViewSet):
     """
     queryset = Appointment.objects.select_related('patient', 'provider', 'scheduled_by').all()
     serializer_class = AppointmentSerializer
+    authentication_classes = [SupabaseProxyAuthentication]
     permission_classes = [IsAuthenticated]
     filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
     search_fields = ['patient__first_name', 'patient__paternal_last_name', 'reason', 'appointment_number']
@@ -380,6 +384,7 @@ class AppointmentHistoryViewSet(viewsets.ReadOnlyModelViewSet):
     """Appointment history ViewSet"""
     queryset = AppointmentHistory.objects.select_related('appointment', 'modified_by').all()
     serializer_class = AppointmentHistorySerializer
+    authentication_classes = [SupabaseProxyAuthentication]
     permission_classes = [IsAuthenticated]
     filter_backends = [DjangoFilterBackend, filters.OrderingFilter]
     filterset_fields = ['appointment', 'action']
@@ -391,6 +396,7 @@ class ProviderScheduleViewSet(viewsets.ModelViewSet):
     """Provider schedule management ViewSet"""
     queryset = ProviderSchedule.objects.select_related('provider').all()
     serializer_class = ProviderScheduleSerializer
+    authentication_classes = [SupabaseProxyAuthentication]
     permission_classes = [IsAuthenticated]
     filter_backends = [DjangoFilterBackend, filters.OrderingFilter]
     filterset_fields = ['provider', 'weekday', 'is_active']
@@ -402,6 +408,7 @@ class ScheduleBlockViewSet(viewsets.ModelViewSet):
     """Schedule block management ViewSet"""
     queryset = ScheduleBlock.objects.select_related('provider').all()
     serializer_class = ScheduleBlockSerializer
+    authentication_classes = [SupabaseProxyAuthentication]
     permission_classes = [IsAuthenticated]
     filter_backends = [DjangoFilterBackend, filters.OrderingFilter]
     filterset_fields = ['provider', 'block_type']
@@ -413,6 +420,7 @@ class WaitingListViewSet(viewsets.ModelViewSet):
     """Waiting list management ViewSet"""
     queryset = WaitingList.objects.select_related('patient', 'provider', 'added_by').all()
     serializer_class = WaitingListSerializer
+    authentication_classes = [SupabaseProxyAuthentication]
     permission_classes = [IsAuthenticated]
     filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
     search_fields = ['patient__first_name', 'patient__paternal_last_name', 'reason']

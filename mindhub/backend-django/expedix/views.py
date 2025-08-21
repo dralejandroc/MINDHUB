@@ -11,6 +11,9 @@ from django_filters.rest_framework import DjangoFilterBackend
 from django.db.models import Q, Count
 from django.utils import timezone
 from datetime import datetime, timedelta
+import logging
+
+logger = logging.getLogger(__name__)
 
 from .models import User, Patient, MedicalHistory, Consultation
 from .serializers import (
@@ -229,95 +232,82 @@ class UserViewSet(viewsets.ReadOnlyModelViewSet):
         return Response(serializer.data)
 
 
-# Standalone views for specific endpoints
-from django.http import JsonResponse
-from django.views.decorators.csrf import csrf_exempt
-from django.views.decorators.http import require_http_methods
-import json
-import logging
-
-logger = logging.getLogger(__name__)
-
-@csrf_exempt
-@require_http_methods(["GET", "POST", "PUT"])
-def schedule_config(request):
+class ScheduleConfigViewSet(viewsets.ViewSet):
     """
-    Schedule configuration endpoint
-    GET: Return current schedule configuration
-    POST/PUT: Update schedule configuration
+    Schedule configuration ViewSet with proper authentication
     """
-    try:
-        if request.method == 'GET':
-            # Return default schedule configuration
-            config = {
-                'workingHours': {
-                    'start': '09:00',
-                    'end': '18:00'
+    authentication_classes = [SupabaseProxyAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def list(self, request):
+        """GET /api/expedix/schedule-config/"""
+        config = {
+            'workingHours': {
+                'start': '09:00',
+                'end': '18:00'
+            },
+            'workingDays': ['monday', 'tuesday', 'wednesday', 'thursday', 'friday'],
+            'appointmentDuration': 60,
+            'breakDuration': 15,
+            'consultationTypes': [
+                {
+                    'id': 'initial',
+                    'name': 'Consulta inicial',
+                    'duration': 90,
+                    'color': '#3B82F6'
                 },
-                'workingDays': ['monday', 'tuesday', 'wednesday', 'thursday', 'friday'],
-                'appointmentDuration': 60,
-                'breakDuration': 15,
-                'consultationTypes': [
-                    {
-                        'id': 'initial',
-                        'name': 'Consulta inicial',
-                        'duration': 90,
-                        'color': '#3B82F6'
-                    },
-                    {
-                        'id': 'followup',
-                        'name': 'Seguimiento',
-                        'duration': 60,
-                        'color': '#10B981'
-                    },
-                    {
-                        'id': 'evaluation',
-                        'name': 'Evaluación psicológica',
-                        'duration': 120,
-                        'color': '#8B5CF6'
-                    },
-                    {
-                        'id': 'therapy',
-                        'name': 'Terapia',
-                        'duration': 50,
-                        'color': '#F59E0B'
-                    }
-                ],
-                'allowOverlapping': False,
-                'bufferTime': 10
-            }
+                {
+                    'id': 'followup',
+                    'name': 'Seguimiento',
+                    'duration': 60,
+                    'color': '#10B981'
+                },
+                {
+                    'id': 'evaluation',
+                    'name': 'Evaluación psicológica',
+                    'duration': 120,
+                    'color': '#8B5CF6'
+                },
+                {
+                    'id': 'therapy',
+                    'name': 'Terapia',
+                    'duration': 50,
+                    'color': '#F59E0B'
+                }
+            ],
+            'allowOverlapping': False,
+            'bufferTime': 10
+        }
+        
+        return Response({
+            'success': True,
+            'data': config,
+            'timestamp': timezone.now().isoformat()
+        })
+
+    def update(self, request, pk=None):
+        """PUT /api/expedix/schedule-config/"""
+        try:
+            data = request.data
+            logger.info(f'[Schedule Config] Updating configuration: {data}')
             
-            return JsonResponse({
+            # In a real implementation, you would save this to the database
+            # For now, just return success
+            
+            return Response({
                 'success': True,
-                'data': config,
+                'message': 'Schedule configuration updated successfully',
+                'data': data,
                 'timestamp': timezone.now().isoformat()
             })
             
-        elif request.method in ['POST', 'PUT']:
-            # Update schedule configuration
-            try:
-                data = json.loads(request.body)
-                logger.info(f'[Schedule Config] Updating configuration: {data}')
-                
-                # In a real implementation, you would save this to the database
-                # For now, just return success
-                
-                return JsonResponse({
-                    'success': True,
-                    'message': 'Schedule configuration updated successfully',
-                    'data': data,
-                    'timestamp': timezone.now().isoformat()
-                })
-                
-            except json.JSONDecodeError:
-                return JsonResponse({
-                    'success': False,
-                    'error': 'Invalid JSON data'
-                }, status=400)
-                
-    except Exception as e:
-        logger.error(f'[Schedule Config] Error: {str(e)}')
-        return JsonResponse({
-            'success': False,
-            'error': f'Schedule configuration error: {str(e)}'
-        }, status=500)
+        except Exception as e:
+            logger.error(f'[Schedule Config] Error: {str(e)}')
+            return Response({
+                'success': False,
+                'error': f'Schedule configuration error: {str(e)}'
+            }, status=500)
+
+    def create(self, request):
+        """POST /api/expedix/schedule-config/ (alias for PUT)"""
+        return self.update(request)

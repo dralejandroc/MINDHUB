@@ -34,6 +34,10 @@ class SupabaseAuthMiddleware(MiddlewareMixin):
             # Set authenticated user data (Supabase user, not Django user)
             request.user = auth_result['user']
             request.supabase_user = auth_result['supabase_data']
+            
+            # Set user context for filtering (simulate RLS behavior)
+            request.supabase_user_id = auth_result['supabase_data'].get('id')
+            request.authenticated_user_email = auth_result['supabase_data'].get('email')
         
         response = self.get_response(request)
         return response

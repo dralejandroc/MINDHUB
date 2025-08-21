@@ -13,6 +13,7 @@ router.register(r'patients', views.PatientViewSet)
 router.register(r'consultations', views.ConsultationViewSet)
 router.register(r'medical-history', views.MedicalHistoryViewSet)
 router.register(r'users', views.UserViewSet)
+router.register(r'schedule-config', views.ScheduleConfigViewSet, basename='schedule-config')
 
 # URL patterns that match Node.js API routes
 urlpatterns = [
@@ -26,7 +27,4 @@ urlpatterns = [
     path('consultations/by-patient/', views.ConsultationViewSet.as_view({'get': 'by_patient'}), name='consultations-by-patient'),
     path('medical-history/by-patient/', views.MedicalHistoryViewSet.as_view({'get': 'by_patient'}), name='medical-history-by-patient'),
     path('users/me/', views.UserViewSet.as_view({'get': 'me'}), name='user-profile'),
-    
-    # Schedule configuration endpoint
-    path('schedule-config/', views.schedule_config, name='schedule-config'),
 ]
