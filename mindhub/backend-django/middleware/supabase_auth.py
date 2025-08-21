@@ -111,8 +111,13 @@ class SupabaseAuthMiddleware(MiddlewareMixin):
         """
         try:
             # Check if it's a service role key from trusted proxy
-            # Allow service role key from Next.js proxy that has already validated the user
-            if hasattr(settings, 'SUPABASE_SERVICE_ROLE_KEY') and token == settings.SUPABASE_SERVICE_ROLE_KEY:
+            # Allow specific service role key from Next.js proxy that has already validated the user
+            expected_service_key = getattr(settings, 'SUPABASE_SERVICE_ROLE_KEY', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp2YmNwbGR6b3lpY2VmZHRud2tkIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1NTQwMTQ3MCwiZXhwIjoyMDcwOTc3NDcwfQ.-iooltGuYeGqXVh7pgRhH_Oo_R64VtHIssbE3u_y0WQ')
+            
+            logger.info(f'Token validation - Token length: {len(token)}, Expected key length: {len(expected_service_key)}')
+            logger.info(f'Token matches service key: {token == expected_service_key}')
+            
+            if token == expected_service_key:
                 # Check if this is from a pre-authenticated proxy
                 proxy_auth = request.META.get('HTTP_X_PROXY_AUTH')
                 user_id = request.META.get('HTTP_X_USER_ID')
