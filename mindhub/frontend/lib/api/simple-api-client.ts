@@ -3,7 +3,7 @@
  * This client handles Supabase token authentication for direct backend calls
  */
 
-// This client should be used from components that have access to Supabase context
+import { supabase } from '@/lib/supabase/client';
 
 // Backend configuration - Next.js API Routes for Expedix and other services
 const API_BASE_URL = '/api';
@@ -23,7 +23,7 @@ export interface ApiResponse<T> {
 
 /**
  * Simple API client that calls backend directly
- * Bypasses the broken Next.js proxy routes
+ * Uses the shared Supabase client for consistent authentication
  */
 export class SimpleApiClient {
   private baseUrl: string;
@@ -35,19 +35,22 @@ export class SimpleApiClient {
   private async makeRequest<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
     const url = `${this.baseUrl}${endpoint}`;
     
-    // Get Supabase token for authentication
+    // Get Supabase token for authentication using the shared client
     let supabaseToken: string | null = null;
     if (typeof window !== 'undefined') {
       try {
-        // Get token from Supabase client
-        const { createClient } = await import('@supabase/supabase-js');
-        const supabase = createClient(
-          process.env.NEXT_PUBLIC_SUPABASE_URL!, 
-          process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-        );
+        // Use the shared Supabase client instead of creating a new one
         const { data: { session } } = await supabase.auth.getSession();
         supabaseToken = session?.access_token || null;
-        console.log('[SimpleApiClient] Got Supabase token:', supabaseToken ? 'Token obtained' : 'No token');
+        console.log('[SimpleApiClient] Session check:', { 
+          hasSession: !!session, 
+          hasToken: !!supabaseToken,
+          userId: session?.user?.id || 'no-user'
+        });
+        
+        if (!supabaseToken) {
+          console.warn('[SimpleApiClient] No valid session found. User may need to login.');
+        }
       } catch (error) {
         console.error('[SimpleApiClient] Could not get Supabase token:', error);
       }
@@ -86,6 +89,14 @@ export class SimpleApiClient {
           errorData = await response.json();
         } catch {
           errorData = { message: `HTTP ${response.status} error` };
+        }
+        
+        // Provide helpful error messages based on status code
+        if (response.status === 401) {
+          const authError = supabaseToken 
+            ? 'Authentication failed - token may be invalid or expired'
+            : 'Authentication required - please sign in';
+          throw new Error(authError);
         }
         
         throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
