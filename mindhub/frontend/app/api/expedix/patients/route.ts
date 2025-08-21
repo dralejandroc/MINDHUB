@@ -4,7 +4,7 @@ import { getAuthenticatedUser, createResponse, createErrorResponse } from '@/lib
 export const dynamic = 'force-dynamic';
 
 // Django backend URL
-const DJANGO_BACKEND_URL = process.env.BACKEND_URL || process.env.NEXT_PUBLIC_DJANGO_API_URL || 'https://django-backend-cpqgh0qwj-mind-hub.vercel.app';
+const DJANGO_BACKEND_URL = process.env.BACKEND_URL || process.env.NEXT_PUBLIC_DJANGO_API_URL || 'https://mindhub-django-backend.vercel.app';
 
 export async function GET(request: Request) {
   try {
