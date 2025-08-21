@@ -3,7 +3,7 @@ import { getAuthenticatedUser, createResponse, createErrorResponse } from '@/lib
 
 export const dynamic = 'force-dynamic';
 
-const DJANGO_API_BASE = process.env.NEXT_PUBLIC_DJANGO_API_URL || 'http://localhost:8000';
+const DJANGO_API_BASE = process.env.NEXT_PUBLIC_DJANGO_API_URL || 'https://mindhub-django-backend.vercel.app';
 
 export async function GET(request: Request) {
   try {

@@ -129,7 +129,7 @@ export default function NewAppointmentModal({ selectedDate, selectedTime, editin
         }
 
         // Load consultation types from schedule config
-        const configResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/expedix/schedule-config`);
+        const configResponse = await fetch(`/api/expedix/schedule-config`);
         if (configResponse.ok) {
           const configData = await configResponse.json();
           if (configData.success && configData.data?.consultationTypes) {

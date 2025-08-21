@@ -39,7 +39,7 @@ export default function AgendaCalendar({ selectedDate, onDateSelect, onNewAppoin
         console.log('🔗 API URL:', process.env.NEXT_PUBLIC_API_URL);
         
         // Cargar configuración de agenda
-        const configUrl = `${process.env.NEXT_PUBLIC_API_URL}/expedix/schedule-config`;
+        const configUrl = `/api/expedix/schedule-config`;
         console.log('🔄 Fetching config from:', configUrl);
         const configResponse = await fetch(configUrl);
         console.log('📡 Config response status:', configResponse.status);

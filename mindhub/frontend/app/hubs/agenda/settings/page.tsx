@@ -128,7 +128,7 @@ export default function AgendaSettingsPage() {
     try {
       console.log('💾 Saving settings:', settings);
       const response = await fetch(`/api/expedix/schedule-config`, {
-        method: 'POST',
+        method: 'PUT',
         headers: {
           'Content-Type': 'application/json'
         },

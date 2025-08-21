@@ -353,14 +353,15 @@ export class ClinimetrixProClient {
   }
 
   private async makeRequest<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
-    // Get Auth token for Railway authentication
+    // Get Supabase token for authentication
     let supabaseToken: string | null = null;
-    if (typeof window !== 'undefined' && (window as any).Auth) {
+    if (typeof window !== 'undefined') {
       try {
-        // Get token using the mindhub-backend template
-        supabaseToken = await (window as any).Auth.session?.getToken({ template: 'mindhub-backend' });
+        const { supabase } = await import('@/lib/supabase/client');
+        const { data: { session } } = await supabase.auth.getSession();
+        supabaseToken = session?.access_token || null;
       } catch (error) {
-        console.warn('Could not get Auth token:', error);
+        console.warn('Could not get Supabase token:', error);
       }
     }
     

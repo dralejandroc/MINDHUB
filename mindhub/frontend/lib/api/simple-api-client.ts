@@ -42,12 +42,6 @@ export class SimpleApiClient {
         // Use the shared Supabase client instead of creating a new one
         const { data: { session } } = await supabase.auth.getSession();
         supabaseToken = session?.access_token || null;
-        console.log('[SimpleApiClient] Session check:', { 
-          hasSession: !!session, 
-          hasToken: !!supabaseToken,
-          userId: session?.user?.id || 'no-user',
-          tokenPreview: supabaseToken ? `${supabaseToken.substring(0, 20)}...` : 'none'
-        });
         
         if (!supabaseToken) {
           console.warn('[SimpleApiClient] No valid session found. User may need to login.');

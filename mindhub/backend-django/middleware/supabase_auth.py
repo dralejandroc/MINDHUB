@@ -129,17 +129,17 @@ class SupabaseAuthMiddleware(MiddlewareMixin):
                     }
                 else:
                     logger.warning(f'Service role key provided but missing proxy headers: proxy_auth={proxy_auth}, user_id={user_id}, user_email={user_email}')
-                elif settings.DEBUG:
-                    logger.info('Using service role key for development authentication')
-                    # Return mock user for service role key in development
-                    return {
-                        'id': 'a2733be9-6292-4381-a594-6fa386052052',  # Admin user ID
-                        'email': 'dr_aleks_c@hotmail.com',
-                        'user_metadata': {
-                            'first_name': 'Dr. Alejandro',
-                            'last_name': 'Constante'
-                        }
+            elif settings.DEBUG:
+                logger.info('Using service role key for development authentication')
+                # Return mock user for service role key in development
+                return {
+                    'id': 'a2733be9-6292-4381-a594-6fa386052052',  # Admin user ID
+                    'email': 'dr_aleks_c@hotmail.com',
+                    'user_metadata': {
+                        'first_name': 'Dr. Alejandro',
+                        'last_name': 'Constante'
                     }
+                }
             
             # Make request to Supabase to validate token
             headers = {

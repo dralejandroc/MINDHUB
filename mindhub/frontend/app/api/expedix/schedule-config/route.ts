@@ -101,3 +101,6 @@ export async function PUT(request: Request) {
     });
   }
 }
+
+// POST is an alias for PUT for convenience
+export const POST = PUT;
