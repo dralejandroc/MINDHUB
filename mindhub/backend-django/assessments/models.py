@@ -678,33 +678,6 @@ class SecondaryDevice(models.Model):
         self.save()
 
 
-class ClinimetrixRegistry(models.Model):
-    """Registry for all available ClinimetrixPro scales"""
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    scale_id = models.CharField(max_length=100, unique=True, db_index=True)
-    name = models.CharField(max_length=255)
-    abbreviation = models.CharField(max_length=50)
-    category = models.CharField(max_length=100)
-    description = models.TextField(blank=True)
-    version = models.CharField(max_length=20, default='1.0')
-    language = models.CharField(max_length=10, default='es')
-    json_data = models.JSONField(default=dict)
-    is_active = models.BooleanField(default=True)
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
-    
-    class Meta:
-        db_table = 'clinimetrix_registry'
-        ordering = ['category', 'name']
-        indexes = [
-            models.Index(fields=['scale_id']),
-            models.Index(fields=['category']),
-            models.Index(fields=['is_active']),
-        ]
-    
-    def __str__(self):
-        return f"{self.abbreviation} - {self.name}"
-
 
 class Consultation(models.Model):
     """Medical consultation model for Expedix"""
