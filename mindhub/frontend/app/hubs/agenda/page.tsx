@@ -29,6 +29,7 @@ import {
 import { Button } from '@/components/ui/Button';
 import toast from 'react-hot-toast';
 import { createApiUrlWithParams, createApiUrl } from '@/lib/api/api-url-builders';
+import { authGet, authPost, authPut, authDelete } from '@/lib/api/auth-fetch';
 
 type ViewType = 'calendar' | 'list';
 
@@ -97,7 +98,7 @@ export default function AgendaPage() {
     setLoading(true);
     setError(null);
     try {
-      const response = await fetch(createApiUrl('/expedix/agenda/appointments'));
+      const response = await authGet(createApiUrl('/expedix/agenda/appointments'));
       if (response.ok) {
         // Trigger refresh in AgendaCalendar by changing key
         setRefreshTrigger(prev => prev + 1);
@@ -149,11 +150,7 @@ export default function AgendaPage() {
     try {
       console.log('🔄 Saving appointment:', appointmentData);
       
-      const response = await fetch(createApiUrl('/expedix/agenda/appointments'), {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(appointmentData)
-      });
+      const response = await authPost(createApiUrl('/expedix/agenda/appointments'), appointmentData);
       
       if (response.ok) {
         const result = await response.json();
@@ -186,10 +183,7 @@ export default function AgendaPage() {
     try {
       console.log('🗑️ Deleting appointment:', appointmentId);
       
-      const response = await fetch(createApiUrl(`/expedix/agenda/appointments/${appointmentId}`), {
-        method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' }
-      });
+      const response = await authDelete(createApiUrl(`/expedix/agenda/appointments/${appointmentId}`));
       
       if (response.ok) {
         const result = await response.json();
@@ -238,11 +232,7 @@ export default function AgendaPage() {
     try {
       console.log('🔄 Changing appointment status:', appointmentId, newStatus);
       
-      const response = await fetch(createApiUrl(`/expedix/agenda/appointments/${appointmentId}/status`), {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status: newStatus })
-      });
+      const response = await authPut(createApiUrl(`/expedix/agenda/appointments/${appointmentId}/status`), { status: newStatus });
       
       if (response.ok) {
         console.log('✅ Status changed successfully');
@@ -324,11 +314,7 @@ export default function AgendaPage() {
     try {
       console.log('💾 Saving to waiting list:', waitingListData);
       
-      const response = await fetch(createApiUrl('/expedix/agenda/waiting-list'), {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(waitingListData)
-      });
+      const response = await authPost(createApiUrl('/expedix/agenda/waiting-list'), waitingListData);
       
       if (response.ok) {
         const result = await response.json();
@@ -369,7 +355,7 @@ export default function AgendaPage() {
       try {
         console.log('🔄 Loading daily stats...');
         const today = selectedDate.toISOString().split('T')[0];
-        const response = await fetch(createApiUrlWithParams('/expedix/agenda/daily-stats', { date: today }));
+        const response = await authGet(createApiUrlWithParams('/expedix/agenda/daily-stats', { date: today }));
         
         if (response.ok) {
           const data = await response.json();
@@ -380,7 +366,7 @@ export default function AgendaPage() {
         }
         
         // Calculate from appointments if no dedicated endpoint
-        const appointmentsResponse = await fetch(createApiUrl('/expedix/agenda/appointments'));
+        const appointmentsResponse = await authGet(createApiUrl('/expedix/agenda/appointments'));
         if (appointmentsResponse.ok) {
           const appointmentsData = await appointmentsResponse.json();
           if (appointmentsData.success && appointmentsData.data) {

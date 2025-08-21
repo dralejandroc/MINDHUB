@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { ChevronLeftIcon, ChevronRightIcon, ClockIcon, UserIcon } from '@heroicons/react/24/outline';
 import { AppointmentTooltip } from './AppointmentTooltip';
 import { createApiUrl } from '@/lib/api/api-url-builders';
+import { authGet } from '@/lib/api/auth-fetch';
 
 interface Appointment {
   id: string;
@@ -41,7 +42,7 @@ export default function AgendaCalendar({ selectedDate, onDateSelect, onNewAppoin
         // Cargar configuración de agenda
         const configUrl = `/api/expedix/schedule-config`;
         console.log('🔄 Fetching config from:', configUrl);
-        const configResponse = await fetch(configUrl);
+        const configResponse = await authGet(configUrl);
         console.log('📡 Config response status:', configResponse.status);
         if (configResponse.ok) {
           const configData = await configResponse.json();
@@ -56,7 +57,7 @@ export default function AgendaCalendar({ selectedDate, onDateSelect, onNewAppoin
         // Cargar citas
         const appointmentsUrl = createApiUrl('/expedix/agenda/appointments');
         console.log('🔄 Fetching appointments from:', appointmentsUrl);
-        const appointmentsResponse = await fetch(appointmentsUrl);
+        const appointmentsResponse = await authGet(appointmentsUrl);
         console.log('📡 Appointments response status:', appointmentsResponse.status);
         if (appointmentsResponse.ok) {
           const appointmentsData = await appointmentsResponse.json();
@@ -68,25 +69,31 @@ export default function AgendaCalendar({ selectedDate, onDateSelect, onNewAppoin
             const appointmentsByDate: { [key: string]: Appointment[] } = {};
             
             appointmentsData.data.forEach((apt: any) => {
+              // Handle both API response formats
+              const patientName = apt.patient?.name || 
+                                  `${apt.patients?.first_name || ''} ${apt.patients?.last_name || apt.patients?.paternal_last_name || ''}`.trim() ||
+                                  'Paciente desconocido';
+              
               const appointment: Appointment = {
                 id: apt.id,
-                patientId: apt.patientId,
-                patientName: apt.patient?.name || 'Paciente desconocido',
-                time: apt.time,
+                patientId: apt.patient_id || apt.patientId,
+                patientName,
+                time: apt.appointment_time || apt.time || '00:00',
                 duration: apt.duration || 60,
-                type: apt.type,
+                type: apt.appointment_type || apt.type || 'Consulta general',
                 status: apt.status as any,
-                typeColor: apt.typeColor || '#6B7280', // Use color from backend directly
+                typeColor: apt.typeColor || '#6B7280',
                 hasDeposit: apt.status === 'confirmed',
-                notes: apt.notes || ''
+                notes: apt.notes || apt.reason || ''
               };
               
-              console.log(`📌 Processing appointment: ${apt.date} ${apt.time} - ${apt.patient?.name}`);
+              const appointmentDate = apt.appointment_date?.split('T')[0] || apt.date;
+              console.log(`📌 Processing appointment: ${appointmentDate} ${apt.appointment_time || apt.time} - ${patientName}`);
               
-              if (!appointmentsByDate[apt.date]) {
-                appointmentsByDate[apt.date] = [];
+              if (!appointmentsByDate[appointmentDate]) {
+                appointmentsByDate[appointmentDate] = [];
               }
-              appointmentsByDate[apt.date].push(appointment);
+              appointmentsByDate[appointmentDate].push(appointment);
             });
             
             console.log('📋 Processed appointments by date:', appointmentsByDate);
@@ -181,15 +188,16 @@ export default function AgendaCalendar({ selectedDate, onDateSelect, onNewAppoin
     let bufferTime = 0; // minutos
     
     if (scheduleConfig) {
-      startTime = scheduleConfig.workingHours.start;
-      endTime = scheduleConfig.workingHours.end;
-      defaultDuration = scheduleConfig.defaultAppointmentDuration || 60;
-      bufferTime = scheduleConfig.bufferTime || 0;
+      // Handle both API response formats
+      startTime = scheduleConfig.workingHours?.start || scheduleConfig.start_time || '08:00';
+      endTime = scheduleConfig.workingHours?.end || scheduleConfig.end_time || '20:00';
+      defaultDuration = scheduleConfig.defaultAppointmentDuration || scheduleConfig.appointment_duration || 60;
+      bufferTime = scheduleConfig.bufferTime || scheduleConfig.break_time || 0;
       
-      if (scheduleConfig.lunchBreak?.enabled) {
+      if (scheduleConfig.lunchBreak?.enabled || (scheduleConfig.lunch_start && scheduleConfig.lunch_end)) {
         lunchBreak = {
-          start: scheduleConfig.lunchBreak.start,
-          end: scheduleConfig.lunchBreak.end
+          start: scheduleConfig.lunchBreak?.start || scheduleConfig.lunch_start || '13:00',
+          end: scheduleConfig.lunchBreak?.end || scheduleConfig.lunch_end || '14:00'
         };
       }
     }
@@ -467,8 +475,9 @@ export default function AgendaCalendar({ selectedDate, onDateSelect, onNewAppoin
               {/* Franjas horarias */}
               {timeSlots.map((timeSlot, timeIndex) => {
                 // Verificar si este slot es el inicio del horario de comida
-                const isLunchStart = scheduleConfig?.lunchBreak?.enabled && 
-                  timeSlot === scheduleConfig.lunchBreak.start;
+                const lunchStart = scheduleConfig?.lunchBreak?.start || scheduleConfig?.lunch_start;
+                const isLunchStart = (scheduleConfig?.lunchBreak?.enabled || lunchStart) && 
+                  timeSlot === lunchStart;
                 
                 // Si es el inicio del lunch break, renderizar una fila especial compacta
                 if (isLunchStart) {
@@ -495,7 +504,7 @@ export default function AgendaCalendar({ selectedDate, onDateSelect, onNewAppoin
                         >
                           <div className="flex items-center justify-center h-full">
                             <div className="text-xs text-yellow-800 font-medium leading-tight">
-                              🍽️ {scheduleConfig.lunchBreak.start} - {scheduleConfig.lunchBreak.end}
+                              🍽️ {scheduleConfig.lunchBreak?.start || scheduleConfig.lunch_start} - {scheduleConfig.lunchBreak?.end || scheduleConfig.lunch_end}
                             </div>
                           </div>
                         </div>
@@ -505,9 +514,12 @@ export default function AgendaCalendar({ selectedDate, onDateSelect, onNewAppoin
                 }
 
                 // Verificar si este slot está dentro del rango del horario de comida (pero no es el inicio)
-                const isInLunchRange = scheduleConfig?.lunchBreak?.enabled && 
-                  isTimeInRange(timeSlot, scheduleConfig.lunchBreak.start, scheduleConfig.lunchBreak.end) &&
-                  timeSlot !== scheduleConfig.lunchBreak.start;
+                const lunchRangeStart = scheduleConfig?.lunchBreak?.start || scheduleConfig?.lunch_start;
+                const lunchRangeEnd = scheduleConfig?.lunchBreak?.end || scheduleConfig?.lunch_end;
+                const isInLunchRange = (scheduleConfig?.lunchBreak?.enabled || lunchRangeStart) && 
+                  lunchRangeStart && lunchRangeEnd &&
+                  isTimeInRange(timeSlot, lunchRangeStart, lunchRangeEnd) &&
+                  timeSlot !== lunchRangeStart;
 
                 // Saltar los slots que están dentro del rango del lunch (excepto el primero)
                 if (isInLunchRange) {

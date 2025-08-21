@@ -11,6 +11,7 @@ import {
   PlusIcon
 } from '@heroicons/react/24/outline';
 import { createApiUrl } from '@/lib/api/api-url-builders';
+import { authGet } from '@/lib/api/auth-fetch';
 
 interface Patient {
   id: string;
@@ -106,7 +107,7 @@ export default function NewAppointmentModal({ selectedDate, selectedTime, editin
         }
 
         // Load patients
-        const patientsResponse = await fetch(createApiUrl('/expedix/patients'));
+        const patientsResponse = await authGet(createApiUrl('/expedix/patients'));
         if (patientsResponse.ok) {
           const data = await patientsResponse.json();
           const patientsData = data.data?.map((p: any) => ({
@@ -129,7 +130,7 @@ export default function NewAppointmentModal({ selectedDate, selectedTime, editin
         }
 
         // Load consultation types from schedule config
-        const configResponse = await fetch(`/api/expedix/schedule-config`);
+        const configResponse = await authGet(`/api/expedix/schedule-config`);
         if (configResponse.ok) {
           const configData = await configResponse.json();
           if (configData.success && configData.data?.consultationTypes) {
