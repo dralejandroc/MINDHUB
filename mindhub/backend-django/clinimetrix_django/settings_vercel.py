@@ -20,7 +20,8 @@ ALLOWED_HOSTS = [
     '.mindhub.cloud'
 ]
 
-# Database - Use Supabase PostgreSQL
+# Database - Use Supabase PostgreSQL (Transaction Pooler for Serverless)
+# Using IPv4 shared pooler for Vercel compatibility (Transaction mode)
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
@@ -28,9 +29,11 @@ DATABASES = {
         'USER': os.environ.get('DB_USER', 'postgres.jvbcpldzoyicefdtnwkd'),
         'PASSWORD': os.environ.get('DB_PASSWORD', '53AlfaCoca.'),
         'HOST': os.environ.get('DB_HOST', 'aws-1-us-west-1.pooler.supabase.com'),
-        'PORT': os.environ.get('DB_PORT', '5432'),
+        'PORT': os.environ.get('DB_PORT', '6543'),  # Transaction pooler port
         'OPTIONS': {
             'sslmode': 'require',
+            'connect_timeout': 10,
+            'options': '-c statement_timeout=60000'  # 60 seconds timeout for serverless
         },
     }
 }
