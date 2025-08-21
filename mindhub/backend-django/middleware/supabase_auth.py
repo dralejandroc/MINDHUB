@@ -68,7 +68,7 @@ class SupabaseAuthMiddleware(MiddlewareMixin):
                 }
             
             # Validate token with Supabase
-            user_data = self.validate_with_supabase(token)
+            user_data = self.validate_with_supabase(token, request)
             if not user_data:
                 return {
                     'valid': False,
@@ -105,7 +105,7 @@ class SupabaseAuthMiddleware(MiddlewareMixin):
             return auth_header.split(' ')[1]
         return None
     
-    def validate_with_supabase(self, token):
+    def validate_with_supabase(self, token, request):
         """
         Validate token with Supabase API
         """
