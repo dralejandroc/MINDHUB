@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-Django Development Server Starter
-Optimized for FormX & ClinimetrixPro integration
+MindHub Django Backend Development Server
+Starts complete Django backend with all modules
 """
 
 import os
@@ -19,15 +19,13 @@ def check_environment():
     """Check if environment is properly configured"""
     print("🔍 Checking environment configuration...")
     
-    # Check for .env file
-    env_file = BASE_DIR / '.env'
-    if not env_file.exists():
-        print("❌ .env file not found")
-        print("   Please copy .env.example to .env and configure it")
-        return False
-    
-    # Check required environment variables
-    required_vars = ['SECRET_KEY', 'DATABASE_URL', 'SUPABASE_URL']
+    # Check required environment variables (can be from .env or system)
+    required_vars = [
+        'SECRET_KEY', 
+        'DATABASE_URL', 
+        'SUPABASE_URL',
+        'SUPABASE_SERVICE_ROLE_KEY'
+    ]
     missing_vars = []
     
     for var in required_vars:
@@ -36,6 +34,7 @@ def check_environment():
     
     if missing_vars:
         print(f"❌ Missing environment variables: {', '.join(missing_vars)}")
+        print("   See VERCEL_ENV_VARIABLES.md for configuration")
         return False
     
     print("✅ Environment configuration OK")
@@ -78,6 +77,22 @@ def run_migrations():
     except subprocess.CalledProcessError as e:
         print(f"❌ Migration failed: {e}")
         return False
+
+
+def migrate_scales():
+    """Migrate ClinimetrixPro scales"""
+    print("📊 Migrating ClinimetrixPro scales...")
+    
+    try:
+        subprocess.run([
+            sys.executable, 'manage.py', 'migrate_scales_json'
+        ], check=True, cwd=BASE_DIR)
+        
+        print("✅ Scales migration completed")
+        return True
+    except subprocess.CalledProcessError:
+        print("⚠️ Scales migration skipped (may already exist)")
+        return True
 
 
 def collect_static():
@@ -127,25 +142,32 @@ def check_ports():
 
 def start_development_server(port=8000):
     """Start Django development server"""
-    print(f"\n🚀 Starting Django development server on port {port}...")
-    print("="*60)
-    print("🌟 MindHub Django Backend")
-    print("   FormX + ClinimetrixPro Integration")
-    print("="*60)
+    print(f"\n🚀 Starting MindHub Django Backend on port {port}...")
+    print("="*70)
+    print("🏥 MindHub Complete Healthcare Platform")
+    print("   Django Backend - All Modules Active")
+    print("="*70)
     print(f"\n📍 Server URLs:")
-    print(f"   🏠 Django Admin: http://localhost:{port}/admin/")
-    print(f"   📋 FormX API: http://localhost:{port}/formx/api/")
-    print(f"   🧠 ClinimetrixPro: http://localhost:{port}/assessments/")
-    print(f"   📊 Scales API: http://localhost:{port}/scales/")
-    print(f"   📚 API Docs: http://localhost:{port}/api/schema/swagger-ui/")
+    print(f"   🏠 Django Admin:    http://localhost:{port}/admin/")
+    print(f"   🩺 Expedix API:     http://localhost:{port}/api/expedix/")
+    print(f"   🧠 ClinimetrixPro:  http://localhost:{port}/assessments/")
+    print(f"   📊 Scales API:      http://localhost:{port}/scales/")
+    print(f"   📅 Agenda API:      http://localhost:{port}/api/agenda/")
+    print(f"   📚 Resources API:   http://localhost:{port}/api/resources/")
+    print(f"   📋 FormX API:       http://localhost:{port}/formx/")
+    print(f"   📖 API Docs:        http://localhost:{port}/api/schema/swagger-ui/")
     print(f"\n🔑 Default Admin Credentials:")
     print(f"   Email: admin@mindhub.com")
     print(f"   Password: admin123")
-    print(f"\n🔗 Integration:")
-    print(f"   React Frontend should point to: http://localhost:{port}")
-    print("="*60)
+    print(f"\n🌐 Frontend Integration:")
+    print(f"   Production:  https://mindhub.cloud → https://mindhub-django-backend.vercel.app")
+    print(f"   Development: http://localhost:3002 → http://localhost:{port}")
+    print(f"\n🗃️ Database:")
+    print(f"   Provider: Supabase PostgreSQL")
+    print(f"   Auth: Supabase JWT middleware")
+    print("="*70)
     print("Press Ctrl+C to stop the server")
-    print("="*60)
+    print("="*70)
     
     try:
         # Start server
@@ -153,7 +175,7 @@ def start_development_server(port=8000):
             sys.executable, 'manage.py', 'runserver', f'0.0.0.0:{port}'
         ], cwd=BASE_DIR)
     except KeyboardInterrupt:
-        print("\n\n👋 Django server stopped")
+        print("\n\n👋 MindHub Django Backend stopped")
     except Exception as e:
         print(f"\n❌ Server error: {e}")
 
@@ -161,19 +183,22 @@ def start_development_server(port=8000):
 def main():
     """Main function"""
     print("🚀 Starting MindHub Django Backend")
-    print("   FormX & ClinimetrixPro Integration")
-    print("="*60)
+    print("   Complete Healthcare Platform - All Modules")
+    print("="*70)
     
     # Load environment
     try:
         import environ
         env = environ.Env()
-        environ.Env.read_env(BASE_DIR / '.env')
+        # Try loading .env if it exists
+        env_file = BASE_DIR / '.env'
+        if env_file.exists():
+            environ.Env.read_env(env_file)
     except ImportError:
         print("❌ django-environ not installed")
         return 1
     except Exception as e:
-        print(f"❌ Error loading environment: {e}")
+        print(f"⚠️ Environment file warning: {e}")
     
     # Check environment
     if not check_environment():
@@ -190,6 +215,10 @@ def main():
     
     # Run migrations
     if not run_migrations():
+        return 1
+    
+    # Migrate scales
+    if not migrate_scales():
         return 1
     
     # Collect static files

@@ -1,60 +1,87 @@
-# ClinimetrixPro Django Backend
+# MindHub Django Backend
 
-## 🎯 Propósito
+## 🎯 Arquitectura Actual - Sistema Completo Migrado
 
-Este es el backend Django especializado para **ClinimetrixPro**, el sistema de evaluaciones clínicas de MindHub. 
+Este es el **backend Django principal** de MindHub que maneja **TODOS los módulos** del sistema.
 
-## 🏗️ Arquitectura Híbrida
+## 🏗️ Arquitectura Post-Migración Completa
 
 ```
 MindHub/
-├── frontend/              # React/Next.js frontend
-├── backend/              # Node.js backend principal (Expedix, FormX, etc.)
-└── backend-django/       # Django backend ClinimetrixPro (este directorio)
+├── frontend/              # React/Next.js frontend (Vercel)
+├── backend-django/        # Django REST API - Backend PRINCIPAL
+└── legacy-backend/        # Node.js backend (DEPRECATED - no usar)
 ```
 
-## 🔄 Integración
+## 📦 Módulos Django Implementados
 
-- **React Frontend** se comunica con **Django Backend** para ClinimetrixPro
-- **Django Backend** maneja todo el sistema de evaluaciones clínicas
-- **Node.js Backend** mantiene Expedix, FormX, Agenda y otros módulos
+### ✅ **Todos los Hubs Migrados a Django:**
 
-## 🚀 Características
+1. **ClinimetrixPro** - Sistema híbrido de evaluaciones psicométricas
+   - 29 escalas psicométricas migradas
+   - Sistema de evaluación `focused_take.html`
+   - Bridge React ↔ Django funcionando
 
-### ✅ Sistema Completamente Funcional:
-- **40 escalas psicológicas** migradas y operativas
-- **Motor de renderizado** con Alpine.js (`focused_take.html`)
-- **APIs React-compatible** para integración con frontend
-- **Bridge endpoints** para redirección híbrida
-- **Base de datos SQLite** con migración a MySQL lista
+2. **Expedix** - Gestión de pacientes y expedientes médicos
+   - CRUD completo de pacientes
+   - Sistema de expedientes digitales
+   - Integración con ClinimetrixPro
 
-### 🔗 Endpoints Principales:
+3. **Agenda** - Sistema de citas y programación
+   - Gestión de citas médicas
+   - Programación de horarios
+   - Notificaciones automáticas
 
-**React-Compatible APIs:**
-- `GET /assessments/react-api/catalog/` - Catálogo de escalas
-- `GET /assessments/react-api/template/{id}/` - Plantilla específica
-- `POST /assessments/react-api/assessment/create/` - Crear evaluación
-- `PUT /assessments/react-api/assessment/{id}/responses/` - Guardar respuestas
-- `POST /assessments/react-api/assessment/{id}/complete/` - Completar evaluación
+4. **Resources** - Gestión de recursos médicos
+   - Biblioteca de recursos
+   - Sistema de categorías
+   - Envío de documentos a pacientes
 
-**Bridge Endpoints:**
-- `POST /assessments/api/create-from-react/` - Bridge React → Django
+5. **FormX** - Generador de formularios (base implementada)
+   - Django Forms dinámicos
+   - Templates médicos preconfigurrados
+
+## 🔗 URLs de Producción
+
+- **Frontend**: https://mindhub.cloud (Vercel)
+- **Django Backend**: https://mindhub-django-backend.vercel.app
+- **API Proxy**: https://mindhub.cloud/api/*/django/
+- **Database**: Supabase PostgreSQL
+- **Auth**: Supabase Auth
 
 ## 🗃️ Base de Datos
 
-- **Desarrollo**: SQLite (`db.sqlite3`)
-- **Producción**: PostgreSQL en Supabase
-- **Migradas**: 40 escalas con metadata completa
-- **Management Commands**: Migración automática de JSON templates
+- **Principal**: **Supabase PostgreSQL** (todo el proyecto)
+- **Desarrollo**: Conectado a Supabase via DATABASE_URL
+- **ORM**: Django ORM conectado a PostgreSQL
+- **Auth**: Middleware Supabase JWT validation
 
-## 🧪 Testing Completado
+## 🔐 Sistema de Autenticación
 
-- ✅ Health check endpoints
-- ✅ Catalog API (40 escalas disponibles)
-- ✅ Template loading (PHQ-9 verificado)
-- ✅ Assessment creation and completion
-- ✅ Scoring engine con interpretación
-- ✅ Bridge endpoint para integración híbrida
+- **Proveedor**: Supabase Auth ÚNICAMENTE
+- **Middleware**: `middleware/supabase_auth.py`
+- **JWT Validation**: Tokens Supabase validados en Django
+- **Integration**: Bridge seamless React ↔ Django
+
+## 🚀 Endpoints API Principales
+
+### Expedix (Pacientes)
+- `GET /api/expedix/patients/` - Lista de pacientes
+- `POST /api/expedix/patients/` - Crear paciente
+- `GET /api/expedix/patients/{id}/` - Detalle paciente
+
+### ClinimetrixPro (Evaluaciones)
+- `GET /scales/api/catalog/` - Catálogo de escalas
+- `POST /assessments/api/create-from-react/` - Bridge React → Django
+- `GET /assessments/{id}/focused-take/` - Página de evaluación
+
+### Agenda (Citas)
+- `GET /api/agenda/appointments/` - Lista de citas
+- `POST /api/agenda/appointments/` - Crear cita
+
+### Resources (Recursos)
+- `GET /api/resources/documents/` - Lista de recursos
+- `POST /api/resources/documents/` - Subir recurso
 
 ## 🔧 Setup y Deploy
 
@@ -62,30 +89,34 @@ MindHub/
 # Instalar dependencias
 pip install -r requirements.txt
 
+# Variables de entorno (ver VERCEL_ENV_VARIABLES.md)
+export DATABASE_URL="postgresql://..."
+export SUPABASE_URL="https://..."
+export SUPABASE_SERVICE_ROLE_KEY="..."
+
 # Ejecutar migraciones
 python manage.py migrate
 
-# Migrar escalas desde JSON
+# Migrar escalas ClinimetrixPro
 python manage.py migrate_scales_json
 
 # Servidor desarrollo
 python manage.py runserver 8000
-
-# Verificar health
-curl http://localhost:8000/assessments/react-api/health/
 ```
 
-## 🎯 Estado del Proyecto
+## 🎯 Estado Actual
 
-**✅ COMPLETAMENTE FUNCIONAL** - Sistema listo para producción
-- Integración React ↔ Django verificada
-- Todas las APIs funcionando
-- 40 escalas migradas y operativas
-- Alpine.js assessment engine funcionando
-- Bridge híbrido implementado
+**✅ SISTEMA COMPLETAMENTE MIGRADO Y FUNCIONAL**
+
+- ✅ **5 módulos migrados**: Expedix, ClinimetrixPro, Agenda, Resources, FormX
+- ✅ **Django REST API**: Endpoints unificados para todos los módulos  
+- ✅ **Supabase Integration**: Auth y PostgreSQL conectados
+- ✅ **Frontend Integration**: Proxy routes React → Django
+- ✅ **Production Ready**: Deploy en Vercel configurado
+- ✅ **Node.js deprecado**: Backend anterior movido a legacy-backend
 
 ---
 
-**Fecha de migración**: 2025-08-17  
-**Sistema origen**: `/analysis/ClinimetrixProV2Phyton/`  
-**Ubicación final**: `/mindhub/backend-django/`
+**Migración completada**: 2025-08-21  
+**Sistema origen**: Múltiples backends Node.js  
+**Sistema actual**: Django REST Framework unificado

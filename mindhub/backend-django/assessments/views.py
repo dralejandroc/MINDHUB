@@ -9,6 +9,11 @@ from django.utils import timezone
 from .models import Assessment, Patient, RemoteAssessmentLink
 
 
+class HomeView(TemplateView):
+    """Public home page view for ClinimetrixPro"""
+    template_name = 'core/home.html'
+
+
 class AssessmentListView(LoginRequiredMixin, ListView):
     """List of assessments"""
     model = Assessment

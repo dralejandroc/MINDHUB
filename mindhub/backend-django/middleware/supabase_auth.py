@@ -111,7 +111,7 @@ class SupabaseAuthMiddleware(MiddlewareMixin):
         """
         try:
             # Check if it's a service role key (development/testing)
-            if hasattr(settings, 'SUPABASE_SERVICE_ROLE_KEY') and token == settings.SUPABASE_SERVICE_ROLE_KEY:
+            if hasattr(settings, 'SUPABASE_SERVICE_ROLE_KEY') and token == settings.SUPABASE_SERVICE_ROLE_KEY and settings.DEBUG:
                 logger.info('Using service role key for development authentication')
                 # Return mock user for service role key
                 return {
@@ -162,33 +162,32 @@ class SupabaseAuthMiddleware(MiddlewareMixin):
             # Get user metadata
             user_metadata = supabase_user_data.get('user_metadata', {})
             
-            # Get or create Django user
-            user, created = User.objects.get_or_create(
+            # First try to get existing user by email
+            try:
+                user = User.objects.get(email=email)
+                logger.info(f'Found existing Django user: {email}')
+                return user
+            except User.DoesNotExist:
+                pass
+            
+            # Generate unique username from email if needed
+            username = email.split('@')[0]
+            base_username = username
+            counter = 1
+            while User.objects.filter(username=username).exists():
+                username = f"{base_username}_{counter}"
+                counter += 1
+            
+            # Create new user
+            user = User.objects.create(
+                username=username,
                 email=email,
-                defaults={
-                    'first_name': user_metadata.get('first_name', ''),
-                    'last_name': user_metadata.get('last_name', ''),
-                    'is_active': True,
-                }
+                first_name=user_metadata.get('first_name', ''),
+                last_name=user_metadata.get('last_name', ''),
+                is_active=True,
             )
             
-            if created:
-                logger.info(f'Created new Django user from Supabase: {email}')
-            
-            # Update user info if needed
-            if not created:
-                updated = False
-                if user_metadata.get('first_name') and not user.first_name:
-                    user.first_name = user_metadata.get('first_name', '')
-                    updated = True
-                if user_metadata.get('last_name') and not user.last_name:
-                    user.last_name = user_metadata.get('last_name', '')
-                    updated = True
-                
-                if updated:
-                    user.save()
-                    logger.info(f'Updated Django user info: {email}')
-            
+            logger.info(f'Created new Django user from Supabase: {email}')
             return user
             
         except Exception as e:

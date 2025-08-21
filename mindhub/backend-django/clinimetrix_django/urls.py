@@ -16,15 +16,11 @@ urlpatterns = [
     path('auth/', include('allauth.urls')),
     path('accounts/', include('accounts.urls')),
     
-    # Core functionality
-    path('', include('clinimetrix_core.urls')),
-    path('api/scales/', include('psychometric_scales.urls')),        # ✅ CAMBIAR con prefijo api
-    path('api/assessments/', include('assessments.urls')),           # ✅ CAMBIAR con prefijo api
-    path('api/clinimetrix-pro/', include('assessments.urls')),       # ✅ AGREGAR alias
+    # Core functionality - Home page (ClinimetrixPro)
+    path('', include('assessments.urls')),
     
-    # Legacy paths (mantener por compatibilidad)
+    # API endpoints  
     path('scales/', include('psychometric_scales.urls')),
-    path('assessments/', include('assessments.urls')),
     
     # FormX - Dynamic Form Builder
     path('formx/', include('formx.urls')),

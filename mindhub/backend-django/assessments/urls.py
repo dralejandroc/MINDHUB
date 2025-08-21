@@ -3,12 +3,20 @@ URLs for assessments app
 """
 from django.urls import path
 from . import views, api_views, react_api_views
+from django.views.generic import TemplateView
 
-app_name = 'assessments'
+app_name = 'core'  # Changed to match template references
 
 urlpatterns = [
-    # Regular views
-    path('', views.AssessmentListView.as_view(), name='list'),
+    # Public home page
+    path('', views.HomeView.as_view(), name='home'),
+    
+    # Core pages
+    path('dashboard/', TemplateView.as_view(template_name='core/dashboard.html'), name='dashboard'),
+    path('settings/', TemplateView.as_view(template_name='core/settings.html'), name='settings'),
+    
+    # Regular views  
+    path('assessments/', views.AssessmentListView.as_view(), name='list'),
     path('<uuid:pk>/', views.AssessmentDetailView.as_view(), name='detail'),
     path('<uuid:pk>/take/', views.TakeAssessmentView.as_view(), name='take'),
     path('<uuid:assessment_id>/focused-take/', views.focused_take, name='focused_take'),

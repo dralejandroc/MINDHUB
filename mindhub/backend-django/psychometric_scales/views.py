@@ -175,8 +175,40 @@ class ActiveScalesAPIView(LoginRequiredMixin, View):
                 'abbreviation': scale.abbreviation,
                 'category': scale.category.name if scale.category else 'Sin categoría',
                 'description': scale.description,
-                'duration_minutes': scale.duration_minutes,
+                'duration_minutes': scale.estimated_duration_minutes,
                 'population': scale.get_population_display() if scale.population else 'General',
             })
         
         return JsonResponse(scales_data, safe=False)
+
+
+class ScaleCatalogAPIView(View):
+    """API endpoint for scale catalog - compatible with ClinimetrixPro frontend"""
+    
+    def get(self, request):
+        scales = PsychometricScale.objects.filter(is_active=True).select_related('category').prefetch_related('tags')
+        
+        scales_data = []
+        for scale in scales:
+            scale_data = {
+                'id': str(scale.id),
+                'name': scale.name,
+                'abbreviation': scale.abbreviation,
+                'category': scale.category.name if scale.category else 'General',
+                'description': scale.description,
+                'estimated_duration_minutes': scale.estimated_duration_minutes,
+                'total_items': scale.total_items,
+                'population': scale.get_population_display() if scale.population else 'Todas las edades',
+                'application_type': scale.get_application_type_display() if scale.application_type else 'Autoaplicada',
+                'is_validated': scale.is_validated,
+                'usage_count': scale.usage_count,
+                'tags': [tag.name for tag in scale.tags.all()],
+                'created_at': scale.created_at.isoformat() if scale.created_at else None,
+            }
+            scales_data.append(scale_data)
+        
+        return JsonResponse({
+            'success': True,
+            'data': scales_data,
+            'total': len(scales_data)
+        })

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-Setup script for Django Backend - FormX & ClinimetrixPro
-Configures backend for integration with Supabase and React frontend
+Setup script for MindHub Django Backend
+Configures all modules: Expedix, ClinimetrixPro, Agenda, Resources, FormX
 """
 
 import os
@@ -40,8 +40,8 @@ def check_environment():
         'SECRET_KEY',
         'DATABASE_URL',
         'SUPABASE_URL',
-        'SUPABASE_ANON_KEY',
-        'REACT_FRONTEND_URL'
+        'SUPABASE_SERVICE_ROLE_KEY',
+        'SUPABASE_ANON_KEY'
     ]
     
     missing_vars = []
@@ -51,7 +51,7 @@ def check_environment():
     
     if missing_vars:
         print(f"❌ Missing environment variables: {', '.join(missing_vars)}")
-        print("   Please create a .env file based on .env.example")
+        print("   Please check VERCEL_ENV_VARIABLES.md for configuration")
         return False
     
     print("✅ Environment configuration is complete")
@@ -77,6 +77,12 @@ def setup_database():
         return False
     
     return True
+
+
+def migrate_scales():
+    """Migrate ClinimetrixPro scales from JSON"""
+    print("\n📊 Migrating ClinimetrixPro scales...")
+    return run_command("python manage.py migrate_scales_json", "Migrating psychometric scales")
 
 
 def create_superuser():
@@ -115,100 +121,6 @@ def collect_static_files():
     return run_command("python manage.py collectstatic --noinput", "Collecting static files")
 
 
-def setup_formx_templates():
-    """Set up FormX with sample templates"""
-    print("\n📋 Setting up FormX templates...")
-    
-    django.setup()
-    from formx.models import FormTemplate, FormField, DocumentTemplate
-    
-    try:
-        # Create sample FormX template
-        if not FormTemplate.objects.filter(name='Registro de Paciente').exists():
-            from django.contrib.auth import get_user_model
-            User = get_user_model()
-            admin_user = User.objects.filter(is_superuser=True).first()
-            
-            if admin_user:
-                template = FormTemplate.objects.create(
-                    name='Registro de Paciente',
-                    form_type='intake',
-                    description='Formulario de registro inicial para nuevos pacientes',
-                    integration_type='expedix',
-                    created_by=admin_user,
-                    auto_sync_expedix=True,
-                    mobile_optimized=True,
-                    expedix_mapping={
-                        'first_name': 'firstName',
-                        'paternal_last_name': 'paternalLastName',
-                        'maternal_last_name': 'maternalLastName',
-                        'email': 'email',
-                        'phone': 'phone',
-                        'date_of_birth': 'dateOfBirth'
-                    }
-                )
-                
-                # Add fields
-                fields_data = [
-                    {'field_name': 'first_name', 'field_type': 'text', 'label': 'Nombre', 'required': True},
-                    {'field_name': 'paternal_last_name', 'field_type': 'text', 'label': 'Apellido Paterno', 'required': True},
-                    {'field_name': 'maternal_last_name', 'field_type': 'text', 'label': 'Apellido Materno'},
-                    {'field_name': 'email', 'field_type': 'email', 'label': 'Correo Electrónico', 'required': True},
-                    {'field_name': 'phone', 'field_type': 'phone', 'label': 'Teléfono', 'required': True},
-                    {'field_name': 'date_of_birth', 'field_type': 'date', 'label': 'Fecha de Nacimiento', 'required': True},
-                    {'field_name': 'emergency_contact', 'field_type': 'text', 'label': 'Contacto de Emergencia'},
-                    {'field_name': 'allergies', 'field_type': 'textarea', 'label': 'Alergias Conocidas'},
-                    {'field_name': 'current_medications', 'field_type': 'textarea', 'label': 'Medicamentos Actuales'},
-                ]
-                
-                for i, field_data in enumerate(fields_data):
-                    FormField.objects.create(
-                        template=template,
-                        order=i,
-                        **field_data
-                    )
-                
-                print("✅ Sample FormX template created")
-            else:
-                print("❌ No superuser found to create templates")
-        else:
-            print("✅ FormX templates already exist")
-        
-        # Create sample document template
-        if not DocumentTemplate.objects.filter(name='Consentimiento Informado').exists():
-            DocumentTemplate.objects.create(
-                name='Consentimiento Informado',
-                document_type='consent',
-                description='Consentimiento informado para tratamiento psicológico',
-                created_by=admin_user,
-                template_content="""
-                <h2>CONSENTIMIENTO INFORMADO PARA TRATAMIENTO PSICOLÓGICO</h2>
-                
-                <p>Yo, <strong>{{patient_name}}</strong>, con fecha de nacimiento {{date_of_birth}}, 
-                acepto voluntariamente recibir tratamiento psicológico en MindHub.</p>
-                
-                <p><strong>Fecha:</strong> {{current_date}}</p>
-                <p><strong>Email:</strong> {{patient_email}}</p>
-                
-                <p>He sido informado sobre los procedimientos, riesgos y beneficios del tratamiento.</p>
-                
-                <div style="margin-top: 50px;">
-                    <p>_________________________________</p>
-                    <p>Firma del Paciente</p>
-                </div>
-                """,
-                auto_fill_fields=['patient_name', 'date_of_birth', 'patient_email', 'current_date'],
-                requires_signature=True
-            )
-            print("✅ Sample document template created")
-        
-        return True
-        
-    except Exception as e:
-        print(f"❌ Error setting up FormX templates: {e}")
-        return False
-
-
 def test_integration():
     """Test Django backend integration"""
     print("\n🧪 Testing Django backend integration...")
@@ -222,15 +134,53 @@ def test_integration():
             cursor.execute("SELECT 1")
         print("✅ Database connection successful")
         
-        # Test FormX models
-        from formx.models import FormTemplate
-        template_count = FormTemplate.objects.count()
-        print(f"✅ FormX integration working - {template_count} templates found")
+        # Test all modules
+        modules_status = []
         
-        # Test ClinimetrixPro models
-        from psychometric_scales.models import PsychometricScale
-        scale_count = PsychometricScale.objects.count()
-        print(f"✅ ClinimetrixPro integration working - {scale_count} scales found")
+        # Test Expedix
+        try:
+            from expedix.models import Patient
+            patient_count = Patient.objects.count()
+            modules_status.append(f"✅ Expedix - {patient_count} patients")
+        except Exception as e:
+            modules_status.append(f"❌ Expedix - Error: {e}")
+        
+        # Test ClinimetrixPro
+        try:
+            from psychometric_scales.models import PsychometricScale
+            scale_count = PsychometricScale.objects.count()
+            modules_status.append(f"✅ ClinimetrixPro - {scale_count} scales")
+        except Exception as e:
+            modules_status.append(f"❌ ClinimetrixPro - Error: {e}")
+        
+        # Test Agenda
+        try:
+            from agenda.models import Appointment
+            appointment_count = Appointment.objects.count()
+            modules_status.append(f"✅ Agenda - {appointment_count} appointments")
+        except Exception as e:
+            modules_status.append(f"❌ Agenda - Error: {e}")
+        
+        # Test Resources
+        try:
+            from resources.models import Resource
+            resource_count = Resource.objects.count()
+            modules_status.append(f"✅ Resources - {resource_count} resources")
+        except Exception as e:
+            modules_status.append(f"❌ Resources - Error: {e}")
+        
+        # Test FormX
+        try:
+            from formx.models import FormTemplate
+            form_count = FormTemplate.objects.count()
+            modules_status.append(f"✅ FormX - {form_count} templates")
+        except Exception as e:
+            modules_status.append(f"❌ FormX - Error: {e}")
+        
+        # Print module status
+        print("\n📦 Module Status:")
+        for status in modules_status:
+            print(f"   {status}")
         
         return True
         
@@ -242,7 +192,7 @@ def test_integration():
 def print_startup_info():
     """Print information about starting the Django server"""
     print("\n" + "="*60)
-    print("🎉 Django Backend Setup Complete!")
+    print("🎉 MindHub Django Backend Setup Complete!")
     print("="*60)
     print("\n📋 Next Steps:")
     print("1. Start the Django development server:")
@@ -251,25 +201,28 @@ def print_startup_info():
     print("   http://localhost:8000/admin/")
     print("   Email: admin@mindhub.com")
     print("   Password: admin123")
-    print("\n3. FormX API Endpoints:")
-    print("   http://localhost:8000/formx/api/")
-    print("\n4. ClinimetrixPro Endpoints:")
-    print("   http://localhost:8000/assessments/")
-    print("   http://localhost:8000/scales/")
-    print("\n5. API Documentation:")
+    print("\n🏥 API Endpoints by Module:")
+    print("   Expedix:        /api/expedix/")
+    print("   ClinimetrixPro:  /scales/ and /assessments/")
+    print("   Agenda:         /api/agenda/")
+    print("   Resources:      /api/resources/")
+    print("   FormX:          /formx/")
+    print("\n📖 API Documentation:")
     print("   http://localhost:8000/api/schema/swagger-ui/")
     print("\n🌐 Frontend Integration:")
-    print("   Make sure your React frontend points to:")
-    print("   http://localhost:8000 (development)")
-    print("   Or your production Django URL")
+    print("   Production:  https://mindhub.cloud")
+    print("   Development: http://localhost:3002")
+    print("\n🗃️ Database:")
+    print("   Provider: Supabase PostgreSQL")
+    print("   Auth:     Supabase JWT middleware")
     print("\n" + "="*60)
 
 
 def main():
     """Main setup function"""
-    print("🚀 Setting up Django Backend for MindHub")
-    print("   FormX + ClinimetrixPro Integration")
-    print("="*60)
+    print("🚀 Setting up MindHub Django Backend")
+    print("   All Modules: Expedix + ClinimetrixPro + Agenda + Resources + FormX")
+    print("="*80)
     
     success = True
     
@@ -285,16 +238,16 @@ def main():
     if success and not setup_database():
         success = False
     
+    # Migrate scales
+    if success and not migrate_scales():
+        success = False
+    
     # Create superuser
     if success and not create_superuser():
         success = False
     
     # Collect static files
     if success and not collect_static_files():
-        success = False
-    
-    # Setup FormX templates
-    if success and not setup_formx_templates():
         success = False
     
     # Test integration
@@ -306,6 +259,7 @@ def main():
         return 0
     else:
         print("\n❌ Setup failed. Please check the errors above.")
+        print("   See VERCEL_ENV_VARIABLES.md for environment configuration.")
         return 1
 
 

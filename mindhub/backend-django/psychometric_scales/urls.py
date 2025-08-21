@@ -12,5 +12,6 @@ urlpatterns = [
     path('<uuid:pk>/start/', views.StartAssessmentView.as_view(), name='start_assessment'),
     
     # API endpoints
+    path('api/catalog/', views.ScaleCatalogAPIView.as_view(), name='api_catalog'),
     path('api/active/', views.ActiveScalesAPIView.as_view(), name='api_active_scales'),
 ]
