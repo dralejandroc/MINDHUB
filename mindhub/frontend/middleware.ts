@@ -55,7 +55,7 @@ export async function middleware(req: NextRequest) {
     "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; " +
     "font-src 'self' https://fonts.gstatic.com; " +
     "img-src 'self' data: https://*.supabase.co; " +
-    "connect-src 'self' https://*.supabase.co https://jvbcpldzoyicefdtnwkd.supabase.co https://mindhub.cloud https://www.mindhub.cloud https://mindhub-django-backend.vercel.app https://mindhub-backend.vercel.app https://*.vercel.app http://localhost:* ws://localhost:*; " +
+    "connect-src 'self' https://*.supabase.co https://jvbcpldzoyicefdtnwkd.supabase.co https://mindhub.cloud https://www.mindhub.cloud https://mindhub-django-backend.vercel.app https://*.vercel.app http://localhost:* ws://localhost:*; " +
     "frame-src 'self' https://*.supabase.co; " +
     "worker-src 'self' blob: 'unsafe-inline'"
   )
