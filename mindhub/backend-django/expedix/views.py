@@ -49,10 +49,31 @@ class PatientViewSet(viewsets.ModelViewSet):
             return PatientSummarySerializer
         return PatientSerializer
 
+    def get_queryset(self):
+        """
+        Filter patients based on user context:
+        - Clinic users: see all patients in their clinic (clinic_id)
+        - Individual users: see all patients (handled by RLS in production)
+        """
+        queryset = self.queryset
+        
+        # Apply clinic-specific filtering if user belongs to a clinic
+        if hasattr(self.request, 'is_clinic_user') and self.request.is_clinic_user:
+            if self.request.user_clinic_id:
+                logger.info(f'Filtering patients for clinic: {self.request.user_clinic_id}')
+                queryset = queryset.filter(clinic_id=self.request.user_clinic_id)
+        else:
+            # Individual users see all patients (RLS handles filtering in production)
+            logger.info(f'Individual user access - showing all patients (RLS filtering in production)')
+            
+        return queryset
+
     def perform_create(self, serializer):
-        # Don't set created_by as we don't have a users table
-        # The user info is in self.request.user (SupabaseUser) if needed
-        serializer.save()
+        # Save patient with clinic context if available
+        if hasattr(self.request, 'user_clinic_id') and self.request.user_clinic_id:
+            serializer.save(clinic_id=self.request.user_clinic_id)
+        else:
+            serializer.save()
 
     @action(detail=False, methods=['get'])
     def search(self, request):

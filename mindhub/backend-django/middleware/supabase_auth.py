@@ -38,6 +38,15 @@ class SupabaseAuthMiddleware(MiddlewareMixin):
             # Set user context for filtering (simulate RLS behavior)
             request.supabase_user_id = auth_result['supabase_data'].get('id')
             request.authenticated_user_email = auth_result['supabase_data'].get('email')
+            
+            # Clinic-aware context: determine if user works individually or in a clinic
+            # If user has clinic_id → filter by clinic_id (multiple users, shared data)
+            # If user has no clinic_id → filter by user_id (individual practice)
+            user_metadata = auth_result['supabase_data'].get('user_metadata', {})
+            request.user_clinic_id = user_metadata.get('clinic_id')  # None for individual users
+            request.is_clinic_user = bool(request.user_clinic_id)
+            
+            logger.info(f'User auth context: email={request.authenticated_user_email}, clinic_id={request.user_clinic_id}, is_clinic={request.is_clinic_user}')
         
         response = self.get_response(request)
         return response
