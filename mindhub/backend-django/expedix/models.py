@@ -39,7 +39,7 @@ class User(models.Model):
 
 
 class Patient(models.Model):
-    """Patient model migrated from Prisma schema"""
+    """Patient model matching Supabase schema exactly"""
     GENDER_CHOICES = [
         ('masculine', 'Masculino'),
         ('feminine', 'Femenino'),
@@ -58,7 +58,7 @@ class Patient(models.Model):
     address = models.TextField(blank=True, null=True)
     city = models.CharField(max_length=100, blank=True, null=True)
     state = models.CharField(max_length=100, blank=True, null=True)
-    zip_code = models.CharField(max_length=10, blank=True, null=True)
+    postal_code = models.CharField(max_length=10, blank=True, null=True)  # Changed from zip_code to postal_code
     country = models.CharField(max_length=100, default='México')
     emergency_contact_name = models.CharField(max_length=100, blank=True, null=True)
     emergency_contact_phone = models.CharField(max_length=20, blank=True, null=True)
@@ -69,10 +69,19 @@ class Patient(models.Model):
     current_medications = models.TextField(blank=True, null=True)
     chronic_conditions = models.TextField(blank=True, null=True)
     notes = models.TextField(blank=True, null=True)
+    
+    # Additional fields from Supabase schema
+    medical_record_number = models.CharField(max_length=50, blank=True, null=True)
+    curp = models.CharField(max_length=18, blank=True, null=True)  # CURP mexicano
+    rfc = models.CharField(max_length=13, blank=True, null=True)   # RFC mexicano
+    blood_type = models.CharField(max_length=10, blank=True, null=True)
+    patient_category = models.CharField(max_length=50, blank=True, null=True)
+    clinic_id = models.UUIDField(blank=True, null=True)
+    
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
-    created_by = models.ForeignKey(User, on_delete=models.PROTECT, related_name='patients_created')
+    # Removed created_by foreign key as users table doesn't exist in Supabase
 
     class Meta:
         db_table = 'patients'
@@ -80,7 +89,8 @@ class Patient(models.Model):
             models.Index(fields=['email']),
             models.Index(fields=['is_active']),
             models.Index(fields=['created_at']),
-            models.Index(fields=['created_by']),
+            models.Index(fields=['medical_record_number']),
+            models.Index(fields=['clinic_id']),
         ]
 
     def __str__(self):

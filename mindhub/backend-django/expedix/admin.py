@@ -18,9 +18,9 @@ class UserAdmin(admin.ModelAdmin):
 
 @admin.register(Patient)
 class PatientAdmin(admin.ModelAdmin):
-    list_display = ['full_name', 'email', 'phone', 'age', 'gender', 'created_by', 'created_at']
-    list_filter = ['gender', 'city', 'state', 'is_active', 'created_at']
-    search_fields = ['first_name', 'paternal_last_name', 'maternal_last_name', 'email', 'phone']
+    list_display = ['full_name', 'email', 'phone', 'age', 'gender', 'medical_record_number', 'created_at']
+    list_filter = ['gender', 'city', 'state', 'patient_category', 'is_active', 'created_at']
+    search_fields = ['first_name', 'paternal_last_name', 'maternal_last_name', 'email', 'phone', 'medical_record_number']
     readonly_fields = ['id', 'age', 'created_at', 'updated_at']
     ordering = ['-created_at']
     
@@ -30,17 +30,23 @@ class PatientAdmin(admin.ModelAdmin):
                       'email', 'phone', 'date_of_birth', 'gender')
         }),
         ('Dirección', {
-            'fields': ('address', 'city', 'state', 'zip_code', 'country')
+            'fields': ('address', 'city', 'state', 'postal_code', 'country')
+        }),
+        ('Identificación Mexicana', {
+            'fields': ('curp', 'rfc', 'medical_record_number')
         }),
         ('Contacto de Emergencia', {
             'fields': ('emergency_contact_name', 'emergency_contact_phone', 'emergency_contact_relationship')
         }),
         ('Información Médica', {
-            'fields': ('insurance_provider', 'insurance_number', 'allergies', 
+            'fields': ('insurance_provider', 'insurance_number', 'blood_type', 'allergies', 
                       'current_medications', 'chronic_conditions', 'notes')
         }),
+        ('Clasificación', {
+            'fields': ('patient_category', 'clinic_id', 'is_active')
+        }),
         ('Sistema', {
-            'fields': ('created_by', 'is_active', 'created_at', 'updated_at')
+            'fields': ('created_at', 'updated_at')
         })
     )
 

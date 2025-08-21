@@ -19,6 +19,7 @@ from .serializers import (
     ConsultationSerializer, ConsultationCreateSerializer,
     DashboardStatsSerializer
 )
+from .authentication import SupabaseProxyAuthentication
 
 
 class PatientViewSet(viewsets.ModelViewSet):
@@ -26,13 +27,16 @@ class PatientViewSet(viewsets.ModelViewSet):
     Patient management ViewSet
     Replaces /api/expedix/patients/* endpoints from Node.js
     """
-    queryset = Patient.objects.select_related('created_by').filter(is_active=True)
+    # Remove select_related('created_by') as we don't have a users table in Supabase
+    # The patients table in Supabase doesn't have a created_by relationship
+    queryset = Patient.objects.filter(is_active=True)
     serializer_class = PatientSerializer
+    authentication_classes = [SupabaseProxyAuthentication]
     permission_classes = [IsAuthenticated]
     filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
-    search_fields = ['first_name', 'paternal_last_name', 'maternal_last_name', 'email', 'phone']
-    filterset_fields = ['gender', 'city', 'state', 'created_by']
-    ordering_fields = ['created_at', 'first_name', 'paternal_last_name']
+    search_fields = ['first_name', 'paternal_last_name', 'maternal_last_name', 'email', 'phone', 'medical_record_number']
+    filterset_fields = ['gender', 'city', 'state', 'patient_category', 'clinic_id']
+    ordering_fields = ['created_at', 'first_name', 'paternal_last_name', 'medical_record_number']
     ordering = ['-created_at']
 
     def get_serializer_class(self):
@@ -43,7 +47,9 @@ class PatientViewSet(viewsets.ModelViewSet):
         return PatientSerializer
 
     def perform_create(self, serializer):
-        serializer.save(created_by=self.request.user)
+        # Don't set created_by as we don't have a users table
+        # The user info is in self.request.user (SupabaseUser) if needed
+        serializer.save()
 
     @action(detail=False, methods=['get'])
     def search(self, request):
@@ -119,12 +125,14 @@ class ConsultationViewSet(viewsets.ModelViewSet):
     Consultation management ViewSet
     Replaces /api/expedix/consultations/* endpoints from Node.js
     """
-    queryset = Consultation.objects.select_related('patient', 'professional').all()
+    # Remove select_related('professional') as we don't have a users table
+    queryset = Consultation.objects.select_related('patient').all()
     serializer_class = ConsultationSerializer
+    authentication_classes = [SupabaseProxyAuthentication]
     permission_classes = [IsAuthenticated]
     filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
     search_fields = ['patient__first_name', 'patient__paternal_last_name', 'reason', 'diagnosis']
-    filterset_fields = ['status', 'patient', 'professional']
+    filterset_fields = ['status', 'patient']  # Removed 'professional'
     ordering_fields = ['consultation_date', 'created_at']
     ordering = ['-consultation_date']
 
@@ -134,7 +142,8 @@ class ConsultationViewSet(viewsets.ModelViewSet):
         return ConsultationSerializer
 
     def perform_create(self, serializer):
-        serializer.save(professional=self.request.user)
+        # Don't set professional as we don't have a users table
+        serializer.save()
 
     @action(detail=False, methods=['get'])
     def upcoming(self, request):
@@ -180,6 +189,7 @@ class MedicalHistoryViewSet(viewsets.ModelViewSet):
     """
     queryset = MedicalHistory.objects.select_related('patient').all()
     serializer_class = MedicalHistorySerializer
+    authentication_classes = [SupabaseProxyAuthentication]
     permission_classes = [IsAuthenticated]
     filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
     search_fields = ['condition', 'treatment', 'notes']
@@ -205,6 +215,7 @@ class UserViewSet(viewsets.ReadOnlyModelViewSet):
     """
     queryset = User.objects.filter(is_active=True)
     serializer_class = UserSerializer
+    authentication_classes = [SupabaseProxyAuthentication]
     permission_classes = [IsAuthenticated]
     filter_backends = [filters.SearchFilter, filters.OrderingFilter]
     search_fields = ['first_name', 'last_name', 'email', 'organization']

@@ -24,23 +24,20 @@ class PatientSerializer(serializers.ModelSerializer):
     """Patient serializer for API responses"""
     full_name = serializers.CharField(read_only=True)
     age = serializers.IntegerField(read_only=True)
-    created_by_name = serializers.SerializerMethodField()
     
     class Meta:
         model = Patient
         fields = [
             'id', 'first_name', 'last_name', 'paternal_last_name', 'maternal_last_name',
             'email', 'phone', 'date_of_birth', 'gender', 'address', 'city', 'state',
-            'zip_code', 'country', 'emergency_contact_name', 'emergency_contact_phone',
+            'postal_code', 'country', 'emergency_contact_name', 'emergency_contact_phone',
             'emergency_contact_relationship', 'insurance_provider', 'insurance_number',
             'allergies', 'current_medications', 'chronic_conditions', 'notes',
-            'is_active', 'created_at', 'updated_at', 'created_by',
-            'full_name', 'age', 'created_by_name'
+            'medical_record_number', 'curp', 'rfc', 'blood_type', 'patient_category', 'clinic_id',
+            'is_active', 'created_at', 'updated_at',
+            'full_name', 'age'
         ]
         read_only_fields = ['id', 'created_at', 'updated_at', 'full_name', 'age']
-
-    def get_created_by_name(self, obj):
-        return f"{obj.created_by.first_name} {obj.created_by.last_name}".strip()
 
 
 class PatientCreateSerializer(serializers.ModelSerializer):
@@ -51,9 +48,10 @@ class PatientCreateSerializer(serializers.ModelSerializer):
         fields = [
             'first_name', 'last_name', 'paternal_last_name', 'maternal_last_name',
             'email', 'phone', 'date_of_birth', 'gender', 'address', 'city', 'state',
-            'zip_code', 'country', 'emergency_contact_name', 'emergency_contact_phone',
+            'postal_code', 'country', 'emergency_contact_name', 'emergency_contact_phone',
             'emergency_contact_relationship', 'insurance_provider', 'insurance_number',
-            'allergies', 'current_medications', 'chronic_conditions', 'notes'
+            'allergies', 'current_medications', 'chronic_conditions', 'notes',
+            'medical_record_number', 'curp', 'rfc', 'blood_type', 'patient_category', 'clinic_id'
         ]
 
     def validate_email(self, value):
