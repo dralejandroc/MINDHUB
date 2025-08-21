@@ -6,9 +6,31 @@ from django.contrib import admin
 from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
+from django.http import JsonResponse
 from django.views.generic import RedirectView
 
+def api_root(request):
+    """API root endpoint - Django backend serves only APIs"""
+    return JsonResponse({
+        'service': 'MindHub Django Backend',
+        'version': '1.0',
+        'status': 'active',
+        'message': 'This is an API-only backend. Frontend is served at https://mindhub.cloud',
+        'available_apis': [
+            '/api/expedix/ - Patient Management',
+            '/api/agenda/ - Appointment System', 
+            '/api/resources/ - Medical Resources',
+            '/api/clinics/ - Multi-user Management',
+            '/assessments/ - ClinimetrixPro Assessment Engine',
+            '/scales/ - Psychometric Scale Data',
+            '/admin/ - Django Admin'
+        ]
+    })
+
 urlpatterns = [
+    # API Root - Shows available endpoints
+    path('', api_root, name='api_root'),
+    
     # Admin
     path('admin/', admin.site.urls),
     
@@ -16,8 +38,8 @@ urlpatterns = [
     path('auth/', include('allauth.urls')),
     path('accounts/', include('accounts.urls')),
     
-    # Core functionality - Home page (ClinimetrixPro)
-    path('', include('assessments.urls')),
+    # ClinimetrixPro API endpoints (no frontend pages)
+    path('assessments/', include('assessments.urls')),
     
     # API endpoints  
     path('scales/', include('psychometric_scales.urls')),
