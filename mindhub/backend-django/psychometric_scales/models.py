@@ -207,7 +207,7 @@ class PsychometricScale(models.Model):
     class Meta:
         verbose_name = _('Escala psicométrica')
         verbose_name_plural = _('Escalas psicométricas')
-        db_table = 'clinimetrix_scales'
+        db_table = 'clinimetrix_registry'
         ordering = ['name']
         indexes = [
             models.Index(fields=['abbreviation']),
