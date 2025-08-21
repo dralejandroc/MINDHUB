@@ -130,14 +130,17 @@ class SupabaseAuthMiddleware(MiddlewareMixin):
                 user_id = request.META.get('HTTP_X_USER_ID')
                 user_email = request.META.get('HTTP_X_USER_EMAIL')
                 
+                logger.info(f'Service role - Proxy headers: proxy_auth={proxy_auth}, user_id={user_id}, user_email={user_email}')
+                
                 if proxy_auth == 'verified' and user_id and user_email:
                     logger.info(f'Using service role key from pre-authenticated proxy for user: {user_email}')
                     return {
                         'id': user_id,
                         'email': user_email,
                         'user_metadata': {
-                            'first_name': user_email.split('@')[0],  # Extract name from email
-                            'last_name': ''
+                            'first_name': user_email.split('@')[0],
+                            'last_name': '',
+                            'clinic_id': None  # TODO: Extract from Supabase profile
                         }
                     }
                 else:
