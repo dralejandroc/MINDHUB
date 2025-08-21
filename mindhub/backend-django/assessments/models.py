@@ -7,6 +7,7 @@ from django.db import models
 from django.conf import settings
 from django.utils.translation import gettext_lazy as _
 from django.core.validators import MinValueValidator, MaxValueValidator
+from django.utils import timezone
 import uuid
 
 
@@ -675,3 +676,74 @@ class SecondaryDevice(models.Model):
         self.session_expires_at = None
         self.current_assessment = None
         self.save()
+
+
+class ClinimetrixRegistry(models.Model):
+    """Registry for all available ClinimetrixPro scales"""
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    scale_id = models.CharField(max_length=100, unique=True, db_index=True)
+    name = models.CharField(max_length=255)
+    abbreviation = models.CharField(max_length=50)
+    category = models.CharField(max_length=100)
+    description = models.TextField(blank=True)
+    version = models.CharField(max_length=20, default='1.0')
+    language = models.CharField(max_length=10, default='es')
+    json_data = models.JSONField(default=dict)
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        db_table = 'clinimetrix_registry'
+        ordering = ['category', 'name']
+        indexes = [
+            models.Index(fields=['scale_id']),
+            models.Index(fields=['category']),
+            models.Index(fields=['is_active']),
+        ]
+    
+    def __str__(self):
+        return f"{self.abbreviation} - {self.name}"
+
+
+class Consultation(models.Model):
+    """Medical consultation model for Expedix"""
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    patient = models.ForeignKey(Patient, on_delete=models.CASCADE, related_name='consultations')
+    consultation_date = models.DateTimeField(default=timezone.now)
+    consultation_type = models.CharField(max_length=50)
+    chief_complaint = models.TextField(blank=True)
+    diagnosis = models.TextField(blank=True)
+    treatment_plan = models.TextField(blank=True)
+    notes = models.TextField(blank=True)
+    amount = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    status = models.CharField(max_length=20, default='pending')
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        db_table = 'assessments_consultations'
+        ordering = ['-consultation_date']
+    
+    def __str__(self):
+        return f"{self.patient.get_full_name()} - {self.consultation_date}"
+
+
+class Payment(models.Model):
+    """Payment model for finance module"""
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    consultation = models.ForeignKey(Consultation, on_delete=models.CASCADE, related_name='payments')
+    patient = models.ForeignKey(Patient, on_delete=models.CASCADE, related_name='payments')
+    amount = models.DecimalField(max_digits=10, decimal_places=2)
+    payment_date = models.DateTimeField(default=timezone.now)
+    payment_method = models.CharField(max_length=50)
+    status = models.CharField(max_length=20, default='pending')
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        db_table = 'assessments_payments'
+        ordering = ['-payment_date']
+    
+    def __str__(self):
+        return f"Payment {self.amount} - {self.patient.get_full_name()}"
