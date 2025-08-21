@@ -26,4 +26,7 @@ urlpatterns = [
     path('consultations/by-patient/', views.ConsultationViewSet.as_view({'get': 'by_patient'}), name='consultations-by-patient'),
     path('medical-history/by-patient/', views.MedicalHistoryViewSet.as_view({'get': 'by_patient'}), name='medical-history-by-patient'),
     path('users/me/', views.UserViewSet.as_view({'get': 'me'}), name='user-profile'),
+    
+    # Schedule configuration endpoint
+    path('schedule-config/', views.schedule_config, name='schedule-config'),
 ]
