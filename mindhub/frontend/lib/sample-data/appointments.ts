@@ -49,8 +49,20 @@ const samplePatients = [
   { id: '8', first_name: 'David', last_name: 'Moreno', paternal_last_name: 'Delgado', email: 'david.moreno@email.com', phone: '555-0108' }
 ];
 
+// Type definitions for weighted random selection
+interface AppointmentType {
+  name: string;
+  duration: number;
+  weight: number;
+}
+
+interface StatusOption {
+  status: 'scheduled' | 'confirmed' | 'confirmed-no-deposit' | 'completed' | 'cancelled' | 'no-show';
+  weight: number;
+}
+
 // Appointment types with realistic consultation patterns
-const appointmentTypes = [
+const appointmentTypes: AppointmentType[] = [
   { name: 'Primera consulta', duration: 60, weight: 0.2 },
   { name: 'Consulta subsecuente', duration: 60, weight: 0.5 },
   { name: 'Consulta breve', duration: 30, weight: 0.15 },
@@ -65,16 +77,16 @@ const timeSlots = [
 ];
 
 // Status distribution for realistic clinic patterns
-const statusOptions = [
-  { status: 'scheduled' as const, weight: 0.3 },
-  { status: 'confirmed' as const, weight: 0.4 },
-  { status: 'confirmed-no-deposit' as const, weight: 0.15 },
-  { status: 'completed' as const, weight: 0.1 },
-  { status: 'cancelled' as const, weight: 0.04 },
-  { status: 'no-show' as const, weight: 0.01 }
+const statusOptions: StatusOption[] = [
+  { status: 'scheduled', weight: 0.3 },
+  { status: 'confirmed', weight: 0.4 },
+  { status: 'confirmed-no-deposit', weight: 0.15 },
+  { status: 'completed', weight: 0.1 },
+  { status: 'cancelled', weight: 0.04 },
+  { status: 'no-show', weight: 0.01 }
 ];
 
-function weightedRandom<T>(items: { weight: number; [key: string]: any }[]): T {
+function weightedRandom<T extends { weight: number }>(items: T[]): T {
   const totalWeight = items.reduce((sum, item) => sum + item.weight, 0);
   let random = Math.random() * totalWeight;
   
