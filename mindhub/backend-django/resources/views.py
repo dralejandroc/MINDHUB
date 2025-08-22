@@ -1,6 +1,9 @@
 """
-Resources Views - Django REST Framework
+Resources Views - Django REST Framework DUAL SYSTEM
 Replaces Node.js Express routes with Django ViewSets
+Supports:
+- LICENCIA CLÍNICA: Shared resource library among all clinic professionals
+- LICENCIA INDIVIDUAL: Private resource library for single professional
 """
 
 from rest_framework import viewsets, status, filters
@@ -16,6 +19,8 @@ from datetime import datetime, timedelta
 import os
 import mimetypes
 
+from middleware.base_viewsets import ResourcesDualViewSet, DualSystemModelViewSet
+
 from .models import (
     ResourceCategory, Resource, WatermarkTemplate, ResourceEmailTemplate,
     ResourceSend, ResourceAccessLog, ResourceCollection, ResourceCollectionItem
@@ -29,8 +34,8 @@ from .serializers import (
 )
 
 
-class ResourceCategoryViewSet(viewsets.ModelViewSet):
-    """Resource category management ViewSet"""
+class ResourceCategoryViewSet(DualSystemModelViewSet):
+    """🎯 DUAL SYSTEM Resource category management ViewSet"""
     queryset = ResourceCategory.objects.all()
     serializer_class = ResourceCategorySerializer
     permission_classes = [IsAuthenticated]
@@ -59,15 +64,19 @@ class ResourceCategoryViewSet(viewsets.ModelViewSet):
         return Response(tree_data)
 
 
-class ResourceViewSet(viewsets.ModelViewSet):
-    """Resource management ViewSet"""
+class ResourceViewSet(ResourcesDualViewSet):
+    """
+    🎯 DUAL SYSTEM Resource management ViewSet
+    - LICENCIA CLÍNICA: Shared resources among all clinic professionals
+    - LICENCIA INDIVIDUAL: Private resources for single professional
+    """
     queryset = Resource.objects.select_related('category', 'owner', 'upload_by').filter(is_active=True)
     serializer_class = ResourceSerializer
     permission_classes = [IsAuthenticated]
     parser_classes = [MultiPartParser, FormParser, JSONParser]
     filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
     search_fields = ['title', 'description', 'tags', 'full_text_content']
-    filterset_fields = ['category', 'file_type', 'library_type', 'owner']
+    filterset_fields = ['category', 'file_type', 'library_type']  # Removed owner (handled by dual system)
     ordering_fields = ['title', 'created_at', 'send_count', 'view_count']
     ordering = ['-created_at']
 
@@ -79,19 +88,40 @@ class ResourceViewSet(viewsets.ModelViewSet):
         return ResourceSerializer
 
     def get_queryset(self):
-        queryset = super().get_queryset()
+        """
+        🎯 DUAL SYSTEM: Already filtered by license type
+        - LICENCIA CLÍNICA: All resources in clinic
+        - LICENCIA INDIVIDUAL: Only user's resources
+        """
+        queryset = super().get_queryset()  # Already filtered by dual system
         
-        # Filter by library access
-        user = self.request.user
-        if hasattr(user, 'role') and user.role in ['admin', 'super_admin']:
-            return queryset  # Admins see everything
+        # Additional filtering for sharing capabilities
+        if hasattr(self.request, 'user_context'):
+            sharing_scope = self.get_sharing_scope()
+            if not sharing_scope.get('shareable', False):
+                # Individual users only see their own resources
+                queryset = queryset.filter(
+                    Q(library_type='public') | 
+                    Q(owner_id=self.request.supabase_user_id) |
+                    Q(upload_by_id=self.request.supabase_user_id)
+                )
         
-        # Regular users see public resources and their own private resources
-        return queryset.filter(
-            Q(library_type='public') | 
-            Q(owner=user) | 
-            Q(upload_by=user)
-        )
+        return queryset
+
+    @action(detail=False, methods=['get'])
+    def sharing_capabilities(self, request):
+        """
+        🎯 DUAL SYSTEM: Get resource sharing capabilities for current license type
+        """
+        sharing_scope = self.get_sharing_scope()
+        
+        return Response({
+            'success': True,
+            'license_type': getattr(request, 'user_context', {}).get('license_type'),
+            'sharing_capabilities': sharing_scope,
+            'can_share_resources': self.can_share_resources(),
+            'accessible_locations': self.get_accessible_locations()
+        })
 
     @action(detail=False, methods=['get'])
     def library(self, request):

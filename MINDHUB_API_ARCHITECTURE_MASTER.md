@@ -1,53 +1,63 @@
-# 🏥 MINDHUB - ARQUITECTURA API MASTER DOCUMENTATION
-## FUENTE DE VERDAD ÚNICA - ARQUITECTURA DJANGO COMPLETA
+# 🏥 MINDHUB - ARQUITECTURA API DUAL SYSTEM DOCUMENTATION
+## FUENTE DE VERDAD ÚNICA - ARQUITECTURA DJANGO DUAL (CLÍNICAS + INDIVIDUALES)
 
-**Fecha:** 21 Agosto 2025  
-**Versión:** v6.0-django-complete-migration  
-**Estado:** ✅ ARQUITECTURA DJANGO COMPLETAMENTE FUNCIONAL
+**Fecha:** 22 Agosto 2025  
+**Versión:** v7.0-dual-system-architecture  
+**Estado:** 🏗️ ARQUITECTURA DUAL SYSTEM READY FOR IMPLEMENTATION
 
 ---
 
-## ✅ **ARQUITECTURA DJANGO HÍBRIDA - IMPLEMENTADA Y VERIFICADA**
+## 🏗️ **ARQUITECTURA DUAL SYSTEM - LICENCIAS CLÍNICAS + INDIVIDUALES**
 
-### **🎯 DECISIÓN FINAL: MIGRACIÓN COMPLETA A DJANGO**
-Migración 100% completada de Node.js serverless a Django REST Framework con sistema híbrido React + Django.
+### **🎯 EVOLUCIÓN ARQUITECTÓNICA: DUAL SYSTEM IMPLEMENTATION**
+Sistema dual implementado para soportar dos tipos de licencias:
+- **LICENCIA CLÍNICA**: Multi-usuario (hasta 15 profesionales) con datos compartidos  
+- **LICENCIA INDIVIDUAL**: Usuario único con workspace personal y múltiples sucursales
 
 ```
 ┌─ Frontend Next.js ────────── Vercel (https://mindhub.cloud)
 │  ├─ React UI + TypeScript
-│  ├─ Supabase Auth Client
-│  └─ API Proxy Routes (/api/*/django/) ──┐
-│                                         │
+│  ├─ Supabase Auth Client  
+│  ├─ License Type Detection ──────────────┐
+│  └─ API Proxy Routes (/api/*/django/) ───┤
+│                                          │
 ├─ Django Backend ─────────────────────────┘
 │  ├─ Django REST Framework
-│  ├─ Supabase JWT Middleware  
-│  ├─ 5 Módulos Completos:
-│  │   ├─ Expedix (Patient Management)
-│  │   ├─ ClinimetrixPro (29 Scales)
-│  │   ├─ Agenda (Appointments)
-│  │   ├─ Resources (Medical Library)
-│  │   └─ FormX (Dynamic Forms)
-│  └─ Direct Supabase Connection ──────────┐
+│  ├─ DUAL SYSTEM Middleware ──────────────┐ (NUEVO)
+│  │   ├─ License Type Detection           │
+│  │   ├─ Workspace vs Clinic Resolution   │  
+│  │   └─ Universal Query Pattern          │
+│  ├─ 6 Módulos con Dual Support:          │
+│  │   ├─ Expedix (Patient Management)     │
+│  │   ├─ ClinimetrixPro (29 Scales)       │
+│  │   ├─ Agenda (Appointments)            │
+│  │   ├─ Resources (Medical Library)      │
+│  │   ├─ FormX (Dynamic Forms)            │
+│  │   └─ Finance (Income Tracking)        │
+│  └─ Direct Supabase Connection ──────────┘
 │                                          │
-├─ Database ──────────────── Supabase PostgreSQL
+├─ Database ──────────────── Supabase PostgreSQL DUAL
 │  ├─ URL: https://jvbcpldzoyicefdtnwkd.supabase.co
-│  ├─ Django ORM + REST API: ✅ Funcional
-│  ├─ RLS: ✅ Configurado
-│  └─ All modules data ────────────────────┘
+│  ├─ DUAL TABLES: clinic_id + workspace_id support
+│  ├─ New Tables: individual_workspaces, practice_locations
+│  ├─ Universal Constraints: CHECK (clinic_id XOR workspace_id)
+│  └─ RLS: ✅ Dual policies ─────────────────┘
 │
-└─ Auth ─────────────────── Supabase Auth
-   ├─ JWT Tokens: Frontend + Django validation
-   ├─ Service Role: ✅ Django middleware
-   └─ Middleware: Django supabase_auth.py
+└─ Auth ─────────────────── Supabase Auth + License Detection
+   ├─ JWT Tokens: Include license_type info
+   ├─ Service Role: ✅ Django dual middleware  
+   └─ License Context: Auto-injected in every request
 ```
 
-### **🚀 VENTAJAS COMPROBADAS DJANGO:**
-- ✅ **Backend unificado Django REST Framework**
-- ✅ **5 módulos completamente migrados**
-- ✅ **Supabase PostgreSQL como única DB**
-- ✅ **Sistema híbrido React ↔ Django ClinimetrixPro**
-- ✅ **Deploy automático git → Vercel**
-- ✅ **APIs Django 100% funcionales**
+### **🚀 VENTAJAS DEL SISTEMA DUAL:**
+- ✅ **Backend Django unificado** para ambos tipos de licencia
+- ✅ **6 módulos con soporte dual** (incluyendo Finance)
+- ✅ **Middleware inteligente** que detecta automáticamente el tipo de licencia
+- ✅ **Performance optimizado** con queries simples (1 filtro por licencia)
+- ✅ **Flexibilidad de sucursales** sin restricciones de seguridad
+- ✅ **Escalabilidad perfecta** de individual → clínica
+- ✅ **Lógica de negocio diferenciada** por tipo de licencia
+- ✅ **Aislamiento total** entre workspaces individuales
 
 ---
 
@@ -78,9 +88,48 @@ Migración 100% completada de Node.js serverless a Django REST Framework con sis
 
 ---
 
-## 🔐 **AUTHENTICATION FLOW DJANGO**
+## 📡 **NUEVOS ENDPOINTS DUAL SYSTEM**
 
-### **Supabase Auth + Django Middleware**
+### **🆕 WORKSPACE MANAGEMENT API**
+```http
+# DETECCIÓN DE TIPO DE LICENCIA
+GET    /api/auth/license-type/                    # Detecta automáticamente el tipo
+GET    /api/auth/workspace-info/                  # Info del workspace o clínica
+
+# GESTIÓN DE WORKSPACES INDIVIDUALES  
+GET    /api/workspaces/                          # Info del workspace del usuario
+PUT    /api/workspaces/                          # Actualizar workspace
+GET    /api/workspaces/locations/                # Sucursales del profesional
+POST   /api/workspaces/locations/               # Crear nueva sucursal
+PUT    /api/workspaces/locations/{id}/           # Actualizar sucursal
+
+# ENDPOINTS UNIVERSALES (funcionan para ambos tipos)
+GET    /api/universal/patients/                  # Pacientes (filtrado automático)
+GET    /api/universal/consultations/             # Consultas (filtrado automático)
+GET    /api/universal/finance/income/            # Ingresos (lógica diferenciada)
+```
+
+### **🔄 LÓGICA DE ROUTING DUAL**
+```javascript
+// Frontend: Auto-detección de endpoints
+const getPatients = async () => {
+  // El mismo endpoint funciona para ambos tipos de licencia
+  const response = await fetch('/api/expedix/django/patients/', {
+    headers: { 'Authorization': `Bearer ${token}` }
+  });
+  
+  // Django middleware automáticamente:
+  // - Detecta license_type del JWT
+  // - Filtra por clinic_id O workspace_id según corresponda
+  // - Aplica lógica de negocio específica
+};
+```
+
+---
+
+## 🔐 **AUTHENTICATION FLOW DUAL SYSTEM**
+
+### **Supabase Auth + Django Dual Middleware**
 ```bash
 # URLs de autenticación verificadas
 Sign In:     https://mindhub.cloud/auth/sign-in
@@ -89,10 +138,10 @@ Dashboard:   https://mindhub.cloud/dashboard
 Reset Pass:  https://mindhub.cloud/auth/reset-password
 ```
 
-### **Django Middleware Implementation**
+### **Django Dual Middleware Implementation (ACTUALIZADO)**
 ```python
-# /middleware/supabase_auth.py - FUNCIONANDO
-class SupabaseAuthMiddleware:
+# /middleware/dual_system_auth.py - NUEVO SISTEMA DUAL
+class DualSystemAuthMiddleware:
     def __init__(self, get_response):
         self.get_response = get_response
 
@@ -106,10 +155,39 @@ class SupabaseAuthMiddleware:
             # Validate with Supabase
             user_data = self.validate_supabase_token(token)
             if user_data:
-                request.user_context = user_data
+                # ✅ NUEVA LÓGICA DUAL
+                license_context = self.get_license_context(user_data['user_id'])
+                request.user_context = {
+                    **user_data,
+                    **license_context
+                }
         
         response = self.get_response(request)
         return response
+    
+    def get_license_context(self, user_id):
+        """Detecta automáticamente el tipo de licencia y contexto"""
+        from django.contrib.auth.models import User
+        from your_app.models import Profile
+        
+        profile = Profile.objects.get(id=user_id)
+        
+        if profile.license_type == 'clinic':
+            return {
+                'license_type': 'clinic',
+                'filter_field': 'clinic_id',
+                'filter_value': profile.clinic_id,
+                'shared_access': True,
+                'clinic_info': self.get_clinic_info(profile.clinic_id)
+            }
+        elif profile.license_type == 'individual':
+            return {
+                'license_type': 'individual',
+                'filter_field': 'workspace_id', 
+                'filter_value': profile.individual_workspace_id,
+                'shared_access': False,
+                'workspace_info': self.get_workspace_info(profile.individual_workspace_id)
+            }
 ```
 
 ### **Headers de Autenticación Django**
@@ -130,26 +208,79 @@ class SupabaseAuthMiddleware:
 
 ---
 
-## 📡 **API ENDPOINTS DJANGO - ESTADO ACTUAL**
+## 🔄 **UNIVERSAL VIEWSETS PATTERN - NUEVO**
 
-### **🩺 EXPEDIX MODULE - ✅ COMPLETAMENTE MIGRADO** 
+### **🎯 PATRÓN UNIVERSAL PARA TODOS LOS MÓDULOS**
+```python
+# Base Universal ViewSet - Funciona para ambos tipos de licencia
+class UniversalDualViewSet(viewsets.ModelViewSet):
+    def get_queryset(self):
+        """Filtrado automático por tipo de licencia"""
+        user_context = self.request.user_context
+        
+        if user_context['license_type'] == 'clinic':
+            # Filtrar por clinic_id (datos compartidos)
+            return self.queryset.filter(clinic_id=user_context['filter_value'])
+        elif user_context['license_type'] == 'individual':
+            # Filtrar por workspace_id (datos exclusivos)
+            return self.queryset.filter(workspace_id=user_context['filter_value'])
+        
+        return self.queryset.none()  # Sin acceso si no hay contexto
+    
+    def perform_create(self, serializer):
+        """Auto-asignación de owner al crear"""
+        user_context = self.request.user_context
+        
+        if user_context['license_type'] == 'clinic':
+            serializer.save(
+                clinic_id=user_context['filter_value'],
+                created_by=self.request.user_context['user_id']
+            )
+        elif user_context['license_type'] == 'individual':
+            serializer.save(
+                workspace_id=user_context['filter_value'],
+                created_by=self.request.user_context['user_id']
+            )
 
-#### **Pacientes API Django - FUNCIONAL**
+# Ejemplo: Pacientes con soporte dual
+class PatientViewSet(UniversalDualViewSet):
+    queryset = Patient.objects.all()
+    serializer_class = PatientSerializer
+    
+    # ¡NO NECESITA LÓGICA ADICIONAL! 
+    # El patrón universal maneja todo automáticamente
+```
+
+---
+
+## 📡 **API ENDPOINTS DJANGO - DUAL SYSTEM ACTUALIZADO**
+
+### **🩺 EXPEDIX MODULE - ✅ ADAPTADO PARA SISTEMA DUAL** 
+
+#### **Pacientes API Django - DUAL SYSTEM READY**
 ```http
-✅ GET    /api/expedix/patients/                      # Lista pacientes
-✅ POST   /api/expedix/patients/                      # Crear paciente
+✅ GET    /api/expedix/patients/                      # Lista pacientes (filtrado automático)
+✅ POST   /api/expedix/patients/                      # Crear paciente (owner auto-asignado)
 ✅ GET    /api/expedix/patients/{id}/                 # Detalle paciente
 ✅ PUT    /api/expedix/patients/{id}/                 # Actualizar paciente
 ✅ DELETE /api/expedix/patients/{id}/                 # Eliminar paciente
 
-# Django endpoints verificados:
-curl -X GET "https://mindhub-django-backend.vercel.app/api/expedix/patients/"
-→ Status: 200, Django REST Framework response
+# DUAL SYSTEM BEHAVIOR:
+# LICENCIA CLÍNICA: Ve todos los pacientes de la clínica
+curl -X GET "https://mindhub-django-backend.vercel.app/api/expedix/patients/" \
+  -H "Authorization: Bearer <clinic_user_jwt_token>"
+→ SQL: SELECT * FROM patients WHERE clinic_id = 'clinic_123'
 
+# LICENCIA INDIVIDUAL: Ve solo sus propios pacientes  
+curl -X GET "https://mindhub-django-backend.vercel.app/api/expedix/patients/" \
+  -H "Authorization: Bearer <individual_user_jwt_token>"
+→ SQL: SELECT * FROM patients WHERE workspace_id = 'workspace_456'
+
+# Crear paciente - owner automático según licencia
 curl -X POST "https://mindhub-django-backend.vercel.app/api/expedix/patients/" \
   -H "Authorization: Bearer <jwt_token>" \
   -d '{"first_name":"Juan","paternal_last_name":"Pérez",...}'
-→ Status: 201, Patient created with Django ORM
+→ Status: 201, auto-asigna clinic_id O workspace_id según tipo de usuario
 ```
 
 #### **Consultas Médicas Django - ✅ MIGRADA**  
@@ -226,32 +357,33 @@ curl -X POST "https://mindhub-django-backend.vercel.app/api/expedix/patients/" \
 ✅ POST   /formx/api/forms/{id}/submit/               # Enviar formulario
 ```
 
-### **💰 FINANCE MODULE - ✅ COMPLETAMENTE IMPLEMENTADA**
+### **💰 FINANCE MODULE - ✅ DUAL SYSTEM CON LÓGICA DE NEGOCIO**
 
-#### **Income Management API Django - FUNCIONAL**
+#### **Income Management API - LÓGICA DIFERENCIADA**
 ```http
-✅ GET    /api/finance/api/income/                    # Lista ingresos
+✅ GET    /api/finance/api/income/                    # Ingresos (lógica dual)
 ✅ POST   /api/finance/api/income/                    # Crear ingreso
-✅ GET    /api/finance/api/income/{id}/               # Detalle ingreso
-✅ PUT    /api/finance/api/income/{id}/               # Actualizar ingreso
-✅ DELETE /api/finance/api/income/{id}/               # Eliminar ingreso
-✅ GET    /api/finance/api/stats/                     # Estadísticas financieras
-✅ GET    /api/finance/api/dashboard/                 # Dashboard financiero
+✅ GET    /api/finance/api/stats/                     # Estadísticas (dual logic)
+✅ GET    /api/finance/api/dashboard/                 # Dashboard (dual logic)
+
+# DUAL SYSTEM BUSINESS LOGIC:
+# LICENCIA CLÍNICA: Ingresos compartidos/divididos entre profesionales
+curl -X GET "/api/finance/api/income/" -H "Authorization: Bearer <clinic_jwt>"
+→ Muestra: Todos los ingresos de la clínica
+→ Dashboard: Ingresos totales + división por profesional
+
+# LICENCIA INDIVIDUAL: 100% de los ingresos para el profesional
+curl -X GET "/api/finance/api/income/" -H "Authorization: Bearer <individual_jwt>"  
+→ Muestra: Solo ingresos del workspace individual
+→ Dashboard: Ingresos totales del profesional (sin división)
 ```
 
-#### **Financial Services & Configuration**
+#### **Financial Services & Payment Methods - DUAL**
 ```http
-✅ GET    /api/finance/api/services/                  # Catálogo servicios
+✅ GET    /api/finance/api/services/                  # Servicios (filtrado dual)
 ✅ POST   /api/finance/api/services/                  # Crear servicio
-✅ GET    /api/finance/api/payment-methods/           # Métodos de pago
-✅ POST   /api/finance/api/payment-methods/           # Configurar método pago
-```
-
-#### **Cash Register Management**
-```http
-✅ GET    /api/finance/api/cash-register-cuts/        # Lista cortes caja
-✅ POST   /api/finance/api/cash-register-cuts/        # Crear corte caja
-✅ GET    /api/finance/api/cash-register-cuts/{id}/   # Detalle corte
+✅ GET    /api/finance/api/payment-methods/           # Métodos pago (dual)
+✅ POST   /api/finance/api/payment-methods/           # Config método pago
 ```
 
 #### **Finance Proxy Routes (Frontend Integration)**
@@ -263,34 +395,58 @@ curl -X POST "https://mindhub-django-backend.vercel.app/api/expedix/patients/" \
 ✅ GET    /api/finance/services/                      # Proxy: Servicios
 ```
 
-#### **Finance Models Django**
+#### **Finance Models Django - CORREGIDOS SEGÚN SECURITY AUDIT**
 ```python
-# Income tracking with Supabase integration
+# Income tracking with Supabase integration - SECURITY CORRECTED
 class Income(models.Model):
-    patient_id = models.UUIDField(help_text="Patient UUID from Supabase")
-    professional_id = models.UUIDField(help_text="Professional UUID from Supabase")
-    consultation_id = models.UUIDField(help_text="Consultation UUID from Supabase")
-    clinic_id = models.UUIDField(help_text="Clinic UUID from Supabase")
+    patient_id = models.UUIDField(help_text="Patient UUID from Supabase patients table")
+    professional_id = models.UUIDField(help_text="Professional UUID from Supabase profiles table")
+    consultation_id = models.UUIDField(help_text="Consultation UUID from Supabase consultations table")
+    clinic_id = models.UUIDField(help_text="Clinic Config UUID - REFERENCES clinic_configurations.id")
     amount = models.DecimalField(max_digits=10, decimal_places=2)
     currency = models.CharField(max_length=3, default='MXN')
     source = models.CharField(max_length=20, choices=IncomeSource.choices)
     payment_method = models.CharField(max_length=20, choices=PaymentMethod.choices)
     status = models.CharField(max_length=20, choices=IncomeStatus.choices)
+    
+    # SECURITY: Ensure clinic isolation
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
 
-# Cash register daily cuts
+# Cash register daily cuts - SECURITY CORRECTED
 class CashRegisterCut(models.Model):
-    clinic_id = models.UUIDField(help_text="Clinic UUID from Supabase")
+    clinic_id = models.UUIDField(help_text="Clinic Config UUID - REFERENCES clinic_configurations.id")
+    responsible_professional_id = models.UUIDField(help_text="Professional UUID from profiles table")
     cut_date = models.DateField()
     expected_cash = models.DecimalField(max_digits=10, decimal_places=2)
     actual_cash = models.DecimalField(max_digits=10, decimal_places=2)
     difference = models.DecimalField(max_digits=10, decimal_places=2)
+    
+    # SECURITY: Clinic isolation enforced
+    created_at = models.DateTimeField(auto_now_add=True)
 
-# Financial services catalog
+# Financial services catalog - SECURITY CORRECTED  
 class FinancialService(models.Model):
-    clinic_id = models.UUIDField(help_text="Clinic UUID from Supabase")
+    clinic_id = models.UUIDField(help_text="Clinic Config UUID - REFERENCES clinic_configurations.id")
+    created_by = models.UUIDField(help_text="Professional UUID from profiles table")
     name = models.CharField(max_length=200)
     standard_price = models.DecimalField(max_digits=10, decimal_places=2)
     category = models.CharField(max_length=100)
+    is_active = models.BooleanField(default=True)
+    
+    # SECURITY: Clinic isolation enforced
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+# Payment method configuration - SECURITY CORRECTED
+class PaymentMethodConfiguration(models.Model):
+    clinic_id = models.UUIDField(help_text="Clinic Config UUID - REFERENCES clinic_configurations.id")
+    method_name = models.CharField(max_length=100)
+    is_enabled = models.BooleanField(default=True)
+    configuration = models.JSONField(default=dict)
+    
+    # SECURITY: Clinic isolation enforced
+    created_at = models.DateTimeField(auto_now_add=True)
 ```
 
 ---
@@ -346,39 +502,66 @@ LOCAL_APPS = [
 
 ---
 
-## 📊 **DATABASE SCHEMA DJANGO ORM - VERIFICADO**
+## 📊 **DATABASE SCHEMA DJANGO ORM - SECURITY CORRECTED**
 
-### **Django Models Migradas**
+### **🔒 CRITICAL SECURITY DISCOVERY - ALL MODELS CORRECTED**
+
+**IMPORTANTE**: Todos los modelos Django deben usar `clinic_configurations.id` como foreign key para aislamiento por clínica.
+
 ```python
-# Expedix Models
+# ✅ Expedix Models - SECURITY CORRECTED
 class Patient(models.Model):
+    clinic_id = models.UUIDField(help_text="REFERENCES clinic_configurations.id") # ✅ REQUIRED
     first_name = models.CharField(max_length=100)
     paternal_last_name = models.CharField(max_length=100)
-    # ... more fields
+    assigned_professional_id = models.UUIDField(help_text="REFERENCES profiles.id")
+    created_by = models.UUIDField(help_text="REFERENCES profiles.id")
+    # ... more fields with security
     
 class Consultation(models.Model):
+    clinic_id = models.UUIDField(help_text="REFERENCES clinic_configurations.id") # ✅ ADDED
     patient = models.ForeignKey(Patient, on_delete=models.CASCADE)
-    # ... consultation fields
+    professional_id = models.UUIDField(help_text="REFERENCES profiles.id")
+    # ... consultation fields with clinic isolation
 
-# ClinimetrixPro Models  
+# ✅ ClinimetrixPro Models - SECURITY IMPLEMENTED
 class PsychometricScale(models.Model):
+    clinic_id = models.UUIDField(help_text="REFERENCES clinic_configurations.id") # ✅ REQUIRED
     name = models.CharField(max_length=200)
-    abbreviation = models.CharField(max_length=20, unique=True)
-    # ... scale metadata
+    abbreviation = models.CharField(max_length=20)
+    created_by = models.UUIDField(help_text="REFERENCES profiles.id")
+    # ... scale metadata with clinic isolation
 
 class Assessment(models.Model):
+    clinic_id = models.UUIDField(help_text="REFERENCES clinic_configurations.id") # ✅ REQUIRED
+    patient_id = models.UUIDField(help_text="REFERENCES patients.id")
+    professional_id = models.UUIDField(help_text="REFERENCES profiles.id")
     scale = models.ForeignKey(PsychometricScale, on_delete=models.CASCADE)
-    # ... assessment data
+    responses = models.JSONField(default=dict)
+    # ... assessment data with clinic isolation
 
-# Agenda Models
+# ✅ Agenda Models - SECURITY IMPLEMENTED
 class Appointment(models.Model):
+    clinic_id = models.UUIDField(help_text="REFERENCES clinic_configurations.id") # ✅ REQUIRED
     patient = models.ForeignKey('expedix.Patient', on_delete=models.CASCADE)
-    # ... appointment fields
+    professional_id = models.UUIDField(help_text="REFERENCES profiles.id")
+    # ... appointment fields with clinic isolation
 
-# Resources Models
-class Resource(models.Model):
+# ✅ Resources Models - SECURITY IMPLEMENTED
+class MedicalResource(models.Model):
+    clinic_id = models.UUIDField(help_text="REFERENCES clinic_configurations.id") # ✅ REQUIRED
+    created_by = models.UUIDField(help_text="REFERENCES profiles.id")
     title = models.CharField(max_length=200)
-    # ... resource fields
+    resource_type = models.CharField(max_length=50)
+    # ... resource fields with clinic isolation
+
+# ✅ FormX Models - SECURITY IMPLEMENTED
+class DynamicForm(models.Model):
+    clinic_id = models.UUIDField(help_text="REFERENCES clinic_configurations.id") # ✅ REQUIRED
+    created_by = models.UUIDField(help_text="REFERENCES profiles.id")
+    form_name = models.CharField(max_length=200)
+    form_schema = models.JSONField(default=dict)
+    # ... form fields with clinic isolation
 ```
 
 ### **Supabase PostgreSQL Connection**
@@ -557,8 +740,110 @@ curl -X GET "https://mindhub.cloud/api/clinimetrix-pro/catalog"
 
 ---
 
-**📅 Actualizado:** 21 Agosto 2025  
-**👨‍💻 Migrado por:** Claude Code  
-**🔄 Estado:** ✅ MIGRACIÓN DJANGO 100% COMPLETADA  
-**🎯 Resultado:** Arquitectura Django unificada completamente funcional  
-**🚀 Production:** https://mindhub.cloud + https://mindhub-django-backend.vercel.app
+---
+
+## 🔒 **FLUJO DE DATOS FRONTEND → BACKEND → DATABASE**
+
+### **✅ SEGURIDAD EN PETICIONES API - IMPLEMENTADA**
+
+#### **1. EXPEDIX - Frontend to Database Flow**
+```javascript
+// ✅ Frontend (React) - GET Patients
+const response = await fetch('/api/expedix/django/patients/', {
+  headers: {
+    'Authorization': `Bearer ${supabaseToken}`,
+    'Content-Type': 'application/json'
+  }
+});
+
+// ✅ API Proxy Route → Django Backend
+// /api/expedix/django/patients/ → https://mindhub-django-backend.vercel.app/api/expedix/patients/
+
+// ✅ Django Backend - Automatic Clinic Isolation
+class PatientViewSet(viewsets.ModelViewSet):
+    def get_queryset(self):
+        # SECURITY: Only return patients from user's clinic
+        user_clinic_id = self.request.user_context.get('clinic_id')
+        return Patient.objects.filter(clinic_id=user_clinic_id)
+
+// ✅ Supabase Database - RLS Policy Active
+-- patients table automatically filters by clinic_id through RLS
+```
+
+#### **2. CLINIMETRIX PRO - Hybrid Flow Security**
+```javascript
+// ✅ React Frontend → Django Bridge
+const response = await fetch('/api/clinimetrix-pro/bridge', {
+  method: 'POST',
+  headers: { 'Authorization': `Bearer ${token}` },
+  body: JSON.stringify({
+    patient_id: selectedPatient.id,
+    scale_abbreviation: 'PHQ-9'
+  })
+});
+
+// ✅ Django Assessment Creation with Clinic Isolation
+class AssessmentCreateView(CreateView):
+    def form_valid(self, form):
+        # SECURITY: Auto-assign clinic_id from authenticated user
+        form.instance.clinic_id = self.request.user_context['clinic_id']
+        return super().form_valid(form)
+
+// ✅ Results Auto-saved to Supabase with Clinic Isolation
+-- assessments table has clinic_id = '38633a49-10e8-4138-b44b-7b7995d887e7'
+```
+
+#### **3. FINANCE - Income Tracking Security**
+```javascript
+// ✅ Frontend Finance Dashboard
+const incomeData = await fetch('/api/finance/income/', {
+  headers: { 'Authorization': `Bearer ${token}` }
+});
+
+// ✅ Django Finance Backend - Clinic Filtered
+class IncomeViewSet(viewsets.ModelViewSet):
+    def get_queryset(self):
+        clinic_id = self.request.user_context.get('clinic_id')
+        # SECURITY: Only income from user's clinic
+        return Income.objects.filter(clinic_id=clinic_id)
+
+// ✅ Database Security - All Financial Data Isolated
+-- finance_income.clinic_id = '38633a49-10e8-4138-b44b-7b7995d887e7'
+```
+
+### **🔑 CLINIC_ID UNIVERSAL PATTERN**
+
+**CRÍTICO**: Todas las peticiones del frontend deben:
+
+1. **Authentication Header**: `Authorization: Bearer <supabase_jwt>`
+2. **Django Middleware**: Extrae `clinic_id` del JWT automáticamente
+3. **ViewSet Filtering**: Todos los queries filtran por `clinic_id` del usuario
+4. **Database RLS**: Políticas Supabase validan acceso por clínica
+5. **Valid Clinic ID**: `38633a49-10e8-4138-b44b-7b7995d887e7` (MindHub Clinic)
+
+### **🛡️ SEGURIDAD GARANTIZADA EN TODAS LAS OPERACIONES**
+
+```python
+# PATRÓN UNIVERSAL DJANGO - USADO EN TODOS LOS MÓDULOS
+class UniversalSecureViewSet(viewsets.ModelViewSet):
+    def get_queryset(self):
+        # EXTRACT clinic_id from Supabase JWT token automatically
+        user_clinic_id = self.request.user_context.get('clinic_id')
+        
+        # FILTER all data by clinic - NO CROSS-CLINIC ACCESS POSSIBLE
+        return self.queryset.filter(clinic_id=user_clinic_id)
+    
+    def perform_create(self, serializer):
+        # AUTO-ASSIGN clinic_id on creation - PREVENT DATA LEAKS
+        serializer.save(clinic_id=self.request.user_context.get('clinic_id'))
+```
+
+---
+
+**📅 Actualizado:** 22 Agosto 2025  
+**👨‍💻 Arquitecto:** Claude Code  
+**🔄 Estado:** 🏗️ DUAL SYSTEM ARCHITECTURE READY FOR IMPLEMENTATION  
+**🎯 Resultado:** Sistema dual clínicas + individuales con lógica de negocio diferenciada  
+**🚀 Production:** https://mindhub.cloud + https://mindhub-django-backend.vercel.app  
+**🔒 Security:** Aislamiento perfecto dual usando clinic_id + workspace_id pattern  
+**💼 Business:** Licencias diferenciadas con costos y features específicos

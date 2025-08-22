@@ -31,6 +31,10 @@ class Appointment(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     appointment_number = models.CharField(max_length=50, unique=True)
     
+    # 🎯 DUAL SYSTEM: Puede pertenecer a clínica O workspace individual
+    clinic_id = models.UUIDField(blank=True, null=True, help_text="For clinic licenses")
+    workspace_id = models.UUIDField(blank=True, null=True, help_text="For individual licenses")
+    
     # Foreign keys (using string references to avoid circular imports)
     patient = models.ForeignKey('expedix.Patient', on_delete=models.CASCADE, related_name='appointments')
     provider = models.ForeignKey('expedix.User', on_delete=models.PROTECT, related_name='provider_appointments')
@@ -75,6 +79,19 @@ class Appointment(models.Model):
             models.Index(fields=['appointment_date']),
             models.Index(fields=['status']),
             models.Index(fields=['appointment_number']),
+            # 🎯 DUAL SYSTEM: Índices para filtrado eficiente
+            models.Index(fields=['clinic_id']),
+            models.Index(fields=['workspace_id']),
+        ]
+        constraints = [
+            # 🎯 DUAL SYSTEM: XOR constraint - solo uno de clinic_id O workspace_id
+            models.CheckConstraint(
+                check=(
+                    models.Q(clinic_id__isnull=False, workspace_id__isnull=True) |
+                    models.Q(clinic_id__isnull=True, workspace_id__isnull=False)
+                ),
+                name='check_appointment_owner'
+            )
         ]
 
     def __str__(self):
@@ -108,6 +125,10 @@ class AppointmentHistory(models.Model):
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     appointment = models.ForeignKey(Appointment, on_delete=models.CASCADE, related_name='history')
+    
+    # 🎯 DUAL SYSTEM: Hereda el owner del appointment
+    clinic_id = models.UUIDField(blank=True, null=True, help_text="Inherited from appointment")
+    workspace_id = models.UUIDField(blank=True, null=True, help_text="Inherited from appointment")
     action = models.CharField(max_length=20, choices=ACTION_CHOICES)
     changes = models.JSONField(help_text="Details of changes made")
     reason = models.TextField(blank=True, null=True)
@@ -144,6 +165,10 @@ class AppointmentConfirmation(models.Model):
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     appointment = models.ForeignKey(Appointment, on_delete=models.CASCADE, related_name='confirmations')
+    
+    # 🎯 DUAL SYSTEM: Hereda el owner del appointment
+    clinic_id = models.UUIDField(blank=True, null=True, help_text="Inherited from appointment")
+    workspace_id = models.UUIDField(blank=True, null=True, help_text="Inherited from appointment")
     confirmation_type = models.CharField(max_length=20, choices=CONFIRMATION_TYPE_CHOICES)
     confirmation_method = models.CharField(max_length=20, choices=CONFIRMATION_METHOD_CHOICES)
     confirmed_by = models.ForeignKey('expedix.User', on_delete=models.PROTECT)
@@ -176,6 +201,10 @@ class ProviderSchedule(models.Model):
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     provider = models.ForeignKey('expedix.User', on_delete=models.CASCADE, related_name='provider_schedules')
+    
+    # 🎯 DUAL SYSTEM: Schedule pertenece a clínica O workspace individual
+    clinic_id = models.UUIDField(blank=True, null=True, help_text="For clinic licenses")
+    workspace_id = models.UUIDField(blank=True, null=True, help_text="For individual licenses")
     weekday = models.IntegerField(choices=WEEKDAY_CHOICES)
     start_time = models.TimeField()
     end_time = models.TimeField()
@@ -211,6 +240,10 @@ class ScheduleBlock(models.Model):
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     provider = models.ForeignKey('expedix.User', on_delete=models.CASCADE, related_name='schedule_blocks')
+    
+    # 🎯 DUAL SYSTEM: Block pertenece a clínica O workspace individual
+    clinic_id = models.UUIDField(blank=True, null=True, help_text="For clinic licenses")
+    workspace_id = models.UUIDField(blank=True, null=True, help_text="For individual licenses")
     block_type = models.CharField(max_length=20, choices=BLOCK_TYPE_CHOICES)
     start_date = models.DateField()
     end_date = models.DateField()
@@ -254,6 +287,10 @@ class WaitingList(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     patient = models.ForeignKey('expedix.Patient', on_delete=models.CASCADE, related_name='waiting_list_entries')
     provider = models.ForeignKey('expedix.User', on_delete=models.CASCADE, related_name='waiting_list')
+    
+    # 🎯 DUAL SYSTEM: Waiting list pertenece a clínica O workspace individual
+    clinic_id = models.UUIDField(blank=True, null=True, help_text="For clinic licenses")
+    workspace_id = models.UUIDField(blank=True, null=True, help_text="For individual licenses")
     appointment_type = models.CharField(max_length=50, choices=Appointment.TYPE_CHOICES)
     preferred_date_start = models.DateField(blank=True, null=True)
     preferred_date_end = models.DateField(blank=True, null=True)

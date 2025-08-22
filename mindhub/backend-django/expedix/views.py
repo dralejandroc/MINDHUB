@@ -1,6 +1,9 @@
 """
-Expedix Views - Django REST Framework
+Expedix Views - Django REST Framework DUAL SYSTEM
 Replaces Node.js Express routes with Django ViewSets
+Supports:
+- LICENCIA CLÍNICA: Multi-user (up to 15 professionals) with shared data
+- LICENCIA INDIVIDUAL: Single professional with workspace personal and multiple sucursales
 """
 
 from rest_framework import viewsets, status, filters
@@ -24,22 +27,23 @@ from .serializers import (
     DashboardStatsSerializer
 )
 from .authentication import SupabaseProxyAuthentication
+from middleware.base_viewsets import ExpedixDualViewSet, DualSystemReadOnlyViewSet
 
 
-class PatientViewSet(viewsets.ModelViewSet):
+class PatientViewSet(ExpedixDualViewSet):
     """
-    Patient management ViewSet
-    Replaces /api/expedix/patients/* endpoints from Node.js
+    🎯 DUAL SYSTEM Patient management ViewSet
+    Automatically filters by license type:
+    - LICENCIA CLÍNICA: WHERE clinic_id = user.clinic_id (shared patients)
+    - LICENCIA INDIVIDUAL: WHERE workspace_id = user.workspace_id (private patients)
     """
-    # Remove select_related('created_by') as we don't have a users table in Supabase
-    # The patients table in Supabase doesn't have a created_by relationship
     queryset = Patient.objects.filter(is_active=True)
     serializer_class = PatientSerializer
     authentication_classes = [SupabaseProxyAuthentication]
     permission_classes = [IsAuthenticated]
     filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
     search_fields = ['first_name', 'paternal_last_name', 'maternal_last_name', 'email', 'phone', 'medical_record_number']
-    filterset_fields = ['gender', 'city', 'state', 'patient_category', 'clinic_id']
+    filterset_fields = ['gender', 'city', 'state', 'patient_category']  # Removed clinic_id as it's handled by dual system
     ordering_fields = ['created_at', 'first_name', 'paternal_last_name', 'medical_record_number']
     ordering = ['-created_at']
 
@@ -50,56 +54,8 @@ class PatientViewSet(viewsets.ModelViewSet):
             return PatientSummarySerializer
         return PatientSerializer
 
-    def get_queryset(self):
-        """
-        Filter patients based on user context - MATCHES DATABASE_TRUTH.md exactly:
-        - Individual users: Only see patients where created_by = user_id AND clinic_id IS NULL
-        - Clinic users: See all patients where clinic_id = user_clinic_id
-        """
-        queryset = self.queryset
-        
-        # Apply filtering based on DATABASE_TRUTH.md access patterns
-        if hasattr(self.request, 'is_clinic_user') and self.request.is_clinic_user:
-            # Clinic user: see all patients in their clinic
-            if self.request.user_clinic_id:
-                logger.info(f'Filtering patients for clinic: {self.request.user_clinic_id}')
-                queryset = queryset.filter(clinic_id=self.request.user_clinic_id)
-            else:
-                # Clinic user without clinic_id - no access
-                queryset = queryset.none()
-        else:
-            # Individual user: only see own patients (created_by = user_id AND clinic_id IS NULL)
-            if hasattr(self.request, 'supabase_user_id') and self.request.supabase_user_id:
-                logger.info(f'Filtering patients for individual user: {self.request.supabase_user_id}')
-                queryset = queryset.filter(
-                    created_by=self.request.supabase_user_id,
-                    clinic_id__isnull=True
-                )
-            else:
-                # No authenticated user - no access
-                queryset = queryset.none()
-            
-        return queryset
-
-    def perform_create(self, serializer):
-        """Create patient with proper association - MATCHES DATABASE_TRUTH.md"""
-        # Always set created_by to current user
-        data = {'created_by': self.request.supabase_user_id}
-        
-        # Set clinic association based on user type
-        if hasattr(self.request, 'is_clinic_user') and self.request.is_clinic_user:
-            # Clinic user: patient belongs to clinic
-            if self.request.user_clinic_id:
-                data['clinic_id'] = self.request.user_clinic_id
-                logger.info(f'Creating patient for clinic: {self.request.user_clinic_id}')
-            else:
-                raise ValidationError('Clinic user must have clinic_id')
-        else:
-            # Individual user: patient has clinic_id = NULL (individual patient)
-            data['clinic_id'] = None
-            logger.info(f'Creating individual patient for user: {self.request.supabase_user_id}')
-        
-        serializer.save(**data)
+    # ✅ DUAL SYSTEM: get_queryset() and perform_create() are now handled by ExpedixDualViewSet
+    # Automatic filtering: clinic_id or workspace_id based on license type
 
     @action(detail=False, methods=['get'])
     def search(self, request):
@@ -170,19 +126,18 @@ class PatientViewSet(viewsets.ModelViewSet):
         return Response(serializer.data)
 
 
-class ConsultationViewSet(viewsets.ModelViewSet):
+class ConsultationViewSet(ExpedixDualViewSet):
     """
-    Consultation management ViewSet
-    Replaces /api/expedix/consultations/* endpoints from Node.js
+    🎯 DUAL SYSTEM Consultation management ViewSet
+    Automatically filters by license type through patient relationship
     """
-    # Remove select_related('professional') as we don't have a users table
     queryset = Consultation.objects.select_related('patient').all()
     serializer_class = ConsultationSerializer
     authentication_classes = [SupabaseProxyAuthentication]
     permission_classes = [IsAuthenticated]
     filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
     search_fields = ['patient__first_name', 'patient__paternal_last_name', 'reason', 'diagnosis']
-    filterset_fields = ['status', 'patient']  # Removed 'professional'
+    filterset_fields = ['status', 'patient']
     ordering_fields = ['consultation_date', 'created_at']
     ordering = ['-consultation_date']
 
@@ -233,9 +188,10 @@ class ConsultationViewSet(viewsets.ModelViewSet):
         return Response(serializer.data)
 
 
-class MedicalHistoryViewSet(viewsets.ModelViewSet):
+class MedicalHistoryViewSet(ExpedixDualViewSet):
     """
-    Medical History management ViewSet
+    🎯 DUAL SYSTEM Medical History management ViewSet
+    Automatically filters by license type through patient relationship
     """
     queryset = MedicalHistory.objects.select_related('patient').all()
     serializer_class = MedicalHistorySerializer
@@ -259,9 +215,10 @@ class MedicalHistoryViewSet(viewsets.ModelViewSet):
         return Response(serializer.data)
 
 
-class UserViewSet(viewsets.ReadOnlyModelViewSet):
+class UserViewSet(DualSystemReadOnlyViewSet):
     """
-    User management ViewSet (read-only for now)
+    🎯 DUAL SYSTEM User management ViewSet (read-only)
+    Automatically filters by license type
     """
     queryset = User.objects.filter(is_active=True)
     serializer_class = UserSerializer

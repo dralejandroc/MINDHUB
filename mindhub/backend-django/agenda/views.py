@@ -1,6 +1,9 @@
 """
-Agenda Views - Django REST Framework
+Agenda Views - Django REST Framework DUAL SYSTEM
 Replaces Node.js Express routes with Django ViewSets
+Supports:
+- LICENCIA CLÍNICA: Multi-professional shared agenda with clinic-wide appointments
+- LICENCIA INDIVIDUAL: Single professional private agenda with multiple locations
 """
 
 from rest_framework import viewsets, status, filters
@@ -15,6 +18,7 @@ import uuid
 
 # Import Supabase authentication
 from expedix.authentication import SupabaseProxyAuthentication
+from middleware.base_viewsets import AgendaDualViewSet, DualSystemReadOnlyViewSet, DualSystemModelViewSet
 
 from .models import (
     Appointment, AppointmentHistory, AppointmentConfirmation,
@@ -29,10 +33,12 @@ from .serializers import (
 )
 
 
-class AppointmentViewSet(viewsets.ModelViewSet):
+class AppointmentViewSet(AgendaDualViewSet):
     """
-    Appointment management ViewSet
-    Replaces /api/expedix/appointments/* endpoints from Node.js
+    🎯 DUAL SYSTEM Appointment management ViewSet
+    Automatically filters by license type:
+    - LICENCIA CLÍNICA: WHERE clinic_id = user.clinic_id (shared agenda)
+    - LICENCIA INDIVIDUAL: WHERE workspace_id = user.workspace_id (private agenda)
     """
     queryset = Appointment.objects.select_related('patient', 'provider', 'scheduled_by').all()
     serializer_class = AppointmentSerializer
@@ -380,8 +386,8 @@ class AppointmentViewSet(viewsets.ModelViewSet):
         return slots
 
 
-class AppointmentHistoryViewSet(viewsets.ReadOnlyModelViewSet):
-    """Appointment history ViewSet"""
+class AppointmentHistoryViewSet(DualSystemReadOnlyViewSet):
+    """🎯 DUAL SYSTEM Appointment history ViewSet"""
     queryset = AppointmentHistory.objects.select_related('appointment', 'modified_by').all()
     serializer_class = AppointmentHistorySerializer
     authentication_classes = [SupabaseProxyAuthentication]
@@ -392,8 +398,8 @@ class AppointmentHistoryViewSet(viewsets.ReadOnlyModelViewSet):
     ordering = ['-created_at']
 
 
-class ProviderScheduleViewSet(viewsets.ModelViewSet):
-    """Provider schedule management ViewSet"""
+class ProviderScheduleViewSet(DualSystemModelViewSet):
+    """🎯 DUAL SYSTEM Provider schedule management ViewSet"""
     queryset = ProviderSchedule.objects.select_related('provider').all()
     serializer_class = ProviderScheduleSerializer
     authentication_classes = [SupabaseProxyAuthentication]
@@ -404,8 +410,8 @@ class ProviderScheduleViewSet(viewsets.ModelViewSet):
     ordering = ['weekday', 'start_time']
 
 
-class ScheduleBlockViewSet(viewsets.ModelViewSet):
-    """Schedule block management ViewSet"""
+class ScheduleBlockViewSet(DualSystemModelViewSet):
+    """🎯 DUAL SYSTEM Schedule block management ViewSet"""
     queryset = ScheduleBlock.objects.select_related('provider').all()
     serializer_class = ScheduleBlockSerializer
     authentication_classes = [SupabaseProxyAuthentication]
@@ -416,8 +422,8 @@ class ScheduleBlockViewSet(viewsets.ModelViewSet):
     ordering = ['-start_date']
 
 
-class WaitingListViewSet(viewsets.ModelViewSet):
-    """Waiting list management ViewSet"""
+class WaitingListViewSet(AgendaDualViewSet):
+    """🎯 DUAL SYSTEM Waiting list management ViewSet"""
     queryset = WaitingList.objects.select_related('patient', 'provider', 'added_by').all()
     serializer_class = WaitingListSerializer
     authentication_classes = [SupabaseProxyAuthentication]

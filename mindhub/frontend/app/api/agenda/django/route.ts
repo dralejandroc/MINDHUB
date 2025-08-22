@@ -1,4 +1,5 @@
-// Agenda Django Proxy API - Bridges to Django backend
+// Agenda Django Proxy API - DUAL SYSTEM
+// Bridges to Django backend with automatic license type detection
 import { getAuthenticatedUser, createResponse, createErrorResponse } from '@/lib/supabase/admin'
 
 export const dynamic = 'force-dynamic';
@@ -19,7 +20,7 @@ export async function GET(request: Request) {
     const url = new URL(request.url);
     const queryParams = url.searchParams.toString();
     
-    // Forward request to Django
+    // Forward request to Django with dual system headers
     const djangoUrl = `${DJANGO_API_BASE}/api/agenda/${queryParams ? '?' + queryParams : ''}`;
     
     const response = await fetch(djangoUrl, {
@@ -27,6 +28,11 @@ export async function GET(request: Request) {
       headers: {
         'Authorization': request.headers.get('Authorization') || '',
         'Content-Type': 'application/json',
+        // 🎯 DUAL SYSTEM: Headers for automatic license type detection
+        'X-Proxy-Auth': 'verified',
+        'X-User-Id': user.id,
+        'X-User-Email': user.email,
+        'X-MindHub-Dual-System': 'enabled',
       },
     });
 
@@ -62,7 +68,7 @@ export async function POST(request: Request) {
     // Get request body
     const body = await request.json();
     
-    // Forward request to Django
+    // Forward request to Django with dual system headers
     const djangoUrl = `${DJANGO_API_BASE}/api/agenda/`;
     
     const response = await fetch(djangoUrl, {
@@ -70,6 +76,11 @@ export async function POST(request: Request) {
       headers: {
         'Authorization': request.headers.get('Authorization') || '',
         'Content-Type': 'application/json',
+        // 🎯 DUAL SYSTEM: Headers for automatic license type detection
+        'X-Proxy-Auth': 'verified',
+        'X-User-Id': user.id,
+        'X-User-Email': user.email,
+        'X-MindHub-Dual-System': 'enabled',
       },
       body: JSON.stringify(body),
     });
@@ -108,7 +119,7 @@ export async function PUT(request: Request) {
     const url = new URL(request.url);
     const queryParams = url.searchParams.toString();
     
-    // Forward request to Django
+    // Forward request to Django with dual system headers
     const djangoUrl = `${DJANGO_API_BASE}/api/agenda/${queryParams ? '?' + queryParams : ''}`;
     
     const response = await fetch(djangoUrl, {
@@ -116,6 +127,11 @@ export async function PUT(request: Request) {
       headers: {
         'Authorization': request.headers.get('Authorization') || '',
         'Content-Type': 'application/json',
+        // 🎯 DUAL SYSTEM: Headers for automatic license type detection
+        'X-Proxy-Auth': 'verified',
+        'X-User-Id': user.id,
+        'X-User-Email': user.email,
+        'X-MindHub-Dual-System': 'enabled',
       },
       body: JSON.stringify(body),
     });
@@ -152,7 +168,7 @@ export async function DELETE(request: Request) {
     const url = new URL(request.url);
     const queryParams = url.searchParams.toString();
     
-    // Forward request to Django
+    // Forward request to Django with dual system headers
     const djangoUrl = `${DJANGO_API_BASE}/api/agenda/${queryParams ? '?' + queryParams : ''}`;
     
     const response = await fetch(djangoUrl, {
@@ -160,6 +176,11 @@ export async function DELETE(request: Request) {
       headers: {
         'Authorization': request.headers.get('Authorization') || '',
         'Content-Type': 'application/json',
+        // 🎯 DUAL SYSTEM: Headers for automatic license type detection
+        'X-Proxy-Auth': 'verified',
+        'X-User-Id': user.id,
+        'X-User-Email': user.email,
+        'X-MindHub-Dual-System': 'enabled',
       },
     });
 

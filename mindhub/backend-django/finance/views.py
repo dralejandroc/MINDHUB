@@ -1,6 +1,9 @@
 """
-Finance views for MindHub Finance API
+Finance views for MindHub Finance API - DUAL SYSTEM
 Handles income tracking, financial statistics, and cash register management
+Supports:
+- LICENCIA CLÍNICA: Shared income with percentage distribution among professionals
+- LICENCIA INDIVIDUAL: 100% income for single professional, no sharing
 """
 
 from rest_framework import viewsets, status
@@ -20,16 +23,19 @@ from .serializers import (
     FinancialStatsSerializer, IncomeStatsQuerySerializer, 
     IncomeListQuerySerializer, DashboardStatsSerializer
 )
+from middleware.base_viewsets import FinanceDualViewSet, DualSystemModelViewSet
 
 
-class IncomeViewSet(viewsets.ModelViewSet):
+class IncomeViewSet(FinanceDualViewSet):
     """
-    ViewSet for managing income records
+    🎯 DUAL SYSTEM Income ViewSet with business logic differentiation
+    - LICENCIA CLÍNICA: Shared income with percentage distribution
+    - LICENCIA INDIVIDUAL: 100% income for professional, no sharing
     """
     queryset = Income.objects.all()
     permission_classes = [IsAuthenticated]
     filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]
-    filterset_fields = ['status', 'source', 'payment_method', 'clinic_id', 'professional_id']
+    filterset_fields = ['status', 'source', 'payment_method', 'professional_id']  # Removed clinic_id (handled by dual system)
     search_fields = ['description', 'patient_name', 'professional_name', 'reference']
     ordering_fields = ['received_date', 'amount', 'created_at']
     ordering = ['-received_date', '-created_at']
@@ -40,15 +46,14 @@ class IncomeViewSet(viewsets.ModelViewSet):
         return IncomeSerializer
 
     def get_queryset(self):
-        """Filter queryset based on user permissions and clinic access"""
-        queryset = super().get_queryset()
+        """
+        🎯 DUAL SYSTEM: Base filtering by license type + additional date filters
+        - LICENCIA CLÍNICA: WHERE clinic_id = user.clinic_id
+        - LICENCIA INDIVIDUAL: WHERE workspace_id = user.workspace_id
+        """
+        queryset = super().get_queryset()  # Already filtered by dual system
         
-        # Filter by clinic_id if provided in query params
-        clinic_id = self.request.query_params.get('clinic_id')
-        if clinic_id:
-            queryset = queryset.filter(clinic_id=clinic_id)
-            
-        # Filter by date range if provided
+        # Additional filter by date range if provided
         start_date = self.request.query_params.get('start_date')
         end_date = self.request.query_params.get('end_date')
         
@@ -67,6 +72,23 @@ class IncomeViewSet(viewsets.ModelViewSet):
                 pass
         
         return queryset
+
+    @action(detail=False, methods=['get'])
+    def business_logic(self, request):
+        """
+        🎯 DUAL SYSTEM: Get finance business logic for current license type
+        Returns different logic for clinic vs individual licenses
+        """
+        finance_logic = self.get_finance_context()
+        
+        return Response({
+            'success': True,
+            'license_type': getattr(request, 'user_context', {}).get('license_type'),
+            'business_logic': finance_logic,
+            'can_share_income': self.can_share_income(),
+            'income_percentage': self.get_income_percentage(),
+            'accessible_locations': self.get_accessible_locations()
+        })
 
     @action(detail=False, methods=['get'])
     def stats(self, request):
@@ -281,27 +303,20 @@ class IncomeViewSet(viewsets.ModelViewSet):
         })
 
 
-class CashRegisterCutViewSet(viewsets.ModelViewSet):
+class CashRegisterCutViewSet(DualSystemModelViewSet):
     """
-    ViewSet for managing cash register cuts
+    🎯 DUAL SYSTEM Cash Register Cut ViewSet
+    Automatically filtered by license type
     """
     queryset = CashRegisterCut.objects.all()
     serializer_class = CashRegisterCutSerializer
     permission_classes = [IsAuthenticated]
     filter_backends = [DjangoFilterBackend, OrderingFilter]
-    filterset_fields = ['clinic_id', 'cut_date', 'responsible_professional_id']
+    filterset_fields = ['cut_date', 'responsible_professional_id']  # Removed clinic_id (handled by dual system)
     ordering_fields = ['cut_date', 'created_at']
     ordering = ['-cut_date', '-created_at']
 
-    def get_queryset(self):
-        queryset = super().get_queryset()
-        
-        # Filter by clinic_id if provided
-        clinic_id = self.request.query_params.get('clinic_id')
-        if clinic_id:
-            queryset = queryset.filter(clinic_id=clinic_id)
-            
-        return queryset
+    # ✅ DUAL SYSTEM: get_queryset() now handled automatically by DualSystemModelViewSet
 
     def perform_create(self, serializer):
         """
@@ -332,27 +347,23 @@ class CashRegisterCutViewSet(viewsets.ModelViewSet):
         instance.save()
 
 
-class FinancialServiceViewSet(viewsets.ModelViewSet):
+class FinancialServiceViewSet(DualSystemModelViewSet):
     """
-    ViewSet for managing financial services catalog
+    🎯 DUAL SYSTEM Financial Services catalog ViewSet
+    Automatically filtered by license type
     """
     queryset = FinancialService.objects.all()
     serializer_class = FinancialServiceSerializer
     permission_classes = [IsAuthenticated]
     filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]
-    filterset_fields = ['clinic_id', 'category', 'is_active']
+    filterset_fields = ['category', 'is_active']  # Removed clinic_id (handled by dual system)
     search_fields = ['name', 'code', 'description']
     ordering_fields = ['name', 'standard_price', 'category']
     ordering = ['category', 'name']
 
     def get_queryset(self):
-        queryset = super().get_queryset()
+        queryset = super().get_queryset()  # Already filtered by dual system
         
-        # Filter by clinic_id if provided
-        clinic_id = self.request.query_params.get('clinic_id')
-        if clinic_id:
-            queryset = queryset.filter(clinic_id=clinic_id)
-            
         # Filter by active status by default
         if 'is_active' not in self.request.query_params:
             queryset = queryset.filter(is_active=True)
@@ -360,26 +371,22 @@ class FinancialServiceViewSet(viewsets.ModelViewSet):
         return queryset
 
 
-class PaymentMethodConfigViewSet(viewsets.ModelViewSet):
+class PaymentMethodConfigViewSet(DualSystemModelViewSet):
     """
-    ViewSet for managing payment method configurations
+    🎯 DUAL SYSTEM Payment Method Configuration ViewSet
+    Automatically filtered by license type
     """
     queryset = PaymentMethodConfiguration.objects.all()
     serializer_class = PaymentMethodConfigSerializer
     permission_classes = [IsAuthenticated]
     filter_backends = [DjangoFilterBackend, OrderingFilter]
-    filterset_fields = ['clinic_id', 'payment_method', 'is_enabled']
+    filterset_fields = ['payment_method', 'is_enabled']  # Removed clinic_id (handled by dual system)
     ordering_fields = ['display_order', 'display_name']
     ordering = ['display_order', 'display_name']
 
     def get_queryset(self):
-        queryset = super().get_queryset()
+        queryset = super().get_queryset()  # Already filtered by dual system
         
-        # Filter by clinic_id if provided
-        clinic_id = self.request.query_params.get('clinic_id')
-        if clinic_id:
-            queryset = queryset.filter(clinic_id=clinic_id)
-            
         # Filter by enabled status by default
         if 'is_enabled' not in self.request.query_params:
             queryset = queryset.filter(is_enabled=True)

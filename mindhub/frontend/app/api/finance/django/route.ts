@@ -1,4 +1,4 @@
-// Resources Django Proxy API - DUAL SYSTEM
+// Finance Django Proxy API - DUAL SYSTEM
 // Bridges to Django backend with automatic license type detection
 import { getAuthenticatedUser, createResponse, createErrorResponse } from '@/lib/supabase/admin'
 
@@ -8,7 +8,7 @@ const DJANGO_API_BASE = process.env.NEXT_PUBLIC_DJANGO_API_URL || 'https://mindh
 
 export async function GET(request: Request) {
   try {
-    console.log('[RESOURCES DJANGO PROXY] Processing GET request');
+    console.log('[FINANCE DJANGO PROXY] Processing GET request');
     
     // Verify authentication
     const { user, error: authError } = await getAuthenticatedUser(request);
@@ -21,7 +21,7 @@ export async function GET(request: Request) {
     const queryParams = url.searchParams.toString();
     
     // Forward request to Django with dual system headers
-    const djangoUrl = `${DJANGO_API_BASE}/api/resources/${queryParams ? '?' + queryParams : ''}`;
+    const djangoUrl = `${DJANGO_API_BASE}/api/finance/${queryParams ? '?' + queryParams : ''}`;
     
     const response = await fetch(djangoUrl, {
       method: 'GET',
@@ -41,12 +41,12 @@ export async function GET(request: Request) {
     }
 
     const data = await response.json();
-    console.log('[RESOURCES DJANGO PROXY] Successfully proxied request to Django');
+    console.log('[FINANCE DJANGO PROXY] Successfully proxied request to Django');
 
     return createResponse(data);
 
   } catch (error) {
-    console.error('[RESOURCES DJANGO PROXY] Error:', error);
+    console.error('[FINANCE DJANGO PROXY] Error:', error);
     return createErrorResponse(
       'Failed to proxy request to Django',
       error instanceof Error ? error.message : 'Unknown error',
@@ -57,7 +57,7 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   try {
-    console.log('[RESOURCES DJANGO PROXY] Processing POST request');
+    console.log('[FINANCE DJANGO PROXY] Processing POST request');
     
     // Verify authentication
     const { user, error: authError } = await getAuthenticatedUser(request);
@@ -69,7 +69,7 @@ export async function POST(request: Request) {
     const body = await request.json();
     
     // Forward request to Django with dual system headers
-    const djangoUrl = `${DJANGO_API_BASE}/api/resources/`;
+    const djangoUrl = `${DJANGO_API_BASE}/api/finance/`;
     
     const response = await fetch(djangoUrl, {
       method: 'POST',
@@ -90,12 +90,12 @@ export async function POST(request: Request) {
     }
 
     const data = await response.json();
-    console.log('[RESOURCES DJANGO PROXY] Successfully proxied POST to Django');
+    console.log('[FINANCE DJANGO PROXY] Successfully proxied POST to Django');
 
     return createResponse(data, 201);
 
   } catch (error) {
-    console.error('[RESOURCES DJANGO PROXY] Error:', error);
+    console.error('[FINANCE DJANGO PROXY] Error:', error);
     return createErrorResponse(
       'Failed to proxy POST request to Django',
       error instanceof Error ? error.message : 'Unknown error',
@@ -106,7 +106,7 @@ export async function POST(request: Request) {
 
 export async function PUT(request: Request) {
   try {
-    console.log('[RESOURCES DJANGO PROXY] Processing PUT request');
+    console.log('[FINANCE DJANGO PROXY] Processing PUT request');
     
     // Verify authentication
     const { user, error: authError } = await getAuthenticatedUser(request);
@@ -120,7 +120,7 @@ export async function PUT(request: Request) {
     const queryParams = url.searchParams.toString();
     
     // Forward request to Django with dual system headers
-    const djangoUrl = `${DJANGO_API_BASE}/api/resources/${queryParams ? '?' + queryParams : ''}`;
+    const djangoUrl = `${DJANGO_API_BASE}/api/finance/${queryParams ? '?' + queryParams : ''}`;
     
     const response = await fetch(djangoUrl, {
       method: 'PUT',
@@ -141,12 +141,12 @@ export async function PUT(request: Request) {
     }
 
     const data = await response.json();
-    console.log('[RESOURCES DJANGO PROXY] Successfully proxied PUT to Django');
+    console.log('[FINANCE DJANGO PROXY] Successfully proxied PUT to Django');
 
     return createResponse(data);
 
   } catch (error) {
-    console.error('[RESOURCES DJANGO PROXY] Error:', error);
+    console.error('[FINANCE DJANGO PROXY] Error:', error);
     return createErrorResponse(
       'Failed to proxy PUT request to Django',
       error instanceof Error ? error.message : 'Unknown error',
@@ -157,7 +157,7 @@ export async function PUT(request: Request) {
 
 export async function DELETE(request: Request) {
   try {
-    console.log('[RESOURCES DJANGO PROXY] Processing DELETE request');
+    console.log('[FINANCE DJANGO PROXY] Processing DELETE request');
     
     // Verify authentication
     const { user, error: authError } = await getAuthenticatedUser(request);
@@ -169,7 +169,7 @@ export async function DELETE(request: Request) {
     const queryParams = url.searchParams.toString();
     
     // Forward request to Django with dual system headers
-    const djangoUrl = `${DJANGO_API_BASE}/api/resources/${queryParams ? '?' + queryParams : ''}`;
+    const djangoUrl = `${DJANGO_API_BASE}/api/finance/${queryParams ? '?' + queryParams : ''}`;
     
     const response = await fetch(djangoUrl, {
       method: 'DELETE',
@@ -189,12 +189,12 @@ export async function DELETE(request: Request) {
     }
 
     const data = await response.json();
-    console.log('[RESOURCES DJANGO PROXY] Successfully proxied DELETE to Django');
+    console.log('[FINANCE DJANGO PROXY] Successfully proxied DELETE to Django');
 
     return createResponse(data);
 
   } catch (error) {
-    console.error('[RESOURCES DJANGO PROXY] Error:', error);
+    console.error('[FINANCE DJANGO PROXY] Error:', error);
     return createErrorResponse(
       'Failed to proxy DELETE request to Django',
       error instanceof Error ? error.message : 'Unknown error',

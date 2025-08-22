@@ -1,6 +1,9 @@
 """
-Supabase Authentication Middleware for Django
-Handles JWT token validation from React frontend
+Supabase Authentication Middleware for Django - DUAL SYSTEM
+Handles JWT token validation from React frontend with automatic license type detection
+Supports:
+- LICENCIA CLÍNICA: Multi-user (up to 15 professionals) with shared data
+- LICENCIA INDIVIDUAL: Single professional with workspace personal and multiple sucursales
 Django acts as stateless API - no local user creation needed
 """
 import requests
@@ -39,32 +42,121 @@ class SupabaseAuthMiddleware(MiddlewareMixin):
             request.supabase_user_id = auth_result['supabase_data'].get('id')
             request.authenticated_user_email = auth_result['supabase_data'].get('email')
             
-            # Clinic-aware context: determine if user works individually or in a clinic
-            # Extract clinic_id from Supabase profile data
-            user_metadata = auth_result['supabase_data'].get('user_metadata', {})
-            request.user_clinic_id = user_metadata.get('clinic_id')  # From user metadata
+            # 🎯 DUAL SYSTEM: Automatic license type detection
+            request.user_context = self.get_user_access_context(request.supabase_user_id)
             
-            # If no clinic_id in metadata, check database
-            if not request.user_clinic_id:
-                try:
-                    from clinics.models import ClinicProfile
-                    clinic_profile = ClinicProfile.objects.filter(
-                        id=request.supabase_user_id,
-                        clinic_id__isnull=False
-                    ).first()
-                    if clinic_profile:
-                        request.user_clinic_id = str(clinic_profile.clinic_id)
-                        request.user_clinic_role = clinic_profile.clinic_role
-                except Exception as e:
-                    logger.warning(f'Could not fetch clinic profile: {e}')
+            # Set legacy attributes for backward compatibility
+            request.user_clinic_id = request.user_context.get('clinic_id')
+            request.individual_workspace_id = request.user_context.get('workspace_id')
+            request.is_clinic_user = (request.user_context.get('license_type') == 'clinic')
+            request.user_clinic_role = request.user_context.get('clinic_role', 'professional')
             
-            request.is_clinic_user = bool(request.user_clinic_id)
-            request.user_clinic_role = getattr(request, 'user_clinic_role', 'professional')
-            
-            logger.info(f'User auth context: email={request.authenticated_user_email}, clinic_id={request.user_clinic_id}, is_clinic={request.is_clinic_user}, role={request.user_clinic_role}')
+            logger.info(f'DUAL SYSTEM auth context: email={request.authenticated_user_email}, '
+                       f'license_type={request.user_context.get("license_type")}, '
+                       f'clinic_id={request.user_context.get("clinic_id")}, '
+                       f'workspace_id={request.user_context.get("workspace_id")}, '
+                       f'role={request.user_context.get("clinic_role", "owner")}')
         
         response = self.get_response(request)
         return response
+    
+    def get_user_access_context(self, user_id):
+        """
+        🎯 DUAL SYSTEM: Automatic license type detection
+        Returns user access context for filtering queries
+        """
+        try:
+            # Import here to avoid circular imports
+            from django.db import connection
+            
+            with connection.cursor() as cursor:
+                # Check if user exists in profiles table with license type
+                cursor.execute("""
+                    SELECT 
+                        license_type, 
+                        clinic_id, 
+                        clinic_role,
+                        individual_workspace_id
+                    FROM profiles 
+                    WHERE id = %s AND is_active = true
+                """, [user_id])
+                
+                result = cursor.fetchone()
+                
+                if result:
+                    license_type, clinic_id, clinic_role, workspace_id = result
+                    
+                    if license_type == 'clinic' and clinic_id:
+                        return {
+                            'license_type': 'clinic',
+                            'access_type': 'clinic',
+                            'filter_field': 'clinic_id',
+                            'filter_value': str(clinic_id),
+                            'clinic_id': str(clinic_id),
+                            'workspace_id': None,
+                            'clinic_role': clinic_role,
+                            'shared_access': True
+                        }
+                    elif license_type == 'individual' and workspace_id:
+                        return {
+                            'license_type': 'individual',
+                            'access_type': 'individual',
+                            'filter_field': 'workspace_id', 
+                            'filter_value': str(workspace_id),
+                            'clinic_id': None,
+                            'workspace_id': str(workspace_id),
+                            'clinic_role': 'owner',
+                            'shared_access': False
+                        }
+                
+                # If no license type found, check legacy clinic profile
+                cursor.execute("""
+                    SELECT clinic_id, clinic_role 
+                    FROM clinic_profiles 
+                    WHERE id = %s AND clinic_id IS NOT NULL
+                """, [user_id])
+                
+                legacy_result = cursor.fetchone()
+                if legacy_result:
+                    clinic_id, clinic_role = legacy_result
+                    logger.warning(f'User {user_id} found in legacy clinic_profiles, migrating to dual system needed')
+                    return {
+                        'license_type': 'clinic',
+                        'access_type': 'clinic',
+                        'filter_field': 'clinic_id',
+                        'filter_value': str(clinic_id),
+                        'clinic_id': str(clinic_id),
+                        'workspace_id': None,
+                        'clinic_role': clinic_role,
+                        'shared_access': True
+                    }
+                
+                # Default to individual workspace for new users
+                logger.warning(f'User {user_id} not found in dual system, defaulting to individual')
+                return {
+                    'license_type': 'individual',
+                    'access_type': 'individual',
+                    'filter_field': 'workspace_id',
+                    'filter_value': f'default_workspace_{user_id}',
+                    'clinic_id': None,
+                    'workspace_id': f'default_workspace_{user_id}',
+                    'clinic_role': 'owner',
+                    'shared_access': False
+                }
+                
+        except Exception as e:
+            logger.error(f'Error detecting user license type for {user_id}: {e}')
+            # Fallback to individual workspace
+            return {
+                'license_type': 'individual',
+                'access_type': 'individual', 
+                'filter_field': 'workspace_id',
+                'filter_value': f'fallback_workspace_{user_id}',
+                'clinic_id': None,
+                'workspace_id': f'fallback_workspace_{user_id}',
+                'clinic_role': 'owner',
+                'shared_access': False
+            }
     
     def should_process_auth(self, request):
         """
