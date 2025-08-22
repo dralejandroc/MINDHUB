@@ -4,6 +4,7 @@ import React, { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { ArrowLeftIcon, DocumentTextIcon, ChartBarIcon, BeakerIcon, CheckCircleIcon, ClipboardDocumentCheckIcon } from '@heroicons/react/24/outline';
 import { ClinimetrixProAssessmentModal } from '@/components/ClinimetrixPro/ClinimetrixProAssessmentModal';
+import { useSupabase } from '@/components/providers/supabase-provider';
 
 interface ScaleDocumentation {
   id: string;
@@ -41,6 +42,7 @@ interface ScaleDocumentation {
 export default function ScaleDetailPage() {
   const params = useParams();
   const router = useRouter();
+  const { supabase, user } = useSupabase();
   const scaleId = params?.scaleId as string;
   
   const [scaleData, setScaleData] = useState<ScaleDocumentation | null>(null);
@@ -49,15 +51,32 @@ export default function ScaleDetailPage() {
   const [showAssessment, setShowAssessment] = useState(false);
 
   useEffect(() => {
-    loadScaleDetails();
-  }, [scaleId]);
+    if (user) {
+      loadScaleDetails();
+    } else if (user === null) {
+      // User is not authenticated, redirect to login
+      router.push('/auth/sign-in?redirectTo=' + encodeURIComponent(window.location.pathname));
+    }
+  }, [scaleId, user, router]);
 
   const loadScaleDetails = async () => {
     try {
       setLoading(true);
       setError(null);
       
-      const response = await fetch(`/api/clinimetrix-pro/templates/${scaleId}`);
+      // Get the session token for authentication
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (!session) {
+        throw new Error('Not authenticated');
+      }
+      
+      const response = await fetch(`/api/clinimetrix-pro/templates/${scaleId}`, {
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`,
+          'Content-Type': 'application/json',
+        },
+      });
       
       if (!response.ok) {
         throw new Error('Failed to load scale details');
