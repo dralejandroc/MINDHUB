@@ -1,52 +1,54 @@
-import { NextRequest, NextResponse } from 'next/server';
+// ClinimetrixPro Template by ID API Route - connects DIRECTLY to Supabase
+import { supabaseAdmin, getAuthenticatedUser, createResponse, createErrorResponse } from '@/lib/supabase/admin'
 
-/**
- * ClinimetrixPro Template by ID API Route
- * Proxies requests to get specific template data
- */
-
-// Force dynamic rendering for this API route
 export const dynamic = 'force-dynamic';
 
-const BACKEND_URL = process.env.BACKEND_URL || 'https://mindhub-django-backend.vercel.app';
-
-export async function GET(request: NextRequest, { params }: { params: { templateId: string } }) {
+export async function GET(request: Request, { params }: { params: { templateId: string } }) {
   try {
     const { templateId } = params;
+    console.log('[CLINIMETRIX TEMPLATE API] Processing GET request for templateId:', templateId);
     
-    // Forward authentication headers
-    const headers: HeadersInit = {
-      'Content-Type': 'application/json',
-    };
-
-    // Forward Authorization header (Auth token)
-    const authHeader = request.headers.get('Authorization');
-    if (authHeader) {
-      headers['Authorization'] = authHeader;
+    // Verify authentication
+    const { user, error: authError } = await getAuthenticatedUser(request);
+    if (authError || !user) {
+      return createErrorResponse('Unauthorized', 'Valid authentication required', 401);
     }
 
-    // Forward user context
-    const userContextHeader = request.headers.get('X-User-Context');
-    if (userContextHeader) {
-      headers['X-User-Context'] = userContextHeader;
+    console.log('[CLINIMETRIX TEMPLATE API] Authenticated user:', user.id);
+
+    // Get specific template from Supabase
+    const { data: template, error } = await supabaseAdmin
+      .from('clinimetrix_templates')
+      .select('*')
+      .eq('id', templateId)
+      .eq('is_active', true)
+      .single();
+
+    if (error) {
+      console.error('[CLINIMETRIX TEMPLATE API] Supabase error:', error);
+      if (error.code === 'PGRST116') {
+        return createErrorResponse('Template not found', `Template with ID ${templateId} not found`, 404);
+      }
+      throw new Error(`Database error: ${error.message}`);
     }
 
-    const response = await fetch(`${BACKEND_URL}/api/clinimetrix-pro/templates/${templateId}`, {
-      method: 'GET',
-      headers,
+    if (!template) {
+      return createErrorResponse('Template not found', `Template with ID ${templateId} not found`, 404);
+    }
+
+    console.log('[CLINIMETRIX TEMPLATE API] Successfully fetched template:', template.id);
+
+    return createResponse({
+      success: true,
+      data: template.template_data || template
     });
-    
-    if (!response.ok) {
-      throw new Error(`Backend responded with status: ${response.status}`);
-    }
-    
-    const data = await response.json();
-    return NextResponse.json(data);
+
   } catch (error) {
-    console.error('ClinimetrixPro Template API Error:', error);
-    return NextResponse.json(
-      { error: 'Failed to fetch template from ClinimetrixPro API' }, 
-      { status: 500 }
+    console.error('[CLINIMETRIX TEMPLATE API] Error:', error);
+    return createErrorResponse(
+      'Failed to fetch template',
+      error instanceof Error ? error.message : 'Unknown error',
+      500
     );
   }
 }

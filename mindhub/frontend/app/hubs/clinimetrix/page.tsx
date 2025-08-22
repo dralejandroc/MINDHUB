@@ -531,11 +531,11 @@ function ScaleCard({ scale, onToggleFavorite, onSelect }: {
   onToggleFavorite: (scaleId: string) => void;
   onSelect: (scale: ClinimetrixRegistry) => void;
 }) {
+  const router = useRouter();
 
   return (
     <div 
-      className="bg-white rounded-lg border shadow-sm hover:shadow-lg transition-all duration-300 cursor-pointer hover:border-purple-400 group hover:shadow-purple flex flex-col h-full"
-      onClick={() => onSelect(scale)}
+      className="bg-white rounded-lg border shadow-sm hover:shadow-lg transition-all duration-300 hover:border-purple-400 group hover:shadow-purple flex flex-col h-full"
     >
       {/* Header with gradient background */}
       <div className="bg-gradient-to-r from-purple-50 to-purple-100 p-2.5 border-b border-gray-100">
@@ -587,8 +587,7 @@ function ScaleCard({ scale, onToggleFavorite, onSelect }: {
           <button
             onClick={(e) => {
               e.stopPropagation();
-              // TODO: Open scale documentation modal
-              alert(`Ver información científica de ${scale?.name || 'esta escala'}\n\nEsta funcionalidad estará disponible próximamente con bibliografía completa y evidencia científica.`);
+              router.push(`/hubs/clinimetrix-pro/catalog/${scale?.templateId}`);
             }}
             className="text-gray-400 hover:text-purple-600 transition-colors p-1 hover:bg-purple-50 rounded"
             title="Ver información científica y bibliografía"
@@ -624,7 +623,19 @@ function ScaleCard({ scale, onToggleFavorite, onSelect }: {
       </div>
 
       {/* Footer */}
-      <div className="px-2.5 pb-2.5 mt-auto">
+      <div className="px-2.5 pb-2.5 mt-auto space-y-1.5">
+        <Button
+          onClick={(e) => {
+            e.stopPropagation();
+            router.push(`/hubs/clinimetrix-pro/catalog/${scale?.templateId}`);
+          }}
+          variant="outline"
+          size="sm"
+          className="w-full font-semibold shadow-sm hover:shadow-md transition-all text-[10px] py-1.5 border-purple-300 text-purple-700 hover:bg-purple-50"
+        >
+          <InformationCircleIcon className="h-3 w-3 mr-1" />
+          Ver Documentación
+        </Button>
         <Button
           onClick={(e) => {
             e.stopPropagation();
@@ -648,10 +659,11 @@ function ScaleListItem({ scale, onToggleFavorite, onSelect }: {
   onToggleFavorite: (scaleId: string) => void;
   onSelect: (scale: ClinimetrixRegistry) => void;
 }) {
+  const router = useRouter();
+  
   return (
     <div 
-      className="bg-white rounded-xl border border-gray-200 p-4 hover:shadow-lg hover:shadow-secondary transition-all cursor-pointer hover:border-teal-400"
-      onClick={() => onSelect(scale)}
+      className="bg-white rounded-xl border border-gray-200 p-4 hover:shadow-lg hover:shadow-secondary transition-all hover:border-teal-400"
     >
       <div className="flex items-center justify-between">
         <div className="flex-1 min-w-0">
@@ -706,11 +718,25 @@ function ScaleListItem({ scale, onToggleFavorite, onSelect }: {
           <Button
             onClick={(e) => {
               e.stopPropagation();
-              onSelect(scale);
+              router.push(`/hubs/clinimetrix-pro/catalog/${scale?.templateId}`);
             }}
             variant="outline"
             size="sm"
+            className="mr-2"
           >
+            <InformationCircleIcon className="h-4 w-4 mr-1" />
+            Ver Documentación
+          </Button>
+          
+          <Button
+            onClick={(e) => {
+              e.stopPropagation();
+              onSelect(scale);
+            }}
+            variant="primary"
+            size="sm"
+          >
+            <BeakerIcon className="h-4 w-4 mr-1" />
             Aplicar Escala
           </Button>
         </div>

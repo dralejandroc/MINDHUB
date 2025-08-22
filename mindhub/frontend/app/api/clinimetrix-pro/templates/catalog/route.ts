@@ -54,6 +54,7 @@ export async function GET(request: Request) {
     // Transform data to match expected format
     const transformedCatalog = catalog.map(item => ({
       id: item.id,
+      templateId: item.id,
       template_id: item.id,
       abbreviation: item.template_data?.metadata?.abbreviation || 'N/A',
       name: item.template_data?.metadata?.name || 'Unknown Template',
