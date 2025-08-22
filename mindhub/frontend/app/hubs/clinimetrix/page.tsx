@@ -24,6 +24,16 @@ import { ClinimetrixProAssessmentModal } from '@/components/ClinimetrixPro/Clini
 
 // Genera un patrón abstracto único basado en el ID de la escala - FUNCIÓN GLOBAL
 function generateAbstractPattern(scaleId: string, category: string): string {
+  // Validar que scaleId existe y no está vacío
+  if (!scaleId || typeof scaleId !== 'string') {
+    scaleId = 'default-pattern-id';
+  }
+  
+  // Validar que category existe y no está vacío
+  if (!category || typeof category !== 'string') {
+    category = 'general';
+  }
+  
   // Colores vibrantes por categoría - SIN grises, blancos o negros
   const categoryColors: { [key: string]: { primary: string; secondary: string; accent: string; shadow: string } } = {
     'Ansiedad': { 
@@ -152,15 +162,15 @@ export default function ClinimetrixPage() {
     
     const searchLower = searchTerm.toLowerCase();
     const matchesSearch = !searchTerm || 
-      (scale.name && scale.name.toLowerCase().includes(searchLower)) ||
-      (scale.abbreviation && scale.abbreviation.toLowerCase().includes(searchLower)) ||
-      (scale.description && scale.description.toLowerCase().includes(searchLower)) ||
-      (scale.category && scale.category.toLowerCase().includes(searchLower)) ||
+      (scale?.name && scale.name.toLowerCase().includes(searchLower)) ||
+      (scale?.abbreviation && scale.abbreviation.toLowerCase().includes(searchLower)) ||
+      (scale?.description && scale.description.toLowerCase().includes(searchLower)) ||
+      (scale?.category && scale.category.toLowerCase().includes(searchLower)) ||
       // Smart abbreviation search (e.g., "bdi" matches "BDI-21")
-      (scale.name && scale.name.toLowerCase().replace(/[^a-z0-9]/g, '').includes(searchLower.replace(/[^a-z0-9]/g, '')));
+      (scale?.name && scale.name.toLowerCase().replace(/[^a-z0-9]/g, '').includes(searchLower.replace(/[^a-z0-9]/g, '')));
     
-    const matchesCategory = selectedCategory === 'all' || scale.category === selectedCategory;
-    const matchesFavorites = !showFavoritesOnly || scale.isFeatured; // Using isFeatured as favorites for now
+    const matchesCategory = selectedCategory === 'all' || scale?.category === selectedCategory;
+    const matchesFavorites = !showFavoritesOnly || scale?.isFeatured; // Using isFeatured as favorites for now
     
     return matchesSearch && matchesCategory && matchesFavorites;
   });
@@ -186,7 +196,7 @@ export default function ClinimetrixPage() {
       const favorites = JSON.parse(localStorage.getItem('clinimetrix-favorites') || '[]');
       const scalesWithFavorites = scalesData.map(scale => ({
         ...scale,
-        isFeatured: favorites.includes(scale.templateId)
+        isFeatured: favorites.includes(scale?.templateId)
       }));
       
       setScales(scalesWithFavorites);
@@ -205,7 +215,7 @@ export default function ClinimetrixPage() {
       const safeScales = Array.isArray(scales) ? scales : [];
       const updatedScales = safeScales.map(scale => 
         scale?.templateId === scaleId 
-          ? { ...scale, isFeatured: !scale.isFeatured }
+          ? { ...scale, isFeatured: !scale?.isFeatured }
           : scale
       );
       setScales(updatedScales);
@@ -457,7 +467,7 @@ export default function ClinimetrixPage() {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-3 sm:gap-4">
           {filteredScales.map((scale) => scale && (
             <ScaleCard 
-              key={scale.templateId} 
+              key={scale?.templateId || `scale-${Math.random()}`} 
               scale={scale} 
               onToggleFavorite={toggleFavorite}
               onSelect={handleSelectScale}
@@ -468,7 +478,7 @@ export default function ClinimetrixPage() {
         <div className="space-y-3">
           {filteredScales.map((scale) => scale && (
             <ScaleListItem 
-              key={scale.templateId} 
+              key={scale?.templateId || `scale-${Math.random()}`} 
               scale={scale} 
               onToggleFavorite={toggleFavorite}
               onSelect={handleSelectScale}
@@ -535,15 +545,15 @@ function ScaleCard({ scale, onToggleFavorite, onSelect }: {
               <div 
                 className="w-8 h-8 rounded-lg group-hover:scale-105 transition-transform overflow-hidden flex-shrink-0"
                 style={{ 
-                  background: generateAbstractPattern(scale.templateId, scale.category),
+                  background: generateAbstractPattern(scale?.templateId || 'default', scale?.category || 'general'),
                   boxShadow: '0 4px 12px -2px rgba(0, 0, 0, 0.15), 0 2px 6px -1px rgba(0, 0, 0, 0.1)'
                 }}
               />
               <div className="min-w-0 flex-1">
                 <h3 className="font-bold text-gray-900 group-hover:text-purple-700 transition-colors text-xs line-clamp-2 leading-tight">
-                  {scale.name}
+                  {scale?.name || 'Escala sin nombre'}
                 </h3>
-                {scale.abbreviation && (
+                {scale?.abbreviation && (
                   <p className="text-[10px] text-purple-600 font-mono font-semibold mt-0.5">
                     {scale.abbreviation}
                   </p>
@@ -554,11 +564,11 @@ function ScaleCard({ scale, onToggleFavorite, onSelect }: {
           <button
             onClick={(e) => {
               e.stopPropagation();
-              onToggleFavorite(scale.templateId);
+              onToggleFavorite(scale?.templateId || '');
             }}
             className="text-gray-400 hover:text-red-500 transition-colors p-1 hover:bg-white rounded"
           >
-            {scale.isFeatured ? (
+            {scale?.isFeatured ? (
               <HeartSolidIcon className="h-3 w-3 text-red-500" />
             ) : (
               <HeartIcon className="h-3 w-3" />
@@ -571,14 +581,14 @@ function ScaleCard({ scale, onToggleFavorite, onSelect }: {
       <div className="p-2.5 space-y-2 flex-1 flex flex-col">
         {/* Category and Info button */}
         <div className="flex items-center justify-between">
-          <div className={`inline-flex items-center px-2 py-1 rounded-full text-[10px] font-semibold border shadow-sm ${getCategoryColor(scale.category)}`}>
-            {scale.category}
+          <div className={`inline-flex items-center px-2 py-1 rounded-full text-[10px] font-semibold border shadow-sm ${getCategoryColor(scale?.category || 'general')}`}>
+            {scale?.category || 'General'}
           </div>
           <button
             onClick={(e) => {
               e.stopPropagation();
               // TODO: Open scale documentation modal
-              alert(`Ver información científica de ${scale.name}\n\nEsta funcionalidad estará disponible próximamente con bibliografía completa y evidencia científica.`);
+              alert(`Ver información científica de ${scale?.name || 'esta escala'}\n\nEsta funcionalidad estará disponible próximamente con bibliografía completa y evidencia científica.`);
             }}
             className="text-gray-400 hover:text-purple-600 transition-colors p-1 hover:bg-purple-50 rounded"
             title="Ver información científica y bibliografía"
@@ -589,7 +599,7 @@ function ScaleCard({ scale, onToggleFavorite, onSelect }: {
 
         {/* Compact description */}
         <p className="text-gray-600 text-[10px] line-clamp-2 leading-relaxed flex-1">
-          {scale.description}
+          {scale?.description || 'Descripción no disponible'}
         </p>
 
         {/* Stats grid - más visual */}
@@ -650,25 +660,25 @@ function ScaleListItem({ scale, onToggleFavorite, onSelect }: {
             <div 
               className="w-10 h-10 rounded-lg flex-shrink-0"
               style={{ 
-                background: generateAbstractPattern(scale.templateId, scale.category),
+                background: generateAbstractPattern(scale?.templateId || 'default', scale?.category || 'general'),
                 boxShadow: '0 6px 20px -5px rgba(0, 0, 0, 0.2), 0 3px 8px -3px rgba(0, 0, 0, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.15)'
               }}
             />
             <div className="flex items-center gap-2">
-              <h3 className="font-semibold text-gray-900">{scale.name}</h3>
-              {scale.abbreviation && (
+              <h3 className="font-semibold text-gray-900">{scale?.name || 'Escala sin nombre'}</h3>
+              {scale?.abbreviation && (
                 <span className="text-xs font-mono text-gray-500 bg-gray-100 px-2 py-0.5 rounded">
                   {scale.abbreviation}
                 </span>
               )}
             </div>
-            <div className={`px-2 py-1 rounded-full text-xs font-medium border ${getCategoryColor(scale.category)}`}>
-              {scale.category}
+            <div className={`px-2 py-1 rounded-full text-xs font-medium border ${getCategoryColor(scale?.category || 'general')}`}>
+              {scale?.category || 'General'}
             </div>
           </div>
           
           <p className="text-gray-600 text-sm mb-2 line-clamp-2">
-            {scale.description}
+            {scale?.description || 'Descripción no disponible'}
           </p>
 
           <div className="flex items-center gap-6 text-xs text-gray-500">
@@ -682,11 +692,11 @@ function ScaleListItem({ scale, onToggleFavorite, onSelect }: {
           <button
             onClick={(e) => {
               e.stopPropagation();
-              onToggleFavorite(scale.templateId);
+              onToggleFavorite(scale?.templateId || '');
             }}
             className="text-gray-400 hover:text-red-500 transition-colors"
           >
-            {scale.isFeatured ? (
+            {scale?.isFeatured ? (
               <HeartSolidIcon className="h-5 w-5 text-red-500" />
             ) : (
               <HeartIcon className="h-5 w-5" />
