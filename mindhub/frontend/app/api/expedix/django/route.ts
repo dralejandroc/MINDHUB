@@ -30,7 +30,7 @@ export async function GET(request: Request) {
         // 🎯 DUAL SYSTEM: Headers for automatic license type detection
         'X-Proxy-Auth': 'verified',
         'X-User-Id': user.id,
-        'X-User-Email': user.email,
+        'X-User-Email': user.email || '',
         'X-MindHub-Dual-System': 'enabled',
       },
     });
@@ -78,7 +78,7 @@ export async function POST(request: Request) {
         // 🎯 DUAL SYSTEM: Headers for automatic license type detection
         'X-Proxy-Auth': 'verified',
         'X-User-Id': user.id,
-        'X-User-Email': user.email,
+        'X-User-Email': user.email || '',
         'X-MindHub-Dual-System': 'enabled',
       },
       body: JSON.stringify(body),
@@ -129,7 +129,7 @@ export async function PUT(request: Request) {
         // 🎯 DUAL SYSTEM: Headers for automatic license type detection
         'X-Proxy-Auth': 'verified',
         'X-User-Id': user.id,
-        'X-User-Email': user.email,
+        'X-User-Email': user.email || '',
         'X-MindHub-Dual-System': 'enabled',
       },
       body: JSON.stringify(body),
@@ -178,7 +178,7 @@ export async function DELETE(request: Request) {
         // 🎯 DUAL SYSTEM: Headers for automatic license type detection
         'X-Proxy-Auth': 'verified',
         'X-User-Id': user.id,
-        'X-User-Email': user.email,
+        'X-User-Email': user.email || '',
         'X-MindHub-Dual-System': 'enabled',
       },
     });
