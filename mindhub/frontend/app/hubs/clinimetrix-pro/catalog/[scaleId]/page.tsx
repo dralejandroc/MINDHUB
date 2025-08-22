@@ -4,7 +4,8 @@ import React, { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { ArrowLeftIcon, DocumentTextIcon, ChartBarIcon, BeakerIcon, CheckCircleIcon, ClipboardDocumentCheckIcon } from '@heroicons/react/24/outline';
 import { ClinimetrixProAssessmentModal } from '@/components/ClinimetrixPro/ClinimetrixProAssessmentModal';
-import { useSupabase } from '@/components/providers/supabase-provider';
+import { useAuth } from '@/lib/providers/AuthProvider';
+import { supabase } from '@/lib/supabase/client';
 
 interface ScaleDocumentation {
   id: string;
@@ -42,7 +43,7 @@ interface ScaleDocumentation {
 export default function ScaleDetailPage() {
   const params = useParams();
   const router = useRouter();
-  const { supabase, user } = useSupabase();
+  const { user, session, loading: authLoading } = useAuth();
   const scaleId = params?.scaleId as string;
   
   const [scaleData, setScaleData] = useState<ScaleDocumentation | null>(null);
@@ -51,22 +52,22 @@ export default function ScaleDetailPage() {
   const [showAssessment, setShowAssessment] = useState(false);
 
   useEffect(() => {
-    if (user) {
-      loadScaleDetails();
-    } else if (user === null) {
-      // User is not authenticated, redirect to login
-      router.push('/auth/sign-in?redirectTo=' + encodeURIComponent(window.location.pathname));
+    if (!authLoading) {
+      if (user && session) {
+        loadScaleDetails();
+      } else {
+        // User is not authenticated, redirect to login
+        router.push('/auth/sign-in?redirectTo=' + encodeURIComponent(window.location.pathname));
+      }
     }
-  }, [scaleId, user, router]);
+  }, [scaleId, user, session, authLoading, router]);
 
   const loadScaleDetails = async () => {
     try {
       setLoading(true);
       setError(null);
       
-      // Get the session token for authentication
-      const { data: { session } } = await supabase.auth.getSession();
-      
+      // Use session from context
       if (!session) {
         throw new Error('Not authenticated');
       }

@@ -14,18 +14,23 @@ export interface AuthenticatedFetchOptions extends RequestInit {
  */
 export const useAuthenticatedFetch = () => {
   return async (url: string, options: AuthenticatedFetchOptions = {}) => {
-    // Get current session
-    const { data: { session }, error } = await supabase.auth.getSession();
+    // Get current user (more secure than getSession)
+    const { data: { user }, error: userError } = await supabase.auth.getUser();
     
-    let token: string;
-    
-    if (error || !session?.access_token) {
-      // No valid JWT - user needs to login
-      console.error('[AUTH] No valid JWT found - user must be authenticated');
+    if (userError || !user) {
+      console.error('[AUTH] No valid user found - user must be authenticated');
       throw new Error('Authentication required. Please log in.');
-    } else {
-      token = session.access_token;
     }
+    
+    // Get session for access token
+    const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+    
+    if (sessionError || !session?.access_token) {
+      console.error('[AUTH] No valid session found - user must be authenticated');
+      throw new Error('Authentication required. Please log in.');
+    }
+    
+    const token = session.access_token;
 
     // Add Authorization header
     const headers = new Headers(options.headers);
@@ -63,8 +68,8 @@ export const getCurrentUser = async () => {
  * Check if user is authenticated
  */
 export const isAuthenticated = async (): Promise<boolean> => {
-  const { data: { session } } = await supabase.auth.getSession();
-  return !!session?.access_token;
+  const { data: { user } } = await supabase.auth.getUser();
+  return !!user;
 };
 
 /**

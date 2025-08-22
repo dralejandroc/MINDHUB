@@ -75,8 +75,14 @@ const NAVIGATION_ITEMS = [
     href: '/frontdesk',
     icon: ClipboardDocumentListIcon,
     status: 'active'
+  },
+  {
+    id: 'formx',
+    name: 'FormX',
+    href: '/hubs/formx',
+    icon: DocumentTextIcon,
+    status: 'active'
   }
-  // FormX removed for beta deployment
   // Reports integrated into other modules
 ];
 
