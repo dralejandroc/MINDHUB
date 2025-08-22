@@ -16,7 +16,7 @@ export async function GET(request: NextRequest) {
       params.append(key, value);
     });
     
-    let url = `${BACKEND_URL}/api/finance/api/income/`;
+    let url = `${BACKEND_URL}/api/finance/api/services/`;
     if (params.toString()) {
       url += `?${params.toString()}`;
     }
@@ -26,7 +26,7 @@ export async function GET(request: NextRequest) {
       'Content-Type': 'application/json',
     };
 
-    // Forward Authorization header (Auth token)
+    // Forward Authorization header
     const authHeader = request.headers.get('Authorization');
     if (authHeader) {
       headers['Authorization'] = authHeader;
@@ -50,20 +50,17 @@ export async function GET(request: NextRequest) {
     const data = await response.json();
     return NextResponse.json(data);
   } catch (error) {
-    console.error('Error proxying finance income GET request:', error);
+    console.error('Error proxying financial services GET request:', error);
     
-    // Return empty data instead of mock data - real data only!
+    // Return empty services instead of mock data - real data only!
     return NextResponse.json(
       { 
         success: true, 
-        message: 'No data available - backend connection failed',
-        data: [], // Empty array - NO MOCK DATA
-        pagination: {
-          page: 1,
-          limit: 20,
-          total: 0,
-          pages: 0
-        }
+        message: 'No financial services available - backend connection failed',
+        data: [],
+        count: 0,
+        next: null,
+        previous: null
       }, 
       { status: 200 }
     );
@@ -74,12 +71,14 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
     
+    const url = `${BACKEND_URL}/api/finance/api/services/`;
+
     // Forward authentication headers
     const headers: HeadersInit = {
       'Content-Type': 'application/json',
     };
 
-    // Forward Authorization header (Auth token)
+    // Forward Authorization header
     const authHeader = request.headers.get('Authorization');
     if (authHeader) {
       headers['Authorization'] = authHeader;
@@ -90,26 +89,27 @@ export async function POST(request: NextRequest) {
     if (userContextHeader) {
       headers['X-User-Context'] = userContextHeader;
     }
-    
-    const response = await fetch(`${BACKEND_URL}/api/finance/api/income/`, {
+
+    const response = await fetch(url, {
       method: 'POST',
       headers,
       body: JSON.stringify(body),
     });
 
     if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
+      const errorData = await response.json();
+      return NextResponse.json(errorData, { status: response.status });
     }
 
     const data = await response.json();
     return NextResponse.json(data);
   } catch (error) {
-    console.error('Error creating income record:', error);
+    console.error('Error proxying financial service POST request:', error);
+    
     return NextResponse.json(
       { 
         success: false, 
-        error: 'Failed to create income record',
-        message: error instanceof Error ? error.message : "Unknown error"
+        error: 'Failed to create financial service - backend connection failed'
       }, 
       { status: 500 }
     );

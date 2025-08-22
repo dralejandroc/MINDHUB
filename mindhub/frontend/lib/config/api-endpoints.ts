@@ -20,9 +20,9 @@ export const API_CONFIG = {
 export const FRONTEND_ENDPOINTS = {
   // Expedix - Patient Management
   expedix: {
-    patients: '/expedix/patients',
-    consultations: '/expedix/consultations',
-    patientTimeline: '/expedix/patient-timeline'
+    patients: '/expedix/patients/',
+    consultations: '/expedix/consultations/',
+    patientTimeline: '/expedix/patient-timeline/'
   },
   
   // Clinimetrix - Clinical Assessments
@@ -42,13 +42,13 @@ export const FRONTEND_ENDPOINTS = {
   // FrontDesk Module
   frontdesk: {
     tasks: {
-      pending: '/frontdesk/tasks/pending'
+      pending: '/frontdesk/tasks/pending/'
     },
     stats: {
-      today: '/frontdesk/stats/today'
+      today: '/frontdesk/stats/today/'
     },
     appointments: {
-      today: '/frontdesk/appointments/today'
+      today: '/frontdesk/appointments/today/'
     }
   },
   

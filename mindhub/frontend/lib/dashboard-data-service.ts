@@ -34,7 +34,7 @@ class DashboardDataService {
   private static instance: DashboardDataService;
   private cachedData: DashboardData | null = null;
   private lastFetch: number = 0;
-  private cacheTimeout = 2 * 60 * 1000; // 2 minutes (reduced for testing)
+  private cacheTimeout = 5 * 60 * 1000; // 5 minutes to reduce API calls
 
   static getInstance(): DashboardDataService {
     if (!DashboardDataService.instance) {
@@ -44,11 +44,12 @@ class DashboardDataService {
   }
 
   async fetchDashboardData(userId?: string): Promise<DashboardData> {
-    // Check cache (temporarily disabled for testing)
+    // Check cache - Reactivated to prevent excessive API calls
     const now = Date.now();
-    // if (this.cachedData && (now - this.lastFetch) < this.cacheTimeout) {
-    //   return this.cachedData;
-    // }
+    if (this.cachedData && (now - this.lastFetch) < this.cacheTimeout) {
+      console.log('[DashboardService] Returning cached data, age:', (now - this.lastFetch), 'ms');
+      return this.cachedData;
+    }
 
     try {
       // Fetch data from existing backend endpoints only

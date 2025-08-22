@@ -21,6 +21,7 @@ def api_root(request):
             '/api/agenda/ - Appointment System', 
             '/api/resources/ - Medical Resources',
             '/api/clinics/ - Multi-user Management',
+            '/api/finance/ - Financial Management',
             '/assessments/ - ClinimetrixPro Assessment Engine',
             '/scales/ - Psychometric Scale Data',
             '/admin/ - Django Admin'
@@ -52,6 +53,7 @@ urlpatterns = [
     path('api/agenda/', include('agenda.urls')),    # Agenda - Appointment System
     path('api/resources/', include('resources.urls')),  # Resources - Medical Resources
     path('api/clinics/', include('clinics.urls')),  # Clinics - Multi-user Management
+    path('api/finance/', include('finance.urls')),  # Finance - Financial Management
     path('api/frontdesk/', include('assessments.frontdesk_urls')),  # FrontDesk endpoints
 ]
 

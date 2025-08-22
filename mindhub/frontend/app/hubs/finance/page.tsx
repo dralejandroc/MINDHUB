@@ -218,44 +218,13 @@ export default function FinancePage() {
         </div>
         
         <div className="space-y-2">
-          {/* Mock recent transactions */}
-          <div className="flex items-center justify-between p-3 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors duration-200">
-            <div className="flex items-center">
-              <div className="w-8 h-8 gradient-secondary rounded-full flex items-center justify-center mr-3">
-                <CurrencyDollarIcon className="h-4 w-4 text-white" />
-              </div>
-              <div>
-                <div className="font-medium text-gray-900 text-xs">Consulta General</div>
-                <div className="text-xs text-gray-500">Ana López • Efectivo</div>
-              </div>
-            </div>
-            <div className="text-right">
-              <div className="font-bold text-secondary-600 text-sm">$1,200.00</div>
-              <div className="text-xs text-gray-500">Hace 2 horas</div>
-            </div>
-          </div>
-
-          <div className="flex items-center justify-between p-3 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors duration-200">
-            <div className="flex items-center">
-              <div className="w-8 h-8 gradient-primary rounded-full flex items-center justify-center mr-3">
-                <CurrencyDollarIcon className="h-4 w-4 text-white" />
-              </div>
-              <div>
-                <div className="font-medium text-gray-900 text-xs">Terapia Psicológica</div>
-                <div className="text-xs text-gray-500">Carlos Ruiz • Tarjeta</div>
-              </div>
-            </div>
-            <div className="text-right">
-              <div className="font-bold text-secondary-600 text-sm">$800.00</div>
-              <div className="text-xs text-gray-500">Hace 4 horas</div>
-            </div>
-          </div>
-
-          <div className="text-center py-3 text-gray-500">
-            <CurrencyDollarIcon className="h-8 w-8 text-gray-300 mx-auto mb-2" />
-            <p className="text-xs">¿Listo para registrar más ingresos?</p>
-            <Button onClick={handleNewIncome} variant="secondary" size="sm" className="mt-2">
-              Registrar Ingreso
+          {/* No mock data - real transactions only */}
+          <div className="text-center py-6 text-gray-500">
+            <CurrencyDollarIcon className="h-10 w-10 text-gray-300 mx-auto mb-3" />
+            <p className="text-sm font-medium text-gray-700 mb-1">No hay transacciones recientes</p>
+            <p className="text-xs text-gray-500 mb-3">Registra tu primer ingreso para comenzar</p>
+            <Button onClick={() => setCurrentView('income')} variant="secondary" size="sm" className="mt-2">
+              Registrar Primer Ingreso
             </Button>
           </div>
         </div>

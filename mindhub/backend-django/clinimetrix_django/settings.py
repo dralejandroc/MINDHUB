@@ -55,6 +55,7 @@ LOCAL_APPS = [
     'agenda',  # Agenda - Appointment Scheduling System
     'resources',  # Resources - Medical Resources Management
     'clinics',  # Clinics - Multi-user Clinic Management System
+    'finance',  # Finance - Financial Management & Income Tracking
 ]
 
 INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS
