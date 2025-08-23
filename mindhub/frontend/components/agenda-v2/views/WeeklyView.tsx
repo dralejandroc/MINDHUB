@@ -21,6 +21,7 @@ export interface WeeklyViewProps {
   onSettings?: () => void;
   onRefresh?: () => void;
   onSearch?: (query: string) => void;
+  onViewChange?: (view: 'week' | 'day' | 'month' | 'clinic-global' | 'reception') => void;
   todayStats?: {
     totalAppointments: number;
     confirmed: number;
@@ -52,6 +53,7 @@ export const WeeklyView: React.FC<WeeklyViewProps> = ({
   onSettings,
   onRefresh,
   onSearch,
+  onViewChange,
   todayStats,
   isLoading = false,
   lastRefresh,
@@ -82,8 +84,8 @@ export const WeeklyView: React.FC<WeeklyViewProps> = ({
 
   // Handle view changes
   const handleViewChange = (view: 'week' | 'day' | 'month' | 'clinic-global' | 'reception') => {
-    // This will be handled by parent component
     console.log('View change requested:', view);
+    onViewChange?.(view);
   };
 
   const handleToday = () => {

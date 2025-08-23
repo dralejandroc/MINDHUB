@@ -30,6 +30,7 @@ export interface DailyViewProps {
   onSettings?: () => void;
   onRefresh?: () => void;
   onSearch?: (query: string) => void;
+  onViewChange?: (view: 'week' | 'day' | 'month' | 'clinic-global' | 'reception') => void;
   todayStats?: {
     totalAppointments: number;
     confirmed: number;
@@ -79,6 +80,7 @@ export const DailyView: React.FC<DailyViewProps> = ({
   onSettings,
   onRefresh,
   onSearch,
+  onViewChange,
   todayStats,
   isLoading = false,
   lastRefresh,
@@ -104,6 +106,7 @@ export const DailyView: React.FC<DailyViewProps> = ({
   // Handle view changes
   const handleViewChange = (view: 'week' | 'day' | 'month' | 'clinic-global' | 'reception') => {
     console.log('View change requested:', view);
+    onViewChange?.(view);
   };
 
   const handleToday = () => {

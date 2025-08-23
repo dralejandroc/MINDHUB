@@ -374,42 +374,28 @@ export default function NewAppointmentModal({ selectedDate, selectedTime, editin
                               >
                                 No se encontraron pacientes
                               </p>
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  setShowPatientSearch(false);
-                                  handleNewPatientCreation();
-                                }}
-                                className="mt-2 text-sm px-3 py-1 rounded-lg transition-colors duration-200"
-                                style={{ 
-                                  backgroundColor: 'var(--primary-100)',
-                                  color: 'var(--primary-700)'
-                                }}
-                              >
-                                <PlusIcon className="h-3 w-3 inline mr-1" />
-                                Crear nuevo paciente
-                              </button>
                             </div>
                           )}
+                          {/* Always show create patient button */}
+                          <div className="p-3 border-t" style={{ borderColor: 'var(--neutral-200)' }}>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setShowPatientSearch(false);
+                                handleNewPatientCreation();
+                              }}
+                              className="w-full text-sm px-3 py-2 rounded-lg transition-colors duration-200 flex items-center justify-center"
+                              style={{ 
+                                backgroundColor: 'var(--primary-500)',
+                                color: 'white'
+                              }}
+                            >
+                              <PlusIcon className="h-4 w-4 mr-1" />
+                              Nuevo Paciente
+                            </button>
+                          </div>
                         </>
                       )}
-                    </div>
-                    <div className="p-3 border-t" style={{ borderColor: 'var(--neutral-200)' }}>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setShowPatientSearch(false);
-                          handleNewPatientCreation();
-                        }}
-                        className="w-full text-sm px-3 py-2 rounded-lg transition-colors duration-200 flex items-center justify-center"
-                        style={{ 
-                          backgroundColor: 'var(--primary-500)',
-                          color: 'white'
-                        }}
-                      >
-                        <PlusIcon className="h-4 w-4 mr-1" />
-                        Nuevo Paciente
-                      </button>
                     </div>
                   </div>
                 )}

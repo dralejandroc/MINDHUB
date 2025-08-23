@@ -11,6 +11,7 @@ import { AppointmentContextMenu } from '@/components/agenda-v2/shared/Appointmen
 import { AppointmentData } from '@/components/agenda-v2/shared/AppointmentCard';
 import { ScheduleConfig } from '@/components/agenda-v2/shared/TimeSlotGrid';
 import NewAppointmentModal from '@/components/agenda/NewAppointmentModal';
+import NewPatientQuickModal from '@/components/agenda/NewPatientQuickModal';
 import { 
   CalendarIcon, 
   PlusIcon,
@@ -32,6 +33,7 @@ export default function AgendaV2Page() {
   const [appointments, setAppointments] = useState<AppointmentData[]>([]);
   const [loading, setLoading] = useState(true);
   const [showNewAppointment, setShowNewAppointment] = useState(false);
+  const [showNewPatientModal, setShowNewPatientModal] = useState(false);
   const [licenseType, setLicenseType] = useState<'clinic' | 'individual'>('individual');
   const [lastRefresh, setLastRefresh] = useState<Date>(new Date());
   
@@ -145,6 +147,24 @@ export default function AgendaV2Page() {
   const handleRefresh = () => {
     loadAppointments();
   };
+
+  // Handler for new patient modal
+  const handleOpenNewPatientModal = (event: any) => {
+    const { fromAgenda, callback } = event.detail;
+    if (fromAgenda) {
+      setShowNewPatientModal(true);
+      // Store callback for later use
+      (window as any).newPatientCallback = callback;
+    }
+  };
+
+  // Setup event listener for new patient modal
+  useEffect(() => {
+    window.addEventListener('openNewPatientModal', handleOpenNewPatientModal as any);
+    return () => {
+      window.removeEventListener('openNewPatientModal', handleOpenNewPatientModal as any);
+    };
+  }, []);
 
   const handleSearch = (query: string) => {
     // Implement search functionality
@@ -273,6 +293,7 @@ export default function AgendaV2Page() {
             onNewAppointment={() => setShowNewAppointment(true)}
             onRefresh={handleRefresh}
             onSearch={handleSearch}
+            onViewChange={setCurrentView}
             todayStats={todayStats}
             isLoading={loading}
             lastRefresh={lastRefresh}
@@ -292,6 +313,7 @@ export default function AgendaV2Page() {
             onNewAppointment={() => setShowNewAppointment(true)}
             onRefresh={handleRefresh}
             onSearch={handleSearch}
+            onViewChange={setCurrentView}
             todayStats={todayStats}
             isLoading={loading}
             lastRefresh={lastRefresh}
@@ -414,6 +436,21 @@ export default function AgendaV2Page() {
           }}
           selectedDate={currentDate}
           selectedTime=""
+        />
+      )}
+
+      {/* New Patient Modal */}
+      {showNewPatientModal && (
+        <NewPatientQuickModal
+          onClose={() => setShowNewPatientModal(false)}
+          onSave={(patient) => {
+            // Call the stored callback with the new patient data
+            if ((window as any).newPatientCallback) {
+              (window as any).newPatientCallback(patient);
+              (window as any).newPatientCallback = null;
+            }
+            setShowNewPatientModal(false);
+          }}
         />
       )}
     </div>
