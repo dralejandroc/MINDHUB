@@ -19,7 +19,8 @@ import {
   WrenchScrewdriverIcon,
   ComputerDesktopIcon,
   CalendarIcon,
-  ExclamationTriangleIcon
+  ExclamationTriangleIcon,
+  ArrowUpTrayIcon
 } from '@heroicons/react/24/outline';
 import { DashboardSettings } from '@/components/settings/DashboardSettings';
 import { AgendaConfigurationSettings } from '@/components/settings/AgendaConfigurationSettings';
@@ -339,6 +340,7 @@ export default function GeneralSettingsPage() {
     { id: 'agenda', name: 'Agenda', icon: CalendarIcon },
     { id: 'clinimetrix', name: 'Clinimetrix', icon: ChartBarIcon },
     { id: 'formx', name: 'FormX', icon: DocumentTextIcon },
+    { id: 'import', name: 'Importación Masiva', icon: ArrowUpTrayIcon },
     { id: 'preferences', name: 'Preferencias', icon: UserIcon },
   ];
 
@@ -727,6 +729,164 @@ export default function GeneralSettingsPage() {
               <div className="text-center py-8">
                 <p className="text-gray-500 text-lg mb-4">La configuración específica de FormX estará disponible próximamente</p>
                 <p className="text-gray-400">Aquí podrás configurar plantillas de formularios, validaciones automáticas, y opciones de exportación.</p>
+              </div>
+            </div>
+          )}
+
+          {/* Import Tab */}
+          {activeTab === 'import' && (
+            <div className="space-y-6">
+              {/* Importación de Pacientes */}
+              <div className="bg-white border border-gray-200 rounded-lg shadow-sm p-6">
+                <div className="flex items-center gap-2 mb-4">
+                  <UserIcon className="h-5 w-5 text-blue-600" />
+                  <h2 className="text-xl font-semibold">Importación de Pacientes</h2>
+                </div>
+                <div className="space-y-4">
+                  <p className="text-gray-600">Importa múltiples pacientes desde archivos Excel o CSV. Descarga la plantilla para asegurar el formato correcto.</p>
+                  
+                  <div className="flex flex-wrap gap-3">
+                    <Button
+                      onClick={() => {
+                        // Crear y descargar plantilla Excel
+                        const csvContent = "first_name,paternal_last_name,maternal_last_name,email,cell_phone,birth_date,gender,curp,address,city,state,postal_code\nJuan,Pérez,García,juan@email.com,5551234567,1990-01-15,male,PEGJ900115HDFRRL09,Av. Principal 123,Ciudad de México,Ciudad de México,01000";
+                        const blob = new Blob([csvContent], { type: 'text/csv' });
+                        const url = window.URL.createObjectURL(blob);
+                        const a = document.createElement('a');
+                        a.href = url;
+                        a.download = 'plantilla_pacientes.csv';
+                        a.click();
+                        window.URL.revokeObjectURL(url);
+                        toast.success('Plantilla descargada exitosamente');
+                      }}
+                      variant="outline"
+                      className="bg-green-50 border-green-200 text-green-700 hover:bg-green-100"
+                    >
+                      📥 Descargar Plantilla CSV
+                    </Button>
+                    
+                    <Button
+                      onClick={() => {
+                        const input = document.createElement('input');
+                        input.type = 'file';
+                        input.accept = '.csv,.xlsx,.xls';
+                        input.onchange = (e) => {
+                          const file = (e.target as HTMLInputElement).files?.[0];
+                          if (file) {
+                            toast.success(`Archivo seleccionado: ${file.name}`);
+                            // TODO: Implementar subida y procesamiento
+                            toast('Procesamiento de importación pendiente de implementar');
+                          }
+                        };
+                        input.click();
+                      }}
+                      className="bg-blue-600 text-white hover:bg-blue-700"
+                    >
+                      📂 Seleccionar Archivo
+                    </Button>
+                  </div>
+                  
+                  <div className="text-xs text-gray-500">
+                    <p>Formatos soportados: CSV, Excel (.xlsx, .xls)</p>
+                    <p>Los pacientes se asignarán automáticamente según tu tipo de licencia (individual/clínica)</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Importación de Medicamentos */}
+              <div className="bg-white border border-gray-200 rounded-lg shadow-sm p-6">
+                <div className="flex items-center gap-2 mb-4">
+                  <HeartIcon className="h-5 w-5 text-red-600" />
+                  <h2 className="text-xl font-semibold">Importación de Medicamentos</h2>
+                </div>
+                <div className="space-y-4">
+                  <p className="text-gray-600">Importa tu lista personalizada de medicamentos más utilizados para agilizar la creación de recetas en Expedix.</p>
+                  
+                  <div className="flex flex-wrap gap-3">
+                    <Button
+                      onClick={() => {
+                        const csvContent = "medication_name,generic_name,presentation,concentration,dosage_form,route,therapeutic_class,common_dosage,side_effects,contraindications\nParacetamol,Paracetamol,Tabletas,500mg,Tableta,Oral,Analgésico,1 tableta cada 6-8 horas,Náusea leve,Hipersensibilidad al paracetamol\nIbuprofeno,Ibuprofeno,Cápsulas,400mg,Cápsula,Oral,AINE,1 cápsula cada 8 horas,Dolor estomacal,Úlcera péptica activa";
+                        const blob = new Blob([csvContent], { type: 'text/csv' });
+                        const url = window.URL.createObjectURL(blob);
+                        const a = document.createElement('a');
+                        a.href = url;
+                        a.download = 'plantilla_medicamentos.csv';
+                        a.click();
+                        window.URL.revokeObjectURL(url);
+                        toast.success('Plantilla de medicamentos descargada');
+                      }}
+                      variant="outline"
+                      className="bg-green-50 border-green-200 text-green-700 hover:bg-green-100"
+                    >
+                      💊 Descargar Plantilla CSV
+                    </Button>
+                    
+                    <Button
+                      onClick={() => {
+                        const input = document.createElement('input');
+                        input.type = 'file';
+                        input.accept = '.csv,.xlsx,.xls';
+                        input.onchange = (e) => {
+                          const file = (e.target as HTMLInputElement).files?.[0];
+                          if (file) {
+                            toast.success(`Archivo de medicamentos seleccionado: ${file.name}`);
+                            // TODO: Implementar subida y procesamiento
+                            toast('Procesamiento de medicamentos pendiente de implementar');
+                          }
+                        };
+                        input.click();
+                      }}
+                      className="bg-red-600 text-white hover:bg-red-700"
+                    >
+                      📂 Seleccionar Archivo
+                    </Button>
+                  </div>
+                  
+                  <div className="text-xs text-gray-500">
+                    <p>Los medicamentos se guardarán en tu biblioteca personal para uso en recetas</p>
+                    <p>Incluye información completa para evitar errores de prescripción</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Subida de Recursos */}
+              <div className="bg-white border border-gray-200 rounded-lg shadow-sm p-6">
+                <div className="flex items-center gap-2 mb-4">
+                  <DocumentTextIcon className="h-5 w-5 text-purple-600" />
+                  <h2 className="text-xl font-semibold">Subida de Recursos</h2>
+                </div>
+                <div className="space-y-4">
+                  <p className="text-gray-600">Sube documentos PDF e imágenes JPG para tu biblioteca de recursos médicos.</p>
+                  
+                  <div className="flex flex-wrap gap-3">
+                    <Button
+                      onClick={() => {
+                        const input = document.createElement('input');
+                        input.type = 'file';
+                        input.accept = '.pdf,.jpg,.jpeg,.png';
+                        input.multiple = true;
+                        input.onchange = (e) => {
+                          const files = (e.target as HTMLInputElement).files;
+                          if (files && files.length > 0) {
+                            toast.success(`${files.length} archivo(s) seleccionado(s)`);
+                            // TODO: Implementar subida de recursos
+                            toast('Subida de recursos pendiente de implementar');
+                          }
+                        };
+                        input.click();
+                      }}
+                      className="bg-purple-600 text-white hover:bg-purple-700"
+                    >
+                      📎 Seleccionar Archivos
+                    </Button>
+                  </div>
+                  
+                  <div className="text-xs text-gray-500">
+                    <p>Formatos soportados: PDF, JPG, JPEG, PNG</p>
+                    <p>Los recursos se organizarán automáticamente en categorías</p>
+                    <p>Tamaño máximo por archivo: 10MB</p>
+                  </div>
+                </div>
               </div>
             </div>
           )}
