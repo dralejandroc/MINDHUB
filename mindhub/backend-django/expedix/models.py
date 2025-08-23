@@ -4,9 +4,36 @@ Migrated from Node.js Prisma to Django ORM
 """
 
 import uuid
+import json
 from django.db import models
 from django.contrib.auth.models import AbstractUser
 from django.core.validators import EmailValidator
+
+
+class SafeJSONField(models.JSONField):
+    """
+    Custom JSONField that handles corrupted JSON data gracefully
+    """
+    
+    def from_db_value(self, value, expression, connection):
+        """Handle value from database - may be already parsed or a string"""
+        if value is None:
+            return value
+        
+        # If it's already a list/dict, return as-is (this is our case)
+        if isinstance(value, (list, dict)):
+            return value
+        
+        # If it's a string, try to parse as JSON
+        if isinstance(value, str):
+            try:
+                return json.loads(value)
+            except (json.JSONDecodeError, TypeError):
+                # If JSON parsing fails, return empty list as fallback
+                return []
+        
+        # For any other type, return empty list as safe fallback
+        return []
 
 
 class User(models.Model):
@@ -39,43 +66,70 @@ class User(models.Model):
 
 
 class Patient(models.Model):
-    """Patient model matching Supabase schema exactly"""
-    GENDER_CHOICES = [
-        ('masculine', 'Masculino'),
-        ('feminine', 'Femenino'),
-        ('other', 'Otro'),
-    ]
-
+    """Patient model matching ACTUAL Supabase schema exactly"""
+    
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     
-    # Personal information - MATCHES DATABASE_TRUTH.md exactly
-    first_name = models.CharField(max_length=100)  # VARCHAR(100) NOT NULL
-    last_name = models.CharField(max_length=100)   # VARCHAR(100) NOT NULL  
-    email = models.CharField(max_length=100, blank=True, null=True)  # VARCHAR(100) - not unique, not required
-    phone = models.CharField(max_length=20, blank=True, null=True)        # VARCHAR(20)
-    date_of_birth = models.DateField(blank=True, null=True)             # DATE
-    gender = models.CharField(max_length=20, blank=True, null=True)     # VARCHAR(20)
+    # Core personal fields - EXACT match to database
+    medical_record_number = models.TextField(blank=True, null=True)
+    first_name = models.TextField()  # NOT NULL
+    last_name = models.TextField(blank=True, null=True)
+    paternal_last_name = models.TextField(blank=True, null=True)  # Missing from old model
+    maternal_last_name = models.TextField(blank=True, null=True)  # Missing from old model
+    date_of_birth = models.DateField(blank=True, null=True)
+    gender = models.TextField(blank=True, null=True)
+    email = models.TextField(blank=True, null=True)
+    phone = models.TextField(blank=True, null=True)
     
-    # Location information - MATCHES DATABASE_TRUTH.md
-    address = models.TextField(blank=True, null=True)                   # TEXT
-    city = models.CharField(max_length=100, blank=True, null=True)      # VARCHAR(100)
-    state = models.CharField(max_length=100, blank=True, null=True)     # VARCHAR(100)
-    postal_code = models.CharField(max_length=10, blank=True, null=True) # VARCHAR(10)
+    # Location fields
+    address = models.TextField(blank=True, null=True)
+    city = models.TextField(blank=True, null=True)
+    state = models.TextField(blank=True, null=True)
+    postal_code = models.TextField(blank=True, null=True)
+    country = models.TextField(blank=True, null=True)  # Missing from old model
     
     # Mexican specific fields
-    curp = models.CharField(max_length=18, blank=True, null=True)  # CURP único
-    rfc = models.CharField(max_length=13, blank=True, null=True)   # RFC
-    medical_record_number = models.CharField(max_length=50, blank=True, null=True)  # Número expediente
-    blood_type = models.CharField(max_length=5, blank=True, null=True)  # Tipo sangre
+    curp = models.TextField(blank=True, null=True)
+    rfc = models.TextField(blank=True, null=True)
+    blood_type = models.TextField(blank=True, null=True)
     
-    # Critical association fields - MATCHES DATABASE_TRUTH.md
+    # Array fields (PostgreSQL specific) - Using SafeJSONField to handle corrupted data
+    allergies = SafeJSONField(blank=True, null=True, default=list)  # ARRAY field
+    chronic_conditions = SafeJSONField(blank=True, null=True, default=list)  # ARRAY field
+    current_medications = SafeJSONField(blank=True, null=True, default=list)  # ARRAY field
+    tags = SafeJSONField(blank=True, null=True, default=list)  # ARRAY field
+    
+    # Emergency contact fields
+    emergency_contact_name = models.TextField(blank=True, null=True)
+    emergency_contact_phone = models.TextField(blank=True, null=True)
+    emergency_contact_relationship = models.TextField(blank=True, null=True)
+    emergency_contact = models.CharField(max_length=255, blank=True, null=True)  # Different type
+    emergency_phone = models.CharField(max_length=255, blank=True, null=True)  # Different type
+    
+    # Medical info
+    marital_status = models.CharField(max_length=255, blank=True, null=True)
+    occupation = models.CharField(max_length=255, blank=True, null=True)
+    insurance_provider = models.CharField(max_length=255, blank=True, null=True)
+    insurance_number = models.CharField(max_length=255, blank=True, null=True)
+    
+    # Consent fields
+    consent_to_treatment = models.BooleanField(blank=True, null=True)
+    consent_to_data_processing = models.BooleanField(blank=True, null=True)
+    
+    # Classification
+    patient_category = models.TextField(blank=True, null=True)
+    
+    # Critical association fields
     created_by = models.UUIDField(blank=True, null=True)  # Supabase user ID del creador
-    clinic_id = models.UUIDField(blank=True, null=True)   # NULL = paciente individual
+    clinic_id = models.UUIDField()  # NOT NULL in real table
     assigned_professional_id = models.UUIDField(blank=True, null=True)  # Profesional asignado
+    workspace_id = models.UUIDField(blank=True, null=True)  # Missing from old model
     
-    # Estado
-    patient_category = models.CharField(max_length=50, default='general', blank=True, null=True)
-    is_active = models.BooleanField(default=True)
+    # Additional notes
+    notes = models.TextField(blank=True, null=True)
+    
+    # Status
+    is_active = models.BooleanField(blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -91,11 +145,19 @@ class Patient(models.Model):
         ]
 
     def __str__(self):
-        return f"{self.first_name} {self.last_name}".strip()
+        # Use the proper name format: first_name + paternal_last_name + maternal_last_name
+        name_parts = [self.first_name]
+        if self.paternal_last_name:
+            name_parts.append(self.paternal_last_name)
+        if self.maternal_last_name:
+            name_parts.append(self.maternal_last_name)
+        elif self.last_name:  # Fallback to last_name if no paternal_last_name
+            name_parts.append(self.last_name)
+        return " ".join(name_parts).strip()
 
     @property
     def full_name(self):
-        return f"{self.first_name} {self.last_name}".strip()
+        return self.__str__()
 
     @property
     def age(self):

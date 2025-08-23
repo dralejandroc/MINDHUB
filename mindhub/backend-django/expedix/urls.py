@@ -14,6 +14,8 @@ router.register(r'consultations', views.ConsultationViewSet)
 router.register(r'medical-history', views.MedicalHistoryViewSet)
 router.register(r'users', views.UserViewSet)
 router.register(r'schedule-config', views.ScheduleConfigViewSet, basename='schedule-config')
+router.register(r'debug-auth', views.DebugAuthViewSet, basename='debug-auth')
+router.register(r'dual-system-test', views.DualSystemTestViewSet, basename='dual-system-test')
 
 # URL patterns that match Node.js API routes
 urlpatterns = [

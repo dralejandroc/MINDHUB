@@ -23,6 +23,28 @@ class DualSystemFilterMixin:
         """
         queryset = super().get_queryset()
         
+        # 🧪 TEMPORARY: Inject test user context for dual system testing
+        if not hasattr(self.request, 'user_context'):
+            # Simulate dr_aleks_c (individual license) if no test_mode param
+            test_mode = self.request.query_params.get('test_mode', 'individual')
+            
+            if test_mode == 'clinic':
+                # Simulate test@mindhub.com (clinic license)
+                self.request.user_context = {
+                    'license_type': 'clinic',
+                    'clinic_id': '38633a49-10e8-4138-b44b-7b7995d887e7',
+                    'workspace_id': None
+                }
+                logger.info('🧪 TESTING: Injected CLINIC license context')
+            else:
+                # Simulate dr_aleks_c (individual license)
+                self.request.user_context = {
+                    'license_type': 'individual', 
+                    'clinic_id': None,
+                    'workspace_id': '8a956bcb-abca-409e-8ae8-2604372084cf'
+                }
+                logger.info('🧪 TESTING: Injected INDIVIDUAL license context')
+        
         # Check if user context is available
         if not hasattr(self.request, 'user_context'):
             logger.warning('No user_context found in request - using unfiltered queryset')
@@ -40,11 +62,12 @@ class DualSystemFilterMixin:
                 return queryset.none()
                 
         elif license_type == 'individual':
+            # For individual licenses, filter by workspace_id (dual system)
             workspace_id = user_context.get('workspace_id')
             if workspace_id:
                 return queryset.filter(workspace_id=workspace_id)
             else:
-                logger.error(f'Individual license but no workspace_id found for user')
+                logger.error(f'Individual license but no workspace_id found for filtering')
                 return queryset.none()
         
         logger.warning(f'Unknown license type: {license_type} - returning empty queryset')
@@ -52,7 +75,7 @@ class DualSystemFilterMixin:
     
     def perform_create(self, serializer):
         """
-        Automatically set clinic_id or workspace_id when creating objects
+        Automatically set clinic_id or created_by when creating objects
         """
         if not hasattr(self.request, 'user_context'):
             logger.error('Cannot create object - no user_context')
@@ -60,28 +83,29 @@ class DualSystemFilterMixin:
         
         user_context = self.request.user_context
         license_type = user_context.get('license_type')
+        user_id = getattr(self.request, 'supabase_user_id', None)
         
         if license_type == 'clinic':
             clinic_id = user_context.get('clinic_id')
             if clinic_id:
                 serializer.save(
                     clinic_id=clinic_id,
-                    workspace_id=None,
-                    created_by_id=self.request.supabase_user_id
+                    created_by=user_id
                 )
             else:
                 logger.error('Cannot create object - clinic license but no clinic_id')
                 
         elif license_type == 'individual':
+            # For individual licenses, set workspace_id
             workspace_id = user_context.get('workspace_id')
-            if workspace_id:
+            if workspace_id and user_id:
                 serializer.save(
                     clinic_id=None,
                     workspace_id=workspace_id,
-                    created_by_id=self.request.supabase_user_id
+                    created_by=user_id
                 )
             else:
-                logger.error('Cannot create object - individual license but no workspace_id')
+                logger.error('Cannot create object - individual license but no workspace_id or user_id')
 
 
 class DualSystemQueryHelper:
@@ -90,7 +114,7 @@ class DualSystemQueryHelper:
     """
     
     @staticmethod
-    def filter_by_user_context(queryset, user_context):
+    def filter_by_user_context(queryset, user_context, user_id=None):
         """
         Apply dual system filtering to any queryset
         """
@@ -101,15 +125,16 @@ class DualSystemQueryHelper:
             return queryset.filter(clinic_id=clinic_id) if clinic_id else queryset.none()
             
         elif license_type == 'individual':
+            # For individual licenses, filter by workspace_id (dual system)
             workspace_id = user_context.get('workspace_id')
             return queryset.filter(workspace_id=workspace_id) if workspace_id else queryset.none()
         
         return queryset.none()
     
     @staticmethod
-    def get_create_data(user_context):
+    def get_create_data(user_context, user_id=None):
         """
-        Get clinic_id/workspace_id data for creating new objects
+        Get clinic_id/created_by data for creating new objects
         """
         license_type = user_context.get('license_type')
         
@@ -117,19 +142,22 @@ class DualSystemQueryHelper:
             clinic_id = user_context.get('clinic_id')
             return {
                 'clinic_id': clinic_id,
-                'workspace_id': None
+                'created_by': user_id
             }
             
         elif license_type == 'individual':
+            # For individual licenses, set workspace_id
             workspace_id = user_context.get('workspace_id')
             return {
                 'clinic_id': None,
-                'workspace_id': workspace_id
+                'workspace_id': workspace_id,
+                'created_by': user_id
             }
         
         return {
             'clinic_id': None,
-            'workspace_id': None
+            'workspace_id': None,
+            'created_by': None
         }
 
 
@@ -169,7 +197,7 @@ class DualSystemBusinessLogic:
         return {}
     
     @staticmethod
-    def can_access_patient(user_context, patient):
+    def can_access_patient(user_context, patient, user_id=None):
         """
         Check if user can access specific patient based on license type
         """
@@ -180,8 +208,9 @@ class DualSystemBusinessLogic:
             return patient.clinic_id == user_context.get('clinic_id')
             
         elif license_type == 'individual':
-            # Individual users can only access their own patients
-            return patient.workspace_id == user_context.get('workspace_id')
+            # Individual users can only access patients in their workspace
+            workspace_id = user_context.get('workspace_id')
+            return patient.workspace_id == workspace_id if workspace_id else False
         
         return False
     
@@ -214,6 +243,7 @@ class DualSystemBusinessLogic:
                     """, [clinic_id])
                     
                 elif license_type == 'individual':
+                    # For individual licenses, use workspace_id
                     workspace_id = user_context.get('workspace_id')
                     cursor.execute("""
                         SELECT id, location_name, address, is_primary

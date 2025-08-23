@@ -21,9 +21,7 @@ class UserSerializer(serializers.ModelSerializer):
 
 
 class PatientSerializer(serializers.ModelSerializer):
-    """Patient serializer for API responses"""
-    full_name = serializers.CharField(read_only=True)
-    age = serializers.IntegerField(read_only=True)
+    """Patient serializer for API responses - MINIMAL TEST VERSION"""
     
     class Meta:
         model = Patient
@@ -37,11 +35,9 @@ class PatientSerializer(serializers.ModelSerializer):
             # Critical association fields
             'created_by', 'clinic_id', 'assigned_professional_id',
             # Status and metadata
-            'patient_category', 'is_active', 'created_at', 'updated_at',
-            # Computed fields
-            'full_name', 'age'
+            'patient_category', 'is_active', 'created_at', 'updated_at'
         ]
-        read_only_fields = ['id', 'created_at', 'updated_at', 'full_name', 'age']
+        read_only_fields = ['id', 'created_at', 'updated_at']
 
 
 class PatientCreateSerializer(serializers.ModelSerializer):

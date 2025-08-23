@@ -30,11 +30,23 @@ class DualSystemModelViewSet(DualSystemFilterMixin, viewsets.ModelViewSet):
         
         # Add license context to response for frontend
         if hasattr(request, 'user_context'):
-            response.data['license_context'] = {
-                'license_type': request.user_context.get('license_type'),
-                'shared_access': request.user_context.get('shared_access'),
-                'business_logic': DualSystemBusinessLogic.get_finance_logic(request.user_context)
-            }
+            # Check if response data is a dict (paginated) or list (not paginated)
+            if isinstance(response.data, dict):
+                response.data['license_context'] = {
+                    'license_type': request.user_context.get('license_type'),
+                    'shared_access': request.user_context.get('shared_access'),
+                    'business_logic': DualSystemBusinessLogic.get_finance_logic(request.user_context)
+                }
+            else:
+                # For non-paginated responses, wrap the list in a dict
+                response.data = {
+                    'results': response.data,
+                    'license_context': {
+                        'license_type': request.user_context.get('license_type'),
+                        'shared_access': request.user_context.get('shared_access'),
+                        'business_logic': DualSystemBusinessLogic.get_finance_logic(request.user_context)
+                    }
+                }
         
         return response
     
@@ -60,11 +72,23 @@ class DualSystemReadOnlyViewSet(DualSystemFilterMixin, viewsets.ReadOnlyModelVie
         
         # Add license context to response for frontend
         if hasattr(request, 'user_context'):
-            response.data['license_context'] = {
-                'license_type': request.user_context.get('license_type'),
-                'shared_access': request.user_context.get('shared_access'),
-                'business_logic': DualSystemBusinessLogic.get_finance_logic(request.user_context)
-            }
+            # Check if response data is a dict (paginated) or list (not paginated)
+            if isinstance(response.data, dict):
+                response.data['license_context'] = {
+                    'license_type': request.user_context.get('license_type'),
+                    'shared_access': request.user_context.get('shared_access'),
+                    'business_logic': DualSystemBusinessLogic.get_finance_logic(request.user_context)
+                }
+            else:
+                # For non-paginated responses, wrap the list in a dict
+                response.data = {
+                    'results': response.data,
+                    'license_context': {
+                        'license_type': request.user_context.get('license_type'),
+                        'shared_access': request.user_context.get('shared_access'),
+                        'business_logic': DualSystemBusinessLogic.get_finance_logic(request.user_context)
+                    }
+                }
         
         return response
 
@@ -82,11 +106,13 @@ class DualSystemGenericViewSet(DualSystemFilterMixin, viewsets.GenericViewSet):
     
     def filter_queryset_by_license(self, queryset):
         """Helper to manually filter queryset by license type"""
-        return DualSystemQueryHelper.filter_by_user_context(queryset, self.get_user_context())
+        user_id = getattr(self.request, 'supabase_user_id', None)
+        return DualSystemQueryHelper.filter_by_user_context(queryset, self.get_user_context(), user_id)
     
     def get_create_data_for_license(self):
-        """Helper to get clinic_id/workspace_id for creating objects"""
-        return DualSystemQueryHelper.get_create_data(self.get_user_context())
+        """Helper to get clinic_id/created_by for creating objects"""
+        user_id = getattr(self.request, 'supabase_user_id', None)
+        return DualSystemQueryHelper.get_create_data(self.get_user_context(), user_id)
 
 
 class FinanceDualSystemMixin:
@@ -127,7 +153,8 @@ class PatientAccessMixin:
         if not hasattr(self.request, 'user_context'):
             return False
         
-        return DualSystemBusinessLogic.can_access_patient(self.request.user_context, patient)
+        user_id = getattr(self.request, 'supabase_user_id', None)
+        return DualSystemBusinessLogic.can_access_patient(self.request.user_context, patient, user_id)
     
     def get_accessible_patients(self, queryset=None):
         """Get patients accessible to current user"""
