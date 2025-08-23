@@ -8,7 +8,7 @@ const DJANGO_BACKEND_URL = process.env.BACKEND_URL || process.env.NEXT_PUBLIC_DJ
 
 export async function GET(request: Request) {
   try {
-    console.log('[PATIENTS API] Processing GET request - Django Backend Proxy');
+    console.log('[PATIENTS API] Processing GET request - Django Backend Proxy with Supabase Fallback');
     
     // Verify authentication
     const { user, error: authError } = await getAuthenticatedUser(request);
@@ -16,64 +16,138 @@ export async function GET(request: Request) {
       return createErrorResponse('Unauthorized', 'Valid authentication required', 401);
     }
 
-    console.log('[PATIENTS API] Authenticated user:', user.id, '- Proxying to Django backend');
+    console.log('[PATIENTS API] Authenticated user:', user.id, '- Attempting Django backend');
 
     // Extract query parameters from original request
     const url = new URL(request.url);
     const queryString = url.search; // Preserva todos los query parameters
 
-    // Build Django backend URL
-    const djangoUrl = `${DJANGO_BACKEND_URL}/api/expedix/patients${queryString}`;
-    console.log('[PATIENTS API] Proxying to Django:', djangoUrl);
+    let djangoWorking = true;
 
-    // Get auth token from request 
-    const authHeader = request.headers.get('Authorization');
-    
-    // Forward request to Django backend with service role key for internal auth
-    // Since we've already validated the user in Next.js, we can use service role for Django
-    const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp2YmNwbGR6b3lpY2VmZHRud2tkIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1NTQwMTQ3MCwiZXhwIjoyMDcwOTc3NDcwfQ.-iooltGuYeGqXVh7pgRhH_Oo_R64VtHIssbE3u_y0WQ';
-    
-    const djangoResponse = await fetch(djangoUrl, {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${serviceRoleKey}`, // Use service role for Django auth
-        'X-User-ID': user.id,
-        'X-User-Email': user.email || '',
-        'X-Proxy-Auth': 'verified', // Indicate this request is pre-authenticated
-      }
-    });
+    try {
+      // Build Django backend URL
+      const djangoUrl = `${DJANGO_BACKEND_URL}/api/expedix/patients${queryString}`;
+      console.log('[PATIENTS API] Proxying to Django:', djangoUrl);
 
-    console.log('[PATIENTS API] Django response status:', djangoResponse.status);
-
-    if (!djangoResponse.ok) {
-      const errorText = await djangoResponse.text();
-      console.error('[PATIENTS API] Django backend error:', errorText);
+      // Get auth token from request 
+      const authHeader = request.headers.get('Authorization');
       
-      return createErrorResponse(
-        'Backend error',
-        `Django backend responded with ${djangoResponse.status}`,
-        djangoResponse.status
-      );
+      // Forward request to Django backend with service role key for internal auth
+      const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp2YmNwbGR6b3lpY2VmZHRud2tkIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1NTQwMTQ3MCwiZXhwIjoyMDcwOTc3NDcwfQ.-iooltGuYeGqXVh7pgRhH_Oo_R64VtHIssbE3u_y0WQ';
+      
+      // Implement timeout using AbortController
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout
+
+      const djangoResponse = await fetch(djangoUrl, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${serviceRoleKey}`,
+          'X-User-ID': user.id,
+          'X-User-Email': user.email || '',
+          'X-Proxy-Auth': 'verified',
+        },
+        signal: controller.signal
+      });
+
+      clearTimeout(timeoutId);
+
+      console.log('[PATIENTS API] Django response status:', djangoResponse.status);
+
+      if (djangoResponse.ok) {
+        // Django working - return response
+        const responseData = await djangoResponse.json();
+        const patientCount = responseData.results?.length || responseData.count || 0;
+        console.log('[PATIENTS API] Django success - patients returned:', patientCount);
+        return createResponse(responseData);
+      } else {
+        djangoWorking = false;
+        console.warn('[PATIENTS API] Django returned error status:', djangoResponse.status);
+      }
+
+    } catch (djangoError) {
+      djangoWorking = false;
+      console.warn('[PATIENTS API] Django connection failed:', djangoError);
     }
 
-    // Get response data from Django
-    const responseData = await djangoResponse.json();
-    
-    // Django REST Framework returns { count, results } format
-    const patientCount = responseData.results?.length || responseData.count || 0;
-    console.log('[PATIENTS API] Successfully proxied to Django, patients returned:', patientCount);
+    // Django failed - use Supabase fallback
+    if (!djangoWorking) {
+      console.log('[PATIENTS API] Django failed - falling back to direct Supabase');
+      
+      const { createClient } = await import('@supabase/supabase-js');
+      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+      const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
+      
+      const supabase = createClient(supabaseUrl, supabaseServiceKey);
+      
+      // Query patients directly from Supabase
+      const { data: patients, error: supabaseError } = await supabase
+        .from('patients')
+        .select(`
+          *,
+          consultations:consultations(count),
+          appointments:appointments(count)
+        `)
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false });
+      
+      if (supabaseError) {
+        console.error('[PATIENTS API] Supabase fallback error:', supabaseError);
+        return createErrorResponse(
+          'Database error',
+          'Could not retrieve patient data from any source',
+          500
+        );
+      }
+      
+      // Transform data to Django-compatible format
+      const transformedPatients = patients?.map(patient => ({
+        id: patient.id,
+        first_name: patient.first_name,
+        paternal_last_name: patient.paternal_last_name,
+        maternal_last_name: patient.maternal_last_name,
+        birth_date: patient.birth_date,
+        age: patient.age || 0,
+        gender: patient.gender,
+        email: patient.email,
+        cell_phone: patient.cell_phone,
+        phone: patient.phone,
+        curp: patient.curp,
+        address: patient.address,
+        city: patient.city,
+        state: patient.state,
+        postal_code: patient.postal_code,
+        consultations_count: patient.consultations?.[0]?.count || 0,
+        created_at: patient.created_at,
+        updated_at: patient.updated_at
+      })) || [];
+      
+      console.log('[PATIENTS API] Supabase fallback success - patients returned:', transformedPatients.length);
+      
+      // Return in Django-compatible format
+      return createResponse({
+        count: transformedPatients.length,
+        results: transformedPatients,
+        fallback: true,
+        source: 'supabase_direct'
+      });
+    }
 
-    // Return Django response as-is
-    return createResponse(responseData);
-
-  } catch (error) {
-    console.error('[PATIENTS API] Proxy error:', error);
-    
+    // This should never happen, but just in case
     return createErrorResponse(
       'Backend connection failed',
-      'No patient data available - backend unavailable',
+      'No patient data available - all backends unavailable',
       503
+    );
+
+  } catch (error) {
+    console.error('[PATIENTS API] Unexpected error:', error);
+    
+    return createErrorResponse(
+      'Internal error',
+      error instanceof Error ? error.message : 'Unknown error occurred',
+      500
     );
   }
 }
