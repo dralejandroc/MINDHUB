@@ -8,7 +8,6 @@ from django.conf import settings
 from django.conf.urls.static import static
 from django.http import JsonResponse
 from django.views.generic import RedirectView
-from test_endpoint import test_patients
 
 def api_root(request):
     """API root endpoint - Django backend serves only APIs"""
@@ -57,8 +56,8 @@ urlpatterns = [
     path('api/finance/', include('finance.urls')),  # Finance - Financial Management
     path('api/frontdesk/', include('assessments.frontdesk_urls')),  # FrontDesk endpoints
     
-    # Debug/Test endpoints
-    path('test-patients/', test_patients, name='test_patients'),
+    # Debug/Test endpoints (removed problematic import)
+    # path('test-patients/', test_patients, name='test_patients'),
 ]
 
 # Serve media files in development
