@@ -182,7 +182,7 @@ class SupabaseAuthMiddleware(MiddlewareMixin):
             '/api/expedix/users',                   # ✅ AGREGAR validación
             '/api/expedix/schedule-config',         # ✅ AGREGAR validación
             '/api/agenda/',                         # ✅ AGREGAR validación  
-            '/api/resources/',                      # ✅ AGREGAR validación
+            # '/api/resources/',                    # 🧪 TEMPORARILY DISABLED for dual system testing
             '/api/clinics/',                        # ✅ AGREGAR validación clinic management
         ]
         
