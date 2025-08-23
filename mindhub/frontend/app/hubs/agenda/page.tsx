@@ -29,13 +29,13 @@ type ViewType = 'week' | 'day' | 'month' | 'clinic-global' | 'reception';
 export default function AgendaV2Page() {
   const router = useRouter();
   const [currentView, setCurrentView] = useState<ViewType>('week');
-  const [currentDate, setCurrentDate] = useState(new Date());
+  const [currentDate, setCurrentDate] = useState<Date | null>(null);
   const [appointments, setAppointments] = useState<AppointmentData[]>([]);
   const [loading, setLoading] = useState(true);
   const [showNewAppointment, setShowNewAppointment] = useState(false);
   const [showNewPatientModal, setShowNewPatientModal] = useState(false);
   const [licenseType, setLicenseType] = useState<'clinic' | 'individual'>('individual');
-  const [lastRefresh, setLastRefresh] = useState<Date>(new Date());
+  const [lastRefresh, setLastRefresh] = useState<Date | null>(null);
   
   // Context menu state
   const [contextMenuData, setContextMenuData] = useState<{
@@ -73,10 +73,18 @@ export default function AgendaV2Page() {
     }
   ];
 
+  // Initialize dates on client side to avoid hydration issues
+  useEffect(() => {
+    setCurrentDate(new Date());
+    setLastRefresh(new Date());
+  }, []);
+
   // Load appointments
   useEffect(() => {
-    loadAppointments();
-    checkLicenseType();
+    if (currentDate) {
+      loadAppointments();
+      checkLicenseType();
+    }
   }, [currentDate, currentView]);
 
   const checkLicenseType = async () => {
@@ -146,6 +154,10 @@ export default function AgendaV2Page() {
 
   const handleRefresh = () => {
     loadAppointments();
+  };
+
+  const handleSettings = () => {
+    router.push('/hubs/agenda/settings');
   };
 
   // Handler for new patient modal
@@ -254,23 +266,39 @@ export default function AgendaV2Page() {
     }
   };
 
-  // Calculate today stats
-  const todayStats = {
+  // Calculate today stats (avoiding hydration issues)
+  const todayStats = currentDate ? {
     totalAppointments: appointments.filter(a => 
-      a.startTime.toDateString() === new Date().toDateString()
+      a.startTime.toDateString() === currentDate.toDateString()
     ).length,
     confirmed: appointments.filter(a => 
-      a.startTime.toDateString() === new Date().toDateString() && a.status === 'confirmed'
+      a.startTime.toDateString() === currentDate.toDateString() && a.status === 'confirmed'
     ).length,
     pending: appointments.filter(a => 
-      a.startTime.toDateString() === new Date().toDateString() && a.status === 'scheduled'
+      a.startTime.toDateString() === currentDate.toDateString() && a.status === 'scheduled'
     ).length,
     completed: appointments.filter(a => 
-      a.startTime.toDateString() === new Date().toDateString() && a.status === 'completed'
+      a.startTime.toDateString() === currentDate.toDateString() && a.status === 'completed'
     ).length
+  } : {
+    totalAppointments: 0,
+    confirmed: 0,
+    pending: 0,
+    completed: 0
   };
 
   const canSwitchToClinicViews = licenseType === 'clinic';
+
+  // Prevent hydration issues by waiting for client initialization
+  if (!currentDate) {
+    return (
+      <div className="flex flex-col bg-gray-50">
+        <div className="flex items-center justify-center min-h-screen">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col bg-gray-50">
@@ -294,6 +322,7 @@ export default function AgendaV2Page() {
             onRefresh={handleRefresh}
             onSearch={handleSearch}
             onViewChange={setCurrentView}
+            onSettings={handleSettings}
             todayStats={todayStats}
             isLoading={loading}
             lastRefresh={lastRefresh}
@@ -314,6 +343,7 @@ export default function AgendaV2Page() {
             onRefresh={handleRefresh}
             onSearch={handleSearch}
             onViewChange={setCurrentView}
+            onSettings={handleSettings}
             todayStats={todayStats}
             isLoading={loading}
             lastRefresh={lastRefresh}
@@ -343,6 +373,7 @@ export default function AgendaV2Page() {
             onNewAppointment={() => setShowNewAppointment(true)}
             onRefresh={handleRefresh}
             onSearch={handleSearch}
+            onViewChange={setCurrentView}
             todayStats={todayStats}
             isLoading={loading}
             lastRefresh={lastRefresh}
@@ -351,6 +382,7 @@ export default function AgendaV2Page() {
               setCurrentView('day');
             }}
             onAppointmentClick={handleAppointmentClick}
+            onSettings={handleSettings}
           />
         )}
 
@@ -364,6 +396,7 @@ export default function AgendaV2Page() {
             onNewAppointment={() => setShowNewAppointment(true)}
             onRefresh={handleRefresh}
             onSearch={handleSearch}
+            onSettings={handleSettings}
             todayStats={todayStats}
             isLoading={loading}
             lastRefresh={lastRefresh}
@@ -395,6 +428,7 @@ export default function AgendaV2Page() {
             onNewAppointment={() => setShowNewAppointment(true)}
             onRefresh={handleRefresh}
             onSearch={handleSearch}
+            onSettings={handleSettings}
             todayStats={todayStats}
             isLoading={loading}
             lastRefresh={lastRefresh}
