@@ -1,16 +1,36 @@
+import { ShieldCheckIcon, ArrowLeftIcon } from '@heroicons/react/24/outline'
+
 export default function PrivacyPage() {
   return (
-    <div className="min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-3xl mx-auto">
-        <div className="bg-white shadow-sm rounded-lg p-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-8">
+    <div className="min-h-screen gradient-background py-12 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-4xl mx-auto">
+        {/* Header */}
+        <div className="text-center mb-12">
+          <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl gradient-primary shadow-primary mb-6">
+            <ShieldCheckIcon className="w-8 h-8 text-white" />
+          </div>
+          <h1 className="text-4xl font-heading font-bold text-dark-green mb-2">
             Política de Privacidad
           </h1>
+          <p className="text-gray-600">
+            MindHub - Protección de Datos y Privacidad
+          </p>
+        </div>
+
+        <div className="bg-white shadow-xl border border-primary-100 rounded-2xl p-8 lg:p-12">
+          <div className="mb-8">
+            <div className="flex items-center text-sm text-gray-500 mb-6">
+              <span className="inline-flex items-center px-3 py-1 rounded-full bg-blue-100 text-blue-800 text-xs font-medium">
+                GDPR Compliant
+              </span>
+              <span className="ml-3">Última actualización: Enero 2025</span>
+            </div>
+            <h2 className="text-2xl font-heading font-bold text-dark-green mb-6">
+              Política de Privacidad de MindHub
+            </h2>
+          </div>
           
-          <div className="prose prose-gray max-w-none">
-            <p className="text-lg text-gray-600 mb-6">
-              Última actualización: Enero 2025
-            </p>
+          <div className="prose prose-lg max-w-none">
 
             <section className="mb-8">
               <h2 className="text-xl font-semibold text-gray-900 mb-4">
@@ -112,14 +132,32 @@ export default function PrivacyPage() {
             </section>
           </div>
           
-          <div className="mt-8 pt-8 border-t border-gray-200">
-            <a 
-              href="/"
-              className="text-primary-teal hover:text-purple-600 font-medium"
-            >
-              ← Volver al inicio
+        </div>
+
+        {/* Footer */}
+        <div className="mt-8 text-center">
+          <a 
+            href="/"
+            className="inline-flex items-center justify-center px-6 py-3 border-2 border-primary-600 text-primary-600 font-semibold rounded-xl hover:bg-primary-50 transition-all duration-200 ease-in-out hover-lift"
+          >
+            <ArrowLeftIcon className="w-5 h-5 mr-2" />
+            Volver al Inicio
+          </a>
+        </div>
+
+        {/* Additional Links */}
+        <div className="mt-6 text-center space-y-2">
+          <p className="text-sm text-gray-600">
+            Para ejercer sus derechos de privacidad:{' '}
+            <a href="mailto:privacy@mindhub.cloud" className="text-primary-600 hover:text-primary-700 font-medium underline">
+              privacy@mindhub.cloud
             </a>
-          </div>
+          </p>
+          <p className="text-xs text-gray-500">
+            <a href="/terms" className="hover:text-primary-600 underline">Términos de Servicio</a>
+            {' • '}
+            <a href="/contact" className="hover:text-primary-600 underline">Contacto</a>
+          </p>
         </div>
       </div>
     </div>

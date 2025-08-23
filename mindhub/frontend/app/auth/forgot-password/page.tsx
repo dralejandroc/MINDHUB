@@ -403,7 +403,7 @@ export default function ForgotPasswordPage() {
           <div className="mt-8 text-center">
             <p className="text-xs text-gray-500">
               ¿Necesitas ayuda?{' '}
-              <a href="#" className="text-primary-600 hover:text-primary-700">
+              <a href="/contact" target="_blank" className="text-primary-600 hover:text-primary-700 underline">
                 Contacta al Soporte
               </a>
             </p>

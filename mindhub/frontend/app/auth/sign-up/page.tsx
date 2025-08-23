@@ -360,11 +360,11 @@ export default function SignUpPage() {
                     />
                     <label htmlFor="terms" className="text-sm text-gray-600">
                       Acepto los{' '}
-                      <a href="#" className="text-secondary-600 hover:text-secondary-700 font-medium">
+                      <a href="/terms" target="_blank" className="text-secondary-600 hover:text-secondary-700 font-medium underline">
                         Términos de Servicio
                       </a>{' '}
                       y{' '}
-                      <a href="#" className="text-secondary-600 hover:text-secondary-700 font-medium">
+                      <a href="/privacy" target="_blank" className="text-secondary-600 hover:text-secondary-700 font-medium underline">
                         Política de Privacidad
                       </a>
                     </label>
