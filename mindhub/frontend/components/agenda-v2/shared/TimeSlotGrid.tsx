@@ -24,7 +24,7 @@ interface AppointmentData {
   notes?: string;
 }
 
-interface ScheduleConfig {
+export interface ScheduleConfig {
   startHour: number; // 8 = 8:00 AM
   endHour: number;   // 18 = 6:00 PM  
   slotDuration: number; // minutes
@@ -34,24 +34,39 @@ interface ScheduleConfig {
 }
 
 interface TimeSlotGridProps {
-  date: Date;
+  date?: Date;
+  currentDate?: Date; // Alias for date
   appointments: AppointmentData[];
   scheduleConfig: ScheduleConfig;
-  onSlotClick: (time: Date) => void;
-  onAppointmentClick: (appointment: AppointmentData) => void;
+  onSlotClick?: (time: Date) => void;
+  onTimeSlotClick?: (hour: number, minute: number) => void;
+  onTimeSlotDrop?: (hour: number, minute: number) => void;
+  onAppointmentClick?: (appointment: AppointmentData) => void;
   className?: string;
   showCurrentTime?: boolean;
+  showCurrentTimeIndicator?: boolean; // Alias for showCurrentTime
+  timeSlotHeight?: number;
+  renderAppointments?: (appointment: AppointmentData, style: React.CSSProperties) => React.ReactNode;
 }
 
 export const TimeSlotGrid: React.FC<TimeSlotGridProps> = ({
-  date,
+  date: dateProp,
+  currentDate,
   appointments = [],
   scheduleConfig,
   onSlotClick,
+  onTimeSlotClick,
+  onTimeSlotDrop,
   onAppointmentClick,
   className = '',
-  showCurrentTime = true
+  showCurrentTime,
+  showCurrentTimeIndicator,
+  timeSlotHeight = 60,
+  renderAppointments
 }) => {
+  // Handle date prop aliases
+  const date = dateProp || currentDate || new Date();
+  const shouldShowCurrentTime = showCurrentTime ?? showCurrentTimeIndicator ?? true;
   const generateTimeSlots = (): TimeSlot[] => {
     const slots: TimeSlot[] = [];
     const startOfDayTime = startOfDay(date);
@@ -137,7 +152,6 @@ export const TimeSlotGrid: React.FC<TimeSlotGridProps> = ({
 
   const slots = generateTimeSlots();
   const currentTimePosition = getCurrentTimePosition();
-  const slotHeight = 60; // Height in pixels per slot
 
   return (
     <div className={`relative bg-white border border-gray-200 rounded-xl overflow-hidden ${className}`}>
@@ -150,7 +164,7 @@ export const TimeSlotGrid: React.FC<TimeSlotGridProps> = ({
               <div
                 key={hour}
                 className="h-15 flex items-start justify-center pt-2 text-xs text-gray-500 font-medium"
-                style={{ height: `${slotHeight}px` }}
+                style={{ height: `${timeSlotHeight}px` }}
               >
                 {hour === scheduleConfig.startHour || hour % 2 === 0 ? (
                   format(new Date().setHours(hour, 0), 'HH:mm')
@@ -172,8 +186,17 @@ export const TimeSlotGrid: React.FC<TimeSlotGridProps> = ({
                   ${slot.available ? 'hover:bg-primary-50' : ''}
                   ${index % (60 / scheduleConfig.slotDuration) === 0 ? 'border-gray-200' : ''}
                 `}
-                style={{ height: `${slotHeight / (60 / scheduleConfig.slotDuration)}px` }}
-                onClick={() => slot.available && onSlotClick(slot.time)}
+                style={{ height: `${timeSlotHeight / (60 / scheduleConfig.slotDuration)}px` }}
+                onClick={() => {
+                  if (slot.available) {
+                    if (onSlotClick) {
+                      onSlotClick(slot.time);
+                    }
+                    if (onTimeSlotClick) {
+                      onTimeSlotClick(slot.time.getHours(), slot.time.getMinutes());
+                    }
+                  }
+                }}
               >
                 {/* Available slot indicator */}
                 {slot.available && (
@@ -188,29 +211,39 @@ export const TimeSlotGrid: React.FC<TimeSlotGridProps> = ({
           </div>
 
           {/* Appointments */}
-          {appointments.map((appointment) => (
-            <div
-              key={appointment.id}
-              className={`
-                rounded-lg border-l-4 px-3 py-2 cursor-pointer transition-all duration-200
-                text-white text-xs shadow-sm hover:shadow-md transform hover:scale-[1.02]
-                ${getStatusColor(appointment.status)}
-              `}
-              style={getAppointmentStyle(appointment, appointment.startTime)}
-              onClick={() => onAppointmentClick(appointment)}
-            >
-              <div className="font-semibold truncate">{appointment.patientName}</div>
-              <div className="text-white/80 truncate">
-                {format(appointment.startTime, 'HH:mm')} • {appointment.type}
+          {appointments.map((appointment) => {
+            const style = getAppointmentStyle(appointment, appointment.startTime);
+            
+            // Use custom renderer if provided
+            if (renderAppointments) {
+              return renderAppointments(appointment, style);
+            }
+            
+            // Default rendering
+            return (
+              <div
+                key={appointment.id}
+                className={`
+                  rounded-lg border-l-4 px-3 py-2 cursor-pointer transition-all duration-200
+                  text-white text-xs shadow-sm hover:shadow-md transform hover:scale-[1.02]
+                  ${getStatusColor(appointment.status)}
+                `}
+                style={style}
+                onClick={() => onAppointmentClick?.(appointment)}
+              >
+                <div className="font-semibold truncate">{appointment.patientName}</div>
+                <div className="text-white/80 truncate">
+                  {format(appointment.startTime, 'HH:mm')} • {appointment.type}
+                </div>
+                {appointment.hasDeposit && (
+                  <div className="text-white/90 text-xs">💳 Depósito</div>
+                )}
               </div>
-              {appointment.hasDeposit && (
-                <div className="text-white/90 text-xs">💳 Depósito</div>
-              )}
-            </div>
-          ))}
+            );
+          })}
 
           {/* Current Time Indicator */}
-          {showCurrentTime && currentTimePosition >= 0 && (
+          {shouldShowCurrentTime && currentTimePosition >= 0 && (
             <div
               className="absolute left-0 right-0 h-0.5 bg-red-500 z-20"
               style={{ top: `${currentTimePosition}%` }}

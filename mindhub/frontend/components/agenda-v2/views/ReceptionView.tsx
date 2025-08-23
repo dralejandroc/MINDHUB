@@ -150,7 +150,7 @@ export const ReceptionView: React.FC<ReceptionViewProps> = ({
     return {
       today: todayAppointments,
       payments: receptionAppointments.filter(apt => 
-        apt.paymentStatus === 'debt' || apt.paymentStatus === 'deposit' || apt.remainingBalance > 0
+        apt.paymentStatus === 'debt' || apt.paymentStatus === 'deposit' || (apt.remainingBalance && apt.remainingBalance > 0)
       ),
       changes: receptionAppointments.filter(apt => apt.hasScheduleChanges),
       reminders: receptionAppointments.filter(apt => 
@@ -183,7 +183,7 @@ export const ReceptionView: React.FC<ReceptionViewProps> = ({
     if (appointment.paymentStatus === 'deposit') {
       return 'bg-blue-100 text-blue-700 border-blue-200';
     }
-    if (appointment.paymentStatus === 'debt' || appointment.remainingBalance > 0) {
+    if (appointment.paymentStatus === 'debt' || (appointment.remainingBalance && appointment.remainingBalance > 0)) {
       return 'bg-red-100 text-red-700 border-red-200';
     }
     return 'bg-yellow-100 text-yellow-700 border-yellow-200';
@@ -272,19 +272,19 @@ export const ReceptionView: React.FC<ReceptionViewProps> = ({
       </div>
 
       {/* Payment Information */}
-      {(appointment.remainingBalance > 0 || appointment.depositAmount > 0) && (
+      {((appointment.remainingBalance && appointment.remainingBalance > 0) || (appointment.depositAmount && appointment.depositAmount > 0)) && (
         <div className="bg-gray-50 rounded-lg p-3 mb-3">
           <h4 className="font-medium text-gray-900 mb-2 flex items-center">
             <CurrencyDollarIcon className="w-4 h-4 mr-1" />
             Estado de Pago
           </h4>
           <div className="grid grid-cols-2 gap-2 text-sm">
-            {appointment.depositAmount > 0 && (
+            {appointment.depositAmount && appointment.depositAmount > 0 && (
               <div className="text-blue-700">
                 Depósito: ${appointment.depositAmount.toFixed(2)}
               </div>
             )}
-            {appointment.remainingBalance > 0 && (
+            {appointment.remainingBalance && appointment.remainingBalance > 0 && (
               <div className="text-red-700">
                 Pendiente: ${appointment.remainingBalance.toFixed(2)}
               </div>
@@ -299,7 +299,7 @@ export const ReceptionView: React.FC<ReceptionViewProps> = ({
       )}
 
       {/* Schedule Changes */}
-      {appointment.hasScheduleChanges && appointment.scheduleChangeHistory?.length > 0 && (
+      {appointment.hasScheduleChanges && appointment.scheduleChangeHistory && appointment.scheduleChangeHistory.length > 0 && (
         <div className="bg-orange-50 rounded-lg p-3 mb-3">
           <h4 className="font-medium text-gray-900 mb-2 flex items-center">
             <ArrowPathIcon className="w-4 h-4 mr-1 text-orange-600" />
@@ -338,11 +338,11 @@ export const ReceptionView: React.FC<ReceptionViewProps> = ({
           </button>
         )}
         
-        {appointment.remainingBalance > 0 && (
+        {appointment.remainingBalance && appointment.remainingBalance > 0 && (
           <button
             onClick={(e) => {
               e.stopPropagation();
-              onProcessPayment?.(appointment.id, appointment.remainingBalance);
+              onProcessPayment?.(appointment.id, appointment.remainingBalance || 0);
             }}
             className="px-3 py-1 bg-blue-600 text-white rounded text-sm hover:bg-blue-700 transition-colors"
           >

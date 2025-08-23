@@ -18,7 +18,7 @@ import {
   ShieldCheckIcon
 } from '@heroicons/react/24/outline';
 
-interface PatientTooltipData {
+export interface PatientTooltipData {
   // Basic Patient Info (GDPR/HIPAA compliant)
   patientId: string;
   name: string;

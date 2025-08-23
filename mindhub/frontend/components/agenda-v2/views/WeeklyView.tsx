@@ -210,12 +210,12 @@ export const WeeklyView: React.FC<WeeklyViewProps> = ({
               <div className="bg-gray-50">
                 <TimeSlotGrid
                   scheduleConfig={scheduleConfig}
-                  currentDate={currentDate}
+                  date={currentDate}
                   appointments={[]} // We'll render appointments separately
-                  onTimeSlotClick={() => {}} // Handled by day columns
-                  showCurrentTimeIndicator={false}
+                  onSlotClick={() => {}} // Handled by day columns
+                  onAppointmentClick={() => {}}
+                  showCurrentTime={false}
                   className="border-r border-gray-200"
-                  timeSlotHeight={60}
                 />
               </div>
 
