@@ -565,7 +565,7 @@ export default function SignUpPage() {
                       className="flex-1 relative overflow-hidden gradient-secondary text-white font-semibold py-3 px-4 rounded-xl shadow-secondary hover:shadow-secondary-hover transition-all duration-300 ease-in-out disabled:opacity-50 disabled:cursor-not-allowed hover-lift focus:outline-none focus:ring-4 focus:ring-secondary-200 group"
                     >
                       {/* Shimmer effect */}
-                      <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-500"></div>
+                      <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-300 will-change-transform"></div>
                       
                       <span className="relative z-10 flex items-center justify-center">
                         {loading ? (
