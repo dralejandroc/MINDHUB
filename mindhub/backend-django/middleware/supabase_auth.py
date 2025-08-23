@@ -176,13 +176,13 @@ class SupabaseAuthMiddleware(MiddlewareMixin):
         # Only validate auth for specific bridge endpoints  
         bridge_paths = [
             '/assessments/api/create-from-react/',  # ✅ ACTIVAR validación
-            # '/api/expedix/patients',              # 🧪 TEMPORARILY DISABLED to isolate JSON issue
+            '/api/expedix/patients',                # ✅ RESTORED according to architecture
             '/api/expedix/consultations',           # ✅ AGREGAR validación
             '/api/expedix/medical-history',         # ✅ AGREGAR validación
             '/api/expedix/users',                   # ✅ AGREGAR validación
             '/api/expedix/schedule-config',         # ✅ AGREGAR validación
             '/api/agenda/',                         # ✅ AGREGAR validación  
-            # '/api/resources/',                    # 🧪 TEMPORARILY DISABLED for dual system testing
+            '/api/resources/',                      # ✅ RESTORED according to architecture
             '/api/clinics/',                        # ✅ AGREGAR validación clinic management
         ]
         
@@ -240,64 +240,62 @@ class SupabaseAuthMiddleware(MiddlewareMixin):
         Validate token with Supabase API
         """
         try:
-            # Check if it's a service role key from trusted proxy
-            # Allow specific service role key from Next.js proxy that has already validated the user
+            # Try to validate as actual JWT token first
+            supabase_headers = {
+                'Authorization': f'Bearer {token}',
+                'apikey': getattr(settings, 'SUPABASE_ANON_KEY', ''),
+                'Content-Type': 'application/json'
+            }
+            
+            try:
+                response = requests.get(
+                    f'{settings.SUPABASE_URL}/auth/v1/user',
+                    headers=supabase_headers,
+                    timeout=10
+                )
+                
+                if response.status_code == 200:
+                    logger.info('Valid Supabase JWT token detected')
+                    return response.json()
+                    
+            except requests.RequestException:
+                logger.debug('Token is not a valid Supabase JWT, checking service role key')
+            
+            # Fallback to service role key for development/proxy
             expected_service_key = getattr(settings, 'SUPABASE_SERVICE_ROLE_KEY', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp2YmNwbGR6b3lpY2VmZHRud2tkIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1NTQwMTQ3MCwiZXhwIjoyMDcwOTc3NDcwfQ.-iooltGuYeGqXVh7pgRhH_Oo_R64VtHIssbE3u_y0WQ')
             
-            logger.info(f'Token validation - Token length: {len(token)}, Expected key length: {len(expected_service_key)}')
-            logger.info(f'Token matches service key: {token == expected_service_key}')
-            
             if token == expected_service_key:
-                # Check if this is from a pre-authenticated proxy
+                # Check for proxy headers first
                 proxy_auth = request.META.get('HTTP_X_PROXY_AUTH')
-                user_id = request.META.get('HTTP_X_USER_ID')
+                user_id = request.META.get('HTTP_X_USER_ID') 
                 user_email = request.META.get('HTTP_X_USER_EMAIL')
                 
-                logger.info(f'Service role - Proxy headers: proxy_auth={proxy_auth}, user_id={user_id}, user_email={user_email}')
-                
                 if proxy_auth == 'verified' and user_id and user_email:
-                    logger.info(f'Using service role key from pre-authenticated proxy for user: {user_email}')
+                    logger.info(f'Service role with proxy authentication: {user_email}')
                     return {
                         'id': user_id,
                         'email': user_email,
                         'user_metadata': {
                             'first_name': user_email.split('@')[0],
-                            'last_name': '',
-                            'clinic_id': None  # TODO: Extract from Supabase profile
+                            'last_name': ''
                         }
                     }
-                else:
-                    logger.warning(f'Service role key provided but missing proxy headers: proxy_auth={proxy_auth}, user_id={user_id}, user_email={user_email}')
-                    # In development, allow service role key without proxy headers
-                    if settings.DEBUG:
-                        logger.info('Using service role key for development authentication (no proxy headers)')
-                        return {
-                            'id': 'a1c193e9-643a-4ba9-9214-29536ea93913',  # Correct dr_aleks_c ID
-                            'email': 'dr_aleks_c@hotmail.com',
-                            'user_metadata': {
-                                'first_name': 'Dr. Alejandro',
-                                'last_name': 'Constante'
-                            }
+                
+                # Development fallback - use test user for dual system testing
+                if settings.DEBUG:
+                    logger.info('Development mode: Using service role with test user context')
+                    return {
+                        'id': 'a1c193e9-643a-4ba9-9214-29536ea93913',  # dr_aleks_c ID
+                        'email': 'dr_aleks_c@hotmail.com',
+                        'user_metadata': {
+                            'first_name': 'Dr. Alejandro',
+                            'last_name': 'Constante'
                         }
+                    }
             
-            # Make request to Supabase to validate token
-            headers = {
-                'Authorization': f'Bearer {token}',
-                'apikey': settings.SUPABASE_ANON_KEY,
-                'Content-Type': 'application/json'
-            }
-            
-            response = requests.get(
-                f'{settings.SUPABASE_URL}/auth/v1/user',
-                headers=headers,
-                timeout=10
-            )
-            
-            if response.status_code == 200:
-                return response.json()
-            else:
-                logger.warning(f'Supabase auth failed: {response.status_code} - {response.text}')
-                return None
+            # If we get here, neither real JWT nor service role key worked
+            logger.warning(f'Token validation failed for token: {token[:20]}...')
+            return None
                 
         except requests.RequestException as e:
             logger.error(f'Supabase API request failed: {str(e)}')

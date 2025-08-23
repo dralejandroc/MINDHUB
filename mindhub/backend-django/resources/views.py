@@ -20,6 +20,7 @@ import os
 import mimetypes
 
 from middleware.base_viewsets import ResourcesDualViewSet, DualSystemModelViewSet
+from expedix.authentication import SupabaseProxyAuthentication
 
 from .models import (
     ResourceCategory, Resource, WatermarkTemplate, ResourceEmailTemplate,
@@ -38,8 +39,8 @@ class ResourceCategoryViewSet(DualSystemModelViewSet):
     """🎯 DUAL SYSTEM Resource category management ViewSet"""
     queryset = ResourceCategory.objects.all()
     serializer_class = ResourceCategorySerializer
-    authentication_classes = []  # 🧪 TEMPORARILY DISABLED for dual system testing
-    permission_classes = []      # 🧪 TEMPORARILY DISABLED for dual system testing
+    authentication_classes = [SupabaseProxyAuthentication]  # ✅ RESTORED according to architecture
+    permission_classes = [IsAuthenticated]                 # ✅ RESTORED according to architecture
     filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
     search_fields = ['name', 'description']
     filterset_fields = ['parent', 'is_active']
@@ -73,8 +74,8 @@ class ResourceViewSet(ResourcesDualViewSet):
     """
     queryset = Resource.objects.select_related('category', 'owner', 'upload_by').filter(is_active=True)
     serializer_class = ResourceSerializer
-    authentication_classes = []  # 🧪 TEMPORARILY DISABLED for dual system testing
-    permission_classes = []      # 🧪 TEMPORARILY DISABLED for dual system testing
+    authentication_classes = [SupabaseProxyAuthentication]  # ✅ RESTORED according to architecture
+    permission_classes = [IsAuthenticated]                 # ✅ RESTORED according to architecture
     parser_classes = [MultiPartParser, FormParser, JSONParser]
     filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
     search_fields = ['title', 'description', 'tags', 'full_text_content']
@@ -277,8 +278,8 @@ class WatermarkTemplateViewSet(viewsets.ModelViewSet):
     """Watermark template management ViewSet"""
     queryset = WatermarkTemplate.objects.all()
     serializer_class = WatermarkTemplateSerializer
-    authentication_classes = []  # 🧪 TEMPORARILY DISABLED for dual system testing
-    permission_classes = []      # 🧪 TEMPORARILY DISABLED for dual system testing
+    authentication_classes = [SupabaseProxyAuthentication]  # ✅ RESTORED according to architecture
+    permission_classes = [IsAuthenticated]                 # ✅ RESTORED according to architecture
     filter_backends = [filters.SearchFilter, filters.OrderingFilter]
     search_fields = ['name', 'text_content']
     ordering_fields = ['name', 'created_at']
@@ -295,8 +296,8 @@ class ResourceEmailTemplateViewSet(viewsets.ModelViewSet):
     """Resource email template management ViewSet"""
     queryset = ResourceEmailTemplate.objects.all()
     serializer_class = ResourceEmailTemplateSerializer
-    authentication_classes = []  # 🧪 TEMPORARILY DISABLED for dual system testing
-    permission_classes = []      # 🧪 TEMPORARILY DISABLED for dual system testing
+    authentication_classes = [SupabaseProxyAuthentication]  # ✅ RESTORED according to architecture
+    permission_classes = [IsAuthenticated]                 # ✅ RESTORED according to architecture
     filter_backends = [filters.SearchFilter, filters.OrderingFilter]
     search_fields = ['name', 'subject']
     ordering_fields = ['name', 'created_at']
@@ -313,8 +314,8 @@ class ResourceSendViewSet(viewsets.ModelViewSet):
     """Resource send tracking ViewSet"""
     queryset = ResourceSend.objects.select_related('resource', 'patient', 'sent_by').all()
     serializer_class = ResourceSendSerializer
-    authentication_classes = []  # 🧪 TEMPORARILY DISABLED for dual system testing
-    permission_classes = []      # 🧪 TEMPORARILY DISABLED for dual system testing
+    authentication_classes = [SupabaseProxyAuthentication]  # ✅ RESTORED according to architecture
+    permission_classes = [IsAuthenticated]                 # ✅ RESTORED according to architecture
     filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
     search_fields = ['resource__title', 'patient__first_name', 'patient__paternal_last_name']
     filterset_fields = ['send_method', 'delivery_status', 'watermark_applied']
@@ -377,8 +378,8 @@ class ResourceCollectionViewSet(viewsets.ModelViewSet):
     """Resource collection management ViewSet"""
     queryset = ResourceCollection.objects.all()
     serializer_class = ResourceCollectionSerializer
-    authentication_classes = []  # 🧪 TEMPORARILY DISABLED for dual system testing
-    permission_classes = []      # 🧪 TEMPORARILY DISABLED for dual system testing
+    authentication_classes = [SupabaseProxyAuthentication]  # ✅ RESTORED according to architecture
+    permission_classes = [IsAuthenticated]                 # ✅ RESTORED according to architecture
     filter_backends = [filters.SearchFilter, filters.OrderingFilter]
     search_fields = ['name', 'description']
     ordering_fields = ['name', 'created_at']

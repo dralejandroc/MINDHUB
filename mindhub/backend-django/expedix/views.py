@@ -39,8 +39,8 @@ class PatientViewSet(ExpedixDualViewSet):  # 🎯 RESTORED DUAL SYSTEM after fix
     """
     queryset = Patient.objects.filter(is_active=True)
     serializer_class = PatientSerializer
-    authentication_classes = []  # 🧪 TEMPORARILY DISABLED to isolate JSON issue
-    permission_classes = []      # 🧪 TEMPORARILY DISABLED to isolate JSON issue
+    authentication_classes = [SupabaseProxyAuthentication]  # ✅ RESTORED according to architecture
+    permission_classes = [IsAuthenticated]                 # ✅ RESTORED according to architecture
     filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
     search_fields = ['first_name', 'paternal_last_name', 'maternal_last_name', 'email', 'phone', 'medical_record_number']
     filterset_fields = ['gender', 'city', 'state', 'patient_category']  # Removed clinic_id as it's handled by dual system
