@@ -13,7 +13,8 @@ import {
 
 interface NewPatientData {
   firstName: string;
-  lastName: string;
+  paternalLastName: string;
+  maternalLastName: string;
   email: string;
   phone: string;
   birthDate: string;
@@ -33,7 +34,8 @@ interface NewPatientQuickModalProps {
 export default function NewPatientQuickModal({ onClose, onSave }: NewPatientQuickModalProps) {
   const [formData, setFormData] = useState<NewPatientData>({
     firstName: '',
-    lastName: '',
+    paternalLastName: '',
+    maternalLastName: '',
     email: '',
     phone: '',
     birthDate: '',
@@ -77,7 +79,8 @@ export default function NewPatientQuickModal({ onClose, onSave }: NewPatientQuic
         },
         body: JSON.stringify({
           first_name: formData.firstName,
-          last_name: formData.lastName,
+          paternal_last_name: formData.paternalLastName,
+          maternal_last_name: formData.maternalLastName,
           birth_date: formData.birthDate ? `${formData.birthDate}T00:00:00.000Z` : null,
           gender: formData.gender,
           ...(formData.email && { email: formData.email }),
@@ -101,7 +104,8 @@ export default function NewPatientQuickModal({ onClose, onSave }: NewPatientQuic
         console.error('❌ Server error creating patient:', errorData);
         console.error('❌ Request data sent:', {
           first_name: formData.firstName,
-          last_name: formData.lastName,
+          paternal_last_name: formData.paternalLastName,
+          maternal_last_name: formData.maternalLastName,
           birth_date: formData.birthDate,
           gender: formData.gender,
           email: formData.email,
@@ -122,7 +126,7 @@ export default function NewPatientQuickModal({ onClose, onSave }: NewPatientQuic
     }
   };
 
-  const isFormValid = formData.firstName && formData.lastName && formData.phone && formData.birthDate && formData.gender;
+  const isFormValid = formData.firstName && formData.paternalLastName && formData.phone && formData.birthDate && formData.gender;
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-[60]">
@@ -182,20 +186,39 @@ export default function NewPatientQuickModal({ onClose, onSave }: NewPatientQuic
 
               <div>
                 <label className="block text-xs font-medium mb-1" style={{ color: 'var(--neutral-700)' }}>
-                  Apellidos *
+                  Apellido Paterno *
                 </label>
                 <div className="relative">
                   <UserIcon className="h-4 w-4 absolute left-3 top-1/2 transform -translate-y-1/2" style={{ color: 'var(--primary-500)' }} />
                   <input
                     type="text"
-                    value={formData.lastName}
-                    onChange={(e) => setFormData(prev => ({ ...prev, lastName: e.target.value }))}
+                    value={formData.paternalLastName}
+                    onChange={(e) => setFormData(prev => ({ ...prev, paternalLastName: e.target.value }))}
                     className="w-full pl-10 pr-4 py-2 text-sm rounded-lg focus:outline-none"
                     style={{ 
                       border: '2px solid var(--neutral-200)',
                       fontFamily: 'var(--font-primary)'
                     }}
                     required
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium mb-1" style={{ color: 'var(--neutral-700)' }}>
+                  Apellido Materno
+                </label>
+                <div className="relative">
+                  <UserIcon className="h-4 w-4 absolute left-3 top-1/2 transform -translate-y-1/2" style={{ color: 'var(--primary-500)' }} />
+                  <input
+                    type="text"
+                    value={formData.maternalLastName}
+                    onChange={(e) => setFormData(prev => ({ ...prev, maternalLastName: e.target.value }))}
+                    className="w-full pl-10 pr-4 py-2 text-sm rounded-lg focus:outline-none"
+                    style={{ 
+                      border: '2px solid var(--neutral-200)',
+                      fontFamily: 'var(--font-primary)'
+                    }}
                   />
                 </div>
               </div>
