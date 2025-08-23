@@ -10,13 +10,18 @@ export async function GET(request: NextRequest) {
 
     // Try to forward request to backend
     try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout
+      
       const response = await fetch(`${BACKEND_URL}/api/expedix/clinic-configuration/default`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
         },
-        timeout: 5000 // 5 second timeout
+        signal: controller.signal
       });
+      
+      clearTimeout(timeoutId);
 
       if (response.ok) {
         const data = await response.json();
