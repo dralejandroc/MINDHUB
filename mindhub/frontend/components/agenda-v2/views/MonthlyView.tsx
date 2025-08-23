@@ -285,7 +285,7 @@ export const MonthlyView: React.FC<MonthlyViewProps> = ({
   }, [dayStats, currentDate]);
 
   return (
-    <div className={`flex flex-col h-full bg-gray-50 ${className}`}>
+    <div className={`flex flex-col h-screen bg-gray-50 ${className}`}>
       {/* Header */}
       <CalendarHeader
         currentDate={currentDate}
@@ -307,7 +307,7 @@ export const MonthlyView: React.FC<MonthlyViewProps> = ({
       {/* Main Content - Sidebar Layout */}
       <div className="flex flex-1 overflow-hidden">
         {/* Left Sidebar */}
-        <div className="w-80 bg-white border-r border-gray-200 flex flex-col">
+        <div className="w-80 min-w-80 bg-white border-r border-gray-200 flex flex-col flex-shrink-0 overflow-y-auto">
           {/* Month Navigation */}
           <div className="p-4 border-b border-gray-100">
             <div className="flex items-center justify-between mb-4">
@@ -401,7 +401,7 @@ export const MonthlyView: React.FC<MonthlyViewProps> = ({
         </div>
 
         {/* Main Calendar Area */}
-        <div className="flex-1 flex flex-col bg-white">
+        <div className="flex-1 flex flex-col bg-white min-w-0 overflow-hidden">
           {/* Week Days Header */}
           <div className="grid grid-cols-7 border-b border-gray-200">
             {weekDays.map((day) => (

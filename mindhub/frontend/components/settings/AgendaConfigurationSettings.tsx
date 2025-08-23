@@ -135,7 +135,24 @@ export function AgendaConfigurationSettings() {
         const data = await response.json();
         console.log('🔄 Loaded agenda settings from API:', data);
         if (data.success && data.data) {
-          setSettings(data.data);
+          // Merge with default structure to ensure all properties exist
+          const loadedData = {
+            ...settings, // Use current defaults as base
+            ...data.data, // Override with loaded data
+            reminders: {
+              whatsapp: {
+                enabled: data.data.reminders?.whatsapp?.enabled || false,
+                template: data.data.reminders?.whatsapp?.template || "Hola {PATIENT_NAME}, te recordamos tu cita con {PROFESSIONAL_NAME} el {DATE} a las {TIME} en {CLINIC_NAME}. Ubicado en {CLINIC_ADDRESS}. Si necesitas reprogramar, contacta al {CLINIC_PHONE}.",
+                hoursBeforeAppointment: data.data.reminders?.whatsapp?.hoursBeforeAppointment || 24
+              },
+              email: {
+                enabled: data.data.reminders?.email?.enabled || false,
+                template: data.data.reminders?.email?.template || "Estimado/a {PATIENT_NAME},\n\nEste es un recordatorio de su cita médica:\n\nFecha: {DATE}\nHora: {TIME}\nProfesional: {PROFESSIONAL_NAME}\nTipo de consulta: {APPOINTMENT_TYPE}\n\nDirección: {CLINIC_NAME}\n{CLINIC_ADDRESS}\nTeléfono: {CLINIC_PHONE}\n\nPor favor llegue 15 minutos antes de su cita.\n\nSi necesita reprogramar o cancelar, contacte con nosotros al menos 24 horas antes.\n\nSaludos cordiales,\nEquipo de {CLINIC_NAME}",
+                hoursBeforeAppointment: data.data.reminders?.email?.hoursBeforeAppointment || 24
+              }
+            }
+          };
+          setSettings(loadedData);
         }
       }
     } catch (error) {

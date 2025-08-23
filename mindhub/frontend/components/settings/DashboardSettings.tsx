@@ -7,7 +7,11 @@ import {
   ShieldCheckIcon,
   EyeIcon,
   PencilSquareIcon,
-  HomeIcon
+  HomeIcon,
+  CurrencyDollarIcon,
+  CalendarDaysIcon,
+  ClockIcon,
+  ExclamationTriangleIcon
 } from '@heroicons/react/24/outline';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
@@ -26,6 +30,13 @@ export function DashboardSettings() {
   const [showAdminPanel, setShowAdminPanel] = useState(false);
   const [adminSettings, setAdminSettings] = useState(getAdminSettings());
   const [activeSection, setActiveSection] = useState<'dashboard' | 'startpage'>('dashboard');
+  const [scheduleConfig, setScheduleConfig] = useState({
+    startHour: 8,
+    endHour: 18,
+    workingDays: [1, 2, 3, 4, 5], // Monday to Friday
+    sessionCost: 1200,
+    sessionsPerHour: 2
+  });
 
   const handleModeChange = (mode: 'beginner' | 'advanced') => {
     updateDashboardConfig({ mode });
@@ -56,6 +67,30 @@ export function DashboardSettings() {
     };
     setAdminSettings(newSettings);
     saveAdminSettings(newSettings);
+  };
+
+  // Calculate financial projection
+  const calculateFinancialProjection = () => {
+    const hoursPerDay = scheduleConfig.endHour - scheduleConfig.startHour;
+    const workingDaysPerWeek = scheduleConfig.workingDays.length;
+    const sessionsPerDay = hoursPerDay * scheduleConfig.sessionsPerHour;
+    const occupancyRate = 0.85; // 85% occupancy
+    
+    const occupiedSessionsPerDay = Math.floor(sessionsPerDay * occupancyRate);
+    const dailyRevenue = occupiedSessionsPerDay * scheduleConfig.sessionCost;
+    const weeklyRevenue = dailyRevenue * workingDaysPerWeek;
+    const monthlyRevenue = weeklyRevenue * 4.33; // Average weeks per month
+    const annualRevenue = monthlyRevenue * 12;
+
+    return {
+      sessionsPerDay,
+      occupiedSessionsPerDay,
+      dailyRevenue,
+      weeklyRevenue,
+      monthlyRevenue,
+      annualRevenue,
+      workingDaysPerWeek
+    };
   };
 
   return (
@@ -239,6 +274,185 @@ export function DashboardSettings() {
           </div>
         </div>
       </Card>
+
+      {/* Financial Projection - Only for Individual Users */}
+      {!isAdmin && (
+        <Card className="p-6 border-green-200 bg-gradient-to-r from-green-50 to-emerald-50">
+          <div className="flex items-center space-x-3 mb-6">
+            <CurrencyDollarIcon className="h-6 w-6 text-green-600" />
+            <div>
+              <h2 className="text-xl font-semibold text-gray-900">Proyección Financiera Automática</h2>
+              <p className="text-sm text-green-700 font-medium">
+                Esta estimación es solo aproximada suponiendo agenda en un 85%
+              </p>
+              <p className="text-xs text-gray-500 mt-1">
+                (Esta proyección es solo una estimación, no representa ingresos reales)
+              </p>
+            </div>
+          </div>
+
+          {/* Configuration Settings */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6 p-4 bg-white rounded-lg border">
+            <div>
+              <label className="block text-xs font-medium text-gray-700 mb-1">Hora Inicio</label>
+              <input
+                type="time"
+                value={`${scheduleConfig.startHour.toString().padStart(2, '0')}:00`}
+                onChange={(e) => setScheduleConfig(prev => ({
+                  ...prev,
+                  startHour: parseInt(e.target.value.split(':')[0])
+                }))}
+                className="w-full text-xs px-2 py-1 border border-gray-300 rounded focus:ring-2 focus:ring-green-500"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-gray-700 mb-1">Hora Fin</label>
+              <input
+                type="time"
+                value={`${scheduleConfig.endHour.toString().padStart(2, '0')}:00`}
+                onChange={(e) => setScheduleConfig(prev => ({
+                  ...prev,
+                  endHour: parseInt(e.target.value.split(':')[0])
+                }))}
+                className="w-full text-xs px-2 py-1 border border-gray-300 rounded focus:ring-2 focus:ring-green-500"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-gray-700 mb-1">Sesiones/Hora</label>
+              <select
+                value={scheduleConfig.sessionsPerHour}
+                onChange={(e) => setScheduleConfig(prev => ({
+                  ...prev,
+                  sessionsPerHour: parseInt(e.target.value)
+                }))}
+                className="w-full text-xs px-2 py-1 border border-gray-300 rounded focus:ring-2 focus:ring-green-500"
+              >
+                <option value={1}>1 (60 min)</option>
+                <option value={2}>2 (30 min)</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-gray-700 mb-1">Costo Sesión</label>
+              <input
+                type="number"
+                value={scheduleConfig.sessionCost}
+                onChange={(e) => setScheduleConfig(prev => ({
+                  ...prev,
+                  sessionCost: parseInt(e.target.value)
+                }))}
+                className="w-full text-xs px-2 py-1 border border-gray-300 rounded focus:ring-2 focus:ring-green-500"
+                placeholder="1200"
+              />
+            </div>
+          </div>
+
+          {/* Working Days Selection */}
+          <div className="mb-6 p-4 bg-white rounded-lg border">
+            <label className="block text-sm font-medium text-gray-700 mb-3">Días Laborales</label>
+            <div className="flex flex-wrap gap-2">
+              {[
+                { id: 1, name: 'Lun', full: 'Lunes' },
+                { id: 2, name: 'Mar', full: 'Martes' },
+                { id: 3, name: 'Mié', full: 'Miércoles' },
+                { id: 4, name: 'Jue', full: 'Jueves' },
+                { id: 5, name: 'Vie', full: 'Viernes' },
+                { id: 6, name: 'Sáb', full: 'Sábado' },
+                { id: 0, name: 'Dom', full: 'Domingo' }
+              ].map(day => (
+                <button
+                  key={day.id}
+                  onClick={() => setScheduleConfig(prev => ({
+                    ...prev,
+                    workingDays: prev.workingDays.includes(day.id)
+                      ? prev.workingDays.filter(d => d !== day.id)
+                      : [...prev.workingDays, day.id]
+                  }))}
+                  className={`px-3 py-1 text-xs rounded-full border transition-colors ${
+                    scheduleConfig.workingDays.includes(day.id)
+                      ? 'bg-green-500 text-white border-green-500'
+                      : 'bg-white text-gray-600 border-gray-300 hover:bg-green-50'
+                  }`}
+                  title={day.full}
+                >
+                  {day.name}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Financial Projections Display */}
+          {(() => {
+            const projection = calculateFinancialProjection();
+            return (
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div className="text-center p-4 bg-white rounded-lg border-l-4 border-green-500">
+                  <div className="flex items-center justify-center space-x-1 mb-2">
+                    <CalendarDaysIcon className="w-4 h-4 text-green-600" />
+                    <span className="text-xs text-gray-600">Diario (85%)</span>
+                  </div>
+                  <div className="text-lg font-bold text-green-600">
+                    ${projection.dailyRevenue.toLocaleString()}
+                  </div>
+                  <div className="text-xs text-gray-500">
+                    {projection.occupiedSessionsPerDay} de {projection.sessionsPerDay} sesiones
+                  </div>
+                </div>
+
+                <div className="text-center p-4 bg-white rounded-lg border-l-4 border-blue-500">
+                  <div className="flex items-center justify-center space-x-1 mb-2">
+                    <CalendarIcon className="w-4 h-4 text-blue-600" />
+                    <span className="text-xs text-gray-600">Semanal</span>
+                  </div>
+                  <div className="text-lg font-bold text-blue-600">
+                    ${projection.weeklyRevenue.toLocaleString()}
+                  </div>
+                  <div className="text-xs text-gray-500">
+                    {projection.workingDaysPerWeek} días laborales
+                  </div>
+                </div>
+
+                <div className="text-center p-4 bg-white rounded-lg border-l-4 border-purple-500">
+                  <div className="flex items-center justify-center space-x-1 mb-2">
+                    <ClockIcon className="w-4 h-4 text-purple-600" />
+                    <span className="text-xs text-gray-600">Mensual</span>
+                  </div>
+                  <div className="text-lg font-bold text-purple-600">
+                    ${Math.round(projection.monthlyRevenue).toLocaleString()}
+                  </div>
+                  <div className="text-xs text-gray-500">~4.33 semanas/mes</div>
+                </div>
+
+                <div className="text-center p-4 bg-white rounded-lg border-l-4 border-orange-500">
+                  <div className="flex items-center justify-center space-x-1 mb-2">
+                    <CurrencyDollarIcon className="w-4 h-4 text-orange-600" />
+                    <span className="text-xs text-gray-600">Anual</span>
+                  </div>
+                  <div className="text-lg font-bold text-orange-600">
+                    ${Math.round(projection.annualRevenue).toLocaleString()}
+                  </div>
+                  <div className="text-xs text-gray-500">Proyección 12 meses</div>
+                </div>
+              </div>
+            );
+          })()}
+
+          {/* Disclaimer */}
+          <div className="mt-4 p-3 bg-yellow-50 border-l-4 border-yellow-400 rounded">
+            <div className="flex items-start space-x-2">
+              <ExclamationTriangleIcon className="w-4 h-4 text-yellow-600 mt-0.5 flex-shrink-0" />
+              <div className="text-xs text-yellow-800">
+                <p className="font-medium mb-1">Información Importante:</p>
+                <ul className="list-disc list-inside space-y-1 text-xs">
+                  <li>Esta es una proyección aproximada basada en 85% de ocupación</li>
+                  <li>Los ingresos reales pueden variar según múltiples factores</li>
+                  <li>Para clínicas, esta proyección debe revisarse en el módulo de Finanzas</li>
+                  <li>No incluye gastos operativos, impuestos o deducciones</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        </Card>
+      )}
 
       {/* Admin Panel */}
       {isAdmin && (

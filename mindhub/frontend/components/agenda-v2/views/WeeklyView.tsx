@@ -63,7 +63,6 @@ export const WeeklyView: React.FC<WeeklyViewProps> = ({
   onAppointmentDrop,
   className = ''
 }) => {
-  const [selectedTimeSlot, setSelectedTimeSlot] = useState<{ date: Date; hour: number; minute: number } | null>(null);
   const [draggedAppointment, setDraggedAppointment] = useState<AppointmentData | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -94,8 +93,9 @@ export const WeeklyView: React.FC<WeeklyViewProps> = ({
 
   // Handle time slot clicks
   const handleTimeSlotClick = (date: Date, hour: number, minute: number) => {
-    setSelectedTimeSlot({ date, hour, minute });
+    // Directly open new appointment modal instead of showing popup
     onTimeSlotClick?.(date, hour, minute);
+    onNewAppointment?.();
   };
 
   // Handle appointment drag and drop
@@ -211,15 +211,27 @@ export const WeeklyView: React.FC<WeeklyViewProps> = ({
               {/* Time slots column - wider for readability */}
               <div className="bg-gray-50 w-20 flex-shrink-0 border-r border-gray-200">
                 <div className="sticky top-0 bg-gray-50 border-b border-gray-200 h-12"></div>
-                {/* Time labels */}
-                {Array.from({ length: scheduleConfig.endHour - scheduleConfig.startHour }, (_, i) => {
-                  const hour = scheduleConfig.startHour + i;
+                {/* Time labels - Dynamic based on slot duration */}
+                {Array.from({ 
+                  length: Math.ceil((scheduleConfig.endHour - scheduleConfig.startHour) * (60 / scheduleConfig.slotDuration))
+                }, (_, i) => {
+                  const totalMinutes = i * scheduleConfig.slotDuration;
+                  const hour = scheduleConfig.startHour + Math.floor(totalMinutes / 60);
+                  const minute = totalMinutes % 60;
+                  
+                  // Only show labels for major time marks (every hour or every 30 minutes)
+                  const showLabel = scheduleConfig.slotDuration <= 30 
+                    ? (minute === 0 || minute === 30) 
+                    : minute === 0;
+
                   return (
                     <div
-                      key={hour}
-                      className="h-16 border-b border-gray-100 flex items-center justify-center text-xs text-gray-600"
+                      key={`${hour}-${minute}`}
+                      className={`h-12 border-b border-gray-100 flex items-center justify-center text-xs text-gray-600 ${
+                        !showLabel ? 'border-gray-50' : ''
+                      }`}
                     >
-                      {hour}:00
+                      {showLabel && `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`}
                     </div>
                   );
                 })}
@@ -245,19 +257,28 @@ export const WeeklyView: React.FC<WeeklyViewProps> = ({
                       </span>
                     </div>
 
-                    {/* Time slots for this day */}
+                    {/* Time slots for this day - Dynamic based on slot duration */}
                     <div className="relative">
-                      {Array.from({ length: scheduleConfig.endHour - scheduleConfig.startHour }, (_, i) => {
-                        const hour = scheduleConfig.startHour + i;
+                      {Array.from({ 
+                        length: Math.ceil((scheduleConfig.endHour - scheduleConfig.startHour) * (60 / scheduleConfig.slotDuration))
+                      }, (_, i) => {
+                        const totalMinutes = i * scheduleConfig.slotDuration;
+                        const hour = scheduleConfig.startHour + Math.floor(totalMinutes / 60);
+                        const minute = totalMinutes % 60;
+                        
                         return (
                           <div
-                            key={hour}
-                            className="h-16 border-b border-gray-100 hover:bg-gray-50 cursor-pointer relative"
-                            onClick={() => handleTimeSlotClick(day, hour, 0)}
+                            key={`${hour}-${minute}`}
+                            className="h-12 border-b border-gray-100 hover:bg-gray-50 cursor-pointer relative"
+                            onClick={() => handleTimeSlotClick(day, hour, minute)}
                           >
-                            {/* Appointments for this hour */}
+                            {/* Appointments for this time slot */}
                             {dayAppointments
-                              .filter(apt => apt.startTime.getHours() === hour)
+                              .filter(apt => {
+                                const aptHour = apt.startTime.getHours();
+                                const aptMinute = apt.startTime.getMinutes();
+                                return aptHour === hour && Math.floor(aptMinute / scheduleConfig.slotDuration) * scheduleConfig.slotDuration === minute;
+                              })
                               .map(appointment => (
                                 <div
                                   key={appointment.id}
@@ -285,36 +306,6 @@ export const WeeklyView: React.FC<WeeklyViewProps> = ({
         </div>
       </div>
 
-      {/* Selection indicator for new appointments */}
-      {selectedTimeSlot && (
-        <div className="fixed inset-0 bg-black bg-opacity-25 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg shadow-lg p-4">
-            <h3 className="font-semibold text-gray-900 mb-2">Nueva Cita</h3>
-            <p className="text-sm text-gray-600 mb-4">
-              {format(selectedTimeSlot.date, 'EEEE, d MMMM yyyy', { locale: es })} a las{' '}
-              {selectedTimeSlot.hour.toString().padStart(2, '0')}:
-              {selectedTimeSlot.minute.toString().padStart(2, '0')}
-            </p>
-            <div className="flex space-x-2">
-              <button
-                onClick={() => {
-                  setSelectedTimeSlot(null);
-                  onNewAppointment?.();
-                }}
-                className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"
-              >
-                Crear Cita
-              </button>
-              <button
-                onClick={() => setSelectedTimeSlot(null)}
-                className="px-4 py-2 text-gray-600 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
-              >
-                Cancelar
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 };
