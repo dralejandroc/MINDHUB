@@ -25,7 +25,9 @@ export async function GET(request: Request) {
     
     console.log(`[Resource Categories API] Successfully retrieved ${mockResourceCategories.length} categories`);
     
-    return createSuccessResponse(mockResourceCategories, 'Resource categories retrieved successfully');
+    return createSuccessResponse({
+      data: mockResourceCategories || []
+    }, 'Resource categories retrieved successfully');
 
   } catch (error) {
     console.error('[Resource Categories API] Error:', error);

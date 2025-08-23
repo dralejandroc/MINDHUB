@@ -42,98 +42,30 @@ export default function IncomeTracker({ selectedDate, onNewIncome }: IncomeTrack
   const [sortBy, setSortBy] = useState<'date' | 'amount' | 'source'>('date');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
 
-  // Mock data ampliada
+  // Load income data from API
   useEffect(() => {
-    const mockIncomes: IncomeData[] = [
-      {
-        id: '1',
-        date: '2025-01-21',
-        amount: 800,
-        source: 'consultation',
-        paymentMethod: 'cash',
-        patientName: 'María González',
-        description: 'Consulta inicial - Psicología',
-        professionalId: 'prof1',
-        professionalName: 'Dr. Juan Pérez'
-      },
-      {
-        id: '2',
-        date: '2025-01-21',
-        amount: 1200,
-        source: 'advance',
-        paymentMethod: 'transfer',
-        patientName: 'Carlos Rodríguez',
-        description: 'Anticipo para tratamiento',
-        professionalId: 'prof1',
-        professionalName: 'Dr. Juan Pérez'
-      },
-      {
-        id: '3',
-        date: '2025-01-21',
-        amount: 600,
-        source: 'consultation',
-        paymentMethod: 'card',
-        patientName: 'Ana Martínez',
-        description: 'Seguimiento - Psiquiatría',
-        professionalId: 'prof2',
-        professionalName: 'Dra. María López'
-      },
-      {
-        id: '4',
-        date: '2025-01-20',
-        amount: 1500,
-        source: 'other',
-        paymentMethod: 'transfer',
-        description: 'Consultoría externa - Capacitación',
-        professionalId: 'prof1',
-        professionalName: 'Dr. Juan Pérez'
-      },
-      {
-        id: '5',
-        date: '2025-01-19',
-        amount: 900,
-        source: 'consultation',
-        paymentMethod: 'cash',
-        patientName: 'Pedro López',
-        description: 'Evaluación psicológica',
-        professionalId: 'prof1',
-        professionalName: 'Dr. Juan Pérez'
-      },
-      {
-        id: '6',
-        date: '2025-01-18',
-        amount: 750,
-        source: 'consultation',
-        paymentMethod: 'card',
-        patientName: 'Sofía García',
-        description: 'Terapia cognitivo-conductual',
-        professionalId: 'prof2',
-        professionalName: 'Dra. María López'
-      },
-      {
-        id: '7',
-        date: '2025-01-17',
-        amount: 500,
-        source: 'advance',
-        paymentMethod: 'cash',
-        patientName: 'Roberto Morales',
-        description: 'Anticipo sesiones grupales',
-        professionalId: 'prof1',
-        professionalName: 'Dr. Juan Pérez'
-      },
-      {
-        id: '8',
-        date: '2025-01-16',
-        amount: 2000,
-        source: 'other',
-        paymentMethod: 'transfer',
-        description: 'Peritaje psicológico',
-        professionalId: 'prof2',
-        professionalName: 'Dra. María López'
+    loadIncomeData();
+  }, [selectedDate]);
+
+  const loadIncomeData = async () => {
+    try {
+      const response = await fetch('/api/finance/income');
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success && data.data) {
+          setIncomes(data.data);
+        } else {
+          setIncomes([]);
+        }
+      } else {
+        console.warn('Failed to load income data from API');
+        setIncomes([]);
       }
-    ];
-    setIncomes(mockIncomes);
-  }, []);
+    } catch (error) {
+      console.error('Error loading income data:', error);
+      setIncomes([]);
+    }
+  };
 
   // Aplicar filtros
   useEffect(() => {

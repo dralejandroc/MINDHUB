@@ -18,32 +18,106 @@ export async function GET(request: Request) {
       return createAuthResponse()
     }
     
-    // Mock clinic configuration
+    // Clinic configuration matching the Settings component interface
     const clinicConfig = {
-      id: 'clinic-001',
-      clinic_name: 'MindHub Clinic',
-      address: 'Av. Reforma 123, Col. Centro, CDMX',
-      phone: '+52 55 1234 5678',
-      email: 'contacto@mindhub.cloud',
-      tax_id: 'MHC123456789',
-      logo_url: '/logo.png',
-      settings: {
-        timezone: 'America/Mexico_City',
-        language: 'es',
-        currency: 'MXN',
-        appointment_duration: 30,
-        working_hours: {
-          monday: { start: '09:00', end: '18:00' },
-          tuesday: { start: '09:00', end: '18:00' },
-          wednesday: { start: '09:00', end: '18:00' },
-          thursday: { start: '09:00', end: '18:00' },
-          friday: { start: '09:00', end: '18:00' },
-          saturday: { start: '09:00', end: '14:00' },
-          sunday: null
+      configuration: {
+        clinicInfo: {
+          name: 'MindHub Clinic',
+          address: 'Av. Reforma 123, Col. Centro',
+          city: 'Ciudad de México',
+          state: 'CDMX',
+          postalCode: '06000',
+          phone: '+52 55 1234 5678',
+          email: 'contacto@mindhub.cloud',
+          website: 'https://mindhub.cloud',
+          logoUrl: '/logo.png',
+          logoPosition: 'top-left',
+          logoSize: 100
+        },
+        printConfiguration: {
+          marginLeft: 1.5,
+          marginTop: 2.0,
+          marginRight: 1.5,
+          marginBottom: 1.5,
+          fontSize: {
+            header: 16,
+            patientInfo: 12,
+            medication: 12,
+            instructions: 11,
+            footer: 10,
+            clinicName: 14,
+            patientName: 13,
+            actualDate: 11,
+            diagnostics: 12,
+            prescription: 12
+          },
+          showPatientAge: true,
+          showPatientBirthdate: true,
+          showMedicName: true,
+          showActualDate: true,
+          showPatientName: true,
+          showNumbers: true,
+          showDiagnostics: true,
+          showMeasurements: false,
+          boldMedicine: true,
+          boldPrescription: true,
+          boldPatientName: true,
+          boldPatientAge: false,
+          boldMedicName: true,
+          boldDate: true,
+          boldDiagnostics: true,
+          boldIndications: false,
+          treatmentsAtPage: 5
+        },
+        digitalSignature: {
+          enabled: false,
+          signatureImageUrl: '',
+          signaturePosition: 'bottom-right',
+          signatureSize: 80,
+          showLicense: true,
+          showSpecialization: true
+        },
+        medicalRecordFields: {
+          patientDemographics: {
+            showCURP: false,
+            showRFC: false,
+            showBloodType: true,
+            showAllergies: true,
+            showEmergencyContact: true,
+            requireEmergencyContact: false
+          },
+          consultationFields: {
+            showVitalSigns: true,
+            showPhysicalExam: true,
+            showDiagnostics: true,
+            showTreatmentPlan: true,
+            showFollowUp: true,
+            customFields: []
+          }
+        },
+        prescriptionSettings: {
+          electronicPrescription: {
+            enabled: false,
+            vigency: 30,
+            auto: false,
+            anthropometrics: true,
+            diagnostics: true,
+            additional: false,
+            info: ''
+          },
+          defaultDuration: '7 días',
+          defaultFrequency: 'Cada 8 horas',
+          showInteractionWarnings: true,
+          requireClinicalIndication: true
+        },
+        userPreferences: {
+          language: 'es',
+          dateFormat: 'DD/MM/YYYY',
+          timeFormat: '24h',
+          currency: 'MXN',
+          timezone: 'America/Mexico_City'
         }
-      },
-      created_at: '2024-01-01T00:00:00.000Z',
-      updated_at: '2024-01-01T00:00:00.000Z'
+      }
     };
 
     console.log('[Clinic Config API] Returning clinic configuration');

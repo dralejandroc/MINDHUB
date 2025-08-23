@@ -28,21 +28,39 @@ export async function GET(request: Request) {
 
     // Parse query parameters
     const page = parseInt(searchParams.get('page') || '1');
-    const limit = parseInt(searchParams.get('limit') || '20');
-    const search = searchParams.get('search') || '';
+    const limit = parseInt(searchParams.get('limit') || '50');
+    const search = searchParams.get('q') || '';
+    const libraryType = searchParams.get('libraryType') || 'all';
+    const categoryId = searchParams.get('categoryId') || '';
     const offset = (page - 1) * limit;
 
     // For development: use mock data while setting up Supabase
     const { mockResources } = await import('@/lib/mock-data');
     
-    // Filter resources based on search
+    // Filter resources based on parameters
     let filteredResources = mockResources;
+    
+    // Filter by library type
+    if (libraryType !== 'all') {
+      filteredResources = filteredResources.filter(resource => 
+        resource.library_type === libraryType
+      );
+    }
+    
+    // Filter by search query
     if (search) {
       const searchLower = search.toLowerCase();
-      filteredResources = mockResources.filter(resource => 
-        resource.name.toLowerCase().includes(searchLower) ||
-        resource.description.toLowerCase().includes(searchLower) ||
-        resource.tags.some(tag => tag.toLowerCase().includes(searchLower))
+      filteredResources = filteredResources.filter(resource => 
+        resource.title.toLowerCase().includes(searchLower) ||
+        (resource.description && resource.description.toLowerCase().includes(searchLower)) ||
+        (Array.isArray(resource.tags) && resource.tags.some(tag => tag.toLowerCase().includes(searchLower)))
+      );
+    }
+    
+    // Filter by category (simple string match for now)
+    if (categoryId) {
+      filteredResources = filteredResources.filter(resource => 
+        resource.category_name && resource.category_name.toLowerCase().includes(categoryId.toLowerCase())
       );
     }
     

@@ -40,34 +40,10 @@ export async function GET(request: NextRequest) {
     console.error('Error proxying frontdesk appointments today request:', error);
     return NextResponse.json(
       { 
-        success: true, 
-        message: 'Using mock data (backend unavailable)',
-        data: [
-          {
-            id: '1',
-            patientName: 'María González',
-            time: '09:00',
-            status: 'scheduled',
-            paymentStatus: 'pending',
-            amount: 1500
-          },
-          {
-            id: '2',
-            patientName: 'Carlos Ruiz',
-            time: '10:30',
-            status: 'completed',
-            paymentStatus: 'paid',
-            amount: 1200
-          },
-          {
-            id: '3',
-            patientName: 'Ana Martínez',
-            time: '14:00',
-            status: 'scheduled',
-            paymentStatus: 'partial',
-            amount: 1800
-          }
-        ]
+        success: false, 
+        message: 'Backend connection failed - no appointment data available',
+        error: error instanceof Error ? error.message : 'Unknown error',
+        data: []
       }, 
       { status: 500 }
     );

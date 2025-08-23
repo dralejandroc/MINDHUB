@@ -1,6 +1,10 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { useAuth } from '@/lib/providers/AuthProvider';
+import { useRouter } from 'next/navigation';
+import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
+import { UnifiedSidebar } from '@/components/layout/UnifiedSidebar';
 // Using simple div wrappers to avoid conflicts with Clinimetrix Card usage
 import { Button } from '@/components/ui/Button';
 import { toast } from 'react-hot-toast';
@@ -14,7 +18,8 @@ import {
   ChartBarIcon,
   WrenchScrewdriverIcon,
   ComputerDesktopIcon,
-  CalendarIcon
+  CalendarIcon,
+  ExclamationTriangleIcon
 } from '@heroicons/react/24/outline';
 import { DashboardSettings } from '@/components/settings/DashboardSettings';
 import { AgendaConfigurationSettings } from '@/components/settings/AgendaConfigurationSettings';
@@ -120,32 +125,154 @@ interface ClinicConfiguration {
 }
 
 export default function GeneralSettingsPage() {
+  const { user, loading: authLoading } = useAuth();
+  const router = useRouter();
   const [config, setConfig] = useState<ClinicConfiguration | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [activeTab, setActiveTab] = useState('general');
+  const [connectionError, setConnectionError] = useState(false);
 
   useEffect(() => {
-    loadConfiguration();
-  }, []);
+    if (!authLoading && !user) {
+      router.push('/auth/sign-in');
+    }
+  }, [authLoading, user, router]);
+
+  useEffect(() => {
+    if (user) {
+      loadConfiguration();
+    }
+  }, [user]);
 
   const loadConfiguration = async () => {
     try {
+      setConnectionError(false);
       const response = await fetch(`/api/expedix/clinic-configuration`);
       if (response.ok) {
         const data = await response.json();
-        setConfig(data.data.configuration);
+        if (data.success && data.data && data.data.configuration) {
+          setConfig(data.data.configuration);
+        } else {
+          throw new Error('Invalid configuration data structure');
+        }
       } else {
         // Load default configuration if none exists
+        console.log('Loading default configuration...');
         const defaultResponse = await fetch(`/api/expedix/clinic-configuration/default`);
         if (defaultResponse.ok) {
           const defaultData = await defaultResponse.json();
           setConfig(defaultData.data);
+          setConnectionError(true); // Mark as connection error but still load defaults
+        } else {
+          throw new Error('Failed to load default configuration');
         }
       }
     } catch (error) {
       console.error('Error loading configuration:', error);
-      toast.error('Error al cargar la configuración');
+      setConnectionError(true);
+      // Show minimal error, don't prevent UI from showing
+      console.warn('Using fallback configuration due to connection error');
+      
+      // Set minimal fallback configuration
+      setConfig({
+        clinicInfo: {
+          name: '',
+          address: '',
+          city: '',
+          state: '',
+          postalCode: '',
+          phone: '',
+          email: '',
+          website: '',
+          logoUrl: '',
+          logoPosition: 'top-left',
+          logoSize: 100
+        },
+        printConfiguration: {
+          marginLeft: 1.5,
+          marginTop: 2.0,
+          marginRight: 1.5,
+          marginBottom: 1.5,
+          fontSize: {
+            header: 16,
+            patientInfo: 12,
+            medication: 12,
+            instructions: 11,
+            footer: 10,
+            clinicName: 14,
+            patientName: 13,
+            actualDate: 11,
+            diagnostics: 12,
+            prescription: 12
+          },
+          showPatientAge: true,
+          showPatientBirthdate: true,
+          showMedicName: true,
+          showActualDate: true,
+          showPatientName: true,
+          showNumbers: true,
+          showDiagnostics: true,
+          showMeasurements: false,
+          boldMedicine: true,
+          boldPrescription: true,
+          boldPatientName: true,
+          boldPatientAge: false,
+          boldMedicName: true,
+          boldDate: true,
+          boldDiagnostics: true,
+          boldIndications: false,
+          treatmentsAtPage: 5
+        },
+        digitalSignature: {
+          enabled: false,
+          signatureImageUrl: '',
+          signaturePosition: 'bottom-right',
+          signatureSize: 80,
+          showLicense: true,
+          showSpecialization: true
+        },
+        medicalRecordFields: {
+          patientDemographics: {
+            showCURP: false,
+            showRFC: false,
+            showBloodType: true,
+            showAllergies: true,
+            showEmergencyContact: true,
+            requireEmergencyContact: false
+          },
+          consultationFields: {
+            showVitalSigns: true,
+            showPhysicalExam: true,
+            showDiagnostics: true,
+            showTreatmentPlan: true,
+            showFollowUp: true,
+            customFields: []
+          }
+        },
+        prescriptionSettings: {
+          electronicPrescription: {
+            enabled: false,
+            vigency: 30,
+            auto: false,
+            anthropometrics: true,
+            diagnostics: true,
+            additional: false,
+            info: ''
+          },
+          defaultDuration: '7 días',
+          defaultFrequency: 'Cada 8 horas',
+          showInteractionWarnings: true,
+          requireClinicalIndication: true
+        },
+        userPreferences: {
+          language: 'es',
+          dateFormat: 'DD/MM/YYYY',
+          timeFormat: '24h',
+          currency: 'MXN',
+          timezone: 'America/Mexico_City'
+        }
+      });
     } finally {
       setLoading(false);
     }
@@ -215,36 +342,55 @@ export default function GeneralSettingsPage() {
     { id: 'preferences', name: 'Preferencias', icon: UserIcon },
   ];
 
-  if (loading) {
+  if (authLoading || loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <div className="text-lg">Cargando configuración...</div>
+        <LoadingSpinner size="lg" />
+      </div>
+    );
+  }
+
+  if (!user) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <LoadingSpinner size="lg" />
       </div>
     );
   }
 
   if (!config) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-lg text-red-600">Error al cargar la configuración</div>
-      </div>
+      <UnifiedSidebar>
+        <div className="flex items-center justify-center min-h-screen">
+          <div className="text-lg text-red-600">Error al cargar la configuración</div>
+        </div>
+      </UnifiedSidebar>
     );
   }
 
   return (
+    <UnifiedSidebar>
     <div className="container mx-auto p-6 max-w-6xl">
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-3">
           <WrenchScrewdriverIcon className="h-8 w-8 text-teal-600" />
           <h1 className="text-3xl font-bold text-gray-900">Configuración General del Sistema</h1>
         </div>
-        <Button 
-          onClick={saveConfiguration} 
-          disabled={saving}
-          className="bg-blue-600 hover:bg-blue-700"
-        >
-          {saving ? 'Guardando...' : 'Guardar Cambios'}
-        </Button>
+        <div className="flex items-center gap-3">
+          {connectionError && (
+            <div className="flex items-center gap-2 px-3 py-1 bg-amber-50 border border-amber-200 rounded-lg">
+              <ExclamationTriangleIcon className="h-4 w-4 text-amber-600" />
+              <span className="text-sm text-amber-700">Sin conexión al servidor</span>
+            </div>
+          )}
+          <Button 
+            onClick={saveConfiguration} 
+            disabled={saving || connectionError}
+            className="bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400"
+          >
+            {saving ? 'Guardando...' : 'Guardar Cambios'}
+          </Button>
+        </div>
       </div>
 
       {/* Custom Tab Navigation */}
@@ -680,5 +826,6 @@ export default function GeneralSettingsPage() {
         </div>
       </div>
     </div>
+    </UnifiedSidebar>
   );
 }

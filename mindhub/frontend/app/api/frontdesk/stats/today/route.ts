@@ -40,16 +40,17 @@ export async function GET(request: NextRequest) {
     console.error('Error proxying frontdesk stats today request:', error);
     return NextResponse.json(
       { 
-        success: true, 
-        message: 'Sample data (backend unavailable)',
+        success: false, 
+        message: 'Backend connection failed - no data available',
+        error: error instanceof Error ? error.message : 'Unknown error',
         data: {
-          appointments: 3,
-          payments: 2,
-          pendingPayments: 1,
-          resourcesSent: 4
+          appointments: 0,
+          payments: 0,
+          pendingPayments: 0,
+          resourcesSent: 0
         }
       }, 
-      { status: 200 }
+      { status: 500 }
     );
   }
 }

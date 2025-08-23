@@ -1,6 +1,5 @@
 // Expedix appointments API route - connects DIRECTLY to Supabase
 import { supabaseAdmin, getAuthenticatedUser, createResponse, createErrorResponse } from '@/lib/supabase/admin'
-import { sampleAppointmentData } from '@/lib/sample-data/appointments'
 
 export const dynamic = 'force-dynamic';
 
@@ -75,103 +74,22 @@ export async function GET(request: Request) {
 
     if (error) {
       console.error('[APPOINTMENTS API] Supabase error:', error);
-      console.log('[APPOINTMENTS API] Falling back to sample data due to database error');
-      
-      // Return sample data as fallback
-      let filteredData = [...sampleAppointmentData];
-      
-      // Apply filters to sample data
-      if (patientId) {
-        filteredData = filteredData.filter(apt => apt.patient_id === patientId);
-      }
-      
-      if (appointmentStatus) {
-        filteredData = filteredData.filter(apt => apt.status === appointmentStatus);
-      }
-      
-      if (date) {
-        filteredData = filteredData.filter(apt => apt.appointment_date === date);
-      }
-      
-      if (search) {
-        filteredData = filteredData.filter(apt => 
-          apt.notes?.toLowerCase().includes(search.toLowerCase()) ||
-          apt.appointment_type?.toLowerCase().includes(search.toLowerCase()) ||
-          apt.reason?.toLowerCase().includes(search.toLowerCase()) ||
-          `${apt.patients.first_name} ${apt.patients.last_name}`.toLowerCase().includes(search.toLowerCase())
-        );
-      }
-      
-      // Apply pagination
-      const paginatedData = filteredData.slice(offset, offset + limit);
-      
-      return createResponse({
-        success: true,
-        data: paginatedData,
-        total: filteredData.length,
-        limit,
-        offset,
-        search,
-        status,
-        patient_id: patientId,
-        date,
-        appointment_status: appointmentStatus,
-        note: 'Sample data (database unavailable)'
-      });
+      return createErrorResponse(
+        'Database connection failed',
+        'Unable to fetch appointments from database',
+        503
+      );
     }
 
     console.log('[APPOINTMENTS API] Successfully fetched appointments:', count, 'total');
 
-    // If no appointments from database, return sample data
-    if (!appointments || appointments.length === 0) {
-      console.log('[APPOINTMENTS API] No appointments in database, returning sample data');
-      
-      let filteredData = [...sampleAppointmentData];
-      
-      // Apply filters to sample data
-      if (patientId) {
-        filteredData = filteredData.filter(apt => apt.patient_id === patientId);
-      }
-      
-      if (appointmentStatus) {
-        filteredData = filteredData.filter(apt => apt.status === appointmentStatus);
-      }
-      
-      if (date) {
-        filteredData = filteredData.filter(apt => apt.appointment_date === date);
-      }
-      
-      if (search) {
-        filteredData = filteredData.filter(apt => 
-          apt.notes?.toLowerCase().includes(search.toLowerCase()) ||
-          apt.appointment_type?.toLowerCase().includes(search.toLowerCase()) ||
-          apt.reason?.toLowerCase().includes(search.toLowerCase()) ||
-          `${apt.patients.first_name} ${apt.patients.last_name}`.toLowerCase().includes(search.toLowerCase())
-        );
-      }
-      
-      // Apply pagination
-      const paginatedData = filteredData.slice(offset, offset + limit);
-      
-      return createResponse({
-        success: true,
-        data: paginatedData,
-        total: filteredData.length,
-        limit,
-        offset,
-        search,
-        status,
-        patient_id: patientId,
-        date,
-        appointment_status: appointmentStatus,
-        note: 'Sample data (no database appointments found)'
-      });
-    }
+    // Return real appointments or empty array if none exist
+    console.log('[APPOINTMENTS API] Returning appointments:', appointments?.length || 0, 'found');
 
     return createResponse({
       success: true,
-      data: appointments,
-      total: count,
+      data: appointments || [],
+      total: count || 0,
       limit,
       offset,
       search,
@@ -241,29 +159,11 @@ export async function POST(request: Request) {
 
     if (error) {
       console.error('[APPOINTMENTS API] Supabase insert error:', error);
-      console.log('[APPOINTMENTS API] Falling back to mock creation response');
-      
-      // Return mock success response when database is unavailable
-      const mockAppointment = {
-        id: `mock-${Date.now()}`,
-        ...appointmentData,
-        patients: {
-          id: appointmentData.patient_id,
-          first_name: 'Paciente',
-          last_name: 'Demo',
-          paternal_last_name: '',
-          maternal_last_name: '',
-          email: 'demo@mindhub.com',
-          phone: '555-0000'
-        }
-      };
-      
-      return createResponse({
-        success: true,
-        data: mockAppointment,
-        message: 'Appointment created successfully (demo mode)',
-        note: 'Sample response (database unavailable)'
-      }, 201);
+      return createErrorResponse(
+        'Database connection failed',
+        'Unable to create appointment in database',
+        503
+      );
     }
 
     console.log('[APPOINTMENTS API] Successfully created appointment:', appointment.id);

@@ -40,34 +40,10 @@ export async function GET(request: NextRequest) {
     console.error('Error proxying tasks/pending request:', error);
     return NextResponse.json(
       { 
-        success: true, 
-        message: 'Using mock data (backend unavailable)',
-        data: [
-          {
-            id: '1',
-            type: 'callback',
-            description: 'Confirmar cita con María González',
-            patientName: 'María González',
-            priority: 'high',
-            dueTime: '09:00'
-          },
-          {
-            id: '2',
-            type: 'followup',
-            description: 'Enviar recordatorio a Carlos Ruiz',
-            patientName: 'Carlos Ruiz',
-            priority: 'medium',
-            dueTime: '10:00'
-          },
-          {
-            id: '3',
-            type: 'payment',
-            description: 'Procesar pago pendiente de Ana Martínez',
-            patientName: 'Ana Martínez',
-            priority: 'high',
-            dueTime: '11:00'
-          }
-        ]
+        success: false, 
+        message: 'Backend connection failed - no task data available',
+        error: error instanceof Error ? error.message : 'Unknown error',
+        data: []
       }, 
       { status: 500 }
     );
