@@ -92,7 +92,16 @@ export default function ResourcesPage() {
 
       if (resourcesResponse.ok) {
         const resourcesData = await resourcesResponse.json();
-        setResources(resourcesData.data || []);
+        // Ensure we always have an array
+        const resourcesArray = Array.isArray(resourcesData) 
+          ? resourcesData 
+          : Array.isArray(resourcesData.data) 
+            ? resourcesData.data 
+            : [];
+        setResources(resourcesArray);
+      } else {
+        console.error('Failed to fetch resources:', resourcesResponse.status);
+        setResources([]);
       }
 
       // Load categories
