@@ -250,20 +250,14 @@ export default function AgendaV2Page() {
     ).length
   };
 
-  const breadcrumbs = [
-    { label: 'MindHub', href: '/dashboard' },
-    { label: 'Agenda v2', href: '/hubs/agenda' }
-  ];
-
   const canSwitchToClinicViews = licenseType === 'clinic';
 
   return (
     <div className="min-h-screen flex flex-col bg-gray-50">
       <PageHeader
         title="Agenda"
-        subtitle="Gestión de citas y horarios"
+        description="Gestión de citas y horarios"
         icon={CalendarIcon}
-        breadcrumbs={breadcrumbs}
       />
 
       <div className="flex-1 flex flex-col">
@@ -413,9 +407,8 @@ export default function AgendaV2Page() {
       {/* New Appointment Modal */}
       {showNewAppointment && (
         <NewAppointmentModal
-          isOpen={showNewAppointment}
           onClose={() => setShowNewAppointment(false)}
-          onSuccess={() => {
+          onSave={() => {
             loadAppointments();
             setShowNewAppointment(false);
           }}
