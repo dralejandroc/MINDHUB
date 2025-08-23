@@ -203,26 +203,31 @@ export const WeeklyView: React.FC<WeeklyViewProps> = ({
           </div>
         </div>
 
-        {/* Time Grid and Appointments */}
+        {/* Time Grid and Appointments - Mobile/Tablet Friendly */}
         <div className="flex-1 overflow-auto" ref={containerRef}>
           <div className="relative">
-            {/* Background Grid */}
-            <div className="grid grid-cols-8 divide-x divide-gray-200 bg-white">
-              {/* Time slots column */}
-              <div className="bg-gray-50">
-                <TimeSlotGrid
-                  scheduleConfig={scheduleConfig}
-                  date={currentDate}
-                  appointments={[]} // We'll render appointments separately
-                  onSlotClick={() => {}} // Handled by day columns
-                  onAppointmentClick={() => {}}
-                  showCurrentTime={false}
-                  className="border-r border-gray-200"
-                />
+            {/* Mobile/Tablet optimized grid */}
+            <div className="flex bg-white">
+              {/* Time slots column - wider for readability */}
+              <div className="bg-gray-50 w-20 flex-shrink-0 border-r border-gray-200">
+                <div className="sticky top-0 bg-gray-50 border-b border-gray-200 h-12"></div>
+                {/* Time labels */}
+                {Array.from({ length: scheduleConfig.endHour - scheduleConfig.startHour }, (_, i) => {
+                  const hour = scheduleConfig.startHour + i;
+                  return (
+                    <div
+                      key={hour}
+                      className="h-16 border-b border-gray-100 flex items-center justify-center text-xs text-gray-600"
+                    >
+                      {hour}:00
+                    </div>
+                  );
+                })}
               </div>
 
-              {/* Day columns */}
-              {weekDays.map((day) => {
+              {/* Day columns - responsive width */}
+              <div className="flex-1 grid grid-cols-7 divide-x divide-gray-200">
+                {weekDays.map((day) => {
                 const dayAppointments = appointmentsByDay[format(day, 'yyyy-MM-dd')] || [];
                 const isCurrentDay = isToday(day);
                 
@@ -230,50 +235,51 @@ export const WeeklyView: React.FC<WeeklyViewProps> = ({
                   <div
                     key={day.toISOString()}
                     className={`
-                      relative min-h-full border-r border-gray-200
-                      ${isCurrentDay ? 'bg-primary-25' : 'bg-white'}
+                      relative ${isCurrentDay ? 'bg-blue-50' : 'bg-white'} min-h-0
                     `}
-                    style={{
-                      minHeight: `${((scheduleConfig.endHour - scheduleConfig.startHour) * 60 / scheduleConfig.slotDuration) * 60}px`
-                    }}
                   >
-                    {/* Time Slot Grid for this day */}
-                    <TimeSlotGrid
-                      scheduleConfig={scheduleConfig}
-                      currentDate={day}
-                      appointments={dayAppointments}
-                      onTimeSlotClick={(hour, minute) => handleTimeSlotClick(day, hour, minute)}
-                      onTimeSlotDrop={(hour, minute) => handleTimeSlotDrop(day, hour, minute)}
-                      showCurrentTimeIndicator={isCurrentDay}
-                      renderAppointments={(appointment, style) => (
-                        <div
-                          key={appointment.id}
-                          style={style}
-                          className="absolute inset-x-1 z-10"
-                        >
-                          <PatientTooltip 
-                            patientData={createPatientTooltipData(appointment)}
-                            position="auto"
-                            delay={300}
+                    {/* Day header */}
+                    <div className="h-12 border-b border-gray-200 flex items-center justify-center bg-white sticky top-0 z-10">
+                      <span className={`text-xs font-medium ${isCurrentDay ? 'text-blue-600' : 'text-gray-600'}`}>
+                        {format(day, 'EEE d', { locale: es })}
+                      </span>
+                    </div>
+
+                    {/* Time slots for this day */}
+                    <div className="relative">
+                      {Array.from({ length: scheduleConfig.endHour - scheduleConfig.startHour }, (_, i) => {
+                        const hour = scheduleConfig.startHour + i;
+                        return (
+                          <div
+                            key={hour}
+                            className="h-16 border-b border-gray-100 hover:bg-gray-50 cursor-pointer relative"
+                            onClick={() => handleTimeSlotClick(day, hour, 0)}
                           >
-                            <AppointmentCard
-                              appointment={appointment}
-                              onClick={() => onAppointmentClick?.(appointment)}
-                              size="compact"
-                              draggable={true}
-                              onDragStart={() => handleAppointmentDragStart(appointment)}
-                              onDragEnd={handleAppointmentDragEnd}
-                              className="h-full shadow-sm hover:shadow-md transition-shadow"
-                            />
-                          </PatientTooltip>
-                        </div>
-                      )}
-                      timeSlotHeight={60}
-                      className="absolute inset-0"
-                    />
+                            {/* Appointments for this hour */}
+                            {dayAppointments
+                              .filter(apt => apt.startTime.getHours() === hour)
+                              .map(appointment => (
+                                <div
+                                  key={appointment.id}
+                                  className="absolute inset-1 bg-blue-500 text-white text-xs p-1 rounded shadow-sm cursor-pointer hover:bg-blue-600 transition-colors"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    onAppointmentClick?.(appointment);
+                                  }}
+                                  title={`${appointment.patientName} - ${appointment.type}`}
+                                >
+                                  <div className="font-medium truncate">{appointment.patientName}</div>
+                                  <div className="opacity-90 truncate">{appointment.type}</div>
+                                </div>
+                              ))}
+                          </div>
+                        );
+                      })}
+                    </div>
                   </div>
                 );
               })}
+              </div>
             </div>
           </div>
         </div>

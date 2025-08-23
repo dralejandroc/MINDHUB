@@ -35,7 +35,7 @@ export default function AgendaV2Page() {
   const [showNewAppointment, setShowNewAppointment] = useState(false);
   const [showNewPatientModal, setShowNewPatientModal] = useState(false);
   const [licenseType, setLicenseType] = useState<'clinic' | 'individual'>('individual');
-  const [lastRefresh, setLastRefresh] = useState<Date | null>(null);
+  const [lastRefresh, setLastRefresh] = useState<Date | undefined>(undefined);
   
   // Context menu state
   const [contextMenuData, setContextMenuData] = useState<{

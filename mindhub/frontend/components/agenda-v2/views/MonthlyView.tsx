@@ -11,17 +11,23 @@ import {
   isSameMonth, 
   isToday, 
   isSameDay,
+  addMonths,
+  subMonths,
   getDay
 } from 'date-fns';
 import { es } from 'date-fns/locale';
 import {
   CalendarDaysIcon,
   ClockIcon,
+  FunnelIcon,
+  ChevronLeftIcon,
+  ChevronRightIcon,
+  CheckCircleIcon,
+  XCircleIcon,
+  ClockIcon as PendingIcon,
   ExclamationTriangleIcon,
   ChatBubbleLeftIcon,
-  PlusIcon,
-  CheckCircleIcon,
-  XCircleIcon
+  PlusIcon
 } from '@heroicons/react/24/outline';
 import { CalendarHeader } from '../shared/CalendarHeader';
 import { AppointmentData } from '../shared/AppointmentCard';
@@ -40,6 +46,7 @@ export interface MonthlyViewProps {
   onSettings?: () => void;
   onRefresh?: () => void;
   onSearch?: (query: string) => void;
+  onViewChange?: (view: 'week' | 'day' | 'month' | 'clinic-global' | 'reception') => void;
   todayStats?: {
     totalAppointments: number;
     confirmed: number;
@@ -86,6 +93,7 @@ export const MonthlyView: React.FC<MonthlyViewProps> = ({
   onSettings,
   onRefresh,
   onSearch,
+  onViewChange,
   todayStats,
   isLoading = false,
   lastRefresh,
@@ -96,14 +104,42 @@ export const MonthlyView: React.FC<MonthlyViewProps> = ({
   className = ''
 }) => {
   const [hoveredDay, setHoveredDay] = useState<Date | null>(null);
+  const [activeFilters, setActiveFilters] = useState<string[]>(['all']);
+
+  // Consultation types for filtering
+  const consultationTypes = [
+    { id: 'all', label: 'Todas las citas', color: 'bg-gray-100' },
+    { id: 'presencial', label: 'Presencial', color: 'bg-blue-100' },
+    { id: 'virtual', label: 'Virtual', color: 'bg-green-100' },
+    { id: 'urgencia', label: 'Urgencia', color: 'bg-red-100' },
+    { id: 'seguimiento', label: 'Seguimiento', color: 'bg-yellow-100' },
+    { id: 'primera_vez', label: 'Primera vez', color: 'bg-purple-100' }
+  ];
 
   // Handle view changes
   const handleViewChange = (view: 'week' | 'day' | 'month' | 'clinic-global' | 'reception') => {
-    console.log('View change requested:', view);
+    onViewChange?.(view);
   };
 
   const handleToday = () => {
     onDateChange(new Date());
+  };
+
+  // Handle filter changes
+  const handleFilterToggle = (filterId: string) => {
+    if (filterId === 'all') {
+      setActiveFilters(['all']);
+    } else {
+      setActiveFilters(prev => {
+        const withoutAll = prev.filter(f => f !== 'all');
+        if (withoutAll.includes(filterId)) {
+          const newFilters = withoutAll.filter(f => f !== filterId);
+          return newFilters.length === 0 ? ['all'] : newFilters;
+        } else {
+          return [...withoutAll, filterId];
+        }
+      });
+    }
   };
 
   // Calculate month calendar grid
@@ -116,13 +152,25 @@ export const MonthlyView: React.FC<MonthlyViewProps> = ({
   // Week days for header
   const weekDays = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
 
+  // Filter appointments based on active filters
+  const filteredAppointments = useMemo(() => {
+    if (activeFilters.includes('all')) {
+      return appointments;
+    }
+    
+    return appointments.filter(apt => {
+      const consultationType = apt.consultationType || 'presencial';
+      return activeFilters.includes(consultationType);
+    });
+  }, [appointments, activeFilters]);
+
   // Calculate day statistics
   const dayStats = useMemo(() => {
     const stats = new Map<string, DayStats>();
     
     calendarDays.forEach(day => {
       const dayKey = format(day, 'yyyy-MM-dd');
-      const dayAppointments = appointments.filter(apt => 
+      const dayAppointments = filteredAppointments.filter(apt => 
         isSameDay(apt.startTime, day)
       );
       
@@ -155,16 +203,16 @@ export const MonthlyView: React.FC<MonthlyViewProps> = ({
     });
     
     return stats;
-  }, [calendarDays, appointments, scheduleConfig, dayNotes, blockedDays]);
+  }, [calendarDays, filteredAppointments, scheduleConfig, dayNotes, blockedDays]);
 
   // Handle day click
   const handleDayClick = (day: Date) => {
     onDayClick?.(day);
   };
 
-  // Get day cell content
+  // Simplified day cell content
   const getDayCellContent = (dayStats: DayStats) => {
-    const { date, totalAppointments, confirmedAppointments, availableSlots, notes, isBlocked, isWorkingDay } = dayStats;
+    const { date, totalAppointments, isWorkingDay } = dayStats;
     const isCurrentMonth = isSameMonth(date, currentDate);
     const isCurrentDay = isToday(date);
     const dayNumber = format(date, 'd');
@@ -172,112 +220,47 @@ export const MonthlyView: React.FC<MonthlyViewProps> = ({
     return (
       <div
         className={`
-          h-24 p-1 border border-gray-200 cursor-pointer transition-all duration-200
-          ${isCurrentMonth 
-            ? 'bg-white hover:bg-gray-50' 
-            : 'bg-gray-50 text-gray-400 hover:bg-gray-100'
-          }
-          ${isCurrentDay ? 'bg-primary-50 border-primary-200 ring-1 ring-primary-300' : ''}
-          ${isBlocked ? 'bg-red-50 border-red-200' : ''}
-          ${hoveredDay && isSameDay(hoveredDay, date) ? 'ring-2 ring-primary-400 bg-primary-25' : ''}
+          h-16 p-2 border-r border-b border-gray-100 cursor-pointer transition-all duration-150
+          ${isCurrentMonth ? 'bg-white hover:bg-gray-50' : 'bg-gray-25 text-gray-400'}
+          ${isCurrentDay ? 'bg-blue-50 border-blue-200 text-blue-900' : ''}
         `}
         onClick={() => handleDayClick(date)}
-        onMouseEnter={() => setHoveredDay(date)}
-        onMouseLeave={() => setHoveredDay(null)}
       >
         {/* Day Number */}
-        <div className="flex items-center justify-between mb-1">
+        <div className="flex items-center justify-between">
           <span className={`
             text-sm font-medium
-            ${isCurrentDay ? 'text-primary-700 font-bold' : ''}
+            ${isCurrentDay ? 'font-bold' : ''}
           `}>
             {dayNumber}
           </span>
           
-          {/* Day Status Indicators */}
-          <div className="flex items-center space-x-1">
-            {isBlocked && (
-              <ExclamationTriangleIcon className="w-3 h-3 text-red-500" title={`Bloqueado: ${dayStats.blockReason}`} />
-            )}
-            {notes.length > 0 && (
-              <ChatBubbleLeftIcon className="w-3 h-3 text-blue-500" title={`${notes.length} notas`} />
-            )}
-          </div>
+          {/* Simple appointment count */}
+          {totalAppointments > 0 && (
+            <span className="text-xs bg-blue-100 text-blue-800 px-1.5 py-0.5 rounded-full">
+              {totalAppointments}
+            </span>
+          )}
         </div>
 
-        {/* Appointments and Availability */}
-        {isWorkingDay && !isBlocked && (
-          <div className="space-y-1 text-xs">
-            {/* Appointments */}
-            {totalAppointments > 0 && (
-              <div className="flex items-center space-x-1">
-                <CalendarDaysIcon className="w-3 h-3 text-primary-600" />
-                <span className="text-primary-700 font-medium">
-                  {totalAppointments} citas
-                </span>
-                {confirmedAppointments > 0 && (
-                  <CheckCircleIcon className="w-3 h-3 text-green-500" />
-                )}
-              </div>
-            )}
-            
-            {/* Available Slots */}
-            {availableSlots > 0 && (
-              <div className="flex items-center space-x-1">
-                <ClockIcon className="w-3 h-3 text-gray-500" />
-                <span className="text-gray-600">
-                  {availableSlots} disponibles
-                </span>
-              </div>
-            )}
-
-            {/* No appointments, show add button */}
-            {totalAppointments === 0 && availableSlots > 0 && (
-              <div className="flex items-center justify-center h-4 text-gray-400 hover:text-primary-600">
-                <PlusIcon className="w-3 h-3" />
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* Non-working day indicator */}
-        {!isWorkingDay && !isBlocked && (
-          <div className="text-xs text-gray-400 flex items-center justify-center h-4">
-            <span>No laboral</span>
-          </div>
-        )}
-
-        {/* Blocked day indicator */}
-        {isBlocked && (
-          <div className="text-xs text-red-600 flex items-center space-x-1">
-            <XCircleIcon className="w-3 h-3" />
-            <span className="truncate">
-              {dayStats.blockType === 'full' ? 'Bloqueado' : 'Parcialmente bloqueado'}
-            </span>
-          </div>
-        )}
-
-        {/* Quick appointment indicators */}
+        {/* Simple appointment dots */}
         {totalAppointments > 0 && (
-          <div className="flex flex-wrap gap-0.5 mt-1">
-            {dayStats.appointments.slice(0, 3).map((apt, index) => (
+          <div className="flex gap-1 mt-1">
+            {dayStats.appointments.slice(0, 4).map((apt, index) => (
               <div
                 key={apt.id}
                 className={`
-                  w-2 h-2 rounded-full
-                  ${apt.status === 'confirmed' ? 'bg-green-500' :
-                    apt.status === 'scheduled' ? 'bg-yellow-500' :
-                    apt.status === 'completed' ? 'bg-blue-500' :
-                    'bg-gray-400'
+                  w-1.5 h-1.5 rounded-full
+                  ${apt.status === 'confirmed' ? 'bg-green-400' :
+                    apt.status === 'scheduled' ? 'bg-yellow-400' :
+                    apt.status === 'completed' ? 'bg-blue-400' :
+                    'bg-gray-300'
                   }
                 `}
-                title={`${apt.patientName} - ${format(apt.startTime, 'HH:mm')}`}
               />
             ))}
-            {totalAppointments > 3 && (
-              <div className="text-xs text-gray-500 ml-1">
-                +{totalAppointments - 3}
-              </div>
+            {totalAppointments > 4 && (
+              <span className="text-xs text-gray-500">+{totalAppointments - 4}</span>
             )}
           </div>
         )}
@@ -321,52 +304,115 @@ export const MonthlyView: React.FC<MonthlyViewProps> = ({
         lastRefresh={lastRefresh}
       />
 
-      {/* Month Statistics */}
-      <div className="bg-white border-b border-gray-200 px-6 py-4">
-        <div className="flex items-center justify-between">
-          <div>
-            <h2 className="text-xl font-semibold text-gray-900 capitalize">
-              {format(currentDate, 'MMMM yyyy', { locale: es })}
-            </h2>
-            <p className="text-sm text-gray-600">
-              {monthStats.totalAppointments} citas este mes • {monthStats.availableSlots} espacios disponibles
-            </p>
+      {/* Main Content - Sidebar Layout */}
+      <div className="flex flex-1 overflow-hidden">
+        {/* Left Sidebar */}
+        <div className="w-80 bg-white border-r border-gray-200 flex flex-col">
+          {/* Month Navigation */}
+          <div className="p-4 border-b border-gray-100">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-gray-900 capitalize">
+                {format(currentDate, 'MMMM yyyy', { locale: es })}
+              </h3>
+              <div className="flex items-center space-x-2">
+                <button
+                  onClick={() => onDateChange(subMonths(currentDate, 1))}
+                  className="p-1 hover:bg-gray-100 rounded"
+                >
+                  <ChevronLeftIcon className="w-5 h-5" />
+                </button>
+                <button
+                  onClick={() => onDateChange(addMonths(currentDate, 1))}
+                  className="p-1 hover:bg-gray-100 rounded"
+                >
+                  <ChevronRightIcon className="w-5 h-5" />
+                </button>
+              </div>
+            </div>
+            
+            {/* Quick Stats */}
+            <div className="grid grid-cols-2 gap-3 text-sm">
+              <div className="text-center p-2 bg-blue-50 rounded">
+                <div className="font-bold text-blue-600">{monthStats.totalAppointments}</div>
+                <div className="text-blue-700">Citas</div>
+              </div>
+              <div className="text-center p-2 bg-green-50 rounded">
+                <div className="font-bold text-green-600">{monthStats.confirmedAppointments}</div>
+                <div className="text-green-700">Confirmadas</div>
+              </div>
+            </div>
           </div>
-          <div className="flex items-center space-x-6">
-            <div className="text-center">
-              <div className="text-lg font-bold text-primary-600">{monthStats.totalAppointments}</div>
-              <div className="text-xs text-gray-500">Total Citas</div>
+
+          {/* Consultation Type Filters */}
+          <div className="p-4 border-b border-gray-100">
+            <h4 className="text-sm font-medium text-gray-900 mb-3">Tipos de Consulta</h4>
+            <div className="space-y-2">
+              {consultationTypes.map((type) => (
+                <label key={type.id} className="flex items-center space-x-3 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={activeFilters.includes(type.id)}
+                    onChange={() => handleFilterToggle(type.id)}
+                    className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                  />
+                  <div className={`w-3 h-3 rounded-full ${type.color}`}></div>
+                  <span className="text-sm text-gray-700">{type.label}</span>
+                </label>
+              ))}
             </div>
-            <div className="text-center">
-              <div className="text-lg font-bold text-green-600">{monthStats.confirmedAppointments}</div>
-              <div className="text-xs text-gray-500">Confirmadas</div>
-            </div>
-            <div className="text-center">
-              <div className="text-lg font-bold text-blue-600">{monthStats.availableSlots}</div>
-              <div className="text-xs text-gray-500">Disponibles</div>
-            </div>
-            <div className="text-center">
-              <div className="text-lg font-bold text-orange-600">{monthStats.workingDays}</div>
-              <div className="text-xs text-gray-500">Días Laborales</div>
+          </div>
+
+          {/* Mini Calendar */}
+          <div className="p-4 flex-1">
+            <h4 className="text-sm font-medium text-gray-900 mb-3">Navegación</h4>
+            <div className="bg-gray-50 rounded-lg p-3">
+              {/* Mini calendar grid */}
+              <div className="grid grid-cols-7 gap-1 text-xs">
+                {weekDays.map((day) => (
+                  <div key={day} className="text-center p-1 text-gray-500 font-medium">
+                    {day.slice(0, 1)}
+                  </div>
+                ))}
+                {calendarDays.map((day) => {
+                  const dayKey = format(day, 'yyyy-MM-dd');
+                  const stats = dayStats.get(dayKey);
+                  const isCurrentMonth = isSameMonth(day, currentDate);
+                  const isCurrentDay = isToday(day);
+                  const hasAppointments = (stats?.totalAppointments || 0) > 0;
+                  
+                  return (
+                    <button
+                      key={day.toISOString()}
+                      onClick={() => handleDayClick(day)}
+                      className={`
+                        p-1 text-xs rounded hover:bg-white transition-colors
+                        ${isCurrentMonth ? 'text-gray-900' : 'text-gray-400'}
+                        ${isCurrentDay ? 'bg-blue-600 text-white' : ''}
+                        ${hasAppointments && !isCurrentDay ? 'bg-blue-100 text-blue-800' : ''}
+                      `}
+                    >
+                      {format(day, 'd')}
+                    </button>
+                  );
+                })}
+              </div>
             </div>
           </div>
         </div>
-      </div>
 
-      {/* Calendar Grid */}
-      <div className="flex-1 p-6">
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+        {/* Main Calendar Area */}
+        <div className="flex-1 flex flex-col bg-white">
           {/* Week Days Header */}
-          <div className="grid grid-cols-7 divide-x divide-gray-200 bg-gray-50">
+          <div className="grid grid-cols-7 border-b border-gray-200">
             {weekDays.map((day) => (
-              <div key={day} className="p-3 text-center text-sm font-medium text-gray-700">
+              <div key={day} className="p-3 text-center text-sm font-medium text-gray-600 border-r border-gray-100">
                 {day}
               </div>
             ))}
           </div>
 
-          {/* Calendar Days Grid */}
-          <div className="grid grid-cols-7 divide-x divide-y divide-gray-200">
+          {/* Calendar Grid */}
+          <div className="flex-1 grid grid-cols-7">
             {calendarDays.map((day) => {
               const dayKey = format(day, 'yyyy-MM-dd');
               const stats = dayStats.get(dayKey)!;
@@ -376,45 +422,6 @@ export const MonthlyView: React.FC<MonthlyViewProps> = ({
                 </div>
               );
             })}
-          </div>
-        </div>
-
-        {/* Legend */}
-        <div className="mt-4 bg-white rounded-lg shadow-sm border border-gray-200 p-4">
-          <h3 className="font-medium text-gray-900 mb-3">Leyenda</h3>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-            <div className="flex items-center space-x-2">
-              <div className="w-3 h-3 rounded-full bg-green-500"></div>
-              <span>Confirmadas</span>
-            </div>
-            <div className="flex items-center space-x-2">
-              <div className="w-3 h-3 rounded-full bg-yellow-500"></div>
-              <span>Programadas</span>
-            </div>
-            <div className="flex items-center space-x-2">
-              <div className="w-3 h-3 rounded-full bg-blue-500"></div>
-              <span>Completadas</span>
-            </div>
-            <div className="flex items-center space-x-2">
-              <ExclamationTriangleIcon className="w-4 h-4 text-red-500" />
-              <span>Días bloqueados</span>
-            </div>
-            <div className="flex items-center space-x-2">
-              <ChatBubbleLeftIcon className="w-4 h-4 text-blue-500" />
-              <span>Con notas</span>
-            </div>
-            <div className="flex items-center space-x-2">
-              <ClockIcon className="w-4 h-4 text-gray-500" />
-              <span>Espacios disponibles</span>
-            </div>
-            <div className="flex items-center space-x-2">
-              <PlusIcon className="w-4 h-4 text-gray-400" />
-              <span>Click para agendar</span>
-            </div>
-            <div className="flex items-center space-x-2">
-              <div className="w-3 h-3 bg-primary-50 border border-primary-300 rounded"></div>
-              <span>Hoy</span>
-            </div>
           </div>
         </div>
       </div>
