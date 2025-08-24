@@ -166,11 +166,22 @@ class ExpedixApiClient {
     const queryParams = searchTerm ? `?search=${encodeURIComponent(searchTerm)}` : '';
     const fullRoute = `${baseRoute}${queryParams}`;
     
-    const response = await this.makeRequest<{ success: boolean; data: Patient[]; pagination: { total: number } }>(fullRoute);
+    const response = await this.makeRequest<{ 
+      success?: boolean; 
+      data?: Patient[]; 
+      pagination?: { total: number };
+      // Django format
+      results?: Patient[];
+      count?: number;
+    }>(fullRoute);
+    
+    // Handle both formats: legacy (data/pagination) and Django (results/count)
+    const patients = response.results || response.data || [];
+    const total = response.count || response.pagination?.total || 0;
     
     return {
-      data: response.data || [],
-      total: response.pagination?.total || 0
+      data: patients,
+      total: total
     };
   }
 
