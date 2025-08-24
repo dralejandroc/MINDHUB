@@ -108,8 +108,8 @@ export default function PatientManagementAdvanced({
             // Calculate risk level based on various factors
             const riskLevel = calculateRiskLevel(patient, consultationsCount, lastConsultationDate);
 
-            // Get patient tags from API
-            const tags = await generatePatientTags(patient, riskLevel);
+            // Generate patient tags synchronously (performance optimization)
+            const tags = generatePatientTagsSync(patient, riskLevel);
 
             return {
               ...patient,
@@ -135,8 +135,7 @@ export default function PatientManagementAdvanced({
               riskLevel: 'low' as const
             } as EnhancedPatient;
           }
-        })
-      );
+        });
 
       setPatients(enhancedPatients);
       setError(null);
@@ -212,19 +211,9 @@ export default function PatientManagementAdvanced({
     return 'low';
   };
 
-  // Generate tags based on patient data using API
-  const generatePatientTags = async (patient: Patient, riskLevel: string): Promise<PatientTag[]> => {
-    try {
-      // Try to get existing patient tags first
-      const existingTags = await patientTagsApi.getPatientTags(patient.id);
-      if (existingTags.data.tags.length > 0) {
-        return existingTags.data.tags;
-      }
-    } catch (error) {
-      console.log('No existing tags found, generating defaults');
-    }
-    
-    // If no existing tags, generate default tags based on patient data
+  // Generate tags synchronously for performance (avoids async map issues)
+  const generatePatientTagsSync = (patient: Patient, riskLevel: string): PatientTag[] => {
+    // Generate default tags based on patient data (synchronous version)
     const defaultTags = patientTagsApi.getDefaultTags();
     const patientTags: PatientTag[] = [];
     
@@ -246,6 +235,22 @@ export default function PatientManagementAdvanced({
     if (riskTag) patientTags.push(riskTag);
     
     return patientTags;
+  };
+
+  // Generate tags based on patient data using API (async version for when needed)
+  const generatePatientTags = async (patient: Patient, riskLevel: string): Promise<PatientTag[]> => {
+    try {
+      // Try to get existing patient tags first
+      const existingTags = await patientTagsApi.getPatientTags(patient.id);
+      if (existingTags.data.tags.length > 0) {
+        return existingTags.data.tags;
+      }
+    } catch (error) {
+      console.log('No existing tags found, generating defaults');
+    }
+    
+    // Fall back to synchronous generation
+    return generatePatientTagsSync(patient, riskLevel);
   };
 
   useEffect(() => {
