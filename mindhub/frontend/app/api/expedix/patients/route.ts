@@ -8,7 +8,7 @@ const DJANGO_BACKEND_URL = process.env.BACKEND_URL || process.env.NEXT_PUBLIC_DJ
 
 export async function GET(request: Request) {
   try {
-    console.log('[PATIENTS API] Processing GET request - Django Backend Proxy with Supabase Fallback');
+    console.log('[PATIENTS API] Processing GET request - Django Backend Proxy with Supabase Fallback [v2.0]');
     
     // Verify authentication
     const { user, error: authError } = await getAuthenticatedUser(request);
