@@ -21,7 +21,7 @@ def get_template_catalog(request):
     Devuelve lista de escalas en formato esperado por React
     """
     try:
-        scales = PsychometricScale.objects.filter(is_active=True).prefetch_related('tags', 'category')
+        scales = PsychometricScale.objects.filter(is_active=True).prefetch_related('tags')
         
         catalog = []
         for scale in scales:
@@ -31,7 +31,7 @@ def get_template_catalog(request):
                 'id': str(scale.id),
                 'name': scale.name,
                 'abbreviation': scale.abbreviation,
-                'category': scale.category.name if scale.category else 'General',
+                'category': getattr(scale.category, 'name', 'General') if hasattr(scale, 'category') and scale.category else 'General',
                 'description': scale.description,
                 'authors': scale.authors,
                 'year': scale.year,

@@ -23,7 +23,7 @@ class ScaleCatalogView(LoginRequiredMixin, ListView):
     paginate_by = 12
     
     def get_queryset(self):
-        queryset = PsychometricScale.objects.filter(is_active=True).select_related('category').prefetch_related('tags')
+        queryset = PsychometricScale.objects.filter(is_active=True).prefetch_related('tags')
         
         # Filter by category
         category = self.request.GET.get('category')
@@ -165,7 +165,7 @@ class ActiveScalesAPIView(LoginRequiredMixin, View):
     """API endpoint to get active scales for dropdowns"""
     
     def get(self, request):
-        scales = PsychometricScale.objects.filter(is_active=True).select_related('category')
+        scales = PsychometricScale.objects.filter(is_active=True)
         
         scales_data = []
         for scale in scales:
@@ -173,7 +173,7 @@ class ActiveScalesAPIView(LoginRequiredMixin, View):
                 'id': str(scale.id),
                 'name': scale.name,
                 'abbreviation': scale.abbreviation,
-                'category': scale.category.name if scale.category else 'Sin categoría',
+                'category': getattr(scale.category, 'name', 'Sin categoría') if hasattr(scale, 'category') and scale.category else 'Sin categoría',
                 'description': scale.description,
                 'duration_minutes': scale.estimated_duration_minutes,
                 'population': scale.get_population_display() if scale.population else 'General',
@@ -186,7 +186,7 @@ class ScaleCatalogAPIView(View):
     """API endpoint for scale catalog - compatible with ClinimetrixPro frontend"""
     
     def get(self, request):
-        scales = PsychometricScale.objects.filter(is_active=True).select_related('category').prefetch_related('tags')
+        scales = PsychometricScale.objects.filter(is_active=True).prefetch_related('tags')
         
         scales_data = []
         for scale in scales:
@@ -194,7 +194,7 @@ class ScaleCatalogAPIView(View):
                 'id': str(scale.id),
                 'name': scale.name,
                 'abbreviation': scale.abbreviation,
-                'category': scale.category.name if scale.category else 'General',
+                'category': getattr(scale.category, 'name', 'General') if hasattr(scale, 'category') and scale.category else 'General',
                 'description': scale.description,
                 'estimated_duration_minutes': scale.estimated_duration_minutes,
                 'total_items': scale.total_items,

@@ -1,4 +1,6 @@
 // Prevent static generation for this API route
+import { getAuthenticatedUser, createResponse, createErrorResponse } from '@/lib/supabase/admin'
+
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
@@ -7,40 +9,43 @@ const BACKEND_URL = process.env.BACKEND_URL || 'https://mindhub-django-backend.v
 export async function GET(request: Request, { params }: { params: { id: string } }) {
   try {
     const { id } = params;
+    console.log('[PATIENT BY ID] Processing GET request for patient:', id);
 
-    // Forward authentication headers
-    const headers: HeadersInit = {
-      'Content-Type': 'application/json',
-    };
-
-    // Forward Authorization header (Auth token)
-    const authHeader = request.headers.get('Authorization');
-    if (authHeader) {
-      headers['Authorization'] = authHeader;
+    // Verify authentication
+    const { user, error: authError } = await getAuthenticatedUser(request);
+    if (authError || !user) {
+      console.error('[PATIENT BY ID] Auth error:', authError);
+      return createErrorResponse('Unauthorized', 'Valid authentication required', 401);
     }
 
-    // Forward user context
-    const userContextHeader = request.headers.get('X-User-Context');
-    if (userContextHeader) {
-      headers['X-User-Context'] = userContextHeader;
-    }
+    // Forward request to Django backend with trailing slash
+    const djangoUrl = `${BACKEND_URL}/api/expedix/patients/${id}/`;
+    console.log('[PATIENT BY ID] Forwarding to Django:', djangoUrl);
 
-    const response = await fetch(`${BACKEND_URL}/api/expedix/patients/${id}`, {
+    const response = await fetch(djangoUrl, {
       method: 'GET',
-      headers,
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': request.headers.get('Authorization') || '',
+        'X-User-Id': user.id,
+        'X-User-Email': user.email || '',
+        'X-Proxy-Auth': 'verified',
+      },
     });
 
     if (!response.ok) {
+      console.error('[PATIENT BY ID] Django error:', response.status, response.statusText);
       throw new Error(`HTTP error! status: ${response.status}`);
     }
 
     const data = await response.json();
-    return new Response(JSON.stringify(data), {
-      status: 200,
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    });
+    console.log('[PATIENT BY ID] Successfully retrieved patient');
+    
+    // Ensure we return the data in the expected format
+    if (data && !data.data) {
+      return createResponse({ data: data });
+    }
+    return createResponse(data);
   } catch (error) {
     console.error('Error proxying patient request:', error);
     
@@ -76,41 +81,43 @@ export async function PUT(request: Request, { params }: { params: { id: string }
   try {
     const { id } = params;
     const body = await request.json();
+    console.log('[PATIENT BY ID] Processing PUT request for patient:', id);
     
-    // Forward authentication headers
-    const headers: HeadersInit = {
-      'Content-Type': 'application/json',
-    };
-
-    // Forward Authorization header (Auth token)
-    const authHeader = request.headers.get('Authorization');
-    if (authHeader) {
-      headers['Authorization'] = authHeader;
-    }
-
-    // Forward user context
-    const userContextHeader = request.headers.get('X-User-Context');
-    if (userContextHeader) {
-      headers['X-User-Context'] = userContextHeader;
+    // Verify authentication
+    const { user, error: authError } = await getAuthenticatedUser(request);
+    if (authError || !user) {
+      console.error('[PATIENT BY ID] PUT Auth error:', authError);
+      return createErrorResponse('Unauthorized', 'Valid authentication required', 401);
     }
     
-    const response = await fetch(`${BACKEND_URL}/api/expedix/patients/${id}`, {
+    // Forward request to Django backend with trailing slash
+    const djangoUrl = `${BACKEND_URL}/api/expedix/patients/${id}/`;
+    
+    const response = await fetch(djangoUrl, {
       method: 'PUT',
-      headers,
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': request.headers.get('Authorization') || '',
+        'X-User-Id': user.id,
+        'X-User-Email': user.email || '',
+        'X-Proxy-Auth': 'verified',
+      },
       body: JSON.stringify(body),
     });
 
     if (!response.ok) {
+      console.error('[PATIENT BY ID] PUT Django error:', response.status);
       throw new Error(`HTTP error! status: ${response.status}`);
     }
 
     const data = await response.json();
-    return new Response(JSON.stringify(data), {
-      status: 200,
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    });
+    console.log('[PATIENT BY ID] Successfully updated patient');
+    
+    // Ensure we return the data in the expected format
+    if (data && !data.data) {
+      return createResponse({ data: data });
+    }
+    return createResponse(data);
   } catch (error) {
     console.error('Error updating patient:', error);
     
@@ -145,40 +152,36 @@ export async function PUT(request: Request, { params }: { params: { id: string }
 export async function DELETE(request: Request, { params }: { params: { id: string } }) {
   try {
     const { id } = params;
+    console.log('[PATIENT BY ID] Processing DELETE request for patient:', id);
     
-    // Forward authentication headers
-    const headers: HeadersInit = {
-      'Content-Type': 'application/json',
-    };
-
-    // Forward Authorization header (Auth token)
-    const authHeader = request.headers.get('Authorization');
-    if (authHeader) {
-      headers['Authorization'] = authHeader;
-    }
-
-    // Forward user context
-    const userContextHeader = request.headers.get('X-User-Context');
-    if (userContextHeader) {
-      headers['X-User-Context'] = userContextHeader;
+    // Verify authentication
+    const { user, error: authError } = await getAuthenticatedUser(request);
+    if (authError || !user) {
+      console.error('[PATIENT BY ID] DELETE Auth error:', authError);
+      return createErrorResponse('Unauthorized', 'Valid authentication required', 401);
     }
     
-    const response = await fetch(`${BACKEND_URL}/api/expedix/patients/${id}`, {
+    // Forward request to Django backend with trailing slash
+    const djangoUrl = `${BACKEND_URL}/api/expedix/patients/${id}/`;
+    
+    const response = await fetch(djangoUrl, {
       method: 'DELETE',
-      headers,
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': request.headers.get('Authorization') || '',
+        'X-User-Id': user.id,
+        'X-User-Email': user.email || '',
+        'X-Proxy-Auth': 'verified',
+      },
     });
 
     if (!response.ok) {
+      console.error('[PATIENT BY ID] DELETE Django error:', response.status);
       throw new Error(`HTTP error! status: ${response.status}`);
     }
 
-    const data = await response.json();
-    return new Response(JSON.stringify(data), {
-      status: 200,
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    });
+    console.log('[PATIENT BY ID] Successfully deleted patient');
+    return createResponse({ success: true });
   } catch (error) {
     console.error('Error deleting patient:', error);
     

@@ -413,29 +413,23 @@ export function useExpedixApi() {
       return apiClient.deletePatient(id);
     },
     
-    // Other methods with retry capability (will be implemented as needed)
-    // Note: These methods need to be updated to use authentication tokens
-    getPrescriptions: (patientId: string) => {
-      console.warn('[ExpedixAPI] getPrescriptions not yet updated for auth retry');
-      return expedixApi.getPrescriptions(patientId);
+    // Prescription Management  
+    getPrescriptions: async (patientId: string) => {
+      return apiClient.getPrescriptions(patientId);
     },
-    createPrescription: (data: Partial<Prescription>) => {
-      console.warn('[ExpedixAPI] createPrescription not yet updated for auth retry');
-      return expedixApi.createPrescription(data);
+    createPrescription: async (data: Partial<Prescription>) => {
+      return apiClient.createPrescription(data);
     },
-    getPatientPrescriptions: (patientId: string) => {
-      console.warn('[ExpedixAPI] getPatientPrescriptions not yet updated for auth retry');
-      return expedixApi.getPatientPrescriptions(patientId);
+    getPatientPrescriptions: async (patientId: string) => {
+      return apiClient.getPatientPrescriptions(patientId);
     },
     
     // Appointment Management
-    getAppointments: (patientId?: string) => {
-      console.warn('[ExpedixAPI] getAppointments not yet updated for auth retry');
-      return expedixApi.getAppointments(patientId);
+    getAppointments: async (patientId?: string) => {
+      return apiClient.getAppointments(patientId);
     },
-    createAppointment: (data: Partial<Appointment>) => {
-      console.warn('[ExpedixAPI] createAppointment not yet updated for auth retry');
-      return expedixApi.createAppointment(data);
+    createAppointment: async (data: Partial<Appointment>) => {
+      return apiClient.createAppointment(data);
     },
     
     // Document Management
