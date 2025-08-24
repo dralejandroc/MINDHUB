@@ -137,6 +137,9 @@ class PatientSummarySerializer(serializers.ModelSerializer):
     full_name = serializers.CharField(read_only=True)
     age = serializers.IntegerField(read_only=True)
     consultations_count = serializers.SerializerMethodField()
+    evaluations_count = serializers.SerializerMethodField()
+    appointments = serializers.SerializerMethodField()
+    prescriptions = serializers.SerializerMethodField()
     # Individual name fields matching Supabase schema exactly
     first_name = serializers.CharField(read_only=True)
     paternal_last_name = serializers.CharField(read_only=True)  # Direct field, not source
@@ -150,11 +153,50 @@ class PatientSummarySerializer(serializers.ModelSerializer):
         fields = [
             'id', 'full_name', 'first_name', 'paternal_last_name', 'maternal_last_name',
             'email', 'phone', 'cell_phone', 'age', 'birth_date', 'gender', 
-            'created_at', 'updated_at', 'consultations_count'
+            'created_at', 'updated_at', 'consultations_count', 'evaluations_count',
+            'appointments', 'prescriptions'
         ]
 
     def get_consultations_count(self, obj):
-        return obj.consultations.count()
+        # Use prefetch_related to avoid N+1
+        return getattr(obj, 'consultations_count', 0) if hasattr(obj, 'consultations_count') else obj.consultations.count()
+    
+    def get_evaluations_count(self, obj):
+        # Placeholder for evaluations count - implement when assessment model is ready
+        return getattr(obj, 'evaluations_count', 0)
+    
+    def get_appointments(self, obj):
+        # Get recent appointments (limit to 5 most recent to avoid large payloads)
+        appointments = getattr(obj, 'recent_appointments', None)
+        if appointments is None:
+            # Fallback to direct query with limit
+            appointments = obj.appointments.filter(status__in=['scheduled', 'confirmed', 'completed']).order_by('-appointment_date')[:5]
+        
+        return [{
+            'id': apt.id,
+            'appointment_date': apt.appointment_date,
+            'appointment_time': apt.appointment_time,
+            'type': apt.appointment_type,
+            'status': apt.status,
+            'branch': apt.branch,
+            'resource': apt.resource,
+            'professional': apt.professional,
+            'balance': float(apt.balance) if apt.balance else 0.0,
+        } for apt in appointments]
+    
+    def get_prescriptions(self, obj):
+        # Get recent active prescriptions (limit to 5 to avoid large payloads)
+        prescriptions = getattr(obj, 'recent_prescriptions', None)
+        if prescriptions is None:
+            # This would need to be implemented when prescription model is available
+            return []
+        
+        return [{
+            'id': presc.id,
+            'medications': presc.medications,
+            'status': presc.status,
+            'created_at': presc.created_at,
+        } for presc in prescriptions[:5]]
 
 
 class DashboardStatsSerializer(serializers.Serializer):

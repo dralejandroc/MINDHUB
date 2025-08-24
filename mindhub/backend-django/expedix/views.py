@@ -11,6 +11,7 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.exceptions import ValidationError
+from rest_framework.pagination import PageNumberPagination
 from django_filters.rest_framework import DjangoFilterBackend
 from django.db.models import Q, Count
 from django.utils import timezone
@@ -18,6 +19,14 @@ from datetime import datetime, timedelta
 import logging
 
 logger = logging.getLogger(__name__)
+
+
+class OptimizedPatientPagination(PageNumberPagination):
+    """Optimized pagination for patient lists"""
+    page_size = 20  # Reasonable page size 
+    page_size_query_param = 'page_size'
+    max_page_size = 100  # Prevent massive page sizes
+
 
 from .models import User, Patient, MedicalHistory, Consultation
 from .serializers import (
@@ -39,6 +48,7 @@ class PatientViewSet(ExpedixDualViewSet):  # 🎯 RESTORED DUAL SYSTEM after fix
     """
     queryset = Patient.objects.filter(is_active=True)
     serializer_class = PatientSerializer
+    pagination_class = OptimizedPatientPagination  # PERFORMANCE: Add pagination
     authentication_classes = [SupabaseProxyAuthentication]  # ✅ RESTORED according to architecture
     permission_classes = [IsAuthenticated]                 # ✅ RESTORED according to architecture
     filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
@@ -46,6 +56,23 @@ class PatientViewSet(ExpedixDualViewSet):  # 🎯 RESTORED DUAL SYSTEM after fix
     filterset_fields = ['gender', 'city', 'state', 'patient_category']  # Removed clinic_id as it's handled by dual system
     ordering_fields = ['created_at', 'first_name', 'paternal_last_name', 'medical_record_number']
     ordering = ['-created_at']
+
+    def get_queryset(self):
+        """Optimize queryset with prefetch to avoid N+1 queries"""
+        queryset = super().get_queryset()
+        
+        # PERFORMANCE OPTIMIZATION: Prefetch related data for list views
+        if self.action == 'list':
+            queryset = queryset.select_related().prefetch_related(
+                'consultations', 
+                'appointments',
+                'medical_history'
+            ).annotate(
+                consultations_count=Count('consultations'),
+                evaluations_count=Count('medical_history')  # Using medical_history as proxy for evaluations
+            )
+        
+        return queryset
 
     def get_serializer_class(self):
         if self.action == 'create':
