@@ -116,15 +116,24 @@ class ConsultationCreateSerializer(serializers.ModelSerializer):
 
 # Summary serializers for dashboard
 class PatientSummarySerializer(serializers.ModelSerializer):
-    """Patient summary for dashboard/lists"""
+    """Patient summary for dashboard/lists - Fixed to include individual name fields"""
     full_name = serializers.CharField(read_only=True)
     age = serializers.IntegerField(read_only=True)
     consultations_count = serializers.SerializerMethodField()
+    # Add individual name fields for frontend compatibility
+    first_name = serializers.CharField(read_only=True)
+    paternal_last_name = serializers.CharField(source='last_name', read_only=True)
+    maternal_last_name = serializers.CharField(default='', read_only=True)
+    birth_date = serializers.DateField(source='date_of_birth', read_only=True)
+    gender = serializers.CharField(read_only=True)
+    cell_phone = serializers.CharField(source='phone', read_only=True)
     
     class Meta:
         model = Patient
         fields = [
-            'id', 'full_name', 'email', 'phone', 'age', 'created_at', 'consultations_count'
+            'id', 'full_name', 'first_name', 'paternal_last_name', 'maternal_last_name',
+            'email', 'phone', 'cell_phone', 'age', 'birth_date', 'gender', 
+            'created_at', 'updated_at', 'consultations_count'
         ]
 
     def get_consultations_count(self, obj):

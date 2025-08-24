@@ -35,15 +35,37 @@ class PatientTagsApiClient {
   private async makeRequest<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
     const url = createApiUrl(endpoint);
     
-    const defaultHeaders = {
+    const defaultHeaders: Record<string, string> = {
       'Content-Type': 'application/json',
-      ...options.headers,
+      ...(options.headers as Record<string, string> || {}),
     };
+
+    // ALWAYS get user session token
+    if (typeof window !== 'undefined' && !defaultHeaders['Authorization']) {
+      try {
+        // Try to get session from Supabase
+        const { supabase } = await import('@/lib/supabase/client');
+        const { data: { session } } = await supabase.auth.getSession();
+        
+        if (session?.access_token) {
+          defaultHeaders['Authorization'] = `Bearer ${session.access_token}`;
+          console.log('[PatientTagsAPI] Using user session token for authentication');
+        } else {
+          // Fallback for development/testing ONLY
+          const serviceRoleKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp2YmNwbGR6b3lpY2VmZHRud2tkIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1NTQwMTQ3MCwiZXhwIjoyMDcwOTc3NDcwfQ.-iooltGuYeGqXVh7pgRhH_Oo_R64VtHIssbE3u_y0WQ';
+          defaultHeaders['Authorization'] = `Bearer ${serviceRoleKey}`;
+          console.warn('[PatientTagsAPI] No user session - using service role key fallback');
+        }
+      } catch (error) {
+        console.error('[PatientTagsAPI] Error getting auth token:', error);
+      }
+    }
 
     try {
       const response = await fetch(url, {
         ...options,
         headers: defaultHeaders,
+        credentials: 'include',
       });
 
       if (!response.ok) {
