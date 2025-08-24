@@ -159,7 +159,7 @@ export async function GET(request: Request) {
         console.error('[PATIENTS API] Supabase fallback completely failed:', supabaseFallbackError);
         return createErrorResponse(
           'Database error',
-          `Could not retrieve patient data from any source: ${supabaseFallbackError.message}`,
+          `Could not retrieve patient data from any source: ${supabaseFallbackError instanceof Error ? supabaseFallbackError.message : 'Unknown error'}`,
           500
         );
       }
