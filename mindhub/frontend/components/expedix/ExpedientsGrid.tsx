@@ -176,14 +176,14 @@ export default function ExpedientsGrid({ onSelectPatient }: ExpedientsGridProps)
                       background: 'linear-gradient(135deg, var(--primary-500), var(--primary-600))' 
                     }}
                   >
-                    {patient.first_name?.charAt(0)}{patient.paternal_last_name?.charAt(0)}
+                    {(patient.first_name?.charAt(0) || 'P').toUpperCase()}{(patient.paternal_last_name?.charAt(0) || '').toUpperCase()}
                   </div>
                   <div>
                     <h3 className="font-semibold text-gray-900 group-hover:text-blue-600 transition-colors">
-                      {patient.first_name} {patient.paternal_last_name} {patient.maternal_last_name}
+                      {patient.first_name || 'Sin nombre'} {patient.paternal_last_name || ''} {patient.maternal_last_name || ''}
                     </h3>
                     <p className="text-sm text-gray-500">
-                      Exp. #{patient.id.slice(-8).toUpperCase()}
+                      Exp. #{(patient.id?.toString() || '').slice(-8).toUpperCase() || 'N/A'}
                     </p>
                   </div>
                 </div>

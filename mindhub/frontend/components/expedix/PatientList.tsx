@@ -155,12 +155,12 @@ export const PatientList: React.FC<PatientListProps> = ({
                     <div className="flex items-center">
                       <div className="flex-shrink-0 h-10 w-10">
                         <div className="h-10 w-10 rounded-full bg-blue-600 flex items-center justify-center text-white font-medium">
-                          {patient.firstName.charAt(0)}{patient.lastName.charAt(0)}
+                          {(patient.firstName?.charAt(0) || 'P').toUpperCase()}{(patient.lastName?.charAt(0) || '').toUpperCase()}
                         </div>
                       </div>
                       <div className="ml-4">
                         <div className="text-sm font-medium text-gray-900">
-                          {patient.firstName} {patient.lastName}
+                          {patient.firstName || 'Sin nombre'} {patient.lastName || ''}
                         </div>
                         <div className="text-sm text-gray-500">
                           ID: {patient.id}

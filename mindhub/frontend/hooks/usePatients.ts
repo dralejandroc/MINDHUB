@@ -24,21 +24,35 @@ export interface Patient {
 
 // Function to convert Expedix patient to legacy format
 function convertExpedixToLegacy(expedixPatient: ExpedixPatient): Patient {
-  const birthDate = new Date(expedixPatient.birth_date);
-  const today = new Date();
-  const age = today.getFullYear() - birthDate.getFullYear();
+  // Safe date parsing
+  let age = 0;
+  if (expedixPatient.birth_date) {
+    try {
+      const birthDate = new Date(expedixPatient.birth_date);
+      const today = new Date();
+      age = today.getFullYear() - birthDate.getFullYear();
+    } catch (e) {
+      console.warn('Invalid birth date:', expedixPatient.birth_date);
+    }
+  }
+  
+  // Build last name safely
+  const lastName = [
+    expedixPatient.paternal_last_name || '',
+    expedixPatient.maternal_last_name || ''
+  ].filter(Boolean).join(' ').trim() || 'Sin apellido';
   
   return {
     id: expedixPatient.id,
-    firstName: expedixPatient.first_name,
-    lastName: `${expedixPatient.paternal_last_name} ${expedixPatient.maternal_last_name || ''}`.trim(),
+    firstName: expedixPatient.first_name || 'Sin nombre',
+    lastName: lastName,
     age,
     gender: expedixPatient.gender === 'masculine' ? 'M' : expedixPatient.gender === 'feminine' ? 'F' : 'Other',
     status: 'active', // Default to active
-    lastVisit: expedixPatient.updated_at || expedixPatient.created_at,
-    birthDate: expedixPatient.birth_date,
-    email: expedixPatient.email,
-    phone: expedixPatient.cell_phone || expedixPatient.phone
+    lastVisit: expedixPatient.updated_at || expedixPatient.created_at || new Date().toISOString(),
+    birthDate: expedixPatient.birth_date || '',
+    email: expedixPatient.email || '',
+    phone: expedixPatient.cell_phone || expedixPatient.phone || ''
   };
 }
 

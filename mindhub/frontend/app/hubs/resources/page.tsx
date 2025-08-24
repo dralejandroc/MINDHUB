@@ -108,7 +108,16 @@ export default function ResourcesPage() {
       const categoriesResponse = await fetch(`/api/resources/categories`);
       if (categoriesResponse.ok) {
         const categoriesData = await categoriesResponse.json();
-        setCategories(categoriesData.data || []);
+        // Ensure categories is always an array
+        const categoriesArray = Array.isArray(categoriesData) 
+          ? categoriesData 
+          : Array.isArray(categoriesData.data) 
+            ? categoriesData.data 
+            : [];
+        setCategories(categoriesArray);
+      } else {
+        console.error('Failed to fetch categories:', categoriesResponse.status);
+        setCategories([]);
       }
 
       // Calculate stats
