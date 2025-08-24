@@ -25,8 +25,8 @@ export async function GET(request: Request) {
     let djangoWorking = true;
 
     try {
-      // Build Django backend URL
-      const djangoUrl = `${DJANGO_BACKEND_URL}/api/expedix/patients${queryString}`;
+      // Build Django backend URL - Django requires trailing slash
+      const djangoUrl = `${DJANGO_BACKEND_URL}/api/expedix/patients/${queryString}`;
       console.log('[PATIENTS API] Proxying to Django:', djangoUrl);
 
       // Get auth token from request 
@@ -168,8 +168,8 @@ export async function POST(request: Request) {
     const body = await request.json();
     console.log('[PATIENTS API] Creating patient with data:', Object.keys(body));
 
-    // Build Django backend URL
-    const djangoUrl = `${DJANGO_BACKEND_URL}/api/expedix/patients`;
+    // Build Django backend URL - Django requires trailing slash
+    const djangoUrl = `${DJANGO_BACKEND_URL}/api/expedix/patients/`;
     console.log('[PATIENTS API] Proxying POST to Django:', djangoUrl);
 
     // Get auth token from request 

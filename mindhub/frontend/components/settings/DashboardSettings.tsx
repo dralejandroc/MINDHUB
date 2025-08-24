@@ -400,7 +400,7 @@ export function DashboardSettings() {
 
                 <div className="text-center p-4 bg-white rounded-lg border-l-4 border-blue-500">
                   <div className="flex items-center justify-center space-x-1 mb-2">
-                    <CalendarIcon className="w-4 h-4 text-blue-600" />
+                    <CalendarDaysIcon className="w-4 h-4 text-blue-600" />
                     <span className="text-xs text-gray-600">Semanal</span>
                   </div>
                   <div className="text-lg font-bold text-blue-600">
