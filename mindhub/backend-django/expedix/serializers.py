@@ -21,39 +21,56 @@ class UserSerializer(serializers.ModelSerializer):
 
 
 class PatientSerializer(serializers.ModelSerializer):
-    """Patient serializer for API responses - MINIMAL TEST VERSION"""
+    """Patient serializer for API responses - Compatible with Supabase schema"""
+    # Add computed fields for frontend compatibility
+    birth_date = serializers.DateField(source='date_of_birth', read_only=True)
+    cell_phone = serializers.CharField(source='phone', read_only=True)
+    age = serializers.IntegerField(read_only=True)
     
     class Meta:
         model = Patient
         fields = [
-            # Basic information - MATCHES DATABASE_TRUTH.md
-            'id', 'first_name', 'last_name', 'email', 'phone', 'date_of_birth', 'gender',
+            # Basic information - MATCHES Supabase schema exactly
+            'id', 'first_name', 'paternal_last_name', 'maternal_last_name', 'last_name',
+            'email', 'phone', 'cell_phone', 'date_of_birth', 'birth_date', 'gender', 'age',
             # Location
-            'address', 'city', 'state', 'postal_code', 
+            'address', 'city', 'state', 'postal_code', 'country',
             # Mexican specific fields
             'curp', 'rfc', 'medical_record_number', 'blood_type',
+            # Medical arrays
+            'allergies', 'chronic_conditions', 'current_medications', 'tags',
+            # Emergency contact
+            'emergency_contact_name', 'emergency_contact_phone', 'emergency_contact_relationship',
             # Critical association fields
-            'created_by', 'clinic_id', 'assigned_professional_id',
+            'created_by', 'clinic_id', 'assigned_professional_id', 'workspace_id',
             # Status and metadata
             'patient_category', 'is_active', 'created_at', 'updated_at'
         ]
-        read_only_fields = ['id', 'created_at', 'updated_at']
+        read_only_fields = ['id', 'created_at', 'updated_at', 'age']
 
 
 class PatientCreateSerializer(serializers.ModelSerializer):
-    """Patient creation serializer with validation"""
+    """Patient creation serializer with validation - Compatible with Supabase schema"""
+    # Accept both formats for compatibility
+    birth_date = serializers.DateField(source='date_of_birth', required=False)
+    cell_phone = serializers.CharField(source='phone', required=False)
     
     class Meta:
         model = Patient
         fields = [
-            # Required fields for creation - MATCHES DATABASE_TRUTH.md
-            'first_name', 'last_name', 'email', 'phone', 'date_of_birth', 'gender',
+            # Required fields for creation - MATCHES Supabase schema
+            'first_name', 'paternal_last_name', 'maternal_last_name', 'last_name',
+            'email', 'phone', 'cell_phone', 'date_of_birth', 'birth_date', 'gender',
             # Location information
-            'address', 'city', 'state', 'postal_code',
+            'address', 'city', 'state', 'postal_code', 'country',
             # Mexican specific fields
             'curp', 'rfc', 'medical_record_number', 'blood_type',
+            # Medical arrays
+            'allergies', 'chronic_conditions', 'current_medications', 'tags',
+            # Emergency contact
+            'emergency_contact_name', 'emergency_contact_phone', 'emergency_contact_relationship',
             # Professional assignment (optional)
-            'assigned_professional_id',
+            'assigned_professional_id', 'workspace_id',
             # Category
             'patient_category'
             # Note: created_by and clinic_id are set automatically in views
@@ -116,14 +133,14 @@ class ConsultationCreateSerializer(serializers.ModelSerializer):
 
 # Summary serializers for dashboard
 class PatientSummarySerializer(serializers.ModelSerializer):
-    """Patient summary for dashboard/lists - Fixed to include individual name fields"""
+    """Patient summary for dashboard/lists - Compatible with Supabase schema"""
     full_name = serializers.CharField(read_only=True)
     age = serializers.IntegerField(read_only=True)
     consultations_count = serializers.SerializerMethodField()
-    # Add individual name fields for frontend compatibility
+    # Individual name fields matching Supabase schema exactly
     first_name = serializers.CharField(read_only=True)
-    paternal_last_name = serializers.CharField(source='last_name', read_only=True)
-    maternal_last_name = serializers.CharField(default='', read_only=True)
+    paternal_last_name = serializers.CharField(read_only=True)  # Direct field, not source
+    maternal_last_name = serializers.CharField(read_only=True)  # Direct field
     birth_date = serializers.DateField(source='date_of_birth', read_only=True)
     gender = serializers.CharField(read_only=True)
     cell_phone = serializers.CharField(source='phone', read_only=True)
