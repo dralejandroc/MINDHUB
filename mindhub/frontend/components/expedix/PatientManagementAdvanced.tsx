@@ -86,24 +86,21 @@ export default function PatientManagementAdvanced({
       const response = await expedixApi.getPatients(searchTerm || undefined);
       
       // Enhance patient data with additional information
-      const enhancedPatients: EnhancedPatient[] = await Promise.all(
-        response.data.map(async (patient) => {
-          try {
-            // Get patient consultations count and last date
-            const consultations = await expedixApi.getAppointments(patient.id).catch(() => ({ data: [] }));
-            const prescriptions = await expedixApi.getPrescriptions(patient.id).catch(() => ({ data: [] }));
-            
-            const consultationsCount = consultations.data?.length || 0;
-            const prescriptionsCount = prescriptions.data?.length || 0;
-            const lastConsultationDate = consultations.data?.[0]?.appointment_date;
+      // PERFORMANCE FIX: Use pre-calculated counts from backend instead of N+1 queries
+      const enhancedPatients: EnhancedPatient[] = response.data.map((patient) => {
+        try {
+          // Use pre-calculated counts from the patient object instead of individual API calls
+          const consultationsCount = patient.consultations_count || 0;
+          const prescriptionsCount = patient.prescriptions?.length || 0;
+          const lastConsultationDate = patient.appointments?.[0]?.appointment_date;
             
             // Calculate follow-up status and duration
-            const followUpStartDate = consultations.data?.[consultations.data.length - 1]?.appointment_date;
+            const followUpStartDate = patient.appointments?.[patient.appointments.length - 1]?.appointment_date;
             const followUpStatus = calculateFollowUpStatus(lastConsultationDate);
             const followUpDuration = calculateFollowUpDuration(followUpStartDate, lastConsultationDate, followUpStatus);
             
             // Get current medications
-            const currentMedications = prescriptions.data
+            const currentMedications = patient.prescriptions
               ?.filter(p => p.status === 'active')
               ?.map(p => p.medications?.[0]?.name)
               ?.filter(Boolean) || [];
