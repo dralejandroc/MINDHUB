@@ -13,10 +13,11 @@ export async function GET(request: Request) {
     // Verify authentication
     const { user, error: authError } = await getAuthenticatedUser(request);
     if (authError || !user) {
-      return createErrorResponse('Unauthorized', 'Valid authentication required', 401);
+      return createErrorResponse('Unauthorized', `Auth failed: ${authError}`, 401);
     }
 
     console.log('[PATIENTS API] Authenticated user:', user.id, '- Attempting Django backend');
+    console.log('[PATIENTS API] User object:', JSON.stringify(user, null, 2));
 
     // Extract query parameters from original request
     const url = new URL(request.url);
@@ -37,7 +38,7 @@ export async function GET(request: Request) {
       
       // Implement timeout using AbortController
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout for debugging
+      const timeoutId = setTimeout(() => controller.abort(), 3000); // 3 second timeout to reach fallback faster
 
       const djangoResponse = await fetch(djangoUrl, {
         method: 'GET',
@@ -78,29 +79,49 @@ export async function GET(request: Request) {
     if (!djangoWorking) {
       console.log('[PATIENTS API] Django failed - falling back to direct Supabase');
       
-      const { createClient } = await import('@supabase/supabase-js');
-      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-      const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
-      
-      const supabase = createClient(supabaseUrl, supabaseServiceKey);
-      
-      // Query patients directly from Supabase with correct table name
-      const { data: patients, error: supabaseError } = await supabase
-        .from('expedix_patients')
-        .select(`
-          *
-        `)
-        .eq('created_by', user.id)
-        .order('created_at', { ascending: false });
-      
-      if (supabaseError) {
-        console.error('[PATIENTS API] Supabase fallback error:', supabaseError);
-        return createErrorResponse(
-          'Database error',
-          'Could not retrieve patient data from any source',
-          500
-        );
-      }
+      try {
+        const { createClient } = await import('@supabase/supabase-js');
+        const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+        const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
+        
+        console.log('[PATIENTS API] Supabase URL:', supabaseUrl);
+        console.log('[PATIENTS API] Service key length:', supabaseServiceKey?.length || 'undefined');
+        console.log('[PATIENTS API] Service key start:', supabaseServiceKey?.substring(0, 50) || 'undefined');
+        
+        const supabase = createClient(supabaseUrl, supabaseServiceKey);
+        
+        let patients = null;
+        
+        // Direct approach - matching the working dual-system-test endpoint structure  
+        console.log('[PATIENTS API] Using service role key for direct Supabase access');
+        
+        // First, try to get all patients and then filter (bypassing potential RLS issues)
+        const { data: allPatients, error: allError } = await supabase
+          .from('patients')
+          .select('*')
+          .eq('is_active', true)
+          .order('created_at', { ascending: false });
+        
+        if (allError) {
+          console.error('[PATIENTS API] Failed to query patients table:', allError);
+          throw new Error(`Supabase query failed: ${allError.message}`);
+        }
+        
+        // Filter to user's patients (based on created_by field)
+        const userPatients = allPatients?.filter(p => p.created_by === user.id) || [];
+        patients = userPatients;
+        
+        console.log(`[PATIENTS API] Found ${allPatients?.length || 0} total patients, ${userPatients.length} for user ${user.id}`);
+        
+        // Error handling is now inside the try-catch above
+        if (!patients) {
+          console.error('[PATIENTS API] No patients data received');
+          return createErrorResponse(
+            'Database error',
+            'No patients data available',
+            500
+          );
+        }
       
       // Transform data to Django-compatible format with correct field mapping
       const transformedPatients = patients?.map(patient => ({
@@ -133,6 +154,15 @@ export async function GET(request: Request) {
         fallback: true,
         source: 'supabase_direct'
       });
+      
+      } catch (supabaseFallbackError) {
+        console.error('[PATIENTS API] Supabase fallback completely failed:', supabaseFallbackError);
+        return createErrorResponse(
+          'Database error',
+          `Could not retrieve patient data from any source: ${supabaseFallbackError.message}`,
+          500
+        );
+      }
     }
 
     // This should never happen, but just in case
