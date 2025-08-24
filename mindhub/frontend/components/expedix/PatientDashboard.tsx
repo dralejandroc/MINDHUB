@@ -97,6 +97,9 @@ export default function PatientDashboard({
     { id: 'documents', name: 'Documentos', icon: DocumentArrowDownIcon }
   ];
 
+  console.log('[PatientDashboard] Rendering with tabs:', tabs.map(t => t.name));
+  console.log('[PatientDashboard] Active tab:', activeTab);
+
   const fetchAdministrativeData = async () => {
     try {
       const response = await fetch(`/api/expedix/patients/${patient.id}/administrative`);
@@ -180,7 +183,7 @@ export default function PatientDashboard({
   }, [activeTab]);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6" data-version="2.1-administrative">
       {/* Header */}
       <div className="bg-gradient-to-r from-blue-600 to-blue-700 rounded-lg p-6 text-white">
         <div className="flex items-center justify-between">
@@ -189,7 +192,10 @@ export default function PatientDashboard({
               <UserIcon className="h-8 w-8" />
             </div>
             <div>
-              <h1 className="text-2xl font-bold">{patient.first_name} {patient.paternal_last_name} {patient.maternal_last_name || ''}</h1>
+              <h1 className="text-2xl font-bold">
+                {patient.first_name} {patient.paternal_last_name} {patient.maternal_last_name || ''}
+                <span className="ml-2 text-sm bg-green-500 px-2 py-1 rounded">v2.1</span>
+              </h1>
               <p className="text-blue-100">Expediente: {patient.id.slice(-8).toUpperCase()}</p>
               <p className="text-blue-100">{patient.age} años • {patient.email}</p>
             </div>
