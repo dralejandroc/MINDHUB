@@ -1,9 +1,9 @@
 # 🏥 MINDHUB - ARQUITECTURA API DUAL SYSTEM DOCUMENTATION
 ## FUENTE DE VERDAD ÚNICA - ARQUITECTURA DJANGO DUAL (CLÍNICAS + INDIVIDUALES)
 
-**Fecha:** 22 Agosto 2025  
-**Versión:** v7.0-dual-system-architecture  
-**Estado:** 🏗️ ARQUITECTURA DUAL SYSTEM READY FOR IMPLEMENTATION
+**Fecha:** 24 Agosto 2025  
+**Versión:** v8.0-production-validated  
+**Estado:** ✅ ARQUITECTURA DUAL SYSTEM FUNCIONANDO EN PRODUCCIÓN
 
 ---
 
@@ -58,6 +58,118 @@ Sistema dual implementado para soportar dos tipos de licencias:
 - ✅ **Escalabilidad perfecta** de individual → clínica
 - ✅ **Lógica de negocio diferenciada** por tipo de licencia
 - ✅ **Aislamiento total** entre workspaces individuales
+
+---
+
+## 🎯 **ENDPOINTS CRÍTICOS VALIDADOS EN PRODUCCIÓN**
+
+### **⚠️ LECCIONES APRENDIDAS - ERRORES QUE NUNCA DEBEN REPETIRSE**
+
+#### **🚨 ERROR CRÍTICO RESUELTO (24 Ago 2025)**
+**Problema:** Error 500 en `/api/expedix/patients` - Tabla incorrecta
+**Causa raíz:** Código intentaba acceder a `expedix_patients` (NO EXISTE) en lugar de `patients`  
+**Impacto:** Dashboard completamente no funcional, "Could not retrieve patient data from any source"
+
+**✅ SOLUCIÓN PERMANENTE:**
+```http
+# ❌ INCORRECTO (NUNCA USAR)
+.from('expedix_patients')  # Tabla NO EXISTE en Supabase
+
+# ✅ CORRECTO (SIEMPRE USAR) 
+.from('patients')         # Tabla REAL en Supabase
+```
+
+#### **📋 TABLA SUPABASE VERIFICADAS - FUENTE DE VERDAD ÚNICA**
+```sql
+-- ✅ TABLAS REALES EN SUPABASE (VERIFICADO 24 AGO 2025)
+patients                    ← ✅ USAR ESTA
+consultations              ← ✅ USAR ESTA  
+profiles                   ← ✅ USAR ESTA
+appointments               ← ✅ USAR ESTA
+resources                  ← ✅ USAR ESTA
+
+-- ❌ TABLAS QUE NO EXISTEN (NUNCA REFERENCIAR)
+expedix_patients           ← ❌ ERROR 404
+expedix_consultations      ← ❌ ERROR 404  
+expedix_appointments       ← ❌ ERROR 404
+```
+
+#### **🔒 REGLAS DE VALIDACIÓN DE ENDPOINTS**
+1. **SIEMPRE verificar nombres de tabla en Supabase Dashboard antes de usar**
+2. **NUNCA asumir nombres de tabla con prefijos** (`expedix_`, `agenda_`, etc.)
+3. **VERIFICAR en logs de Supabase** que la query llegue a tabla correcta
+4. **TESTS de build deben incluir** verificación de conexión real a tablas
+5. **TypeScript strict mode** para prevenir errores de tipos `unknown`
+
+---
+
+### **✅ ENDPOINTS DE PACIENTES - FUNCIONANDO EN PRODUCCIÓN**
+
+#### **API Frontend → Django Proxy (VALIDADO)**
+```http
+# Proxy route que funciona correctamente
+GET    https://mindhub.cloud/api/expedix/patients/
+POST   https://mindhub.cloud/api/expedix/patients/
+PUT    https://mindhub.cloud/api/expedix/patients/{id}/
+DELETE https://mindhub.cloud/api/expedix/patients/{id}/
+
+# Headers requeridos
+Authorization: Bearer {supabase_jwt_token}
+Content-Type: application/json
+```
+
+#### **Django Backend Direct (VALIDADO)**  
+```http
+# Django REST endpoints funcionando
+GET    https://mindhub-django-backend.vercel.app/api/expedix/patients/
+POST   https://mindhub-django-backend.vercel.app/api/expedix/patients/
+PUT    https://mindhub-django-backend.vercel.app/api/expedix/patients/{id}/
+DELETE https://mindhub-django-backend.vercel.app/api/expedix/patients/{id}/
+
+# Headers para Django directo
+Authorization: Bearer {supabase_service_role_key}
+X-User-ID: {user_id}
+X-User-Email: {user_email}
+X-Proxy-Auth: verified
+```
+
+#### **Supabase Direct (FALLBACK VALIDADO)**
+```http
+# Solo para fallback cuando Django falla
+GET https://jvbcpldzoyicefdtnwkd.supabase.co/rest/v1/patients
+Content-Type: application/json
+Authorization: Bearer {service_role_key}
+apikey: {anon_key}
+```
+
+#### **🔍 DEBUG ENDPOINTS (DISPONIBLES)**
+```http
+# Para troubleshooting
+GET https://mindhub.cloud/api/expedix/debug/                     # Diagnóstico completo
+GET https://mindhub-django-backend.vercel.app/api/expedix/debug-auth/    # Test autenticación 
+GET https://mindhub-django-backend.vercel.app/api/expedix/dual-system-test/  # Test sistema dual
+```
+
+#### **📊 RESPUESTA EXITOSA VALIDADA**
+```json
+{
+  "success": true,
+  "count": 5,
+  "results": [
+    {
+      "id": "147b4c95-3a93-4444-addf-742fe96ae9ac",
+      "first_name": "María",
+      "paternal_last_name": "Rivera", 
+      "created_by": "a1c193e9-643a-4ba9-9214-29536ea93913",
+      "clinic_id": null,
+      "workspace_id": "8a956bcb-abca-409e-8ae8-2604372084cf",
+      "is_active": true
+    }
+  ],
+  "fallback": false,
+  "source": "django"
+}
+```
 
 ---
 
