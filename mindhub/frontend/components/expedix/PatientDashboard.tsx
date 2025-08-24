@@ -14,7 +14,10 @@ import {
   IdentificationIcon,
   DocumentArrowDownIcon,
   AcademicCapIcon,
-  BookOpenIcon
+  BookOpenIcon,
+  CogIcon,
+  CurrencyDollarIcon,
+  ClipboardIcon
 } from '@heroicons/react/24/outline';
 import { useExpedixApi, Patient } from '@/lib/api/expedix-client';
 import ResourcesTimeline from './ResourcesTimeline';
@@ -38,6 +41,19 @@ interface DashboardData {
   assessments: any[];
 }
 
+interface AdministrativeData {
+  appointments: any[];
+  financial: {
+    totalPaid: number;
+    totalCharged: number;
+    currentBalance: number;
+    totalInvoices: number;
+    totalPayments: number;
+    totalRefunds: number;
+    transactions: any[];
+  };
+}
+
 export default function PatientDashboard({ 
   patient, 
   onClose, 
@@ -57,15 +73,43 @@ export default function PatientDashboard({
     assessments: []
   });
 
+  const [administrativeData, setAdministrativeData] = useState<AdministrativeData>({
+    appointments: [],
+    financial: {
+      totalPaid: 0,
+      totalCharged: 0,
+      currentBalance: 0,
+      totalInvoices: 0,
+      totalPayments: 0,
+      totalRefunds: 0,
+      transactions: []
+    }
+  });
+
   const tabs = [
     { id: 'timeline', name: 'Timeline', icon: ClipboardDocumentListIcon },
-    { id: 'config', name: 'Configuración', icon: IdentificationIcon },
+    { id: 'config', name: 'Datos personales', icon: IdentificationIcon },
     { id: 'consultations', name: 'Consultas', icon: CalendarIcon },
     { id: 'prescriptions', name: 'Recetas', icon: DocumentTextIcon },
     { id: 'assessments', name: 'Evaluaciones', icon: DocumentChartBarIcon },
+    { id: 'administrative', name: 'Administrativo', icon: CogIcon },
     { id: 'resources', name: 'Recursos', icon: BookOpenIcon },
     { id: 'documents', name: 'Documentos', icon: DocumentArrowDownIcon }
   ];
+
+  const fetchAdministrativeData = async () => {
+    try {
+      const response = await fetch(`/api/expedix/patients/${patient.id}/administrative`);
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success && data.data) {
+          setAdministrativeData(data.data);
+        }
+      }
+    } catch (error) {
+      console.error('Error loading administrative data:', error);
+    }
+  };
 
   const fetchDashboardData = async () => {
     try {
@@ -128,6 +172,12 @@ export default function PatientDashboard({
       fetchDashboardData();
     }
   }, [patient.id]);
+
+  useEffect(() => {
+    if (activeTab === 'administrative') {
+      fetchAdministrativeData();
+    }
+  }, [activeTab]);
 
   return (
     <div className="space-y-6">
@@ -223,7 +273,7 @@ export default function PatientDashboard({
             {activeTab === 'config' && (
               <div className="bg-white rounded-xl p-6 border shadow">
                 <div className="flex items-center justify-between mb-6">
-                  <h3 className="text-lg font-bold text-gray-900">Configuración del Paciente</h3>
+                  <h3 className="text-lg font-bold text-gray-900">Datos Personales del Paciente</h3>
                   {!editingPatient ? (
                     <Button
                       onClick={() => setEditingPatient(true)}
@@ -589,6 +639,245 @@ export default function PatientDashboard({
                 patientName={`${patient.first_name} ${patient.paternal_last_name} ${patient.maternal_last_name || ''}`}
                 onNewAssessment={onClinicalAssessment}
               />
+            )}
+
+            {activeTab === 'administrative' && (
+              <div className="space-y-6">
+                {/* Citas Section */}
+                <div className="bg-white rounded-xl p-6 border shadow">
+                  <div className="flex items-center justify-between mb-6">
+                    <div className="flex items-center">
+                      <CalendarIcon className="w-6 h-6 text-blue-600 mr-3" />
+                      <h3 className="text-lg font-bold text-gray-900">Historial de Citas</h3>
+                    </div>
+                    <Button
+                      onClick={() => {
+                        // Navigate to agenda with patient pre-selected
+                        window.location.href = `/hubs/agenda?patient=${patient.id}&action=schedule`;
+                      }}
+                      className="bg-blue-600 hover:bg-blue-700 text-white"
+                    >
+                      <PlusIcon className="w-4 h-4 mr-2" />
+                      Nueva Cita
+                    </Button>
+                  </div>
+                  
+                  <div className="overflow-x-auto">
+                    <table className="min-w-full divide-y divide-gray-200">
+                      <thead className="bg-gray-50">
+                        <tr>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Atención</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Sucursal</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Profesional</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Recurso</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Fecha</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Hora</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Estado</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Balance</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Comentarios</th>
+                        </tr>
+                      </thead>
+                      <tbody className="bg-white divide-y divide-gray-200">
+                        {administrativeData.appointments.length === 0 ? (
+                          <tr>
+                            <td colSpan={9} className="px-6 py-4 text-center text-gray-500">
+                              No hay citas registradas
+                            </td>
+                          </tr>
+                        ) : (
+                          administrativeData.appointments.map((appointment, index) => (
+                            <tr key={index} className="hover:bg-gray-50">
+                              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                {appointment.type || 'Consulta general'}
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                {appointment.branch || 'Principal'}
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                {appointment.professional || 'Por asignar'}
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                {appointment.resource || 'Consultorio 1'}
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                {appointment.appointment_date ? new Date(appointment.appointment_date).toLocaleDateString('es-MX') : '-'}
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                {appointment.appointment_time || '-'}
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap">
+                                <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                                  appointment.status === 'completed' ? 'bg-green-100 text-green-800' :
+                                  appointment.status === 'confirmed' ? 'bg-blue-100 text-blue-800' :
+                                  appointment.status === 'cancelled' ? 'bg-red-100 text-red-800' :
+                                  'bg-yellow-100 text-yellow-800'
+                                }`}>
+                                  {appointment.status === 'completed' ? 'Completada' :
+                                   appointment.status === 'confirmed' ? 'Confirmada' :
+                                   appointment.status === 'cancelled' ? 'Cancelada' :
+                                   'Programada'}
+                                </span>
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                ${appointment.balance || '0.00'}
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                {appointment.notes || '-'}
+                              </td>
+                            </tr>
+                          ))
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+
+                {/* Finanzas Section */}
+                <div className="bg-white rounded-xl p-6 border shadow">
+                  <div className="flex items-center justify-between mb-6">
+                    <div className="flex items-center">
+                      <CurrencyDollarIcon className="w-6 h-6 text-green-600 mr-3" />
+                      <h3 className="text-lg font-bold text-gray-900">Información Financiera</h3>
+                    </div>
+                    <div className="flex space-x-2">
+                      <Button
+                        onClick={() => {
+                          // Navigate to finance module
+                          window.location.href = `/hubs/finance?patient=${patient.id}&action=payment`;
+                        }}
+                        className="bg-green-600 hover:bg-green-700 text-white"
+                      >
+                        <CurrencyDollarIcon className="w-4 h-4 mr-2" />
+                        Registrar Pago
+                      </Button>
+                      <Button
+                        onClick={() => {
+                          // Generate financial report
+                          window.location.href = `/hubs/finance?patient=${patient.id}&action=report`;
+                        }}
+                        variant="outline"
+                      >
+                        <ClipboardIcon className="w-4 h-4 mr-2" />
+                        Reporte
+                      </Button>
+                    </div>
+                  </div>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+                    <div className="bg-green-50 p-4 rounded-lg">
+                      <div className="flex items-center">
+                        <div className="p-2 bg-green-100 rounded-md">
+                          <CurrencyDollarIcon className="w-6 h-6 text-green-600" />
+                        </div>
+                        <div className="ml-4">
+                          <p className="text-sm text-green-600 font-medium">Total Pagado</p>
+                          <p className="text-2xl font-bold text-green-900">${administrativeData.financial.totalPaid.toFixed(2)}</p>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <div className="bg-yellow-50 p-4 rounded-lg">
+                      <div className="flex items-center">
+                        <div className="p-2 bg-yellow-100 rounded-md">
+                          <ClipboardIcon className="w-6 h-6 text-yellow-600" />
+                        </div>
+                        <div className="ml-4">
+                          <p className="text-sm text-yellow-600 font-medium">Balance Pendiente</p>
+                          <p className="text-2xl font-bold text-yellow-900">${administrativeData.financial.currentBalance.toFixed(2)}</p>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <div className="bg-blue-50 p-4 rounded-lg">
+                      <div className="flex items-center">
+                        <div className="p-2 bg-blue-100 rounded-md">
+                          <DocumentTextIcon className="w-6 h-6 text-blue-600" />
+                        </div>
+                        <div className="ml-4">
+                          <p className="text-sm text-blue-600 font-medium">Facturas</p>
+                          <p className="text-2xl font-bold text-blue-900">{administrativeData.financial.totalInvoices}</p>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <div className="bg-red-50 p-4 rounded-lg">
+                      <div className="flex items-center">
+                        <div className="p-2 bg-red-100 rounded-md">
+                          <XMarkIcon className="w-6 h-6 text-red-600" />
+                        </div>
+                        <div className="ml-4">
+                          <p className="text-sm text-red-600 font-medium">Devoluciones</p>
+                          <p className="text-2xl font-bold text-red-900">{administrativeData.financial.totalRefunds}</p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="space-y-4">
+                    <h4 className="text-lg font-semibold text-gray-900">Historial de Transacciones</h4>
+                    <div className="overflow-x-auto">
+                      <table className="min-w-full divide-y divide-gray-200">
+                        <thead className="bg-gray-50">
+                          <tr>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Fecha</th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tipo</th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Concepto</th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Monto</th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Estado</th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Comentarios</th>
+                          </tr>
+                        </thead>
+                        <tbody className="bg-white divide-y divide-gray-200">
+                          {administrativeData.financial.transactions.length === 0 ? (
+                            <tr>
+                              <td colSpan={6} className="px-6 py-4 text-center text-gray-500">
+                                No hay transacciones registradas
+                              </td>
+                            </tr>
+                          ) : (
+                            administrativeData.financial.transactions.map((transaction, index) => (
+                              <tr key={index} className="hover:bg-gray-50">
+                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                  {transaction.transaction_date ? new Date(transaction.transaction_date).toLocaleDateString('es-MX') : '-'}
+                                </td>
+                                <td className="px-6 py-4 whitespace-nowrap">
+                                  <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                                    transaction.transaction_type === 'payment' ? 'bg-green-100 text-green-800' :
+                                    transaction.transaction_type === 'refund' ? 'bg-red-100 text-red-800' :
+                                    transaction.transaction_type === 'invoice' ? 'bg-blue-100 text-blue-800' :
+                                    'bg-gray-100 text-gray-800'
+                                  }`}>
+                                    {transaction.type_display || transaction.transaction_type}
+                                  </span>
+                                </td>
+                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                  {transaction.concept || 'Sin concepto'}
+                                </td>
+                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                  ${transaction.amount ? Number(transaction.amount).toFixed(2) : '0.00'}
+                                </td>
+                                <td className="px-6 py-4 whitespace-nowrap">
+                                  <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                                    transaction.status === 'completed' ? 'bg-green-100 text-green-800' :
+                                    transaction.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                                    transaction.status === 'cancelled' ? 'bg-red-100 text-red-800' :
+                                    'bg-gray-100 text-gray-800'
+                                  }`}>
+                                    {transaction.status_display || transaction.status}
+                                  </span>
+                                </td>
+                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                  {transaction.comments || '-'}
+                                </td>
+                              </tr>
+                            ))
+                          )}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                </div>
+              </div>
             )}
 
             {activeTab === 'resources' && (

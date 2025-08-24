@@ -24,15 +24,34 @@ class AppointmentSerializer(serializers.ModelSerializer):
     class Meta:
         model = Appointment
         fields = [
-            'id', 'appointment_number', 'patient', 'provider', 'appointment_date',
+            'id', 'appointment_number', 'patient', 'provider', 'appointment_date', 'appointment_time',
             'duration', 'appointment_type', 'reason', 'notes', 'status',
             'confirmed_at', 'confirmed_by', 'cancelled_at', 'cancelled_by',
             'cancellation_reason', 'reschedule_requested', 'requires_preparation',
             'preparation_instructions', 'scheduled_by', 'created_at', 'updated_at',
+            'branch', 'resource', 'professional', 'balance', 'is_paid',
             'patient_name', 'provider_name', 'is_upcoming', 'can_be_confirmed',
             'can_be_cancelled', 'scheduled_by_name'
         ]
-        read_only_fields = ['id', 'appointment_number', 'created_at', 'updated_at']
+        read_only_fields = ['id', 'appointment_number', 'appointment_time', 'created_at', 'updated_at']
+
+
+class AppointmentAdministrativeSerializer(serializers.ModelSerializer):
+    """Appointment serializer specifically for administrative view in Expedix"""
+    patient_name = serializers.CharField(source='patient.full_name', read_only=True)
+    provider_name = serializers.SerializerMethodField()
+    scheduled_by_name = serializers.SerializerMethodField()
+    type_display = serializers.CharField(source='get_appointment_type_display', read_only=True)
+    status_display = serializers.CharField(source='get_status_display', read_only=True)
+    
+    class Meta:
+        model = Appointment
+        fields = [
+            'id', 'appointment_number', 'appointment_date', 'appointment_time',
+            'type_display', 'branch', 'professional', 'resource', 
+            'status', 'status_display', 'balance', 'notes',
+            'patient_name', 'provider_name', 'scheduled_by_name', 'created_at'
+        ]
 
     def get_provider_name(self, obj):
         return f"{obj.provider.first_name} {obj.provider.last_name}".strip()

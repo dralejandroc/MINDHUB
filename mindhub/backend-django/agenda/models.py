@@ -41,6 +41,7 @@ class Appointment(models.Model):
     
     # Appointment details
     appointment_date = models.DateTimeField()
+    appointment_time = models.TimeField(help_text="Time extracted from appointment_date for easier filtering")
     duration = models.IntegerField(
         validators=[MinValueValidator(15), MaxValueValidator(480)],
         help_text="Duration in minutes (15-480)"
@@ -48,6 +49,15 @@ class Appointment(models.Model):
     appointment_type = models.CharField(max_length=50, choices=TYPE_CHOICES)
     reason = models.CharField(max_length=200, blank=True, null=True)
     notes = models.TextField(blank=True, null=True)
+    
+    # Administrative fields for comprehensive tracking
+    branch = models.CharField(max_length=100, blank=True, null=True, help_text="Sucursal donde se realiza la cita")
+    resource = models.CharField(max_length=100, blank=True, null=True, help_text="Recurso utilizado (consultorio, sala, etc.)")
+    professional = models.CharField(max_length=200, blank=True, null=True, help_text="Nombre del profesional asignado")
+    
+    # Financial tracking
+    balance = models.DecimalField(max_digits=10, decimal_places=2, default=0.00, help_text="Balance pendiente de la cita")
+    is_paid = models.BooleanField(default=False, help_text="Indica si la cita ha sido pagada completamente")
     
     # Status and tracking
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='scheduled')
@@ -93,6 +103,12 @@ class Appointment(models.Model):
                 name='check_appointment_owner'
             )
         ]
+
+    def save(self, *args, **kwargs):
+        # Auto-sync appointment_time with appointment_date
+        if self.appointment_date:
+            self.appointment_time = self.appointment_date.time()
+        super().save(*args, **kwargs)
 
     def __str__(self):
         return f"Cita {self.appointment_number} - {self.patient} - {self.appointment_date.strftime('%Y-%m-%d %H:%M')}"
