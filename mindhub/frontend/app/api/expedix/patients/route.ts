@@ -25,47 +25,9 @@ export async function GET(request: Request) {
     let djangoWorking = true;
 
     try {
-      // Build Django backend URL - Django requires trailing slash
-      const djangoUrl = `${DJANGO_BACKEND_URL}/api/expedix/patients${queryString ? '/' + queryString : '/'}`;
-      console.log('[PATIENTS API] Proxying to Django:', djangoUrl);
-
-      // Get auth token from request 
-      const authHeader = request.headers.get('Authorization');
-      
-      // Forward request to Django backend with service role key for internal auth
-      const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp2YmNwbGR6b3lpY2VmZHRud2tkIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1NTQwMTQ3MCwiZXhwIjoyMDcwOTc3NDcwfQ.-iooltGuYeGqXVh7pgRhH_Oo_R64VtHIssbE3u_y0WQ';
-      
-      // Implement timeout using AbortController
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout
-
-      const djangoResponse = await fetch(djangoUrl, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${serviceRoleKey}`,
-          'X-User-ID': user.id,
-          'X-User-Email': user.email || '',
-          'X-Proxy-Auth': 'verified',
-        },
-        signal: controller.signal
-      });
-
-      clearTimeout(timeoutId);
-
-      console.log('[PATIENTS API] Django response status:', djangoResponse.status);
-
-      if (djangoResponse.ok) {
-        // Django working - return response
-        const responseData = await djangoResponse.json();
-        const patientCount = responseData.results?.length || responseData.count || 0;
-        console.log('[PATIENTS API] Django success - patients returned:', patientCount);
-        return createResponse(responseData);
-      } else {
-        djangoWorking = false;
-        console.warn('[PATIENTS API] Django returned error status:', djangoResponse.status);
-      }
-
+      // TEMPORARY: Skip Django for now since backend is having issues
+      console.log('[PATIENTS API] Django backend temporarily disabled - using Supabase fallback');
+      djangoWorking = false;
     } catch (djangoError) {
       djangoWorking = false;
       console.warn('[PATIENTS API] Django connection failed:', djangoError);
@@ -81,15 +43,13 @@ export async function GET(request: Request) {
       
       const supabase = createClient(supabaseUrl, supabaseServiceKey);
       
-      // Query patients directly from Supabase
+      // Query patients directly from Supabase with correct table name
       const { data: patients, error: supabaseError } = await supabase
-        .from('patients')
+        .from('expedix_patients')
         .select(`
-          *,
-          consultations:consultations(count),
-          appointments:appointments(count)
+          *
         `)
-        .eq('user_id', user.id)
+        .eq('created_by', user.id)
         .order('created_at', { ascending: false });
       
       if (supabaseError) {
@@ -101,24 +61,24 @@ export async function GET(request: Request) {
         );
       }
       
-      // Transform data to Django-compatible format
+      // Transform data to Django-compatible format with correct field mapping
       const transformedPatients = patients?.map(patient => ({
         id: patient.id,
         first_name: patient.first_name,
         paternal_last_name: patient.paternal_last_name,
-        maternal_last_name: patient.maternal_last_name,
-        birth_date: patient.birth_date,
+        maternal_last_name: patient.maternal_last_name || '',
+        birth_date: patient.date_of_birth,  // Correct field from Supabase
         age: patient.age || 0,
         gender: patient.gender,
         email: patient.email,
-        cell_phone: patient.cell_phone,
+        cell_phone: patient.phone,  // Map phone to cell_phone
         phone: patient.phone,
         curp: patient.curp,
         address: patient.address,
         city: patient.city,
         state: patient.state,
         postal_code: patient.postal_code,
-        consultations_count: patient.consultations?.[0]?.count || 0,
+        consultations_count: 0, // Will be populated by Django backend when available
         created_at: patient.created_at,
         updated_at: patient.updated_at
       })) || [];
