@@ -26,7 +26,7 @@ export async function GET(request: Request) {
 
     try {
       // Build Django backend URL - Django requires trailing slash
-      const djangoUrl = `${DJANGO_BACKEND_URL}/api/expedix/patients/${queryString}`;
+      const djangoUrl = `${DJANGO_BACKEND_URL}/api/expedix/patients${queryString ? '/' + queryString : '/'}`;
       console.log('[PATIENTS API] Proxying to Django:', djangoUrl);
 
       // Get auth token from request 
