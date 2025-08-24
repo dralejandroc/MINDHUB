@@ -63,6 +63,7 @@ export default function PatientDashboard({
   const expedixApi = useExpedixApi(); // Use authenticated API client
   const [activeTab, setActiveTab] = useState('timeline');
   const [loading, setLoading] = useState(false);
+  const [tabLoading, setTabLoading] = useState(false); // Lazy loading state
   const [editingPatient, setEditingPatient] = useState(false);
   const [patientData, setPatientData] = useState<Patient>(patient);
   const [dashboardData, setDashboardData] = useState<DashboardData>({
@@ -114,22 +115,56 @@ export default function PatientDashboard({
     }
   };
 
+  // Lazy loading functions for non-critical data
+  const fetchTabData = async (tabId: string) => {
+    if (tabId === 'administrative') {
+      setTabLoading(true);
+      await fetchAdministrativeData();
+      setTabLoading(false);
+      return;
+    }
+    
+    // For other tabs, only fetch if not already loaded
+    if (dashboardData.consultations.length === 0 && 
+        ['consultations', 'prescriptions', 'assessments', 'documents', 'resources'].includes(tabId)) {
+      setTabLoading(true);
+      try {
+        const patientResponse = await expedixApi.getPatient(patient.id);
+        if (patientResponse?.data) {
+          const patientData = patientResponse.data;
+          setDashboardData({
+            consultations: patientData.consultations || [],
+            prescriptions: patientData.prescriptions || [],
+            appointments: patientData.appointments || [],
+            documents: patientData.documents || [],
+            assessments: patientData.assessments || []
+          });
+        }
+      } catch (error) {
+        console.error('Error fetching tab data:', error);
+      } finally {
+        setTabLoading(false);
+      }
+    }
+  };
+
   const fetchDashboardData = async () => {
     try {
       setLoading(true);
       
-      // Fetch patient data from API
+      // Only fetch basic patient data initially (performance optimization)
       const patientResponse = await expedixApi.getPatient(patient.id);
       
       if (patientResponse?.data) {
         const patientData = patientResponse.data;
         
+        // Initialize with empty arrays for lazy loading
         setDashboardData({
-          consultations: patientData.consultations || [],
-          prescriptions: patientData.prescriptions || [],
-          appointments: patientData.appointments || [],
-          documents: patientData.documents || [],
-          assessments: patientData.assessments || []
+          consultations: [],
+          prescriptions: [],
+          appointments: [],
+          documents: [],
+          assessments: []
         });
         
         // Update local patient data with fresh data
@@ -177,8 +212,9 @@ export default function PatientDashboard({
   }, [patient.id]);
 
   useEffect(() => {
-    if (activeTab === 'administrative') {
-      fetchAdministrativeData();
+    // Lazy load data only when tab becomes active (performance optimization)
+    if (activeTab && activeTab !== 'config') {
+      fetchTabData(activeTab);
     }
   }, [activeTab]);
 
@@ -261,6 +297,11 @@ export default function PatientDashboard({
           <div className="flex items-center justify-center py-12">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
             <span className="ml-3 text-gray-600">Cargando información...</span>
+          </div>
+        ) : tabLoading ? (
+          <div className="flex items-center justify-center py-12">
+            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-500"></div>
+            <span className="ml-3 text-gray-500">Cargando contenido...</span>
           </div>
         ) : (
           <div>
