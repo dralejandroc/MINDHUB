@@ -1,36 +1,41 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { getAuthenticatedUser } from '@/lib/supabase/server';
+import { getAuthenticatedUser, createResponse, createErrorResponse } from '@/lib/supabase/admin';
 
-export async function GET(
-  request: NextRequest,
-  { params }: { params: { id: string } }
-) {
+export const runtime = 'nodejs';
+export const dynamic = 'force-dynamic';
+
+const BACKEND_URL = process.env.BACKEND_URL || 'https://mindhub-django-backend.vercel.app';
+
+export async function GET(request: Request, { params }: { params: { id: string } }) {
   try {
-    const user = await getAuthenticatedUser();
-    if (!user) {
-      return NextResponse.json(
-        { success: false, error: 'Authentication required' },
-        { status: 401 }
-      );
-    }
+    const { id: patientId } = params;
+    console.log('[BEHAVIORAL HISTORY] Processing GET request for patient:', patientId);
 
-    const patientId = params.id;
+    // Verify authentication
+    const { user, error: authError } = await getAuthenticatedUser(request);
+    if (authError || !user) {
+      console.error('[BEHAVIORAL HISTORY] Auth error:', authError);
+      return createErrorResponse('Unauthorized', 'Valid authentication required', 401);
+    }
 
     // Call Django backend for behavioral history/assessments
     const djangoResponse = await fetch(
-      `${process.env.NEXT_PUBLIC_DJANGO_API_URL}/api/expedix/patients/${patientId}/assessments/`,
+      `${BACKEND_URL}/api/expedix/patients/${patientId}/assessments/`,
       {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${user.access_token}`,
+          'Authorization': request.headers.get('Authorization') || '',
+          'X-User-Id': user.id,
+          'X-User-Email': user.email || '',
+          'X-Proxy-Auth': 'verified',
         },
       }
     );
 
     if (!djangoResponse.ok) {
+      console.log('[BEHAVIORAL HISTORY] Django response not ok, returning empty array');
       // Return empty array instead of error for non-fatal cases
-      return NextResponse.json({
+      return createResponse({
         success: true,
         data: [],
         total: 0,
@@ -39,8 +44,9 @@ export async function GET(
     }
 
     const data = await djangoResponse.json();
+    console.log('[BEHAVIORAL HISTORY] Successfully retrieved behavioral history');
     
-    return NextResponse.json({
+    return createResponse({
       success: true,
       data: data.results || data.data || [],
       total: data.count || data.total || 0
@@ -50,7 +56,7 @@ export async function GET(
     console.error('Error fetching behavioral history:', error);
     
     // Return empty array for graceful fallback
-    return NextResponse.json({
+    return createResponse({
       success: true,
       data: [],
       total: 0,

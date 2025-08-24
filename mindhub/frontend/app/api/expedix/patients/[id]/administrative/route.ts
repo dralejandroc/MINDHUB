@@ -1,41 +1,47 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { getAuthenticatedUser } from '@/lib/supabase/server';
+import { getAuthenticatedUser, createResponse, createErrorResponse } from '@/lib/supabase/admin';
 
-export async function GET(
-  request: NextRequest,
-  { params }: { params: { id: string } }
-) {
+export const runtime = 'nodejs';
+export const dynamic = 'force-dynamic';
+
+const BACKEND_URL = process.env.BACKEND_URL || 'https://mindhub-django-backend.vercel.app';
+
+export async function GET(request: Request, { params }: { params: { id: string } }) {
   try {
-    const user = await getAuthenticatedUser();
-    if (!user) {
-      return NextResponse.json(
-        { success: false, error: 'Authentication required' },
-        { status: 401 }
-      );
-    }
+    const { id: patientId } = params;
+    console.log('[ADMINISTRATIVE DATA] Processing GET request for patient:', patientId);
 
-    const patientId = params.id;
+    // Verify authentication
+    const { user, error: authError } = await getAuthenticatedUser(request);
+    if (authError || !user) {
+      console.error('[ADMINISTRATIVE DATA] Auth error:', authError);
+      return createErrorResponse('Unauthorized', 'Valid authentication required', 401);
+    }
 
     // Get both appointments and financial data from Django
     const [appointmentsResponse, financialResponse] = await Promise.all([
       fetch(
-        `${process.env.NEXT_PUBLIC_DJANGO_API_URL}/api/agenda/appointments/`,
+        `${BACKEND_URL}/api/agenda/appointments/?patient=${patientId}`,
         {
           method: 'GET',
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${user.access_token}`,
-            'X-Patient-Filter': patientId, // Custom header to filter by patient
+            'Authorization': request.headers.get('Authorization') || '',
+            'X-User-Id': user.id,
+            'X-User-Email': user.email || '',
+            'X-Proxy-Auth': 'verified',
           },
         }
       ),
       fetch(
-        `${process.env.NEXT_PUBLIC_DJANGO_API_URL}/api/finance/patients/${patientId}/summary/`,
+        `${BACKEND_URL}/api/finance/patients/${patientId}/summary/`,
         {
           method: 'GET',
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${user.access_token}`,
+            'Authorization': request.headers.get('Authorization') || '',
+            'X-User-Id': user.id,
+            'X-User-Email': user.email || '',
+            'X-Proxy-Auth': 'verified',
           },
         }
       )
@@ -72,7 +78,8 @@ export async function GET(
       };
     }
 
-    return NextResponse.json({
+    console.log('[ADMINISTRATIVE DATA] Successfully retrieved administrative data');
+    return createResponse({
       success: true,
       data: {
         appointments,
@@ -83,9 +90,8 @@ export async function GET(
   } catch (error) {
     console.error('Error fetching administrative data:', error);
     
-    return NextResponse.json({
-      success: false,
-      error: 'Failed to fetch administrative data',
+    return createResponse({
+      success: true, // Return success true for graceful fallback
       data: {
         appointments: [],
         financial: {
@@ -98,6 +104,6 @@ export async function GET(
           transactions: []
         }
       }
-    }, { status: 500 });
+    });
   }
 }
