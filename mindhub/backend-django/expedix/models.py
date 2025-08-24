@@ -201,10 +201,10 @@ class Consultation(models.Model):
     ]
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    patient = models.ForeignKey(Patient, on_delete=models.CASCADE, related_name='consultations')
-    professional = models.ForeignKey(User, on_delete=models.PROTECT, related_name='consultations')
+    patient_id = models.UUIDField()  # Use direct UUID field to avoid FK errors
+    professional_id = models.UUIDField()  # Use direct UUID field to avoid FK errors
     consultation_date = models.DateTimeField()
-    reason = models.CharField(max_length=200, blank=True, null=True)
+    chief_complaint = models.TextField(blank=True, null=True)  # Match real table structure
     consultation_notes = models.TextField(blank=True, null=True)
     diagnosis = models.TextField(blank=True, null=True)
     treatment_plan = models.TextField(blank=True, null=True)
@@ -216,11 +216,12 @@ class Consultation(models.Model):
     class Meta:
         db_table = 'consultations'
         indexes = [
-            models.Index(fields=['patient']),
-            models.Index(fields=['professional']),
+            models.Index(fields=['patient_id']),
+            models.Index(fields=['professional_id']),
             models.Index(fields=['consultation_date']),
             models.Index(fields=['status']),
         ]
+        managed = False  # Use existing Supabase table
 
     def __str__(self):
-        return f"Consulta {self.patient.full_name} - {self.consultation_date.strftime('%Y-%m-%d')}"
+        return f"Consulta {self.patient_id} - {self.consultation_date.strftime('%Y-%m-%d')}"

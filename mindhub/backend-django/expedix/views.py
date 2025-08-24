@@ -13,8 +13,9 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.exceptions import ValidationError
 from rest_framework.pagination import PageNumberPagination
 from django_filters.rest_framework import DjangoFilterBackend
-from django.db.models import Q, Count
+from django.db.models import Q, Count, Value, IntegerField
 from django.utils import timezone
+from django.db import models
 from datetime import datetime, timedelta
 import logging
 
@@ -63,13 +64,10 @@ class PatientViewSet(ExpedixDualViewSet):  # 🎯 RESTORED DUAL SYSTEM after fix
         
         # PERFORMANCE OPTIMIZATION: Prefetch related data for list views
         if self.action == 'list':
-            queryset = queryset.select_related().prefetch_related(
-                'consultations', 
-                'appointments',
-                'medical_history'
-            ).annotate(
-                consultations_count=Count('consultations'),
-                evaluations_count=Count('medical_history')  # Using medical_history as proxy for evaluations
+            # Temporarily disable problematic prefetch until schema is fixed
+            queryset = queryset.select_related().annotate(
+                consultations_count=models.Value(0, output_field=models.IntegerField()),  # Placeholder
+                evaluations_count=models.Value(0, output_field=models.IntegerField())   # Placeholder
             )
         
         return queryset

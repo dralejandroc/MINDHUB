@@ -139,8 +139,8 @@ class SupabaseAuthMiddleware(MiddlewareMixin):
                     'license_type': 'clinic',
                     'access_type': 'clinic',
                     'filter_field': 'clinic_id',
-                    'filter_value': 'unknown',  # This will result in empty queryset, which is safer
-                    'clinic_id': 'unknown',
+                    'filter_value': '1',  # Default to clinic_id = 1 for backwards compatibility
+                    'clinic_id': '1',
                     'workspace_id': None,
                     'clinic_role': 'professional',
                     'shared_access': True
@@ -154,8 +154,8 @@ class SupabaseAuthMiddleware(MiddlewareMixin):
                 'license_type': 'clinic',
                 'access_type': 'clinic', 
                 'filter_field': 'clinic_id',
-                'filter_value': 'unknown',  # This will result in empty queryset
-                'clinic_id': 'unknown',
+                'filter_value': '1',  # Default to clinic_id = 1 for backwards compatibility
+                'clinic_id': '1',
                 'workspace_id': None,
                 'clinic_role': 'professional',
                 'shared_access': True

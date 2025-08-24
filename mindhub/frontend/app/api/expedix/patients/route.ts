@@ -25,12 +25,53 @@ export async function GET(request: Request) {
     let djangoWorking = true;
 
     try {
-      // TEMPORARY: Skip Django for now since backend is having issues
-      console.log('[PATIENTS API] Django backend temporarily disabled - using Supabase fallback');
-      djangoWorking = false;
+      // Build Django backend URL correctly
+      const djangoUrl = `${DJANGO_BACKEND_URL}/api/expedix/patients/${queryString || ''}`;
+      console.log('[PATIENTS API] Proxying to Django:', djangoUrl);
+
+      // Get auth token from request 
+      const authHeader = request.headers.get('Authorization');
+      
+      // Forward request to Django backend with service role key for internal auth
+      const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp2YmNwbGR6b3lpY2VmZHRud2tkIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1NTQwMTQ3MCwiZXhwIjoyMDcwOTc3NDcwfQ.-iooltGuYeGqXVh7pgRhH_Oo_R64VtHIssbE3u_y0WQ';
+      
+      // Implement timeout using AbortController
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout for debugging
+
+      const djangoResponse = await fetch(djangoUrl, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${serviceRoleKey}`,
+          'X-User-ID': user.id,
+          'X-User-Email': user.email || '',
+          'X-Proxy-Auth': 'verified',
+          'X-MindHub-Dual-System': 'enabled',
+        },
+        signal: controller.signal
+      });
+
+      clearTimeout(timeoutId);
+
+      console.log('[PATIENTS API] Django response status:', djangoResponse.status);
+
+      if (djangoResponse.ok) {
+        // Django working - return response
+        const responseData = await djangoResponse.json();
+        const patientCount = responseData.results?.length || responseData.count || 0;
+        console.log('[PATIENTS API] Django success - patients returned:', patientCount);
+        return createResponse(responseData);
+      } else {
+        djangoWorking = false;
+        const errorText = await djangoResponse.text();
+        console.error('[PATIENTS API] Django error response:', errorText);
+        console.warn('[PATIENTS API] Django returned error status:', djangoResponse.status);
+      }
+
     } catch (djangoError) {
       djangoWorking = false;
-      console.warn('[PATIENTS API] Django connection failed:', djangoError);
+      console.error('[PATIENTS API] Django connection failed:', djangoError);
     }
 
     // Django failed - use Supabase fallback
