@@ -94,7 +94,7 @@ export async function GET(request: Request) {
           'Authorization': `Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY}`,
           'X-Proxy-Auth': 'verified',
           'X-User-ID': user.id,
-          'X-User-Email': user.email,
+          'X-User-Email': user.email || '',
           'Content-Type': 'application/json'
         },
         cache: 'no-store'
@@ -160,7 +160,7 @@ export async function POST(request: Request) {
           'Authorization': `Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY}`,
           'X-Proxy-Auth': 'verified',
           'X-User-ID': user.id,
-          'X-User-Email': user.email,
+          'X-User-Email': user.email || '',
           'Content-Type': 'application/json'
         },
         body: JSON.stringify(body),
@@ -228,7 +228,7 @@ export async function PUT(request: Request) {
           'Authorization': `Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY}`,
           'X-Proxy-Auth': 'verified',
           'X-User-ID': user.id,
-          'X-User-Email': user.email,
+          'X-User-Email': user.email || '',
           'Content-Type': 'application/json'
         },
         body: JSON.stringify(body),
@@ -295,7 +295,7 @@ export async function DELETE(request: Request) {
           'Authorization': `Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY}`,
           'X-Proxy-Auth': 'verified',
           'X-User-ID': user.id,
-          'X-User-Email': user.email,
+          'X-User-Email': user.email || '',
           'Content-Type': 'application/json'
         },
         cache: 'no-store'

@@ -101,7 +101,7 @@ export function useConsultationTemplates() {
 
   const createTemplate = async (templateData: Partial<ConsultationTemplate>) => {
     try {
-      await expedixApi.post('/consultation-templates/', templateData);
+      await expedixApi.createConsultationTemplate(templateData);
       await loadTemplates(); // Reload templates
     } catch (err) {
       console.error('Error creating template:', err);
@@ -111,7 +111,7 @@ export function useConsultationTemplates() {
 
   const updateTemplate = async (templateId: string, templateData: Partial<ConsultationTemplate>) => {
     try {
-      await expedixApi.put(`/consultation-templates/${templateId}/`, templateData);
+      await expedixApi.updateConsultationTemplate(templateId, templateData);
       await loadTemplates(); // Reload templates
     } catch (err) {
       console.error('Error updating template:', err);
@@ -121,7 +121,7 @@ export function useConsultationTemplates() {
 
   const deleteTemplate = async (templateId: string) => {
     try {
-      await expedixApi.delete(`/consultation-templates/${templateId}/`);
+      await expedixApi.deleteConsultationTemplate(templateId);
       await loadTemplates(); // Reload templates
     } catch (err) {
       console.error('Error deleting template:', err);

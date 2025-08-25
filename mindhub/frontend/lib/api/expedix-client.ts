@@ -379,6 +379,27 @@ class ExpedixApiClient {
   async getPatientConsultationForms(patientId: string): Promise<{ success: boolean; data: any[] }> {
     return this.makeRequest<{ success: boolean; data: any[] }>(`/expedix/forms/forms/patient/${patientId}`);
   }
+
+  // Consultation Template Management
+  async createConsultationTemplate(templateData: any): Promise<{ data: any }> {
+    return this.makeRequest<{ data: any }>('/expedix/consultation-templates/', {
+      method: 'POST',
+      body: JSON.stringify(templateData),
+    });
+  }
+
+  async updateConsultationTemplate(templateId: string, templateData: any): Promise<{ data: any }> {
+    return this.makeRequest<{ data: any }>(`/expedix/consultation-templates/${templateId}/`, {
+      method: 'PUT',
+      body: JSON.stringify(templateData),
+    });
+  }
+
+  async deleteConsultationTemplate(templateId: string): Promise<{ success: boolean }> {
+    return this.makeRequest<{ success: boolean }>(`/expedix/consultation-templates/${templateId}/`, {
+      method: 'DELETE',
+    });
+  }
 }
 
 // Export simple singleton instance - authentication handled by backend cookies
