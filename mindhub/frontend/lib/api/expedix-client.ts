@@ -122,11 +122,17 @@ class ExpedixApiClient {
         if (session?.access_token) {
           defaultHeaders['Authorization'] = `Bearer ${session.access_token}`;
           console.log('[ExpedixAPI] Using user session token for authentication');
+          
+          // Log token info for debugging
+          try {
+            const payload = JSON.parse(atob(session.access_token.split('.')[1]));
+            console.log('[ExpedixAPI] Token payload:', { sub: payload.sub, exp: payload.exp, role: payload.role });
+          } catch (e) {
+            console.warn('[ExpedixAPI] Could not parse token payload');
+          }
         } else {
-          // Fallback for development/testing ONLY
-          const serviceRoleKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp2YmNwbGR6b3lpY2VmZHRud2tkIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1NTQwMTQ3MCwiZXhwIjoyMDcwOTc3NDcwfQ.-iooltGuYeGqXVh7pgRhH_Oo_R64VtHIssbE3u_y0WQ';
-          defaultHeaders['Authorization'] = `Bearer ${serviceRoleKey}`;
-          console.warn('[ExpedixAPI] No user session - using service role key fallback');
+          console.error('[ExpedixAPI] No user session available - user not authenticated');
+          throw new Error('User not authenticated - please log in');
         }
       }
       

@@ -187,7 +187,7 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   try {
-    console.log('[PATIENTS API] Processing POST request - Django Backend Proxy');
+    console.log('[PATIENTS API] Processing POST request - Django Backend Proxy with Supabase Fallback');
     
     // Verify authentication
     const { user, error: authError } = await getAuthenticatedUser(request);
@@ -195,54 +195,98 @@ export async function POST(request: Request) {
       return createErrorResponse('Unauthorized', 'Valid authentication required', 401);
     }
 
-    console.log('[PATIENTS API] Authenticated user:', user.id, '- Proxying POST to Django backend');
+    console.log('[PATIENTS API] Authenticated user:', user.id);
 
     // Get request body
     const body = await request.json();
     console.log('[PATIENTS API] Creating patient with data:', Object.keys(body));
 
-    // Build Django backend URL - Django requires trailing slash
-    const djangoUrl = `${DJANGO_BACKEND_URL}/api/expedix/patients/`;
-    console.log('[PATIENTS API] Proxying POST to Django:', djangoUrl);
-
-    // Get auth token from request 
-    const authHeader = request.headers.get('Authorization');
+    // Skip Django completely and go directly to Supabase since Django is not working
+    console.log('[PATIENTS API] Using Supabase direct creation (Django disabled)');
     
-    // Forward request to Django backend with service role key for internal auth
-    // Since we've already validated the user in Next.js, we can use service role for Django
-    const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp2YmNwbGR6b3lpY2VmZHRud2tkIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1NTQwMTQ3MCwiZXhwIjoyMDcwOTc3NDcwfQ.-iooltGuYeGqXVh7pgRhH_Oo_R64VtHIssbE3u_y0WQ';
-    
-    const djangoResponse = await fetch(djangoUrl, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${serviceRoleKey}`, // Use service role for Django auth
-        'X-User-ID': user.id,
-        'X-User-Email': user.email || '',
-        'X-Proxy-Auth': 'verified', // Indicate this request is pre-authenticated
-      },
-      body: JSON.stringify(body)
-    });
-
-    console.log('[PATIENTS API] Django POST response status:', djangoResponse.status);
-
-    if (!djangoResponse.ok) {
-      const errorText = await djangoResponse.text();
-      console.error('[PATIENTS API] Django backend POST error:', errorText);
+    try {
+      const { createClient } = await import('@supabase/supabase-js');
+      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+      const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
       
+      const supabase = createClient(supabaseUrl, supabaseServiceKey);
+      
+      // Calculate age from birth date if not provided
+      let age = body.age;
+      if (!age && body.birth_date) {
+        const birthDate = new Date(body.birth_date);
+        const today = new Date();
+        age = Math.floor((today.getTime() - birthDate.getTime()) / (365.25 * 24 * 60 * 60 * 1000));
+      }
+      
+      // Prepare patient data for Supabase
+      const patientData = {
+        id: crypto.randomUUID(),
+        first_name: body.first_name,
+        paternal_last_name: body.paternal_last_name,
+        maternal_last_name: body.maternal_last_name || '',
+        date_of_birth: body.birth_date,
+        age: age || 0,
+        gender: body.gender,
+        email: body.email,
+        phone: body.cell_phone || body.phone,
+        curp: body.curp || '',
+        address: body.address || '',
+        city: body.city || '',
+        state: body.state || '',
+        postal_code: body.postal_code || '',
+        created_by: user.id,
+        is_active: true,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      };
+
+      // Insert patient into Supabase
+      const { data: patient, error: insertError } = await supabase
+        .from('patients')
+        .insert(patientData)
+        .select()
+        .single();
+
+      if (insertError) {
+        console.error('[PATIENTS API] Supabase insert error:', insertError);
+        throw new Error(`Failed to create patient in database: ${insertError.message}`);
+      }
+
+      // Transform back to Django-compatible format
+      const transformedPatient = {
+        id: patient.id,
+        first_name: patient.first_name,
+        paternal_last_name: patient.paternal_last_name,
+        maternal_last_name: patient.maternal_last_name,
+        birth_date: patient.date_of_birth,
+        age: patient.age,
+        gender: patient.gender,
+        email: patient.email,
+        cell_phone: patient.phone,
+        phone: patient.phone,
+        curp: patient.curp,
+        address: patient.address,
+        city: patient.city,
+        state: patient.state,
+        postal_code: patient.postal_code,
+        consultations_count: 0,
+        created_at: patient.created_at,
+        updated_at: patient.updated_at,
+        source: 'supabase_direct'
+      };
+
+      console.log('[PATIENTS API] Supabase success - patient created:', patient.id);
+      return createResponse({ data: transformedPatient }, 201);
+
+    } catch (supabaseError) {
+      console.error('[PATIENTS API] Supabase creation failed:', supabaseError);
       return createErrorResponse(
-        'Backend error',
-        `Django backend responded with ${djangoResponse.status}`,
-        djangoResponse.status
+        'Database error',
+        `Could not create patient: ${supabaseError instanceof Error ? supabaseError.message : 'Unknown error'}`,
+        500
       );
     }
-
-    // Get response data from Django
-    const responseData = await djangoResponse.json();
-    console.log('[PATIENTS API] Successfully proxied POST to Django, patient created:', responseData.id || 'unknown');
-
-    // Return Django response as-is
-    return createResponse(responseData, djangoResponse.status);
 
   } catch (error) {
     console.error('[PATIENTS API] Proxy POST error:', error);
