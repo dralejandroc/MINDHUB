@@ -29,11 +29,12 @@ class OptimizedPatientPagination(PageNumberPagination):
     max_page_size = 100  # Prevent massive page sizes
 
 
-from .models import User, Patient, MedicalHistory, Consultation
+from .models import User, Patient, MedicalHistory, Consultation, Prescription
 from .serializers import (
     UserSerializer, PatientSerializer, PatientCreateSerializer,
     PatientSummarySerializer, MedicalHistorySerializer, 
     ConsultationSerializer, ConsultationCreateSerializer,
+    PrescriptionSerializer, PrescriptionCreateSerializer,
     DashboardStatsSerializer
 )
 from .authentication import SupabaseProxyAuthentication
@@ -238,6 +239,82 @@ class MedicalHistoryViewSet(ExpedixDualViewSet):
         history = self.queryset.filter(patient_id=patient_id)
         serializer = self.get_serializer(history, many=True)
         return Response(serializer.data)
+
+
+class PrescriptionViewSet(ExpedixDualViewSet):
+    """
+    🎯 DUAL SYSTEM Prescription management ViewSet
+    Handles medical prescriptions with filtering by license type through patient relationship
+    """
+    queryset = Prescription.objects.select_related().all()
+    serializer_class = PrescriptionSerializer
+    authentication_classes = [SupabaseProxyAuthentication]
+    permission_classes = [IsAuthenticated]
+    filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
+    search_fields = ['patient_id', 'medications', 'instructions']
+    filterset_fields = ['patient_id', 'professional_id', 'status']
+    ordering_fields = ['prescription_date', 'created_at', 'valid_until']
+    ordering = ['-prescription_date']
+
+    def get_serializer_class(self):
+        if self.action == 'create':
+            return PrescriptionCreateSerializer
+        return PrescriptionSerializer
+
+    def perform_create(self, serializer):
+        # Set professional_id from authenticated user context
+        serializer.save(professional_id=self.request.user.id)
+
+    @action(detail=False, methods=['get'])
+    def by_patient(self, request):
+        """Get prescriptions by patient ID"""
+        patient_id = request.query_params.get('patient_id')
+        if not patient_id:
+            return Response({'error': 'patient_id parameter required'}, status=400)
+            
+        prescriptions = self.queryset.filter(patient_id=patient_id)
+        serializer = self.get_serializer(prescriptions, many=True)
+        return Response(serializer.data)
+
+    @action(detail=False, methods=['get'])
+    def by_professional(self, request):
+        """Get prescriptions by professional ID"""
+        professional_id = request.query_params.get('professional_id', self.request.user.id)
+        prescriptions = self.queryset.filter(professional_id=professional_id)
+        serializer = self.get_serializer(prescriptions, many=True)
+        return Response(serializer.data)
+
+    @action(detail=True, methods=['patch'])
+    def update_status(self, request, pk=None):
+        """Update prescription status"""
+        prescription = self.get_object()
+        new_status = request.data.get('status')
+        
+        if new_status not in dict(Prescription.STATUS_CHOICES):
+            return Response({'error': 'Invalid status'}, status=400)
+            
+        prescription.status = new_status
+        prescription.save()
+        
+        serializer = self.get_serializer(prescription)
+        return Response(serializer.data)
+
+    @action(detail=True, methods=['post'])
+    def duplicate(self, request, pk=None):
+        """Duplicate a prescription for reuse"""
+        original = self.get_object()
+        
+        # Create a copy
+        prescription_copy = Prescription.objects.create(
+            patient_id=original.patient_id,
+            professional_id=self.request.user.id,
+            medications=original.medications,
+            instructions=original.instructions,
+            status='draft'
+        )
+        
+        serializer = self.get_serializer(prescription_copy)
+        return Response(serializer.data, status=201)
 
 
 class UserViewSet(DualSystemReadOnlyViewSet):

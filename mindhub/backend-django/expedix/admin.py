@@ -74,15 +74,15 @@ class MedicalHistoryAdmin(admin.ModelAdmin):
 
 @admin.register(Consultation)
 class ConsultationAdmin(admin.ModelAdmin):
-    list_display = ['patient', 'professional', 'consultation_date', 'status', 'reason', 'duration_minutes']
-    list_filter = ['status', 'consultation_date', 'professional', 'created_at']
-    search_fields = ['patient__first_name', 'patient__paternal_last_name', 'reason', 'diagnosis']
+    list_display = ['patient_id', 'professional_id', 'consultation_date', 'status', 'chief_complaint', 'duration_minutes']
+    list_filter = ['status', 'consultation_date', 'created_at']
+    search_fields = ['patient_id', 'professional_id', 'chief_complaint', 'diagnosis']
     readonly_fields = ['id', 'created_at', 'updated_at']
     ordering = ['-consultation_date']
     
     fieldsets = (
         ('Información de la Consulta', {
-            'fields': ('patient', 'professional', 'consultation_date', 'reason', 'status', 'duration_minutes')
+            'fields': ('patient_id', 'professional_id', 'consultation_date', 'chief_complaint', 'status', 'duration_minutes')
         }),
         ('Contenido de la Consulta', {
             'fields': ('consultation_notes', 'diagnosis', 'treatment_plan')

@@ -225,3 +225,38 @@ class Consultation(models.Model):
 
     def __str__(self):
         return f"Consulta {self.patient_id} - {self.consultation_date.strftime('%Y-%m-%d')}"
+
+
+class Prescription(models.Model):
+    """Prescription model for medical prescriptions"""
+    STATUS_CHOICES = [
+        ('draft', 'Borrador'),
+        ('issued', 'Emitida'),
+        ('dispensed', 'Dispensada'),
+        ('cancelled', 'Cancelada'),
+    ]
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    patient_id = models.UUIDField()  # Reference to patient
+    professional_id = models.UUIDField()  # Reference to professional
+    consultation_id = models.UUIDField(blank=True, null=True)  # Reference to consultation
+    prescription_date = models.DateTimeField(auto_now_add=True)
+    medications = models.JSONField(default=list)  # List of medications with details
+    instructions = models.TextField(blank=True, null=True)
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='draft')
+    valid_until = models.DateField(blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = 'prescriptions'
+        indexes = [
+            models.Index(fields=['patient_id']),
+            models.Index(fields=['professional_id']),
+            models.Index(fields=['prescription_date']),
+            models.Index(fields=['status']),
+        ]
+        managed = False  # Use existing Supabase table
+
+    def __str__(self):
+        return f"Prescripción {self.patient_id} - {self.prescription_date.strftime('%Y-%m-%d')}"

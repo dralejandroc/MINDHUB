@@ -21,42 +21,34 @@ class ScaleTagAdmin(admin.ModelAdmin):
 @admin.register(PsychometricScale)
 class PsychometricScaleAdmin(admin.ModelAdmin):
     list_display = ('abbreviation', 'name', 'category', 'total_items', 'estimated_duration_minutes', 'is_active')
-    list_filter = ('category', 'population', 'application_type', 'is_active', 'is_validated', 'tags')
+    list_filter = ('category', 'is_active', 'is_public', 'is_featured')
     search_fields = ('name', 'abbreviation', 'description')
-    filter_horizontal = ('tags',)
-    readonly_fields = ('id', 'usage_count', 'created_at', 'updated_at')
+    readonly_fields = ('id', 'created_at', 'updated_at')
     
     fieldsets = (
         ('Información Básica', {
-            'fields': ('name', 'abbreviation', 'category', 'description', 'indication')
+            'fields': ('id', 'name', 'abbreviation', 'category', 'subcategory', 'description')
         }),
         ('Autoría y Publicación', {
-            'fields': ('authors', 'year', 'primary_reference', 'additional_references')
+            'fields': ('authors', 'year', 'version', 'language')
         }),
         ('Características', {
-            'fields': ('population', 'application_type', 'total_items', 'estimated_duration_minutes')
+            'fields': ('administration_mode', 'total_items', 'estimated_duration_minutes')
         }),
-        ('Archivo JSON', {
-            'fields': ('json_file_path',)
+        ('Población y Rango', {
+            'fields': ('target_population', 'score_range_min', 'score_range_max')
         }),
-        ('Propiedades Psicométricas', {
-            'fields': ('reliability_alpha', 'sensitivity', 'specificity', 'test_retest_reliability')
+        ('Datos Técnicos', {
+            'fields': ('psychometric_properties', 'clinical_validation')
         }),
         ('Tags y Categorización', {
             'fields': ('tags',)
         }),
         ('Configuración', {
-            'fields': ('is_active', 'is_validated', 'requires_training')
+            'fields': ('is_active', 'is_public', 'is_featured', 'template_id')
         }),
-        ('Legal', {
-            'fields': ('copyright_info', 'license_required')
-        }),
-        ('Estadísticas', {
-            'fields': ('usage_count',),
-            'classes': ('collapse',)
-        }),
-        ('Metadatos', {
-            'fields': ('id', 'created_at', 'updated_at'),
+        ('Fechas', {
+            'fields': ('last_validated', 'created_at', 'updated_at'),
             'classes': ('collapse',)
         })
     )

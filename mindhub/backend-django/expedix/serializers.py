@@ -4,7 +4,7 @@ Replaces Node.js API responses with Django serializers
 """
 
 from rest_framework import serializers
-from .models import User, Patient, MedicalHistory, Consultation
+from .models import User, Patient, MedicalHistory, Consultation, Prescription
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -197,6 +197,60 @@ class PatientSummarySerializer(serializers.ModelSerializer):
             'status': presc.status,
             'created_at': presc.created_at,
         } for presc in prescriptions[:5]]
+
+
+class PrescriptionSerializer(serializers.ModelSerializer):
+    """Prescription serializer for API responses"""
+    patient_name = serializers.CharField(source='patient.full_name', read_only=True)
+    professional_name = serializers.SerializerMethodField()
+    
+    class Meta:
+        model = Prescription
+        fields = [
+            'id', 'patient_id', 'professional_id', 'consultation_id',
+            'prescription_date', 'medications', 'instructions', 'status',
+            'valid_until', 'created_at', 'updated_at',
+            'patient_name', 'professional_name'
+        ]
+        read_only_fields = ['id', 'prescription_date', 'created_at', 'updated_at']
+    
+    def get_professional_name(self, obj):
+        # This would need to be updated when we have proper user relations
+        return f"Professional {obj.professional_id}"
+
+
+class PrescriptionCreateSerializer(serializers.ModelSerializer):
+    """Prescription creation serializer"""
+    
+    class Meta:
+        model = Prescription
+        fields = [
+            'patient_id', 'consultation_id', 'medications', 
+            'instructions', 'status', 'valid_until'
+        ]
+    
+    def validate_medications(self, value):
+        """Validate medications format"""
+        if not isinstance(value, list):
+            raise serializers.ValidationError("Medications must be a list")
+        
+        for medication in value:
+            if not isinstance(medication, dict):
+                raise serializers.ValidationError("Each medication must be an object")
+            
+            required_fields = ['name', 'dosage', 'frequency']
+            for field in required_fields:
+                if field not in medication:
+                    raise serializers.ValidationError(f"Medication missing required field: {field}")
+        
+        return value
+    
+    def validate_status(self, value):
+        """Validate prescription status"""
+        valid_statuses = dict(Prescription.STATUS_CHOICES).keys()
+        if value not in valid_statuses:
+            raise serializers.ValidationError(f"Status must be one of: {list(valid_statuses)}")
+        return value
 
 
 class DashboardStatsSerializer(serializers.Serializer):

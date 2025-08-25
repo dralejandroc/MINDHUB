@@ -90,12 +90,12 @@ class ScaleTag(models.Model):
 class PsychometricScale(models.Model):
     """
     Main model for psychometric scales
-    Stores metadata and references to JSON files
+    This model needs to work with Supabase clinimetrix_registry table structure
     """
     
     class ApplicationType(models.TextChoices):
-        AUTO = 'auto', _('Autoaplicada')
-        HETERO = 'hetero', _('Heteroaplicada')
+        AUTO = 'self', _('Autoaplicada')
+        HETERO = 'interviewer', _('Heteroaplicada')
         BOTH = 'both', _('Ambas')
     
     class PopulationType(models.TextChoices):
@@ -105,70 +105,85 @@ class PsychometricScale(models.Model):
         ELDERLY = 'elderly', _('Adultos mayores')
         ALL = 'all', _('Todas las edades')
     
+    # Primary key - use text field to match Supabase
+    id = models.TextField(primary_key=True)
+    
     # Basic Information
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    template_id = models.TextField(null=True, blank=True)
     name = models.CharField(max_length=200)
     abbreviation = models.CharField(max_length=20, unique=True)
     
     # Classification
-    category = models.ForeignKey(
-        ScaleCategory,
-        on_delete=models.SET_NULL,
-        null=True,
-        blank=True,
-        related_name='scales'
-    )
+    category = models.CharField(max_length=100, null=True, blank=True)
+    subcategory = models.CharField(max_length=100, null=True, blank=True)
+    category_id = models.BigIntegerField(null=True, blank=True)
+    
+    # Description and metadata  
+    description = models.TextField(blank=True)
+    version = models.CharField(max_length=20, default='1.0')
+    language = models.CharField(max_length=10, default='es')
     
     # Authors and Publication
-    authors = models.JSONField(default=list)  # List of author names
-    year = models.PositiveIntegerField()
+    authors = models.JSONField(default=list)
+    year = models.PositiveIntegerField(null=True, blank=True)
     
-    # Description and Usage
-    description = models.TextField()
-    indication = models.TextField(help_text="Indicaciones clínicas de uso")
+    # Administration and usage
+    administration_mode = models.CharField(
+        max_length=20,
+        choices=ApplicationType.choices,
+        default=ApplicationType.AUTO
+    )
+    estimated_duration_minutes = models.PositiveIntegerField(default=10)
+    
+    # Population and structure
+    target_population = models.JSONField(default=dict)
+    total_items = models.PositiveIntegerField(default=0)
+    score_range_min = models.IntegerField(default=0)
+    score_range_max = models.IntegerField(default=100)
+    
+    # Psychometric Properties
+    psychometric_properties = models.JSONField(default=dict)
+    clinical_validation = models.JSONField(default=dict)
+    
+    # Status and visibility
+    is_public = models.BooleanField(default=True)
+    is_featured = models.BooleanField(default=False)
+    is_active = models.BooleanField(default=True)
+    
+    # Tags and validation
+    tags = models.JSONField(default=list)
+    last_validated = models.DateTimeField(null=True, blank=True)
+    
+    # File References (for backwards compatibility with Django views)
+    json_file_path = models.CharField(max_length=255, blank=True)
+    
+    # Legacy fields for compatibility
+    indication = models.TextField(blank=True, help_text="Indicaciones clínicas")
     population = models.CharField(
         max_length=20,
         choices=PopulationType.choices,
         default=PopulationType.ADULT
     )
     
-    application_type = models.CharField(
-        max_length=10,
-        choices=ApplicationType.choices,
-        default=ApplicationType.AUTO
-    )
-    
-    # Timing and Structure
-    estimated_duration_minutes = models.PositiveIntegerField(default=10)
-    total_items = models.PositiveIntegerField()
-    
-    # File References
-    json_file_path = models.CharField(max_length=255)  # Path to JSON file
-    
-    # Psychometric Properties
+    # Additional psychometric fields
     reliability_alpha = models.FloatField(
         null=True, blank=True,
-        validators=[MinValueValidator(0), MaxValueValidator(1)],
-        help_text="Cronbach's Alpha"
+        validators=[MinValueValidator(0), MaxValueValidator(1)]
     )
-    
     sensitivity = models.FloatField(
         null=True, blank=True,
         validators=[MinValueValidator(0), MaxValueValidator(1)]
     )
-    
     specificity = models.FloatField(
         null=True, blank=True,
         validators=[MinValueValidator(0), MaxValueValidator(1)]
     )
-    
     test_retest_reliability = models.FloatField(
         null=True, blank=True,
         validators=[MinValueValidator(0), MaxValueValidator(1)]
     )
     
     # Usage and Status
-    is_active = models.BooleanField(default=True)
     is_validated = models.BooleanField(default=False)
     requires_training = models.CharField(
         max_length=20,
@@ -188,14 +203,6 @@ class PsychometricScale(models.Model):
     # Scientific References
     primary_reference = models.TextField(blank=True)
     additional_references = models.JSONField(default=list)
-    
-    # Tags
-    tags = models.ManyToManyField(
-        ScaleTag,
-        blank=True,
-        related_name='scales',
-        help_text="Tags para categorizar y filtrar la escala"
-    )
     
     # Usage Statistics
     usage_count = models.PositiveIntegerField(default=0)
