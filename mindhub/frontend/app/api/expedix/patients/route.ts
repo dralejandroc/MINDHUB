@@ -251,3 +251,77 @@ export async function POST(request: Request) {
     );
   }
 }
+
+export async function PUT(request: Request) {
+  try {
+    console.log('[PATIENTS API] Processing PUT request - Django Backend Proxy');
+    
+    // Verify authentication
+    const { user, error: authError } = await getAuthenticatedUser(request);
+    if (authError || !user) {
+      return createErrorResponse('Unauthorized', 'Valid authentication required', 401);
+    }
+
+    console.log('[PATIENTS API] Authenticated user:', user.id, '- Proxying PUT to Django backend');
+
+    // Get request body
+    const body = await request.json();
+    console.log('[PATIENTS API] Updating patient with data:', Object.keys(body));
+
+    // Extract patient ID from URL path
+    const url = new URL(request.url);
+    const pathParts = url.pathname.split('/');
+    const patientId = pathParts[pathParts.length - 1]; // Last part of the path
+
+    // Build Django backend URL
+    const djangoUrl = `${DJANGO_BACKEND_URL}/api/expedix/patients/${patientId}/`;
+    console.log('[PATIENTS API] Proxying PUT to Django:', djangoUrl);
+
+    // Get auth token from request 
+    const authHeader = request.headers.get('Authorization');
+    
+    // Forward request to Django backend with service role key for internal auth
+    const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp2YmNwbGR6b3lpY2VmZHRud2tkIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1NTQwMTQ3MCwiZXhwIjoyMDcwOTc3NDcwfQ.-iooltGuYeGqXVh7pgRhH_Oo_R64VtHIssbE3u_y0WQ';
+    
+    const djangoResponse = await fetch(djangoUrl, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${serviceRoleKey}`, // Use service role for Django auth
+        'X-User-ID': user.id,
+        'X-User-Email': user.email || '',
+        'X-Proxy-Auth': 'verified', // Indicate this request is pre-authenticated
+        'X-MindHub-Dual-System': 'enabled',
+      },
+      body: JSON.stringify(body)
+    });
+
+    console.log('[PATIENTS API] Django PUT response status:', djangoResponse.status);
+
+    if (!djangoResponse.ok) {
+      const errorText = await djangoResponse.text();
+      console.error('[PATIENTS API] Django backend PUT error:', errorText);
+      
+      return createErrorResponse(
+        'Failed to update patient',
+        `HTTP error! status: ${djangoResponse.status}`,
+        500
+      );
+    }
+
+    // Get response data from Django
+    const responseData = await djangoResponse.json();
+    console.log('[PATIENTS API] Successfully proxied PUT to Django, patient updated:', responseData.id || 'unknown');
+
+    // Return Django response as-is
+    return createResponse(responseData, djangoResponse.status);
+
+  } catch (error) {
+    console.error('[PATIENTS API] Proxy PUT error:', error);
+    return createErrorResponse(
+      'Failed to update patient',
+      error instanceof Error ? error.message : 'Unknown error',
+      500
+    );
+  }
+}

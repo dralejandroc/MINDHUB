@@ -15,17 +15,21 @@ export async function GET(request: Request) {
       return createErrorResponse('Unauthorized', 'Valid authentication required', 401);
     }
 
-    // Extract query parameters
+    // Extract query parameters and path
     const url = new URL(request.url);
     const queryParams = url.searchParams.toString();
     
+    // Extract the endpoint path from the Next.js API route
+    // This proxy handles ALL /api/expedix/* requests, so we need to forward the full path
+    const expedixPath = url.pathname.replace('/api/expedix/django', ''); // Remove the proxy prefix
+    
     // Forward request to Django with dual system headers
-    const djangoUrl = `${DJANGO_API_BASE}/api/expedix/${queryParams ? '?' + queryParams : ''}`;
+    const djangoUrl = `${DJANGO_API_BASE}/api/expedix${expedixPath}${queryParams ? '?' + queryParams : ''}`;
     
     const response = await fetch(djangoUrl, {
       method: 'GET',
       headers: {
-        'Authorization': request.headers.get('Authorization') || '',
+        'Authorization': `Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY}`,
         'Content-Type': 'application/json',
         // 🎯 DUAL SYSTEM: Headers for automatic license type detection
         'X-Proxy-Auth': 'verified',
@@ -67,13 +71,17 @@ export async function POST(request: Request) {
     // Get request body
     const body = await request.json();
     
+    // Extract the endpoint path from the Next.js API route
+    const url = new URL(request.url);
+    const expedixPath = url.pathname.replace('/api/expedix/django', ''); // Remove the proxy prefix
+    
     // Forward request to Django with dual system headers
-    const djangoUrl = `${DJANGO_API_BASE}/api/expedix/`;
+    const djangoUrl = `${DJANGO_API_BASE}/api/expedix${expedixPath}`;
     
     const response = await fetch(djangoUrl, {
       method: 'POST',
       headers: {
-        'Authorization': request.headers.get('Authorization') || '',
+        'Authorization': `Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY}`,
         'Content-Type': 'application/json',
         // 🎯 DUAL SYSTEM: Headers for automatic license type detection
         'X-Proxy-Auth': 'verified',
@@ -118,13 +126,16 @@ export async function PUT(request: Request) {
     const url = new URL(request.url);
     const queryParams = url.searchParams.toString();
     
+    // Extract the endpoint path from the Next.js API route
+    const expedixPath = url.pathname.replace('/api/expedix/django', ''); // Remove the proxy prefix
+    
     // Forward request to Django with dual system headers
-    const djangoUrl = `${DJANGO_API_BASE}/api/expedix/${queryParams ? '?' + queryParams : ''}`;
+    const djangoUrl = `${DJANGO_API_BASE}/api/expedix${expedixPath}${queryParams ? '?' + queryParams : ''}`;
     
     const response = await fetch(djangoUrl, {
       method: 'PUT',
       headers: {
-        'Authorization': request.headers.get('Authorization') || '',
+        'Authorization': `Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY}`,
         'Content-Type': 'application/json',
         // 🎯 DUAL SYSTEM: Headers for automatic license type detection
         'X-Proxy-Auth': 'verified',
@@ -167,13 +178,16 @@ export async function DELETE(request: Request) {
     const url = new URL(request.url);
     const queryParams = url.searchParams.toString();
     
+    // Extract the endpoint path from the Next.js API route
+    const expedixPath = url.pathname.replace('/api/expedix/django', ''); // Remove the proxy prefix
+    
     // Forward request to Django with dual system headers
-    const djangoUrl = `${DJANGO_API_BASE}/api/expedix/${queryParams ? '?' + queryParams : ''}`;
+    const djangoUrl = `${DJANGO_API_BASE}/api/expedix${expedixPath}${queryParams ? '?' + queryParams : ''}`;
     
     const response = await fetch(djangoUrl, {
       method: 'DELETE',
       headers: {
-        'Authorization': request.headers.get('Authorization') || '',
+        'Authorization': `Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY}`,
         'Content-Type': 'application/json',
         // 🎯 DUAL SYSTEM: Headers for automatic license type detection
         'X-Proxy-Auth': 'verified',

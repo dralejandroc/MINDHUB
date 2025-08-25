@@ -29,13 +29,15 @@ class OptimizedPatientPagination(PageNumberPagination):
     max_page_size = 100  # Prevent massive page sizes
 
 
-from .models import User, Patient, MedicalHistory, Consultation, Prescription
+from .models import User, Patient, MedicalHistory, Consultation, Prescription, ExpedixConfiguration, ConsultationTemplate
 from .serializers import (
     UserSerializer, PatientSerializer, PatientCreateSerializer,
     PatientSummarySerializer, MedicalHistorySerializer, 
     ConsultationSerializer, ConsultationCreateSerializer,
     PrescriptionSerializer, PrescriptionCreateSerializer,
-    DashboardStatsSerializer
+    DashboardStatsSerializer, ExpedixConfigurationSerializer,
+    ExpedixConfigurationCreateSerializer, ConsultationTemplateSerializer,
+    ConsultationTemplateCreateSerializer
 )
 from .authentication import SupabaseProxyAuthentication
 from middleware.base_viewsets import ExpedixDualViewSet, DualSystemReadOnlyViewSet
@@ -78,7 +80,62 @@ class PatientViewSet(ExpedixDualViewSet):  # 🎯 RESTORED DUAL SYSTEM after fix
             return PatientCreateSerializer
         elif self.action == 'list':
             return PatientSummarySerializer
+        elif self.action in ['update', 'partial_update']:
+            # Use PatientCreateSerializer for updates too, as it has the email validation fix
+            return PatientCreateSerializer
         return PatientSerializer
+    
+    def get_serializer_context(self):
+        """Add configuration context to serializer"""
+        context = super().get_serializer_context()
+        
+        # Get or create configuration for current user/clinic
+        config = self._get_or_create_configuration()
+        context['expedix_config'] = config
+        
+        return context
+    
+    def _get_or_create_configuration(self):
+        """Get or create Expedix configuration for current user context"""
+        try:
+            # Get user context from request (set by middleware)
+            user_context = getattr(self.request, 'user_context', {})
+            
+            if user_context.get('license_type') == 'clinic':
+                clinic_id = user_context.get('clinic_id')
+                if clinic_id:
+                    config, created = ExpedixConfiguration.objects.get_or_create(
+                        clinic_id=clinic_id,
+                        defaults={
+                            'user_id': getattr(self.request, 'supabase_user_id', None) or 'unknown',
+                            'configuration_type': 'clinic',
+                            'required_patient_fields': [],  # Will use defaults
+                            'consultation_templates_enabled': True,
+                        }
+                    )
+                    return config
+            else:
+                workspace_id = user_context.get('workspace_id')
+                if workspace_id:
+                    config, created = ExpedixConfiguration.objects.get_or_create(
+                        workspace_id=workspace_id,
+                        defaults={
+                            'user_id': getattr(self.request, 'supabase_user_id', None) or 'unknown',
+                            'configuration_type': 'individual',
+                            'required_patient_fields': [],  # Will use defaults
+                            'consultation_templates_enabled': True,
+                        }
+                    )
+                    return config
+        except Exception as e:
+            logger.error(f"Error getting configuration: {e}")
+        
+        # Fallback: create a default configuration object (not saved)
+        return ExpedixConfiguration(
+            configuration_type='clinic',
+            required_patient_fields=[],
+            consultation_templates_enabled=True,
+        )
 
     # ✅ DUAL SYSTEM: get_queryset() and perform_create() are now handled by ExpedixDualViewSet
     # Automatic filtering: clinic_id or workspace_id based on license type
@@ -773,3 +830,599 @@ class DebugAuthViewSet(viewsets.ViewSet):
                 'success': False,
                 'error': f'Debug query failed: {str(e)}'
             }, status=500)
+
+
+class ExpedixConfigurationViewSet(ExpedixDualViewSet):
+    """
+    Expedix Configuration ViewSet - DUAL SYSTEM
+    Manages flexible field configurations per clinic/workspace
+    """
+    queryset = ExpedixConfiguration.objects.filter(is_active=True)
+    serializer_class = ExpedixConfigurationSerializer
+    authentication_classes = [SupabaseProxyAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def get_serializer_class(self):
+        if self.action in ['create', 'update', 'partial_update']:
+            return ExpedixConfigurationCreateSerializer
+        return ExpedixConfigurationSerializer
+
+    def get_queryset(self):
+        """Filter configurations by clinic/workspace based on user context"""
+        queryset = super().get_queryset()
+        
+        # Get user context from middleware
+        user_context = getattr(self.request, 'user_context', {})
+        
+        if user_context.get('license_type') == 'clinic':
+            clinic_id = user_context.get('clinic_id')
+            if clinic_id:
+                return queryset.filter(clinic_id=clinic_id)
+        else:
+            workspace_id = user_context.get('workspace_id')
+            if workspace_id:
+                return queryset.filter(workspace_id=workspace_id)
+        
+        return queryset.none()  # No access if no context
+
+    @action(detail=False, methods=['get'])
+    def current(self, request):
+        """Get current configuration for authenticated user"""
+        try:
+            # Get or create configuration
+            user_context = getattr(request, 'user_context', {})
+            
+            if user_context.get('license_type') == 'clinic':
+                clinic_id = user_context.get('clinic_id')
+                if clinic_id:
+                    config, created = ExpedixConfiguration.objects.get_or_create(
+                        clinic_id=clinic_id,
+                        defaults={
+                            'user_id': getattr(request, 'supabase_user_id', 'unknown'),
+                            'configuration_type': 'clinic',
+                            'required_patient_fields': [],
+                            'consultation_templates_enabled': True,
+                        }
+                    )
+                else:
+                    return Response({'error': 'No clinic context found'}, status=400)
+            else:
+                workspace_id = user_context.get('workspace_id')
+                if workspace_id:
+                    config, created = ExpedixConfiguration.objects.get_or_create(
+                        workspace_id=workspace_id,
+                        defaults={
+                            'user_id': getattr(request, 'supabase_user_id', 'unknown'),
+                            'configuration_type': 'individual',
+                            'required_patient_fields': [],
+                            'consultation_templates_enabled': True,
+                        }
+                    )
+                else:
+                    return Response({'error': 'No workspace context found'}, status=400)
+
+            serializer = ExpedixConfigurationSerializer(config)
+            return Response({
+                'success': True,
+                'data': serializer.data,
+                'created': created
+            })
+
+        except Exception as e:
+            logger.error(f"Error getting current configuration: {e}")
+            return Response({
+                'success': False,
+                'error': str(e)
+            }, status=500)
+
+    @action(detail=False, methods=['get'])
+    def available_fields(self, request):
+        """Get available fields for configuration"""
+        return Response({
+            'success': True,
+            'data': {
+                'default_required_fields': ExpedixConfiguration.get_default_patient_fields(),
+                'available_optional_fields': ExpedixConfiguration.get_available_optional_fields(),
+                'supported_custom_field_types': [
+                    'text', 'number', 'date', 'select', 'textarea', 
+                    'checkbox', 'email', 'phone'
+                ]
+            }
+        })
+
+
+class ConsultationTemplateViewSet(ExpedixDualViewSet):
+    """
+    Consultation Template ViewSet - DUAL SYSTEM
+    Manages consultation templates with FormX integration
+    """
+    queryset = ConsultationTemplate.objects.filter(is_active=True)
+    serializer_class = ConsultationTemplateSerializer
+    authentication_classes = [SupabaseProxyAuthentication]
+    permission_classes = [IsAuthenticated]
+    filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
+    search_fields = ['name', 'description']
+    filterset_fields = ['template_type', 'is_default']
+    ordering_fields = ['created_at', 'name', 'template_type']
+    ordering = ['-created_at']
+
+    def get_serializer_class(self):
+        if self.action in ['create', 'update', 'partial_update']:
+            return ConsultationTemplateCreateSerializer
+        return ConsultationTemplateSerializer
+
+    def get_queryset(self):
+        """Filter templates by clinic/workspace based on user context"""
+        queryset = super().get_queryset()
+        
+        # Get user context from middleware
+        user_context = getattr(self.request, 'user_context', {})
+        
+        if user_context.get('license_type') == 'clinic':
+            clinic_id = user_context.get('clinic_id')
+            if clinic_id:
+                return queryset.filter(clinic_id=clinic_id)
+        else:
+            workspace_id = user_context.get('workspace_id')
+            if workspace_id:
+                return queryset.filter(workspace_id=workspace_id)
+        
+        return queryset.none()  # No access if no context
+
+    @action(detail=False, methods=['get'])
+    def default_templates(self, request):
+        """Get default consultation templates"""
+        templates = self.get_queryset().filter(is_default=True)
+        serializer = self.get_serializer(templates, many=True)
+        
+        return Response({
+            'success': True,
+            'data': serializer.data,
+            'count': len(serializer.data)
+        })
+
+    @action(detail=True, methods=['post'])
+    def set_as_default(self, request, pk=None):
+        """Set a template as default for the clinic/workspace"""
+        try:
+            template = self.get_object()
+            
+            # Remove default from all other templates in same context
+            user_context = getattr(request, 'user_context', {})
+            
+            if user_context.get('license_type') == 'clinic':
+                clinic_id = user_context.get('clinic_id')
+                if clinic_id:
+                    ConsultationTemplate.objects.filter(
+                        clinic_id=clinic_id, 
+                        is_default=True
+                    ).update(is_default=False)
+            else:
+                workspace_id = user_context.get('workspace_id')
+                if workspace_id:
+                    ConsultationTemplate.objects.filter(
+                        workspace_id=workspace_id, 
+                        is_default=True
+                    ).update(is_default=False)
+
+            # Set this template as default
+            template.is_default = True
+            template.save()
+
+            return Response({
+                'success': True,
+                'message': f'Template "{template.name}" set as default'
+            })
+
+        except Exception as e:
+            logger.error(f"Error setting template as default: {e}")
+            return Response({
+                'success': False,
+                'error': str(e)
+            }, status=500)
+
+    @action(detail=False, methods=['post'])
+    def create_from_formx(self, request):
+        """Create consultation template from FormX template"""
+        try:
+            formx_template_id = request.data.get('formx_template_id')
+            name = request.data.get('name')
+            description = request.data.get('description', '')
+            template_type = request.data.get('template_type', 'custom')
+
+            if not formx_template_id or not name:
+                return Response({
+                    'success': False,
+                    'error': 'formx_template_id and name are required'
+                }, status=400)
+
+            # Validate FormX template exists
+            try:
+                from formx.models import FormTemplate
+                formx_template = FormTemplate.objects.get(id=formx_template_id)
+                if not formx_template.is_active:
+                    return Response({
+                        'success': False,
+                        'error': 'Selected FormX template is not active'
+                    }, status=400)
+            except FormTemplate.DoesNotExist:
+                return Response({
+                    'success': False,
+                    'error': 'FormX template not found'
+                }, status=404)
+            
+            # Create template
+            user_context = getattr(request, 'user_context', {})
+            template_data = {
+                'name': name,
+                'description': description,
+                'template_type': template_type,
+                'formx_template_id': formx_template_id,
+                'created_by': getattr(request, 'supabase_user_id', 'unknown')
+            }
+
+            if user_context.get('license_type') == 'clinic':
+                template_data['clinic_id'] = user_context.get('clinic_id')
+            else:
+                template_data['workspace_id'] = user_context.get('workspace_id')
+
+            serializer = ConsultationTemplateCreateSerializer(data=template_data)
+            if serializer.is_valid():
+                template = serializer.save()
+                response_serializer = ConsultationTemplateSerializer(template)
+                
+                return Response({
+                    'success': True,
+                    'data': response_serializer.data,
+                    'message': 'Template created from FormX successfully'
+                }, status=201)
+            else:
+                return Response({
+                    'success': False,
+                    'errors': serializer.errors
+                }, status=400)
+
+        except Exception as e:
+            logger.error(f"Error creating template from FormX: {e}")
+            return Response({
+                'success': False,
+                'error': str(e)
+            }, status=500)
+
+    @action(detail=True, methods=['post'])
+    def sync_with_formx(self, request, pk=None):
+        """Sync consultation template with FormX template"""
+        try:
+            template = self.get_object()
+            
+            if not template.has_formx_integration():
+                return Response({
+                    'success': False,
+                    'error': 'This template does not have FormX integration'
+                }, status=400)
+
+            # Get the FormX template and sync fields
+            formx_template = template.get_formx_template()
+            if not formx_template:
+                return Response({
+                    'success': False,
+                    'error': 'Associated FormX template not found'
+                }, status=404)
+
+            # Update template metadata from FormX
+            template.description = formx_template.description or template.description
+            template.save()
+
+            serializer = ConsultationTemplateSerializer(template)
+            
+            return Response({
+                'success': True,
+                'data': serializer.data,
+                'message': 'Template synced with FormX successfully',
+                'formx_fields_count': formx_template.total_fields
+            })
+
+        except Exception as e:
+            logger.error(f"Error syncing with FormX: {e}")
+            return Response({
+                'success': False,
+                'error': str(e)
+            }, status=500)
+
+    @action(detail=True, methods=['get'])
+    def formx_fields(self, request, pk=None):
+        """Get FormX fields for this template"""
+        try:
+            template = self.get_object()
+            
+            if not template.has_formx_integration():
+                return Response({
+                    'success': False,
+                    'error': 'This template does not have FormX integration'
+                }, status=400)
+
+            formx_template = template.get_formx_template()
+            if not formx_template:
+                return Response({
+                    'success': False,
+                    'error': 'Associated FormX template not found'
+                }, status=404)
+
+            # Get all fields from FormX template
+            try:
+                fields = formx_template.fields.all().order_by('order')
+                fields_data = [
+                    {
+                        'id': field.id,
+                        'field_name': field.field_name,
+                        'label': field.label,
+                        'field_type': field.field_type,
+                        'help_text': field.help_text,
+                        'placeholder': field.placeholder,
+                        'required': field.required,
+                        'order': field.order,
+                        'choices': field.choices,
+                        'expedix_mapping': field.expedix_field,
+                        'validation_rules': field.validation_rules,
+                        'css_classes': field.css_classes,
+                    }
+                    for field in fields
+                ]
+                
+                return Response({
+                    'success': True,
+                    'formx_template': {
+                        'id': formx_template.id,
+                        'name': formx_template.name,
+                        'form_type': formx_template.form_type,
+                        'total_fields': formx_template.total_fields
+                    },
+                    'fields': fields_data,
+                    'fields_count': len(fields_data)
+                })
+            except Exception as field_error:
+                return Response({
+                    'success': False,
+                    'error': f'Error retrieving FormX fields: {str(field_error)}'
+                }, status=500)
+
+        except Exception as e:
+            logger.error(f"Error getting FormX fields: {e}")
+            return Response({
+                'success': False,
+                'error': str(e)
+            }, status=500)
+
+    @action(detail=False, methods=['get'])
+    def available_formx_templates(self, request):
+        """Get available FormX templates for creating consultation templates"""
+        try:
+            from formx.models import FormTemplate
+            
+            # Get FormX templates that can be used for consultations
+            formx_templates = FormTemplate.objects.filter(
+                is_active=True,
+                form_type__in=['clinical', 'intake', 'follow_up']
+            ).order_by('-created_at')
+
+            templates_data = [
+                {
+                    'id': template.id,
+                    'name': template.name,
+                    'form_type': template.form_type,
+                    'description': template.description,
+                    'integration_type': template.integration_type,
+                    'total_fields': template.total_fields,
+                    'total_submissions': template.total_submissions,
+                    'created_at': template.created_at,
+                }
+                for template in formx_templates
+            ]
+
+            return Response({
+                'success': True,
+                'available_templates': templates_data,
+                'count': len(templates_data)
+            })
+
+        except Exception as e:
+            logger.error(f"Error getting available FormX templates: {e}")
+            return Response({
+                'success': False,
+                'error': str(e),
+                'available_templates': [],
+                'count': 0
+            }, status=500)
+
+
+class PrescriptionViewSet(ExpedixDualViewSet):
+    """
+    Prescription ViewSet - DUAL SYSTEM
+    Manages medical prescriptions with PDF generation
+    """
+    queryset = Prescription.objects.filter(status__in=['active', 'completed'])
+    serializer_class = PrescriptionSerializer
+    authentication_classes = [SupabaseProxyAuthentication]
+    permission_classes = [IsAuthenticated]
+    filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
+    search_fields = ['prescription_number', 'diagnosis', 'medications']
+    filterset_fields = ['status', 'prescription_type', 'patient_id', 'created_by']
+    ordering_fields = ['date_prescribed', 'created_at', 'prescription_number']
+    ordering = ['-date_prescribed']
+
+    def get_serializer_class(self):
+        if self.action in ['create', 'update', 'partial_update']:
+            return PrescriptionCreateSerializer
+        return PrescriptionSerializer
+
+    def get_queryset(self):
+        """Filter prescriptions by clinic/workspace based on user context"""
+        queryset = super().get_queryset()
+        
+        # Get user context from middleware
+        user_context = getattr(self.request, 'user_context', {})
+        
+        if user_context.get('license_type') == 'clinic':
+            clinic_id = user_context.get('clinic_id')
+            if clinic_id:
+                return queryset.filter(clinic_id=clinic_id)
+        else:
+            workspace_id = user_context.get('workspace_id')
+            if workspace_id:
+                return queryset.filter(workspace_id=workspace_id)
+        
+        return queryset.none()  # No access if no context
+
+    @action(detail=False, methods=['get'])
+    def by_patient(self, request):
+        """Get prescriptions by patient ID"""
+        patient_id = request.query_params.get('patient_id')
+        if not patient_id:
+            return Response({
+                'success': False,
+                'error': 'patient_id parameter is required'
+            }, status=400)
+
+        user_context = getattr(request, 'user_context', {})
+        clinic_id = user_context.get('clinic_id')
+        workspace_id = user_context.get('workspace_id')
+
+        prescriptions = Prescription.get_active_by_patient(
+            patient_id=patient_id,
+            clinic_id=clinic_id,
+            workspace_id=workspace_id
+        )
+
+        serializer = self.get_serializer(prescriptions, many=True)
+        return Response({
+            'success': True,
+            'data': serializer.data,
+            'count': len(serializer.data)
+        })
+
+    @action(detail=False, methods=['get'])
+    def by_professional(self, request):
+        """Get prescriptions by professional ID"""
+        professional_id = request.query_params.get('professional_id')
+        if not professional_id:
+            return Response({
+                'success': False,
+                'error': 'professional_id parameter is required'
+            }, status=400)
+
+        user_context = getattr(request, 'user_context', {})
+        clinic_id = user_context.get('clinic_id')
+        workspace_id = user_context.get('workspace_id')
+
+        prescriptions = Prescription.get_by_professional(
+            professional_id=professional_id,
+            clinic_id=clinic_id,
+            workspace_id=workspace_id
+        )
+
+        serializer = self.get_serializer(prescriptions, many=True)
+        return Response({
+            'success': True,
+            'data': serializer.data,
+            'count': len(serializer.data)
+        })
+
+    @action(detail=True, methods=['post'])
+    def generate_pdf(self, request, pk=None):
+        """Generate PDF for prescription"""
+        try:
+            prescription = self.get_object()
+            
+            # Generate PDF
+            pdf_data = prescription.generate_pdf()
+            
+            if pdf_data:
+                serializer = self.get_serializer(prescription)
+                return Response({
+                    'success': True,
+                    'data': serializer.data,
+                    'pdf_info': pdf_data,
+                    'message': 'PDF generated successfully'
+                })
+            else:
+                return Response({
+                    'success': False,
+                    'error': 'Failed to generate PDF'
+                }, status=500)
+
+        except Exception as e:
+            logger.error(f"Error generating PDF for prescription {pk}: {e}")
+            return Response({
+                'success': False,
+                'error': str(e)
+            }, status=500)
+
+    @action(detail=True, methods=['post'])
+    def regenerate_verification_code(self, request, pk=None):
+        """Regenerate verification code for prescription"""
+        try:
+            prescription = self.get_object()
+            
+            # Generate new verification code
+            new_code = prescription.generate_verification_code()
+            prescription.save(update_fields=['verification_code'])
+            
+            return Response({
+                'success': True,
+                'verification_code': new_code,
+                'message': 'Verification code regenerated successfully'
+            })
+
+        except Exception as e:
+            logger.error(f"Error regenerating verification code for prescription {pk}: {e}")
+            return Response({
+                'success': False,
+                'error': str(e)
+            }, status=500)
+
+    @action(detail=True, methods=['patch'])
+    def update_status(self, request, pk=None):
+        """Update prescription status"""
+        try:
+            prescription = self.get_object()
+            new_status = request.data.get('status')
+            
+            if not new_status:
+                return Response({
+                    'success': False,
+                    'error': 'status field is required'
+                }, status=400)
+
+            valid_statuses = [choice[0] for choice in Prescription.PRESCRIPTION_STATUS_CHOICES]
+            if new_status not in valid_statuses:
+                return Response({
+                    'success': False,
+                    'error': f'Invalid status. Valid options: {valid_statuses}'
+                }, status=400)
+
+            prescription.status = new_status
+            prescription.save(update_fields=['status', 'updated_at'])
+            
+            serializer = self.get_serializer(prescription)
+            return Response({
+                'success': True,
+                'data': serializer.data,
+                'message': f'Prescription status updated to {new_status}'
+            })
+
+        except Exception as e:
+            logger.error(f"Error updating prescription status {pk}: {e}")
+            return Response({
+                'success': False,
+                'error': str(e)
+            }, status=500)
+
+    def perform_create(self, serializer):
+        """Add user context when creating prescription"""
+        user_context = getattr(self.request, 'user_context', {})
+        
+        # Auto-set the clinic_id or workspace_id based on user context
+        if user_context.get('license_type') == 'clinic':
+            serializer.save(clinic_id=user_context.get('clinic_id'))
+        else:
+            serializer.save(workspace_id=user_context.get('workspace_id'))

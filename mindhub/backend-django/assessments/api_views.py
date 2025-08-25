@@ -530,4 +530,71 @@ class CreateRemoteLinkView(View):
             return JsonResponse({
                 'success': False,
                 'error': str(e)
-            }, status=500)# AÑADIENDO ENDPOINTS PARA COMPATIBILIDAD CON REACT
+            }, status=500)
+
+
+@method_decorator(csrf_exempt, name='dispatch')
+class PatientAssessmentsView(View):
+    """
+    Get assessments for a specific patient
+    Compatible with Expedix frontend
+    """
+    
+    def get(self, request, patient_id):
+        """Get all assessments for a patient"""
+        try:
+            # Get patient (verify it exists and user has access)
+            try:
+                from expedix.models import Patient
+                patient = Patient.objects.get(id=patient_id)
+            except Patient.DoesNotExist:
+                return JsonResponse({
+                    'success': False,
+                    'error': 'Patient not found'
+                }, status=404)
+            
+            # Get assessments for this patient
+            assessments = Assessment.objects.filter(
+                patient_id=patient_id
+            ).select_related('scale').order_by('-created_at')
+            
+            # Serialize assessments data
+            assessments_data = []
+            for assessment in assessments:
+                # Get scoring result if exists
+                scoring_result = None
+                try:
+                    scoring_result = assessment.scoring_results.latest('created_at')
+                except ScoringResult.DoesNotExist:
+                    pass
+                
+                assessments_data.append({
+                    'id': str(assessment.id),
+                    'scale_name': assessment.scale.name if assessment.scale else 'Unknown Scale',
+                    'scale_abbreviation': assessment.scale.abbreviation if assessment.scale else 'N/A',
+                    'status': assessment.status,
+                    'score': scoring_result.score if scoring_result else None,
+                    'interpretation': scoring_result.interpretation if scoring_result else None,
+                    'created_at': assessment.created_at.isoformat(),
+                    'completed_at': assessment.completed_at.isoformat() if assessment.completed_at else None,
+                    'current_item': assessment.current_item,
+                    'total_items': assessment.total_items,
+                    'patient_id': str(assessment.patient_id)
+                })
+            
+            return JsonResponse({
+                'success': True,
+                'results': assessments_data,
+                'assessments': assessments_data,  # Alternative key for compatibility
+                'count': len(assessments_data),
+                'patient_id': str(patient_id)
+            })
+            
+        except Exception as e:
+            return JsonResponse({
+                'success': False,
+                'error': f'Error retrieving patient assessments: {str(e)}'
+            }, status=500)
+
+
+# AÑADIENDO ENDPOINTS PARA COMPATIBILIDAD CON REACT

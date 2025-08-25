@@ -17,6 +17,9 @@ router.register(r'users', views.UserViewSet)
 router.register(r'schedule-config', views.ScheduleConfigViewSet, basename='schedule-config')
 router.register(r'debug-auth', views.DebugAuthViewSet, basename='debug-auth')
 router.register(r'dual-system-test', views.DualSystemTestViewSet, basename='dual-system-test')
+# Configuration endpoints
+router.register(r'configuration', views.ExpedixConfigurationViewSet, basename='expedix-config')
+router.register(r'consultation-templates', views.ConsultationTemplateViewSet, basename='consultation-templates')
 
 # URL patterns that match Node.js API routes
 urlpatterns = [

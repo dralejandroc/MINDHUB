@@ -1,4 +1,4 @@
-// Expedix Prescriptions Django Proxy - Routes prescriptions requests to Django backend
+// Expedix Consultation Templates Django Proxy
 import { getAuthenticatedUser, createResponse, createErrorResponse } from '@/lib/supabase/admin'
 
 export const dynamic = 'force-dynamic';
@@ -7,22 +7,22 @@ const DJANGO_API_BASE = process.env.NEXT_PUBLIC_DJANGO_API_URL || 'https://mindh
 
 export async function GET(request: Request) {
   try {
-    console.log('[EXPEDIX PRESCRIPTIONS PROXY] Processing GET request');
+    console.log('[CONSULTATION TEMPLATES PROXY] Processing GET request');
     
     // Verify authentication
     const { user, error: authError } = await getAuthenticatedUser(request);
     if (authError || !user) {
-      console.error('[EXPEDIX PRESCRIPTIONS PROXY] Auth error:', authError);
+      console.error('[CONSULTATION TEMPLATES PROXY] Auth error:', authError);
       return createErrorResponse('Unauthorized', 'Valid authentication required', 401);
     }
-
-    // Extract query parameters
+    
+    // Parse URL for query parameters
     const url = new URL(request.url);
-    const queryParams = url.searchParams.toString();
+    const queryString = url.search;
     
     // Forward request to Django
-    const djangoUrl = `${DJANGO_API_BASE}/api/expedix/prescriptions${queryParams ? '?' + queryParams : ''}`;
-    console.log('[EXPEDIX PRESCRIPTIONS PROXY] Forwarding to:', djangoUrl);
+    const djangoUrl = `${DJANGO_API_BASE}/api/expedix/consultation-templates/${queryString}`;
+    console.log('[CONSULTATION TEMPLATES PROXY] Forwarding to:', djangoUrl);
     
     const response = await fetch(djangoUrl, {
       method: 'GET',
@@ -37,32 +37,28 @@ export async function GET(request: Request) {
     });
 
     if (!response.ok) {
-      console.error('[EXPEDIX PRESCRIPTIONS PROXY] Django error:', response.status, response.statusText);
-      
-      // Return empty array for 404 to prevent crashes
-      if (response.status === 404) {
-        return createResponse({ data: [] });
-      }
-      
+      console.error('[CONSULTATION TEMPLATES PROXY] Django error:', response.status, response.statusText);
       throw new Error(`Django API error: ${response.status} ${response.statusText}`);
     }
 
     const data = await response.json();
-    console.log('[EXPEDIX PRESCRIPTIONS PROXY] Successfully proxied request');
+    console.log('[CONSULTATION TEMPLATES PROXY] Successfully retrieved templates');
 
     return createResponse(data);
 
   } catch (error) {
-    console.error('[EXPEDIX PRESCRIPTIONS PROXY] Error:', error);
-    
-    // Return empty data instead of error to prevent frontend crashes
-    return createResponse({ data: [] });
+    console.error('[CONSULTATION TEMPLATES PROXY] Error:', error);
+    return createErrorResponse(
+      'Failed to retrieve consultation templates',
+      error instanceof Error ? error.message : 'Unknown error',
+      500
+    );
   }
 }
 
 export async function POST(request: Request) {
   try {
-    console.log('[EXPEDIX PRESCRIPTIONS PROXY] Processing POST request');
+    console.log('[CONSULTATION TEMPLATES PROXY] Processing POST request');
     
     // Verify authentication
     const { user, error: authError } = await getAuthenticatedUser(request);
@@ -74,7 +70,7 @@ export async function POST(request: Request) {
     const body = await request.json();
     
     // Forward request to Django
-    const djangoUrl = `${DJANGO_API_BASE}/api/expedix/prescriptions/`;
+    const djangoUrl = `${DJANGO_API_BASE}/api/expedix/consultation-templates/`;
     
     const response = await fetch(djangoUrl, {
       method: 'POST',
@@ -94,14 +90,14 @@ export async function POST(request: Request) {
     }
 
     const data = await response.json();
-    console.log('[EXPEDIX PRESCRIPTIONS PROXY] Successfully created prescription');
+    console.log('[CONSULTATION TEMPLATES PROXY] Successfully created template');
 
-    return createResponse(data, 201);
+    return createResponse(data);
 
   } catch (error) {
-    console.error('[EXPEDIX PRESCRIPTIONS PROXY] Error:', error);
+    console.error('[CONSULTATION TEMPLATES PROXY] Error:', error);
     return createErrorResponse(
-      'Failed to create prescription',
+      'Failed to create consultation template',
       error instanceof Error ? error.message : 'Unknown error',
       500
     );

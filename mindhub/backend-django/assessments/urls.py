@@ -27,6 +27,7 @@ urlpatterns = [
     
     # API endpoints
     path('api/create-from-react/', api_views.create_and_start_assessment_from_react, name='api_create_from_react'),
+    path('api/patient/<uuid:patient_id>/assessments/', api_views.PatientAssessmentsView.as_view(), name='api_patient_assessments'),
     path('api/<uuid:assessment_id>/progress/', api_views.AssessmentProgressView.as_view(), name='api_progress'),
     path('api/<uuid:assessment_id>/response/', api_views.AssessmentResponseView.as_view(), name='api_response'),
     path('api/<uuid:assessment_id>/complete/', api_views.AssessmentCompleteView.as_view(), name='api_complete'),
