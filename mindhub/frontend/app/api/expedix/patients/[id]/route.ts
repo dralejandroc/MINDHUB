@@ -186,7 +186,7 @@ export async function PUT(request: Request, { params }: { params: { id: string }
     }
     
     // Forward request to Django backend with trailing slash
-    const djangoUrl = `${BACKEND_URL}/api/expedix/patients/${id}/`;
+    const djangoUrl = `${DJANGO_BACKEND_URL}/api/expedix/patients/${id}/`;
     
     const response = await fetch(djangoUrl, {
       method: 'PUT',
@@ -257,7 +257,7 @@ export async function DELETE(request: Request, { params }: { params: { id: strin
     }
     
     // Forward request to Django backend with trailing slash
-    const djangoUrl = `${BACKEND_URL}/api/expedix/patients/${id}/`;
+    const djangoUrl = `${DJANGO_BACKEND_URL}/api/expedix/patients/${id}/`;
     
     const response = await fetch(djangoUrl, {
       method: 'DELETE',
