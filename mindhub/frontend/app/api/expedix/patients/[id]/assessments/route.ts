@@ -1,9 +1,11 @@
 import { getAuthenticatedUser, createResponse, createErrorResponse } from '@/lib/supabase/admin';
+import { API_CONFIG } from '@/lib/config/api-endpoints';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
-const DJANGO_BACKEND_URL = process.env.BACKEND_URL || process.env.NEXT_PUBLIC_DJANGO_API_URL || 'https://mindhub-django-backend.vercel.app';
+// Use centralized backend URL configuration
+const DJANGO_BACKEND_URL = API_CONFIG.BACKEND_URL;
 
 export async function GET(request: Request, { params }: { params: { id: string } }) {
   try {

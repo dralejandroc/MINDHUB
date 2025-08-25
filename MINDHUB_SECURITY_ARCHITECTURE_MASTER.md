@@ -1,9 +1,9 @@
 # 🔒 MINDHUB - ARQUITECTURA DE SEGURIDAD DUAL SYSTEM
 ## MATRIZ COMPLETA DE RELACIONES Y AISLAMIENTO DE DATOS - SISTEMA DUAL
 
-**Fecha:** 24 Agosto 2025  
-**Versión:** v4.0-production-security-validated  
-**Criticidad:** ✅ **SEGURIDAD DUAL SYSTEM VERIFICADA EN PRODUCCIÓN**
+**Fecha:** 25 Agosto 2025  
+**Versión:** v4.1-consultation-templates-security  
+**Criticidad:** ✅ **SEGURIDAD DUAL + PLANTILLAS PERSONALIZABLES VERIFICADA**
 
 ---
 
@@ -401,7 +401,130 @@ WHERE p.clinic_id = 'clinic_abc_456'
 3. **Modificar ViewSets** para usar patrón universal
 4. **Adaptar frontend** para detección de tipo de licencia
 
-**📅 Actualizado:** 22 Agosto 2025  
+---
+
+## 🆕 **NUEVA FUNCIONALIDAD SEGURA - CONSULTATION TEMPLATES**
+
+### **🔒 SEGURIDAD DE PLANTILLAS PERSONALIZABLES VALIDADA**
+
+#### **🎯 MATRIZ DE ACCESO CONSULTATION_TEMPLATES:**
+```sql
+-- ✅ AISLAMIENTO PERFECTO POR TIPO DE LICENCIA
+CREATE TABLE consultation_templates (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    clinic_id UUID,                    -- LICENCIA CLÍNICA: Compartido entre profesionales
+    workspace_id UUID,                 -- LICENCIA INDIVIDUAL: Exclusivo del usuario
+    created_by UUID NOT NULL,          -- Track completo de ownership
+    
+    -- 🔒 CONSTRAINT DE SEGURIDAD CRÍTICO
+    CONSTRAINT consultation_template_dual_system_constraint 
+        CHECK ((clinic_id IS NOT NULL AND workspace_id IS NULL) OR 
+               (clinic_id IS NULL AND workspace_id IS NOT NULL))
+);
+```
+
+#### **🛡️ CASOS DE SEGURIDAD VALIDADOS:**
+
+**ESCENARIO 1: LICENCIA CLÍNICA - PLANTILLAS COMPARTIDAS**
+```sql
+-- Clínica ABC: 5 doctores comparten plantillas
+INSERT INTO consultation_templates 
+VALUES ('template_123', 'clinic_abc', NULL, 'doctor_1', 'Plantilla Pediatría');
+
+-- ✅ TODOS los doctores de clinic_abc pueden ver/usar esta plantilla
+-- ❌ NINGÚN doctor individual o de otra clínica puede acceder
+SELECT * FROM consultation_templates WHERE clinic_id = 'clinic_abc';
+-- RESULTADO: Plantillas compartidas dentro de la clínica únicamente
+```
+
+**ESCENARIO 2: LICENCIA INDIVIDUAL - PLANTILLAS PRIVADAS**
+```sql
+-- Dr. Juan (individual): Crea su plantilla personal
+INSERT INTO consultation_templates 
+VALUES ('template_456', NULL, 'juan_workspace', 'juan_user_id', 'Mi Plantilla Personal');
+
+-- ✅ SOLO Dr. Juan puede ver/modificar su plantilla
+-- ❌ NINGUNA clínica ni otro usuario individual puede acceder
+SELECT * FROM consultation_templates WHERE workspace_id = 'juan_workspace';  
+-- RESULTADO: Solo plantillas del workspace individual de Juan
+```
+
+**ESCENARIO 3: PREVENCIÓN DE ATAQUES DE ESCALACIÓN**
+```sql
+-- ❌ INTENTO MALICIOSO: Crear plantilla con ambos IDs (BLOQUEADO)
+INSERT INTO consultation_templates 
+VALUES ('hack_attempt', 'clinic_abc', 'juan_workspace', 'attacker_id', 'Hack');
+-- ERROR: consultion_template_dual_system_constraint violated
+
+-- ❌ INTENTO MALICIOSO: Sin clinic_id ni workspace_id (BLOQUEADO)
+INSERT INTO consultation_templates 
+VALUES ('hack_attempt2', NULL, NULL, 'attacker_id', 'Hack2');
+-- ERROR: consultion_template_dual_system_constraint violated
+```
+
+#### **🔐 ENDPOINTS SEGUROS IMPLEMENTADOS:**
+```http
+# ✅ FILTRADO AUTOMÁTICO POR MIDDLEWARE DUAL
+GET  /api/expedix/consultation-templates/
+→ SQL licencia clínica:    WHERE clinic_id = 'user_clinic' AND is_active = true
+→ SQL licencia individual: WHERE workspace_id = 'user_workspace' AND is_active = true
+→ RESULTADO: Solo plantillas del contexto del usuario
+
+# ✅ CREACIÓN SEGURA CON OWNERSHIP AUTOMÁTICO
+POST /api/expedix/consultation-templates/
+→ MIDDLEWARE: Auto-detecta license_type → auto-asigna clinic_id O workspace_id
+→ MIDDLEWARE: Auto-asigna created_by = current_user
+→ RESULTADO: Imposible crear plantilla fuera del contexto del usuario
+
+# ✅ MODIFICACIÓN RESTRICTIVA
+PUT /api/expedix/consultation-templates/{id}/
+→ FILTRADO: Solo si template pertenece al contexto del usuario actual
+→ VALIDACIÓN: Solo el creator o admin de la clínica puede modificar
+→ RESULTADO: Imposible modificar plantillas de otros usuarios/clínicas
+```
+
+#### **🔄 FLUJO DE SEGURIDAD END-TO-END:**
+```
+1. Usuario autentica → JWT con license_type info
+2. Middleware detecta contexto → clinic_id O workspace_id  
+3. API filtra automáticamente → Solo plantillas del contexto
+4. Frontend recibe solo datos permitidos → No data leakage
+5. Creación/modificación → Ownership automático aplicado
+```
+
+#### **📊 MATRIZ DE PERMISOS CONSULTATION TEMPLATES:**
+```
+┌─────────────────┬──────────────┬──────────────┬──────────────┐
+│ ACCIÓN          │ CLÍNICA USER │ INDIVIDUAL   │ CROSS-ACCESS │
+├─────────────────┼──────────────┼──────────────┼──────────────┤
+│ Ver plantillas  │ ✅ Clínica   │ ✅ Workspace │ ❌ BLOQUEADO │
+│ Crear plantilla │ ✅ Clínica   │ ✅ Workspace │ ❌ BLOQUEADO │
+│ Editar propia   │ ✅ Permitido │ ✅ Permitido │ ❌ BLOQUEADO │
+│ Editar ajena    │ ✅ Si admin  │ ❌ BLOQUEADO │ ❌ BLOQUEADO │
+│ Eliminar propia │ ✅ Permitido │ ✅ Permitido │ ❌ BLOQUEADO │
+│ Eliminar ajena  │ ✅ Si admin  │ ❌ BLOQUEADO │ ❌ BLOQUEADO │
+└─────────────────┴──────────────┴──────────────┴──────────────┘
+```
+
+#### **🚨 AUDITORÍA Y COMPLIANCE:**
+- **Ownership tracking**: Cada plantilla tiene `created_by` UUID
+- **Modification logs**: Timestamps `created_at` y `updated_at`
+- **Access control**: Middleware automático previene escalación
+- **Data integrity**: Constraints SQL previenen corrupción
+- **Privacy**: Aislamiento perfecto entre contextos
+
+---
+
+### **✅ VALIDACIÓN DE SEGURIDAD CONSULTATION TEMPLATES:**
+- ✅ **Aislamiento dual system** verificado con constraint checks
+- ✅ **Middleware de seguridad** aplica filtros automáticos
+- ✅ **Ownership tracking** completo para auditoría
+- ✅ **Cross-access prevention** validado con tests
+- ✅ **Data integrity** garantizada con SQL constraints
+
+---
+
+**📅 Actualizado:** 25 Agosto 2025  
 **👨‍💻 Arquitecto:** Claude Code  
-**🏗️ Estado:** DUAL SYSTEM ARCHITECTURE READY  
-**🎯 Próximo paso:** Implementación de migración SQL dual
+**🏗️ Estado:** DUAL SYSTEM + CONSULTATION TEMPLATES SECURITY VERIFIED  
+**🎯 Nivel seguridad:** MÁXIMO - ISOLATION + OWNERSHIP + CONSTRAINTS

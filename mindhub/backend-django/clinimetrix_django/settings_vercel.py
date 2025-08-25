@@ -3,12 +3,126 @@ Django settings for Vercel deployment
 Production-optimized settings for FormX + ClinimetrixPro
 """
 
-from .settings import *
 import os
 from pathlib import Path
 
+# Build paths inside the project like this: BASE_DIR / 'subdir'.
+BASE_DIR = Path(__file__).resolve().parent.parent
+
+# SECURITY WARNING: keep the secret key used in production secret!
+SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-vercel-deployment-key-2025')
+
 # Override base settings for Vercel
 DEBUG = False
+
+# Application definition
+INSTALLED_APPS = [
+    'django.contrib.admin',
+    'django.contrib.auth',
+    'django.contrib.contenttypes',
+    'django.contrib.sessions',
+    'django.contrib.messages',
+    'django.contrib.staticfiles',
+    'django.contrib.sites',
+    'rest_framework',
+    'corsheaders',
+    'django_extensions',
+    'django_filters',
+    'drf_spectacular',
+    'psychometric_scales',
+    'assessments',
+    'accounts',
+    'formx',
+    'expedix',
+    'agenda',
+    'resources',
+]
+
+MIDDLEWARE = [
+    'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',
+    'corsheaders.middleware.CorsMiddleware',
+    'django.contrib.sessions.middleware.SessionMiddleware',
+    'django.middleware.common.CommonMiddleware',
+    'django.middleware.csrf.CsrfViewMiddleware',
+    'django.contrib.auth.middleware.AuthenticationMiddleware',
+    'django.contrib.messages.middleware.MessageMiddleware',
+    'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'middleware.supabase_auth.SupabaseAuthMiddleware',
+]
+
+ROOT_URLCONF = 'clinimetrix_django.urls'
+
+TEMPLATES = [
+    {
+        'BACKEND': 'django.template.backends.django.DjangoTemplates',
+        'DIRS': [BASE_DIR / 'templates'],
+        'APP_DIRS': True,
+        'OPTIONS': {
+            'context_processors': [
+                'django.template.context_processors.debug',
+                'django.template.context_processors.request',
+                'django.contrib.auth.context_processors.auth',
+                'django.contrib.messages.context_processors.messages',
+            ],
+        },
+    },
+]
+
+WSGI_APPLICATION = 'clinimetrix_django.wsgi.application'
+
+# Database
+# Password validation
+AUTH_PASSWORD_VALIDATORS = [
+    {
+        'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',
+    },
+    {
+        'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator',
+    },
+    {
+        'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator',
+    },
+    {
+        'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',
+    },
+]
+
+# Internationalization
+LANGUAGE_CODE = 'es-mx'
+TIME_ZONE = 'America/Mexico_City'
+USE_I18N = True
+USE_L10N = True
+USE_TZ = True
+
+# Site ID for django.contrib.sites
+SITE_ID = 1
+
+# Default primary key field type
+DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+# Django REST Framework
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': [
+        'rest_framework.authentication.SessionAuthentication',
+        'rest_framework.authentication.TokenAuthentication',
+    ],
+    'DEFAULT_PERMISSION_CLASSES': [
+        'rest_framework.permissions.AllowAny',
+    ],
+    'DEFAULT_RENDERER_CLASSES': [
+        'rest_framework.renderers.JSONRenderer',
+    ],
+    'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
+}
+
+# Spectacular settings
+SPECTACULAR_SETTINGS = {
+    'TITLE': 'MindHub Django API',
+    'DESCRIPTION': 'Backend API for MindHub healthcare platform',
+    'VERSION': '1.0.0',
+    'SERVE_INCLUDE_SCHEMA': False,
+}
 
 # Vercel deployment settings
 ALLOWED_HOSTS = [
@@ -147,19 +261,12 @@ LOGGING = {
     },
 }
 
-# Django REST Framework settings
-REST_FRAMEWORK.update({
-    'DEFAULT_AUTHENTICATION_CLASSES': [
-        'rest_framework.authentication.SessionAuthentication',
-        'rest_framework.authentication.TokenAuthentication',
-    ],
-    'DEFAULT_PERMISSION_CLASSES': [
-        'rest_framework.permissions.IsAuthenticated',
-    ],
-    'DEFAULT_RENDERER_CLASSES': [
-        'rest_framework.renderers.JSONRenderer',
-    ],
-})
+# Custom settings for ClinimetrixPro
+CLINIMETRIX_SETTINGS = {
+    'ENABLE_ANALYTICS': True,
+    'CACHE_SCALE_DATA': True,
+    'MAX_CONCURRENT_ASSESSMENTS': 100,
+}
 
 # Cache configuration for production
 CACHES = {
@@ -185,11 +292,5 @@ FORMX_SETTINGS = {
     'DEFAULT_FORM_EXPIRY_DAYS': 30,
 }
 
-# ClinimetrixPro settings for production
-CLINIMETRIX_SETTINGS.update({
-    'ENABLE_ANALYTICS': True,
-    'CACHE_SCALE_DATA': True,
-    'MAX_CONCURRENT_ASSESSMENTS': 100,
-})
 
 print("🚀 Django configured for Vercel deployment")

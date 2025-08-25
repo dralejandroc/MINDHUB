@@ -2,6 +2,7 @@
 API views for assessments
 """
 import json
+import logging
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_http_methods
@@ -15,6 +16,8 @@ from psychometric_scales.models import PsychometricScale
 from datetime import datetime, timedelta
 import secrets
 from django.conf import settings
+
+logger = logging.getLogger(__name__)
 
 
 @method_decorator([login_required, csrf_exempt], name='dispatch')
@@ -543,6 +546,15 @@ class PatientAssessmentsView(View):
     def get(self, request, patient_id):
         """Get all assessments for a patient"""
         try:
+            # Verify authentication from Supabase middleware
+            if not hasattr(request, 'supabase_user_id') or not request.supabase_user_id:
+                return JsonResponse({
+                    'success': False,
+                    'error': 'Authentication required'
+                }, status=401)
+            
+            logger.info(f'[PatientAssessmentsView] Getting assessments for patient {patient_id} by user {request.supabase_user_id}')
+            
             # Get patient (verify it exists and user has access)
             try:
                 from expedix.models import Patient

@@ -3,8 +3,10 @@ import { getAuthenticatedUser, createResponse, createErrorResponse } from '@/lib
 
 export const dynamic = 'force-dynamic';
 
-// Django backend URL
-const DJANGO_BACKEND_URL = process.env.BACKEND_URL || process.env.NEXT_PUBLIC_DJANGO_API_URL || 'https://mindhub-django-backend.vercel.app';
+import { API_CONFIG } from '@/lib/config/api-endpoints';
+
+// Django backend URL - Using centralized configuration
+const DJANGO_BACKEND_URL = API_CONFIG.BACKEND_URL;
 
 export async function GET(request: Request) {
   try {

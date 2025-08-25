@@ -1,9 +1,9 @@
 # 🏥 MINDHUB - ARQUITECTURA API DUAL SYSTEM DOCUMENTATION
 ## FUENTE DE VERDAD ÚNICA - ARQUITECTURA DJANGO DUAL (CLÍNICAS + INDIVIDUALES)
 
-**Fecha:** 24 Agosto 2025  
-**Versión:** v8.0-production-validated  
-**Estado:** ✅ ARQUITECTURA DUAL SYSTEM FUNCIONANDO EN PRODUCCIÓN
+**Fecha:** 25 Agosto 2025  
+**Versión:** v8.1-consultation-templates-system  
+**Estado:** ✅ ARQUITECTURA DUAL + PLANTILLAS PERSONALIZABLES FUNCIONANDO
 
 ---
 
@@ -393,6 +393,88 @@ curl -X POST "https://mindhub-django-backend.vercel.app/api/expedix/patients/" \
   -H "Authorization: Bearer <jwt_token>" \
   -d '{"first_name":"Juan","paternal_last_name":"Pérez",...}'
 → Status: 201, auto-asigna clinic_id O workspace_id según tipo de usuario
+```
+
+#### **🆕 Plantillas de Consulta Django - SISTEMA COMPLETAMENTE PERSONALIZABLE**
+```http
+✅ GET    /api/expedix/consultation-templates/           # Lista plantillas (filtrado automático)
+✅ POST   /api/expedix/consultation-templates/           # Crear plantilla personalizada
+✅ PUT    /api/expedix/consultation-templates/{id}/      # Actualizar plantilla
+✅ DELETE /api/expedix/consultation-templates/{id}/      # Eliminar plantilla
+
+# DUAL SYSTEM + PERSONALIZATION:
+# LICENCIA CLÍNICA: Ve plantillas de la clínica + puede crear nuevas
+curl -X GET "https://mindhub-django-backend.vercel.app/api/expedix/consultation-templates/" \
+  -H "Authorization: Bearer <clinic_user_jwt_token>"
+→ SQL: SELECT * FROM consultation_templates WHERE clinic_id = 'clinic_123' AND is_active = true
+
+# LICENCIA INDIVIDUAL: Ve sus plantillas personales + puede crear nuevas
+curl -X GET "https://mindhub-django-backend.vercel.app/api/expedix/consultation-templates/" \
+  -H "Authorization: Bearer <individual_user_jwt_token>"  
+→ SQL: SELECT * FROM consultation_templates WHERE workspace_id = 'workspace_456' AND is_active = true
+
+# Crear plantilla personalizada - tipo automático según usuario
+curl -X POST "https://mindhub-django-backend.vercel.app/api/expedix/consultation-templates/" \
+  -H "Authorization: Bearer <jwt_token>" \
+  -d '{
+    "name": "Mi Plantilla Personalizada",
+    "description": "Plantilla específica para pediatría",
+    "template_type": "custom",
+    "fields_config": ["vitalSigns", "currentCondition", "diagnosis", "medications"],
+    "is_default": false
+  }'
+→ Status: 201, auto-asigna clinic_id O workspace_id + created_by del usuario actual
+```
+
+**🔄 ESQUEMA DE DATOS CONSULTATION_TEMPLATES:**
+```sql
+-- Tabla que soporta tanto plantillas por defecto como personalizadas
+CREATE TABLE consultation_templates (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    clinic_id UUID,                     -- Para licencias clínicas (compartido)
+    workspace_id UUID,                  -- Para licencias individuales (exclusivo)
+    created_by UUID NOT NULL,           -- Usuario que creó la plantilla
+    name VARCHAR(200) NOT NULL,         -- Nombre de la plantilla
+    description TEXT,                   -- Descripción
+    template_type VARCHAR(20),          -- 'general','initial','custom',etc.
+    formx_template_id UUID,             -- Integración con FormX (futuro)
+    fields_config JSONB DEFAULT '[]',   -- ["vitalSigns","diagnosis",...] 
+    is_default BOOLEAN DEFAULT FALSE,   -- Plantilla por defecto
+    is_active BOOLEAN DEFAULT TRUE,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW(),
+    
+    -- CONSTRAINT DUAL SYSTEM: O clínica O workspace, no ambos
+    CONSTRAINT consultation_template_dual_system_constraint 
+        CHECK ((clinic_id IS NOT NULL AND workspace_id IS NULL) OR 
+               (clinic_id IS NULL AND workspace_id IS NOT NULL))
+);
+
+-- ESCALABILIDAD: La tabla puede manejar:
+-- ✅ Miles de clínicas con plantillas compartidas  
+-- ✅ Miles de usuarios individuales con plantillas privadas
+-- ✅ Plantillas por defecto del sistema
+-- ✅ Plantillas personalizadas por usuario
+-- ✅ Integración futura con FormX para formularios avanzados
+```
+
+**🎯 GESTIÓN FRONTEND DE PLANTILLAS:**
+```typescript
+// Página dedicada: /hubs/expedix/templates
+// Componente: ConsultationTemplateManager.tsx
+// Hook: useConsultationTemplates.ts
+
+// CRUD completo desde la interfaz:
+- ✅ Crear plantillas personalizadas con campos seleccionables
+- ✅ Editar plantillas existentes en tiempo real  
+- ✅ Eliminar plantillas con confirmación
+- ✅ Configurar plantilla por defecto
+- ✅ Vista previa de campos incluidos
+- ✅ Integración directa con ConsultationNotes
+
+// FLUJO COMPLETO:
+Usuario → /hubs/expedix/templates → Crear/Editar → Guarda en DB → 
+ConsultationNotes actualiza automáticamente → Usuario ve plantilla disponible
 ```
 
 #### **Consultas Médicas Django - ✅ MIGRADA**  

@@ -6,6 +6,9 @@ import { Button } from '@/components/ui/Button';
 import { expedixApi, Patient } from '@/lib/api/expedix-client';
 import MentalExam from './MentalExam';
 import ClinimetrixScaleSelector from './ClinimetrixScaleSelector';
+import { useConsultationTemplates, NoteTemplate } from '@/hooks/useConsultationTemplates';
+import Link from 'next/link';
+import { SettingsIcon } from 'lucide-react';
 
 // Using Patient interface from expedix-client
 
@@ -17,18 +20,10 @@ interface Medication {
   prescription: string;
 }
 
-type NoteType = 'primera-vez' | 'subsecuente' | 'soap' | 'psicoterapia' | 'primera-vez-psicologia' | 'primera-vez-psiquiatria' | 'subsecuente-psicologia' | 'alta-psiquiatria' | 'evento-entre-consultas' | 'subsecuente-psiquiatria' | 'seguimiento' | 'urgencias';
-
-interface NoteTemplate {
-  id: NoteType;
-  name: string;
-  description: string;
-  fields: string[];
-  icon: string;
-}
+type NoteType = string; // Now using dynamic template IDs from database
 
 interface ConsultationData {
-  noteType: NoteType;
+  noteType: string;
   date: string;
   patientOffice: string;
   currentCondition: string;
@@ -156,92 +151,7 @@ const MEDICATIONS_DATABASE = [
   }
 ];
 
-const NOTE_TEMPLATES: NoteTemplate[] = [
-  {
-    id: 'primera-vez',
-    name: 'Nota de Primera Vez',
-    description: 'Consulta inicial completa con historia clínica detallada',
-    fields: ['vitalSigns', 'currentCondition', 'physicalExamination', 'diagnosis', 'medications'],
-    icon: '👤'
-  },
-  {
-    id: 'primera-vez-psicologia',
-    name: 'Primera Vez - Psicología',
-    description: 'Evaluación inicial completa para primera consulta psicológica con enfoque cognitivo-conductual',
-    fields: ['currentCondition', 'diagnosis'],
-    icon: '🧠'
-  },
-  {
-    id: 'primera-vez-psiquiatria',
-    name: 'Primera Vez - Psiquiatría',
-    description: 'Evaluación psiquiátrica inicial completa con examen mental detallado',
-    fields: ['currentCondition', 'vitalSigns', 'physicalExamination', 'diagnosis', 'medications'],
-    icon: '🧬'
-  },
-  {
-    id: 'subsecuente-psicologia',
-    name: 'Subsecuente - Psicología',
-    description: 'Seguimiento psicológico enfocado en progreso del plan de tratamiento',
-    fields: ['currentCondition', 'diagnosis'],
-    icon: '📈'
-  },
-  {
-    id: 'subsecuente',
-    name: 'Nota Subsecuente',
-    description: 'Consulta de seguimiento y evaluación de progreso',
-    fields: ['currentCondition', 'physicalExamination', 'diagnosis', 'medications'],
-    icon: '📋'
-  },
-  {
-    id: 'soap',
-    name: 'Nota SOAP',
-    description: 'Formato estructurado: Subjetivo, Objetivo, Análisis, Plan',
-    fields: ['currentCondition', 'physicalExamination', 'diagnosis', 'medications'],
-    icon: '📝'
-  },
-  {
-    id: 'psicoterapia',
-    name: 'Nota de Psicoterapia',
-    description: 'Sesión de psicoterapia y evaluación mental',
-    fields: ['currentCondition', 'diagnosis'],
-    icon: '🧠'
-  },
-  {
-    id: 'seguimiento',
-    name: 'Nota de Seguimiento',
-    description: 'Evaluación rápida de seguimiento',
-    fields: ['currentCondition', 'medications'],
-    icon: '🔄'
-  },
-  {
-    id: 'urgencias',
-    name: 'Nota de Urgencias',
-    description: 'Atención de urgencia médica',
-    fields: ['vitalSigns', 'currentCondition', 'diagnosis', 'medications'],
-    icon: '🚨'
-  },
-  {
-    id: 'alta-psiquiatria',
-    name: 'Alta Psiquiátrica',
-    description: 'Nota de alta psiquiátrica con resumen completo del tratamiento y recomendaciones',
-    fields: ['currentCondition', 'diagnosis'],
-    icon: '🎯'
-  },
-  {
-    id: 'evento-entre-consultas',
-    name: 'Evento Entre Consultas',
-    description: 'Registro rápido de incidentes o eventos reportados por el paciente entre consultas programadas',
-    fields: ['currentCondition'],
-    icon: '⚡'
-  },
-  {
-    id: 'subsecuente-psiquiatria',
-    name: 'Consulta Subsecuente - Psiquiatría',
-    description: 'Seguimiento psiquiátrico con evaluación de respuesta al tratamiento y examen mental',
-    fields: ['vitalSigns', 'currentCondition', 'physicalExamination', 'diagnosis', 'medications'],
-    icon: '🔄'
-  }
-];
+// NOTE_TEMPLATES are now loaded dynamically from the database
 
 const CIE10_CODES = [
   { code: 'F32.0', description: 'Episodio depresivo leve' },
@@ -253,8 +163,11 @@ const CIE10_CODES = [
 ];
 
 export default function ConsultationNotes({ patient, onSaveConsultation, onCancel }: ConsultationNotesProps) {
+  // Load dynamic templates from database
+  const { noteTemplates, loading: templatesLoading, getDefaultTemplate } = useConsultationTemplates();
+  
   const [consultationData, setConsultationData] = useState<ConsultationData>({
-    noteType: 'subsecuente',
+    noteType: getDefaultTemplate()?.id || 'default-general',
     date: new Date().toISOString().split('T')[0],
     patientOffice: '',
     currentCondition: '',
@@ -481,7 +394,7 @@ export default function ConsultationNotes({ patient, onSaveConsultation, onCance
 
   // Helper function to check if field should be shown for current note type
   const shouldShowField = (fieldName: string) => {
-    const currentTemplate = NOTE_TEMPLATES.find(t => t.id === consultationData.noteType);
+    const currentTemplate = noteTemplates.find(t => t.id === consultationData.noteType);
     return currentTemplate?.fields.includes(fieldName) ?? true;
   };
 
@@ -696,12 +609,17 @@ export default function ConsultationNotes({ patient, onSaveConsultation, onCance
                   setNoteTypeReason('Selección manual');
                 }}
                 className="px-2 py-1 border border-gray-300 rounded text-sm focus:outline-none focus:ring-1 focus:ring-blue-500 bg-white"
+                disabled={templatesLoading}
               >
-                {NOTE_TEMPLATES.map((template) => (
-                  <option key={template.id} value={template.id}>
-                    {template.icon} {template.name}
-                  </option>
-                ))}
+                {templatesLoading ? (
+                  <option>Cargando plantillas...</option>
+                ) : (
+                  noteTemplates.map((template) => (
+                    <option key={template.id} value={template.id}>
+                      {template.icon} {template.name}
+                    </option>
+                  ))
+                )}
               </select>
             </div>
             
@@ -718,6 +636,19 @@ export default function ConsultationNotes({ patient, onSaveConsultation, onCance
           </div>
           
           <div className="flex items-center space-x-2">
+            <Link href="/hubs/expedix/templates">
+              <Button 
+                type="button" 
+                variant="outline" 
+                size="sm"
+                className="text-xs py-1 px-2 h-7"
+                title="Gestionar plantillas de consulta"
+              >
+                <SettingsIcon className="w-3 h-3 mr-1" />
+                Plantillas
+              </Button>
+            </Link>
+            
             {noteTypeReason && (
               <span className="text-xs px-2 py-1 bg-blue-50 text-blue-600 rounded">
                 💡 {noteTypeReason}

@@ -66,40 +66,10 @@ export default function PatientDashboard({
       // Simulate API calls - replace with actual API when available
       setTimeout(() => {
         setDashboardData({
-          prescriptions: [
-            {
-              id: '1',
-              date: '2025-07-15',
-              medications: ['Sertralina 50mg', 'Lorazepam 1mg'],
-              status: 'active'
-            }
-          ],
-          appointments: [
-            {
-              id: '1',
-              date: '2025-07-25',
-              time: '10:00',
-              type: 'Consulta de seguimiento',
-              status: 'scheduled'
-            }
-          ],
-          documents: [
-            {
-              id: '1',
-              name: 'Reporte de laboratorio',
-              date: '2025-07-10',
-              type: 'PDF'
-            }
-          ],
-          assessments: [
-            {
-              id: '1',
-              date: '2025-07-12',
-              scale: 'PHQ-9',
-              score: 12,
-              severity: 'Moderado'
-            }
-          ]
+          prescriptions: [],  // Real prescriptions will be loaded from database
+          appointments: [],   // Real appointments will be loaded from database
+          documents: [],      // Real documents will be loaded from database
+          assessments: []     // Real assessments will be loaded from database
         });
         setLoading(false);
       }, 1000);

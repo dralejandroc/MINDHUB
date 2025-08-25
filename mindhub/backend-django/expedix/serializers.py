@@ -180,8 +180,8 @@ class ConsultationCreateSerializer(serializers.ModelSerializer):
     class Meta:
         model = Consultation
         fields = [
-            'patient', 'consultation_date', 'reason', 'consultation_notes',
-            'diagnosis', 'treatment_plan', 'duration_minutes'
+            'patient_id', 'professional_id', 'consultation_date', 'chief_complaint', 'consultation_notes',
+            'diagnosis', 'treatment_plan', 'status', 'duration_minutes'
         ]
 
     def validate_consultation_date(self, value):
