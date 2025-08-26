@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { expedixApi } from '@/lib/api/expedix-client';
+import { supabase } from '@/lib/supabase/client';
 
 export interface ConsultationTemplate {
   id: string;
@@ -59,10 +60,17 @@ export function useConsultationTemplates() {
       setLoading(true);
       setError(null);
       
+      // ✅ FIX: Use proper Supabase session token
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (!session?.access_token) {
+        throw new Error('No authentication session found');
+      }
+      
       const response = await fetch('/api/expedix/consultation-templates/', {
         method: 'GET',
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('supabase-auth-token') || ''}`,
+          'Authorization': `Bearer ${session.access_token}`,
           'Content-Type': 'application/json'
         }
       });
