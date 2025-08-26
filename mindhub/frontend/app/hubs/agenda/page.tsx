@@ -464,9 +464,39 @@ export default function AgendaV2Page() {
       {showNewAppointment && (
         <NewAppointmentModal
           onClose={() => setShowNewAppointment(false)}
-          onSave={() => {
-            loadAppointments();
-            setShowNewAppointment(false);
+          onSave={async (appointmentData: any) => {
+            try {
+              // Map frontend field names to API field names
+              const apiData = {
+                patient_id: appointmentData.patientId,
+                appointment_date: appointmentData.date,
+                appointment_time: appointmentData.time,
+                duration: appointmentData.duration || 60,
+                appointment_type: appointmentData.type,
+                notes: appointmentData.notes || '',
+                status: 'scheduled'
+              };
+              
+              console.log('[Agenda] Saving appointment:', apiData);
+              
+              // Create appointment in database
+              const response = await authPost('/api/expedix/agenda/appointments', apiData);
+              
+              if (response.ok) {
+                const result = await response.json();
+                console.log('[Agenda] Appointment created:', result);
+                toast.success('Cita creada exitosamente');
+                await loadAppointments(); // Reload appointments to show the new one
+                setShowNewAppointment(false);
+              } else {
+                const errorData = await response.json().catch(() => ({ error: 'Error desconocido' }));
+                toast.error('Error al crear la cita: ' + (errorData.error || errorData.message || 'Error desconocido'));
+                console.error('Error creating appointment:', response.status, errorData);
+              }
+            } catch (error) {
+              console.error('Error saving appointment:', error);
+              toast.error('Error al guardar la cita');
+            }
           }}
           selectedDate={currentDate}
           selectedTime=""

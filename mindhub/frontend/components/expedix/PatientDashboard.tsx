@@ -225,43 +225,78 @@ export default function PatientDashboard({
         {/* Main Header Row */}
         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
           <div className="flex items-center space-x-3 min-w-0 flex-1">
-            <div className="w-12 h-12 lg:w-16 lg:h-16 bg-white/20 rounded-full flex items-center justify-center flex-shrink-0">
-              <UserIcon className="h-6 w-6 lg:h-8 lg:w-8" />
+            <div className="w-12 h-12 lg:w-14 lg:h-14 bg-white/20 rounded-full flex items-center justify-center flex-shrink-0">
+              <UserIcon className="h-6 w-6 lg:h-7 lg:w-7" />
             </div>
             <div className="min-w-0 flex-1">
               {/* Nombre - responsive font size */}
-              <h1 className="text-lg lg:text-2xl font-bold mb-1 truncate">
+              <h1 className="text-lg lg:text-xl font-bold mb-1">
                 {patient.first_name} {patient.paternal_last_name} {patient.maternal_last_name || ''}
               </h1>
               
-              {/* Información compacta */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-1 text-xs lg:text-sm text-blue-100">
-                <p className="flex items-center space-x-1 truncate">
-                  <CalendarIcon className="h-3 w-3 lg:h-4 lg:w-4 flex-shrink-0" />
+              {/* Grid de información compacta y responsiva */}
+              <div className="grid grid-cols-2 lg:grid-cols-3 gap-x-3 gap-y-1 text-xs lg:text-sm text-blue-100">
+                {/* Edad y fecha de nacimiento */}
+                <p className="flex items-center space-x-1">
+                  <CalendarIcon className="h-3 w-3 flex-shrink-0" />
                   <span className="truncate">
-                    {patient.age ? `${patient.age} años` : 'Sin edad'}
+                    {patient.birth_date ? new Date(patient.birth_date).toLocaleDateString('es-ES') : 'Sin fecha'}
+                    {patient.age && ` • ${patient.age} años`}
                   </span>
                 </p>
-                <p className="flex items-center space-x-1 truncate">
-                  <PhoneIcon className="h-3 w-3 lg:h-4 lg:w-4 flex-shrink-0" />
+                
+                {/* Teléfono */}
+                <p className="flex items-center space-x-1">
+                  <PhoneIcon className="h-3 w-3 flex-shrink-0" />
                   <span className="truncate">{patient.cell_phone || patient.phone || 'Sin teléfono'}</span>
                 </p>
-                <p className="flex items-center space-x-1 truncate">
-                  <IdentificationIcon className="h-3 w-3 lg:h-4 lg:w-4 flex-shrink-0" />
-                  <span className="truncate">#{patient.id.slice(-6).toUpperCase()}</span>
+                
+                {/* Email */}
+                <p className="flex items-center space-x-1">
+                  <EnvelopeIcon className="h-3 w-3 flex-shrink-0" />
+                  <span className="truncate">{patient.email || 'Sin email'}</span>
+                </p>
+                
+                {/* Escolaridad */}
+                <p className="flex items-center space-x-1">
+                  <AcademicCapIcon className="h-3 w-3 flex-shrink-0" />
+                  <span className="truncate">{patientData.education_level || patient.education_level || 'Sin escolaridad'}</span>
+                </p>
+                
+                {/* Ocupación */}
+                <p className="flex items-center space-x-1">
+                  <CogIcon className="h-3 w-3 flex-shrink-0" />
+                  <span className="truncate">{patientData.occupation || patient.occupation || 'Sin ocupación'}</span>
+                </p>
+                
+                {/* ID Expediente */}
+                <p className="flex items-center space-x-1">
+                  <IdentificationIcon className="h-3 w-3 flex-shrink-0" />
+                  <span>Exp: {patient.id.slice(-8).toUpperCase()}</span>
                 </p>
               </div>
               
-              {/* Info secundaria - solo en pantallas grandes */}
-              <div className="hidden lg:flex flex-wrap gap-3 mt-2 pt-2 border-t border-blue-500/30 text-xs text-blue-200">
+              {/* Info médica importante - visible en todas las pantallas */}
+              <div className="flex flex-wrap gap-2 mt-2 pt-2 border-t border-blue-500/30 text-xs text-blue-200">
                 {(patientData.blood_type || patient.blood_type) && (
-                  <span>🩸 {patientData.blood_type || patient.blood_type}</span>
-                )}
-                {patient.gender && (
-                  <span>👤 {patient.gender === 'male' ? 'M' : 'F'}</span>
+                  <span className="bg-blue-800/30 px-2 py-0.5 rounded">
+                    🩸 Sangre: {patientData.blood_type || patient.blood_type}
+                  </span>
                 )}
                 {(patientData.known_allergies || patient.allergies) && (
-                  <span>🚨 Alergias</span>
+                  <span className="bg-red-800/30 px-2 py-0.5 rounded">
+                    🚨 Alergias: {((patientData.known_allergies || patient.allergies) as string).substring(0, 30)}...
+                  </span>
+                )}
+                {patient.gender && (
+                  <span className="bg-blue-800/30 px-2 py-0.5 rounded">
+                    👤 {patient.gender === 'male' ? 'Masculino' : 'Femenino'}
+                  </span>
+                )}
+                {patient.emergency_contact_name && (
+                  <span className="bg-orange-800/30 px-2 py-0.5 rounded">
+                    📞 Emergencia: {patient.emergency_contact_name}
+                  </span>
                 )}
               </div>
             </div>
