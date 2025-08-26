@@ -157,13 +157,22 @@ class DashboardDataService {
 
   private async fetchPatients(): Promise<any[]> {
     try {
+      console.log('[DashboardService] Starting to fetch patients...');
       const response = await simpleApiClient.getExpedixPatients();
+      console.log('[DashboardService] Raw response:', response);
+      
       // Handle both formats: { data: [] } and { results: [] }
       const patients = response?.data || response?.results || [];
-      console.log('[DashboardService] Fetched patients:', patients.length);
+      console.log('[DashboardService] Extracted patients:', patients.length, 'patients');
+      
+      // Log first patient to debug structure
+      if (patients.length > 0) {
+        console.log('[DashboardService] First patient sample:', patients[0]);
+      }
+      
       return patients;
     } catch (error) {
-      console.error('Error fetching patients:', error);
+      console.error('[DashboardService] Error fetching patients:', error);
       return [];
     }
   }

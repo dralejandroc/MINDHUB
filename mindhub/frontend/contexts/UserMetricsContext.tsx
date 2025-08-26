@@ -85,7 +85,7 @@ export function UserMetricsProvider({ children }: { children: React.ReactNode })
         refreshPreferences(); // Still refresh preferences (local data)
       }
     }
-  }, [user, session, authLoading, metricsManager]);
+  }, [user, session, authLoading]);
 
   const recordLogin = () => {
     metricsManager.recordLogin();
