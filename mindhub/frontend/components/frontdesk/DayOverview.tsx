@@ -20,6 +20,7 @@ interface DayOverviewProps {
     payments: number;
     pendingPayments: number;
     resourcesSent: number;
+    patients: number;
   };
   onRefresh: () => void;
 }
@@ -276,7 +277,7 @@ export default function DayOverview({ stats, onRefresh }: DayOverviewProps) {
       {/* Quick Summary */}
       <Card className="p-6 bg-gradient-to-r from-blue-50 to-purple-50">
         <h4 className="text-lg font-semibold text-gray-900 mb-4">Resumen del Día</h4>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
           <div className="text-center">
             <div className="text-2xl font-bold text-blue-600">{stats.appointments}</div>
             <div className="text-sm text-gray-600">Citas</div>
@@ -292,6 +293,10 @@ export default function DayOverview({ stats, onRefresh }: DayOverviewProps) {
           <div className="text-center">
             <div className="text-2xl font-bold text-purple-600">{stats.resourcesSent}</div>
             <div className="text-sm text-gray-600">Recursos</div>
+          </div>
+          <div className="text-center">
+            <div className="text-2xl font-bold text-indigo-600">{stats.patients}</div>
+            <div className="text-sm text-gray-600">Pacientes</div>
           </div>
         </div>
       </Card>
