@@ -65,7 +65,7 @@ export async function GET(request: Request) {
         start_time,
         status,
         appointment_type,
-        patients!inner (
+        patients (
           id,
           first_name,
           last_name,
@@ -91,17 +91,20 @@ export async function GET(request: Request) {
     }
 
     // Transform appointments into task format
-    const tasks = (appointments || []).map(appointment => ({
-      id: appointment.id,
-      type: 'upcoming_appointment',
-      title: `Cita: ${appointment.patients.first_name} ${appointment.patients.last_name}`,
-      description: `${appointment.appointment_type || 'Consulta'} - ${appointment.start_time}`,
-      priority: 'normal',
-      due_date: appointment.appointment_date,
-      patient_name: `${appointment.patients.first_name} ${appointment.patients.last_name}`,
-      patient_phone: appointment.patients.phone,
-      created_at: new Date().toISOString()
-    }));
+    const tasks = (appointments || []).map(appointment => {
+      const patient = Array.isArray(appointment.patients) ? appointment.patients[0] : appointment.patients;
+      return {
+        id: appointment.id,
+        type: 'upcoming_appointment',
+        title: `Cita: ${patient?.first_name || 'N/A'} ${patient?.last_name || ''}`,
+        description: `${appointment.appointment_type || 'Consulta'} - ${appointment.start_time}`,
+        priority: 'normal',
+        due_date: appointment.appointment_date,
+        patient_name: `${patient?.first_name || 'N/A'} ${patient?.last_name || ''}`,
+        patient_phone: patient?.phone || '',
+        created_at: new Date().toISOString()
+      };
+    });
 
     console.log('[FRONTDESK TASKS] Tasks retrieved:', tasks.length);
 

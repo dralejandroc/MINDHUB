@@ -68,7 +68,7 @@ export async function GET(request: Request) {
         notes,
         created_at,
         updated_at,
-        patients!inner (
+        patients (
           id,
           first_name,
           last_name,
