@@ -99,11 +99,15 @@ export async function GET(request: Request) {
         // Direct approach - matching the working dual-system-test endpoint structure  
         console.log('[PATIENTS API] Using service role key for direct Supabase access');
         
-        // Get tenant context from headers (set by frontend)
-        const tenantId = request.headers.get('X-Tenant-ID');
-        const tenantType = request.headers.get('X-Tenant-Type');
+        // Get user's workspace context (DUAL SYSTEM)
+        const { data: workspace } = await supabase
+          .from('individual_workspaces')
+          .select('id')
+          .eq('owner_id', user.id)
+          .eq('is_active', true)
+          .single();
         
-        console.log('[PATIENTS API] Tenant context:', { tenantId, tenantType });
+        console.log('[PATIENTS API] Workspace found:', workspace?.id);
 
         // Build tenant-aware query
         let query = supabase
@@ -112,16 +116,33 @@ export async function GET(request: Request) {
           .eq('is_active', true);
 
         // Apply tenant filtering
-        if (tenantType === 'clinic' && tenantId) {
-          // Clinic context: show all patients in the clinic
-          query = query.eq('clinic_id', tenantId);
-          console.log('[PATIENTS API] Using clinic context:', tenantId);
+        if (workspace) {
+          // Individual workspace context: show patients in user's workspace
+          query = query.eq('workspace_id', workspace.id);
+          console.log('[PATIENTS API] Using workspace context:', workspace.id);
         } else {
-          // Individual workspace context: show only user's patients
-          query = query
-            .eq('created_by', user.id)
-            .eq('workspace_id', tenantId || user.id);
-          console.log('[PATIENTS API] Using individual workspace context');
+          // Check for clinic membership as fallback
+          const { data: membership } = await supabase
+            .from('tenant_memberships')
+            .select('clinic_id')
+            .eq('user_id', user.id)
+            .eq('is_active', true)
+            .limit(1)
+            .single();
+          
+          if (membership) {
+            query = query.eq('clinic_id', membership.clinic_id);
+            console.log('[PATIENTS API] Using clinic context:', membership.clinic_id);
+          } else {
+            // No context found - return empty
+            console.log('[PATIENTS API] No context found');
+            return createResponse({
+              count: 0,
+              results: [],
+              fallback: true,
+              source: 'supabase_direct'
+            });
+          }
         }
 
         // Add search functionality if search parameter is provided
@@ -190,8 +211,8 @@ export async function GET(request: Request) {
           city: patient.city || '',
           state: patient.state || '',
           postal_code: patient.postal_code || '',
-          education_level: patient.education_level || '',
           occupation: patient.occupation || '',
+          education_level: patient.education_level || '',
           consultations_count: 0, // Will be populated by Django backend when available
           created_at: patient.created_at,
           updated_at: patient.updated_at
@@ -323,32 +344,44 @@ export async function POST(request: Request) {
           age = Math.floor((today.getTime() - birthDate.getTime()) / (365.25 * 24 * 60 * 60 * 1000));
         }
         
-        // Prepare patient data for Supabase (without age column if it doesn't exist)
+        // Get user's workspace for tenant context
+        const { data: workspace } = await supabase
+          .from('individual_workspaces')
+          .select('id')
+          .eq('owner_id', user.id)
+          .eq('is_active', true)
+          .single();
+        
+        if (!workspace) {
+          throw new Error('User workspace not found - cannot create patient');
+        }
+        
+        console.log('[PATIENTS API] Creating patient in workspace:', workspace.id);
+        
+        // Prepare patient data for Supabase (matching actual schema)
         const patientData = {
           id: crypto.randomUUID(),
           first_name: body.first_name,
           paternal_last_name: body.paternal_last_name,
           maternal_last_name: body.maternal_last_name || '',
           date_of_birth: body.birth_date || body.date_of_birth,
-          // Don't include age field if it might not exist in schema
           gender: body.gender,
           email: body.email,
           phone: body.cell_phone || body.phone,
           curp: body.curp || '',
           rfc: body.rfc || '',
           blood_type: body.blood_type || '',
-          allergies: body.allergies || '',
-          medical_history: body.medical_history || '',
-          current_medications: body.current_medications || '',
-          emergency_contact_name: body.emergency_contact_name || '',
-          emergency_contact_phone: body.emergency_contact_phone || '',
-          emergency_contact_relationship: body.emergency_contact_relationship || '',
           address: body.address || '',
           city: body.city || '',
           state: body.state || '',
           postal_code: body.postal_code || '',
-          education_level: body.education_level || '',
           occupation: body.occupation || '',
+          education_level: body.education_level || '',
+          medical_history: body.medical_history || '',
+          emergency_contact_name: body.emergency_contact_name || '',
+          emergency_contact_phone: body.emergency_contact_phone || '',
+          emergency_contact_relationship: body.emergency_contact_relationship || '',
+          workspace_id: workspace.id, // CRITICAL: Set workspace context
           created_by: user.id,
           is_active: true,
           created_at: new Date().toISOString(),
@@ -392,8 +425,8 @@ export async function POST(request: Request) {
           city: patient.city || '',
           state: patient.state || '',
           postal_code: patient.postal_code || '',
-          education_level: patient.education_level || '',
           occupation: patient.occupation || '',
+          education_level: patient.education_level || '',
           consultations_count: 0,
           created_at: patient.created_at,
           updated_at: patient.updated_at,
