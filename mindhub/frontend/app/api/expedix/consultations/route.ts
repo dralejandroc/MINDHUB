@@ -89,11 +89,12 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   try {
-    console.log('[CONSULTATIONS API] Processing POST request - Supabase Direct Connection');
+    console.log('[CONSULTATIONS API] Processing POST request');
     
-    // Verify authentication
+    // Verify authentication using same pattern as working endpoints
     const { user, error: authError } = await getAuthenticatedUser(request);
     if (authError || !user) {
+      console.error('[CONSULTATIONS API] Auth error:', authError);
       return createErrorResponse('Unauthorized', 'Valid authentication required', 401);
     }
 
@@ -103,54 +104,54 @@ export async function POST(request: Request) {
     const body = await request.json();
     console.log('[CONSULTATIONS API] Creating consultation with data:', Object.keys(body));
 
-    // Validate required fields
-    if (!body.patient_id || !body.consultation_date) {
-      return createErrorResponse('Validation error', 'patient_id and consultation_date are required', 400);
-    }
-
-    // Prepare consultation data
-    const consultationData = {
-      ...body,
-      professional_id: user.id,
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString()
-    };
-
-    // Insert consultation into Supabase
-    const { data: consultation, error } = await supabaseAdmin
-      .from('consultations')
-      .insert(consultationData)
-      .select(`
-        *,
-        patients!inner(
-          id,
-          first_name,
-          last_name,
-          paternal_last_name,
-          maternal_last_name,
-          email
-        )
-      `)
-      .single();
-
-    if (error) {
-      console.error('[CONSULTATIONS API] Supabase insert error:', error);
+    // Use service role for direct Supabase access (same pattern as patients API)
+    try {
+      const { createClient } = await import('@supabase/supabase-js');
+      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+      const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
       
-      // Handle specific errors
-      if (error.code === '23503') { // Foreign key violation
-        return createErrorResponse('Invalid data', 'Patient not found or invalid references', 400);
+      const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
+      // Prepare consultation data with proper user context
+      const consultationData = {
+        ...body,
+        created_by: user.id,  // Use created_by instead of professional_id
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      };
+
+      // Insert consultation into Supabase with simplified query
+      const { data: consultation, error } = await supabase
+        .from('consultations')
+        .insert(consultationData)
+        .select('*')
+        .single();
+
+      if (error) {
+        console.error('[CONSULTATIONS API] Supabase insert error:', error);
+        return createErrorResponse(
+          'Database error',
+          `Failed to create consultation: ${error.message}`,
+          500
+        );
       }
+
+      console.log('[CONSULTATIONS API] Successfully created consultation:', consultation?.id);
+
+      return createResponse({
+        success: true,
+        data: consultation,
+        message: 'Consultation created successfully'
+      }, 201);
       
-      throw new Error(`Database error: ${error.message}`);
+    } catch (supabaseError) {
+      console.error('[CONSULTATIONS API] Supabase connection failed:', supabaseError);
+      return createErrorResponse(
+        'Database error',
+        `Could not create consultation: ${supabaseError instanceof Error ? supabaseError.message : 'Unknown error'}`,
+        500
+      );
     }
-
-    console.log('[CONSULTATIONS API] Successfully created consultation:', consultation.id);
-
-    return createResponse({
-      success: true,
-      data: consultation,
-      message: 'Consultation created successfully'
-    }, 201);
 
   } catch (error) {
     console.error('[CONSULTATIONS API] Error:', error);

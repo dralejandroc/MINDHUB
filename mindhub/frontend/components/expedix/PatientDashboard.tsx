@@ -220,100 +220,85 @@ export default function PatientDashboard({
 
   return (
     <div className="space-y-6" data-version="2.1-administrative">
-      {/* Header */}
-      <div className="bg-gradient-to-r from-blue-600 to-blue-700 rounded-lg p-6 text-white">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-4">
-            <div className="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center">
-              <UserIcon className="h-8 w-8" />
+      {/* Header - Compact & Responsive */}
+      <div className="bg-gradient-to-r from-blue-600 to-blue-700 rounded-lg p-4 lg:p-6 text-white">
+        {/* Main Header Row */}
+        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+          <div className="flex items-center space-x-3 min-w-0 flex-1">
+            <div className="w-12 h-12 lg:w-16 lg:h-16 bg-white/20 rounded-full flex items-center justify-center flex-shrink-0">
+              <UserIcon className="h-6 w-6 lg:h-8 lg:w-8" />
             </div>
-            <div>
-              {/* Nombre completo y datos principales */}
-              <h1 className="text-2xl font-bold mb-2">
+            <div className="min-w-0 flex-1">
+              {/* Nombre - responsive font size */}
+              <h1 className="text-lg lg:text-2xl font-bold mb-1 truncate">
                 {patient.first_name} {patient.paternal_last_name} {patient.maternal_last_name || ''}
               </h1>
               
-              {/* Información principal en una línea */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-blue-100">
-                <div className="space-y-1">
-                  <p className="flex items-center space-x-2">
-                    <CalendarIcon className="h-4 w-4" />
-                    <span>
-                      {patient.birth_date ? new Date(patient.birth_date).toLocaleDateString('es-ES') : 'Sin fecha'}
-                      {patient.age && ` • ${patient.age} años`}
-                    </span>
-                  </p>
-                  <p className="flex items-center space-x-2">
-                    <PhoneIcon className="h-4 w-4" />
-                    <span>{patient.cell_phone || patient.phone || 'Sin teléfono'}</span>
-                  </p>
-                  <p className="flex items-center space-x-2">
-                    <EnvelopeIcon className="h-4 w-4" />
-                    <span>{patient.email || 'Sin email'}</span>
-                  </p>
-                </div>
-                <div className="space-y-1">
-                  <p className="flex items-center space-x-2">
-                    <AcademicCapIcon className="h-4 w-4" />
-                    <span>{patient.education_level || 'Escolaridad no especificada'}</span>
-                  </p>
-                  <p className="flex items-center space-x-2">
-                    <CogIcon className="h-4 w-4" />
-                    <span>{patient.occupation || 'Ocupación no especificada'}</span>
-                  </p>
-                  <p className="flex items-center space-x-2 text-xs">
-                    <IdentificationIcon className="h-4 w-4" />
-                    <span>Expediente: {patient.id.slice(-8).toUpperCase()}</span>
-                  </p>
-                </div>
+              {/* Información compacta */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-1 text-xs lg:text-sm text-blue-100">
+                <p className="flex items-center space-x-1 truncate">
+                  <CalendarIcon className="h-3 w-3 lg:h-4 lg:w-4 flex-shrink-0" />
+                  <span className="truncate">
+                    {patient.age ? `${patient.age} años` : 'Sin edad'}
+                  </span>
+                </p>
+                <p className="flex items-center space-x-1 truncate">
+                  <PhoneIcon className="h-3 w-3 lg:h-4 lg:w-4 flex-shrink-0" />
+                  <span className="truncate">{patient.cell_phone || patient.phone || 'Sin teléfono'}</span>
+                </p>
+                <p className="flex items-center space-x-1 truncate">
+                  <IdentificationIcon className="h-3 w-3 lg:h-4 lg:w-4 flex-shrink-0" />
+                  <span className="truncate">#{patient.id.slice(-6).toUpperCase()}</span>
+                </p>
               </div>
               
-              {/* Datos menores en texto pequeño */}
-              <div className="mt-2 pt-2 border-t border-blue-500/30">
-                <div className="flex flex-wrap gap-4 text-xs text-blue-200">
-                  {patient.allergies && (
-                    <span>🚨 Alergias: {patient.allergies}</span>
-                  )}
-                  {patient.blood_type && (
-                    <span>🩸 Tipo de sangre: {patientData.blood_type || 'No especificado'}</span>
-                  )}
-                  {patient.gender && (
-                    <span>👤 {patient.gender === 'male' ? 'Masculino' : 'Femenino'}</span>
-                  )}
-                  {patient.emergency_contact_name && (
-                    <span>📞 Contacto emergencia: {patient.emergency_contact_name}</span>
-                  )}
-                </div>
+              {/* Info secundaria - solo en pantallas grandes */}
+              <div className="hidden lg:flex flex-wrap gap-3 mt-2 pt-2 border-t border-blue-500/30 text-xs text-blue-200">
+                {(patientData.blood_type || patient.blood_type) && (
+                  <span>🩸 {patientData.blood_type || patient.blood_type}</span>
+                )}
+                {patient.gender && (
+                  <span>👤 {patient.gender === 'male' ? 'M' : 'F'}</span>
+                )}
+                {(patientData.known_allergies || patient.allergies) && (
+                  <span>🚨 Alergias</span>
+                )}
               </div>
             </div>
           </div>
-          <div className="flex items-center space-x-3">
+          
+          {/* Action Buttons - Compact Grid */}
+          <div className="flex flex-wrap lg:flex-nowrap gap-2">
             <button
               onClick={() => setActiveTab('config')}
-              className="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded-lg flex items-center space-x-2 transition-colors"
+              className="bg-gray-500/80 hover:bg-gray-600 text-white px-2 py-1 lg:px-3 lg:py-2 rounded text-xs lg:text-sm flex items-center space-x-1 transition-colors"
+              title="Configuración"
             >
-              <IdentificationIcon className="h-4 w-4" />
-              <span>Config</span>
+              <IdentificationIcon className="h-3 w-3 lg:h-4 lg:w-4" />
+              <span className="hidden sm:inline">Config</span>
             </button>
             <button
               onClick={onNewConsultation}
-              className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg flex items-center space-x-2 transition-colors"
+              className="bg-green-500/80 hover:bg-green-600 text-white px-2 py-1 lg:px-3 lg:py-2 rounded text-xs lg:text-sm flex items-center space-x-1 transition-colors"
+              title="Nueva Consulta"
             >
-              <PlusIcon className="h-4 w-4" />
-              <span>Nueva Consulta</span>
+              <PlusIcon className="h-3 w-3 lg:h-4 lg:w-4" />
+              <span className="hidden sm:inline">Consulta</span>
             </button>
             <button
               onClick={onClinicalAssessment}
-              className="bg-purple-500 hover:bg-purple-600 text-white px-4 py-2 rounded-lg flex items-center space-x-2 transition-colors"
+              className="bg-purple-500/80 hover:bg-purple-600 text-white px-2 py-1 lg:px-3 lg:py-2 rounded text-xs lg:text-sm flex items-center space-x-1 transition-colors"
+              title="Evaluación Clínica"
             >
-              <DocumentChartBarIcon className="h-4 w-4" />
-              <span>Evaluación</span>
+              <DocumentChartBarIcon className="h-3 w-3 lg:h-4 lg:w-4" />
+              <span className="hidden sm:inline">Evaluar</span>
             </button>
             <button
               onClick={onClose}
-              className="bg-white/20 hover:bg-white/30 text-white p-2 rounded-lg transition-colors"
+              className="bg-white/20 hover:bg-white/30 text-white p-1 lg:p-2 rounded transition-colors"
+              title="Cerrar"
             >
-              <XMarkIcon className="h-5 w-5" />
+              <XMarkIcon className="h-4 w-4 lg:h-5 lg:w-5" />
             </button>
           </div>
         </div>

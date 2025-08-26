@@ -165,29 +165,43 @@ function getDefaultTemplates(): NoteTemplate[] {
       id: 'default-general',
       name: 'Consulta General',
       description: 'Plantilla básica para consulta general',
-      fields: ['currentCondition', 'physicalExamination', 'diagnosis', 'medications'],
+      fields: ['currentCondition', 'mentalExam', 'physicalExamination', 'diagnosis', 'medications'],
       icon: '📋'
     },
     {
       id: 'default-initial',
       name: 'Primera Consulta',
       description: 'Evaluación inicial completa',
-      fields: ['vitalSigns', 'currentCondition', 'physicalExamination', 'diagnosis', 'medications'],
+      fields: ['vitalSigns', 'currentCondition', 'mentalExam', 'physicalExamination', 'diagnosis', 'medications'],
       icon: '👤'
     },
     {
       id: 'default-followup',
       name: 'Consulta de Seguimiento',
       description: 'Seguimiento y evaluación de progreso',
-      fields: ['currentCondition', 'physicalExamination', 'diagnosis', 'medications'],
+      fields: ['currentCondition', 'mentalExam', 'physicalExamination', 'diagnosis', 'medications'],
       icon: '🔄'
     },
     {
       id: 'default-emergency',
       name: 'Consulta de Urgencias',
       description: 'Atención de urgencia médica',
-      fields: ['vitalSigns', 'currentCondition', 'diagnosis', 'medications'],
+      fields: ['vitalSigns', 'currentCondition', 'mentalExam', 'diagnosis', 'medications'],
       icon: '🚨'
+    },
+    {
+      id: 'default-psychiatry',
+      name: 'Consulta Psiquiátrica',
+      description: 'Evaluación psiquiátrica completa con examen mental',
+      fields: ['vitalSigns', 'currentCondition', 'mentalExam', 'physicalExamination', 'diagnosis', 'medications'],
+      icon: '🧬'
+    },
+    {
+      id: 'default-psychology',
+      name: 'Consulta Psicológica',
+      description: 'Evaluación psicológica con examen mental',
+      fields: ['currentCondition', 'mentalExam', 'diagnosis', 'medications'],
+      icon: '🧠'
     }
   ];
 }
