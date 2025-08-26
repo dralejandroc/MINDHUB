@@ -1,9 +1,9 @@
 # 🔒 MINDHUB - ARQUITECTURA DE SEGURIDAD DUAL SYSTEM
 ## MATRIZ COMPLETA DE RELACIONES Y AISLAMIENTO DE DATOS - SISTEMA DUAL
 
-**Fecha:** 25 Agosto 2025  
-**Versión:** v4.1-consultation-templates-security  
-**Criticidad:** ✅ **SEGURIDAD DUAL + PLANTILLAS PERSONALIZABLES VERIFICADA**
+**Fecha:** 26 Agosto 2025  
+**Versión:** v5.0-multitenant-security-complete  
+**Criticidad:** ✅ **ARQUITECTURA MULTITENANT COMPLETA + RLS OPTIMIZADA**
 
 ---
 
@@ -20,6 +20,181 @@
 - **`clinic_id`**: Para licencias de clínica (datos compartidos entre usuarios)
 - **`workspace_id`**: Para licencias individuales (datos exclusivos del profesional)
 - **`practice_locations`**: Sucursales organizacionales (no afectan acceso a datos)
+
+---
+
+## 🏢 **SISTEMA MULTITENANT IMPLEMENTADO - ARQUITECTURA DE SEGURIDAD**
+
+### **🔑 COMPONENTES DE SEGURIDAD MULTITENANT**
+
+#### **1. TENANT MEMBERSHIPS SECURITY**
+```sql
+-- ✅ TABLA PRINCIPAL DE MEMBRESÍAS
+CREATE TABLE tenant_memberships (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+    clinic_id UUID NOT NULL REFERENCES clinics(id) ON DELETE CASCADE,
+    role VARCHAR(50) NOT NULL DEFAULT 'member',
+    permissions JSONB DEFAULT '{}',
+    is_active BOOLEAN DEFAULT TRUE,
+    invited_by UUID REFERENCES auth.users(id),
+    
+    -- SEGURIDAD: Usuario único por clínica
+    UNIQUE(user_id, clinic_id)
+);
+
+-- ✅ RLS POLICIES OPTIMIZADAS
+CREATE POLICY "unified_membership_access" ON tenant_memberships
+  FOR ALL USING (
+    -- Solo ve sus propias membresías
+    user_id = (select auth.uid()) OR
+    -- O es admin de la clínica
+    clinic_id IN (
+      SELECT clinic_id FROM tenant_memberships 
+      WHERE user_id = (select auth.uid()) 
+      AND role IN ('admin', 'owner') 
+      AND is_active = TRUE
+    )
+  );
+```
+
+#### **2. TENANT CONTEXT SECURITY**
+```sql
+-- ✅ FUNCIÓN HELPER OPTIMIZADA
+CREATE OR REPLACE FUNCTION get_user_clinic_ids()
+RETURNS UUID[] AS $$
+BEGIN
+  RETURN ARRAY(
+    SELECT clinic_id 
+    FROM tenant_memberships 
+    WHERE user_id = (select auth.uid()) 
+    AND is_active = TRUE
+  );
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER STABLE;
+
+-- ✅ FUNCIÓN PARA TENANT CONTEXT
+CREATE OR REPLACE FUNCTION get_current_tenant_context()
+RETURNS JSON AS $$
+DECLARE
+  user_workspaces UUID[];
+  user_clinics UUID[];
+  current_tenant JSON;
+BEGIN
+  -- Get user's individual workspace
+  SELECT ARRAY[id] INTO user_workspaces
+  FROM individual_workspaces 
+  WHERE owner_id = (select auth.uid());
+  
+  -- Get user's clinic memberships
+  user_clinics := get_user_clinic_ids();
+  
+  -- Determine primary context (prefer clinic if available)
+  IF array_length(user_clinics, 1) > 0 THEN
+    SELECT json_build_object(
+      'tenant_id', user_clinics[1],
+      'tenant_type', 'clinic',
+      'tenant_name', name
+    ) INTO current_tenant
+    FROM clinics WHERE id = user_clinics[1];
+  ELSIF array_length(user_workspaces, 1) > 0 THEN
+    SELECT json_build_object(
+      'tenant_id', user_workspaces[1],
+      'tenant_type', 'workspace', 
+      'tenant_name', workspace_name
+    ) INTO current_tenant
+    FROM individual_workspaces WHERE id = user_workspaces[1];
+  END IF;
+  
+  RETURN current_tenant;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+```
+
+#### **3. PERFORMANCE-OPTIMIZED RLS POLICIES**
+```sql
+-- ✅ PATRÓN UNIFICADO PARA TODAS LAS TABLAS
+CREATE POLICY "unified_tenant_access" ON {table_name}
+  FOR ALL USING (
+    -- Acceso por clínica (usuario es miembro activo)
+    (clinic_id IS NOT NULL AND clinic_id IN (
+      SELECT clinic_id FROM tenant_memberships 
+      WHERE user_id = (select auth.uid()) 
+      AND is_active = TRUE
+    )) OR
+    -- Acceso por workspace individual (usuario es propietario)
+    (workspace_id IS NOT NULL AND workspace_id IN (
+      SELECT id FROM individual_workspaces
+      WHERE owner_id = (select auth.uid())
+    ))
+  )
+  WITH CHECK (
+    -- Mismas condiciones para INSERT/UPDATE
+    (clinic_id IS NOT NULL AND clinic_id IN (
+      SELECT clinic_id FROM tenant_memberships 
+      WHERE user_id = (select auth.uid()) 
+      AND is_active = TRUE
+    )) OR
+    (workspace_id IS NOT NULL AND workspace_id IN (
+      SELECT id FROM individual_workspaces
+      WHERE owner_id = (select auth.uid())
+    ))
+  );
+```
+
+### **🔒 MATRIZ DE ROLES Y PERMISOS**
+
+#### **ROLES MULTITENANT:**
+```sql
+-- member: Acceso básico a datos compartidos
+-- admin:  Puede invitar usuarios y gestionar membresías  
+-- owner:  Control completo de la clínica
+
+-- PERMISSIONS JSONB STRUCTURE:
+{
+  "can_invite_users": true,        -- Solo admin/owner
+  "can_manage_patients": true,     -- Todos los roles
+  "can_view_finance": false,       -- Configurable por clínica
+  "can_manage_schedules": true,    -- Admin/owner
+  "can_delete_data": false         -- Solo owner
+}
+```
+
+#### **VALIDATION MATRIX:**
+```
+┌─────────────────────┬─────────┬─────────┬─────────┐
+│ ACCIÓN              │ MEMBER  │ ADMIN   │ OWNER   │
+├─────────────────────┼─────────┼─────────┼─────────┤
+│ Ver datos clínica   │ ✅      │ ✅      │ ✅      │
+│ Crear pacientes     │ ✅      │ ✅      │ ✅      │
+│ Ver finanzas        │ Config  │ ✅      │ ✅      │
+│ Invitar usuarios    │ ❌      │ ✅      │ ✅      │
+│ Cambiar roles       │ ❌      │ ❌      │ ✅      │
+│ Eliminar clínica    │ ❌      │ ❌      │ ✅      │
+└─────────────────────┴─────────┴─────────┴─────────┘
+```
+
+### **🚨 SECURITY WARNINGS FIXED**
+
+#### **⚠️ SUPABASE RLS PERFORMANCE WARNINGS RESOLVED**
+```sql
+-- ❌ ANTES: Performance warnings
+auth.uid()  -- Re-evaluado para cada fila
+
+-- ✅ AHORA: Optimizado  
+(select auth.uid())  -- Evaluado una sola vez, cached
+```
+
+#### **⚠️ DUPLICATE POLICIES CONSOLIDATED**
+```sql
+-- ❌ ANTES: Múltiples políticas permissivas (performance degradation)
+Policy 1: "Users can see their data"
+Policy 2: "Admins can see clinic data" 
+Policy 3: "Legacy policy"
+
+-- ✅ AHORA: Política única unificada (optimal performance)
+Policy: "unified_tenant_access" -- Cubre todos los casos
+```
 
 ---
 

@@ -19,7 +19,7 @@ import {
   CurrencyDollarIcon,
   ClipboardIcon
 } from '@heroicons/react/24/outline';
-import { useExpedixApi, Patient } from '@/lib/api/expedix-client';
+import { useExpedixApi, type Patient } from '@/lib/api/expedix-client';
 import ResourcesTimeline from './ResourcesTimeline';
 import PatientTimeline from './PatientTimeline';
 import PatientDocuments from './PatientDocuments';

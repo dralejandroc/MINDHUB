@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, Suspense } from 'react';
-import { useSearchParams } from 'next/navigation';
+import { useSearchParams, useRouter } from 'next/navigation';
 import { PageHeader } from '@/components/layout/PageHeader';
 import ExpedientsGrid from '@/components/expedix/ExpedientsGrid';
 import PatientDashboard from '@/components/expedix/PatientDashboard';
@@ -30,6 +30,7 @@ type DetailView = 'dashboard' | 'consultation' | 'assessment';
 
 function ExpedixContent() {
   const searchParams = useSearchParams();
+  const router = useRouter();
   // Use singleton API client with automatic auth handling
   const [viewMode, setViewMode] = useState<ViewMode>('cards');
   const [detailView, setDetailView] = useState<DetailView>('dashboard');
@@ -116,6 +117,11 @@ function ExpedixContent() {
     window.location.reload();
   };
   
+  const handleScheduleAppointment = (patient: Patient) => {
+    // Navigate to agenda with patient pre-selected
+    router.push(`/hubs/agenda?action=new&patient=${patient.id}&patientName=${encodeURIComponent(`${patient.first_name} ${patient.paternal_last_name}`)}`);
+  };
+
   const handleSettings = () => {
     console.log('Settings');
   };
@@ -262,6 +268,7 @@ function ExpedixContent() {
           onNewPatient={handleNewPatient}
           onNewConsultation={handleNewConsultation}
           onClinicalAssessment={handleClinicalAssessment}
+          onScheduleAppointment={handleScheduleAppointment}
           onSettings={handleSettings}
           onChangeView={setViewMode}
         />

@@ -23,6 +23,8 @@ export async function GET(request: Request) {
 
     // Extract query parameters from original request
     const url = new URL(request.url);
+    const searchParam = url.searchParams.get('search');
+    console.log('[PATIENTS API] Search parameter:', searchParam);
     const queryString = url.search; // Preserva todos los query parameters
 
     let djangoWorking = true;
@@ -97,11 +99,42 @@ export async function GET(request: Request) {
         // Direct approach - matching the working dual-system-test endpoint structure  
         console.log('[PATIENTS API] Using service role key for direct Supabase access');
         
-        // First, try to get all patients and then filter (bypassing potential RLS issues)
-        const { data: allPatients, error: allError } = await supabase
+        // Get tenant context from headers (set by frontend)
+        const tenantId = request.headers.get('X-Tenant-ID');
+        const tenantType = request.headers.get('X-Tenant-Type');
+        
+        console.log('[PATIENTS API] Tenant context:', { tenantId, tenantType });
+
+        // Build tenant-aware query
+        let query = supabase
           .from('patients')
           .select('*')
-          .eq('is_active', true)
+          .eq('is_active', true);
+
+        // Apply tenant filtering
+        if (tenantType === 'clinic' && tenantId) {
+          // Clinic context: show all patients in the clinic
+          query = query.eq('clinic_id', tenantId);
+          console.log('[PATIENTS API] Using clinic context:', tenantId);
+        } else {
+          // Individual workspace context: show only user's patients
+          query = query
+            .eq('created_by', user.id)
+            .eq('workspace_id', tenantId || user.id);
+          console.log('[PATIENTS API] Using individual workspace context');
+        }
+
+        // Add search functionality if search parameter is provided
+        if (searchParam && searchParam.trim()) {
+          console.log('[PATIENTS API] Applying search filter:', searchParam);
+          const searchTerm = searchParam.trim().toLowerCase();
+          
+          // Use OR condition for multiple search fields
+          query = query.or(`first_name.ilike.%${searchTerm}%,paternal_last_name.ilike.%${searchTerm}%,maternal_last_name.ilike.%${searchTerm}%,email.ilike.%${searchTerm}%,phone.ilike.%${searchTerm}%,medical_record_number.ilike.%${searchTerm}%`);
+        }
+
+        // Execute query with ordering
+        const { data: allPatients, error: allError } = await query
           .order('created_at', { ascending: false });
         
         if (allError) {
@@ -109,11 +142,9 @@ export async function GET(request: Request) {
           throw new Error(`Supabase query failed: ${allError.message}`);
         }
         
-        // Filter to user's patients (based on created_by field)
-        const userPatients = allPatients?.filter(p => p.created_by === user.id) || [];
-        patients = userPatients;
+        patients = allPatients || [];
         
-        console.log(`[PATIENTS API] Found ${allPatients?.length || 0} total patients, ${userPatients.length} for user ${user.id}`);
+        console.log(`[PATIENTS API] Found ${allPatients?.length || 0} patients for user ${user.id}${searchParam ? ` (search: "${searchParam}")` : ''}`);
         
         // Error handling is now inside the try-catch above
         if (!patients) {
@@ -233,6 +264,12 @@ export async function POST(request: Request) {
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 3000);
       
+      // Get tenant context from headers
+      const tenantId = request.headers.get('X-Tenant-ID');
+      const tenantType = request.headers.get('X-Tenant-Type');
+      
+      console.log('[PATIENTS API] Creating with tenant context:', { tenantId, tenantType });
+
       const djangoResponse = await fetch(djangoUrl, {
         method: 'POST',
         headers: {
@@ -240,6 +277,8 @@ export async function POST(request: Request) {
           'Authorization': `Bearer ${serviceRoleKey}`,
           'X-User-ID': user.id,
           'X-User-Email': user.email || '',
+          'X-Tenant-ID': tenantId || '',
+          'X-Tenant-Type': tenantType || 'workspace',
           'X-Proxy-Auth': 'verified',
           'X-MindHub-Dual-System': 'enabled',
         },

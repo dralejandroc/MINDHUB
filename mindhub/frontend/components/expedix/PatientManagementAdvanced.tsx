@@ -37,6 +37,7 @@ interface PatientManagementAdvancedProps {
   onNewPatient: () => void;
   onNewConsultation: (patient: Patient) => void;
   onClinicalAssessment: (patient: Patient) => void;
+  onScheduleAppointment?: (patient: Patient) => void;
   onSettings?: () => void;
   onChangeView?: (view: 'cards' | 'timeline') => void;
 }
@@ -62,6 +63,7 @@ export default function PatientManagementAdvanced({
   onNewPatient,
   onNewConsultation,
   onClinicalAssessment,
+  onScheduleAppointment,
   onSettings,
   onChangeView
 }: PatientManagementAdvancedProps) {
@@ -546,6 +548,15 @@ export default function PatientManagementAdvanced({
                         <DocumentTextIcon className="h-3 w-3 sm:mr-0.5" />
                         <span className="hidden sm:inline">Nueva</span>
                       </button>
+                      {onScheduleAppointment && (
+                        <button
+                          onClick={() => onScheduleAppointment(patient)}
+                          className="inline-flex items-center px-2 py-1 text-xs font-medium text-white bg-indigo-500 hover:bg-indigo-600 rounded-full transition-colors duration-200"
+                        >
+                          <CalendarIcon className="h-3 w-3 sm:mr-0.5" />
+                          <span className="hidden sm:inline">Cita</span>
+                        </button>
+                      )}
                       <button
                         onClick={() => onClinicalAssessment(patient)}
                         className="inline-flex items-center px-2 py-1 text-xs font-medium text-white bg-purple-500 hover:bg-purple-600 rounded-full transition-colors duration-200"

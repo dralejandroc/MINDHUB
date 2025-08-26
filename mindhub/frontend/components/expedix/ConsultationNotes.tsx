@@ -12,6 +12,7 @@ import ClinimetrixScaleSelector from './ClinimetrixScaleSelector';
 import { useConsultationTemplates, NoteTemplate } from '@/hooks/useConsultationTemplates';
 import Link from 'next/link';
 import { SettingsIcon, Save, CheckCircle, AlertTriangle, Clock } from 'lucide-react';
+import DynamicConsultationForm from './DynamicConsultationForm';
 
 // Using Patient interface from expedix-client
 
@@ -133,6 +134,10 @@ export default function ConsultationNotes({ patient, onSaveConsultation, onCance
   // Load dynamic templates from database
   const { noteTemplates, loading: templatesLoading, getDefaultTemplate } = useConsultationTemplates();
   
+  // Check if we should use dynamic form
+  const [currentTemplate, setCurrentTemplate] = useState<any>(null);
+  const [useDynamicForm, setUseDynamicForm] = useState(false);
+  
   const [consultationData, setConsultationData] = useState<ConsultationData>({
     noteType: getDefaultTemplate()?.id || 'default-general',
     date: new Date().toISOString().split('T')[0],
@@ -247,6 +252,34 @@ export default function ConsultationNotes({ patient, onSaveConsultation, onCance
   // ✅ NEW: Autosave and consultation management
   const [consultationId, setConsultationId] = useState<string | null>(null);
   const [isFinalized, setIsFinalized] = useState(false);
+  
+  // Detect if current template supports dynamic form
+  useEffect(() => {
+    const template = noteTemplates.find(t => t.id === consultationData.noteType) as any;
+    setCurrentTemplate(template);
+    
+    // Check both fields_config (new) and fields (legacy) properties
+    const fieldsConfig = template?.fields_config || template?.fields;
+    
+    if (template && fieldsConfig && Array.isArray(fieldsConfig)) {
+      // Check if template has structured fields (objects with field, label, type properties)
+      const hasStructuredFields = fieldsConfig.some((field: any) => 
+        typeof field === 'object' && field.field && field.label && field.type
+      );
+      setUseDynamicForm(hasStructuredFields);
+      console.log('[ConsultationNotes] Template analysis:', {
+        templateId: template.id,
+        templateName: template.name,
+        fieldsConfigType: typeof fieldsConfig,
+        fieldsCount: fieldsConfig.length,
+        hasStructuredFields,
+        willUseDynamicForm: hasStructuredFields
+      });
+    } else {
+      setUseDynamicForm(false);
+      console.log('[ConsultationNotes] Using legacy form for template:', template?.name || 'unknown');
+    }
+  }, [consultationData.noteType, noteTemplates]);
   
   // Autosave functionality
   const autosaveState = useAutosave(consultationData, {
@@ -631,6 +664,25 @@ export default function ConsultationNotes({ patient, onSaveConsultation, onCance
     }
   };
 
+
+  // Dynamic form save handler
+  const handleDynamicSave = async (consultationData: any) => {
+    console.log('[ConsultationNotes] Dynamic consultation saved:', consultationData);
+    await onSaveConsultation(consultationData);
+  };
+
+  // If using dynamic form, render DynamicConsultationForm
+  if (useDynamicForm && currentTemplate) {
+    return (
+      <DynamicConsultationForm
+        patient={patient}
+        template={currentTemplate}
+        onSave={handleDynamicSave}
+        onCancel={onCancel}
+        initialData={{}}
+      />
+    );
+  }
 
   return (
     <div className="space-y-6">

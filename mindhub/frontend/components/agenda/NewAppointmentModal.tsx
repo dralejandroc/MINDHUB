@@ -106,16 +106,23 @@ export default function NewAppointmentModal({ selectedDate, selectedTime, editin
           userId = user.id || '';
         }
 
-        // Load patients
+        // Load patients using correct API structure
         const patientsResponse = await authGet(createApiUrl('/expedix/patients'));
         if (patientsResponse.ok) {
           const data = await patientsResponse.json();
-          const patientsData = data.data?.map((p: any) => ({
+          console.log('[NewAppointmentModal] API Response:', data);
+          
+          // Handle both Django and fallback response formats
+          const patientsArray = data.results || data.data || [];
+          
+          const patientsData = patientsArray.map((p: any) => ({
             id: p.id,
-            name: `${p.first_name || ''} ${p.last_name || p.paternal_last_name || ''}`.trim(),
-            phone: p.cell_phone || 'Sin teléfono',
+            name: `${p.first_name || ''} ${p.paternal_last_name || ''} ${p.maternal_last_name || ''}`.trim(),
+            phone: p.cell_phone || p.phone || 'Sin teléfono',
             email: p.email || 'Sin email'
-          })) || [];
+          }));
+          
+          console.log('[NewAppointmentModal] Processed patients:', patientsData.length);
           setPatients(patientsData);
           setFilteredPatients(patientsData);
 

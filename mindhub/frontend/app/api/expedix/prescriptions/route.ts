@@ -16,13 +16,19 @@ export async function GET(request: Request) {
       return createErrorResponse('Unauthorized', 'Valid authentication required', 401);
     }
 
+    // Get tenant context from headers
+    const tenantId = request.headers.get('X-Tenant-ID');
+    const tenantType = request.headers.get('X-Tenant-Type');
+
     // Extract query parameters
     const url = new URL(request.url);
     const patientId = url.searchParams.get('patient_id');
     const limit = parseInt(url.searchParams.get('limit') || '10');
     const offset = parseInt(url.searchParams.get('offset') || '0');
 
-    // Query Supabase for prescriptions
+    console.log('[EXPEDIX PRESCRIPTIONS API] Request with tenant context:', { tenantId, tenantType });
+
+    // Query Supabase for prescriptions with tenant filtering
     let query = supabaseAdmin
       .from('prescriptions')
       .select(`
@@ -34,17 +40,24 @@ export async function GET(request: Request) {
           maternal_last_name,
           email
         )
-      `)
-      .order('created_at', { ascending: false })
-      .range(offset, offset + limit - 1);
+      `);
+
+    // Apply tenant filtering
+    if (tenantType === 'clinic' && tenantId) {
+      query = query.eq('clinic_id', tenantId);
+    } else {
+      // For individual workspace, filter by created_by and workspace_id
+      query = query.eq('created_by', user.id).eq('workspace_id', tenantId || user.id);
+    }
 
     // Filter by patient if specified
     if (patientId) {
       query = query.eq('patient_id', patientId);
-    } else {
-      // Filter by user's patients if no specific patient requested
-      query = query.eq('created_by', user.id);
     }
+
+    query = query
+      .order('created_at', { ascending: false })
+      .range(offset, offset + limit - 1);
 
     const { data: prescriptions, error } = await query;
 
@@ -65,6 +78,8 @@ export async function GET(request: Request) {
             'X-Proxy-Auth': 'verified',
             'X-User-Id': user.id,
             'X-User-Email': user.email || '',
+            'X-Tenant-ID': tenantId || '',
+            'X-Tenant-Type': tenantType || '',
             'X-MindHub-Dual-System': 'enabled',
           },
         });
@@ -107,16 +122,20 @@ export async function POST(request: Request) {
       return createErrorResponse('Unauthorized', 'Valid authentication required', 401);
     }
 
+    // Get tenant context from headers
+    const tenantId = request.headers.get('X-Tenant-ID');
+    const tenantType = request.headers.get('X-Tenant-Type');
+
     // Get request body
     const body = await request.json();
-    console.log('[EXPEDIX PRESCRIPTIONS API] Creating prescription with data:', Object.keys(body));
+    console.log('[EXPEDIX PRESCRIPTIONS API] Creating prescription with data:', Object.keys(body), 'with tenant context:', { tenantId, tenantType });
     
     // Validate required fields
     if (!body.patient_id) {
       return createErrorResponse('Validation error', 'patient_id is required', 400);
     }
 
-    // Prepare prescription data
+    // Prepare prescription data with tenant context
     const prescriptionData = {
       id: crypto.randomUUID(),
       patient_id: body.patient_id,
@@ -127,6 +146,9 @@ export async function POST(request: Request) {
       notes: body.notes || '',
       status: body.status || 'active',
       created_by: user.id,
+      // Apply tenant context using dual-system pattern
+      clinic_id: tenantType === 'clinic' ? tenantId : null,
+      workspace_id: tenantType === 'workspace' ? (tenantId || user.id) : (tenantType !== 'clinic' ? user.id : null),
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString()
     };
@@ -154,6 +176,8 @@ export async function POST(request: Request) {
             'X-Proxy-Auth': 'verified',
             'X-User-Id': user.id,
             'X-User-Email': user.email || '',
+            'X-Tenant-ID': tenantId || '',
+            'X-Tenant-Type': tenantType || '',
             'X-MindHub-Dual-System': 'enabled',
           },
           body: JSON.stringify(body),

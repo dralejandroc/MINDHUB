@@ -1,9 +1,9 @@
 # 🏥 MINDHUB - ARQUITECTURA API DUAL SYSTEM DOCUMENTATION
 ## FUENTE DE VERDAD ÚNICA - ARQUITECTURA DJANGO DUAL (CLÍNICAS + INDIVIDUALES)
 
-**Fecha:** 25 Agosto 2025  
-**Versión:** v8.1-consultation-templates-system  
-**Estado:** ✅ ARQUITECTURA DUAL + PLANTILLAS PERSONALIZABLES FUNCIONANDO
+**Fecha:** 26 Agosto 2025  
+**Versión:** v9.0-multitenant-system-complete  
+**Estado:** ✅ ARQUITECTURA MULTITENANT COMPLETA + PERFORMANCE OPTIMIZADA
 
 ---
 
@@ -61,6 +61,125 @@ Sistema dual implementado para soportar dos tipos de licencias:
 
 ---
 
+## 🏢 **SISTEMA MULTITENANT IMPLEMENTADO - NUEVO v9.0**
+
+### **🎯 ARQUITECTURA MULTITENANT COMPLETA**
+MindHub ahora soporta completamente:
+- **Clínicas multi-profesionales** con datos compartidos
+- **Workspaces individuales** para profesionales independientes  
+- **Membresías de clínica** con roles y permisos
+- **Switching dinámico** entre contextos
+- **Aislamiento completo** de datos por tenant
+
+### **🔑 NUEVOS ENDPOINTS MULTITENANT**
+
+#### **Gestión de Contexto de Tenant**
+```http
+# Obtener contexto actual del usuario
+GET    /api/tenant/context                    # ✅ Contexto actual + opciones disponibles
+POST   /api/tenant/context                    # ✅ Cambiar contexto (validado)
+
+# Headers de tenant para todas las APIs
+X-Tenant-ID: {clinic_id_or_workspace_id}
+X-Tenant-Type: clinic|workspace
+```
+
+#### **Gestión de Membresías**
+```http
+# Membresías de clínica
+GET    /api/tenant/memberships               # ✅ Ver membresías del usuario  
+POST   /api/tenant/memberships               # ✅ Invitar usuarios (admin only)
+PUT    /api/tenant/memberships               # ✅ Actualizar roles (admin only)
+
+# Actions soportadas
+{
+  "action": "invite",        # Invitar usuario por email
+  "action": "leave",         # Abandonar clínica
+  "clinic_id": "uuid",
+  "user_email": "user@domain.com",
+  "role": "member|admin|owner"
+}
+```
+
+### **🔄 FRONTEND TENANT SWITCHING**
+
+#### **Componentes Multitenant**
+```typescript
+// Hook para gestión de tenant context
+const {
+  currentContext,           // Contexto actual
+  availableContexts,        // Clínicas + workspace disponibles
+  switchContext,            // Cambiar contexto
+  isClinicContext,         // Si está en modo clínica  
+  isWorkspaceContext       // Si está en modo individual
+} = useTenantContext();
+
+// Switcher UI component
+<TenantContextSwitcher 
+  className="nav-item"
+  showFullNames={true}      // Nombres completos o truncados
+/>
+
+// API tenant-aware  
+const { makeRequest } = useTenantAwareApi();
+const patients = await makeRequest('/api/expedix/patients');  // Auto incluye headers tenant
+```
+
+### **🏗️ PATRON DUAL-SYSTEM EN DATABASE**
+
+#### **Esquema de Tabla Multitenant**
+```sql
+-- Patrón universal para todas las tablas
+CREATE TABLE example_table (
+    id UUID PRIMARY KEY,
+    clinic_id UUID,                    -- Para datos de clínica (compartidos)
+    workspace_id UUID,                 -- Para datos individuales (privados)
+    created_by UUID NOT NULL,
+    -- ... otros campos
+    
+    -- CONSTRAINT: Solo uno puede estar presente
+    CONSTRAINT dual_system_constraint 
+        CHECK ((clinic_id IS NOT NULL AND workspace_id IS NULL) OR 
+               (clinic_id IS NULL AND workspace_id IS NOT NULL))
+);
+```
+
+#### **RLS Policies Optimizadas**
+```sql
+-- Política unificada con performance optimizada
+CREATE POLICY "unified_tenant_access" ON table_name
+  FOR ALL USING (
+    -- Acceso por clínica (miembro activo)
+    (clinic_id IS NOT NULL AND clinic_id IN (
+      SELECT clinic_id FROM tenant_memberships 
+      WHERE user_id = (select auth.uid()) 
+      AND is_active = TRUE
+    )) OR
+    -- Acceso por workspace individual (propietario)
+    (workspace_id IS NOT NULL AND created_by = (select auth.uid()))
+  );
+```
+
+### **📊 MIGRATION SCRIPT EJECUTADO**
+```sql
+-- Tabla de membresías creada
+CREATE TABLE tenant_memberships (
+    user_id UUID REFERENCES auth.users(id),
+    clinic_id UUID REFERENCES clinics(id), 
+    role VARCHAR(50) DEFAULT 'member',
+    is_active BOOLEAN DEFAULT TRUE,
+    permissions JSONB DEFAULT '{}'
+);
+
+-- Performance optimizado
+-- ✅ Arreglados warnings auth RLS initplan
+-- ✅ Eliminadas políticas duplicadas
+-- ✅ Agregados índices optimizados
+-- ✅ RLS habilitado en todas las tablas principales
+```
+
+---
+
 ## 🎯 **ENDPOINTS CRÍTICOS VALIDADOS EN PRODUCCIÓN**
 
 ### **⚠️ LECCIONES APRENDIDAS - ERRORES QUE NUNCA DEBEN REPETIRSE**
@@ -105,7 +224,7 @@ expedix_appointments       ← ❌ ERROR 404
 
 ### **✅ ENDPOINTS DE PACIENTES - FUNCIONANDO EN PRODUCCIÓN**
 
-#### **API Frontend → Django Proxy (VALIDADO)**
+#### **API Frontend → Django Proxy (VALIDADO + MULTITENANT)**
 ```http
 # Proxy route que funciona correctamente
 GET    https://mindhub.cloud/api/expedix/patients/
@@ -113,12 +232,14 @@ POST   https://mindhub.cloud/api/expedix/patients/
 PUT    https://mindhub.cloud/api/expedix/patients/{id}/
 DELETE https://mindhub.cloud/api/expedix/patients/{id}/
 
-# Headers requeridos
+# Headers requeridos (ACTUALIZADOS CON MULTITENANT)
 Authorization: Bearer {supabase_jwt_token}
 Content-Type: application/json
+X-Tenant-ID: {clinic_id_or_workspace_id}        # ✅ NUEVO: Contexto de tenant
+X-Tenant-Type: clinic|workspace                 # ✅ NUEVO: Tipo de tenant
 ```
 
-#### **Django Backend Direct (VALIDADO)**  
+#### **Django Backend Direct (VALIDADO + MULTITENANT)**  
 ```http
 # Django REST endpoints funcionando
 GET    https://mindhub-django-backend.vercel.app/api/expedix/patients/
@@ -126,10 +247,12 @@ POST   https://mindhub-django-backend.vercel.app/api/expedix/patients/
 PUT    https://mindhub-django-backend.vercel.app/api/expedix/patients/{id}/
 DELETE https://mindhub-django-backend.vercel.app/api/expedix/patients/{id}/
 
-# Headers para Django directo
+# Headers para Django directo (ACTUALIZADOS CON MULTITENANT)
 Authorization: Bearer {supabase_service_role_key}
 X-User-ID: {user_id}
 X-User-Email: {user_email}
+X-Tenant-ID: {clinic_id_or_workspace_id}        # ✅ NUEVO: Tenant context
+X-Tenant-Type: clinic|workspace                 # ✅ NUEVO: Tenant type
 X-Proxy-Auth: verified
 ```
 

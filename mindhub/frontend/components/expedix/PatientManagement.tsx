@@ -14,6 +14,7 @@ interface PatientManagementProps {
   onNewPatient: () => void;
   onNewConsultation: (patient: Patient) => void;
   onClinicalAssessment: (patient: Patient) => void;
+  onScheduleAppointment?: (patient: Patient) => void;
   onSettings?: () => void;
 }
 
@@ -22,6 +23,7 @@ export default function PatientManagement({
   onNewPatient,
   onNewConsultation,
   onClinicalAssessment,
+  onScheduleAppointment,
   onSettings
 }: PatientManagementProps) {
   // Use the authenticated Expedix API hook
@@ -284,6 +286,15 @@ export default function PatientManagement({
                           <DocumentTextIcon className="h-3 w-3 mr-0.5" />
                           Consulta
                         </button>
+                        {onScheduleAppointment && (
+                          <button
+                            onClick={() => onScheduleAppointment(patient)}
+                            className="inline-flex items-center px-2 py-1 text-xs font-medium text-white bg-indigo-500 hover:bg-indigo-600 rounded-full transition-colors duration-200"
+                          >
+                            <CalendarIcon className="h-3 w-3 mr-0.5" />
+                            Cita
+                          </button>
+                        )}
                         <button
                           onClick={() => handleOpenResources(patient)}
                           className="inline-flex items-center px-2 py-1 text-xs font-medium text-white bg-blue-500 hover:bg-blue-600 rounded-full transition-colors duration-200"

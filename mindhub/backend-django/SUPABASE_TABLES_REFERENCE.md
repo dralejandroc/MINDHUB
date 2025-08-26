@@ -1,5 +1,6 @@
 # SUPABASE TABLES REFERENCE - ESTRUCTURA REAL
-**Actualizado: 25/08/2025**  
+**Actualizado: 26/08/2025**  
+**Versión: v9.0-multitenant-system**  
 **Fuente**: `/Users/alekscon/MINDHUB-Pro/SUPABASE_TABLES.txt` (VERIFICADO)
 
 > ⚠️ **CRÍTICO**: Este documento contiene la estructura EXACTA de las tablas en Supabase. 
@@ -17,6 +18,7 @@
 ### 🏥 **ORGANIZATIONAL TABLES**
 - [`clinics`](#clinics) - Clínicas y organizaciones
 - [`individual_workspaces`](#individual_workspaces) - Espacios individuales
+- [`tenant_memberships`](#tenant_memberships) - ✅ NUEVO: Membresías multitenant
 - [`profiles`](#profiles) - Perfiles de usuario
 
 ### 📊 **CLINIMETRIX SYSTEM**
@@ -212,6 +214,40 @@ tax_id: varchar
 settings: jsonb
 created_at: timestamp with time zone
 updated_at: timestamp with time zone
+```
+
+### `tenant_memberships` ✅ NUEVO
+**Membresías multitenant - Sistema de clínicas multi-profesionales**
+
+```sql
+id: uuid (PK)
+user_id: uuid (FK to auth.users) NOT NULL
+clinic_id: uuid (FK to clinics) NOT NULL
+role: varchar (member|admin|owner) DEFAULT 'member'
+permissions: jsonb DEFAULT '{}'
+is_active: boolean DEFAULT TRUE
+invited_by: uuid (FK to auth.users)
+joined_at: timestamp with time zone DEFAULT NOW()
+created_at: timestamp with time zone DEFAULT NOW()
+updated_at: timestamp with time zone DEFAULT NOW()
+
+-- UNIQUE constraint: Un usuario no puede estar duplicado en la misma clínica
+UNIQUE(user_id, clinic_id)
+```
+
+**🔑 ROLES DISPONIBLES:**
+- `member`: Acceso básico a datos compartidos de la clínica
+- `admin`: Puede invitar usuarios y gestionar membresías
+- `owner`: Control completo de la clínica
+
+**🔐 PERMISSIONS JSONB:**
+```json
+{
+  "can_invite_users": true,
+  "can_manage_patients": true,
+  "can_view_finance": false,
+  "can_manage_schedules": true
+}
 ```
 
 ### `profiles`
