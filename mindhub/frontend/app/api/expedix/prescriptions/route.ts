@@ -1,5 +1,5 @@
-// Expedix Prescriptions Django Proxy - Routes prescriptions requests to Django backend
-import { getAuthenticatedUser, createResponse, createErrorResponse } from '@/lib/supabase/admin'
+// Expedix Prescriptions API - Direct Supabase implementation with Django fallback
+import { supabaseAdmin, getAuthenticatedUser, createResponse, createErrorResponse } from '@/lib/supabase/admin'
 
 export const dynamic = 'force-dynamic';
 
@@ -7,53 +7,90 @@ const DJANGO_API_BASE = process.env.NEXT_PUBLIC_DJANGO_API_URL || 'https://mindh
 
 export async function GET(request: Request) {
   try {
-    console.log('[EXPEDIX PRESCRIPTIONS PROXY] Processing GET request');
+    console.log('[EXPEDIX PRESCRIPTIONS API] Processing GET request - Direct Supabase');
     
     // Verify authentication
     const { user, error: authError } = await getAuthenticatedUser(request);
     if (authError || !user) {
-      console.error('[EXPEDIX PRESCRIPTIONS PROXY] Auth error:', authError);
+      console.error('[EXPEDIX PRESCRIPTIONS API] Auth error:', authError);
       return createErrorResponse('Unauthorized', 'Valid authentication required', 401);
     }
 
     // Extract query parameters
     const url = new URL(request.url);
-    const queryParams = url.searchParams.toString();
-    
-    // Forward request to Django
-    const djangoUrl = `${DJANGO_API_BASE}/api/expedix/prescriptions${queryParams ? '?' + queryParams : ''}`;
-    console.log('[EXPEDIX PRESCRIPTIONS PROXY] Forwarding to:', djangoUrl);
-    
-    const response = await fetch(djangoUrl, {
-      method: 'GET',
-      headers: {
-        'Authorization': `Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY}`,
-        'Content-Type': 'application/json',
-        'X-Proxy-Auth': 'verified',
-        'X-User-Id': user.id,
-        'X-User-Email': user.email || '',
-        'X-MindHub-Dual-System': 'enabled',
-      },
-    });
+    const patientId = url.searchParams.get('patient_id');
+    const limit = parseInt(url.searchParams.get('limit') || '10');
+    const offset = parseInt(url.searchParams.get('offset') || '0');
 
-    if (!response.ok) {
-      console.error('[EXPEDIX PRESCRIPTIONS PROXY] Django error:', response.status, response.statusText);
-      
-      // Return empty array for 404 to prevent crashes
-      if (response.status === 404) {
-        return createResponse({ data: [] });
-      }
-      
-      throw new Error(`Django API error: ${response.status} ${response.statusText}`);
+    // Query Supabase for prescriptions
+    let query = supabaseAdmin
+      .from('prescriptions')
+      .select(`
+        *,
+        patients!inner(
+          id,
+          first_name,
+          paternal_last_name,
+          maternal_last_name,
+          email
+        )
+      `)
+      .order('created_at', { ascending: false })
+      .range(offset, offset + limit - 1);
+
+    // Filter by patient if specified
+    if (patientId) {
+      query = query.eq('patient_id', patientId);
+    } else {
+      // Filter by user's patients if no specific patient requested
+      query = query.eq('created_by', user.id);
     }
 
-    const data = await response.json();
-    console.log('[EXPEDIX PRESCRIPTIONS PROXY] Successfully proxied request');
+    const { data: prescriptions, error } = await query;
 
-    return createResponse(data);
+    if (error) {
+      console.error('[EXPEDIX PRESCRIPTIONS API] Supabase query error:', error);
+      
+      // Try Django fallback
+      try {
+        console.log('[EXPEDIX PRESCRIPTIONS API] Attempting Django fallback');
+        const queryParams = url.searchParams.toString();
+        const djangoUrl = `${DJANGO_API_BASE}/api/expedix/prescriptions${queryParams ? '?' + queryParams : ''}`;
+        
+        const response = await fetch(djangoUrl, {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY}`,
+            'Content-Type': 'application/json',
+            'X-Proxy-Auth': 'verified',
+            'X-User-Id': user.id,
+            'X-User-Email': user.email || '',
+            'X-MindHub-Dual-System': 'enabled',
+          },
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          console.log('[EXPEDIX PRESCRIPTIONS API] Django fallback success');
+          return createResponse(data);
+        }
+      } catch (djangoError) {
+        console.error('[EXPEDIX PRESCRIPTIONS API] Django fallback failed:', djangoError);
+      }
+      
+      // Return empty array as final fallback
+      return createResponse({ data: [] });
+    }
+
+    console.log(`[EXPEDIX PRESCRIPTIONS API] Successfully fetched ${prescriptions?.length || 0} prescriptions`);
+
+    return createResponse({ 
+      success: true, 
+      data: prescriptions || [] 
+    });
 
   } catch (error) {
-    console.error('[EXPEDIX PRESCRIPTIONS PROXY] Error:', error);
+    console.error('[EXPEDIX PRESCRIPTIONS API] Error:', error);
     
     // Return empty data instead of error to prevent frontend crashes
     return createResponse({ data: [] });
@@ -62,7 +99,7 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   try {
-    console.log('[EXPEDIX PRESCRIPTIONS PROXY] Processing POST request');
+    console.log('[EXPEDIX PRESCRIPTIONS API] Processing POST request - Direct Supabase');
     
     // Verify authentication
     const { user, error: authError } = await getAuthenticatedUser(request);
@@ -72,34 +109,81 @@ export async function POST(request: Request) {
 
     // Get request body
     const body = await request.json();
+    console.log('[EXPEDIX PRESCRIPTIONS API] Creating prescription with data:', Object.keys(body));
     
-    // Forward request to Django
-    const djangoUrl = `${DJANGO_API_BASE}/api/expedix/prescriptions/`;
-    
-    const response = await fetch(djangoUrl, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY}`,
-        'Content-Type': 'application/json',
-        'X-Proxy-Auth': 'verified',
-        'X-User-Id': user.id,
-        'X-User-Email': user.email || '',
-        'X-MindHub-Dual-System': 'enabled',
-      },
-      body: JSON.stringify(body),
-    });
-
-    if (!response.ok) {
-      throw new Error(`Django API error: ${response.status} ${response.statusText}`);
+    // Validate required fields
+    if (!body.patient_id) {
+      return createErrorResponse('Validation error', 'patient_id is required', 400);
     }
 
-    const data = await response.json();
-    console.log('[EXPEDIX PRESCRIPTIONS PROXY] Successfully created prescription');
+    // Prepare prescription data
+    const prescriptionData = {
+      id: crypto.randomUUID(),
+      patient_id: body.patient_id,
+      practitioner_name: body.practitioner_name || 'Dr. Expedix',
+      practitioner_license: body.practitioner_license || 'MED123456',
+      diagnosis: body.diagnosis || '',
+      medications: JSON.stringify(body.medications || []),
+      notes: body.notes || '',
+      status: body.status || 'active',
+      created_by: user.id,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    };
 
-    return createResponse(data, 201);
+    // Try to insert into Supabase
+    const { data: prescription, error: insertError } = await supabaseAdmin
+      .from('prescriptions')
+      .insert(prescriptionData)
+      .select()
+      .single();
+
+    if (insertError) {
+      console.error('[EXPEDIX PRESCRIPTIONS API] Supabase insert error:', insertError);
+      
+      // Try Django as fallback
+      try {
+        console.log('[EXPEDIX PRESCRIPTIONS API] Attempting Django fallback');
+        const djangoUrl = `${DJANGO_API_BASE}/api/expedix/prescriptions/`;
+        
+        const response = await fetch(djangoUrl, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY}`,
+            'Content-Type': 'application/json',
+            'X-Proxy-Auth': 'verified',
+            'X-User-Id': user.id,
+            'X-User-Email': user.email || '',
+            'X-MindHub-Dual-System': 'enabled',
+          },
+          body: JSON.stringify(body),
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          console.log('[EXPEDIX PRESCRIPTIONS API] Django fallback success');
+          return createResponse(data, 201);
+        }
+      } catch (djangoError) {
+        console.error('[EXPEDIX PRESCRIPTIONS API] Django fallback failed:', djangoError);
+      }
+      
+      return createErrorResponse(
+        'Failed to create prescription',
+        `Database error: ${insertError.message}`,
+        500
+      );
+    }
+
+    console.log('[EXPEDIX PRESCRIPTIONS API] Successfully created prescription:', prescription.id);
+
+    return createResponse({ 
+      success: true, 
+      data: prescription 
+    }, 201);
 
   } catch (error) {
-    console.error('[EXPEDIX PRESCRIPTIONS PROXY] Error:', error);
+    console.error('[EXPEDIX PRESCRIPTIONS API] Error:', error);
     return createErrorResponse(
       'Failed to create prescription',
       error instanceof Error ? error.message : 'Unknown error',

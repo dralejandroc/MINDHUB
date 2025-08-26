@@ -273,7 +273,7 @@ export default function ConsultationNotes({ patient, onSaveConsultation, onCance
         setNoteTypeReason(reason);
 
         // Create new consultation in backend
-        const response = await fetch('/api/expedix/django/consultations/', {
+        const response = await fetch('/api/expedix/consultations/', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -1164,18 +1164,20 @@ export default function ConsultationNotes({ patient, onSaveConsultation, onCance
             </Card>
 
             {/* OBJETIVO Section - Mental Status Exam (Reusable Component) */}
-            <MentalExam 
-              data={consultationData.mentalExam}
-              onChange={(mentalExamData) => 
-                setConsultationData(prev => ({ 
-                  ...prev, 
-                  mentalExam: { ...prev.mentalExam, ...mentalExamData }
-                }))
-              }
-              title="🧬 OBJETIVO - Examen Mental"
-              borderColor="border-l-green-500"
-              required={true}
-            />
+            {shouldShowField('mentalExam') && (
+              <MentalExam 
+                data={consultationData.mentalExam}
+                onChange={(mentalExamData) => 
+                  setConsultationData(prev => ({ 
+                    ...prev, 
+                    mentalExam: { ...prev.mentalExam, ...mentalExamData }
+                  }))
+                }
+                title="🧬 OBJETIVO - Examen Mental"
+                borderColor="border-l-green-500"
+                required={true}
+              />
+            )}
 
             {/* Tratamiento Previo, Fortalezas y Factores de Riesgo Section */}
             <Card className="p-4 border-l-4 border-l-orange-500">
@@ -2174,18 +2176,20 @@ export default function ConsultationNotes({ patient, onSaveConsultation, onCance
           </Card>
 
           {/* Examen Mental de Seguimiento (Reusable Component) */}
-          <MentalExam 
-            data={consultationData.mentalExam}
-            onChange={(mentalExamData) => 
-              setConsultationData(prev => ({ 
-                ...prev, 
-                mentalExam: { ...prev.mentalExam, ...mentalExamData }
-              }))
-            }
+          {shouldShowField('mentalExam') && (
+            <MentalExam 
+              data={consultationData.mentalExam}
+              onChange={(mentalExamData) => 
+                setConsultationData(prev => ({ 
+                  ...prev, 
+                  mentalExam: { ...prev.mentalExam, ...mentalExamData }
+                }))
+              }
             title="🧠 Examen Mental de Seguimiento"
             borderColor="border-l-teal-500"
             required={false}
           />
+          )}
 
           <Card className="p-4 border-l-4 border-l-green-500">
             <h3 className="text-base font-medium text-gray-900 mb-3">📊 Respuesta al Tratamiento</h3>

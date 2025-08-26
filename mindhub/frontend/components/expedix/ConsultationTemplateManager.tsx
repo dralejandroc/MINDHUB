@@ -5,6 +5,7 @@ import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { PlusIcon, PencilIcon, TrashIcon } from 'lucide-react';
 import { expedixApi } from '@/lib/api/expedix-client';
+import { supabase } from '@/lib/supabase/client';
 
 interface ConsultationTemplate {
   id: string;
@@ -36,6 +37,7 @@ const DEFAULT_FIELD_OPTIONS = [
   { value: 'vitalSigns', label: 'Signos Vitales' },
   { value: 'currentCondition', label: 'Padecimiento Actual' },
   { value: 'physicalExamination', label: 'Exploración Física' },
+  { value: 'mentalExam', label: '🧠 Examen Mental', isDefault: true }, // Por defecto en aplicaciones de salud mental
   { value: 'labResults', label: 'Resultados de Laboratorio' },
   { value: 'diagnosis', label: 'Diagnóstico' },
   { value: 'medications', label: 'Medicamentos' },
@@ -56,7 +58,7 @@ export default function ConsultationTemplateManager({
     name: '',
     description: '',
     template_type: 'general',
-    fields_config: [] as string[],
+    fields_config: ['mentalExam'] as string[], // Incluir examen mental por defecto
     is_default: false
   });
 
@@ -64,15 +66,22 @@ export default function ConsultationTemplateManager({
     loadTemplates();
   }, []);
 
+  // Helper function to get authentication headers
+  const getAuthHeaders = async () => {
+    const { data: { session } } = await supabase.auth.getSession();
+    return {
+      'Authorization': `Bearer ${session?.access_token || ''}`,
+      'Content-Type': 'application/json'
+    };
+  };
+
   const loadTemplates = async () => {
     try {
       setLoading(true);
+      const headers = await getAuthHeaders();
       const response = await fetch('/api/expedix/consultation-templates/', {
         method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('supabase-auth-token') || ''}`,
-          'Content-Type': 'application/json'
-        }
+        headers
       });
       
       if (response.ok) {
@@ -91,14 +100,13 @@ export default function ConsultationTemplateManager({
 
   const handleSave = async () => {
     try {
+      const headers = await getAuthHeaders();
+      
       if (editingTemplate) {
         // Update existing template
         const response = await fetch(`/api/expedix/consultation-templates/?id=${editingTemplate.id}`, {
           method: 'PUT',
-          headers: {
-            'Authorization': `Bearer ${localStorage.getItem('supabase-auth-token') || ''}`,
-            'Content-Type': 'application/json'
-          },
+          headers,
           body: JSON.stringify(formData)
         });
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
@@ -106,10 +114,7 @@ export default function ConsultationTemplateManager({
         // Create new template
         const response = await fetch('/api/expedix/consultation-templates/', {
           method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${localStorage.getItem('supabase-auth-token') || ''}`,
-            'Content-Type': 'application/json'
-          },
+          headers,
           body: JSON.stringify(formData)
         });
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
@@ -125,12 +130,10 @@ export default function ConsultationTemplateManager({
   const handleDelete = async (templateId: string) => {
     if (confirm('¿Estás seguro de que deseas eliminar esta plantilla?')) {
       try {
+        const headers = await getAuthHeaders();
         const response = await fetch(`/api/expedix/consultation-templates/?id=${templateId}`, {
           method: 'DELETE',
-          headers: {
-            'Authorization': `Bearer ${localStorage.getItem('supabase-auth-token') || ''}`,
-            'Content-Type': 'application/json'
-          }
+          headers
         });
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
         await loadTemplates();
@@ -157,7 +160,7 @@ export default function ConsultationTemplateManager({
       name: '',
       description: '',
       template_type: 'general',
-      fields_config: [],
+      fields_config: ['mentalExam'], // Mantener examen mental por defecto
       is_default: false
     });
     setEditingTemplate(null);

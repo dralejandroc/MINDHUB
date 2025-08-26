@@ -10,7 +10,7 @@ const DJANGO_BACKEND_URL = API_CONFIG.BACKEND_URL;
 
 export async function GET(request: Request) {
   try {
-    console.log('[PATIENTS API] Processing GET request - Django Backend Proxy with Supabase Fallback [v2.0]');
+    console.log('[PATIENTS API] Processing GET request - Django Backend Proxy with Supabase Fallback');
     
     // Verify authentication
     const { user, error: authError } = await getAuthenticatedUser(request);
@@ -126,26 +126,46 @@ export async function GET(request: Request) {
         }
       
       // Transform data to Django-compatible format with correct field mapping
-      const transformedPatients = patients?.map(patient => ({
-        id: patient.id,
-        first_name: patient.first_name,
-        paternal_last_name: patient.paternal_last_name,
-        maternal_last_name: patient.maternal_last_name || '',
-        birth_date: patient.date_of_birth,  // Correct field from Supabase
-        age: patient.age || 0,
-        gender: patient.gender,
-        email: patient.email,
-        cell_phone: patient.phone,  // Map phone to cell_phone
-        phone: patient.phone,
-        curp: patient.curp,
-        address: patient.address,
-        city: patient.city,
-        state: patient.state,
-        postal_code: patient.postal_code,
-        consultations_count: 0, // Will be populated by Django backend when available
-        created_at: patient.created_at,
-        updated_at: patient.updated_at
-      })) || [];
+      const transformedPatients = patients?.map(patient => {
+        // Calculate age from birth date if age field doesn't exist
+        let calculatedAge = 0;
+        if (patient.date_of_birth) {
+          const birthDate = new Date(patient.date_of_birth);
+          const today = new Date();
+          calculatedAge = Math.floor((today.getTime() - birthDate.getTime()) / (365.25 * 24 * 60 * 60 * 1000));
+        }
+        
+        return {
+          id: patient.id,
+          first_name: patient.first_name,
+          paternal_last_name: patient.paternal_last_name,
+          maternal_last_name: patient.maternal_last_name || '',
+          birth_date: patient.date_of_birth,  // Correct field from Supabase
+          age: patient.age || calculatedAge,  // Use existing age or calculate from birth_date
+          gender: patient.gender,
+          email: patient.email,
+          cell_phone: patient.phone,  // Map phone to cell_phone
+          phone: patient.phone,
+          curp: patient.curp || '',
+          rfc: patient.rfc || '',
+          blood_type: patient.blood_type || '',
+          allergies: patient.allergies || '',
+          medical_history: patient.medical_history || '',
+          current_medications: patient.current_medications || '',
+          emergency_contact_name: patient.emergency_contact_name || '',
+          emergency_contact_phone: patient.emergency_contact_phone || '',
+          emergency_contact_relationship: patient.emergency_contact_relationship || '',
+          address: patient.address || '',
+          city: patient.city || '',
+          state: patient.state || '',
+          postal_code: patient.postal_code || '',
+          education_level: patient.education_level || '',
+          occupation: patient.occupation || '',
+          consultations_count: 0, // Will be populated by Django backend when available
+          created_at: patient.created_at,
+          updated_at: patient.updated_at
+        };
+      }) || [];
       
       console.log('[PATIENTS API] Supabase fallback success - patients returned:', transformedPatients.length);
       
@@ -258,28 +278,38 @@ export async function POST(request: Request) {
         
         // Calculate age from birth date if not provided
         let age = body.age;
-        if (!age && body.birth_date) {
-          const birthDate = new Date(body.birth_date);
+        if (!age && (body.birth_date || body.date_of_birth)) {
+          const birthDate = new Date(body.birth_date || body.date_of_birth);
           const today = new Date();
           age = Math.floor((today.getTime() - birthDate.getTime()) / (365.25 * 24 * 60 * 60 * 1000));
         }
         
-        // Prepare patient data for Supabase
+        // Prepare patient data for Supabase (without age column if it doesn't exist)
         const patientData = {
           id: crypto.randomUUID(),
           first_name: body.first_name,
           paternal_last_name: body.paternal_last_name,
           maternal_last_name: body.maternal_last_name || '',
-          date_of_birth: body.birth_date,
-          age: age || 0,
+          date_of_birth: body.birth_date || body.date_of_birth,
+          // Don't include age field if it might not exist in schema
           gender: body.gender,
           email: body.email,
           phone: body.cell_phone || body.phone,
           curp: body.curp || '',
+          rfc: body.rfc || '',
+          blood_type: body.blood_type || '',
+          allergies: body.allergies || '',
+          medical_history: body.medical_history || '',
+          current_medications: body.current_medications || '',
+          emergency_contact_name: body.emergency_contact_name || '',
+          emergency_contact_phone: body.emergency_contact_phone || '',
+          emergency_contact_relationship: body.emergency_contact_relationship || '',
           address: body.address || '',
           city: body.city || '',
           state: body.state || '',
           postal_code: body.postal_code || '',
+          education_level: body.education_level || '',
+          occupation: body.occupation || '',
           created_by: user.id,
           is_active: true,
           created_at: new Date().toISOString(),
@@ -305,16 +335,26 @@ export async function POST(request: Request) {
           paternal_last_name: patient.paternal_last_name,
           maternal_last_name: patient.maternal_last_name,
           birth_date: patient.date_of_birth,
-          age: patient.age,
+          age: age, // Use calculated age
           gender: patient.gender,
           email: patient.email,
           cell_phone: patient.phone,
           phone: patient.phone,
-          curp: patient.curp,
-          address: patient.address,
-          city: patient.city,
-          state: patient.state,
-          postal_code: patient.postal_code,
+          curp: patient.curp || '',
+          rfc: patient.rfc || '',
+          blood_type: patient.blood_type || '',
+          allergies: patient.allergies || '',
+          medical_history: patient.medical_history || '',
+          current_medications: patient.current_medications || '',
+          emergency_contact_name: patient.emergency_contact_name || '',
+          emergency_contact_phone: patient.emergency_contact_phone || '',
+          emergency_contact_relationship: patient.emergency_contact_relationship || '',
+          address: patient.address || '',
+          city: patient.city || '',
+          state: patient.state || '',
+          postal_code: patient.postal_code || '',
+          education_level: patient.education_level || '',
+          occupation: patient.occupation || '',
           consultations_count: 0,
           created_at: patient.created_at,
           updated_at: patient.updated_at,

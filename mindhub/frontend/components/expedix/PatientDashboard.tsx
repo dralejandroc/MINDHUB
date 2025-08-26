@@ -228,12 +228,63 @@ export default function PatientDashboard({
               <UserIcon className="h-8 w-8" />
             </div>
             <div>
-              <h1 className="text-2xl font-bold">
+              {/* Nombre completo y datos principales */}
+              <h1 className="text-2xl font-bold mb-2">
                 {patient.first_name} {patient.paternal_last_name} {patient.maternal_last_name || ''}
-                <span className="ml-2 text-sm bg-green-500 px-2 py-1 rounded">v2.1</span>
               </h1>
-              <p className="text-blue-100">Expediente: {patient.id.slice(-8).toUpperCase()}</p>
-              <p className="text-blue-100">{patient.age} años • {patient.email}</p>
+              
+              {/* Información principal en una línea */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-blue-100">
+                <div className="space-y-1">
+                  <p className="flex items-center space-x-2">
+                    <CalendarIcon className="h-4 w-4" />
+                    <span>
+                      {patient.birth_date ? new Date(patient.birth_date).toLocaleDateString('es-ES') : 'Sin fecha'}
+                      {patient.age && ` • ${patient.age} años`}
+                    </span>
+                  </p>
+                  <p className="flex items-center space-x-2">
+                    <PhoneIcon className="h-4 w-4" />
+                    <span>{patient.cell_phone || patient.phone || 'Sin teléfono'}</span>
+                  </p>
+                  <p className="flex items-center space-x-2">
+                    <EnvelopeIcon className="h-4 w-4" />
+                    <span>{patient.email || 'Sin email'}</span>
+                  </p>
+                </div>
+                <div className="space-y-1">
+                  <p className="flex items-center space-x-2">
+                    <AcademicCapIcon className="h-4 w-4" />
+                    <span>{patient.education_level || 'Escolaridad no especificada'}</span>
+                  </p>
+                  <p className="flex items-center space-x-2">
+                    <CogIcon className="h-4 w-4" />
+                    <span>{patient.occupation || 'Ocupación no especificada'}</span>
+                  </p>
+                  <p className="flex items-center space-x-2 text-xs">
+                    <IdentificationIcon className="h-4 w-4" />
+                    <span>Expediente: {patient.id.slice(-8).toUpperCase()}</span>
+                  </p>
+                </div>
+              </div>
+              
+              {/* Datos menores en texto pequeño */}
+              <div className="mt-2 pt-2 border-t border-blue-500/30">
+                <div className="flex flex-wrap gap-4 text-xs text-blue-200">
+                  {patient.allergies && (
+                    <span>🚨 Alergias: {patient.allergies}</span>
+                  )}
+                  {patient.blood_type && (
+                    <span>🩸 Tipo de sangre: {patient.blood_type}</span>
+                  )}
+                  {patient.gender && (
+                    <span>👤 {patient.gender === 'masculine' ? 'Masculino' : 'Femenino'}</span>
+                  )}
+                  {patient.emergency_contact_name && (
+                    <span>📞 Contacto emergencia: {patient.emergency_contact_name}</span>
+                  )}
+                </div>
+              </div>
             </div>
           </div>
           <div className="flex items-center space-x-3">
