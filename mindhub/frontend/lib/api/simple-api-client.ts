@@ -132,13 +132,15 @@ export class SimpleApiClient {
   }
 
   // Expedix API methods  
-  async getExpedixPatients(searchTerm?: string): Promise<ApiResponse<any[]>> {
+  async getExpedixPatients(searchTerm?: string): Promise<any> {
     const params = searchTerm ? `?search=${encodeURIComponent(searchTerm)}` : '';
-    return this.makeRequest<ApiResponse<any[]>>(`/expedix/patients${params}`);
+    // Return the raw response to handle different formats
+    return this.makeRequest<any>(`/expedix/patients${params}`);
   }
 
-  async getExpedixConsultations(): Promise<ApiResponse<any[]>> {
-    return this.makeRequest<ApiResponse<any[]>>('/expedix/consultations');
+  async getExpedixConsultations(): Promise<any> {
+    // Return the raw response to handle different formats
+    return this.makeRequest<any>('/expedix/consultations');
   }
 }
 

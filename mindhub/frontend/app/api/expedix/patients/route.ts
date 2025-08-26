@@ -27,57 +27,11 @@ export async function GET(request: Request) {
     console.log('[PATIENTS API] Search parameter:', searchParam);
     const queryString = url.search; // Preserva todos los query parameters
 
-    let djangoWorking = true;
-
-    try {
-      // Build Django backend URL correctly
-      const djangoUrl = `${DJANGO_BACKEND_URL}/api/expedix/patients/${queryString || ''}`;
-      console.log('[PATIENTS API] Proxying to Django:', djangoUrl);
-
-      // Get auth token from request 
-      const authHeader = request.headers.get('Authorization');
-      
-      // Forward request to Django backend with service role key for internal auth
-      const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp2YmNwbGR6b3lpY2VmZHRud2tkIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1NTQwMTQ3MCwiZXhwIjoyMDcwOTc3NDcwfQ.-iooltGuYeGqXVh7pgRhH_Oo_R64VtHIssbE3u_y0WQ';
-      
-      // Implement timeout using AbortController
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 3000); // 3 second timeout to reach fallback faster
-
-      const djangoResponse = await fetch(djangoUrl, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${serviceRoleKey}`,
-          'X-User-ID': user.id,
-          'X-User-Email': user.email || '',
-          'X-Proxy-Auth': 'verified',
-          'X-MindHub-Dual-System': 'enabled',
-        },
-        signal: controller.signal
-      });
-
-      clearTimeout(timeoutId);
-
-      console.log('[PATIENTS API] Django response status:', djangoResponse.status);
-
-      if (djangoResponse.ok) {
-        // Django working - return response
-        const responseData = await djangoResponse.json();
-        const patientCount = responseData.results?.length || responseData.count || 0;
-        console.log('[PATIENTS API] Django success - patients returned:', patientCount);
-        return createResponse(responseData);
-      } else {
-        djangoWorking = false;
-        const errorText = await djangoResponse.text();
-        console.error('[PATIENTS API] Django error response:', errorText);
-        console.warn('[PATIENTS API] Django returned error status:', djangoResponse.status);
-      }
-
-    } catch (djangoError) {
-      djangoWorking = false;
-      console.error('[PATIENTS API] Django connection failed:', djangoError);
-    }
+    // Skip Django for now - go directly to Supabase for speed
+    // TODO: Re-enable Django when performance improves
+    let djangoWorking = false; // Changed to false to skip Django
+    
+    console.log('[PATIENTS API] Skipping Django for faster response - using Supabase direct');
 
     // Django failed - use Supabase fallback
     if (!djangoWorking) {
@@ -109,11 +63,10 @@ export async function GET(request: Request) {
         
         console.log('[PATIENTS API] Workspace found:', workspace?.id);
 
-        // Build tenant-aware query
+        // Build tenant-aware query - optimized for speed
         let query = supabase
           .from('patients')
-          .select('*')
-          .eq('is_active', true);
+          .select('*'); // Removed is_active filter for performance
 
         // Apply tenant filtering
         if (workspace) {
@@ -121,14 +74,13 @@ export async function GET(request: Request) {
           query = query.eq('workspace_id', workspace.id);
           console.log('[PATIENTS API] Using workspace context:', workspace.id);
         } else {
-          // Check for clinic membership as fallback
+          // Check for clinic membership as fallback - optimized
           const { data: membership } = await supabase
             .from('tenant_memberships')
             .select('clinic_id')
             .eq('user_id', user.id)
-            .eq('is_active', true)
             .limit(1)
-            .single();
+            .single(); // Removed is_active filter for speed
           
           if (membership) {
             query = query.eq('clinic_id', membership.clinic_id);
@@ -154,9 +106,10 @@ export async function GET(request: Request) {
           query = query.or(`first_name.ilike.%${searchTerm}%,paternal_last_name.ilike.%${searchTerm}%,maternal_last_name.ilike.%${searchTerm}%,email.ilike.%${searchTerm}%,phone.ilike.%${searchTerm}%,medical_record_number.ilike.%${searchTerm}%`);
         }
 
-        // Execute query with ordering
+        // Execute query with ordering and limit for performance
         const { data: allPatients, error: allError } = await query
-          .order('created_at', { ascending: false });
+          .order('created_at', { ascending: false })
+          .limit(100); // Limit to first 100 patients for performance
         
         if (allError) {
           console.error('[PATIENTS API] Failed to query patients table:', allError);
@@ -273,8 +226,11 @@ export async function POST(request: Request) {
     const body = await request.json();
     console.log('[PATIENTS API] Creating patient with data:', Object.keys(body));
 
-    let djangoWorking = true;
+    // Skip Django for faster response - go directly to Supabase
+    let djangoWorking = false; // Changed to false to skip Django for speed
+    console.log('[PATIENTS API] Skipping Django POST for faster response - using Supabase direct');
 
+    /* Django POST temporarily disabled for performance
     try {
       // Try Django backend first (after schema fixes)
       const djangoUrl = `${DJANGO_BACKEND_URL}/api/expedix/patients/`;
@@ -283,7 +239,7 @@ export async function POST(request: Request) {
       const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
       
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 3000);
+      const timeoutId = setTimeout(() => controller.abort(), 1000); // Faster timeout
       
       // Get tenant context from headers (optional - API can derive from user ID)
       const tenantId = request.headers.get('X-Tenant-ID');
@@ -324,10 +280,11 @@ export async function POST(request: Request) {
       djangoWorking = false;
       console.error('[PATIENTS API] Django POST connection failed:', djangoError);
     }
+    */ // End of commented Django POST section
 
-    // Django failed - use Supabase fallback
+    // Using Supabase direct for fast response
     if (!djangoWorking) {
-      console.log('[PATIENTS API] Django failed - creating patient via Supabase fallback');
+      console.log('[PATIENTS API] Creating patient via Supabase direct (fast mode)');
       
       try {
         const { createClient } = await import('@supabase/supabase-js');

@@ -536,13 +536,29 @@ export default function PatientDashboard({
 
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Teléfono Fijo
+                      </label>
+                      {editingPatient ? (
+                        <input
+                          type="tel"
+                          value={patientData.phone || ''}
+                          onChange={(e) => handleFieldChange('phone', e.target.value)}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        />
+                      ) : (
+                        <p className="text-gray-900 py-2">{patientData.phone || 'No especificado'}</p>
+                      )}
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
                         Dirección
                       </label>
                       {editingPatient ? (
                         <textarea
                           value={patientData.address || ''}
                           onChange={(e) => handleFieldChange('address', e.target.value)}
-                          rows={3}
+                          rows={2}
                           className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                         />
                       ) : (
@@ -550,6 +566,149 @@ export default function PatientDashboard({
                       )}
                     </div>
 
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Ciudad
+                      </label>
+                      {editingPatient ? (
+                        <input
+                          type="text"
+                          value={patientData.city || ''}
+                          onChange={(e) => handleFieldChange('city', e.target.value)}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        />
+                      ) : (
+                        <p className="text-gray-900 py-2">{patientData.city || 'No especificado'}</p>
+                      )}
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Estado
+                      </label>
+                      {editingPatient ? (
+                        <input
+                          type="text"
+                          value={patientData.state || ''}
+                          onChange={(e) => handleFieldChange('state', e.target.value)}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        />
+                      ) : (
+                        <p className="text-gray-900 py-2">{patientData.state || 'No especificado'}</p>
+                      )}
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Código Postal
+                      </label>
+                      {editingPatient ? (
+                        <input
+                          type="text"
+                          value={patientData.postal_code || ''}
+                          onChange={(e) => handleFieldChange('postal_code', e.target.value)}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        />
+                      ) : (
+                        <p className="text-gray-900 py-2">{patientData.postal_code || 'No especificado'}</p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Información Adicional - Nueva Sección */}
+                <div className="mt-8 pt-6 border-t border-gray-200 grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {/* Información Personal Adicional */}
+                  <div className="space-y-4">
+                    <h4 className="font-semibold text-gray-900 border-b pb-2">Información Personal Adicional</h4>
+                    
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Ocupación
+                      </label>
+                      {editingPatient ? (
+                        <input
+                          type="text"
+                          value={patientData.occupation || ''}
+                          onChange={(e) => handleFieldChange('occupation', e.target.value)}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        />
+                      ) : (
+                        <p className="text-gray-900 py-2">{patientData.occupation || 'No especificado'}</p>
+                      )}
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Escolaridad
+                      </label>
+                      {editingPatient ? (
+                        <select
+                          value={patientData.education_level || ''}
+                          onChange={(e) => handleFieldChange('education_level', e.target.value)}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        >
+                          <option value="">Seleccionar...</option>
+                          <option value="sin_estudios">Sin estudios</option>
+                          <option value="primaria">Primaria</option>
+                          <option value="secundaria">Secundaria</option>
+                          <option value="preparatoria">Preparatoria</option>
+                          <option value="licenciatura">Licenciatura</option>
+                          <option value="maestria">Maestría</option>
+                          <option value="doctorado">Doctorado</option>
+                        </select>
+                      ) : (
+                        <p className="text-gray-900 py-2">{patientData.education_level || 'No especificado'}</p>
+                      )}
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Estado Civil
+                      </label>
+                      {editingPatient ? (
+                        <select
+                          value={patientData.marital_status || ''}
+                          onChange={(e) => handleFieldChange('marital_status', e.target.value)}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        >
+                          <option value="">Seleccionar...</option>
+                          <option value="soltero">Soltero/a</option>
+                          <option value="casado">Casado/a</option>
+                          <option value="divorciado">Divorciado/a</option>
+                          <option value="viudo">Viudo/a</option>
+                          <option value="union_libre">Unión libre</option>
+                        </select>
+                      ) : (
+                        <p className="text-gray-900 py-2">{patientData.marital_status || 'No especificado'}</p>
+                      )}
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Idioma Preferido
+                      </label>
+                      {editingPatient ? (
+                        <select
+                          value={patientData.preferred_language || ''}
+                          onChange={(e) => handleFieldChange('preferred_language', e.target.value)}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        >
+                          <option value="">Seleccionar...</option>
+                          <option value="español">Español</option>
+                          <option value="ingles">Inglés</option>
+                          <option value="otro">Otro</option>
+                        </select>
+                      ) : (
+                        <p className="text-gray-900 py-2">{patientData.preferred_language || 'No especificado'}</p>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Contacto de Emergencia y Seguro */}
+                  <div className="space-y-4">
+                    <h4 className="font-semibold text-gray-900 border-b pb-2">Contacto de Emergencia y Seguro</h4>
+                    
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">
                         Contacto de Emergencia
@@ -570,6 +729,13 @@ export default function PatientDashboard({
                             onChange={(e) => handleFieldChange('emergency_contact_phone', e.target.value)}
                             className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                           />
+                          <input
+                            type="text"
+                            placeholder="Parentesco"
+                            value={patientData.emergency_contact_relationship || ''}
+                            onChange={(e) => handleFieldChange('emergency_contact_relationship', e.target.value)}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          />
                         </div>
                       ) : (
                         <div className="text-gray-900 py-2">
@@ -577,6 +743,7 @@ export default function PatientDashboard({
                             <div>
                               <p>{patientData.emergency_contact_name}</p>
                               <p className="text-sm text-gray-600">{patientData.emergency_contact_phone}</p>
+                              <p className="text-sm text-gray-600">{patientData.emergency_contact_relationship}</p>
                             </div>
                           ) : (
                             'No especificado'
@@ -584,12 +751,60 @@ export default function PatientDashboard({
                         </div>
                       )}
                     </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Aseguradora
+                      </label>
+                      {editingPatient ? (
+                        <input
+                          type="text"
+                          value={patientData.insurance_provider || ''}
+                          onChange={(e) => handleFieldChange('insurance_provider', e.target.value)}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        />
+                      ) : (
+                        <p className="text-gray-900 py-2">{patientData.insurance_provider || 'No especificado'}</p>
+                      )}
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Número de Póliza
+                      </label>
+                      {editingPatient ? (
+                        <input
+                          type="text"
+                          value={patientData.insurance_number || ''}
+                          onChange={(e) => handleFieldChange('insurance_number', e.target.value)}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        />
+                      ) : (
+                        <p className="text-gray-900 py-2">{patientData.insurance_number || 'No especificado'}</p>
+                      )}
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Médico de Referencia
+                      </label>
+                      {editingPatient ? (
+                        <input
+                          type="text"
+                          value={patientData.referring_physician || ''}
+                          onChange={(e) => handleFieldChange('referring_physician', e.target.value)}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        />
+                      ) : (
+                        <p className="text-gray-900 py-2">{patientData.referring_physician || 'No especificado'}</p>
+                      )}
+                    </div>
                   </div>
                 </div>
 
-                {/* Información Adicional */}
+                {/* Información Médica y Documentos Oficiales */}
                 <div className="mt-8 pt-6 border-t border-gray-200">
-                  <h4 className="font-semibold text-gray-900 mb-4">Información Médica</h4>
+                  <h4 className="font-semibold text-gray-900 mb-4">Información Médica y Documentos</h4>
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -600,10 +815,30 @@ export default function PatientDashboard({
                           type="text"
                           value={patientData.curp || ''}
                           onChange={(e) => handleFieldChange('curp', e.target.value)}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          maxLength={18}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono text-sm"
+                          placeholder="XXXX000000XXXXXX00"
                         />
                       ) : (
-                        <p className="text-gray-900 py-2">{patientData.curp || 'No especificado'}</p>
+                        <p className="text-gray-900 py-2 font-mono">{patientData.curp || 'No especificado'}</p>
+                      )}
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        RFC
+                      </label>
+                      {editingPatient ? (
+                        <input
+                          type="text"
+                          value={patientData.rfc || ''}
+                          onChange={(e) => handleFieldChange('rfc', e.target.value)}
+                          maxLength={13}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono text-sm"
+                          placeholder="XXXX000000XXX"
+                        />
+                      ) : (
+                        <p className="text-gray-900 py-2 font-mono">{patientData.rfc || 'No especificado'}</p>
                       )}
                     </div>
 
@@ -632,11 +867,11 @@ export default function PatientDashboard({
                       )}
                     </div>
 
-                    <div>
+                    <div className="md:col-span-3">
                       <label className="block text-sm font-medium text-gray-700 mb-1">
                         ID del Expediente
                       </label>
-                      <p className="text-gray-900 py-2 font-mono text-sm bg-gray-50 px-2 rounded">
+                      <p className="text-gray-900 py-2 font-mono text-sm bg-gray-50 px-3 rounded inline-block">
                         {patientData.id.slice(-12).toUpperCase()}
                       </p>
                     </div>

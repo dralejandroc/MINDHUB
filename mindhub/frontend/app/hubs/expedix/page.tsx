@@ -66,13 +66,14 @@ function ExpedixContent() {
           setDetailView('dashboard');
         }
       } else {
-        // Patient not found, redirect back to expedients view
-        handleBackToList();
+        // Patient not found, just log the error but don't redirect
+        console.warn('Patient not found with ID:', patientId);
+        // Don't automatically redirect - let user decide
       }
     } catch (error) {
       console.error('Error loading patient:', error);
-      // On error, redirect back to expedients view and clear URL params
-      handleBackToList();
+      // On error, just log but don't redirect automatically
+      // The user can manually go back if needed
     } finally {
       setLoading(false);
     }
@@ -123,7 +124,7 @@ function ExpedixContent() {
   };
 
   const handleSettings = () => {
-    console.log('Settings');
+    router.push('/hubs/expedix/settings');
   };
 
 

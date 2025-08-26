@@ -158,7 +158,10 @@ class DashboardDataService {
   private async fetchPatients(): Promise<any[]> {
     try {
       const response = await simpleApiClient.getExpedixPatients();
-      return response?.data || [];
+      // Handle both formats: { data: [] } and { results: [] }
+      const patients = response?.data || response?.results || [];
+      console.log('[DashboardService] Fetched patients:', patients.length);
+      return patients;
     } catch (error) {
       console.error('Error fetching patients:', error);
       return [];
@@ -169,19 +172,26 @@ class DashboardDataService {
     try {
       // Try to get consultations directly first
       const response = await simpleApiClient.getExpedixConsultations();
-      if (response?.data) {
-        return response.data;
+      // Handle both formats: { data: [] } and { results: [] }
+      const consultations = response?.data || response?.results || [];
+      
+      if (consultations.length > 0) {
+        console.log('[DashboardService] Fetched consultations:', consultations.length);
+        return consultations;
       }
       
       // Fallback: extract consultations from patient data
       const patientsResponse = await simpleApiClient.getExpedixPatients();
+      const patients = patientsResponse?.data || patientsResponse?.results || [];
       const allConsultations: any[] = [];
-      patientsResponse.data?.forEach((patient: any) => {
+      
+      patients.forEach((patient: any) => {
         if (patient.consultations && patient.consultations.length > 0) {
           allConsultations.push(...patient.consultations);
         }
       });
       
+      console.log('[DashboardService] Fetched consultations from patients:', allConsultations.length);
       return allConsultations;
     } catch (error) {
       console.error('Error fetching consultations:', error);

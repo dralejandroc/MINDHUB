@@ -29,6 +29,11 @@ export interface Patient {
   postal_code?: string;
   education_level?: string;
   occupation?: string;
+  marital_status?: string;
+  preferred_language?: string;
+  insurance_provider?: string;
+  insurance_number?: string;
+  referring_physician?: string;
   consultations_count?: number;
   evaluations_count?: number;
   created_at: string;
