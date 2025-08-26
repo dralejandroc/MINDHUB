@@ -11,7 +11,7 @@ import { AppointmentContextMenu } from '@/components/agenda-v2/shared/Appointmen
 import { AppointmentData } from '@/components/agenda-v2/shared/AppointmentCard';
 import { ScheduleConfig } from '@/components/agenda-v2/shared/TimeSlotGrid';
 import NewAppointmentModal from '@/components/agenda/NewAppointmentModal';
-import NewPatientQuickModal from '@/components/agenda/NewPatientQuickModal';
+import NewPatientModal from '@/components/expedix/NewPatientModal';
 import { 
   CalendarIcon, 
   PlusIcon,
@@ -474,19 +474,18 @@ export default function AgendaV2Page() {
       )}
 
       {/* New Patient Modal */}
-      {showNewPatientModal && (
-        <NewPatientQuickModal
-          onClose={() => setShowNewPatientModal(false)}
-          onSave={(patient) => {
-            // Call the stored callback with the new patient data
-            if ((window as any).newPatientCallback) {
-              (window as any).newPatientCallback(patient);
-              (window as any).newPatientCallback = null;
-            }
-            setShowNewPatientModal(false);
-          }}
-        />
-      )}
+      <NewPatientModal
+        isOpen={showNewPatientModal}
+        onClose={() => setShowNewPatientModal(false)}
+        onSuccess={(patient) => {
+          // Call the stored callback with the new patient data
+          if ((window as any).newPatientCallback) {
+            (window as any).newPatientCallback(patient);
+            (window as any).newPatientCallback = null;
+          }
+          setShowNewPatientModal(false);
+        }}
+      />
     </div>
   );
 }

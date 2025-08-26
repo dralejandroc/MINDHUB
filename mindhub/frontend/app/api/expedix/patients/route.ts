@@ -285,11 +285,11 @@ export async function POST(request: Request) {
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 3000);
       
-      // Get tenant context from headers
+      // Get tenant context from headers (optional - API can derive from user ID)
       const tenantId = request.headers.get('X-Tenant-ID');
       const tenantType = request.headers.get('X-Tenant-Type');
       
-      console.log('[PATIENTS API] Creating with tenant context:', { tenantId, tenantType });
+      console.log('[PATIENTS API] Creating with tenant context:', { tenantId, tenantType, userId: user.id });
 
       const djangoResponse = await fetch(djangoUrl, {
         method: 'POST',
@@ -345,15 +345,24 @@ export async function POST(request: Request) {
         }
         
         // Get user's workspace for tenant context
-        const { data: workspace } = await supabase
+        console.log('[PATIENTS API] Looking for workspace for user:', user.id);
+        
+        const { data: workspace, error: workspaceError } = await supabase
           .from('individual_workspaces')
-          .select('id')
+          .select('id, workspace_name, owner_id')
           .eq('owner_id', user.id)
           .eq('is_active', true)
           .single();
         
+        console.log('[PATIENTS API] Workspace query result:', { workspace, workspaceError });
+        
         if (!workspace) {
-          throw new Error('User workspace not found - cannot create patient');
+          console.error('[PATIENTS API] No workspace found for user:', {
+            userId: user.id,
+            userEmail: user.email,
+            workspaceError: workspaceError?.message
+          });
+          throw new Error(`User workspace not found - cannot create patient. User: ${user.email || user.id}`);
         }
         
         console.log('[PATIENTS API] Creating patient in workspace:', workspace.id);

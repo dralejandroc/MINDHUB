@@ -18,17 +18,17 @@ interface PatientFormData {
   paternal_last_name: string;
   maternal_last_name: string;
   birth_date: string;
-  gender: 'masculine' | 'feminine';
+  gender: 'male' | 'female';
   email: string;
   cell_phone: string;
   phone?: string;
-  address: string;
-  city: string;
-  state: string;
-  postal_code: string;
-  emergency_contact_name: string;
-  emergency_contact_phone: string;
-  emergency_contact_relationship: string;
+  address?: string;
+  city?: string;
+  state?: string;
+  postal_code?: string;
+  emergency_contact_name?: string;
+  emergency_contact_phone?: string;
+  emergency_contact_relationship?: string;
   medical_history?: string;
   current_medications?: string;
   allergies?: string;
@@ -46,7 +46,7 @@ export default function NewPatientModal({ isOpen, onClose, onSuccess }: NewPatie
     paternal_last_name: '',
     maternal_last_name: '',
     birth_date: '',
-    gender: 'masculine',
+    gender: 'male',
     email: '',
     cell_phone: '',
     phone: '',
@@ -112,7 +112,7 @@ export default function NewPatientModal({ isOpen, onClose, onSuccess }: NewPatie
           paternal_last_name: '',
           maternal_last_name: '',
           birth_date: '',
-          gender: 'masculine',
+          gender: 'male',
           email: '',
           cell_phone: '',
           phone: '',
@@ -251,13 +251,13 @@ export default function NewPatientModal({ isOpen, onClose, onSuccess }: NewPatie
                   </label>
                   <select
                     value={formData.gender}
-                    onChange={(e) => handleInputChange('gender', e.target.value as 'masculine' | 'feminine')}
+                    onChange={(e) => handleInputChange('gender', e.target.value as 'male' | 'female')}
                     className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                     style={{ border: '1px solid var(--neutral-300)' }}
                     required
                   >
-                    <option value="masculine">Masculino</option>
-                    <option value="feminine">Femenino</option>
+                    <option value="male">Masculino</option>
+                    <option value="female">Femenino</option>
                   </select>
                 </div>
               </div>
@@ -322,7 +322,7 @@ export default function NewPatientModal({ isOpen, onClose, onSuccess }: NewPatie
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="md:col-span-2">
                   <label className="block text-sm font-medium mb-1" style={{ color: 'var(--dark-green)' }}>
-                    Dirección *
+                    Dirección (Opcional)
                   </label>
                   <input
                     type="text"
@@ -331,12 +331,11 @@ export default function NewPatientModal({ isOpen, onClose, onSuccess }: NewPatie
                     className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                     style={{ border: '1px solid var(--neutral-300)' }}
                     placeholder="Calle, número, colonia"
-                    required
                   />
                 </div>
                 <div>
                   <label className="block text-sm font-medium mb-1" style={{ color: 'var(--dark-green)' }}>
-                    Ciudad *
+                    Ciudad (Opcional)
                   </label>
                   <input
                     type="text"
@@ -344,12 +343,11 @@ export default function NewPatientModal({ isOpen, onClose, onSuccess }: NewPatie
                     onChange={(e) => handleInputChange('city', e.target.value)}
                     className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                     style={{ border: '1px solid var(--neutral-300)' }}
-                    required
                   />
                 </div>
                 <div>
                   <label className="block text-sm font-medium mb-1" style={{ color: 'var(--dark-green)' }}>
-                    Estado *
+                    Estado (Opcional)
                   </label>
                   <input
                     type="text"
@@ -357,7 +355,6 @@ export default function NewPatientModal({ isOpen, onClose, onSuccess }: NewPatie
                     onChange={(e) => handleInputChange('state', e.target.value)}
                     className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                     style={{ border: '1px solid var(--neutral-300)' }}
-                    required
                   />
                 </div>
                 <div>
@@ -380,12 +377,12 @@ export default function NewPatientModal({ isOpen, onClose, onSuccess }: NewPatie
             <div>
               <h3 className="text-lg font-semibold mb-4 flex items-center">
                 <IdentificationIcon className="h-5 w-5 mr-2" style={{ color: 'var(--primary-500)' }} />
-                Contacto de Emergencia
+                Contacto de Emergencia (Opcional)
               </h3>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
                   <label className="block text-sm font-medium mb-1" style={{ color: 'var(--dark-green)' }}>
-                    Nombre Completo *
+                    Nombre Completo
                   </label>
                   <input
                     type="text"
@@ -393,12 +390,11 @@ export default function NewPatientModal({ isOpen, onClose, onSuccess }: NewPatie
                     onChange={(e) => handleInputChange('emergency_contact_name', e.target.value)}
                     className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                     style={{ border: '1px solid var(--neutral-300)' }}
-                    required
                   />
                 </div>
                 <div>
                   <label className="block text-sm font-medium mb-1" style={{ color: 'var(--dark-green)' }}>
-                    Teléfono *
+                    Teléfono
                   </label>
                   <input
                     type="tel"
@@ -406,19 +402,17 @@ export default function NewPatientModal({ isOpen, onClose, onSuccess }: NewPatie
                     onChange={(e) => handleInputChange('emergency_contact_phone', e.target.value)}
                     className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                     style={{ border: '1px solid var(--neutral-300)' }}
-                    required
                   />
                 </div>
                 <div>
                   <label className="block text-sm font-medium mb-1" style={{ color: 'var(--dark-green)' }}>
-                    Parentesco *
+                    Parentesco
                   </label>
                   <select
                     value={formData.emergency_contact_relationship}
                     onChange={(e) => handleInputChange('emergency_contact_relationship', e.target.value)}
                     className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                     style={{ border: '1px solid var(--neutral-300)' }}
-                    required
                   >
                     <option value="">Seleccionar parentesco</option>
                     <option value="madre">Madre</option>
