@@ -78,6 +78,7 @@ class Patient(models.Model):
     paternal_last_name = models.TextField(blank=True, null=True)  # Missing from old model
     maternal_last_name = models.TextField(blank=True, null=True)  # Missing from old model
     date_of_birth = models.DateField(blank=True, null=True)
+    age = models.IntegerField(blank=True, null=True)  # Calculated age field
     gender = models.TextField(blank=True, null=True)
     email = models.TextField(blank=True, null=True)
     phone = models.TextField(blank=True, null=True)
@@ -120,11 +121,11 @@ class Patient(models.Model):
     # Classification
     patient_category = models.TextField(blank=True, null=True)
     
-    # Critical association fields
+    # Critical association fields - EXACTLY as in Supabase
     created_by = models.UUIDField(blank=True, null=True)  # Supabase user ID del creador
-    clinic_id = models.UUIDField()  # NOT NULL in real table
+    clinic_id = models.UUIDField(blank=True, null=True)  # Can be NULL in real table
     assigned_professional_id = models.UUIDField(blank=True, null=True)  # Profesional asignado
-    workspace_id = models.UUIDField(blank=True, null=True)  # Missing from old model
+    workspace_id = models.UUIDField(blank=True, null=True)  # For dual system
     
     # Additional notes
     notes = models.TextField(blank=True, null=True)

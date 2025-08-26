@@ -37,4 +37,7 @@ urlpatterns = [
     path('collections/<uuid:pk>/items/', views.ResourceCollectionViewSet.as_view({'get': 'items'}), name='resource-collection-items'),
     path('collections/<uuid:pk>/add-resource/', views.ResourceCollectionViewSet.as_view({'post': 'add_resource'}), name='resource-collection-add'),
     path('collections/<uuid:pk>/remove-resource/', views.ResourceCollectionViewSet.as_view({'post': 'remove_resource'}), name='resource-collection-remove'),
+    
+    # CORRECTED endpoints using real database schema (temporarily disabled due to model conflicts)
+    # path('real/', include('resources.urls_real')),
 ]

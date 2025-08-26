@@ -42,6 +42,9 @@ urlpatterns = [
     # ClinimetrixPro API endpoints (no frontend pages)
     path('assessments/', include('assessments.urls')),
     
+    # ClinimetrixPro REAL schema endpoints (CORRECTED)
+    path('assessments/', include('assessments.urls_real')),
+    
     # API endpoints  
     path('scales/', include('psychometric_scales.urls')),
     

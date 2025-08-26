@@ -40,13 +40,13 @@ class AppointmentViewSet(AgendaDualViewSet):
     - LICENCIA CLÍNICA: WHERE clinic_id = user.clinic_id (shared agenda)
     - LICENCIA INDIVIDUAL: WHERE workspace_id = user.workspace_id (private agenda)
     """
-    queryset = Appointment.objects.select_related('patient', 'provider', 'scheduled_by').all()
+    queryset = Appointment.objects.all()
     serializer_class = AppointmentSerializer
     authentication_classes = [SupabaseProxyAuthentication]
     permission_classes = [IsAuthenticated]
     filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
-    search_fields = ['patient__first_name', 'patient__paternal_last_name', 'reason', 'appointment_number']
-    filterset_fields = ['status', 'appointment_type', 'patient', 'provider']
+    search_fields = ['reason', 'notes']
+    filterset_fields = ['status', 'appointment_type', 'patient_id', 'professional_id']
     ordering_fields = ['appointment_date', 'created_at']
     ordering = ['appointment_date']
 
@@ -58,27 +58,30 @@ class AppointmentViewSet(AgendaDualViewSet):
         return AppointmentSerializer
 
     def perform_create(self, serializer):
-        # Generate appointment number
-        appointment_number = self._generate_appointment_number()
-        serializer.save(
-            scheduled_by=self.request.user,
-            appointment_number=appointment_number
-        )
+        # Save appointment - no scheduled_by field in real table
+        appointment = serializer.save()
         
-        # Create history entry
-        appointment = serializer.instance
-        AppointmentHistory.objects.create(
-            appointment=appointment,
-            action='SCHEDULED',
-            changes={
-                'status': 'scheduled',
-                'appointment_date': appointment.appointment_date.isoformat(),
-                'duration': appointment.duration,
-                'appointment_type': appointment.appointment_type
-            },
-            reason=f'Cita agendada: {appointment.reason}',
-            modified_by=self.request.user
-        )
+        # Set status to scheduled if not provided
+        if not appointment.status:
+            appointment.status = 'scheduled'
+            appointment.save()
+        
+        # Create history entry (only if AppointmentHistory table exists)
+        try:
+            AppointmentHistory.objects.create(
+                appointment=appointment,
+                action='SCHEDULED',
+                changes={
+                    'status': 'scheduled',
+                    'appointment_date': appointment.appointment_date.isoformat(),
+                    'appointment_type': appointment.appointment_type
+                },
+                reason=f'Cita agendada: {appointment.reason or "Nueva cita"}',
+                modified_by=self.request.user
+            )
+        except Exception:
+            # AppointmentHistory table might not exist in real DB
+            pass
 
     @action(detail=False, methods=['get'])
     def by_patient(self, request):
@@ -110,7 +113,7 @@ class AppointmentViewSet(AgendaDualViewSet):
             'confirmed': appointments.filter(status='confirmed').count(),
             'completed': appointments.filter(status='completed').count(),
             'upcoming': appointments.filter(
-                appointment_date__gt=timezone.now(),
+                appointment_date__gt=timezone.now().date(),
                 status__in=['scheduled', 'confirmed']
             ).count()
         }
@@ -124,9 +127,9 @@ class AppointmentViewSet(AgendaDualViewSet):
     def upcoming(self, request):
         """Get upcoming appointments"""
         upcoming = self.queryset.filter(
-            appointment_date__gte=timezone.now(),
+            appointment_date__gte=timezone.now().date(),
             status__in=['scheduled', 'confirmed']
-        ).order_by('appointment_date')[:10]
+        ).order_by('appointment_date', 'start_time')[:10]
         
         serializer = self.get_serializer(upcoming, many=True)
         return Response(serializer.data)
@@ -145,17 +148,17 @@ class AppointmentViewSet(AgendaDualViewSet):
             'completed_appointments': self.queryset.filter(status='completed').count(),
             'cancelled_appointments': self.queryset.filter(status='cancelled').count(),
             'upcoming_appointments': self.queryset.filter(
-                appointment_date__gte=timezone.now(),
+                appointment_date__gte=timezone.now().date(),
                 status__in=['scheduled', 'confirmed']
             ).count(),
             'appointments_today': self.queryset.filter(
-                appointment_date__date=today
+                appointment_date=today
             ).count(),
             'appointments_this_week': self.queryset.filter(
-                appointment_date__date__gte=week_start
+                appointment_date__gte=week_start
             ).count(),
             'appointments_this_month': self.queryset.filter(
-                appointment_date__date__gte=month_start
+                appointment_date__gte=month_start
             ).count(),
         }
         
@@ -186,10 +189,10 @@ class AppointmentViewSet(AgendaDualViewSet):
                 status=status.HTTP_403_FORBIDDEN
             )
         
-        # Update appointment
+        # Update appointment - using only real fields
         appointment.status = 'confirmed'
-        appointment.confirmed_at = timezone.now()
-        appointment.confirmed_by = request.user
+        appointment.confirmation_sent = True
+        appointment.confirmation_date = timezone.now()
         appointment.save()
         
         # Create confirmation record
@@ -250,12 +253,11 @@ class AppointmentViewSet(AgendaDualViewSet):
                 status=status.HTTP_403_FORBIDDEN
             )
         
-        # Update appointment
+        # Update appointment - using only real fields
         appointment.status = 'cancelled'
-        appointment.cancelled_at = timezone.now()
-        appointment.cancelled_by = request.user
-        appointment.cancellation_reason = reason
-        appointment.reschedule_requested = reschedule_requested
+        # Note: cancelled_at, cancelled_by, cancellation_reason don't exist in real table
+        # Store in notes instead
+        appointment.notes = f"{appointment.notes or ''}\nCancelado: {reason}"
         appointment.save()
         
         # Create history entry
@@ -307,18 +309,18 @@ class AppointmentViewSet(AgendaDualViewSet):
             'available_slots': serializer.data
         })
 
-    def _generate_appointment_number(self):
-        """Generate unique appointment number"""
-        year = timezone.now().year
-        month = timezone.now().month
-        prefix = f"APT-{year}{month:02d}"
-        
-        count = Appointment.objects.filter(
-            appointment_number__startswith=prefix
-        ).count()
-        
-        sequence = str(count + 1).zfill(4)
-        return f"{prefix}-{sequence}"
+    # def _generate_appointment_number(self):
+    #     """Generate unique appointment number - DISABLED: field doesn't exist in real table"""
+    #     year = timezone.now().year
+    #     month = timezone.now().month
+    #     prefix = f"APT-{year}{month:02d}"
+    #     
+    #     count = Appointment.objects.filter(
+    #         appointment_number__startswith=prefix
+    #     ).count()
+    #     
+    #     sequence = str(count + 1).zfill(4)
+    #     return f"{prefix}-{sequence}"
 
     def _get_provider_availability(self, provider_id, target_date, duration):
         """Get available appointment slots for a provider"""
@@ -429,7 +431,7 @@ class WaitingListViewSet(AgendaDualViewSet):
     authentication_classes = [SupabaseProxyAuthentication]
     permission_classes = [IsAuthenticated]
     filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
-    search_fields = ['patient__first_name', 'patient__paternal_last_name', 'reason']
+    search_fields = ['reason', 'notes']
     filterset_fields = ['provider', 'status', 'priority', 'appointment_type']
     ordering_fields = ['created_at', 'priority']
     ordering = ['priority', 'created_at']

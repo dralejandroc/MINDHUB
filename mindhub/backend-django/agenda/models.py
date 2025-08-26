@@ -9,16 +9,9 @@ from django.core.validators import EmailValidator, MinValueValidator, MaxValueVa
 
 
 class Appointment(models.Model):
-    """Appointment model for comprehensive appointment management"""
-    STATUS_CHOICES = [
-        ('scheduled', 'Programada'),
-        ('confirmed', 'Confirmada'),
-        ('cancelled', 'Cancelada'),
-        ('no_show', 'No se presentó'),
-        ('completed', 'Completada'),
-        ('rescheduled', 'Reprogramada'),
-    ]
-
+    """Appointment model matching EXACT Supabase schema - NO CUSTOM FIELDS"""
+    
+    # Choices for other models that reference them
     TYPE_CHOICES = [
         ('consultation', 'Consulta'),
         ('follow_up', 'Seguimiento'),
@@ -27,96 +20,82 @@ class Appointment(models.Model):
         ('evaluation', 'Evaluación'),
         ('medication_review', 'Revisión de medicación'),
     ]
-
+    
+    STATUS_CHOICES = [
+        ('scheduled', 'Programada'),
+        ('confirmed', 'Confirmada'),
+        ('cancelled', 'Cancelada'),
+        ('no_show', 'No se presentó'),
+        ('completed', 'Completada'),
+        ('rescheduled', 'Reprogramada'),
+    ]
+    
+    # Primary key
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    appointment_number = models.CharField(max_length=50, unique=True)
     
-    # 🎯 DUAL SYSTEM: Puede pertenecer a clínica O workspace individual
-    clinic_id = models.UUIDField(blank=True, null=True, help_text="For clinic licenses")
-    workspace_id = models.UUIDField(blank=True, null=True, help_text="For individual licenses")
-    
-    # Foreign keys (using string references to avoid circular imports)
-    patient = models.ForeignKey('expedix.Patient', on_delete=models.CASCADE, related_name='appointments')
-    provider = models.ForeignKey('expedix.User', on_delete=models.PROTECT, related_name='provider_appointments')
-    
-    # Appointment details
-    appointment_date = models.DateTimeField()
-    appointment_time = models.TimeField(help_text="Time extracted from appointment_date for easier filtering")
-    duration = models.IntegerField(
-        validators=[MinValueValidator(15), MaxValueValidator(480)],
-        help_text="Duration in minutes (15-480)"
-    )
-    appointment_type = models.CharField(max_length=50, choices=TYPE_CHOICES)
-    reason = models.CharField(max_length=200, blank=True, null=True)
-    notes = models.TextField(blank=True, null=True)
-    
-    # Administrative fields for comprehensive tracking
-    branch = models.CharField(max_length=100, blank=True, null=True, help_text="Sucursal donde se realiza la cita")
-    resource = models.CharField(max_length=100, blank=True, null=True, help_text="Recurso utilizado (consultorio, sala, etc.)")
-    professional = models.CharField(max_length=200, blank=True, null=True, help_text="Nombre del profesional asignado")
-    
-    # Financial tracking
-    balance = models.DecimalField(max_digits=10, decimal_places=2, default=0.00, help_text="Balance pendiente de la cita")
-    is_paid = models.BooleanField(default=False, help_text="Indica si la cita ha sido pagada completamente")
-    
-    # Status and tracking
-    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='scheduled')
-    
-    # Confirmation tracking
-    confirmed_at = models.DateTimeField(blank=True, null=True)
-    confirmed_by = models.ForeignKey('expedix.User', on_delete=models.SET_NULL, null=True, blank=True, related_name='confirmed_appointments')
-    
-    # Cancellation tracking  
-    cancelled_at = models.DateTimeField(blank=True, null=True)
-    cancelled_by = models.ForeignKey('expedix.User', on_delete=models.SET_NULL, null=True, blank=True, related_name='cancelled_appointments')
-    cancellation_reason = models.TextField(blank=True, null=True)
-    reschedule_requested = models.BooleanField(default=False)
-    
-    # Preparation requirements
-    requires_preparation = models.BooleanField(default=False)
-    preparation_instructions = models.TextField(blank=True, null=True)
-    
-    # Administrative tracking
-    scheduled_by = models.ForeignKey('expedix.User', on_delete=models.PROTECT, related_name='scheduled_appointments')
+    # Timestamps - EXACT order as Supabase
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+    
+    # Core relationships - EXACT field names from Supabase
+    patient_id = models.UUIDField()  # NOT NULL in real table
+    professional_id = models.UUIDField()  # NOT provider_id!
+    
+    # Date/time fields - SEPARATED as in real Supabase schema
+    appointment_date = models.DateField()  # DATE not DATETIME!
+    start_time = models.TimeField()  # SEPARATE TIME field
+    end_time = models.TimeField()    # SEPARATE TIME field
+    
+    # Basic appointment info
+    appointment_type = models.CharField(max_length=255, blank=True, null=True)
+    status = models.CharField(max_length=255, blank=True, null=True)
+    reason = models.TextField(blank=True, null=True)
+    notes = models.TextField(blank=True, null=True)
+    internal_notes = models.TextField(blank=True, null=True)
+    
+    # Confirmation system - EXACT as Supabase
+    confirmation_sent = models.BooleanField(blank=True, null=True)
+    confirmation_date = models.DateTimeField(blank=True, null=True)
+    
+    # Recurring appointments - EXACT as Supabase
+    is_recurring = models.BooleanField(blank=True, null=True)
+    recurring_pattern = models.JSONField(blank=True, null=True)
+    
+    # Reminder system - EXACT as Supabase
+    reminder_sent = models.BooleanField(blank=True, null=True)
+    reminder_date = models.DateTimeField(blank=True, null=True)
+    
+    # 🎯 DUAL SYSTEM: EXACT as Supabase
+    clinic_id = models.UUIDField(blank=True, null=True)
+    workspace_id = models.UUIDField(blank=True, null=True)
 
     class Meta:
         db_table = 'appointments'
+        managed = False  # Use existing Supabase table
         indexes = [
-            models.Index(fields=['patient']),
-            models.Index(fields=['provider']),
+            models.Index(fields=['patient_id']),
+            models.Index(fields=['professional_id']),  # Fixed field name
             models.Index(fields=['appointment_date']),
             models.Index(fields=['status']),
-            models.Index(fields=['appointment_number']),
-            # 🎯 DUAL SYSTEM: Índices para filtrado eficiente
             models.Index(fields=['clinic_id']),
             models.Index(fields=['workspace_id']),
         ]
-        constraints = [
-            # 🎯 DUAL SYSTEM: XOR constraint - solo uno de clinic_id O workspace_id
-            models.CheckConstraint(
-                check=(
-                    models.Q(clinic_id__isnull=False, workspace_id__isnull=True) |
-                    models.Q(clinic_id__isnull=True, workspace_id__isnull=False)
-                ),
-                name='check_appointment_owner'
-            )
-        ]
-
-    def save(self, *args, **kwargs):
-        # Auto-sync appointment_time with appointment_date
-        if self.appointment_date:
-            self.appointment_time = self.appointment_date.time()
-        super().save(*args, **kwargs)
 
     def __str__(self):
-        return f"Cita {self.appointment_number} - {self.patient} - {self.appointment_date.strftime('%Y-%m-%d %H:%M')}"
+        return f"Cita {self.id} - Patient {self.patient_id} - {self.appointment_date} {self.start_time}"
 
     @property
     def is_upcoming(self):
         from django.utils import timezone
-        return self.appointment_date > timezone.now() and self.status in ['scheduled', 'confirmed']
+        from datetime import datetime, date
+        
+        # Combine date and start_time for comparison
+        if self.appointment_date and self.start_time:
+            appointment_datetime = datetime.combine(self.appointment_date, self.start_time)
+            # Make it timezone aware
+            appointment_datetime = timezone.make_aware(appointment_datetime)
+            return appointment_datetime > timezone.now() and self.status in ['scheduled', 'confirmed']
+        return False
 
     @property
     def can_be_confirmed(self):
@@ -125,6 +104,17 @@ class Appointment(models.Model):
     @property
     def can_be_cancelled(self):
         return self.status not in ['cancelled', 'completed']
+        
+    @property
+    def duration_minutes(self):
+        """Calculate duration between start_time and end_time"""
+        if self.start_time and self.end_time:
+            from datetime import datetime, timedelta
+            start = datetime.combine(date.today(), self.start_time)
+            end = datetime.combine(date.today(), self.end_time)
+            duration = end - start
+            return int(duration.total_seconds() / 60)
+        return None
 
 
 class AppointmentHistory(models.Model):
@@ -160,7 +150,7 @@ class AppointmentHistory(models.Model):
         ]
 
     def __str__(self):
-        return f"{self.appointment.appointment_number} - {self.action} - {self.created_at.strftime('%Y-%m-%d %H:%M')}"
+        return f"{self.appointment.id} - {self.action} - {self.created_at.strftime('%Y-%m-%d %H:%M')}"
 
 
 class AppointmentConfirmation(models.Model):
@@ -200,7 +190,7 @@ class AppointmentConfirmation(models.Model):
         ]
 
     def __str__(self):
-        return f"{self.appointment.appointment_number} - Confirmada por {self.confirmation_type} - {self.confirmed_at.strftime('%Y-%m-%d %H:%M')}"
+        return f"{self.appointment.id} - Confirmada por {self.confirmation_type} - {self.confirmed_at.strftime('%Y-%m-%d %H:%M')}"
 
 
 class ProviderSchedule(models.Model):

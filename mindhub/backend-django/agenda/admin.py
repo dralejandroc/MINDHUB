@@ -13,43 +13,44 @@ from .models import (
 @admin.register(Appointment)
 class AppointmentAdmin(admin.ModelAdmin):
     list_display = [
-        'appointment_number', 'patient', 'provider', 'appointment_date', 
-        'duration', 'appointment_type', 'status', 'created_at'
+        'id', 'patient_id', 'professional_id', 'appointment_date', 
+        'start_time', 'end_time', 'appointment_type', 'status', 'created_at'
     ]
-    list_filter = ['status', 'appointment_type', 'provider', 'created_at']
+    list_filter = ['status', 'appointment_type', 'created_at', 'confirmation_sent', 'is_recurring']
     search_fields = [
-        'appointment_number', 'patient__first_name', 'patient__paternal_last_name',
-        'provider__first_name', 'provider__last_name', 'reason'
+        'patient_id', 'professional_id', 'reason', 'notes'
     ]
-    readonly_fields = ['id', 'appointment_number', 'created_at', 'updated_at']
-    ordering = ['-appointment_date']
+    readonly_fields = ['id', 'created_at', 'updated_at']
+    ordering = ['-appointment_date', '-start_time']
     
     fieldsets = (
-        ('Información de la Cita', {
-            'fields': ('appointment_number', 'patient', 'provider', 'appointment_date', 
-                      'duration', 'appointment_type', 'reason', 'notes')
+        ('Información Básica', {
+            'fields': ('patient_id', 'professional_id', 'appointment_date', 
+                      'start_time', 'end_time', 'appointment_type', 'status')
         }),
-        ('Estado y Seguimiento', {
-            'fields': ('status', 'confirmed_at', 'confirmed_by', 'cancelled_at', 
-                      'cancelled_by', 'cancellation_reason', 'reschedule_requested')
+        ('Detalles', {
+            'fields': ('reason', 'notes', 'internal_notes')
         }),
-        ('Preparación', {
-            'fields': ('requires_preparation', 'preparation_instructions')
+        ('Confirmación', {
+            'fields': ('confirmation_sent', 'confirmation_date')
+        }),
+        ('Recordatorios', {
+            'fields': ('reminder_sent', 'reminder_date')
+        }),
+        ('Citas Recurrentes', {
+            'fields': ('is_recurring', 'recurring_pattern')
         }),
         ('Sistema', {
-            'fields': ('scheduled_by', 'created_at', 'updated_at')
+            'fields': ('clinic_id', 'workspace_id', 'created_at', 'updated_at')
         })
     )
-    
-    def get_queryset(self, request):
-        return super().get_queryset(request).select_related('patient', 'provider', 'scheduled_by')
 
 
 @admin.register(AppointmentHistory)
 class AppointmentHistoryAdmin(admin.ModelAdmin):
     list_display = ['appointment', 'action', 'modified_by', 'created_at']
     list_filter = ['action', 'created_at']
-    search_fields = ['appointment__appointment_number', 'reason']
+    search_fields = ['appointment__id', 'reason']
     readonly_fields = ['id', 'created_at']
     ordering = ['-created_at']
     
@@ -61,7 +62,7 @@ class AppointmentHistoryAdmin(admin.ModelAdmin):
 class AppointmentConfirmationAdmin(admin.ModelAdmin):
     list_display = ['appointment', 'confirmation_type', 'confirmation_method', 'confirmed_by', 'confirmed_at']
     list_filter = ['confirmation_type', 'confirmation_method', 'confirmed_at']
-    search_fields = ['appointment__appointment_number']
+    search_fields = ['appointment__id']
     readonly_fields = ['id', 'confirmed_at']
     ordering = ['-confirmed_at']
 

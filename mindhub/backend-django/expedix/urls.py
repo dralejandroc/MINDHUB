@@ -6,13 +6,15 @@ Replaces Node.js Express routing
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
 from . import views
+from .views_consultation import ConsultationViewSet, PrescriptionViewSet
+from .views_medications import MedicationViewSet, DiagnosisViewSet
 
 # Create DRF router
 router = DefaultRouter()
 router.register(r'patients', views.PatientViewSet)
-router.register(r'consultations', views.ConsultationViewSet)
+router.register(r'consultations', ConsultationViewSet)  # Use the real consultation views
 router.register(r'medical-history', views.MedicalHistoryViewSet)
-router.register(r'prescriptions', views.PrescriptionViewSet)
+router.register(r'prescriptions', PrescriptionViewSet)  # Use the real prescription views
 router.register(r'users', views.UserViewSet)
 router.register(r'schedule-config', views.ScheduleConfigViewSet, basename='schedule-config')
 router.register(r'debug-auth', views.DebugAuthViewSet, basename='debug-auth')
@@ -20,6 +22,9 @@ router.register(r'dual-system-test', views.DualSystemTestViewSet, basename='dual
 # Configuration endpoints
 router.register(r'configuration', views.ExpedixConfigurationViewSet, basename='expedix-config')
 router.register(r'consultation-templates', views.ConsultationTemplateViewSet, basename='consultation-templates')
+# Medication and diagnosis endpoints
+router.register(r'medications', MedicationViewSet, basename='medications')
+router.register(r'diagnoses', DiagnosisViewSet, basename='diagnoses')
 
 # URL patterns that match Node.js API routes
 urlpatterns = [
