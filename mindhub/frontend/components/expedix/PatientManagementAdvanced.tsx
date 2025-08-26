@@ -495,7 +495,7 @@ export default function PatientManagementAdvanced({
                         <div className="flex flex-wrap items-center gap-x-2 text-xs text-gray-500 mt-0.5">
                           <span className="whitespace-nowrap">{patient.age} años</span>
                           <span className="hidden sm:inline">•</span>
-                          <span className="hidden sm:inline">{patient.gender === 'masculine' ? 'M' : 'F'}</span>
+                          <span className="hidden sm:inline">{patient.gender === 'male' ? 'M' : 'F'}</span>
                           <span className="hidden md:inline">•</span>
                           <span className="truncate hidden md:inline">{patient.cell_phone || 'Sin teléfono'}</span>
                         </div>
@@ -594,7 +594,7 @@ export default function PatientManagementAdvanced({
                         {patient.first_name} {patient.paternal_last_name}
                       </button>
                       <div className="text-sm text-gray-500">
-                        {patient.age} • {patient.gender === 'masculine' ? 'M' : 'F'}
+                        {patient.age} • {patient.gender === 'male' ? 'M' : 'F'}
                       </div>
                     </div>
                   </div>

@@ -261,7 +261,7 @@ export default function PatientManagement({
                       {/* Age & Gender - More compact */}
                       <div className="col-span-2">
                         <div className="text-sm text-gray-900">{patient.age || 'N/A'}</div>
-                        <div className="text-xs text-gray-500">{patient.gender === 'masculine' ? 'M' : patient.gender === 'feminine' ? 'F' : '-'}</div>
+                        <div className="text-xs text-gray-500">{patient.gender === 'male' ? 'M' : patient.gender === 'female' ? 'F' : '-'}</div>
                       </div>
 
                       {/* Contact */}

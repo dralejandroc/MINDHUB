@@ -63,7 +63,7 @@ export default function QuickScheduling({ onAppointmentScheduled }: QuickSchedul
     phone: '',
     email: '',
     dateOfBirth: '',
-    gender: 'masculine'
+    gender: 'male'
   });
 
   // Appointment form state
@@ -417,8 +417,8 @@ export default function QuickScheduling({ onAppointmentScheduled }: QuickSchedul
                     onChange={(e) => setNewPatient(prev => ({ ...prev, gender: e.target.value }))}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                   >
-                    <option value="masculine">Masculino</option>
-                    <option value="feminine">Femenino</option>
+                    <option value="male">Masculino</option>
+                    <option value="female">Femenino</option>
                   </select>
                 </div>
               </div>

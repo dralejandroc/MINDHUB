@@ -14,7 +14,7 @@ export interface Patient {
   firstName: string;
   lastName: string;
   age: number;
-  gender: 'M' | 'F' | 'Other' | 'masculine' | 'feminine';
+  gender: 'M' | 'F' | 'Other' | 'male' | 'female';
   status: 'active' | 'inactive';
   lastVisit: string;
   birthDate?: string;
@@ -47,7 +47,7 @@ function convertExpedixToLegacy(expedixPatient: ExpedixPatient): Patient {
     firstName: expedixPatient.first_name || 'Sin nombre',
     lastName: lastName,
     age,
-    gender: expedixPatient.gender === 'masculine' ? 'M' : expedixPatient.gender === 'feminine' ? 'F' : 'Other',
+    gender: expedixPatient.gender === 'male' ? 'M' : expedixPatient.gender === 'female' ? 'F' : 'Other',
     status: 'active', // Default to active
     lastVisit: expedixPatient.updated_at || expedixPatient.created_at || new Date().toISOString(),
     birthDate: expedixPatient.birth_date || '',
@@ -130,7 +130,7 @@ export const usePatients = () => {
         paternal_last_name: patientData.lastName.split(' ')[0] || '',
         maternal_last_name: patientData.lastName.split(' ').slice(1).join(' ') || '',
         birth_date: patientData.birthDate,
-        gender: (patientData.gender === 'M' ? 'masculine' : patientData.gender === 'F' ? 'feminine' : 'masculine') as 'masculine' | 'feminine',
+        gender: (patientData.gender === 'M' ? 'male' : patientData.gender === 'F' ? 'female' : 'male') as 'male' | 'female',
         email: patientData.email || '',
         cell_phone: patientData.phone || '',
       };
@@ -173,7 +173,7 @@ export const usePatients = () => {
       if (updates.phone) expedixUpdates.cell_phone = updates.phone;
       if (updates.birthDate) expedixUpdates.birth_date = updates.birthDate;
       if (updates.gender) {
-        expedixUpdates.gender = updates.gender === 'M' ? 'masculine' : updates.gender === 'F' ? 'feminine' : 'masculine';
+        expedixUpdates.gender = updates.gender === 'M' ? 'male' : updates.gender === 'F' ? 'female' : 'male';
       }
       
       const response = await expedixApi.updatePatient(String(id), expedixUpdates);

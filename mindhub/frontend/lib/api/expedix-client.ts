@@ -10,7 +10,7 @@ export interface Patient {
   maternal_last_name: string;
   birth_date: string;
   age: number;
-  gender: 'masculine' | 'feminine';
+  gender: 'male' | 'female';
   email: string;
   cell_phone: string;
   phone?: string;

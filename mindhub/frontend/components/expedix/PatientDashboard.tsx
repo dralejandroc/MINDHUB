@@ -278,7 +278,7 @@ export default function PatientDashboard({
                     <span>🩸 Tipo de sangre: {patient.blood_type}</span>
                   )}
                   {patient.gender && (
-                    <span>👤 {patient.gender === 'masculine' ? 'Masculino' : 'Femenino'}</span>
+                    <span>👤 {patient.gender === 'male' ? 'Masculino' : 'Femenino'}</span>
                   )}
                   {patient.emergency_contact_name && (
                     <span>📞 Contacto emergencia: {patient.emergency_contact_name}</span>
@@ -486,13 +486,13 @@ export default function PatientDashboard({
                           className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                         >
                           <option value="">Seleccionar...</option>
-                          <option value="masculine">Masculino</option>
-                          <option value="feminine">Femenino</option>
+                          <option value="male">Masculino</option>
+                          <option value="female">Femenino</option>
                         </select>
                       ) : (
                         <p className="text-gray-900 py-2">
-                          {patientData.gender === 'masculine' ? 'Masculino' : 
-                           patientData.gender === 'feminine' ? 'Femenino' : 'No especificado'}
+                          {patientData.gender === 'male' ? 'Masculino' : 
+                           patientData.gender === 'female' ? 'Femenino' : 'No especificado'}
                         </p>
                       )}
                     </div>

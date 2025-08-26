@@ -719,7 +719,7 @@ export default function ConsultationNotes({ patient, onSaveConsultation, onCance
                 {patient.first_name} {patient.paternal_last_name} {patient.maternal_last_name || ''}
               </h2>
               <p className="text-sm text-gray-600">
-                🗓️ {patient.birth_date} | Edad: {patient.age} años | Género: {patient.gender === 'masculine' ? 'Masculino' : 'Femenino'}
+                🗓️ {patient.birth_date} | Edad: {patient.age} años | Género: {patient.gender === 'male' ? 'Masculino' : 'Femenino'}
               </p>
               <p className="text-sm text-gray-600">
                 Email: {patient.email} | Tel: {patient.cell_phone}

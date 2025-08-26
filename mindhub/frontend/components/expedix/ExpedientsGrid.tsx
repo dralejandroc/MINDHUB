@@ -202,7 +202,7 @@ export default function ExpedientsGrid({ onSelectPatient }: ExpedientsGridProps)
               <div className="flex items-center space-x-3 text-sm text-gray-600">
                 <span>{patient.age || 'N/A'}</span>
                 <span>•</span>
-                <span>{patient.gender === 'masculine' ? 'M' : patient.gender === 'feminine' ? 'F' : '-'}</span>
+                <span>{patient.gender === 'male' ? 'M' : patient.gender === 'female' ? 'F' : '-'}</span>
                 <span>•</span>
                 <span className="truncate">{patient.cell_phone || 'Sin teléfono'}</span>
               </div>
