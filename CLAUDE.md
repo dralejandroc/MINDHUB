@@ -399,3 +399,5 @@ GET /scales/api/catalog/ - Catálogo de escalas
 - ✅ **Proxy integration**: Frontend proxy routes hacia Django backend
 - ✅ **Autenticación integrada**: Supabase JWT middleware en Django
 - ✅ **Deploy ready**: Configuración Vercel para Django backend completa
+
+- memoria la estructura de la tabla de patient en tu archivo de APIs

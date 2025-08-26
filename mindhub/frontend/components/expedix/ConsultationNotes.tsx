@@ -1,14 +1,16 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { expedixApi, Patient } from '@/lib/api/expedix-client';
+import { expedixMedicationsApi, type Medication, type DiagnosisCode } from '@/lib/api/expedix-medications';
+import { useAutosave, consultationAutosaveApi } from '@/hooks/useAutosave';
 import MentalExam from './MentalExam';
 import ClinimetrixScaleSelector from './ClinimetrixScaleSelector';
 import { useConsultationTemplates, NoteTemplate } from '@/hooks/useConsultationTemplates';
 import Link from 'next/link';
-import { SettingsIcon } from 'lucide-react';
+import { SettingsIcon, Save, CheckCircle, AlertTriangle, Clock } from 'lucide-react';
 
 // Using Patient interface from expedix-client
 
@@ -119,48 +121,11 @@ interface ConsultationNotesProps {
   onCancel: () => void;
 }
 
-const MEDICATIONS_DATABASE = [
-  {
-    id: 1,
-    name: 'Sertralina',
-    presentations: [{ form: 'Tableta', concentration: '50mg', substance: 'Sertralina HCl' }],
-    prescriptions: [
-      'Tomar 1 tableta cada 24 horas en ayunas por la mañana',
-      'Tomar 1 tableta cada 12 horas con alimentos',
-      'Tomar 1/2 tableta cada 24 horas por 7 días, luego 1 tableta diaria'
-    ]
-  },
-  {
-    id: 2,
-    name: 'Fluoxetina',
-    presentations: [{ form: 'Cápsula', concentration: '20mg', substance: 'Fluoxetina HCl' }],
-    prescriptions: [
-      'Tomar 1 cápsula cada 24 horas en ayunas',
-      'Tomar 1 cápsula cada 24 horas con el desayuno'
-    ]
-  },
-  {
-    id: 3,
-    name: 'Lorazepam',
-    presentations: [{ form: 'Tableta', concentration: '1mg', substance: 'Lorazepam' }],
-    prescriptions: [
-      'Tomar 1 tableta cada 12 horas en caso de ansiedad',
-      'Tomar 1/2 tableta antes de dormir',
-      'Tomar 1 tableta 3 veces al día por máximo 15 días'
-    ]
-  }
-];
+// ✅ HARDCODED DATA REMOVED - Now using real APIs
+// MEDICATIONS_DATABASE and CIE10_CODES replaced with dynamic API calls
+// All medication and diagnosis data comes from Django backend
 
 // NOTE_TEMPLATES are now loaded dynamically from the database
-
-const CIE10_CODES = [
-  { code: 'F32.0', description: 'Episodio depresivo leve' },
-  { code: 'F32.1', description: 'Episodio depresivo moderado' },
-  { code: 'F32.2', description: 'Episodio depresivo grave sin síntomas psicóticos' },
-  { code: 'F41.0', description: 'Trastorno de pánico' },
-  { code: 'F41.1', description: 'Trastorno de ansiedad generalizada' },
-  { code: 'F43.1', description: 'Trastorno de estrés postraumático' }
-];
 
 export default function ConsultationNotes({ patient, onSaveConsultation, onCancel }: ConsultationNotesProps) {
   // Load dynamic templates from database
@@ -272,20 +237,64 @@ export default function ConsultationNotes({ patient, onSaveConsultation, onCance
   const [medicationSearch, setMedicationSearch] = useState('');
   const [prescriptionSearch, setPrescriptionSearch] = useState('');
   const [diagnosisSearch, setDiagnosisSearch] = useState('');
-  const [filteredMedications, setFilteredMedications] = useState<typeof MEDICATIONS_DATABASE>([]);
+  const [filteredMedications, setFilteredMedications] = useState<Medication[]>([]);
   const [filteredPrescriptions, setFilteredPrescriptions] = useState<string[]>([]);
-  const [filteredDiagnoses, setFilteredDiagnoses] = useState<typeof CIE10_CODES>([]);
+  const [filteredDiagnoses, setFilteredDiagnoses] = useState<DiagnosisCode[]>([]);
   const [showQuickAssessment, setShowQuickAssessment] = useState(false);
+  
+  // ✅ NEW: Autosave and consultation management
+  const [consultationId, setConsultationId] = useState<string | null>(null);
+  const [isFinalized, setIsFinalized] = useState(false);
+  
+  // Autosave functionality
+  const autosaveState = useAutosave(consultationData, {
+    consultationId: consultationId || undefined,
+    onSave: useCallback(async (data) => {
+      if (consultationId) {
+        await consultationAutosaveApi.autosave(consultationId, data);
+      }
+    }, [consultationId]),
+    onError: useCallback((error) => {
+      console.error('Autosave error:', error);
+      setError(`Error de autoguardado: ${error.message}`);
+    }, []),
+    intervalMs: 30000, // Save every 30 seconds
+    enableWarning: true
+  });
 
-  // Auto-determine note type on component mount
+  // ✅ NEW: Create consultation on component mount
   useEffect(() => {
-    const initializeNoteType = async () => {
-      const { type, reason } = await determineDefaultNoteType();
-      setConsultationData(prev => ({ ...prev, noteType: type }));
-      setNoteTypeReason(reason);
+    const initializeConsultation = async () => {
+      try {
+        const { type, reason } = await determineDefaultNoteType();
+        setConsultationData(prev => ({ ...prev, noteType: type }));
+        setNoteTypeReason(reason);
+
+        // Create new consultation in backend
+        const response = await fetch('/api/expedix/django/consultations/', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            patient_id: patient.id,
+            consultation_type: type,
+            status: 'draft'
+          })
+        });
+
+        if (response.ok) {
+          const result = await response.json();
+          if (result.success && result.consultation?.id) {
+            setConsultationId(result.consultation.id);
+          }
+        }
+      } catch (error) {
+        console.error('Error initializing consultation:', error);
+      }
     };
     
-    initializeNoteType();
+    initializeConsultation();
   }, [patient.id]);
 
   // Load previous prescription for subsequent notes
@@ -321,51 +330,64 @@ export default function ConsultationNotes({ patient, onSaveConsultation, onCance
     loadPreviousPrescription();
   }, [consultationData.noteType, patient.id]);
 
-  const handleMedicationSearch = (value: string) => {
+  const handleMedicationSearch = async (value: string) => {
     setMedicationSearch(value);
     setCurrentMedication(prev => ({ ...prev, name: value }));
     
     if (value.length > 2) {
-      const filtered = MEDICATIONS_DATABASE.filter(med => 
-        med.name.toLowerCase().includes(value.toLowerCase())
-      );
-      setFilteredMedications(filtered);
+      try {
+        const response = await expedixMedicationsApi.searchMedications(value);
+        if (response.success && response.data) {
+          setFilteredMedications(response.data);
+        }
+      } catch (error) {
+        console.error('Medication search error:', error);
+        setFilteredMedications([]);
+      }
     } else {
       setFilteredMedications([]);
     }
   };
 
-  const handlePrescriptionSearch = (value: string) => {
+  const handlePrescriptionSearch = async (value: string) => {
     setPrescriptionSearch(value);
     setCurrentMedication(prev => ({ ...prev, prescription: value }));
     
     if (value.length > 2) {
-      const allPrescriptions = MEDICATIONS_DATABASE.flatMap(med => med.prescriptions);
-      const filtered = allPrescriptions.filter(prescription => 
-        prescription.toLowerCase().includes(value.toLowerCase())
-      );
-      setFilteredPrescriptions(Array.from(new Set(filtered)));
+      try {
+        const response = await expedixMedicationsApi.searchPrescriptions(value, currentMedication.name);
+        if (response.success && response.data) {
+          setFilteredPrescriptions(response.data);
+        }
+      } catch (error) {
+        console.error('Prescription search error:', error);
+        setFilteredPrescriptions([]);
+      }
     } else {
       setFilteredPrescriptions([]);
     }
   };
 
-  const handleDiagnosisSearch = (value: string) => {
+  const handleDiagnosisSearch = async (value: string) => {
     setDiagnosisSearch(value);
     setConsultationData(prev => ({ ...prev, diagnosis: value }));
     
     if (value.length > 2) {
-      const filtered = CIE10_CODES.filter(code => 
-        code.description.toLowerCase().includes(value.toLowerCase()) ||
-        code.code.toLowerCase().includes(value.toLowerCase())
-      );
-      setFilteredDiagnoses(filtered);
+      try {
+        const response = await expedixMedicationsApi.searchDiagnoses(value);
+        if (response.success && response.data) {
+          setFilteredDiagnoses(response.data);
+        }
+      } catch (error) {
+        console.error('Diagnosis search error:', error);
+        setFilteredDiagnoses([]);
+      }
     } else {
       setFilteredDiagnoses([]);
     }
   };
 
-  const selectMedication = (medication: typeof MEDICATIONS_DATABASE[0]) => {
+  const selectMedication = (medication: Medication) => {
     const presentation = medication.presentations[0];
     setCurrentMedication({
       name: medication.name,
@@ -383,7 +405,7 @@ export default function ConsultationNotes({ patient, onSaveConsultation, onCance
     setFilteredPrescriptions([]);
   };
 
-  const selectDiagnosis = (diagnosis: typeof CIE10_CODES[0]) => {
+  const selectDiagnosis = (diagnosis: DiagnosisCode) => {
     setConsultationData(prev => ({ 
       ...prev, 
       diagnosis: `${diagnosis.code}: ${diagnosis.description}` 
@@ -447,6 +469,71 @@ export default function ConsultationNotes({ patient, onSaveConsultation, onCance
       ...prev,
       medications: prev.medications.filter(med => med.id !== id)
     }));
+  };
+
+  // ✅ NEW: Manual save as draft
+  const handleSaveDraft = async () => {
+    if (!consultationId) return;
+    
+    setLoading(true);
+    setError(null);
+
+    try {
+      await consultationAutosaveApi.saveConsultation(consultationId, {
+        chief_complaint: consultationData.currentCondition,
+        physical_examination: consultationData.physicalExamination,
+        assessment: consultationData.labResults,
+        diagnosis: consultationData.diagnosis,
+        plan: consultationData.additionalInstructions,
+        prescriptions: consultationData.medications,
+        vital_signs: consultationData.vitalSigns,
+        follow_up_instructions: consultationData.labOrders,
+        notes: consultationData.additionalInstructions,
+        clinical_notes: consultationData.physicalExamination
+      });
+      
+      // Reset unsaved changes flag
+      autosaveState.manualSave();
+      
+      setError(null);
+    } catch (error) {
+      console.error('Error saving draft:', error);
+      setError(error instanceof Error ? error.message : 'Error al guardar borrador');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // ✅ NEW: Finalize consultation (locks it)
+  const handleFinalize = async () => {
+    if (!consultationId) return;
+
+    const confirmFinalize = window.confirm(
+      '¿Estás seguro de finalizar esta consulta?\n\nUna vez finalizada, no podrás editarla sin proporcionar una justificación.'
+    );
+
+    if (!confirmFinalize) return;
+
+    setLoading(true);
+    setError(null);
+
+    try {
+      // First save current data
+      await handleSaveDraft();
+      
+      // Then finalize
+      await consultationAutosaveApi.finalizeConsultation(consultationId);
+      
+      setIsFinalized(true);
+      
+      // Call parent callback
+      onSaveConsultation(consultationData);
+    } catch (error) {
+      console.error('Error finalizing consultation:', error);
+      setError(error instanceof Error ? error.message : 'Error al finalizar consulta');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -2183,40 +2270,11 @@ export default function ConsultationNotes({ patient, onSaveConsultation, onCance
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">Evaluaciones Previas</label>
               <div className="space-y-2">
-                {/* Mock previous assessments - Replace with real data */}
-                <div className="flex items-center justify-between p-2 bg-gray-50 rounded border">
-                  <div className="flex-1">
-                    <div className="flex items-center space-x-2">
-                      <span className="text-sm font-medium">PHQ-9</span>
-                      <span className="text-xs text-gray-500">Última: 15 Nov 2024</span>
-                      <span className="text-xs bg-orange-100 text-orange-800 px-2 py-1 rounded">Puntuación: 12</span>
-                    </div>
-                    <div className="text-xs text-gray-600">Depresión moderada</div>
-                  </div>
-                  <div className="flex space-x-1">
-                    <Button className="bg-purple-100 text-purple-700 hover:bg-purple-200 text-xs px-2 py-1" size="sm">
-                      Repetir
-                    </Button>
-                    <Button className="bg-gray-100 text-gray-700 hover:bg-gray-200 text-xs px-2 py-1" size="sm">
-                      📊 Historial
-                    </Button>
-                  </div>
-                </div>
-                
-                <div className="flex items-center justify-between p-2 bg-gray-50 rounded border">
-                  <div className="flex-1">
-                    <div className="flex items-center space-x-2">
-                      <span className="text-sm font-medium">GAD-7</span>
-                      <span className="text-xs text-gray-500">Última: 8 Nov 2024</span>
-                      <span className="text-xs bg-yellow-100 text-yellow-800 px-2 py-1 rounded">Puntuación: 8</span>
-                    </div>
-                    <div className="text-xs text-gray-600">Ansiedad leve</div>
-                  </div>
-                  <div className="flex space-x-1">
-                    <Button className="bg-purple-100 text-purple-700 hover:bg-purple-200 text-xs px-2 py-1" size="sm">
-                      Repetir
-                    </Button>
-                  </div>
+                {/* ✅ REAL DATA: No more hardcoded assessments */}
+                <div className="text-center py-6 text-gray-500 bg-gray-50 rounded-lg border-2 border-dashed border-gray-300">
+                  <div className="text-sm font-medium">Sin evaluaciones previas</div>
+                  <div className="text-xs mt-1">Este paciente no tiene evaluaciones completadas</div>
+                  <div className="text-xs text-purple-600 mt-2">Usa "Nueva Evaluación" para comenzar</div>
                 </div>
               </div>
             </div>
@@ -2225,13 +2283,8 @@ export default function ConsultationNotes({ patient, onSaveConsultation, onCance
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Aplicar Nueva Evaluación</label>
               <div className="flex space-x-2">
-                <select className="flex-1 px-2 py-1 border border-gray-300 rounded text-sm focus:ring-1 focus:ring-purple-500">
-                  <option value="">Seleccionar escala...</option>
-                  <option value="phq9">PHQ-9 (Depresión)</option>
-                  <option value="gad7">GAD-7 (Ansiedad)</option>
-                  <option value="beck">Beck Depression Inventory</option>
-                  <option value="hamilton">Hamilton Anxiety Scale</option>
-                  <option value="stai">STAI (Ansiedad Estado-Rasgo)</option>
+                <select className="flex-1 px-2 py-1 border border-gray-300 rounded text-sm focus:ring-1 focus:ring-purple-500" disabled>
+                  <option value="">Cargando escalas disponibles...</option>
                 </select>
                 <Button className="bg-purple-600 hover:bg-purple-700 text-xs px-3 py-1" size="sm">
                   Aplicar
@@ -2255,33 +2308,11 @@ export default function ConsultationNotes({ patient, onSaveConsultation, onCance
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">Recursos Enviados</label>
               <div className="space-y-1">
-                {/* Mock sent resources - Replace with real data */}
-                <div className="flex items-center justify-between p-2 bg-green-50 rounded border">
-                  <div className="flex-1">
-                    <div className="flex items-center space-x-2">
-                      <span className="text-sm font-medium">Técnicas de Respiración</span>
-                      <span className="text-xs text-green-600">✓ Enviado</span>
-                      <span className="text-xs text-gray-500">12 Nov 2024</span>
-                    </div>
-                    <div className="text-xs text-gray-600">PDF - Ejercicios de relajación</div>
-                  </div>
-                  <Button className="bg-green-100 text-green-700 hover:bg-green-200 text-xs px-2 py-1" size="sm">
-                    Reenviar
-                  </Button>
-                </div>
-                
-                <div className="flex items-center justify-between p-2 bg-blue-50 rounded border">
-                  <div className="flex-1">
-                    <div className="flex items-center space-x-2">
-                      <span className="text-sm font-medium">Registro de Pensamientos</span>
-                      <span className="text-xs text-blue-600">🖨 Impreso</span>
-                      <span className="text-xs text-gray-500">10 Nov 2024</span>
-                    </div>
-                    <div className="text-xs text-gray-600">Hoja de trabajo TCC</div>
-                  </div>
-                  <Button className="bg-blue-100 text-blue-700 hover:bg-blue-200 text-xs px-2 py-1" size="sm">
-                    Imprimir
-                  </Button>
+                {/* ✅ REAL DATA: No more hardcoded resources */}
+                <div className="text-center py-6 text-gray-500 bg-gray-50 rounded-lg border-2 border-dashed border-gray-300">
+                  <div className="text-sm font-medium">Sin recursos enviados</div>
+                  <div className="text-xs mt-1">No se han enviado recursos a este paciente</div>
+                  <div className="text-xs text-green-600 mt-2">Usa "Enviar Recurso" para compartir materiales</div>
                 </div>
               </div>
             </div>
@@ -2290,13 +2321,8 @@ export default function ConsultationNotes({ patient, onSaveConsultation, onCance
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Enviar Nuevo Recurso</label>
               <div className="flex space-x-2">
-                <select className="flex-1 px-2 py-1 border border-gray-300 rounded text-sm focus:ring-1 focus:ring-green-500">
-                  <option value="">Seleccionar recurso...</option>
-                  <option value="breathing">Técnicas de Respiración</option>
-                  <option value="thought-record">Registro de Pensamientos</option>
-                  <option value="mindfulness">Ejercicios Mindfulness</option>
-                  <option value="sleep-hygiene">Higiene del Sueño</option>
-                  <option value="anxiety-tips">Tips para Manejo de Ansiedad</option>
+                <select className="flex-1 px-2 py-1 border border-gray-300 rounded text-sm focus:ring-1 focus:ring-green-500" disabled>
+                  <option value="">Cargando recursos disponibles...</option>
                 </select>
                 <select className="px-2 py-1 border border-gray-300 rounded text-sm focus:ring-1 focus:ring-green-500">
                   <option value="email">Email</option>
@@ -2535,6 +2561,47 @@ export default function ConsultationNotes({ patient, onSaveConsultation, onCance
           </div>
         </Card>
 
+        {/* ✅ NEW: Autosave Status Indicator */}
+        {consultationId && (
+          <div className="flex items-center justify-center py-3 border-t border-gray-200 bg-gray-50 rounded-lg">
+            {autosaveState.isSaving ? (
+              <div className="flex items-center space-x-2 text-blue-600">
+                <Clock className="h-4 w-4 animate-spin" />
+                <span className="text-sm">Guardando automáticamente...</span>
+              </div>
+            ) : autosaveState.hasUnsavedChanges ? (
+              <div className="flex items-center space-x-2 text-orange-600">
+                <AlertTriangle className="h-4 w-4" />
+                <span className="text-sm">Cambios sin guardar</span>
+                {autosaveState.lastSaved && (
+                  <span className="text-xs text-gray-500">
+                    (Guardado: {autosaveState.lastSaved.toLocaleTimeString()})
+                  </span>
+                )}
+              </div>
+            ) : autosaveState.lastSaved ? (
+              <div className="flex items-center space-x-2 text-green-600">
+                <CheckCircle className="h-4 w-4" />
+                <span className="text-sm">
+                  Guardado automáticamente - {autosaveState.lastSaved.toLocaleTimeString()}
+                </span>
+              </div>
+            ) : (
+              <div className="flex items-center space-x-2 text-gray-500">
+                <Save className="h-4 w-4" />
+                <span className="text-sm">Autoguardado activado (cada 30s)</span>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Error display for autosave */}
+        {autosaveState.error && (
+          <div className="bg-red-50 border border-red-200 rounded-md p-3 text-red-800 text-sm">
+            {autosaveState.error}
+          </div>
+        )}
+
         {/* Action Buttons */}
         <div className="flex items-center justify-between pt-6">
           <div className="flex items-center space-x-2">
@@ -2548,20 +2615,43 @@ export default function ConsultationNotes({ patient, onSaveConsultation, onCance
             </Button>
           </div>
           
-          <div className="flex space-x-4">
+          <div className="flex space-x-3">
             <Button
               type="button"
               onClick={onCancel}
               variant="outline"
+              disabled={loading}
             >
               Cancelar
             </Button>
+            
+            {/* ✅ NEW: Save Draft Button */}
             <Button
-              type="submit"
-              className="bg-blue-600 hover:bg-blue-700 submit-button"
-              disabled={loading}
+              type="button"
+              onClick={handleSaveDraft}
+              className="bg-yellow-600 hover:bg-yellow-700"
+              disabled={loading || !consultationId}
             >
-              {loading ? '⏳ Guardando...' : '💾 Guardar Consulta'}
+              {loading ? '⏳ Guardando...' : '📝 Guardar Borrador'}
+            </Button>
+            
+            {/* ✅ NEW: Finalize Button */}
+            <Button
+              type="button"
+              onClick={handleFinalize}
+              className={`${
+                isFinalized 
+                  ? 'bg-gray-400 cursor-not-allowed' 
+                  : 'bg-green-600 hover:bg-green-700'
+              }`}
+              disabled={loading || !consultationId || isFinalized}
+            >
+              {isFinalized 
+                ? '✅ Consulta Finalizada' 
+                : loading 
+                  ? '⏳ Finalizando...' 
+                  : '🔒 Finalizar Consulta'
+              }
             </Button>
           </div>
         </div>

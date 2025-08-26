@@ -201,91 +201,138 @@ export async function POST(request: Request) {
     const body = await request.json();
     console.log('[PATIENTS API] Creating patient with data:', Object.keys(body));
 
-    // Skip Django completely and go directly to Supabase since Django is not working
-    console.log('[PATIENTS API] Using Supabase direct creation (Django disabled)');
-    
+    let djangoWorking = true;
+
     try {
-      const { createClient } = await import('@supabase/supabase-js');
-      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-      const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
-      
-      const supabase = createClient(supabaseUrl, supabaseServiceKey);
-      
-      // Calculate age from birth date if not provided
-      let age = body.age;
-      if (!age && body.birth_date) {
-        const birthDate = new Date(body.birth_date);
-        const today = new Date();
-        age = Math.floor((today.getTime() - birthDate.getTime()) / (365.25 * 24 * 60 * 60 * 1000));
-      }
-      
-      // Prepare patient data for Supabase
-      const patientData = {
-        id: crypto.randomUUID(),
-        first_name: body.first_name,
-        paternal_last_name: body.paternal_last_name,
-        maternal_last_name: body.maternal_last_name || '',
-        date_of_birth: body.birth_date,
-        age: age || 0,
-        gender: body.gender,
-        email: body.email,
-        phone: body.cell_phone || body.phone,
-        curp: body.curp || '',
-        address: body.address || '',
-        city: body.city || '',
-        state: body.state || '',
-        postal_code: body.postal_code || '',
-        created_by: user.id,
-        is_active: true,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
-      };
+      // Try Django backend first (after schema fixes)
+      const djangoUrl = `${DJANGO_BACKEND_URL}/api/expedix/patients/`;
+      console.log('[PATIENTS API] Trying Django backend:', djangoUrl);
 
-      // Insert patient into Supabase
-      const { data: patient, error: insertError } = await supabase
-        .from('patients')
-        .insert(patientData)
-        .select()
-        .single();
+      const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
+      
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 3000);
+      
+      const djangoResponse = await fetch(djangoUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${serviceRoleKey}`,
+          'X-User-ID': user.id,
+          'X-User-Email': user.email || '',
+          'X-Proxy-Auth': 'verified',
+          'X-MindHub-Dual-System': 'enabled',
+        },
+        body: JSON.stringify(body),
+        signal: controller.signal
+      });
 
-      if (insertError) {
-        console.error('[PATIENTS API] Supabase insert error:', insertError);
-        throw new Error(`Failed to create patient in database: ${insertError.message}`);
+      clearTimeout(timeoutId);
+      console.log('[PATIENTS API] Django POST response status:', djangoResponse.status);
+
+      if (djangoResponse.ok) {
+        const responseData = await djangoResponse.json();
+        console.log('[PATIENTS API] Django success - patient created:', responseData.id || 'unknown');
+        return createResponse(responseData, djangoResponse.status);
+      } else {
+        djangoWorking = false;
+        const errorText = await djangoResponse.text();
+        console.error('[PATIENTS API] Django POST error:', errorText);
       }
 
-      // Transform back to Django-compatible format
-      const transformedPatient = {
-        id: patient.id,
-        first_name: patient.first_name,
-        paternal_last_name: patient.paternal_last_name,
-        maternal_last_name: patient.maternal_last_name,
-        birth_date: patient.date_of_birth,
-        age: patient.age,
-        gender: patient.gender,
-        email: patient.email,
-        cell_phone: patient.phone,
-        phone: patient.phone,
-        curp: patient.curp,
-        address: patient.address,
-        city: patient.city,
-        state: patient.state,
-        postal_code: patient.postal_code,
-        consultations_count: 0,
-        created_at: patient.created_at,
-        updated_at: patient.updated_at,
-        source: 'supabase_direct'
-      };
+    } catch (djangoError) {
+      djangoWorking = false;
+      console.error('[PATIENTS API] Django POST connection failed:', djangoError);
+    }
 
-      console.log('[PATIENTS API] Supabase success - patient created:', patient.id);
-      return createResponse({ data: transformedPatient }, 201);
+    // Django failed - use Supabase fallback
+    if (!djangoWorking) {
+      console.log('[PATIENTS API] Django failed - creating patient via Supabase fallback');
+      
+      try {
+        const { createClient } = await import('@supabase/supabase-js');
+        const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+        const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
+        
+        const supabase = createClient(supabaseUrl, supabaseServiceKey);
+        
+        // Calculate age from birth date if not provided
+        let age = body.age;
+        if (!age && body.birth_date) {
+          const birthDate = new Date(body.birth_date);
+          const today = new Date();
+          age = Math.floor((today.getTime() - birthDate.getTime()) / (365.25 * 24 * 60 * 60 * 1000));
+        }
+        
+        // Prepare patient data for Supabase
+        const patientData = {
+          id: crypto.randomUUID(),
+          first_name: body.first_name,
+          paternal_last_name: body.paternal_last_name,
+          maternal_last_name: body.maternal_last_name || '',
+          date_of_birth: body.birth_date,
+          age: age || 0,
+          gender: body.gender,
+          email: body.email,
+          phone: body.cell_phone || body.phone,
+          curp: body.curp || '',
+          address: body.address || '',
+          city: body.city || '',
+          state: body.state || '',
+          postal_code: body.postal_code || '',
+          created_by: user.id,
+          is_active: true,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        };
 
-    } catch (supabaseError) {
-      console.error('[PATIENTS API] Supabase creation failed:', supabaseError);
-      return createErrorResponse(
-        'Database error',
-        `Could not create patient: ${supabaseError instanceof Error ? supabaseError.message : 'Unknown error'}`,
-        500
-      );
+        // Insert patient into Supabase
+        const { data: patient, error: insertError } = await supabase
+          .from('patients')
+          .insert(patientData)
+          .select()
+          .single();
+
+        if (insertError) {
+          console.error('[PATIENTS API] Supabase insert error:', insertError);
+          throw new Error(`Failed to create patient in database: ${insertError.message}`);
+        }
+
+        // Transform back to Django-compatible format
+        const transformedPatient = {
+          id: patient.id,
+          first_name: patient.first_name,
+          paternal_last_name: patient.paternal_last_name,
+          maternal_last_name: patient.maternal_last_name,
+          birth_date: patient.date_of_birth,
+          age: patient.age,
+          gender: patient.gender,
+          email: patient.email,
+          cell_phone: patient.phone,
+          phone: patient.phone,
+          curp: patient.curp,
+          address: patient.address,
+          city: patient.city,
+          state: patient.state,
+          postal_code: patient.postal_code,
+          consultations_count: 0,
+          created_at: patient.created_at,
+          updated_at: patient.updated_at,
+          fallback: true,
+          source: 'supabase_direct'
+        };
+
+        console.log('[PATIENTS API] Supabase fallback success - patient created:', patient.id);
+        return createResponse({ data: transformedPatient }, 201);
+
+      } catch (supabaseError) {
+        console.error('[PATIENTS API] Supabase fallback completely failed:', supabaseError);
+        return createErrorResponse(
+          'Database error',
+          `Could not create patient in any database: ${supabaseError instanceof Error ? supabaseError.message : 'Unknown error'}`,
+          500
+        );
+      }
     }
 
   } catch (error) {

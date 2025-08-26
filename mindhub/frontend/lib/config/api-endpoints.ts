@@ -8,8 +8,8 @@ export const API_CONFIG = {
   // NEW: Django backend on Vercel
   FRONTEND_API_BASE: '/api', // Use local Next.js API routes
   
-  // Backend direct URLs (for server-side calls) - Disabled due to schema issues, using Supabase fallback
-  BACKEND_URL: process.env.BACKEND_URL || process.env.NEXT_PUBLIC_BACKEND_URL || 'https://mindhub-django-backend-disabled.vercel.app',
+  // Backend direct URLs (for server-side calls) - Re-enabled after schema fixes
+  BACKEND_URL: process.env.BACKEND_URL || process.env.NEXT_PUBLIC_BACKEND_URL || (process.env.NODE_ENV === 'development' ? 'http://localhost:8002' : 'https://mindhub-django-backend.vercel.app'),
   
   // Environment info
   IS_PRODUCTION: process.env.NODE_ENV === 'production',
