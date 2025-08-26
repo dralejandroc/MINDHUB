@@ -1,11 +1,11 @@
-// FrontDesk Stats API - Direct Supabase with dual system support
+// Emergency FrontDesk Stats API - Direct Supabase connection
 import { getAuthenticatedUser, createResponse, createErrorResponse, supabaseAdmin } from '@/lib/supabase/admin'
 
 export const dynamic = 'force-dynamic';
 
 export async function GET(request: Request) {
   try {
-    console.log('[FRONTDESK STATS] Processing stats request');
+    console.log('[FRONTDESK EMERGENCY] Processing stats request');
     
     // Verify authentication
     const { user, error: authError } = await getAuthenticatedUser(request);
@@ -13,20 +13,18 @@ export async function GET(request: Request) {
       return createErrorResponse('Unauthorized', 'Valid authentication required', 401);
     }
 
-    // Get user's workspace or clinic context (DUAL SYSTEM)
+    // Get user's workspace or clinic context
     let contextFilter: any = {};
     
-    // Check for individual workspace first
+    // Check for individual workspace
     const { data: workspace } = await supabaseAdmin
       .from('individual_workspaces')
       .select('id')
       .eq('owner_id', user.id)
-      .eq('is_active', true)
       .single();
     
     if (workspace) {
       contextFilter.workspace_id = workspace.id;
-      console.log('[FRONTDESK STATS] Using workspace context:', workspace.id);
     } else {
       // Check for clinic membership
       const { data: membership } = await supabaseAdmin
@@ -39,10 +37,8 @@ export async function GET(request: Request) {
       
       if (membership) {
         contextFilter.clinic_id = membership.clinic_id;
-        console.log('[FRONTDESK STATS] Using clinic context:', membership.clinic_id);
       } else {
         // No context found - return empty stats
-        console.log('[FRONTDESK STATS] No context found, returning empty stats');
         return createResponse({
           success: true,
           data: {
@@ -62,9 +58,7 @@ export async function GET(request: Request) {
     const tomorrow = new Date(today);
     tomorrow.setDate(tomorrow.getDate() + 1);
 
-    const todayISO = today.toISOString().split('T')[0];
-    
-    // Initialize stats
+    // Get stats with proper context filtering
     const stats = {
       appointments: 0,
       payments: 0,
@@ -77,7 +71,8 @@ export async function GET(request: Request) {
     let appointmentsQuery = supabaseAdmin
       .from('appointments')
       .select('id', { count: 'exact', head: true })
-      .eq('appointment_date', todayISO);
+      .gte('appointment_date', today.toISOString())
+      .lt('appointment_date', tomorrow.toISOString());
     
     if (contextFilter.workspace_id) {
       appointmentsQuery = appointmentsQuery.eq('workspace_id', contextFilter.workspace_id);
@@ -88,7 +83,7 @@ export async function GET(request: Request) {
     const { count: appointmentCount } = await appointmentsQuery;
     stats.appointments = appointmentCount || 0;
 
-    // Count total active patients
+    // Count patients
     let patientsQuery = supabaseAdmin
       .from('patients')
       .select('id', { count: 'exact', head: true })
@@ -103,15 +98,16 @@ export async function GET(request: Request) {
     const { count: patientCount } = await patientsQuery;
     stats.patients = patientCount || 0;
 
-    console.log('[FRONTDESK STATS] Stats retrieved:', stats);
+    console.log('[FRONTDESK EMERGENCY] Stats retrieved:', stats);
 
     return createResponse({
       success: true,
-      data: stats
+      data: stats,
+      message: 'Emergency stats retrieved successfully'
     });
 
   } catch (error) {
-    console.error('[FRONTDESK STATS] Error:', error);
+    console.error('[FRONTDESK EMERGENCY] Error:', error);
     return createErrorResponse(
       'Failed to get stats',
       error instanceof Error ? error.message : 'Unknown error',

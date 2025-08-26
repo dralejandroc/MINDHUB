@@ -1,11 +1,11 @@
-// FrontDesk Stats API - Direct Supabase with dual system support
+// Emergency FrontDesk Appointments API - Direct Supabase connection
 import { getAuthenticatedUser, createResponse, createErrorResponse, supabaseAdmin } from '@/lib/supabase/admin'
 
 export const dynamic = 'force-dynamic';
 
 export async function GET(request: Request) {
   try {
-    console.log('[FRONTDESK STATS] Processing stats request');
+    console.log('[FRONTDESK EMERGENCY] Processing appointments request');
     
     // Verify authentication
     const { user, error: authError } = await getAuthenticatedUser(request);
@@ -13,20 +13,18 @@ export async function GET(request: Request) {
       return createErrorResponse('Unauthorized', 'Valid authentication required', 401);
     }
 
-    // Get user's workspace or clinic context (DUAL SYSTEM)
+    // Get user's workspace or clinic context
     let contextFilter: any = {};
     
-    // Check for individual workspace first
+    // Check for individual workspace
     const { data: workspace } = await supabaseAdmin
       .from('individual_workspaces')
       .select('id')
       .eq('owner_id', user.id)
-      .eq('is_active', true)
       .single();
     
     if (workspace) {
       contextFilter.workspace_id = workspace.id;
-      console.log('[FRONTDESK STATS] Using workspace context:', workspace.id);
     } else {
       // Check for clinic membership
       const { data: membership } = await supabaseAdmin
@@ -39,19 +37,12 @@ export async function GET(request: Request) {
       
       if (membership) {
         contextFilter.clinic_id = membership.clinic_id;
-        console.log('[FRONTDESK STATS] Using clinic context:', membership.clinic_id);
       } else {
-        // No context found - return empty stats
-        console.log('[FRONTDESK STATS] No context found, returning empty stats');
+        // No context found - return empty appointments
         return createResponse({
           success: true,
-          data: {
-            appointments: 0,
-            payments: 0,
-            pendingPayments: 0,
-            resourcesSent: 0,
-            patients: 0
-          }
+          data: [],
+          count: 0
         });
       }
     }
@@ -62,22 +53,29 @@ export async function GET(request: Request) {
     const tomorrow = new Date(today);
     tomorrow.setDate(tomorrow.getDate() + 1);
 
-    const todayISO = today.toISOString().split('T')[0];
-    
-    // Initialize stats
-    const stats = {
-      appointments: 0,
-      payments: 0,
-      pendingPayments: 0,
-      resourcesSent: 0,
-      patients: 0
-    };
-
-    // Count appointments for today
+    // Get appointments with patient details
     let appointmentsQuery = supabaseAdmin
       .from('appointments')
-      .select('id', { count: 'exact', head: true })
-      .eq('appointment_date', todayISO);
+      .select(`
+        id,
+        appointment_date,
+        appointment_time,
+        status,
+        type,
+        notes,
+        created_at,
+        updated_at,
+        patients (
+          id,
+          first_name,
+          last_name,
+          phone,
+          email
+        )
+      `)
+      .gte('appointment_date', today.toISOString())
+      .lt('appointment_date', tomorrow.toISOString())
+      .order('appointment_time', { ascending: true });
     
     if (contextFilter.workspace_id) {
       appointmentsQuery = appointmentsQuery.eq('workspace_id', contextFilter.workspace_id);
@@ -85,35 +83,26 @@ export async function GET(request: Request) {
       appointmentsQuery = appointmentsQuery.eq('clinic_id', contextFilter.clinic_id);
     }
     
-    const { count: appointmentCount } = await appointmentsQuery;
-    stats.appointments = appointmentCount || 0;
+    const { data: appointments, error } = await appointmentsQuery;
 
-    // Count total active patients
-    let patientsQuery = supabaseAdmin
-      .from('patients')
-      .select('id', { count: 'exact', head: true })
-      .eq('is_active', true);
-    
-    if (contextFilter.workspace_id) {
-      patientsQuery = patientsQuery.eq('workspace_id', contextFilter.workspace_id);
-    } else if (contextFilter.clinic_id) {
-      patientsQuery = patientsQuery.eq('clinic_id', contextFilter.clinic_id);
+    if (error) {
+      console.error('[FRONTDESK EMERGENCY] Database error:', error);
+      throw error;
     }
-    
-    const { count: patientCount } = await patientsQuery;
-    stats.patients = patientCount || 0;
 
-    console.log('[FRONTDESK STATS] Stats retrieved:', stats);
+    console.log('[FRONTDESK EMERGENCY] Appointments retrieved:', appointments?.length || 0);
 
     return createResponse({
       success: true,
-      data: stats
+      data: appointments || [],
+      count: appointments?.length || 0,
+      message: 'Emergency appointments retrieved successfully'
     });
 
   } catch (error) {
-    console.error('[FRONTDESK STATS] Error:', error);
+    console.error('[FRONTDESK EMERGENCY] Error:', error);
     return createErrorResponse(
-      'Failed to get stats',
+      'Failed to get appointments',
       error instanceof Error ? error.message : 'Unknown error',
       500
     );
