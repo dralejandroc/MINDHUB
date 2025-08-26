@@ -1,4 +1,5 @@
 'use client'
+// 🚀 FORCE REBUILD: 2025-08-26 - Removed ALL mock data and connected to real Django backend APIs
 
 import React, { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
@@ -113,59 +114,39 @@ const ResourcesIntegration: React.FC<ResourcesIntegrationProps> = ({
   const fetchResources = async () => {
     try {
       setIsLoading(true)
-      // Mock data para desarrollo
-      const mockResources: Resource[] = [
-        {
-          id: '1',
-          title: 'Técnicas de Respiración para la Ansiedad',
-          description: 'Guía completa de ejercicios de respiración para reducir la ansiedad',
-          category: 'terapia-individual',
-          tags: ['ansiedad', 'respiracion', 'adultos'],
-          type: 'text',
-          content: {
-            hasVariables: true,
-            variables: ['nombrePaciente', 'nombreClinica', 'nombreProfesional']
-          },
-          metadata: {
-            downloadCount: 25,
-            useCount: 45
-          }
-        },
-        {
-          id: '2',
-          title: 'Registro de Emociones Diario',
-          description: 'Plantilla para el registro diario de emociones y pensamientos',
-          category: 'evaluacion',
-          tags: ['emociones', 'autorregistro', 'seguimiento'],
-          type: 'template',
-          content: {
-            hasVariables: true,
-            variables: ['nombrePaciente', 'fechaHoy']
-          },
-          metadata: {
-            downloadCount: 18,
-            useCount: 32
-          }
-        },
-        {
-          id: '3',
-          title: 'Guía sobre Trastornos de Ansiedad',
-          description: 'Información educativa sobre los diferentes tipos de ansiedad',
-          category: 'psicoeducacion',
-          tags: ['ansiedad', 'educacion', 'informacion'],
-          type: 'pdf',
-          content: {
-            hasVariables: false,
-            variables: []
-          },
-          metadata: {
-            downloadCount: 42,
-            useCount: 67
-          }
-        }
-      ]
       
-      setResources(mockResources)
+      // ✅ REAL API CALL: Fetch resources from Django backend
+      const response = await fetch('/api/resources/django/', {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('supabase-auth-token') || ''}`,
+          'Content-Type': 'application/json'
+        }
+      })
+      
+      if (response.ok) {
+        const data = await response.json()
+        // Transform Django backend response to match frontend Resource interface
+        const transformedResources: Resource[] = (data.results || data.data || data || []).map((item: any) => ({
+          id: item.id || item.uuid,
+          title: item.title || item.name,
+          description: item.description || '',
+          category: item.category_id || item.category || 'general',
+          tags: item.tags || [],
+          type: item.resource_type || item.type || 'text',
+          content: {
+            hasVariables: item.has_variables || false,
+            variables: item.variables || []
+          },
+          metadata: {
+            downloadCount: item.download_count || 0,
+            useCount: item.use_count || 0
+          }
+        }))
+        setResources(transformedResources)
+      } else {
+        console.error('Failed to fetch resources:', response.status)
+        setResources([]) // Empty array instead of mock data
+      }
     } catch (error) {
       console.error('Error fetching resources:', error)
     } finally {
@@ -175,39 +156,38 @@ const ResourcesIntegration: React.FC<ResourcesIntegrationProps> = ({
 
   const fetchSentResources = async () => {
     try {
-      // Mock data de recursos enviados
-      const mockSentResources: SentResource[] = [
-        {
-          id: '1',
-          resourceId: '1',
-          resourceTitle: 'Técnicas de Respiración para la Ansiedad',
-          sentAt: '2025-01-18T10:30:00Z',
-          method: 'email',
-          status: 'viewed',
-          personalizedContent: {
-            patientName: patientName,
-            clinicName: 'Clínica MindHub',
-            practitionerName: 'Dr. María García'
-          }
-        },
-        {
-          id: '2',
-          resourceId: '2',
-          resourceTitle: 'Registro de Emociones Diario',
-          sentAt: '2025-01-17T15:45:00Z',
-          method: 'download',
-          status: 'downloaded',
-          personalizedContent: {
-            patientName: patientName,
-            clinicName: 'Clínica MindHub',
-            practitionerName: 'Dr. María García'
-          }
+      // ✅ REAL API CALL: Fetch sent resources from Django backend
+      const response = await fetch(`/api/resources/django/sent?patient_id=${patientId}`, {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('supabase-auth-token') || ''}`,
+          'Content-Type': 'application/json'
         }
-      ]
+      })
       
-      setSentResources(mockSentResources)
+      if (response.ok) {
+        const data = await response.json()
+        // Transform Django backend response to match frontend SentResource interface
+        const transformedSentResources: SentResource[] = (data.results || data.data || data || []).map((item: any) => ({
+          id: item.id || item.uuid,
+          resourceId: item.resource_id || item.resource,
+          resourceTitle: item.resource_title || item.title,
+          sentAt: item.sent_at || item.created_at,
+          method: item.send_method || item.method,
+          status: item.status || 'sent',
+          personalizedContent: item.personalized_content ? {
+            patientName: item.personalized_content.patient_name || patientName,
+            clinicName: item.personalized_content.clinic_name || 'Clínica MindHub',
+            practitionerName: item.personalized_content.practitioner_name || 'Profesional'
+          } : undefined
+        }))
+        setSentResources(transformedSentResources)
+      } else {
+        console.error('Failed to fetch sent resources:', response.status)
+        setSentResources([]) // Empty array instead of mock data
+      }
     } catch (error) {
       console.error('Error fetching sent resources:', error)
+      setSentResources([]) // Empty array instead of mock data
     }
   }
 
@@ -232,24 +212,27 @@ const ResourcesIntegration: React.FC<ResourcesIntegrationProps> = ({
         customMessage
       }
 
-      // En producción hacer llamada a la API
-      const response = await fetch('/api/resources/send', {
+      // ✅ REAL API CALL: Send resource via Django backend
+      const response = await fetch('/api/resources/django/send/', {
         method: 'POST',
         headers: {
+          'Authorization': `Bearer ${localStorage.getItem('supabase-auth-token') || ''}`,
           'Content-Type': 'application/json'
         },
         body: JSON.stringify(sendData)
       })
 
       if (response.ok) {
-        // Agregar a la lista de recursos enviados
+        const responseData = await response.json()
+        
+        // Create SentResource from API response
         const newSentResource: SentResource = {
-          id: Date.now().toString(),
+          id: responseData.id || responseData.uuid,
           resourceId: selectedResource.id,
           resourceTitle: selectedResource.title,
-          sentAt: new Date().toISOString(),
+          sentAt: responseData.sent_at || new Date().toISOString(),
           method,
-          status: 'sent',
+          status: responseData.status || 'sent',
           personalizedContent: sendData.personalizedContent
         }
 
@@ -261,8 +244,12 @@ const ResourcesIntegration: React.FC<ResourcesIntegrationProps> = ({
           onResourceSent(selectedResource.id, method)
         }
 
-        // Mostrar mensaje de éxito
+        // Show success message
         alert(`Recurso enviado exitosamente por ${method === 'email' ? 'correo' : method === 'download' ? 'descarga' : 'impresión'}`)
+      } else {
+        const errorData = await response.json().catch(() => ({}))
+        console.error('Error sending resource:', errorData)
+        alert('Error al enviar el recurso: ' + (errorData.message || 'Error desconocido'))
       }
     } catch (error) {
       console.error('Error sending resource:', error)

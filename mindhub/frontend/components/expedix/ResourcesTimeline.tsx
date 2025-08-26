@@ -1,4 +1,5 @@
 'use client'
+// 🚀 FORCE REBUILD: 2025-08-26 - Removed ALL mock data and connected to real Django backend APIs
 
 import React, { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
@@ -120,85 +121,44 @@ const ResourcesTimeline: React.FC<ResourceTimelineProps> = ({
     try {
       setIsLoading(true)
       
-      // En producción, hacer llamada real a la API
-      const response = await fetch(`/api/resources/tracking/patient/${patientId}`)
+      // ✅ REAL API CALL: Fetch resource usages from Django backend
+      const response = await fetch(`/api/resources/django/tracking/patient/${patientId}`, {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('supabase-auth-token') || ''}`,
+          'Content-Type': 'application/json'
+        }
+      })
+      
       if (response.ok) {
         const data = await response.json()
-        setResourceUsages(data.data.records || [])
+        // Transform Django backend response to match frontend ResourceUsage interface
+        const transformedUsages: ResourceUsage[] = (data.results || data.data || data || []).map((item: any) => ({
+          id: item.id || item.uuid,
+          resourceId: item.resource_id || item.resource,
+          resourceTitle: item.resource_title || item.title,
+          resourceDescription: item.resource_description || item.description || '',
+          resourceType: item.resource_type || item.type || 'text',
+          sentAt: item.sent_at || item.created_at,
+          method: item.send_method || item.method,
+          status: item.status || 'sent',
+          practitionerName: item.practitioner_name || item.professional_name || 'Profesional',
+          practitionerNotes: item.practitioner_notes || item.notes,
+          patientFeedback: item.patient_feedback || item.feedback,
+          personalizedContent: item.personalized_content ? {
+            patientName: item.personalized_content.patient_name || patientName,
+            clinicName: item.personalized_content.clinic_name || 'Clínica MindHub',
+            practitionerName: item.personalized_content.practitioner_name || 'Profesional'
+          } : undefined,
+          deliveryDetails: item.delivery_details || {},
+          viewedAt: item.viewed_at,
+          downloadedAt: item.downloaded_at,
+          completedAt: item.completed_at,
+          sessionId: item.session_id
+        }))
+        setResourceUsages(transformedUsages)
       } else {
-        // Mock data para desarrollo
-        const mockUsages: ResourceUsage[] = [
-          {
-            id: '1',
-            resourceId: 'res_1',
-            resourceTitle: 'Técnicas de Respiración para la Ansiedad',
-            resourceDescription: 'Guía completa de ejercicios de respiración para reducir la ansiedad',
-            resourceType: 'text',
-            sentAt: '2025-01-18T10:30:00Z',
-            method: 'email',
-            status: 'viewed',
-            practitionerName: 'Dr. María García',
-            practitionerNotes: 'Enviado después de sesión donde paciente reportó episodios de ansiedad',
-            personalizedContent: {
-              patientName: patientName,
-              clinicName: 'Clínica MindHub',
-              practitionerName: 'Dr. María García'
-            },
-            deliveryDetails: {
-              emailAddress: 'paciente@email.com'
-            },
-            viewedAt: '2025-01-18T14:22:00Z',
-            sessionId: 'session_123'
-          },
-          {
-            id: '2',
-            resourceId: 'res_2',
-            resourceTitle: 'Registro de Emociones Diario',
-            resourceDescription: 'Plantilla para el registro diario de emociones y pensamientos',
-            resourceType: 'template',
-            sentAt: '2025-01-17T15:45:00Z',
-            method: 'download',
-            status: 'completed',
-            practitionerName: 'Dr. María García',
-            practitionerNotes: 'Para seguimiento entre sesiones',
-            patientFeedback: 'Muy útil, me ayudó a identificar patrones',
-            personalizedContent: {
-              patientName: patientName,
-              clinicName: 'Clínica MindHub',
-              practitionerName: 'Dr. María García'
-            },
-            deliveryDetails: {
-              downloadUrl: 'https://download.link/xyz'
-            },
-            viewedAt: '2025-01-17T16:00:00Z',
-            downloadedAt: '2025-01-17T16:05:00Z',
-            completedAt: '2025-01-19T09:30:00Z',
-            sessionId: 'session_122'
-          },
-          {
-            id: '3',
-            resourceId: 'res_3',
-            resourceTitle: 'Información sobre Trastornos del Sueño',
-            resourceDescription: 'Guía psicoeducativa sobre higiene del sueño',
-            resourceType: 'pdf',
-            sentAt: '2025-01-15T11:20:00Z',
-            method: 'print',
-            status: 'sent',
-            practitionerName: 'Dr. María García',
-            practitionerNotes: 'Paciente prefiere material impreso',
-            personalizedContent: {
-              patientName: patientName,
-              clinicName: 'Clínica MindHub',
-              practitionerName: 'Dr. María García'
-            },
-            deliveryDetails: {
-              printReady: true
-            },
-            sessionId: 'session_121'
-          }
-        ]
-        
-        setResourceUsages(mockUsages)
+        console.error('Failed to fetch resource usages:', response.status)
+        setResourceUsages([]) // Empty array instead of mock data
       }
     } catch (error) {
       console.error('Error fetching resource usages:', error)

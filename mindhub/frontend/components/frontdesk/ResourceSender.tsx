@@ -1,4 +1,5 @@
 'use client';
+// 🚀 FORCE REBUILD: 2025-08-26 - Removed ALL mock data and connected to real Django backend APIs
 
 import { useState, useEffect } from 'react';
 import { 
@@ -141,62 +142,31 @@ export default function ResourceSender() {
   const loadAvailableResources = async () => {
     try {
       setLoading(true);
-      const response = await fetch('/api/resources/library');
+      // ✅ REAL API CALL: Fetch resources from Django backend
+      const response = await fetch('/api/resources/django/', {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('supabase-auth-token') || ''}`,
+          'Content-Type': 'application/json'
+        }
+      });
       const data = await response.json();
       
       if (data.success) {
-        setAvailableResources(data.data);
+        // Transform response to match Resource interface
+        const transformedResources: Resource[] = (data.data || data.results || data || []).map((item: any) => ({
+          id: item.id || item.uuid,
+          title: item.title || item.name,
+          description: item.description || '',
+          category: item.category_id || item.category || 'general',
+          type: item.resource_type || item.type || 'pdf',
+          fileSize: item.file_size || item.size,
+          tags: item.tags || [],
+          previewUrl: item.preview_url || item.thumbnail
+        }));
+        setAvailableResources(transformedResources);
       } else {
-        // Mock data for development
-        const mockResources: Resource[] = [
-          {
-            id: '1',
-            title: 'Guía de Ejercicios Posturales',
-            description: 'Ejercicios básicos para mejorar la postura corporal',
-            category: 'exercises',
-            type: 'pdf',
-            fileSize: '2.1 MB',
-            tags: ['postura', 'ejercicios', 'rehabilitación'],
-            previewUrl: '/previews/ejercicios-posturales.jpg'
-          },
-          {
-            id: '2',
-            title: 'Información sobre Ansiedad',
-            description: 'Guía completa sobre el manejo de la ansiedad',
-            category: 'educational',
-            type: 'pdf',
-            fileSize: '1.8 MB',
-            tags: ['ansiedad', 'salud mental', 'autoayuda']
-          },
-          {
-            id: '3',
-            title: 'Formulario de Seguimiento',
-            description: 'Formulario para registro de síntomas diarios',
-            category: 'forms',
-            type: 'pdf',
-            fileSize: '0.5 MB',
-            tags: ['seguimiento', 'síntomas', 'registro']
-          },
-          {
-            id: '4',
-            title: 'Plan de Alimentación Saludable',
-            description: 'Recomendaciones nutricionales básicas',
-            category: 'diet',
-            type: 'pdf',
-            fileSize: '3.2 MB',
-            tags: ['alimentación', 'nutrición', 'salud']
-          },
-          {
-            id: '5',
-            title: 'Técnicas de Relajación',
-            description: 'Video con técnicas de respiración y relajación',
-            category: 'lifestyle',
-            type: 'video',
-            fileSize: '25.6 MB',
-            tags: ['relajación', 'respiración', 'mindfulness']
-          }
-        ];
-        setAvailableResources(mockResources);
+        console.error('Failed to load resources:', data.message);
+        setAvailableResources([]); // Empty array instead of mock data
       }
     } catch (error) {
       console.error('Error loading resources:', error);
@@ -252,9 +222,11 @@ export default function ResourceSender() {
     try {
       setProcessing(true);
       
-      const response = await fetch(`/api/frontdesk/resources/send`, {
+      // ✅ REAL API CALL: Send resources via Django backend
+      const response = await fetch(`/api/resources/django/send/`, {
         method: 'POST',
         headers: {
+          'Authorization': `Bearer ${localStorage.getItem('supabase-auth-token') || ''}`,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify(sendingData),
