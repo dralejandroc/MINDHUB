@@ -5,7 +5,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { expedixApi, Patient } from '@/lib/api/expedix-client';
-import { expedixMedicationsApi, type Medication, type DiagnosisCode } from '@/lib/api/expedix-medications';
+import { expedixMedicationsApi, type Medication as MedicationAPI, type DiagnosisCode } from '@/lib/api/expedix-medications';
 import { useAutosave, consultationAutosaveApi } from '@/hooks/useAutosave';
 import MentalExam from './MentalExam';
 import ClinimetrixScaleSelector from './ClinimetrixScaleSelector';
@@ -15,7 +15,8 @@ import { SettingsIcon, Save, CheckCircle, AlertTriangle, Clock } from 'lucide-re
 
 // Using Patient interface from expedix-client
 
-interface Medication {
+// Using MedicationAPI from imports, and local Medication for consultation data
+interface LocalMedication {
   id: number;
   name: string;
   presentation: string;
@@ -43,7 +44,7 @@ interface ConsultationData {
   labResults: string;
   diagnosis: string;
   temporality: 'acute' | 'chronic' | 'subacute';
-  medications: Medication[];
+  medications: LocalMedication[];
   additionalInstructions: string;
   labOrders: string;
   nextAppointment: { time: string; date: string };
@@ -228,7 +229,7 @@ export default function ConsultationNotes({ patient, onSaveConsultation, onCance
   const [noteTypeReason, setNoteTypeReason] = useState<string>('');
   const [previousPrescription, setPreviousPrescription] = useState<any>(null);
 
-  const [currentMedication, setCurrentMedication] = useState({
+  const [currentMedication, setCurrentMedication] = useState<Omit<LocalMedication, 'id'>>({
     name: '',
     presentation: '',
     substance: '',
@@ -238,7 +239,7 @@ export default function ConsultationNotes({ patient, onSaveConsultation, onCance
   const [medicationSearch, setMedicationSearch] = useState('');
   const [prescriptionSearch, setPrescriptionSearch] = useState('');
   const [diagnosisSearch, setDiagnosisSearch] = useState('');
-  const [filteredMedications, setFilteredMedications] = useState<Medication[]>([]);
+  const [filteredMedications, setFilteredMedications] = useState<MedicationAPI[]>([]);
   const [filteredPrescriptions, setFilteredPrescriptions] = useState<string[]>([]);
   const [filteredDiagnoses, setFilteredDiagnoses] = useState<DiagnosisCode[]>([]);
   const [showQuickAssessment, setShowQuickAssessment] = useState(false);
@@ -250,12 +251,12 @@ export default function ConsultationNotes({ patient, onSaveConsultation, onCance
   // Autosave functionality
   const autosaveState = useAutosave(consultationData, {
     consultationId: consultationId || undefined,
-    onSave: useCallback(async (data) => {
+    onSave: useCallback(async (data: ConsultationData) => {
       if (consultationId) {
         await consultationAutosaveApi.autosave(consultationId, data);
       }
     }, [consultationId]),
-    onError: useCallback((error) => {
+    onError: useCallback((error: Error) => {
       console.error('Autosave error:', error);
       setError(`Error de autoguardado: ${error.message}`);
     }, []),
@@ -388,7 +389,7 @@ export default function ConsultationNotes({ patient, onSaveConsultation, onCance
     }
   };
 
-  const selectMedication = (medication: Medication) => {
+  const selectMedication = (medication: MedicationAPI) => {
     const presentation = medication.presentations[0];
     setCurrentMedication({
       name: medication.name,

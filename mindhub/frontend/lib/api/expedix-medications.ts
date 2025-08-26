@@ -153,10 +153,4 @@ class ExpedixMedicationsApi {
 // Export singleton instance
 export const expedixMedicationsApi = new ExpedixMedicationsApi();
 
-// Export types
-export type {
-  MedicationPresentation,
-  Medication,
-  DiagnosisCode,
-  SearchResponse
-};
+// All types are already exported as interfaces above

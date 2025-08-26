@@ -14,6 +14,22 @@ interface PatientMedicalInfoProps {
   isEditing?: boolean;
 }
 
+// Helper function to safely parse string or array fields
+const parseArrayField = (field: string | undefined) => {
+  if (!field) return [];
+  if (typeof field !== 'string') return [];
+  try {
+    // If it looks like JSON, parse it
+    if (field.startsWith('[')) {
+      return JSON.parse(field).filter(Boolean);
+    }
+    // Otherwise treat as single item
+    return [field].filter(Boolean);
+  } catch {
+    return [field].filter(Boolean);
+  }
+};
+
 export default function PatientMedicalInfo({ 
   patient, 
   onUpdate, 
@@ -22,18 +38,18 @@ export default function PatientMedicalInfo({
   const [editMode, setEditMode] = useState(isEditing);
   const [formData, setFormData] = useState({
     blood_type: patient.blood_type || '',
-    allergies: patient.allergies || [],
-    chronic_conditions: patient.chronic_conditions || [],
-    current_medications: patient.current_medications || [],
+    allergies: parseArrayField(patient.allergies),
+    chronic_conditions: parseArrayField(patient.medical_history), // Using medical_history as chronic_conditions
+    current_medications: parseArrayField(patient.current_medications),
     emergency_contact_name: patient.emergency_contact_name || '',
     emergency_contact_phone: patient.emergency_contact_phone || '',
     emergency_contact_relationship: patient.emergency_contact_relationship || '',
-    consent_to_treatment: patient.consent_to_treatment || false,
-    consent_to_data_processing: patient.consent_to_data_processing || false,
-    insurance_provider: patient.insurance_provider || '',
-    insurance_number: patient.insurance_number || '',
-    marital_status: patient.marital_status || '',
-    occupation: patient.occupation || ''
+    consent_to_treatment: false, // Not in Patient interface, using default
+    consent_to_data_processing: false, // Not in Patient interface, using default
+    insurance_provider: '', // Not in Patient interface, using default
+    insurance_number: '', // Not in Patient interface, using default
+    marital_status: '', // Not in Patient interface, using default
+    occupation: '' // Not in Patient interface, using default
   });
 
   const handleSave = () => {
@@ -53,7 +69,7 @@ export default function PatientMedicalInfo({
   const removeArrayItem = (field: 'allergies' | 'chronic_conditions' | 'current_medications', index: number) => {
     setFormData(prev => ({
       ...prev,
-      [field]: prev[field].filter((_, i) => i !== index)
+      [field]: prev[field].filter((_item: string, i: number) => i !== index)
     }));
   };
 
@@ -76,19 +92,19 @@ export default function PatientMedicalInfo({
 
           <div>
             <label className="text-sm font-medium text-gray-600">Estado Civil</label>
-            <div className="text-sm">{patient.marital_status || 'No especificado'}</div>
+            <div className="text-sm">{formData.marital_status || 'No especificado'}</div>
           </div>
 
           <div>
             <label className="text-sm font-medium text-gray-600">Ocupación</label>
-            <div className="text-sm">{patient.occupation || 'No especificado'}</div>
+            <div className="text-sm">{formData.occupation || 'No especificado'}</div>
           </div>
 
           <div>
             <label className="text-sm font-medium text-gray-600">Seguro Médico</label>
             <div className="text-sm">
-              {patient.insurance_provider ? 
-                `${patient.insurance_provider} - ${patient.insurance_number}` : 
+              {formData.insurance_provider ? 
+                `${formData.insurance_provider} - ${formData.insurance_number}` : 
                 'No especificado'
               }
             </div>
@@ -98,8 +114,8 @@ export default function PatientMedicalInfo({
           <div className="md:col-span-2">
             <label className="text-sm font-medium text-gray-600">Alergias</label>
             <div className="flex flex-wrap gap-1 mt-1">
-              {patient.allergies && patient.allergies.length > 0 ? 
-                patient.allergies.map((allergy, index) => (
+              {formData.allergies && formData.allergies.length > 0 ? 
+                formData.allergies.map((allergy: string, index: number) => (
                   <span key={index} className="bg-red-100 text-red-800 px-2 py-1 rounded-full text-xs">
                     {allergy}
                   </span>
@@ -112,8 +128,8 @@ export default function PatientMedicalInfo({
           <div className="md:col-span-2">
             <label className="text-sm font-medium text-gray-600">Condiciones Crónicas</label>
             <div className="flex flex-wrap gap-1 mt-1">
-              {patient.chronic_conditions && patient.chronic_conditions.length > 0 ? 
-                patient.chronic_conditions.map((condition, index) => (
+              {formData.chronic_conditions && formData.chronic_conditions.length > 0 ? 
+                formData.chronic_conditions.map((condition: string, index: number) => (
                   <span key={index} className="bg-orange-100 text-orange-800 px-2 py-1 rounded-full text-xs">
                     {condition}
                   </span>
@@ -126,8 +142,8 @@ export default function PatientMedicalInfo({
           <div className="md:col-span-2">
             <label className="text-sm font-medium text-gray-600">Medicamentos Actuales</label>
             <div className="flex flex-wrap gap-1 mt-1">
-              {patient.current_medications && patient.current_medications.length > 0 ? 
-                patient.current_medications.map((medication, index) => (
+              {formData.current_medications && formData.current_medications.length > 0 ? 
+                formData.current_medications.map((medication: string, index: number) => (
                   <span key={index} className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs">
                     {medication}
                   </span>

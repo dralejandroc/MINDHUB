@@ -1,7 +1,7 @@
 'use client';
 
+import { CheckIcon, ExclamationTriangleIcon, UserIcon } from '@heroicons/react/24/outline';
 import React, { useState } from 'react';
-import { UserIcon, CheckIcon, ExclamationTriangleIcon } from '@heroicons/react/24/outline';
 
 interface PatientRegistrationMVPProps {
   onComplete: (patient: any) => void;
@@ -350,7 +350,7 @@ export const PatientRegistrationMVP: React.FC<PatientRegistrationMVPProps> = ({
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Nombre del Contacto *
+                          Nombre del Contacto
                         </label>
                         <input
                           type="text"
@@ -368,7 +368,7 @@ export const PatientRegistrationMVP: React.FC<PatientRegistrationMVPProps> = ({
 
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Teléfono de Emergencia *
+                          Teléfono de Emergencia
                         </label>
                         <input
                           type="tel"
