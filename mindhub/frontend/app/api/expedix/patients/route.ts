@@ -100,11 +100,11 @@ export async function GET(request: Request) {
         console.log('[PATIENTS API] Using service role key for direct Supabase access');
         
         // Get user's workspace context (DUAL SYSTEM)
+        // Note: individual_workspaces doesn't have is_active column
         const { data: workspace } = await supabase
           .from('individual_workspaces')
           .select('id')
           .eq('owner_id', user.id)
-          .eq('is_active', true)
           .single();
         
         console.log('[PATIENTS API] Workspace found:', workspace?.id);
@@ -351,7 +351,6 @@ export async function POST(request: Request) {
           .from('individual_workspaces')
           .select('id, workspace_name, owner_id')
           .eq('owner_id', user.id)
-          .eq('is_active', true)
           .single();
         
         console.log('[PATIENTS API] Workspace query result:', { workspace, workspaceError });
