@@ -27,6 +27,8 @@ export interface Patient {
   city?: string;
   state?: string;
   postal_code?: string;
+  education_level?: string;
+  occupation?: string;
   consultations_count?: number;
   evaluations_count?: number;
   created_at: string;
