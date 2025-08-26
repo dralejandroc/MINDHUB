@@ -3,6 +3,12 @@ import { getAuthenticatedUser, createResponse, createErrorResponse, supabaseAdmi
 
 export const dynamic = 'force-dynamic';
 
+interface TenantContext {
+  tenant_id: string | null;
+  tenant_type: 'workspace' | 'clinic';
+  tenant_name: string;
+}
+
 export async function GET(request: Request) {
   try {
     console.log('[TENANT CONTEXT API] Getting current tenant context');
@@ -60,12 +66,20 @@ export async function GET(request: Request) {
         console.warn('[TENANT CONTEXT API] Error getting workspace:', workspaceError);
       }
 
+      // Check if context has the required properties
+      const hasValidContext = context && 
+        typeof context === 'object' &&
+        'tenant_type' in context && 
+        'tenant_name' in context;
+      
+      const currentContext: TenantContext = hasValidContext ? context as TenantContext : {
+        tenant_id: workspace?.id || null,
+        tenant_type: 'workspace',
+        tenant_name: workspace?.workspace_name || 'Mi Consultorio'
+      };
+
       const response = {
-        current_context: context || {
-          tenant_id: workspace?.id || null,
-          tenant_type: 'workspace',
-          tenant_name: workspace?.workspace_name || 'Mi Consultorio'
-        },
+        current_context: currentContext,
         available_contexts: {
           workspace: workspace ? {
             id: workspace.id,
@@ -88,7 +102,7 @@ export async function GET(request: Request) {
         user_id: user.id
       };
 
-      console.log(`[TENANT CONTEXT API] Context retrieved: ${response.current_context.tenant_type} - ${response.current_context.tenant_name}`);
+      console.log(`[TENANT CONTEXT API] Context retrieved: ${currentContext.tenant_type} - ${currentContext.tenant_name}`);
       
       return createResponse({
         success: true,
