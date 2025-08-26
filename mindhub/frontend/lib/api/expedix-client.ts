@@ -34,6 +34,8 @@ export interface Patient {
   insurance_provider?: string;
   insurance_number?: string;
   referring_physician?: string;
+  workplace?: string;
+  known_allergies?: string;
   consultations_count?: number;
   evaluations_count?: number;
   created_at: string;

@@ -185,62 +185,82 @@ export async function PUT(request: Request, { params }: { params: { id: string }
       return createErrorResponse('Unauthorized', 'Valid authentication required', 401);
     }
     
-    // Forward request to Django backend with trailing slash
-    const djangoUrl = `${DJANGO_BACKEND_URL}/api/expedix/patients/${id}/`;
+    // Skip Django for faster response - go directly to Supabase
+    console.log('[PATIENT BY ID] Using Supabase direct for PUT (fast mode)');
     
-    const response = await fetch(djangoUrl, {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': request.headers.get('Authorization') || '',
-        'X-User-Id': user.id,
-        'X-User-Email': user.email || '',
-        'X-Proxy-Auth': 'verified',
-      },
-      body: JSON.stringify(body),
-    });
-
-    if (!response.ok) {
-      console.error('[PATIENT BY ID] PUT Django error:', response.status);
-      throw new Error(`HTTP error! status: ${response.status}`);
+    try {
+      const { createClient } = await import('@supabase/supabase-js');
+      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+      const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
+      
+      const supabase = createClient(supabaseUrl, supabaseServiceKey);
+      
+      // Update patient in Supabase directly
+      const { data: updatedPatient, error: updateError } = await supabase
+        .from('patients')
+        .update({
+          first_name: body.first_name,
+          paternal_last_name: body.paternal_last_name,
+          maternal_last_name: body.maternal_last_name,
+          date_of_birth: body.birth_date || body.date_of_birth,
+          gender: body.gender,
+          email: body.email,
+          phone: body.cell_phone || body.phone,
+          curp: body.curp,
+          rfc: body.rfc,
+          address: body.address,
+          city: body.city,
+          state: body.state,
+          postal_code: body.postal_code,
+          // Additional fields
+          occupation: body.occupation,
+          education_level: body.education_level,
+          workplace: body.workplace,
+          referring_physician: body.referring_physician,
+          known_allergies: body.known_allergies,
+          blood_type: body.blood_type,
+          emergency_contact_name: body.emergency_contact_name,
+          emergency_contact_phone: body.emergency_contact_phone,
+          emergency_contact_relationship: body.emergency_contact_relationship,
+          marital_status: body.marital_status,
+          preferred_language: body.preferred_language,
+          insurance_provider: body.insurance_provider,
+          insurance_number: body.insurance_number,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', id)
+        .eq('created_by', user.id) // Ensure user owns this patient
+        .select()
+        .single();
+      
+      if (updateError) {
+        console.error('[PATIENT BY ID] Supabase update error:', updateError);
+        return createErrorResponse(
+          'Update failed',
+          `Failed to update patient: ${updateError.message}`,
+          400
+        );
+      }
+      
+      console.log('[PATIENT BY ID] Successfully updated patient via Supabase');
+      return createResponse({ data: updatedPatient });
+      
+    } catch (supabaseError) {
+      console.error('[PATIENT BY ID] Supabase PUT failed:', supabaseError);
+      return createErrorResponse(
+        'Database error',
+        `Could not update patient: ${supabaseError instanceof Error ? supabaseError.message : 'Unknown error'}`,
+        500
+      );
     }
-
-    const data = await response.json();
-    console.log('[PATIENT BY ID] Successfully updated patient');
-    
-    // Ensure we return the data in the expected format
-    if (data && !data.data) {
-      return createResponse({ data: data });
-    }
-    return createResponse(data);
   } catch (error) {
     console.error('Error updating patient:', error);
     
-    // Check if it's an authentication error
-    if (error instanceof Error && (error.message.includes('401') || error.message.includes('Authentication'))) {
-      return new Response(JSON.stringify({
-        success: false, 
-        error: 'Authentication required',
-        message: 'Please log in to access this resource',
-        code: 'AUTHENTICATION_REQUIRED'
-      }), {
-        status: 401,
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
-    }
-    
-    return new Response(JSON.stringify({
-      success: false, 
-      error: 'Failed to update patient',
-      message: error instanceof Error ? error.message : "Unknown error"
-    }), {
-      status: 500,
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    });
+    return createErrorResponse(
+      'Internal error',
+      error instanceof Error ? error.message : 'Unknown error occurred',
+      500
+    );
   }
 }
 

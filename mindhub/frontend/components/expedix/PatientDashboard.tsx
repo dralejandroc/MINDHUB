@@ -275,7 +275,7 @@ export default function PatientDashboard({
                     <span>🚨 Alergias: {patient.allergies}</span>
                   )}
                   {patient.blood_type && (
-                    <span>🩸 Tipo de sangre: {patient.blood_type}</span>
+                    <span>🩸 Tipo de sangre: {patientData.blood_type || 'No especificado'}</span>
                   )}
                   {patient.gender && (
                     <span>👤 {patient.gender === 'male' ? 'Masculino' : 'Femenino'}</span>
@@ -701,6 +701,56 @@ export default function PatientDashboard({
                         </select>
                       ) : (
                         <p className="text-gray-900 py-2">{patientData.preferred_language || 'No especificado'}</p>
+                      )}
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Lugar de Trabajo
+                      </label>
+                      {editingPatient ? (
+                        <input
+                          type="text"
+                          value={patientData.workplace || ''}
+                          onChange={(e) => handleFieldChange('workplace', e.target.value)}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        />
+                      ) : (
+                        <p className="text-gray-900 py-2">{patientData.workplace || 'No especificado'}</p>
+                      )}
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Referencia (Quién lo envía)
+                      </label>
+                      {editingPatient ? (
+                        <input
+                          type="text"
+                          placeholder="Doctor, clínica, familiar, etc."
+                          value={patientData.referring_physician || ''}
+                          onChange={(e) => handleFieldChange('referring_physician', e.target.value)}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        />
+                      ) : (
+                        <p className="text-gray-900 py-2">{patientData.referring_physician || 'No especificado'}</p>
+                      )}
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Alergias Conocidas
+                      </label>
+                      {editingPatient ? (
+                        <textarea
+                          rows={3}
+                          placeholder="Medicamentos, alimentos, sustancias..."
+                          value={patientData.known_allergies || ''}
+                          onChange={(e) => handleFieldChange('known_allergies', e.target.value)}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        />
+                      ) : (
+                        <p className="text-gray-900 py-2">{patientData.known_allergies || 'No especificado'}</p>
                       )}
                     </div>
                   </div>
