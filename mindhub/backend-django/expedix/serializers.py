@@ -5,7 +5,7 @@ Replaces Node.js API responses with Django serializers
 
 from rest_framework import serializers
 from .models import User, Patient, MedicalHistory, Consultation, Prescription, ExpedixConfiguration, ConsultationTemplate
-from agenda.models import Appointment
+# from agenda.models import Appointment  # REMOVED for Vercel deployment
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -230,11 +230,12 @@ class PatientSummarySerializer(serializers.ModelSerializer):
         # Get recent appointments (limit to 5 most recent to avoid large payloads)
         appointments = getattr(obj, 'recent_appointments', None)
         if appointments is None:
-            # Direct query using patient_id since ForeignKey relationship doesn't exist
-            appointments = Appointment.objects.filter(
-                patient_id=obj.id,
-                status__in=['scheduled', 'confirmed', 'completed']
-            ).order_by('-appointment_date')[:5]
+            # TEMPORARILY DISABLED for Vercel deployment - agenda app not included
+            appointments = []
+            # appointments = Appointment.objects.filter(
+            #     patient_id=obj.id,
+            #     status__in=['scheduled', 'confirmed', 'completed']
+            # ).order_by('-appointment_date')[:5]
         
         return [{
             'id': apt.id,

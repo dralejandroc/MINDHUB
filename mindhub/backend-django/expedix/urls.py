@@ -12,9 +12,9 @@ from .views_medications import MedicationViewSet, DiagnosisViewSet
 # Create DRF router
 router = DefaultRouter()
 router.register(r'patients', views.PatientViewSet)
-router.register(r'consultations', ConsultationViewSet)  # Use the real consultation views
+router.register(r'consultations', ConsultationViewSet, basename='consultations')  # Use the real consultation views
 router.register(r'medical-history', views.MedicalHistoryViewSet)
-router.register(r'prescriptions', PrescriptionViewSet)  # Use the real prescription views
+router.register(r'prescriptions', PrescriptionViewSet, basename='prescriptions')  # Use the real prescription views
 router.register(r'users', views.UserViewSet)
 router.register(r'schedule-config', views.ScheduleConfigViewSet, basename='schedule-config')
 router.register(r'debug-auth', views.DebugAuthViewSet, basename='debug-auth')
