@@ -46,6 +46,10 @@ export interface DailyViewProps {
   onAppointmentClick?: (appointment: AppointmentData) => void;
   onTimeSlotClick?: (date: Date, hour: number, minute: number) => void;
   
+  // Drag & Drop handlers
+  onAppointmentDragStart?: (appointment: AppointmentData) => void;
+  onAppointmentDrop?: (appointment: AppointmentData, newDate: Date, newHour: number, newMinute: number) => void;
+  
   // Context menu handlers
   onStartConsultation?: (appointmentId: string) => void;
   onConfirm?: (appointmentId: string, withDeposit: boolean) => void;
@@ -86,6 +90,8 @@ export const DailyView: React.FC<DailyViewProps> = ({
   lastRefresh,
   onAppointmentClick,
   onTimeSlotClick,
+  onAppointmentDragStart,
+  onAppointmentDrop,
   onStartConsultation,
   onConfirm,
   onCancel,

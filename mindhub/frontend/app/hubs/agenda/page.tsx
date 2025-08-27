@@ -31,7 +31,7 @@ type ViewType = 'week' | 'day' | 'month' | 'clinic-global' | 'reception';
 export default function AgendaV2Page() {
   const router = useRouter();
   const { user } = useAuth();
-  const { tenantId, tenantType } = useTenantContext();
+  const { getCurrentTenantId, getCurrentTenantType } = useTenantContext();
   const [currentView, setCurrentView] = useState<ViewType>('week');
   const [currentDate, setCurrentDate] = useState<Date | null>(null);
   const [appointments, setAppointments] = useState<AppointmentData[]>([]);
@@ -271,8 +271,8 @@ export default function AgendaV2Page() {
         status: 'draft',
         is_draft: true,
         linked_appointment_id: appointmentId,
-        clinic_id: tenantType === 'clinic' ? tenantId : undefined,
-        workspace_id: tenantType === 'individual' ? tenantId : undefined
+        clinic_id: getCurrentTenantType() === 'clinic' ? getCurrentTenantId() : undefined,
+        workspace_id: getCurrentTenantType() === 'workspace' ? getCurrentTenantId() : undefined
       };
 
       console.log('[handleStartConsultation] Creating consultation with data:', consultationData);
@@ -281,8 +281,8 @@ export default function AgendaV2Page() {
       const response = await authFetch('/api/expedix/consultations', {
         method: 'POST',
         headers: {
-          'X-Tenant-ID': tenantId || '',
-          'X-Tenant-Type': tenantType || ''
+          'X-Tenant-ID': getCurrentTenantId() || '',
+          'X-Tenant-Type': getCurrentTenantType() || ''
         },
         body: JSON.stringify(consultationData)
       });
@@ -371,8 +371,8 @@ export default function AgendaV2Page() {
       const response = await authFetch(`/api/expedix/agenda/appointments/${appointment.id}`, {
         method: 'PUT',
         headers: {
-          'X-Tenant-ID': tenantId || '',
-          'X-Tenant-Type': tenantType || ''
+          'X-Tenant-ID': getCurrentTenantId() || '',
+          'X-Tenant-Type': getCurrentTenantType() || ''
         },
         body: JSON.stringify(updateData)
       });
