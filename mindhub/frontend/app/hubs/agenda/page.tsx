@@ -21,13 +21,17 @@ import {
   UserGroupIcon
 } from '@heroicons/react/24/outline';
 import toast from 'react-hot-toast';
-import { authGet, authPost, authPut, authDelete } from '@/lib/api/auth-fetch';
+import { authGet, authPost, authPut, authDelete, authFetch } from '@/lib/api/auth-fetch';
 import { useRouter } from 'next/navigation';
+import { useAuth } from '@/hooks/useAuth';
+import { useTenantContext } from '@/hooks/useTenantContext';
 
 type ViewType = 'week' | 'day' | 'month' | 'clinic-global' | 'reception';
 
 export default function AgendaV2Page() {
   const router = useRouter();
+  const { user } = useAuth();
+  const { tenantId, tenantType } = useTenantContext();
   const [currentView, setCurrentView] = useState<ViewType>('week');
   const [currentDate, setCurrentDate] = useState<Date | null>(null);
   const [appointments, setAppointments] = useState<AppointmentData[]>([]);
@@ -120,7 +124,7 @@ export default function AgendaV2Page() {
           const startTime = apt.start_time || '00:00';
           const endTime = apt.end_time || '01:00';
           
-          // Create proper datetime by combining date + time
+          // Create proper datetime by combining date + time (TIMEZONE SAFE)
           const createDateTime = (dateStr: string, timeStr: string): Date => {
             try {
               if (!dateStr || !timeStr) {
@@ -128,18 +132,27 @@ export default function AgendaV2Page() {
                 return new Date();
               }
               
-              // Parse date and time components
-              const date = new Date(dateStr);
+              // Parse date components from string (YYYY-MM-DD)
+              const [year, month, day] = dateStr.split('-').map(Number);
               const [hours, minutes] = timeStr.split(':').map(Number);
+              
+              // Validate date components
+              if (isNaN(year) || isNaN(month) || isNaN(day)) {
+                console.warn('[loadAppointments] Invalid date format:', dateStr);
+                return new Date();
+              }
               
               // Validate time components
               if (isNaN(hours) || isNaN(minutes)) {
                 console.warn('[loadAppointments] Invalid time format:', timeStr);
-                return date;
+                return new Date();
               }
               
-              // Set time on the date
-              date.setHours(hours, minutes, 0, 0);
+              // Create date in LOCAL timezone (month is 0-based in JavaScript)
+              const date = new Date(year, month - 1, day, hours, minutes, 0, 0);
+              
+              // Log for debugging
+              console.log(`[createDateTime] Created: ${dateStr} ${timeStr} -> ${date.toLocaleDateString()} ${date.toLocaleTimeString()}`);
               
               return date;
             } catch (error) {
@@ -238,10 +251,144 @@ export default function AgendaV2Page() {
   };
 
   // Context menu actions
-  const handleStartConsultation = (appointmentId: string) => {
-    const appointment = appointments.find(a => a.id === appointmentId);
-    if (appointment) {
-      router.push(`/hubs/expedix?patient=${appointment.patientId}&consultation=start`);
+  const handleStartConsultation = async (appointmentId: string) => {
+    try {
+      const appointment = appointments.find(a => a.id === appointmentId);
+      if (!appointment) {
+        toast.error('Cita no encontrada');
+        return;
+      }
+
+      console.log('[handleStartConsultation] Starting consultation for appointment:', appointmentId, 'patient:', appointment.patientId);
+
+      // Create a new consultation for this appointment
+      const consultationData = {
+        patient_id: appointment.patientId,
+        professional_id: user?.id, // Current user as professional
+        consultation_date: appointment.startTime.toISOString(),
+        consultation_type: appointment.type || 'general',
+        chief_complaint: `Consulta iniciada desde cita: ${appointment.type}`,
+        status: 'draft',
+        is_draft: true,
+        linked_appointment_id: appointmentId,
+        clinic_id: tenantType === 'clinic' ? tenantId : undefined,
+        workspace_id: tenantType === 'individual' ? tenantId : undefined
+      };
+
+      console.log('[handleStartConsultation] Creating consultation with data:', consultationData);
+
+      // Use authFetch with tenant headers
+      const response = await authFetch('/api/expedix/consultations', {
+        method: 'POST',
+        headers: {
+          'X-Tenant-ID': tenantId || '',
+          'X-Tenant-Type': tenantType || ''
+        },
+        body: JSON.stringify(consultationData)
+      });
+      
+      if (response.ok) {
+        const responseData = await response.json();
+        const consultationId = responseData.data?.id || responseData.id;
+        
+        if (consultationId) {
+          console.log('[handleStartConsultation] Consultation created successfully:', consultationId);
+          
+          // Update appointment status to "in-progress" or "active"
+          try {
+            await authPut(`/api/expedix/agenda/appointments/${appointmentId}/status`, {
+              status: 'confirmed'
+            });
+          } catch (updateError) {
+            console.warn('[handleStartConsultation] Failed to update appointment status:', updateError);
+            // Don't block the consultation creation for this
+          }
+          
+          // Redirect directly to the consultation (not to expedix patient list)
+          router.push(`/hubs/expedix/consultations/${consultationId}?patient=${appointment.patientId}`);
+          toast.success('Consulta iniciada exitosamente');
+        } else {
+          throw new Error('No consultation ID received');
+        }
+      } else {
+        const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+        console.error('[handleStartConsultation] Failed to create consultation:', errorData);
+        toast.error(`Error al crear la consulta: ${errorData.error || 'Error desconocido'}`);
+        
+        // Fallback: redirect to expedix with patient selected
+        router.push(`/hubs/expedix?patient=${appointment.patientId}&consultation=start`);
+      }
+    } catch (error) {
+      console.error('[handleStartConsultation] Error starting consultation:', error);
+      toast.error('Error al iniciar la consulta');
+      
+      // Fallback: redirect to expedix
+      const appointment = appointments.find(a => a.id === appointmentId);
+      if (appointment) {
+        router.push(`/hubs/expedix?patient=${appointment.patientId}&consultation=start`);
+      }
+    }
+  };
+
+  // Drag & Drop handlers
+  const handleAppointmentDragStart = (appointment: AppointmentData) => {
+    console.log('[handleAppointmentDragStart] Dragging appointment:', appointment.id);
+  };
+
+  const handleAppointmentDrop = async (appointment: AppointmentData, newDate: Date, newHour: number, newMinute: number) => {
+    try {
+      console.log('[handleAppointmentDrop] Dropping appointment:', appointment.id, 'to', newDate, newHour, newMinute);
+      
+      // Calculate new start and end times
+      const newStartTime = new Date(newDate);
+      newStartTime.setHours(newHour, newMinute, 0, 0);
+      
+      // Keep the same duration
+      const originalDuration = appointment.duration || 60; // fallback to 60 minutes
+      const newEndTime = new Date(newStartTime);
+      newEndTime.setMinutes(newEndTime.getMinutes() + originalDuration);
+      
+      // Format for API (date + separate time)
+      const appointmentDate = newStartTime.toISOString().split('T')[0]; // YYYY-MM-DD
+      const startTime = `${String(newHour).padStart(2, '0')}:${String(newMinute).padStart(2, '0')}`;
+      const endTime = `${String(newEndTime.getHours()).padStart(2, '0')}:${String(newEndTime.getMinutes()).padStart(2, '0')}`;
+      
+      console.log('[handleAppointmentDrop] Updating appointment with:', { 
+        appointmentDate, 
+        startTime, 
+        endTime,
+        originalDuration 
+      });
+
+      // Update appointment via API
+      const updateData = {
+        appointment_date: appointmentDate,
+        start_time: startTime,
+        end_time: endTime,
+        status: 'modified' // Mark as modified
+      };
+
+      const response = await authFetch(`/api/expedix/agenda/appointments/${appointment.id}`, {
+        method: 'PUT',
+        headers: {
+          'X-Tenant-ID': tenantId || '',
+          'X-Tenant-Type': tenantType || ''
+        },
+        body: JSON.stringify(updateData)
+      });
+
+      if (response.ok) {
+        toast.success('Cita reagendada exitosamente');
+        // Refresh appointments to show the updated time
+        loadAppointments();
+      } else {
+        const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+        console.error('[handleAppointmentDrop] Failed to update appointment:', errorData);
+        toast.error(`Error al reagendar la cita: ${errorData.error || 'Error desconocido'}`);
+      }
+    } catch (error) {
+      console.error('[handleAppointmentDrop] Error updating appointment:', error);
+      toast.error('Error al reagendar la cita');
     }
   };
 
@@ -382,6 +529,8 @@ export default function AgendaV2Page() {
             lastRefresh={lastRefresh}
             onAppointmentClick={handleAppointmentClick}
             onTimeSlotClick={handleTimeSlotClick}
+            onAppointmentDragStart={handleAppointmentDragStart}
+            onAppointmentDrop={handleAppointmentDrop}
           />
         )}
 
@@ -403,6 +552,8 @@ export default function AgendaV2Page() {
             lastRefresh={lastRefresh}
             onAppointmentClick={handleAppointmentClick}
             onTimeSlotClick={handleTimeSlotClick}
+            onAppointmentDragStart={handleAppointmentDragStart}
+            onAppointmentDrop={handleAppointmentDrop}
             onStartConsultation={handleStartConsultation}
             onConfirm={handleConfirm}
             onCancel={handleCancel}

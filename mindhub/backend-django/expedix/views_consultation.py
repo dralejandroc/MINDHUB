@@ -57,9 +57,9 @@ class ConsultationViewSet(viewsets.ViewSet):
         return ip
     
     def list(self, request):
-        """List consultations with filtering using direct SQL"""
+        """List consultations with filtering using direct SQL - COMPLETE FIELDS"""
         try:
-            # Build SQL query
+            # Build SQL query with ALL available fields including mental exam
             sql = """
                 SELECT 
                     c.id,
@@ -69,16 +69,37 @@ class ConsultationViewSet(viewsets.ViewSet):
                     c.consultation_type,
                     c.chief_complaint,
                     c.history_present_illness,
+                    c.present_illness,
                     c.physical_examination,
+                    c.physical_exam,
                     c.assessment,
                     c.plan,
+                    c.treatment_plan,
                     c.diagnosis,
+                    c.diagnosis_codes,
                     c.status,
                     c.notes,
+                    c.clinical_notes,
+                    c.private_notes,
+                    c.mental_exam,
+                    c.vital_signs,
+                    c.prescriptions,
                     c.follow_up_date,
                     c.follow_up_instructions,
+                    c.duration_minutes,
+                    c.is_draft,
+                    c.is_finalized,
+                    c.template_config,
+                    c.form_customizations,
+                    c.consultation_metadata,
+                    c.sections_completed,
+                    c.linked_assessments,
+                    c.linked_appointment_id,
                     c.created_at,
                     c.updated_at,
+                    c.edited_by,
+                    c.finalized_at,
+                    c.finalized_by,
                     c.clinic_id,
                     c.workspace_id
                 FROM consultations c
@@ -155,15 +176,22 @@ class ConsultationViewSet(viewsets.ViewSet):
             import uuid
             consultation_id = str(uuid.uuid4())
             
-            # Insert consultation using raw SQL
+            # Insert consultation using raw SQL with ALL fields
             with connection.cursor() as cursor:
                 cursor.execute("""
                     INSERT INTO consultations (
                         id, patient_id, professional_id, consultation_date, 
-                        consultation_type, chief_complaint, status, 
+                        consultation_type, chief_complaint, history_present_illness,
+                        physical_examination, assessment, plan, diagnosis,
+                        notes, clinical_notes, private_notes, mental_exam,
+                        vital_signs, prescriptions, follow_up_instructions,
+                        status, is_draft, is_finalized, template_config,
+                        form_customizations, consultation_metadata, sections_completed,
+                        linked_assessments, linked_appointment_id,
                         clinic_id, workspace_id, created_at, updated_at
                     ) VALUES (
-                        %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s
+                        %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s,
+                        %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s
                     )
                 """, [
                     consultation_id,
@@ -172,7 +200,27 @@ class ConsultationViewSet(viewsets.ViewSet):
                     request.data.get('consultation_date') or timezone.now(),
                     request.data.get('consultation_type', 'general'),
                     request.data.get('chief_complaint', ''),
-                    'draft',
+                    request.data.get('history_present_illness', ''),
+                    request.data.get('physical_examination', ''),
+                    request.data.get('assessment', ''),
+                    request.data.get('plan', ''),
+                    request.data.get('diagnosis', ''),
+                    request.data.get('notes', ''),
+                    request.data.get('clinical_notes', ''),
+                    request.data.get('private_notes', ''),
+                    request.data.get('mental_exam', {}),  # JSONB field
+                    request.data.get('vital_signs', {}),  # JSONB field
+                    request.data.get('prescriptions', {}),  # JSONB field
+                    request.data.get('follow_up_instructions', ''),
+                    request.data.get('status', 'draft'),
+                    request.data.get('is_draft', True),
+                    request.data.get('is_finalized', False),
+                    request.data.get('template_config', {}),  # JSONB field
+                    request.data.get('form_customizations', {}),  # JSONB field
+                    request.data.get('consultation_metadata', {}),  # JSONB field
+                    request.data.get('sections_completed', {}),  # JSONB field
+                    request.data.get('linked_assessments', []),  # JSONB array
+                    request.data.get('linked_appointment_id'),
                     request.data.get('clinic_id'),
                     request.data.get('workspace_id'),
                     timezone.now(),
@@ -206,9 +254,16 @@ class ConsultationViewSet(viewsets.ViewSet):
                 update_fields = []
                 params = []
                 
+                # ALL ALLOWED FIELDS including mental exam and new fields
                 allowed_fields = [
-                    'chief_complaint', 'history_present_illness', 'physical_examination',
-                    'assessment', 'plan', 'diagnosis', 'notes'
+                    'chief_complaint', 'history_present_illness', 'present_illness',
+                    'physical_examination', 'physical_exam', 'assessment', 'plan', 
+                    'treatment_plan', 'diagnosis', 'notes', 'clinical_notes', 
+                    'private_notes', 'mental_exam', 'vital_signs', 'prescriptions',
+                    'follow_up_instructions', 'duration_minutes', 'status',
+                    'is_draft', 'is_finalized', 'template_config', 'form_customizations',
+                    'consultation_metadata', 'sections_completed', 'linked_assessments',
+                    'linked_appointment_id', 'edit_reason'
                 ]
                 
                 for field in allowed_fields:
@@ -244,6 +299,100 @@ class ConsultationViewSet(viewsets.ViewSet):
             
         except Exception as e:
             logger.error(f'Error updating consultation: {str(e)}')
+            return Response({
+                'success': False,
+                'error': str(e)
+            }, status=500)
+    
+    @action(detail=True, methods=['patch'])
+    def update_mental_exam(self, request, pk=None):
+        """Update only the mental exam section of a consultation"""
+        try:
+            user_info = self.get_user_info(request)
+            mental_exam_data = request.data.get('mental_exam', {})
+            
+            with connection.cursor() as cursor:
+                cursor.execute("""
+                    UPDATE consultations 
+                    SET mental_exam = %s, 
+                        updated_at = %s,
+                        edited_by = %s,
+                        edit_reason = %s
+                    WHERE id = %s
+                """, [
+                    mental_exam_data,
+                    timezone.now(),
+                    user_info['user_id'],
+                    'Mental exam updated',
+                    pk
+                ])
+                
+                if cursor.rowcount == 0:
+                    return Response({
+                        'success': False,
+                        'error': 'Consultation not found'
+                    }, status=404)
+            
+            return Response({
+                'success': True,
+                'data': {'id': pk, 'mental_exam_updated': True},
+                'message': 'Mental exam updated successfully'
+            })
+            
+        except Exception as e:
+            logger.error(f'Error updating mental exam: {str(e)}')
+            return Response({
+                'success': False,
+                'error': str(e)
+            }, status=500)
+    
+    @action(detail=True, methods=['patch'])
+    def finalize_consultation(self, request, pk=None):
+        """Finalize a consultation (mark as completed and lock from editing)"""
+        try:
+            user_info = self.get_user_info(request)
+            
+            with connection.cursor() as cursor:
+                # First check if consultation exists and is not already finalized
+                cursor.execute("SELECT is_finalized FROM consultations WHERE id = %s", [pk])
+                result = cursor.fetchone()
+                
+                if not result:
+                    return Response({
+                        'success': False,
+                        'error': 'Consultation not found'
+                    }, status=404)
+                
+                if result[0]:  # is_finalized = True
+                    return Response({
+                        'success': False,
+                        'error': 'Consultation is already finalized'
+                    }, status=400)
+                
+                # Finalize the consultation
+                cursor.execute("""
+                    UPDATE consultations 
+                    SET is_finalized = TRUE,
+                        is_draft = FALSE,
+                        finalized_at = %s,
+                        finalized_by = %s,
+                        updated_at = %s
+                    WHERE id = %s
+                """, [
+                    timezone.now(),
+                    user_info['user_id'],
+                    timezone.now(),
+                    pk
+                ])
+            
+            return Response({
+                'success': True,
+                'data': {'id': pk, 'is_finalized': True},
+                'message': 'Consultation finalized successfully'
+            })
+            
+        except Exception as e:
+            logger.error(f'Error finalizing consultation: {str(e)}')
             return Response({
                 'success': False,
                 'error': str(e)
