@@ -1,12 +1,12 @@
-// Expedix consultations API route - UNIFIED Django Backend Connection
-import { getAuthenticatedUser, createResponse, createErrorResponse } from '@/lib/supabase/admin'
+// Expedix consultations API route - Django Backend with Supabase Fallback
+import { getAuthenticatedUser, createResponse, createErrorResponse, supabaseAdmin } from '@/lib/supabase/admin'
 import { API_CONFIG } from '@/lib/config/api-endpoints'
 
 export const dynamic = 'force-dynamic';
 
 export async function GET(request: Request) {
   try {
-    console.log('[CONSULTATIONS API] Processing GET request - Django Backend Connection');
+    console.log('[CONSULTATIONS API] Processing GET request - Django Backend with Supabase Fallback');
     
     // Verify authentication
     const { user, error: authError } = await getAuthenticatedUser(request);
@@ -31,57 +31,110 @@ export async function GET(request: Request) {
 
     console.log('[CONSULTATIONS API] Query params:', { search, limit, offset, status, patientId });
 
-    // Build query parameters for Django backend
-    const queryParams = new URLSearchParams();
-    if (search) queryParams.append('search', search);
-    if (limit) queryParams.append('limit', limit);
-    if (offset) queryParams.append('offset', offset);
-    if (status) queryParams.append('status', status);
-    if (patientId) queryParams.append('patient_id', patientId);
+    try {
+      // TRY Django backend first
+      const queryParams = new URLSearchParams();
+      if (search) queryParams.append('search', search);
+      if (limit) queryParams.append('limit', limit);
+      if (offset) queryParams.append('offset', offset);
+      if (status) queryParams.append('status', status);
+      if (patientId) queryParams.append('patient_id', patientId);
 
-    // Call Django backend with proper authentication and tenant context
-    const backendUrl = `${API_CONFIG.BACKEND_URL}/api/expedix/consultations/?${queryParams.toString()}`;
-    console.log('[CONSULTATIONS API] Calling Django backend:', backendUrl);
+      const backendUrl = `${API_CONFIG.BACKEND_URL}/api/expedix/consultations/?${queryParams.toString()}`;
+      console.log('[CONSULTATIONS API] Trying Django backend:', backendUrl);
 
-    const backendResponse = await fetch(backendUrl, {
-      method: 'GET',
-      headers: {
-        'Authorization': `Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY}`,
-        'X-Proxy-Auth': 'verified',
-        'X-User-ID': user.id,
-        'X-User-Email': user.email || '',
-        'X-Tenant-ID': tenantId || '',
-        'X-Tenant-Type': tenantType || '',
-        'Content-Type': 'application/json'
-      },
-      cache: 'no-store'
-    });
+      const backendResponse = await fetch(backendUrl, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY}`,
+          'X-Proxy-Auth': 'verified',
+          'X-User-ID': user.id,
+          'X-User-Email': user.email || '',
+          'X-Tenant-ID': tenantId || '',
+          'X-Tenant-Type': tenantType || '',
+          'Content-Type': 'application/json'
+        },
+        cache: 'no-store'
+      });
 
-    if (!backendResponse.ok) {
-      const errorText = await backendResponse.text();
-      console.error('[CONSULTATIONS API] Django backend error:', backendResponse.status, errorText);
+      if (backendResponse.ok) {
+        const backendData = await backendResponse.json();
+        console.log('[CONSULTATIONS API] Successfully fetched from Django backend:', backendData.count || backendData.length, 'consultations');
+
+        return createResponse({
+          success: true,
+          data: backendData.results || backendData.data || backendData,
+          total: backendData.count || backendData.total || (backendData.results?.length || 0),
+          limit: parseInt(limit),
+          offset: parseInt(offset),
+          search,
+          status,
+          patient_id: patientId,
+          source: 'django_backend'
+        });
+      } else {
+        console.warn('[CONSULTATIONS API] Django backend unavailable, falling back to Supabase');
+        throw new Error(`Django backend error: ${backendResponse.status}`);
+      }
+    } catch (djangoError) {
+      console.error('[CONSULTATIONS API] Django backend failed, using Supabase fallback:', djangoError);
+
+      // FALLBACK: Direct Supabase connection
+      console.log('[CONSULTATIONS API] Using Supabase direct connection as fallback');
       
-      return createErrorResponse(
-        'Backend service error',
-        `Django backend error: ${backendResponse.status}`,
-        503
-      );
+      // Build Supabase query
+      let query = supabaseAdmin
+        .from('consultations')
+        .select(`
+          *,
+          patients!inner(
+            id,
+            first_name,
+            last_name,
+            paternal_last_name,
+            maternal_last_name,
+            email
+          )
+        `, { count: 'exact' })
+        .order('created_at', { ascending: false })
+        .range(parseInt(offset), parseInt(offset) + parseInt(limit) - 1);
+
+      // Filter by patient if specified
+      if (patientId) {
+        query = query.eq('patient_id', patientId);
+      }
+
+      // Apply search if provided
+      if (search) {
+        query = query.or(`chief_complaint.ilike.%${search}%,history_present_illness.ilike.%${search}%,assessment.ilike.%${search}%`);
+      }
+
+      // Execute query
+      const { data: consultations, error, count } = await query;
+
+      if (error) {
+        console.error('[CONSULTATIONS API] Supabase fallback error:', error);
+        return createErrorResponse(
+          'Database connection failed',
+          `Supabase error: ${error.message}`,
+          500
+        );
+      }
+
+      console.log('[CONSULTATIONS API] Successfully fetched from Supabase fallback:', count, 'total consultations');
+
+      return createResponse({
+        success: true,
+        data: consultations || [],
+        total: count || 0,
+        limit: parseInt(limit),
+        offset: parseInt(offset),
+        search,
+        status,
+        patient_id: patientId,
+        source: 'supabase_fallback'
+      });
     }
-
-    const backendData = await backendResponse.json();
-    console.log('[CONSULTATIONS API] Successfully fetched from Django backend:', backendData.count || backendData.length, 'consultations');
-
-    return createResponse({
-      success: true,
-      data: backendData.results || backendData.data || backendData,
-      total: backendData.count || backendData.total || (backendData.results?.length || 0),
-      limit: parseInt(limit),
-      offset: parseInt(offset),
-      search,
-      status,
-      patient_id: patientId,
-      source: 'django_backend'
-    });
 
   } catch (error) {
     console.error('[CONSULTATIONS API] Error:', error);
@@ -95,9 +148,9 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   try {
-    console.log('[CONSULTATIONS API] Processing POST request - Django Backend Connection');
+    console.log('[CONSULTATIONS API] Processing POST request - Django Backend with Supabase Fallback');
     
-    // Verify authentication using same pattern as working endpoints
+    // Verify authentication
     const { user, error: authError } = await getAuthenticatedUser(request);
     if (authError || !user) {
       console.error('[CONSULTATIONS API] Auth error:', authError);
@@ -118,42 +171,136 @@ export async function POST(request: Request) {
       return createErrorResponse('Validation error', 'patient_id is required', 400);
     }
 
-    // Call Django backend to create consultation
-    const backendResponse = await fetch(`${API_CONFIG.BACKEND_URL}/api/expedix/consultations/`, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY}`,
-        'X-Proxy-Auth': 'verified',
-        'X-User-ID': user.id,
-        'X-User-Email': user.email || '',
-        'X-Tenant-ID': tenantId || '',
-        'X-Tenant-Type': tenantType || '',
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify(body),
-      cache: 'no-store'
-    });
+    try {
+      // TRY Django backend first
+      const backendResponse = await fetch(`${API_CONFIG.BACKEND_URL}/api/expedix/consultations/`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY}`,
+          'X-Proxy-Auth': 'verified',
+          'X-User-ID': user.id,
+          'X-User-Email': user.email || '',
+          'X-Tenant-ID': tenantId || '',
+          'X-Tenant-Type': tenantType || '',
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(body),
+        cache: 'no-store'
+      });
 
-    if (!backendResponse.ok) {
-      const errorText = await backendResponse.text();
-      console.error('[CONSULTATIONS API] Django backend error:', backendResponse.status, errorText);
+      if (backendResponse.ok) {
+        const backendData = await backendResponse.json();
+        console.log('[CONSULTATIONS API] Successfully created consultation in Django backend:', backendData.id);
+
+        return createResponse({
+          success: true,
+          data: backendData,
+          message: 'Consultation created successfully',
+          source: 'django_backend'
+        }, 201);
+      } else {
+        console.warn('[CONSULTATIONS API] Django backend unavailable for POST, falling back to Supabase');
+        throw new Error(`Django backend error: ${backendResponse.status}`);
+      }
+    } catch (djangoError) {
+      console.error('[CONSULTATIONS API] Django backend failed for POST, using Supabase fallback:', djangoError);
+
+      // FALLBACK: Direct Supabase creation
+      console.log('[CONSULTATIONS API] Using Supabase direct creation as fallback');
+
+      // Get user's workspace/clinic context for dual system
+      console.log('[CONSULTATIONS API] Getting user context for dual system...');
       
-      return createErrorResponse(
-        'Backend service error',
-        `Django backend error: ${backendResponse.status}`,
-        503
-      );
+      // Check for individual workspace first
+      const { data: workspace } = await supabaseAdmin
+        .from('individual_workspaces')
+        .select('id')
+        .eq('owner_id', user.id)
+        .single();
+      
+      let clinic_id = null;
+      let workspace_id = null;
+      
+      if (workspace) {
+        workspace_id = workspace.id;
+        console.log('[CONSULTATIONS API] Using workspace context:', workspace.id);
+      } else {
+        // Check for clinic membership
+        const { data: membership } = await supabaseAdmin
+          .from('tenant_memberships')
+          .select('clinic_id')
+          .eq('user_id', user.id)
+          .limit(1)
+          .single();
+        
+        if (membership) {
+          clinic_id = membership.clinic_id;
+          console.log('[CONSULTATIONS API] Using clinic context:', membership.clinic_id);
+        } else {
+          console.error('[CONSULTATIONS API] No workspace or clinic context found for user');
+          return createErrorResponse(
+            'Context error',
+            'User workspace or clinic context not found',
+            400
+          );
+        }
+      }
+
+      // Prepare consultation data for Supabase
+      const consultationData = {
+        id: crypto.randomUUID(),
+        patient_id: body.patient_id,
+        professional_id: user.id,
+        consultation_date: body.consultation_date || new Date().toISOString().split('T')[0],
+        consultation_time: body.consultation_time || new Date().toTimeString().split(' ')[0],
+        chief_complaint: body.chief_complaint || body.subjective?.substring(0, 500) || '',
+        history_present_illness: body.history_present_illness || body.subjective || body.currentCondition || '',
+        physical_examination: body.physical_examination || body.objective || body.physicalExamination || '',
+        assessment_plan: body.assessment || body.analysis || body.assessment_plan || '',
+        notes: body.notes || '',
+        status: body.status || 'completed',
+        // Dual system context
+        clinic_id,
+        workspace_id,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      };
+
+      // Insert consultation into Supabase
+      const { data: consultation, error } = await supabaseAdmin
+        .from('consultations')
+        .insert(consultationData)
+        .select(`
+          *,
+          patients!inner(
+            id,
+            first_name,
+            last_name,
+            paternal_last_name,
+            maternal_last_name,
+            email
+          )
+        `)
+        .single();
+
+      if (error) {
+        console.error('[CONSULTATIONS API] Supabase fallback insert error:', error);
+        return createErrorResponse(
+          'Database connection failed',
+          `Supabase error: ${error.message}`,
+          500
+        );
+      }
+
+      console.log('[CONSULTATIONS API] Successfully created consultation via Supabase fallback:', consultation.id);
+
+      return createResponse({
+        success: true,
+        data: consultation,
+        message: 'Consultation created successfully (fallback)',
+        source: 'supabase_fallback'
+      }, 201);
     }
-
-    const backendData = await backendResponse.json();
-    console.log('[CONSULTATIONS API] Successfully created consultation in Django backend:', backendData.id);
-
-    return createResponse({
-      success: true,
-      data: backendData,
-      message: 'Consultation created successfully',
-      source: 'django_backend'
-    }, 201);
 
   } catch (error) {
     console.error('[CONSULTATIONS API] Error creating consultation:', error);
@@ -167,7 +314,7 @@ export async function POST(request: Request) {
 
 export async function PUT(request: Request) {
   try {
-    console.log('[CONSULTATIONS API] Processing PUT request - Django Backend Connection');
+    console.log('[CONSULTATIONS API] Processing PUT request - Django Backend with Supabase Fallback');
     
     // Verify authentication
     const { user, error: authError } = await getAuthenticatedUser(request);
@@ -189,42 +336,83 @@ export async function PUT(request: Request) {
     const body = await request.json();
     console.log('[CONSULTATIONS API] Updating consultation:', consultationId, 'with tenant context:', { tenantId, tenantType });
 
-    // Call Django backend to update consultation
-    const backendResponse = await fetch(`${API_CONFIG.BACKEND_URL}/api/expedix/consultations/${consultationId}/`, {
-      method: 'PUT',
-      headers: {
-        'Authorization': `Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY}`,
-        'X-Proxy-Auth': 'verified',
-        'X-User-ID': user.id,
-        'X-User-Email': user.email || '',
-        'X-Tenant-ID': tenantId || '',
-        'X-Tenant-Type': tenantType || '',
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify(body),
-      cache: 'no-store'
-    });
+    try {
+      // TRY Django backend first
+      const backendResponse = await fetch(`${API_CONFIG.BACKEND_URL}/api/expedix/consultations/${consultationId}/`, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY}`,
+          'X-Proxy-Auth': 'verified',
+          'X-User-ID': user.id,
+          'X-User-Email': user.email || '',
+          'X-Tenant-ID': tenantId || '',
+          'X-Tenant-Type': tenantType || '',
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(body),
+        cache: 'no-store'
+      });
 
-    if (!backendResponse.ok) {
-      const errorText = await backendResponse.text();
-      console.error('[CONSULTATIONS API] Django backend error:', backendResponse.status, errorText);
-      
-      return createErrorResponse(
-        'Backend service error',
-        `Django backend error: ${backendResponse.status}`,
-        503
-      );
+      if (backendResponse.ok) {
+        const backendData = await backendResponse.json();
+        console.log('[CONSULTATIONS API] Successfully updated consultation in Django backend:', backendData.id);
+
+        return createResponse({
+          success: true,
+          data: backendData,
+          message: 'Consultation updated successfully',
+          source: 'django_backend'
+        });
+      } else {
+        console.warn('[CONSULTATIONS API] Django backend unavailable for PUT, falling back to Supabase');
+        throw new Error(`Django backend error: ${backendResponse.status}`);
+      }
+    } catch (djangoError) {
+      console.error('[CONSULTATIONS API] Django backend failed for PUT, using Supabase fallback:', djangoError);
+
+      // FALLBACK: Direct Supabase update
+      console.log('[CONSULTATIONS API] Using Supabase direct update as fallback');
+
+      const updateData = {
+        ...body,
+        updated_at: new Date().toISOString()
+      };
+
+      const { data: consultation, error } = await supabaseAdmin
+        .from('consultations')
+        .update(updateData)
+        .eq('id', consultationId)
+        .select(`
+          *,
+          patients!inner(
+            id,
+            first_name,
+            last_name,
+            paternal_last_name,
+            maternal_last_name,
+            email
+          )
+        `)
+        .single();
+
+      if (error) {
+        console.error('[CONSULTATIONS API] Supabase fallback update error:', error);
+        return createErrorResponse(
+          'Database connection failed',
+          `Supabase error: ${error.message}`,
+          500
+        );
+      }
+
+      console.log('[CONSULTATIONS API] Successfully updated consultation via Supabase fallback:', consultation.id);
+
+      return createResponse({
+        success: true,
+        data: consultation,
+        message: 'Consultation updated successfully (fallback)',
+        source: 'supabase_fallback'
+      });
     }
-
-    const backendData = await backendResponse.json();
-    console.log('[CONSULTATIONS API] Successfully updated consultation in Django backend:', backendData.id);
-
-    return createResponse({
-      success: true,
-      data: backendData,
-      message: 'Consultation updated successfully',
-      source: 'django_backend'
-    });
 
   } catch (error) {
     console.error('[CONSULTATIONS API] Error updating consultation:', error);

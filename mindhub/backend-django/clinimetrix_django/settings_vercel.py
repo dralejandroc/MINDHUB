@@ -15,7 +15,7 @@ SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-vercel-deployment-key
 # Override base settings for Vercel
 DEBUG = False
 
-# Application definition
+# Application definition - SIMPLIFIED FOR VERCEL
 INSTALLED_APPS = [
     'django.contrib.admin',
     'django.contrib.auth',
@@ -23,19 +23,9 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'django.contrib.sites',
     'rest_framework',
     'corsheaders',
-    'django_extensions',
-    'django_filters',
-    'drf_spectacular',
-    'psychometric_scales',
-    'assessments',
-    'accounts',
-    'formx',
-    'expedix',
-    'agenda',
-    'resources',
+    'expedix',  # Only core Expedix for now
 ]
 
 MIDDLEWARE = [

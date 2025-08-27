@@ -35,32 +35,8 @@ urlpatterns = [
     # Admin
     path('admin/', admin.site.urls),
     
-    # Authentication
-    path('auth/', include('allauth.urls')),
-    path('accounts/', include('accounts.urls')),
-    
-    # ClinimetrixPro API endpoints (no frontend pages)
-    path('assessments/', include('assessments.urls')),
-    
-    # ClinimetrixPro REAL schema endpoints (CORRECTED)
-    path('assessments/', include('assessments.urls_real')),
-    
-    # API endpoints  
-    path('scales/', include('psychometric_scales.urls')),
-    
-    # FormX - Dynamic Form Builder
-    path('formx/', include('formx.urls')),
-    
-    # MindHub Core Modules
-    path('api/expedix/', include('expedix.urls')),  # Expedix - Patient Management
-    path('api/agenda/', include('agenda.urls')),    # Agenda - Appointment System
-    path('api/resources/', include('resources.urls')),  # Resources - Medical Resources
-    path('api/clinics/', include('clinics.urls')),  # Clinics - Multi-user Management
-    path('api/finance/', include('finance.urls')),  # Finance - Financial Management
-    path('api/frontdesk/', include('assessments.frontdesk_urls')),  # FrontDesk endpoints
-    
-    # Debug/Test endpoints (removed problematic import)
-    # path('test-patients/', test_patients, name='test_patients'),
+    # ONLY Core Expedix for now - SIMPLIFIED FOR VERCEL
+    path('api/expedix/', include('expedix.urls')),  # Expedix - Patient Management only
 ]
 
 # Serve media files in development

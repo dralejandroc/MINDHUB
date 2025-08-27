@@ -72,10 +72,23 @@ export const MainDashboard: React.FC<MainDashboardProps> = ({ user }) => {
       // Use the dashboard data service with cookie authentication (no token needed)
       const dashboardData = await dashboardDataService.fetchDashboardData(user.id);
       
+      // LOG RECEIVED DATA FROM DASHBOARD SERVICE
+      console.log('[MainDashboard] Received dashboard data:', dashboardData);
+      console.log('[MainDashboard] totalPatients from service:', dashboardData.totalPatients);
+      
       // Convert dashboard data to component format
       setStats({
         totalPatients: dashboardData.totalPatients,
         activePatients: dashboardData.totalPatients, // Assume all are active for now
+        pendingAssessments: Math.max(0, dashboardData.totalScaleApplications - dashboardData.weeklyStats.assessments),
+        completedAssessmentsToday: dashboardData.weeklyStats.assessments,
+        scheduledAppointments: dashboardData.weeklyStats.consultations,
+      });
+      
+      // LOG FINAL STATS SET IN STATE
+      console.log('[MainDashboard] Final stats set in state:', {
+        totalPatients: dashboardData.totalPatients,
+        activePatients: dashboardData.totalPatients,
         pendingAssessments: Math.max(0, dashboardData.totalScaleApplications - dashboardData.weeklyStats.assessments),
         completedAssessmentsToday: dashboardData.weeklyStats.assessments,
         scheduledAppointments: dashboardData.weeklyStats.consultations,

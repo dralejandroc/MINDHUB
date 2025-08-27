@@ -78,6 +78,15 @@ class DashboardDataService {
         resources: totalResources
       });
 
+      // LOG THE DATA THAT WILL BE SENT TO DASHBOARD COMPONENT
+      console.log('[DashboardService] Data being sent to dashboard component:', {
+        totalPatients,
+        totalConsultations,
+        totalScaleApplications,
+        totalFormInstances,
+        totalResources
+      });
+
       // Calculate weekly stats (last 7 days)
       const oneWeekAgo = new Date();
       oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
