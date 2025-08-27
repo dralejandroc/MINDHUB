@@ -18,6 +18,9 @@ const DEFAULT_TEMPLATES = [
       // OBJETIVO - Hallazgos clínicos
       { field: 'objective', label: 'Objetivo', type: 'textarea', required: true, placeholder: 'Signos vitales, exploración física, hallazgos objetivos, resultados de exploraciones...' },
       
+      // EXAMEN MENTAL INTEGRADO
+      { field: 'mental_exam', label: 'Examen del Estado Mental', type: 'mental_exam_component', required: true, placeholder: 'Evaluación completa del estado mental: apariencia, comportamiento, lenguaje, estado de ánimo, afecto, pensamiento, percepción, cognición, insight, juicio...' },
+      
       // INTEGRACIÓN DE EVALUACIONES
       { field: 'clinimetrix_section', label: 'Evaluaciones Clinimétricas', type: 'integration', integration_type: 'clinimetrix', required: false, placeholder: 'Las evaluaciones psicométricas aplicadas aparecerán aquí automáticamente...' },
       
@@ -61,7 +64,7 @@ const DEFAULT_TEMPLATES = [
       { field: 'currentCondition', label: 'Padecimiento Actual', type: 'textarea', required: true, placeholder: 'Historia detallada del padecimiento actual, inicio, evolución, factores asociados...' },
       { field: 'personalHistory', label: 'Antecedentes Personales', type: 'textarea', required: false, placeholder: 'Antecedentes médicos, quirúrgicos, alergias, medicamentos actuales...' },
       { field: 'familyHistory', label: 'Antecedentes Familiares', type: 'textarea', required: false, placeholder: 'Historia familiar relevante de enfermedades...' },
-      { field: 'mentalExam', label: 'Examen Mental', type: 'textarea', required: true, placeholder: 'Estado de conciencia, orientación, memoria, pensamiento, percepción, afecto, juicio, insight...' },
+      { field: 'mentalExam', label: 'Examen Mental', type: 'mental_exam_component', required: true, placeholder: 'Estado de conciencia, orientación, memoria, pensamiento, percepción, afecto, juicio, insight...' },
       { field: 'physicalExamination', label: 'Exploración Física', type: 'textarea', required: true, placeholder: 'Exploración por sistemas, hallazgos positivos y negativos relevantes...' },
       { field: 'diagnosis', label: 'Diagnóstico', type: 'textarea', required: true, placeholder: 'Diagnóstico principal, diagnósticos diferenciales...' },
       { field: 'treatmentPlan', label: 'Plan de Tratamiento', type: 'textarea', required: true, placeholder: 'Plan terapéutico, medicamentos, seguimiento, recomendaciones...' },
@@ -102,7 +105,7 @@ const DEFAULT_TEMPLATES = [
       { field: 'progressSinceLastVisit', label: 'Evolución desde Última Consulta', type: 'textarea', required: true, placeholder: 'Cambios en síntomas, respuesta al tratamiento, efectos adversos...' },
       { field: 'currentCondition', label: 'Estado Actual', type: 'textarea', required: true, placeholder: 'Evaluación del estado actual del paciente...' },
       { field: 'adherence', label: 'Adherencia al Tratamiento', type: 'textarea', required: true, placeholder: 'Cumplimiento con medicamentos, citas, recomendaciones...' },
-      { field: 'mentalExam', label: 'Examen Mental', type: 'textarea', required: false, placeholder: 'Estado mental actual, cambios respecto a consulta previa...' },
+      { field: 'mentalExam', label: 'Examen Mental', type: 'mental_exam_component', required: true, placeholder: 'Estado mental actual, cambios respecto a consulta previa...' },
       { field: 'physicalExamination', label: 'Exploración Física', type: 'textarea', required: false, placeholder: 'Hallazgos físicos relevantes para seguimiento...' },
       { field: 'diagnosis', label: 'Diagnóstico Actual', type: 'textarea', required: true, placeholder: 'Confirmación o modificación de diagnósticos previos...' },
       { field: 'treatmentAdjustments', label: 'Ajustes al Tratamiento', type: 'textarea', required: true, placeholder: 'Modificaciones en el plan de tratamiento, nuevas intervenciones...' },
@@ -123,7 +126,7 @@ const DEFAULT_TEMPLATES = [
       { field: 'vitalSigns', label: 'Signos Vitales', type: 'text', required: true, placeholder: 'TA: __/__mmHg, FC: __lpm, FR: __rpm, Temp: __°C, SatO2: __%' },
       { field: 'currentCondition', label: 'Historia Breve', type: 'textarea', required: true, placeholder: 'Historia breve del padecimiento actual, tiempo de evolución...' },
       { field: 'emergencyExam', label: 'Exploración de Urgencia', type: 'textarea', required: true, placeholder: 'Exploración física dirigida, hallazgos importantes...' },
-      { field: 'mentalExam', label: 'Estado Neurológico/Mental', type: 'textarea', required: true, placeholder: 'Estado de conciencia, orientación, signos neurológicos...' },
+      { field: 'mentalExam', label: 'Estado Neurológico/Mental', type: 'mental_exam_component', required: true, placeholder: 'Estado de conciencia, orientación, signos neurológicos...' },
       { field: 'riskAssessment', label: 'Evaluación de Riesgo', type: 'textarea', required: true, placeholder: 'Severidad del cuadro, estabilidad del paciente, riesgo inmediato...' },
       { field: 'diagnosis', label: 'Impresión Diagnóstica', type: 'textarea', required: true, placeholder: 'Diagnóstico de urgencia, diagnósticos diferenciales...' },
       { field: 'emergencyTreatment', label: 'Tratamiento de Urgencia', type: 'textarea', required: true, placeholder: 'Medidas inmediatas, estabilización, manejo inicial...' },

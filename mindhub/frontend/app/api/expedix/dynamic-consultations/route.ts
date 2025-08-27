@@ -1,12 +1,12 @@
-// Dynamic consultations API route - handles form-based consultations with file uploads
-import { getAuthenticatedUser, createResponse, createErrorResponse, supabaseAdmin } from '@/lib/supabase/admin'
-import { API_CONFIG } from '@/lib/config/api-endpoints'
+// DEPRECATED: Dynamic consultations functionality moved to unified consultations API
+// This endpoint redirects to the main consultations API for harmonized workflow
+import { getAuthenticatedUser, createResponse, createErrorResponse } from '@/lib/supabase/admin'
 
 export const dynamic = 'force-dynamic';
 
 export async function POST(request: Request) {
   try {
-    console.log('[DYNAMIC CONSULTATIONS API] Processing POST request');
+    console.log('[DYNAMIC CONSULTATIONS API] DEPRECATED - Redirecting to unified consultations API');
     
     // Verify authentication
     const { user, error: authError } = await getAuthenticatedUser(request);
@@ -14,148 +14,87 @@ export async function POST(request: Request) {
       return createErrorResponse('Unauthorized', 'Valid authentication required', 401);
     }
 
-    // Get tenant context from headers
-    const tenantId = request.headers.get('X-Tenant-ID');
-    const tenantType = request.headers.get('X-Tenant-Type');
-
     const body = await request.json();
-    console.log('[DYNAMIC CONSULTATIONS API] Creating consultation with template:', body.template_id, 'with tenant context:', { tenantId, tenantType });
+    console.log('[DYNAMIC CONSULTATIONS API] Redirecting dynamic consultation creation to main consultations API');
 
-    // Validate required fields
-    if (!body.patient_id || !body.template_id) {
-      return createErrorResponse('Validation error', 'patient_id and template_id are required', 400);
+    // Transform dynamic consultation data to standard consultation format
+    const consultationData = {
+      patient_id: body.patient_id,
+      consultation_type: body.template_type || 'general',
+      template_id: body.template_id,
+      template_name: body.template_name,
+      
+      // Map dynamic fields to consultation structure
+      chief_complaint: body.subjective?.substring(0, 500) || body.chiefComplaint || '',
+      history_present_illness: body.subjective || body.currentCondition || '',
+      physical_examination: body.objective || body.physicalExamination || body.emergencyExam || '',
+      
+      // Mental exam integration (now unified)
+      mental_exam: body.mental_exam || body.mentalExam || body.mentalStatusExam || {},
+      
+      assessment: body.analysis || body.assessment || body.riskAssessment || '',
+      plan: body.plan || body.treatmentPlan || body.emergencyTreatment || body.treatmentAdjustments || '',
+      
+      // Additional dynamic data stored as metadata
+      form_data: {
+        template_id: body.template_id,
+        template_name: body.template_name,
+        original_fields: body
+      },
+      
+      // Status and metadata
+      status: 'completed',
+      is_draft: false,
+      is_finalized: true,
+      consultation_date: body.consultation_date || new Date().toISOString().split('T')[0],
+      consultation_time: new Date().toTimeString().split(' ')[0],
+      duration_minutes: 60,
+      
+      // Integrations
+      clinimetrix_integrations: body.clinimetrix_section || [],
+      resources_sent: body.resources_section || [],
+      prescriptions: body.prescriptions_section || [],
+      
+      // Follow up
+      follow_up_date: body.next_appointment || body.follow_up_date || null,
+      follow_up_instructions: body.next_appointment_notes || ''
+    };
+
+    // Call unified consultations API internally
+    const consultationsUrl = new URL('/api/expedix/consultations', request.url).toString();
+    
+    const consultationResponse = await fetch(consultationsUrl, {
+      method: 'POST',
+      headers: {
+        ...Object.fromEntries(request.headers.entries()),
+        'Content-Type': 'application/json',
+        'X-Internal-Redirect': 'true',
+        'X-Original-Endpoint': 'dynamic-consultations'
+      },
+      body: JSON.stringify(consultationData)
+    });
+
+    if (!consultationResponse.ok) {
+      const errorData = await consultationResponse.json().catch(() => ({}));
+      console.error('[DYNAMIC CONSULTATIONS API] Unified API error:', consultationResponse.status, errorData);
+      
+      return createErrorResponse(
+        'Consultation creation failed',
+        `Unified consultations API error: ${errorData.error || 'Unknown error'}`,
+        consultationResponse.status
+      );
     }
 
-    try {
-      // Try Django backend first (if available)
-      const backendResponse = await fetch(`${API_CONFIG.BACKEND_URL}/api/expedix/dynamic-consultations/`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY}`,
-          'X-Proxy-Auth': 'verified',
-          'X-User-ID': user.id,
-          'X-User-Email': user.email || '',
-          'X-Tenant-ID': tenantId || '',
-          'X-Tenant-Type': tenantType || '',
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(body),
-        cache: 'no-store'
-      });
+    const result = await consultationResponse.json();
+    console.log('[DYNAMIC CONSULTATIONS API] Successfully created via unified API:', result.data?.id);
 
-      if (backendResponse.ok) {
-        const backendData = await backendResponse.json();
-        console.log('[DYNAMIC CONSULTATIONS API] Successfully created in Django backend');
-        
-        return createResponse({
-          success: true,
-          data: backendData,
-          message: 'Consultation created successfully'
-        }, 201);
-      } else {
-        console.warn('[DYNAMIC CONSULTATIONS API] Django backend unavailable, using Supabase fallback');
-        throw new Error('Django backend unavailable');
-      }
-    } catch (error) {
-      console.error('[DYNAMIC CONSULTATIONS API] Backend error, using Supabase fallback:', error);
-      
-      // Django failed - use Supabase fallback
-      console.log('[DYNAMIC CONSULTATIONS API] Using Supabase fallback for consultation creation');
-      
-      try {
-        // Prepare consultation data for Supabase
-        const consultationData = {
-          id: crypto.randomUUID(),
-          patient_id: body.patient_id,
-          professional_id: user.id, // Current user is the professional
-          consultation_date: body.consultation_date || new Date().toISOString(),
-          consultation_type: body.template_type || 'general',
-          
-          // Dynamic form fields stored as JSON
-          form_data: {
-            template_id: body.template_id,
-            template_name: body.template_name,
-            fields: body
-          },
-          
-          // Extract specific fields for database structure
-          chief_complaint: body.subjective?.substring(0, 500) || '',
-          history_present_illness: body.subjective || '',
-          physical_examination: body.objective || '',
-          assessment: body.analysis || '',
-          plan: body.plan || '',
-          
-          // Structured diagnoses
-          diagnosis_codes: [
-            body.diagnosis_dsm5 && { type: 'DSM-5-TR', code: body.diagnosis_dsm5 },
-            body.diagnosis_cie10 && { type: 'CIE-10', code: body.diagnosis_cie10 }
-          ].filter(Boolean),
-          
-          // Follow up
-          follow_up_date: body.next_appointment || null,
-          
-          // Metadata
-          status: 'completed',
-          duration_minutes: 60, // Default
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-          
-          // Apply tenant context using dual-system pattern
-          clinic_id: tenantType === 'clinic' ? tenantId : null,
-          workspace_id: tenantType === 'workspace' ? (tenantId || user.id) : (tenantType !== 'clinic' ? user.id : null),
-          
-          // Additional fields for comprehensive record
-          vital_signs: body.vital_signs ? JSON.parse(JSON.stringify(body.vital_signs)) : null,
-          prescriptions: body.prescriptions_section || null,
-          notes: body.additional_notes || '',
-          
-          // Integration references
-          clinimetrix_assessments: body.clinimetrix_section || null,
-          resources_sent: body.resources_section || null,
-        };
-
-        // Insert consultation into Supabase
-        const { data: consultation, error: insertError } = await supabaseAdmin
-          .from('consultations')
-          .insert(consultationData)
-          .select()
-          .single();
-
-        if (insertError) {
-          console.error('[DYNAMIC CONSULTATIONS API] Supabase insert error:', insertError);
-          throw new Error(`Failed to create consultation in database: ${insertError.message}`);
-        }
-
-        // Handle file uploads if present
-        if (body.attached_files && Object.keys(body.attached_files).length > 0) {
-          console.log('[DYNAMIC CONSULTATIONS API] Processing file uploads...');
-          
-          // TODO: Implement file upload handling
-          // This would involve:
-          // 1. Upload files to storage (Supabase Storage or similar)
-          // 2. Create records in documents table
-          // 3. Link documents to consultation
-          
-          console.log('[DYNAMIC CONSULTATIONS API] File upload feature - to be implemented');
-        }
-
-        console.log('[DYNAMIC CONSULTATIONS API] Supabase fallback success - consultation created:', consultation.id);
-        return createResponse({
-          success: true,
-          data: consultation,
-          message: 'Consultation created successfully',
-          source: 'supabase_fallback'
-        }, 201);
-
-      } catch (supabaseError) {
-        console.error('[DYNAMIC CONSULTATIONS API] Supabase fallback completely failed:', supabaseError);
-        return createErrorResponse(
-          'Failed to create consultation',
-          `Could not create consultation in any database: ${supabaseError instanceof Error ? supabaseError.message : 'Unknown error'}`,
-          500
-        );
-      }
-    }
+    return createResponse({
+      success: true,
+      data: result.data,
+      message: 'Dynamic consultation created successfully via unified API',
+      redirect_source: 'dynamic-consultations',
+      unified_api_used: true
+    }, 201);
 
   } catch (error) {
     console.error('[DYNAMIC CONSULTATIONS API] Error:', error);
@@ -167,95 +106,27 @@ export async function POST(request: Request) {
   }
 }
 
+// GET, PUT, DELETE methods not supported - redirect to consultations API
 export async function GET(request: Request) {
-  try {
-    console.log('[DYNAMIC CONSULTATIONS API] Processing GET request');
-    
-    // Verify authentication
-    const { user, error: authError } = await getAuthenticatedUser(request);
-    if (authError || !user) {
-      return createErrorResponse('Unauthorized', 'Valid authentication required', 401);
-    }
+  return createErrorResponse(
+    'Endpoint deprecated',
+    'Dynamic consultations have been unified. Use /api/expedix/consultations instead.',
+    410
+  );
+}
 
-    // Get tenant context from headers
-    const tenantId = request.headers.get('X-Tenant-ID');
-    const tenantType = request.headers.get('X-Tenant-Type');
+export async function PUT(request: Request) {
+  return createErrorResponse(
+    'Endpoint deprecated', 
+    'Dynamic consultations have been unified. Use /api/expedix/consultations instead.',
+    410
+  );
+}
 
-    const url = new URL(request.url);
-    const patientId = url.searchParams.get('patient_id');
-    
-    console.log('[DYNAMIC CONSULTATIONS API] Fetching consultations for patient:', patientId, 'with tenant context:', { tenantId, tenantType });
-
-    try {
-      // Build query for consultations with tenant filtering
-      let query = supabaseAdmin
-        .from('consultations')
-        .select(`
-          id,
-          patient_id,
-          professional_id,
-          consultation_date,
-          consultation_type,
-          form_data,
-          chief_complaint,
-          history_present_illness,
-          physical_examination,
-          assessment,
-          plan,
-          diagnosis_codes,
-          follow_up_date,
-          status,
-          duration_minutes,
-          created_at,
-          updated_at
-        `);
-
-      // Apply tenant filtering
-      if (tenantType === 'clinic' && tenantId) {
-        query = query.eq('clinic_id', tenantId);
-      } else {
-        // For individual workspace, filter by professional and workspace
-        query = query.eq('professional_id', user.id).eq('workspace_id', tenantId || user.id);
-      }
-
-      query = query.order('consultation_date', { ascending: false });
-
-      // Filter by patient if specified
-      if (patientId) {
-        query = query.eq('patient_id', patientId);
-      }
-
-      const { data: consultations, error: queryError } = await query;
-      
-      if (queryError) {
-        console.error('[DYNAMIC CONSULTATIONS API] Query error:', queryError);
-        throw new Error(`Failed to query consultations: ${queryError.message}`);
-      }
-      
-      console.log(`[DYNAMIC CONSULTATIONS API] Found ${consultations?.length || 0} consultations`);
-      
-      return createResponse({
-        success: true,
-        data: consultations || [],
-        count: consultations?.length || 0,
-        source: 'supabase_direct'
-      });
-
-    } catch (supabaseError) {
-      console.error('[DYNAMIC CONSULTATIONS API] Database query failed:', supabaseError);
-      return createErrorResponse(
-        'Failed to fetch consultations',
-        `Database error: ${supabaseError instanceof Error ? supabaseError.message : 'Unknown error'}`,
-        500
-      );
-    }
-
-  } catch (error) {
-    console.error('[DYNAMIC CONSULTATIONS API] Error:', error);
-    return createErrorResponse(
-      'Failed to fetch dynamic consultations',
-      error instanceof Error ? error.message : 'Unknown error',
-      500
-    );
-  }
+export async function DELETE(request: Request) {
+  return createErrorResponse(
+    'Endpoint deprecated',
+    'Dynamic consultations have been unified. Use /api/expedix/consultations instead.',
+    410
+  );
 }
