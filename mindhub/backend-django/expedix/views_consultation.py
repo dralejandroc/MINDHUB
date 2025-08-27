@@ -13,79 +13,20 @@ import json
 from datetime import datetime, timedelta
 
 from expedix.authentication import SupabaseProxyAuthentication
-from .models_real import (
-    RealConsultation, RealPrescription, ConsultationAuditLog, ConsultationAutosave,
-    create_consultation_with_audit, update_consultation_with_audit,
-    finalize_consultation_with_audit, autosave_consultation, get_autosaved_content,
-    clear_autosave
-)
+from django.db import connection
+import logging
+
+logger = logging.getLogger(__name__)
 
 
-class ConsultationSerializer:
-    """Basic serializer for consultations"""
-    
-    @staticmethod
-    def serialize(consultation):
-        return {
-            'id': str(consultation.id),
-            'patient_id': str(consultation.patient_id) if consultation.patient_id else None,
-            'professional_id': str(consultation.professional_id) if consultation.professional_id else None,
-            'consultation_date': consultation.consultation_date.isoformat() if consultation.consultation_date else None,
-            'consultation_type': consultation.consultation_type,
-            'chief_complaint': consultation.chief_complaint,
-            'history_present_illness': consultation.history_present_illness,
-            'physical_examination': consultation.physical_examination,
-            'assessment': consultation.assessment,
-            'plan': consultation.plan,
-            'diagnosis': consultation.diagnosis,
-            'status': consultation.status,
-            'is_draft': consultation.is_draft,
-            'is_finalized': consultation.is_finalized,
-            'notes': consultation.notes,
-            'clinical_notes': consultation.clinical_notes,
-            'private_notes': consultation.private_notes,
-            'prescriptions': consultation.prescriptions,
-            'vital_signs': consultation.vital_signs,
-            'follow_up_date': consultation.follow_up_date.isoformat() if consultation.follow_up_date else None,
-            'follow_up_instructions': consultation.follow_up_instructions,
-            'duration_minutes': consultation.duration_minutes,
-            'created_at': consultation.created_at.isoformat() if consultation.created_at else None,
-            'updated_at': consultation.updated_at.isoformat() if consultation.updated_at else None,
-            'clinic_id': str(consultation.clinic_id) if consultation.clinic_id else None,
-            'workspace_id': str(consultation.workspace_id) if consultation.workspace_id else None,
-        }
+# Simplified consultation and prescription views using direct SQL queries
+# No complex ORM models - direct database access for better compatibility
 
 
-class PrescriptionSerializer:
-    """Basic serializer for prescriptions"""
-    
-    @staticmethod
-    def serialize(prescription):
-        return {
-            'id': str(prescription.id),
-            'patient_id': str(prescription.patient_id) if prescription.patient_id else None,
-            'consultation_id': str(prescription.consultation_id) if prescription.consultation_id else None,
-            'prescribed_by': str(prescription.prescribed_by) if prescription.prescribed_by else None,
-            'medication_name': prescription.medication_name,
-            'dosage': prescription.dosage,
-            'frequency': prescription.frequency,
-            'duration': prescription.duration,
-            'instructions': prescription.instructions,
-            'start_date': prescription.start_date.isoformat() if prescription.start_date else None,
-            'end_date': prescription.end_date.isoformat() if prescription.end_date else None,
-            'status': prescription.status,
-            'is_active': prescription.is_active,
-            'days_remaining': prescription.days_remaining,
-            'created_at': prescription.created_at.isoformat() if prescription.created_at else None,
-            'updated_at': prescription.updated_at.isoformat() if prescription.updated_at else None,
-        }
-
-
-class ConsultationViewSet(viewsets.ModelViewSet):
+class ConsultationViewSet(viewsets.ViewSet):
     """
-    Consultation management with autosave and audit support
+    Consultation management with direct Supabase queries (no ORM models)
     """
-    queryset = RealConsultation.objects.all()
     authentication_classes = [SupabaseProxyAuthentication]
     permission_classes = [IsAuthenticated]
     
@@ -116,414 +57,254 @@ class ConsultationViewSet(viewsets.ModelViewSet):
         return ip
     
     def list(self, request):
-        """List consultations with filtering"""
-        consultations = self.queryset
-        
-        # Filter by patient if provided
-        patient_id = request.query_params.get('patient_id')
-        if patient_id:
-            consultations = consultations.filter(patient_id=patient_id)
-        
-        # Filter by status
-        status_filter = request.query_params.get('status')
-        if status_filter:
-            consultations = consultations.filter(status=status_filter)
-        
-        # Filter by date range
-        date_from = request.query_params.get('date_from')
-        date_to = request.query_params.get('date_to')
-        if date_from:
-            consultations = consultations.filter(consultation_date__gte=date_from)
-        if date_to:
-            consultations = consultations.filter(consultation_date__lte=date_to)
-        
-        # Order by date
-        consultations = consultations.order_by('-consultation_date')[:100]
-        
-        # Serialize
-        data = [ConsultationSerializer.serialize(c) for c in consultations]
-        
-        return Response({
-            'success': True,
-            'consultations': data,
-            'total': len(data)
-        })
-    
-    def create(self, request):
-        """Create new consultation with audit"""
-        user_info = self.get_user_info(request)
-        
-        # Extract data
-        patient_id = request.data.get('patient_id')
-        professional_id = request.data.get('professional_id') or user_info['user_id']
-        
-        if not patient_id:
-            return Response({
-                'success': False,
-                'error': 'patient_id is required'
-            }, status=400)
-        
-        # Create consultation data
-        consultation_data = {
-            'consultation_date': request.data.get('consultation_date') or timezone.now(),
-            'consultation_type': request.data.get('consultation_type', 'general'),
-            'chief_complaint': request.data.get('chief_complaint'),
-            'status': 'draft',
-            'clinic_id': request.data.get('clinic_id'),
-            'workspace_id': request.data.get('workspace_id'),
-        }
-        
+        """List consultations with filtering using direct SQL"""
         try:
-            # Create with audit trail
-            consultation = create_consultation_with_audit(
-                patient_id=patient_id,
-                professional_id=professional_id,
-                user_id=user_info['user_id'],
-                user_name=user_info['user_name'],
-                user_role=user_info['user_role'],
-                consultation_data=consultation_data,
-                ip_address=user_info['ip_address']
-            )
+            # Build SQL query
+            sql = """
+                SELECT 
+                    c.id,
+                    c.patient_id,
+                    c.professional_id,
+                    c.consultation_date,
+                    c.consultation_type,
+                    c.chief_complaint,
+                    c.history_present_illness,
+                    c.physical_examination,
+                    c.assessment,
+                    c.plan,
+                    c.diagnosis,
+                    c.status,
+                    c.is_draft,
+                    c.is_finalized,
+                    c.notes,
+                    c.clinical_notes,
+                    c.private_notes,
+                    c.prescriptions,
+                    c.vital_signs,
+                    c.follow_up_date,
+                    c.follow_up_instructions,
+                    c.duration_minutes,
+                    c.created_at,
+                    c.updated_at,
+                    c.clinic_id,
+                    c.workspace_id
+                FROM consultations c
+                WHERE 1=1
+            """
+            
+            params = []
+            
+            # Filter by patient if provided
+            patient_id = request.query_params.get('patient_id')
+            if patient_id:
+                sql += " AND c.patient_id = %s"
+                params.append(patient_id)
+            
+            # Filter by status
+            status_filter = request.query_params.get('status')
+            if status_filter:
+                sql += " AND c.status = %s"
+                params.append(status_filter)
+            
+            # Filter by date range
+            date_from = request.query_params.get('date_from')
+            if date_from:
+                sql += " AND c.consultation_date >= %s"
+                params.append(date_from)
+                
+            date_to = request.query_params.get('date_to')
+            if date_to:
+                sql += " AND c.consultation_date <= %s"
+                params.append(date_to)
+            
+            # Order by date
+            sql += " ORDER BY c.consultation_date DESC LIMIT 100"
+            
+            # Execute query
+            with connection.cursor() as cursor:
+                cursor.execute(sql, params)
+                columns = [col[0] for col in cursor.description]
+                results = []
+                for row in cursor.fetchall():
+                    consultation_dict = dict(zip(columns, row))
+                    results.append(consultation_dict)
             
             return Response({
                 'success': True,
-                'consultation': ConsultationSerializer.serialize(consultation),
+                'results': results,
+                'count': len(results),
+                'total': len(results)
+            })
+            
+        except Exception as e:
+            logger.error(f'Error listing consultations: {str(e)}')
+            return Response({
+                'success': False,
+                'error': str(e)
+            }, status=500)
+    
+    def create(self, request):
+        """Create new consultation using direct SQL"""
+        try:
+            user_info = self.get_user_info(request)
+            
+            # Extract data
+            patient_id = request.data.get('patient_id')
+            professional_id = request.data.get('professional_id') or user_info['user_id']
+            
+            if not patient_id:
+                return Response({
+                    'success': False,
+                    'error': 'patient_id is required'
+                }, status=400)
+            
+            # Generate UUID for new consultation
+            import uuid
+            consultation_id = str(uuid.uuid4())
+            
+            # Insert consultation using raw SQL
+            with connection.cursor() as cursor:
+                cursor.execute("""
+                    INSERT INTO consultations (
+                        id, patient_id, professional_id, consultation_date, 
+                        consultation_type, chief_complaint, status, 
+                        clinic_id, workspace_id, created_at, updated_at
+                    ) VALUES (
+                        %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s
+                    )
+                """, [
+                    consultation_id,
+                    patient_id,
+                    professional_id,
+                    request.data.get('consultation_date') or timezone.now(),
+                    request.data.get('consultation_type', 'general'),
+                    request.data.get('chief_complaint', ''),
+                    'draft',
+                    request.data.get('clinic_id'),
+                    request.data.get('workspace_id'),
+                    timezone.now(),
+                    timezone.now()
+                ])
+            
+            return Response({
+                'success': True,
+                'data': {
+                    'id': consultation_id,
+                    'patient_id': patient_id,
+                    'professional_id': professional_id,
+                    'status': 'draft'
+                },
                 'message': 'Consultation created successfully'
             }, status=201)
             
         except Exception as e:
+            logger.error(f'Error creating consultation: {str(e)}')
             return Response({
                 'success': False,
                 'error': str(e)
             }, status=500)
     
     def update(self, request, pk=None):
-        """Update consultation with audit trail"""
-        user_info = self.get_user_info(request)
-        
+        """Update consultation using direct SQL"""
         try:
-            consultation = RealConsultation.objects.get(id=pk)
-        except RealConsultation.DoesNotExist:
-            return Response({
-                'success': False,
-                'error': 'Consultation not found'
-            }, status=404)
-        
-        # Check if consultation is finalized
-        if consultation.is_finalized and not request.data.get('justification'):
-            return Response({
-                'success': False,
-                'error': 'Consultation is finalized. Justification required for modifications.',
-                'requires_justification': True
-            }, status=400)
-        
-        # Prepare updates
-        updates = {}
-        allowed_fields = [
-            'chief_complaint', 'history_present_illness', 'physical_examination',
-            'assessment', 'plan', 'treatment_plan', 'diagnosis', 'notes',
-            'clinical_notes', 'private_notes', 'vital_signs', 'follow_up_date',
-            'follow_up_instructions', 'prescriptions'
-        ]
-        
-        for field in allowed_fields:
-            if field in request.data:
-                updates[field] = request.data[field]
-        
-        if not updates:
-            return Response({
-                'success': False,
-                'error': 'No valid fields to update'
-            }, status=400)
-        
-        try:
-            # Update with audit trail
-            consultation = update_consultation_with_audit(
-                consultation=consultation,
-                user_id=user_info['user_id'],
-                user_name=user_info['user_name'],
-                user_role=user_info['user_role'],
-                updates=updates,
-                justification=request.data.get('justification'),
-                ip_address=user_info['ip_address']
-            )
-            
-            # Clear autosave after successful save
-            clear_autosave(consultation.id)
+            # Simple update using raw SQL
+            with connection.cursor() as cursor:
+                # Build dynamic update query
+                update_fields = []
+                params = []
+                
+                allowed_fields = [
+                    'chief_complaint', 'history_present_illness', 'physical_examination',
+                    'assessment', 'plan', 'diagnosis', 'notes'
+                ]
+                
+                for field in allowed_fields:
+                    if field in request.data:
+                        update_fields.append(f"{field} = %s")
+                        params.append(request.data[field])
+                
+                if not update_fields:
+                    return Response({
+                        'success': False,
+                        'error': 'No valid fields to update'
+                    }, status=400)
+                
+                # Add updated_at
+                update_fields.append("updated_at = %s")
+                params.append(timezone.now())
+                params.append(pk)  # For WHERE clause
+                
+                sql = f"UPDATE consultations SET {', '.join(update_fields)} WHERE id = %s"
+                cursor.execute(sql, params)
+                
+                if cursor.rowcount == 0:
+                    return Response({
+                        'success': False,
+                        'error': 'Consultation not found'
+                    }, status=404)
             
             return Response({
                 'success': True,
-                'consultation': ConsultationSerializer.serialize(consultation),
+                'data': {'id': pk, 'updated': True},
                 'message': 'Consultation updated successfully'
             })
             
         except Exception as e:
-            return Response({
-                'success': False,
-                'error': str(e)
-            }, status=500)
-    
-    @action(detail=True, methods=['post'])
-    def autosave(self, request, pk=None):
-        """Autosave consultation draft"""
-        user_info = self.get_user_info(request)
-        
-        try:
-            consultation = RealConsultation.objects.get(id=pk)
-        except RealConsultation.DoesNotExist:
-            return Response({
-                'success': False,
-                'error': 'Consultation not found'
-            }, status=404)
-        
-        # Check if consultation can be edited
-        if consultation.is_finalized:
-            return Response({
-                'success': False,
-                'error': 'Cannot autosave finalized consultation'
-            }, status=400)
-        
-        # Get draft content
-        draft_content = request.data.get('content', {})
-        session_id = request.data.get('session_id')
-        
-        try:
-            autosave = autosave_consultation(
-                consultation_id=str(consultation.id),
-                user_id=user_info['user_id'],
-                content=draft_content,
-                session_id=session_id
-            )
-            
-            return Response({
-                'success': True,
-                'message': 'Draft autosaved',
-                'last_saved': autosave.last_saved.isoformat()
-            })
-            
-        except Exception as e:
-            return Response({
-                'success': False,
-                'error': str(e)
-            }, status=500)
-    
-    @action(detail=True, methods=['get'])
-    def get_autosave(self, request, pk=None):
-        """Retrieve autosaved content"""
-        try:
-            consultation = RealConsultation.objects.get(id=pk)
-        except RealConsultation.DoesNotExist:
-            return Response({
-                'success': False,
-                'error': 'Consultation not found'
-            }, status=404)
-        
-        content = get_autosaved_content(str(consultation.id))
-        
-        if content:
-            return Response({
-                'success': True,
-                'has_autosave': True,
-                'content': content
-            })
-        else:
-            return Response({
-                'success': True,
-                'has_autosave': False,
-                'content': None
-            })
-    
-    @action(detail=True, methods=['post'])
-    def finalize(self, request, pk=None):
-        """Finalize consultation (no more edits without justification)"""
-        user_info = self.get_user_info(request)
-        
-        try:
-            consultation = RealConsultation.objects.get(id=pk)
-        except RealConsultation.DoesNotExist:
-            return Response({
-                'success': False,
-                'error': 'Consultation not found'
-            }, status=404)
-        
-        if consultation.is_finalized:
-            return Response({
-                'success': False,
-                'error': 'Consultation is already finalized'
-            }, status=400)
-        
-        try:
-            # Finalize with audit trail
-            consultation = finalize_consultation_with_audit(
-                consultation=consultation,
-                user_id=user_info['user_id'],
-                user_name=user_info['user_name'],
-                user_role=user_info['user_role'],
-                ip_address=user_info['ip_address']
-            )
-            
-            # Clear any autosaved content
-            clear_autosave(consultation.id)
-            
-            return Response({
-                'success': True,
-                'consultation': ConsultationSerializer.serialize(consultation),
-                'message': 'Consultation finalized successfully'
-            })
-            
-        except Exception as e:
-            return Response({
-                'success': False,
-                'error': str(e)
-            }, status=500)
-    
-    @action(detail=True, methods=['get'])
-    def audit_trail(self, request, pk=None):
-        """Get audit trail for consultation"""
-        try:
-            consultation = RealConsultation.objects.get(id=pk)
-        except RealConsultation.DoesNotExist:
-            return Response({
-                'success': False,
-                'error': 'Consultation not found'
-            }, status=404)
-        
-        # Get audit logs
-        logs = ConsultationAuditLog.objects.filter(
-            consultation_id=consultation.id
-        ).order_by('-timestamp')
-        
-        # Serialize audit logs
-        audit_data = []
-        for log in logs:
-            audit_data.append({
-                'id': str(log.id),
-                'action': log.action,
-                'user_name': log.user_name,
-                'user_role': log.user_role,
-                'timestamp': log.timestamp.isoformat(),
-                'field_changes': log.field_changes,
-                'justification': log.justification
-            })
-        
-        return Response({
-            'success': True,
-            'consultation_id': str(consultation.id),
-            'audit_trail': audit_data,
-            'total': len(audit_data)
-        })
-    
-    @action(detail=True, methods=['post'])
-    def add_prescription(self, request, pk=None):
-        """Add prescription to consultation"""
-        user_info = self.get_user_info(request)
-        
-        try:
-            consultation = RealConsultation.objects.get(id=pk)
-        except RealConsultation.DoesNotExist:
-            return Response({
-                'success': False,
-                'error': 'Consultation not found'
-            }, status=404)
-        
-        # Extract prescription data
-        medication_name = request.data.get('medication_name')
-        if not medication_name:
-            return Response({
-                'success': False,
-                'error': 'medication_name is required'
-            }, status=400)
-        
-        try:
-            # Create prescription
-            prescription = RealPrescription.objects.create(
-                patient_id=consultation.patient_id,
-                consultation_id=consultation.id,
-                prescribed_by=user_info['user_id'],
-                medication_name=medication_name,
-                dosage=request.data.get('dosage'),
-                frequency=request.data.get('frequency'),
-                duration=request.data.get('duration'),
-                instructions=request.data.get('instructions'),
-                start_date=request.data.get('start_date') or timezone.now().date(),
-                end_date=request.data.get('end_date'),
-                status='active',
-                clinic_id=consultation.clinic_id,
-                workspace_id=consultation.workspace_id,
-                created_at=timezone.now(),
-                updated_at=timezone.now()
-            )
-            
-            # Add audit log for prescription
-            ConsultationAuditLog.objects.create(
-                consultation_id=consultation.id,
-                action='modified',
-                user_id=user_info['user_id'],
-                user_name=user_info['user_name'],
-                user_role=user_info['user_role'],
-                field_changes=['prescriptions'],
-                new_values={'prescription_added': str(prescription.id)},
-                ip_address=user_info['ip_address']
-            )
-            
-            return Response({
-                'success': True,
-                'prescription': PrescriptionSerializer.serialize(prescription),
-                'message': 'Prescription added successfully'
-            }, status=201)
-            
-        except Exception as e:
+            logger.error(f'Error updating consultation: {str(e)}')
             return Response({
                 'success': False,
                 'error': str(e)
             }, status=500)
 
 
-class PrescriptionViewSet(viewsets.ModelViewSet):
+# Simplified PrescriptionViewSet for basic functionality
+class PrescriptionViewSet(viewsets.ViewSet):
     """
-    Prescription management
+    Basic prescription management using direct SQL
     """
-    queryset = RealPrescription.objects.all()
     authentication_classes = [SupabaseProxyAuthentication]
     permission_classes = [IsAuthenticated]
     
     def list(self, request):
-        """List prescriptions with filtering"""
-        prescriptions = self.queryset
-        
-        # Filter by patient
-        patient_id = request.query_params.get('patient_id')
-        if patient_id:
-            prescriptions = prescriptions.filter(patient_id=patient_id)
-        
-        # Filter by consultation
-        consultation_id = request.query_params.get('consultation_id')
-        if consultation_id:
-            prescriptions = prescriptions.filter(consultation_id=consultation_id)
-        
-        # Filter by status
-        status_filter = request.query_params.get('status')
-        if status_filter:
-            prescriptions = prescriptions.filter(status=status_filter)
-        
-        # Filter active prescriptions
-        active_only = request.query_params.get('active_only')
-        if active_only == 'true':
-            today = timezone.now().date()
-            prescriptions = prescriptions.filter(
-                start_date__lte=today,
-                end_date__gte=today,
-                status='active'
-            )
-        
-        # Order by date
-        prescriptions = prescriptions.order_by('-created_at')[:100]
-        
-        # Serialize
-        data = [PrescriptionSerializer.serialize(p) for p in prescriptions]
-        
-        return Response({
-            'success': True,
-            'prescriptions': data,
-            'total': len(data)
-        })
+        """List prescriptions using direct SQL"""
+        try:
+            sql = """
+                SELECT 
+                    id, patient_id, consultation_id, medication_name,
+                    dosage, frequency, duration, instructions, status,
+                    created_at, updated_at
+                FROM prescriptions
+                WHERE 1=1
+            """
+            
+            params = []
+            
+            # Filter by patient
+            patient_id = request.query_params.get('patient_id')
+            if patient_id:
+                sql += " AND patient_id = %s"
+                params.append(patient_id)
+            
+            # Order by date
+            sql += " ORDER BY created_at DESC LIMIT 100"
+            
+            with connection.cursor() as cursor:
+                cursor.execute(sql, params)
+                columns = [col[0] for col in cursor.description]
+                results = []
+                for row in cursor.fetchall():
+                    prescription_dict = dict(zip(columns, row))
+                    results.append(prescription_dict)
+            
+            return Response({
+                'success': True,
+                'results': results,
+                'count': len(results)
+            })
+            
+        except Exception as e:
+            logger.error(f'Error listing prescriptions: {str(e)}')
+            return Response({
+                'success': False,
+                'error': str(e)
+            }, status=500)
