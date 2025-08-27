@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useDebounce } from '@/hooks/useDebounce';
 import { 
   XMarkIcon, 
@@ -152,28 +152,32 @@ export default function NewAppointmentModal({ selectedDate, selectedTime, editin
     loadData();
   }, [editingAppointment]);
 
-  // Filtrar pacientes con debounce
-  useEffect(() => {
-    const searchPatients = async () => {
-      setSearchLoading(true);
-      try {
-        if (debouncedSearchTerm) {
-          const filtered = patients.filter(patient =>
-            patient.name.toLowerCase().includes(debouncedSearchTerm.toLowerCase()) ||
-            patient.phone.includes(debouncedSearchTerm) ||
-            patient.email.toLowerCase().includes(debouncedSearchTerm.toLowerCase())
-          );
-          setFilteredPatients(filtered);
-        } else {
-          setFilteredPatients(patients);
-        }
-      } finally {
-        setSearchLoading(false);
-      }
-    };
-
-    searchPatients();
+  // Optimized patient filtering with useMemo to prevent excessive re-renders
+  const filteredPatientsOptimized = useMemo(() => {
+    if (!debouncedSearchTerm) {
+      return patients;
+    }
+    
+    const searchLower = debouncedSearchTerm.toLowerCase();
+    return patients.filter(patient =>
+      patient.name.toLowerCase().includes(searchLower) ||
+      patient.phone.includes(debouncedSearchTerm) ||
+      patient.email.toLowerCase().includes(searchLower)
+    );
   }, [debouncedSearchTerm, patients]);
+
+  // Update filtered patients state only when needed
+  useEffect(() => {
+    setSearchLoading(true);
+    setFilteredPatients(filteredPatientsOptimized);
+    
+    // Small delay to show loading state but prevent lag
+    const timeout = setTimeout(() => {
+      setSearchLoading(false);
+    }, 100);
+    
+    return () => clearTimeout(timeout);
+  }, [filteredPatientsOptimized]);
 
   const timeSlots = [
     '08:00', '08:30', '09:00', '09:30', '10:00', '10:30',
@@ -190,12 +194,12 @@ export default function NewAppointmentModal({ selectedDate, selectedTime, editin
     { value: 120, label: '2 horas' }
   ];
 
-  const handleSelectPatient = (patient: Patient) => {
+  const handleSelectPatient = useCallback((patient: Patient) => {
     setSelectedPatient(patient);
     setFormData(prev => ({ ...prev, patientId: patient.id }));
     setShowPatientSearch(false);
     setSearchTerm('');
-  };
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -208,12 +212,23 @@ export default function NewAppointmentModal({ selectedDate, selectedTime, editin
       const savedUser = localStorage.getItem('currentUser');
       const currentUser = savedUser ? JSON.parse(savedUser) : null;
 
-      // Create appointment with logging
+      // Find selected consultation type to get price for Finance integration
+      const selectedConsultationType = consultationTypes.find(type => type.name === formData.type);
+      const appointmentPrice = selectedConsultationType?.price || 0;
+
+      // Create appointment with Finance integration data
       const appointmentData = {
         ...formData,
         createdBy: currentUser?.id || 'unknown',
-        createdByName: currentUser?.name || 'Usuario desconocido'
+        createdByName: currentUser?.name || 'Usuario desconocido',
+        // Finance integration fields
+        price: appointmentPrice,
+        serviceId: selectedConsultationType?.id || null,
+        serviceName: selectedConsultationType?.name || formData.type,
+        createPendingCharge: appointmentPrice > 0 // Only create charge if there's a price
       };
+
+      console.log('[NewAppointmentModal] Submitting appointment with Finance data:', appointmentData);
 
       // Save appointment and create log
       await onSave(appointmentData);

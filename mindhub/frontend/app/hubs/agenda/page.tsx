@@ -111,28 +111,70 @@ export default function AgendaV2Page() {
       const response = await authGet('/api/expedix/agenda/appointments');
       if (response.ok) {
         const data = await response.json();
-        // Transform API data to AppointmentData format
-        const transformedAppointments: AppointmentData[] = (data.data || []).map((apt: any) => ({
-          id: apt.id,
-          patientId: apt.patient_id,
-          patientName: apt.patient_name || 'Paciente',
-          startTime: new Date(apt.start_time),
-          endTime: new Date(apt.end_time),
-          duration: apt.duration || 30,
-          type: apt.appointment_type || 'Consulta',
-          status: apt.status || 'scheduled',
-          hasDeposit: apt.has_deposit || false,
-          paymentStatus: apt.payment_status,
-          notes: apt.notes,
-          consultationType: apt.consultation_type || 'presencial',
-          location: apt.location,
-          patientInfo: {
-            phone: apt.patient_phone,
-            email: apt.patient_email,
-            dateOfBirth: apt.patient_dob,
-            lastVisit: apt.last_visit ? new Date(apt.last_visit) : undefined
-          }
-        }));
+        // Transform API data to AppointmentData format with proper date/time handling
+        const transformedAppointments: AppointmentData[] = (data.data || []).map((apt: any) => {
+          console.log('[loadAppointments] Processing appointment:', apt);
+          
+          // Safely combine appointment_date with start_time/end_time
+          const appointmentDate = apt.appointment_date || apt.date;
+          const startTime = apt.start_time || '00:00';
+          const endTime = apt.end_time || '01:00';
+          
+          // Create proper datetime by combining date + time
+          const createDateTime = (dateStr: string, timeStr: string): Date => {
+            try {
+              if (!dateStr || !timeStr) {
+                console.warn('[loadAppointments] Missing date/time:', { dateStr, timeStr });
+                return new Date();
+              }
+              
+              // Parse date and time components
+              const date = new Date(dateStr);
+              const [hours, minutes] = timeStr.split(':').map(Number);
+              
+              // Validate time components
+              if (isNaN(hours) || isNaN(minutes)) {
+                console.warn('[loadAppointments] Invalid time format:', timeStr);
+                return date;
+              }
+              
+              // Set time on the date
+              date.setHours(hours, minutes, 0, 0);
+              
+              return date;
+            } catch (error) {
+              console.error('[loadAppointments] Date creation error:', error, { dateStr, timeStr });
+              return new Date();
+            }
+          };
+          
+          const startDateTime = createDateTime(appointmentDate, startTime);
+          const endDateTime = createDateTime(appointmentDate, endTime);
+          
+          return {
+            id: apt.id,
+            patientId: apt.patient_id,
+            patientName: apt.patients?.first_name 
+              ? `${apt.patients.first_name} ${apt.patients.paternal_last_name || ''}`.trim()
+              : 'Paciente',
+            startTime: startDateTime,
+            endTime: endDateTime,
+            duration: Math.round((endDateTime.getTime() - startDateTime.getTime()) / 60000) || 60, // Calculate duration from times
+            type: apt.appointment_type || 'Consulta',
+            status: apt.status || 'scheduled',
+            hasDeposit: apt.has_deposit || false,
+            paymentStatus: apt.payment_status,
+            notes: apt.notes || apt.reason || '',
+            consultationType: apt.consultation_type || 'presencial',
+            location: apt.location,
+            patientInfo: {
+              phone: apt.patients?.phone || apt.patient_phone,
+              email: apt.patients?.email || apt.patient_email,
+              dateOfBirth: apt.patient_dob,
+              lastVisit: apt.last_visit ? new Date(apt.last_visit) : undefined
+            }
+          };
+        });
         setAppointments(transformedAppointments);
       }
     } catch (error) {
@@ -502,7 +544,42 @@ export default function AgendaV2Page() {
               if (response.ok) {
                 const result = await response.json();
                 console.log('[Agenda] Appointment created:', result);
-                toast.success('Cita creada exitosamente');
+                
+                // Create pending charge in Finance system if appointment has a price
+                if (appointmentData.createPendingCharge && appointmentData.price > 0) {
+                  try {
+                    const financeData = {
+                      patient_id: appointmentData.patientId,
+                      appointment_id: result.data?.id,
+                      service_name: appointmentData.serviceName || appointmentData.type,
+                      amount: appointmentData.price,
+                      currency: 'MXN',
+                      status: 'pending',
+                      payment_method: 'pending',
+                      transaction_date: new Date().toISOString(),
+                      notes: `Cobro pendiente por cita: ${appointmentData.type} - ${appointmentData.date} ${appointmentData.time}`,
+                      created_by_appointment: true
+                    };
+                    
+                    console.log('[Agenda] Creating pending charge in Finance:', financeData);
+                    
+                    const financeResponse = await authPost('/api/finance/income', financeData);
+                    
+                    if (financeResponse.ok) {
+                      console.log('[Agenda] Pending charge created successfully');
+                      toast.success('Cita creada y cobro pendiente registrado');
+                    } else {
+                      console.warn('[Agenda] Failed to create pending charge, but appointment was created');
+                      toast.success('Cita creada exitosamente (sin cobro pendiente)');
+                    }
+                  } catch (financeError) {
+                    console.error('[Agenda] Error creating pending charge:', financeError);
+                    toast.success('Cita creada exitosamente (sin cobro pendiente)');
+                  }
+                } else {
+                  toast.success('Cita creada exitosamente');
+                }
+                
                 await loadAppointments(); // Reload appointments to show the new one
                 setShowNewAppointment(false);
                 setSelectedSlot(null); // Clear selected slot after successful save
