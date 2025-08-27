@@ -130,16 +130,77 @@ export async function POST(request: Request) {
       return createErrorResponse('Validation error', 'patient_id, appointment_date, and appointment_time are required', 400);
     }
 
-    // Prepare appointment data
+    // Calculate end_time from appointment_time and duration
+    const startTime = body.appointment_time; // e.g., "10:30"
+    const duration = body.duration || 60; // Default 60 minutes
+    
+    // Calculate end time
+    const [hours, minutes] = startTime.split(':').map(Number);
+    const startDate = new Date();
+    startDate.setHours(hours, minutes, 0, 0);
+    const endDate = new Date(startDate.getTime() + (duration * 60000));
+    const endTime = `${endDate.getHours().toString().padStart(2, '0')}:${endDate.getMinutes().toString().padStart(2, '0')}`;
+
+    // Prepare appointment data matching the real table structure
     const appointmentData = {
-      ...body,
+      id: crypto.randomUUID(),
+      patient_id: body.patient_id,
       professional_id: user.id,
+      appointment_date: body.appointment_date,
+      start_time: startTime,
+      end_time: endTime,
+      appointment_type: body.appointment_type || 'Consulta',
       status: body.status || 'scheduled',
+      reason: body.reason || '',
+      notes: body.notes || '',
+      confirmation_sent: false,
+      reminder_sent: false,
+      is_recurring: false,
+      // Add dual system support - get user's workspace/clinic context
+      workspace_id: null, // Will be set below
+      clinic_id: null,    // Will be set below
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString()
     };
 
-    // Insert appointment into Supabase
+    // Get user's workspace/clinic context for dual system
+    console.log('[APPOINTMENTS API] Getting user context for dual system...');
+    
+    // Check for individual workspace first
+    const { data: workspace } = await supabaseAdmin
+      .from('individual_workspaces')
+      .select('id')
+      .eq('owner_id', user.id)
+      .single();
+    
+    if (workspace) {
+      appointmentData.workspace_id = workspace.id;
+      console.log('[APPOINTMENTS API] Using workspace context:', workspace.id);
+    } else {
+      // Check for clinic membership
+      const { data: membership } = await supabaseAdmin
+        .from('tenant_memberships')
+        .select('clinic_id')
+        .eq('user_id', user.id)
+        .limit(1)
+        .single();
+      
+      if (membership) {
+        appointmentData.clinic_id = membership.clinic_id;
+        console.log('[APPOINTMENTS API] Using clinic context:', membership.clinic_id);
+      } else {
+        console.error('[APPOINTMENTS API] No workspace or clinic context found for user');
+        return createErrorResponse(
+          'Context error',
+          'User workspace or clinic context not found',
+          400
+        );
+      }
+    }
+
+    // Insert appointment into Supabase with correct field mapping
+    console.log('[APPOINTMENTS API] Inserting appointment with data:', appointmentData);
+    
     const { data: appointment, error } = await supabaseAdmin
       .from('appointments')
       .insert(appointmentData)
@@ -148,7 +209,6 @@ export async function POST(request: Request) {
         patients!inner(
           id,
           first_name,
-          last_name,
           paternal_last_name,
           maternal_last_name,
           email,

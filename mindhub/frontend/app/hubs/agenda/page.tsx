@@ -37,6 +37,12 @@ export default function AgendaV2Page() {
   const [licenseType, setLicenseType] = useState<'clinic' | 'individual'>('individual');
   const [lastRefresh, setLastRefresh] = useState<Date | undefined>(undefined);
   
+  // Selected slot state for pre-filling modal
+  const [selectedSlot, setSelectedSlot] = useState<{
+    date: Date;
+    time: string;
+  } | null>(null);
+  
   // Context menu state
   const [contextMenuData, setContextMenuData] = useState<{
     appointment: AppointmentData;
@@ -148,6 +154,12 @@ export default function AgendaV2Page() {
   };
 
   const handleTimeSlotClick = (date: Date, hour: number, minute: number) => {
+    // Format the time as HH:MM
+    const time = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
+    
+    // Set selected slot for pre-filling modal
+    setSelectedSlot({ date, time });
+    
     // Open new appointment modal with preselected time
     setShowNewAppointment(true);
   };
@@ -463,7 +475,12 @@ export default function AgendaV2Page() {
       {/* New Appointment Modal */}
       {showNewAppointment && (
         <NewAppointmentModal
-          onClose={() => setShowNewAppointment(false)}
+          selectedDate={selectedSlot?.date || currentDate || new Date()}
+          selectedTime={selectedSlot?.time}
+          onClose={() => {
+            setShowNewAppointment(false);
+            setSelectedSlot(null); // Clear selected slot when closing
+          }}
           onSave={async (appointmentData: any) => {
             try {
               // Map frontend field names to API field names
@@ -488,6 +505,7 @@ export default function AgendaV2Page() {
                 toast.success('Cita creada exitosamente');
                 await loadAppointments(); // Reload appointments to show the new one
                 setShowNewAppointment(false);
+                setSelectedSlot(null); // Clear selected slot after successful save
               } else {
                 const errorData = await response.json().catch(() => ({ error: 'Error desconocido' }));
                 toast.error('Error al crear la cita: ' + (errorData.error || errorData.message || 'Error desconocido'));
@@ -498,8 +516,6 @@ export default function AgendaV2Page() {
               toast.error('Error al guardar la cita');
             }
           }}
-          selectedDate={currentDate}
-          selectedTime=""
         />
       )}
 
