@@ -18,8 +18,41 @@ import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 // import { usePatientManagement } from '@/src/modules/frontdesk/hooks/usePatientManagement';
 
 // Mock hooks for compilation
-const useAppointmentFlow = () => ({ appointments: [], isLoading: false });
-const usePatientManagement = () => ({ patients: [], isLoading: false });
+const useAppointmentFlow = (clinicId?: string, workspaceId?: string, professionalId?: string) => ({ 
+  appointments: [] as any[], 
+  isLoading: false,
+  state: {
+    appointments: [] as any[],
+    dashboard: {
+      todayStats: {
+        total: 0,
+        completed: 0,
+        inProgress: 0,
+        scheduled: 0
+      }
+    },
+    dashboardLoading: false,
+    loading: false
+  },
+  actions: {
+    refreshDashboard: () => Promise.resolve()
+  }
+});
+const usePatientManagement = (clinicId?: string, workspaceId?: string) => ({ 
+  patients: [] as any[], 
+  isLoading: false,
+  state: {
+    patients: [] as any[],
+    isLoading: false,
+    error: null,
+    waitingRoom: {
+      totalWaiting: 0
+    }
+  },
+  actions: {
+    refreshWaitingRoom: () => Promise.resolve()
+  }
+});
 
 interface DayOverviewProps {
   clinicId?: string;

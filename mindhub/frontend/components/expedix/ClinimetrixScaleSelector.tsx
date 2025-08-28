@@ -26,13 +26,37 @@ type ScaleViewModel = {
   category: string;
   description: string;
   duration: string;
+  estimatedTime: string;
   totalItems: number;
   isFavorite: boolean;
+  isFeatured?: boolean;
+  hasSubscales?: boolean;
+  subscaleCount?: number;
+  ui: {
+    color: string;
+    icon: string;
+  };
 };
 
+// Mock data for compilation
+const mockScales: ScaleViewModel[] = [];
+
 // Mock hooks for compilation
-const useScales = () => ({ scales: [], isLoading: false, error: null });
-const useAssessments = () => ({ createAssessment: () => Promise.resolve({ success: true, assessmentId: '123', redirectUrl: '/test' }) });
+const useScales = (config?: any) => ({ 
+  scales: mockScales, 
+  loading: false,
+  error: null,
+  searchScales: () => Promise.resolve(),
+  addToFavorites: (scaleId: string) => Promise.resolve(),
+  removeFromFavorites: (scaleId: string) => Promise.resolve(),
+  isScaleFavorite: (scaleId: string) => false,
+  activeFilters: {},
+  setFilters: () => {}
+});
+const useAssessments = (config?: any) => ({ 
+  startAssessment: (scaleId: string, patientId: string) => Promise.resolve('/test-url'),
+  error: null
+});
 
 interface ClinimetrixScaleSelectorProps {
   patient: {

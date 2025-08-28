@@ -4,18 +4,25 @@
 
 MindHub es una plataforma integral de gestión sanitaria que integra múltiples módulos especializados para clínicas y profesionales de la salud.
 
-## 🚀 ARQUITECTURA ACTUAL - POST MIGRACIÓN COMPLETA A DJANGO
+## 🚀 ARQUITECTURA ACTUAL - DJANGO BACKEND + REACT CLEAN ARCHITECTURE
 
-### 🏗️ **ARQUITECTURA DJANGO FULL-STACK**
+### 🏗️ **ARQUITECTURA COMPLETA**
 
 ```
-┌─ Frontend React/Next.js ──── Vercel (https://mindhub.cloud)
+┌─ Frontend React/Next.js ──── Vercel (https://mindhub.cloud) - CLEAN ARCHITECTURE
 ├─ API Proxy Routes ────────── Next.js (/api/*/django/)
-├─ Django Backend ──────────── Django REST API (/backend-django/)
+├─ Django Backend ──────────── Django REST API (/backend-django/) - TODOS LOS MÓDULOS
 ├─ Auth Middleware ─────────── Supabase JWT validation
 ├─ Database ────────────────── Supabase PostgreSQL 
 └─ Authentication ──────────── Supabase Auth
 ```
+
+### 📁 **DOCUMENTACIÓN ARQUITECTÓNICA**
+
+- **Arquitectura APIs**: `MINDHUB_ARCHITECTURE_MASTER_COMPLETE.md` - 62+ endpoints documentados
+- **Esquema Base de Datos**: `mindhub/backend-django/SUPABASE_TABLES_REFERENCE.md` - Estructura exacta
+- **Frontend**: React Clean Architecture (ver principios de desarrollo)
+- **Backend**: Django REST Framework con todos los módulos migrados
 
 ### URLs de Producción (ACTUALES)
 
@@ -78,60 +85,9 @@ MindHub-Pro/
 - CORS configurado para frontend integration
 - Modelos Django para todos los módulos (Expedix, Agenda, Resources, ClinimetrixPro)
 
-## Módulos Principales
+## 🏥 Módulos Principales (Orden de Interconexión)
 
-### 1. **Expedix** - Gestión de Pacientes y Expedientes Médicos
-
-- **Frontend URL**: `/hubs/expedix`
-- **Django API**: `https://mindhub-django-backend.vercel.app/api/expedix/`
-- **Proxy API**: `https://mindhub.cloud/api/expedix/django/`
-- **Estado**: ✅ **MIGRADO COMPLETAMENTE A DJANGO**
-- **Funcionalidades**:
-  - Gestión completa de pacientes (CRUD) - Django models
-  - Expedientes médicos digitales - Django serializers
-  - Sistema de consultas médicas - Django views
-  - Generación de recetas digitales - Django business logic
-  - Historial médico completo - Django relationships
-  - Portal de pacientes - Django authentication
-  - Documentos médicos encriptados - Django security
-
-### 2. **ClinimetrixPro** - Sistema Híbrido React + Django
-
-- **URL**: `/hubs/clinimetrix`
-- **API URL**: `https://mindhub.cloud/api/clinimetrix-pro` (React) + Django backend
-- **Arquitectura**: **SISTEMA HÍBRIDO COMPLETAMENTE FUNCIONAL**
-
-**FUNCIONALIDADES:**
-
-- ✅ **Frontend React**: Selector de escalas, UI/UX, integración con Expedix
-- ✅ **Backend Django**: Motor de evaluación, focused_take.html, scoring real
-- ✅ **29 escalas migradas**: Desde PHQ-9 hasta escalas especializadas
-- ✅ **CardBase nativo**: Sistema de navegación por tarjetas en Django
-- ✅ **Scoring inteligente**: Cálculos precisos y interpretaciones clínicas
-- ✅ **Bridge seamless**: React → Django → React sin fricción
-- ✅ **Supabase Auth integration**: Autenticación unificada entre sistemas
-
-**ESTADO ACTUAL - SISTEMA HÍBRIDO COMPLETAMENTE FUNCIONAL:**
-
-- ✅ Integración React ↔ Django completada
-- ✅ Django backend en `/mindhub/backend-django/`
-- ✅ 29 escalas psicométricas migradas y funcionales
-- ✅ Sistema de evaluación focused_take.html operativo
-- ✅ Bridge de autenticación Supabase ↔ Django funcionando
-- ✅ Flujo completo: React selector → Django assessment → React results
-- ✅ Alpine.js CardBase system preservado y mejorado
-
-**ARQUITECTURA CLINIMETRIX PRO HÍBRIDA:**
-
-```
-React Frontend (Selector + UI)
-    ↓ (Bridge API)
-Django Backend (Evaluación + Scoring)
-    ↓ (Return URL)
-React Frontend (Resultados + Integración)
-```
-
-### 3. **Agenda** - Sistema de Citas y Programación
+### 1. **Agenda** - Sistema de Citas y Programación
 
 - **Frontend URL**: `/hubs/agenda`
 - **Django API**: `https://mindhub-django-backend.vercel.app/api/agenda/`
@@ -139,34 +95,86 @@ React Frontend (Resultados + Integración)
 - **Estado**: ✅ **MIGRADO COMPLETAMENTE A DJANGO**
 - **Funcionalidades**:
   - Programación de citas médicas - Django scheduling models
-  - Gestión de horarios - Django provider schedules
+  - Gestión de horarios y disponibilidad - Django provider schedules
+  - Drag & Drop para reprogramación - Frontend + Django integration
   - Notificaciones automáticas - Django signals
-  - Lista de espera - Django waiting list system
+  - Lista de espera inteligente - Django waiting list system
   - Confirmación de citas - Django appointment workflow
+  - Integración con Finance para cobros automáticos
 
-### 4. **Resources** - Gestión de Recursos Médicos
+### 2. **Expedix** - Gestión de Pacientes y Expedientes Médicos
 
-- **Frontend URL**: `/hubs/resources`
-- **Django API**: `https://mindhub-django-backend.vercel.app/api/resources/`
-- **Proxy API**: `https://mindhub.cloud/api/resources/django/`
+- **Frontend URL**: `/hubs/expedix`
+- **Django API**: `https://mindhub-django-backend.vercel.app/api/expedix/`
+- **Proxy API**: `https://mindhub.cloud/api/expedix/django/`
 - **Estado**: ✅ **MIGRADO COMPLETAMENTE A DJANGO**
 - **Funcionalidades**:
-  - Biblioteca de recursos médicos - Django resource models
-  - Gestión de categorías - Django taxonomy system
-  - Plantillas de documentos - Django template engine
-  - Sistema de marcas de agua - Django watermarking
-  - Envío de recursos a pacientes - Django email integration
+  - Gestión completa de pacientes (CRUD) - Django models
+  - Expedientes médicos digitales - Django serializers con 33+ campos
+  - Sistema de consultas médicas - Django views con examen mental
+  - Generación de recetas digitales - Django business logic
+  - Historial médico completo - Django relationships
+  - Portal de pacientes - Django authentication
+  - Documentos médicos encriptados - Django security
+  - Integración directa con Agenda para "INICIAR CONSULTA"
 
-### 5. **FormX** - Generador de Formularios
+### 3. **ClinimetrixPro** - Sistema de Evaluaciones Psicométricas
+
+- **Frontend URL**: `/hubs/clinimetrix`
+- **Django API**: `https://mindhub-django-backend.vercel.app/api/clinimetrix/`
+- **Proxy API**: `https://mindhub.cloud/api/clinimetrix/django/`
+- **Estado**: ✅ **MIGRADO COMPLETAMENTE A DJANGO**
+- **Funcionalidades**:
+  - **29 escalas psicométricas migradas**: Desde PHQ-9 hasta escalas especializadas
+  - **Motor de evaluación Django**: focused_take.html con Alpine.js CardBase
+  - **Scoring inteligente**: Cálculos precisos y interpretaciones clínicas
+  - **Integración con Expedix**: Resultados automáticamente asociados a pacientes
+  - **Sistema de selección React**: UI/UX optimizada para selección de escalas
+  - **Auto-guardado obligatorio**: Resultados permanentes en Supabase PostgreSQL
+
+### 4. **FormX** - Generador de Formularios Médicos
 
 - **Frontend URL**: `/hubs/formx`
-- **Django API**: `https://mindhub-django-backend.vercel.app/formx/`
-- **Estado**: ✅ **BASE DJANGO IMPLEMENTADA**
+- **Django API**: `https://mindhub-django-backend.vercel.app/api/formx/`
+- **Proxy API**: `https://mindhub.cloud/api/formx/django/`
+- **Estado**: ✅ **MIGRADO COMPLETAMENTE A DJANGO**
 - **Funcionalidades**:
   - Creación de formularios personalizados con Django Forms
   - Templates médicos preconfigurrados
   - Formularios de registro de pacientes
   - Validación automática avanzada con Django
+  - Integración con consultas médicas
+  - Exportación de datos estructurados
+
+### 5. **Finance** - Gestión Financiera y Facturación
+
+- **Frontend URL**: `/hubs/finance`
+- **Django API**: `https://mindhub-django-backend.vercel.app/api/finance/`
+- **Proxy API**: `https://mindhub.cloud/api/finance/django/`
+- **Estado**: ✅ **MIGRADO COMPLETAMENTE A DJANGO**
+- **Funcionalidades**:
+  - Sistema completo de facturación - Django finance models
+  - Gestión de servicios y precios - Django pricing engine
+  - Registro de ingresos automático - Django transaction system
+  - Cortes de caja - Django cash register management
+  - Integración con Agenda para cobros pendientes
+  - Reportes financieros - Django reporting system
+  - Multi-métodos de pago - Django payment processing
+
+### 6. **FrontDesk** - Recepción y Gestión de Flujo
+
+- **Frontend URL**: `/hubs/frontdesk`
+- **Django API**: `https://mindhub-django-backend.vercel.app/api/frontdesk/`
+- **Proxy API**: `https://mindhub.cloud/api/frontdesk/django/`
+- **Estado**: ✅ **MIGRADO COMPLETAMENTE A DJANGO**
+- **Funcionalidades**:
+  - Dashboard de recepción centralizado
+  - Gestión de llegadas y esperas
+  - Check-in automático de pacientes
+  - Comunicación interna con profesionales
+  - Gestión de documentos pendientes
+  - Integración total con Agenda y Finance
+  - Vista global de clínica multi-profesional
 
 ## Stack Tecnológico
 
@@ -181,204 +189,175 @@ React Frontend (Resultados + Integración)
 - **Estado**: Context API + useState/useEffect
 - **Autenticación**: Supabase Auth - Sistema ÚNICO
 
-### Backend Híbrido
+### Backend Unificado
 
-- **API Routes**: Next.js en Vercel (Expedix, Resources, etc.)
-- **ClinimetrixPro**: Django + **Supabase PostgreSQL** (sistema híbrido)
-- **FormX**: Python/Django (desarrollo futuro)
-- **Base de Datos**: Supabase PostgreSQL - ÚNICO para todo el proyecto
-- **ORM**: Supabase client + Django ORM conectado a Supabase
+- **Arquitectura**: Django REST Framework ÚNICO para todos los módulos
+- **Todos los módulos**: Agenda, Expedix, ClinimetrixPro, FormX, Finance, FrontDesk en Django
+- **Base de Datos**: Supabase PostgreSQL - ÚNICO para todo el proyecto  
+- **ORM**: Django ORM conectado directamente a Supabase PostgreSQL
+- **API Pattern**: Next.js Proxy Routes → Django REST → Supabase
 
 ### Infraestructura de Producción
 
 - **Frontend + API Routes**: Vercel (https://mindhub.cloud)
 - **Base de Datos**: Supabase PostgreSQL
 - **Auth**: Supabase Auth
-- **Django Backend**: Local/Docker (integración híbrida)
+- **Django Backend**: https://mindhub-django-backend.vercel.app (producción)
 - **Build**: Automático en deploy
 
-### Principios de Desarrollo
+## 🏗️ Principios de Desarrollo
 
-## Principios de Desarrollo Específicos
+### 🎯 **REACT CLEAN ARCHITECTURE (OBLIGATORIO)**
 
-### Gestión de Datos y Backend
+**Arquitectura en círculos concéntricos donde las capas internas no dependen de las externas:**
 
-- **Base de Datos Principal Supabase PostgreSQL**:
-  - Todo el proyecto usa PRINCIPALMENTE Supabase PostgreSQL
-  - API Routes usan Supabase client para operaciones de base de datos
-  - Django ClinimetrixPro usa **Supabase PostgreSQL** vía bridge de autenticación
-  - NO usar MAMP - la base de datos principal está en Supabase
-  - Cambios solicitados deben implementarse tanto en frontend como backend
-  - Integración híbrida entre Supabase y Django cuando sea necesario
-
-## Principios de Implementación de Cambios
-
-- Cuando se pida implementar un cambio, este debe ser completo:
-  - No solo visualmente, sino funcionalmente
-  - Conectar todos los endpoints (Next.js API Routes o Django según corresponda)
-  - Dirigir a donde debe ir
-  - Guardar en la base de datos adecuada (Supabase o Django según el módulo)
-  - Registrar todo completamente
-  - En fase avanzada de desarrollo, todo debe quedar funcionando de manera integral
-
-## ⭐ **CLINIMETRIX PRO - SISTEMA HÍBRIDO REACT + DJANGO** ⭐
-
-### **🎯 FUNCIONAMIENTO GENERAL:**
-
-ClinimetrixPro usa un **sistema híbrido** que combina React (frontend hermoso) con Django (backend robusto). El flujo es:
-
-1. **React**: Selector de escalas, integración con Expedix, UI/UX
-2. **Django**: Motor de evaluación, focused_take.html, scoring real
-3. **React**: Resultados, integración con expediente
-
-### **📊 ARQUITECTURA DE DATOS HÍBRIDA:**
-
-- **Supabase PostgreSQL**: Base de datos ÚNICA para todo el proyecto
-  - Pacientes, usuarios, expedientes (Expedix)
-  - Escalas, evaluaciones, templates (ClinimetrixPro)
-  - Autenticación y permisos (RLS)
-- **Django Bridge**: Conexión a Supabase PostgreSQL vía bridge de autenticación
-- **Templates Path**: `/mindhub/backend-django/scales/*.json` (29 escalas disponibles)
-
-### **🔄 FLUJO COMPLETO DE EVALUACIÓN HÍBRIDA:**
-
-#### **1. INICIO DESDE EXPEDIX (React)**
-
-- Usuario va a Expedix → Selecciona paciente → Click "Evaluación ClinimetrixPro"
-- Se abre selector React con escalas desde Django
-- Sistema de favoritas y búsqueda inteligente
-- Al seleccionar escala → bridge a Django
-
-#### **2. EVALUACIÓN EN DJANGO (focused_take.html)**
-
-- Django recibe paciente + escala desde React
-- Renderiza focused_take.html con Alpine.js CardBase
-- Usuario completa evaluación en sistema nativo Django
-- Scoring y cálculos en tiempo real
-
-#### **3. RETURN A REACT (Resultados)**
-
-- Django calcula resultados finales
-- **AUTO-GUARDADO OBLIGATORIO**: Resultados se guardan automáticamente en Supabase
-- Redirige automáticamente de vuelta a React
-- React muestra resultados y opciones de exportación
-- **Integración automática**: Datos asociados al paciente permanentemente
-- **Sin pérdida de información**: Independiente de si el usuario imprime o sale
-
-### **🎨 ESCALAS DISPONIBLES (29 MIGRADAS):**
-
-```
-✅ AQ-Adolescent (Autismo Adolescentes)
-✅ AQ-Child (Autismo Niños)
-✅ BDI-13 (Beck Depression Inventory)
-✅ Cuestionario Salamanca v2007 (Screening)
-✅ DTS (Davidson Trauma Scale)
-✅ DY-BOCS (Yale-Brown TOC Dimensional)
-✅ EAT-26 (Eating Attitudes Test)
-✅ EMUN-AR (Evaluación Multidimensional)
-✅ ESADFUN (Escala de Funcionamiento)
-✅ GADI (Inventario de Ansiedad General)
-✅ GDS-5 (Escala Depresión Geriátrica 5 ítems)
-✅ GDS-15 (Escala Depresión Geriátrica 15 ítems)
-✅ GDS-30 (Escala Depresión Geriátrica 30 ítems)
-✅ HARS (Hamilton Anxiety Rating Scale)
-✅ HDRS-17 (Hamilton Depression Rating Scale)
-✅ IPDE-CIE10 (Trastornos de Personalidad CIE-10)
-✅ IPDE-DSMIV (Trastornos de Personalidad DSM-IV)
-✅ MADRS (Montgomery-Åsberg Depression Rating)
-✅ MOCA (Montreal Cognitive Assessment)
-✅ MOS Sleep Scale (Calidad del Sueño)
-✅ PANSS (Positive and Negative Syndrome Scale)
-✅ PHQ-9 (Patient Health Questionnaire)
-✅ RADS-2 (Reynolds Adolescent Depression Scale)
-✅ SSS-V (Suicide Scale for Suicidal Ideation)
-✅ STAI (State-Trait Anxiety Inventory)
-✅ Y-BOCS (Yale-Brown Obsessive Compulsive Scale)
-✅ YGTSS (Yale Global Tic Severity Scale)
+#### **1. Entidades (Core)**
+**Propósito**: Encapsulan las reglas de negocio más críticas y universales
+**En React**: Objetos o datos centrales con validaciones propias
+```typescript
+// Ejemplo: entities/Patient.ts
+export class Patient {
+  constructor(
+    public id: string,
+    public firstName: string,
+    public lastName: string,
+    public dateOfBirth: Date
+  ) {
+    this.validateAge();
+  }
+  
+  private validateAge(): void {
+    // Lógica de negocio pura
+  }
+}
 ```
 
-**CATEGORÍAS DISPONIBLES:**
-
-- 🧠 **Depresión**: BDI-13, GDS-5/15/30, HDRS-17, MADRS, PHQ-9, RADS-2
-- 😰 **Ansiedad**: GADI, HARS, STAI
-- 🧩 **Autismo/TEA**: AQ-Adolescent, AQ-Child
-- 🍽️ **Trastornos Alimentarios**: EAT-26
-- 🧠 **Cognición**: MOCA
-- 💭 **TOC**: DY-BOCS, Y-BOCS
-- 🏥 **Psicosis**: PANSS
-- 🌙 **Sueño**: MOS Sleep Scale
-- ⚡ **Tics**: YGTSS
-- 🧬 **Personalidad**: IPDE-CIE10, IPDE-DSMIV
-- 💔 **Trauma**: DTS
-- ⚠️ **Suicidalidad**: SSS-V
-
-### **⚡ CARACTERÍSTICAS DEL SISTEMA HÍBRIDO:**
-
-#### **React Frontend (Preservado)**
-
-- ✅ UI/UX hermoso y familiar
-- ✅ Integración perfecta con Expedix
-- ✅ Sistema de favoritas funcionando
-- ✅ Búsqueda inteligente de escalas
-- ✅ Resultados integrados con expediente
-
-#### **Django Backend (Funcional)**
-
-- ✅ focused_take.html con Alpine.js CardBase
-- ✅ Scoring real y preciso
-- ✅ 29 escalas completamente migradas
-- ✅ Sistema de evaluación robusto
-- ✅ Base de datos de escalas científicas
-
-#### **Bridge Integration (Seamless)**
-
-- ✅ Autenticación Supabase validada en Django
-- ✅ Redirecciones automáticas React ↔ Django
-- ✅ Datos de paciente sincronizados
-- ✅ URLs dinámicas para desarrollo/producción
-
-### **🔗 ENDPOINTS API HÍBRIDOS:**
-
-```
-# React APIs (Next.js)
-GET /api/clinimetrix-pro/catalog - Lista escalas desde Django
-POST /api/clinimetrix-pro/bridge - Bridge a Django
-
-# Django APIs
-POST /assessments/api/create-from-react/ - Crea evaluación desde React
-GET /assessments/{id}/focused-take/ - Página de evaluación
-GET /scales/api/catalog/ - Catálogo de escalas
+#### **2. Casos de Uso (Application Business Rules)**
+**Propósito**: Reglas de negocio específicas de la aplicación, orchestrando entidades
+**En React**: Lógicas para interactuar con entidades
+```typescript
+// Ejemplo: usecases/CreatePatientUseCase.ts
+export class CreatePatientUseCase {
+  constructor(private patientRepository: PatientRepository) {}
+  
+  async execute(data: CreatePatientData): Promise<Patient> {
+    // Orchestrar entidades y reglas de negocio
+  }
+}
 ```
 
-### **🎮 COMPONENTES PRINCIPALES:**
+#### **3. Adaptadores de Interfaz (Interface Adapters)**
+**Propósito**: Traducen datos entre la lógica de dominio y la capa de implementación
+**En React**: Comunicación con servicios externos, conversión de datos
+```typescript
+// Ejemplo: adapters/PatientApiAdapter.ts
+export class PatientApiAdapter implements PatientRepository {
+  async create(patient: Patient): Promise<Patient> {
+    // Traducir entre dominio y API externa
+  }
+}
+```
+
+#### **4. Frameworks y Drivers (Externa)**
+**Propósito**: Detalles de implementación (React, UI, base de datos, librerías)
+**En React**: Componentes React, estado, servicios
+```typescript
+// Ejemplo: components/PatientForm.tsx
+export const PatientForm: React.FC = () => {
+  // UI pura, usa casos de uso vía dependency injection
+}
+```
+
+### ✅ **BENEFICIOS DE CLEAN ARCHITECTURE EN REACT**
+
+- **Independencia del Framework**: Lógica de negocio no ligada a React
+- **Testabilidad**: Entidades y casos de uso fáciles de probar unitariamente
+- **Mantenibilidad**: Separación de responsabilidades clara
+- **Escalabilidad**: Estructura modular para crecimiento a largo plazo
+- **Independencia de DB/UI**: Adaptable a diferentes tecnologías sin alterar el núcleo
+
+### 🔄 **REGLAS FUNDAMENTALES**
+
+1. **Inversión de Dependencias**: Capas internas NO conocen las externas
+2. **Flujo de Dependencias**: Siempre hacia el interior (Entities ← Use Cases ← Adapters ← Frameworks)
+3. **Abstracción**: Usar interfaces para desacoplar implementaciones
+4. **Single Responsibility**: Cada capa tiene una responsabilidad específica
+
+### 🎯 **APLICACIÓN EN MINDHUB**
 
 ```
-# React Components
-- ClinimetrixScaleSelector.tsx - Selector integrado con Django
-- UnifiedClinimetrixClient.ts - Cliente híbrido Django+React
-
-# Django Components
-- focused_take.html - Página principal de evaluación
-- CardBase (Alpine.js) - Sistema de navegación
-- ScoringEngine - Motor de cálculo Django
+Frontend React Clean Architecture:
+├── entities/          # Patient, Appointment, Consultation (reglas de negocio puras)
+├── usecases/          # CreatePatient, ScheduleAppointment (lógica de aplicación)  
+├── adapters/          # ApiClients, DataTransformers (traducción de datos)
+└── components/        # React Components (UI, framework específico)
 ```
 
-### **✅ ESTADO ACTUAL - SISTEMA HÍBRIDO COMPLETAMENTE FUNCIONAL:**
+### 📊 **Principios de Desarrollo Específicos**
 
-- ✅ **React ↔ Django integration**: Flujo completo funcionando
-- ✅ **29 escalas migradas**: Desde PHQ-9 hasta escalas especializadas
-- ✅ **Supabase Auth bridge**: Autenticación unificada
-- ✅ **focused_take.html**: Sistema de evaluación nativo Django
-- ✅ **Scoring engine**: Cálculos precisos y confiables
-- ✅ **Repository limpio**: `/mindhub/backend-django/` organizado
-- ✅ **Integration testing**: Flujo end-to-end probado
+#### **Gestión de Datos y Backend**
 
-### **🚀 PRÓXIMOS PASOS OPCIONALES:**
+- **Base de Datos Principal**: Supabase PostgreSQL para todo el proyecto
+- **Backend Unificado**: Django REST Framework para todos los módulos
+- **API Pattern**: Frontend → Next.js Proxy → Django → Supabase
+- **NO usar**: Conexiones directas Frontend → Supabase
+- **SIEMPRE**: Verificar arquitectura documentada antes de implementar cambios
 
-- ⏳ Deploy Django a producción (Vercel)
-- ⏳ Implementar FormX con Django Forms
-- ⏳ Expandir sistema de reportes PDF
-- ⏳ Agregar más escalas especializadas
+#### **Arquitectura de APIs y Conectividad**
+
+- **Documentación Principal**: `MINDHUB_ARCHITECTURE_MASTER_COMPLETE.md` (62+ endpoints)
+- **Esquema de DB**: `mindhub/backend-django/SUPABASE_TABLES_REFERENCE.md` (estructura exacta)
+- **Patrón de Autenticación**: Supabase JWT → Django middleware → PostgreSQL RLS
+- **Sistema Dual**: `clinic_id` OR `workspace_id` (nunca ambos simultáneamente)
+
+## 🔧 Principios de Implementación de Cambios
+
+**SIEMPRE seguir este flujo al implementar cambios:**
+
+1. **Verificar Arquitectura**: Consultar documentos de referencia primero
+2. **Clean Architecture**: Implementar siguiendo capas (Entities → Use Cases → Adapters → Components)
+3. **Backend Django**: Todos los módulos en Django REST, NO híbridos
+4. **Frontend Completo**: No solo visual, sino funcionalmente integrado
+5. **Database Pattern**: Usar estructura exacta documentada en SUPABASE_TABLES_REFERENCE.md
+6. **Testing**: Validar flujo completo Frontend → API → Backend → Database
+7. **Integración**: Asegurar conexión entre módulos (Agenda ↔ Expedix ↔ Finance, etc.)
+
+## 🔗 **INTERCONEXIÓN DE MÓDULOS**
+
+### **📊 FLUJO DE INTEGRACIÓN COMPLETA**
+
+```
+Agenda → Expedix → ClinimetrixPro → FormX → Finance → FrontDesk
+  ↓        ↓           ↓              ↓        ↓         ↓
+  └────────┴───────────┴──────────────┴────────┴─────────┘
+                   Django Backend Unificado
+```
+
+**Integraciones Críticas:**
+
+1. **Agenda ↔ Finance**: Cobros automáticos al crear citas
+2. **Agenda ↔ Expedix**: "INICIAR CONSULTA" crea consulta directa  
+3. **Expedix ↔ ClinimetrixPro**: Evaluaciones asociadas automáticamente al expediente
+4. **FormX ↔ Expedix**: Formularios personalizados en consultas
+5. **FrontDesk ↔ Todos**: Dashboard centralizado de recepción
+6. **Finance ↔ Todos**: Tracking financiero transversal
+
+### **🎨 ESCALAS CLINIMETRIXPRO (29 DISPONIBLES)**
+
+```
+✅ Depresión: BDI-13, GDS-5/15/30, HDRS-17, MADRS, PHQ-9, RADS-2
+✅ Ansiedad: GADI, HARS, STAI  
+✅ Autismo/TEA: AQ-Adolescent, AQ-Child
+✅ Trastornos Alimentarios: EAT-26
+✅ Cognición: MOCA
+✅ TOC: DY-BOCS, Y-BOCS
+✅ Psicosis: PANSS
+✅ Sueño: MOS Sleep Scale
+✅ Tics: YGTSS
+✅ Personalidad: IPDE-CIE10, IPDE-DSMIV
+✅ Trauma: DTS
+✅ Suicidalidad: SSS-V
+```
 
 ---
 
@@ -391,13 +370,15 @@ GET /scales/api/catalog/ - Catálogo de escalas
 - **Autenticación**: 100% Supabase Auth con JWT validation en Django
 - **Base de datos**: Supabase PostgreSQL para todo el proyecto
 
-## Migración Node.js → Django Completada
+## ✅ **ESTADO ACTUAL DEL SISTEMA**
 
-- ✅ **Backend Django**: Todos los módulos migrados (Expedix, Agenda, Resources, ClinimetrixPro)
+**Migración Node.js → Django Completada:**
+
+- ✅ **Backend Django**: TODOS los módulos migrados (Agenda, Expedix, ClinimetrixPro, FormX, Finance, FrontDesk)
 - ✅ **Node.js deprecado**: Backend anterior movido a `/legacy-backend/`
-- ✅ **API unificada**: Django REST Framework con endpoints `/api/*`
+- ✅ **API unificada**: Django REST Framework con endpoints `/api/*` 
 - ✅ **Proxy integration**: Frontend proxy routes hacia Django backend
 - ✅ **Autenticación integrada**: Supabase JWT middleware en Django
-- ✅ **Deploy ready**: Configuración Vercel para Django backend completa
-
-- memoria la estructura de la tabla de patient en tu archivo de APIs
+- ✅ **Deploy completado**: Django backend en producción (Vercel)
+- ✅ **Clean Architecture**: Principios documentados para React frontend
+- ✅ **Documentación completa**: APIs y base de datos completamente documentadas

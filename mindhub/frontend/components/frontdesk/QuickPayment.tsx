@@ -25,14 +25,17 @@ import PatientServiceAssignment from '@/components/finance/PatientServiceAssignm
 // import type { PatientSearchRequest } from '@/src/modules/frontdesk/usecases/ManagePatientCheckInUseCase';
 
 // Mock for compilation
-const usePatientManagement = () => ({ 
-  patients: [], 
+const usePatientManagement = (clinicId?: string, workspaceId?: string) => ({ 
+  patients: [] as any[], 
   searchPatients: () => Promise.resolve([]), 
   isLoading: false,
-  state: { patients: [], isLoading: false, error: null },
+  state: { patients: [] as any[], isLoading: false, error: null, selectedPatient: null as any, searchResults: [] as any[], searchLoading: false },
   actions: { 
-    searchPatients: () => Promise.resolve([]),
-    clearPatients: () => {}
+    searchPatients: (searchRequest: any) => Promise.resolve([]),
+    clearPatients: () => {},
+    clearSearchResults: () => {},
+    selectPatient: (patientId: string) => {},
+    clearSelectedPatient: () => {}
   }
 });
 
