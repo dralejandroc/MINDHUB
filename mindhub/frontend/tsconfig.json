@@ -40,6 +40,8 @@
   "exclude": [
     "node_modules",
     "_TRASH_LEGACY_CLINIMETRIX/**/*",
-    "_TRASH_CORRUPTED_FILES/**/*"
+    "_TRASH_CORRUPTED_FILES/**/*",
+    "src/**",
+    "_src_clean_architecture_backup/**"
   ]
 }

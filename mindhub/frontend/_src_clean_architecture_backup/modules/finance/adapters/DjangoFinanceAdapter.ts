@@ -42,17 +42,36 @@ export class DjangoIncomeAdapter implements IncomeRepository {
   private mapToIncome(data: any): Income {
     return new Income(
       data.id,
-      data.patient_id,
-      data.service_id,
-      data.professional_id,
-      data.amount,
-      data.payment_method,
-      data.concept,
-      new Date(data.date),
-      data.status,
-      data.notes,
+      data.amount || 0,
+      data.currency || 'MXN' as const,
+      data.source || 'consultation' as const,
+      data.payment_method || 'cash' as const,
+      data.status || 'pending' as const,
+      new Date(data.date || data.received_date),
+      data.description || data.concept || '',
+      data.concept || '',
+      data.notes || '',
+      data.patient_id ? {
+        id: data.patient_id,
+        firstName: data.patient_first_name || '',
+        lastName: data.patient_last_name || '',
+        medicalRecordNumber: data.patient_record_number || ''
+      } : undefined,
+      data.professional_id ? {
+        id: data.professional_id,
+        name: data.professional_name || '',
+        email: data.professional_email || ''
+      } : undefined,
+      data.consultation_id ? {
+        id: data.consultation_id,
+        consultationDate: new Date(data.consultation_date),
+        reason: data.consultation_reason || ''
+      } : undefined,
+      data.payment_details || undefined,
       data.clinic_id,
-      data.workspace_id
+      data.workspace_id,
+      new Date(data.created_at || Date.now()),
+      new Date(data.updated_at || Date.now())
     );
   }
 
@@ -60,13 +79,15 @@ export class DjangoIncomeAdapter implements IncomeRepository {
     const data = await this.makeRequest<any>('/incomes/', {
       method: 'POST',
       body: JSON.stringify({
-        patient_id: income.patientId,
-        service_id: income.serviceId,
-        professional_id: income.professionalId,
+        patient_id: income.patient?.id,
+        professional_id: income.professional?.id,
         amount: income.amount,
+        currency: income.currency,
+        source: income.source,
         payment_method: income.paymentMethod,
         concept: income.concept,
-        date: income.date.toISOString(),
+        description: income.description,
+        date: income.receivedDate.toISOString(),
         status: income.status,
         notes: income.notes,
         clinic_id: income.clinicId,
@@ -95,7 +116,6 @@ export class DjangoIncomeAdapter implements IncomeRepository {
     if (filters?.startDate) params.append('start_date', filters.startDate.toISOString().split('T')[0]);
     if (filters?.endDate) params.append('end_date', filters.endDate.toISOString().split('T')[0]);
     if (filters?.paymentMethod) params.append('payment_method', filters.paymentMethod);
-    if (filters?.serviceId) params.append('service_id', filters.serviceId);
     if (filters?.patientId) params.append('patient_id', filters.patientId);
     if (filters?.professionalId) params.append('professional_id', filters.professionalId);
     if (filters?.status) params.append('status', filters.status);
@@ -103,7 +123,7 @@ export class DjangoIncomeAdapter implements IncomeRepository {
     if (filters?.workspaceId) params.append('workspace_id', filters.workspaceId);
 
     const data = await this.makeRequest<any[]>(`/incomes/?${params.toString()}`);
-    return data.map(this.mapToIncome);
+    return data.map(item => this.mapToIncome(item));
   }
 
   async update(income: Income): Promise<Income> {
@@ -111,8 +131,11 @@ export class DjangoIncomeAdapter implements IncomeRepository {
       method: 'PUT',
       body: JSON.stringify({
         amount: income.amount,
+        currency: income.currency,
+        source: income.source,
         payment_method: income.paymentMethod,
         concept: income.concept,
+        description: income.description,
         status: income.status,
         notes: income.notes,
       }),
@@ -193,13 +216,15 @@ export class DjangoIncomeAdapter implements IncomeRepository {
       method: 'POST',
       body: JSON.stringify({
         incomes: incomes.map(income => ({
-          patient_id: income.patientId,
-          service_id: income.serviceId,
-          professional_id: income.professionalId,
+          patient_id: income.patient?.id,
+          professional_id: income.professional?.id,
           amount: income.amount,
+          currency: income.currency,
+          source: income.source,
           payment_method: income.paymentMethod,
           concept: income.concept,
-          date: income.date.toISOString(),
+          description: income.description,
+          date: income.receivedDate.toISOString(),
           status: income.status,
           notes: income.notes,
           clinic_id: income.clinicId,
@@ -208,7 +233,7 @@ export class DjangoIncomeAdapter implements IncomeRepository {
       }),
     });
 
-    return data.map(this.mapToIncome);
+    return data.map(item => this.mapToIncome(item));
   }
 
   async updateStatus(ids: string[], status: string): Promise<void> {
