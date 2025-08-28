@@ -20,15 +20,7 @@ export async function GET(request: Request) {
     }
 
     try {
-      // Get current tenant context using the function we created
-      const { data: context, error: contextError } = await supabaseAdmin
-        .rpc('get_current_tenant_context')
-        .single();
-      
-      if (contextError) {
-        console.error('[TENANT CONTEXT API] Error getting context:', contextError);
-        throw new Error(contextError.message);
-      }
+      console.log('[TENANT CONTEXT API] Fetching user workspace and memberships...');
 
       // Also get user memberships for switching contexts
       const { data: memberships, error: membershipsError } = await supabaseAdmin
@@ -66,16 +58,19 @@ export async function GET(request: Request) {
         console.warn('[TENANT CONTEXT API] Error getting workspace:', workspaceError);
       }
 
-      // Check if context has the required properties
-      const hasValidContext = context && 
-        typeof context === 'object' &&
-        'tenant_type' in context && 
-        'tenant_name' in context;
-      
-      const currentContext: TenantContext = hasValidContext ? context as TenantContext : {
-        tenant_id: workspace?.id || null,
+      // Determine current context - prioritize workspace if available, otherwise first clinic
+      const currentContext: TenantContext = workspace ? {
+        tenant_id: workspace.id,
         tenant_type: 'workspace',
-        tenant_name: workspace?.workspace_name || 'Mi Consultorio'
+        tenant_name: workspace.workspace_name || 'Mi Consultorio'
+      } : (memberships && memberships.length > 0) ? {
+        tenant_id: memberships[0].clinic_id,
+        tenant_type: 'clinic',
+        tenant_name: (memberships[0] as any).clinics?.name || (memberships[0] as any).clinics?.business_name
+      } : {
+        tenant_id: null,
+        tenant_type: 'workspace',
+        tenant_name: 'Mi Consultorio'
       };
 
       const response = {

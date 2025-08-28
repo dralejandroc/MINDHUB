@@ -156,18 +156,6 @@ export default function FormXPage() {
       />
 
       {/* Django Integration Status */}
-      {currentView === 'dashboard' && (
-        <div className="bg-emerald-50 border-l-4 border-emerald-400 p-4 rounded">
-          <div className="flex">
-            <div className="ml-3">
-              <p className="text-sm text-emerald-800">
-                <strong>FormX Fase 2:</strong> Sistema integrado con Django backend. 
-                Funcionalidades disponibles: Dashboard, Constructor, Templates y Asignación de Pacientes.
-              </p>
-            </div>
-          </div>
-        </div>
-      )}
 
       {renderCurrentView()}
     </div>

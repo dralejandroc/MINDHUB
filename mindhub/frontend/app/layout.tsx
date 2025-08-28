@@ -3,8 +3,10 @@ import type { Metadata } from 'next';
 import { Toaster } from 'react-hot-toast';
 import { SpeedInsights } from '@vercel/speed-insights/next';
 import { AuthProvider } from '@/lib/providers/AuthProvider';
+import { ThemeProvider } from '@/contexts/ThemeContext';
 import StartupCleanup from '@/components/StartupCleanup';
 import './globals.css';
+import '../styles/themes.css';
 
 // const inter = Inter({ subsets: ['latin'], variable: '--font-inter' }); // Temporalmente deshabilitado
 
@@ -98,13 +100,15 @@ export default function RootLayout({
           
           {/* Preconnect to external services - Google Fonts temporarily disabled */}
         </head>
-        <body className="bg-gray-50 antialiased">
+        <body className="bg-theme-secondary antialiased">
           <StartupCleanup />
-          <AuthProvider>
-            <div id="root" className="min-h-screen">
-              {children}
-            </div>
-          </AuthProvider>
+          <ThemeProvider>
+            <AuthProvider>
+              <div id="root" className="min-h-screen bg-theme-secondary">
+                {children}
+              </div>
+            </AuthProvider>
+          </ThemeProvider>
         
         {/* Toast notifications */}
         <Toaster

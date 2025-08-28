@@ -97,25 +97,52 @@ export default function DayOverview({
   const loadPendingTasks = async () => {
     try {
       setTasksLoading(true);
-      // Mock pending tasks for now - would connect to real API
-      const mockTasks: PendingTask[] = [
-        {
-          id: '1',
-          type: 'payment',
-          description: 'Pago pendiente de consulta',
-          patientName: 'Juan Pérez',
-          priority: 'high',
-          dueTime: '14:00'
-        },
-        {
-          id: '2',
-          type: 'followup',
-          description: 'Seguimiento post-consulta',
-          patientName: 'María García',
-          priority: 'medium'
+      
+      // Load pending tasks from real APIs
+      const [paymentsResponse, appointmentsResponse] = await Promise.allSettled([
+        // Get pending payments
+        fetch('/api/finance/stats'),
+        // Get follow-up appointments
+        fetch('/api/frontdesk/tasks/pending')
+      ]);
+      
+      const tasks: PendingTask[] = [];
+      
+      // Process pending payments
+      if (paymentsResponse.status === 'fulfilled' && paymentsResponse.value.ok) {
+        const paymentsData = await paymentsResponse.value.json();
+        if (paymentsData.data?.pendingPayments) {
+          paymentsData.data.pendingPayments.forEach((payment: any) => {
+            tasks.push({
+              id: `payment-${payment.id}`,
+              type: 'payment',
+              description: `Pago pendiente de ${payment.service_name || 'consulta'}`,
+              patientName: payment.patient_name || 'Paciente sin nombre',
+              priority: payment.amount > 1000 ? 'high' : 'medium',
+              dueTime: payment.due_time
+            });
+          });
         }
-      ];
-      setPendingTasks(mockTasks);
+      }
+      
+      // Process pending tasks
+      if (appointmentsResponse.status === 'fulfilled' && appointmentsResponse.value.ok) {
+        const tasksData = await appointmentsResponse.value.json();
+        if (tasksData.data?.tasks) {
+          tasksData.data.tasks.forEach((task: any) => {
+            tasks.push({
+              id: task.id,
+              type: task.type,
+              description: task.description,
+              patientName: task.patient_name,
+              priority: task.priority,
+              dueTime: task.due_time
+            });
+          });
+        }
+      }
+      
+      setPendingTasks(tasks);
     } catch (error) {
       console.error('Error loading pending tasks:', error);
       setPendingTasks([]);
