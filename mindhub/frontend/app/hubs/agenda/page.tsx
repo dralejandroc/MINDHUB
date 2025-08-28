@@ -505,7 +505,6 @@ export default function AgendaV2Page() {
     <div className="flex flex-col bg-gray-50">
       <PageHeader
         title="Agenda"
-        description="Gestión de citas y horarios"
         icon={CalendarIcon}
       />
 

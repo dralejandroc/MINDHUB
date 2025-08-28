@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { 
   DocumentChartBarIcon, 
   ClockIcon,
@@ -11,8 +11,9 @@ import {
   HeartIcon
 } from '@heroicons/react/24/outline';
 import { StarIcon as StarSolidIcon } from '@heroicons/react/24/solid';
-import { unifiedClinimetrixClient } from '@/lib/api/unified-clinimetrix-client';
-import type { ClinimetrixRegistry } from '@/lib/api/unified-clinimetrix-client';
+import { useScales } from '../../src/modules/clinimetrix/hooks/useScales';
+import { useAssessments } from '../../src/modules/clinimetrix/hooks/useAssessments';
+import type { ScaleViewModel } from '../../src/modules/clinimetrix/presenters/ClinimetrixPresenter';
 import { ClinimetrixProAssessmentModal } from '@/components/ClinimetrixPro/ClinimetrixProAssessmentModal';
 import { Button } from '@/components/ui/Button';
 
@@ -37,107 +38,95 @@ export default function ClinimetrixScaleSelector({
   isQuickMode = false,
   onAssessmentCompleted
 }: ClinimetrixScaleSelectorProps) {
-  const [scales, setScales] = useState<ClinimetrixRegistry[]>([]);
-  const [filteredScales, setFilteredScales] = useState<ClinimetrixRegistry[]>([]);
-  const [loading, setLoading] = useState(true);
+  // Clean Architecture hooks
+  const {
+    scales,
+    loading,
+    error,
+    searchScales,
+    addToFavorites,
+    removeFromFavorites,
+    isScaleFavorite,
+    activeFilters,
+    setFilters
+  } = useScales({
+    autoLoad: true,
+    userLevel: 'professional', // TODO: Get from auth context
+    userExperience: 'intermediate' // TODO: Get from user profile
+  });
+
+  const {
+    startAssessment,
+    error: assessmentError
+  } = useAssessments({
+    patientId: patient.id,
+    clinicId: 'current-clinic', // TODO: Get from context
+    administratorId: 'current-user' // TODO: Get from auth context
+  });
+
+  // UI State
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedScale, setSelectedScale] = useState<ClinimetrixRegistry | null>(null);
+  const [selectedScale, setSelectedScale] = useState<ScaleViewModel | null>(null);
   const [showAssessment, setShowAssessment] = useState(false);
-  const [favorites, setFavorites] = useState<string[]>([]);
 
-  useEffect(() => {
-    loadScales();
-    loadFavorites();
-  }, []);
-
-  useEffect(() => {
-    filterAndSortScales();
-  }, [scales, searchTerm, favorites]);
-
-  const loadScales = async () => {
-    try {
-      setLoading(true);
-      const scalesData = await unifiedClinimetrixClient.getTemplateCatalog();
-      setScales(scalesData);
-    } catch (error) {
-      console.error('Error loading scales:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const loadFavorites = () => {
-    const storedFavorites = JSON.parse(localStorage.getItem('clinimetrix-favorites') || '[]');
-    setFavorites(storedFavorites);
-  };
-
-  const toggleFavorite = (scaleId: string) => {
-    const newFavorites = favorites.includes(scaleId)
-      ? favorites.filter(id => id !== scaleId)
-      : [...favorites, scaleId];
+  // Search and filter scales
+  const filteredScales = useMemo(() => {
+    if (!searchTerm) return scales;
     
-    setFavorites(newFavorites);
-    localStorage.setItem('clinimetrix-favorites', JSON.stringify(newFavorites));
-  };
+    const searchLower = searchTerm.toLowerCase();
+    return scales.filter(scale =>
+      scale.name.toLowerCase().includes(searchLower) ||
+      scale.abbreviation.toLowerCase().includes(searchLower) ||
+      scale.description.toLowerCase().includes(searchLower) ||
+      scale.category.toLowerCase().includes(searchLower)
+    );
+  }, [scales, searchTerm]);
 
-  const filterAndSortScales = () => {
-    let filtered = [...scales];
-
-    // Aplicar búsqueda
-    if (searchTerm) {
-      const searchLower = searchTerm.toLowerCase();
-      filtered = filtered.filter(scale =>
-        scale.name.toLowerCase().includes(searchLower) ||
-        scale.abbreviation?.toLowerCase().includes(searchLower) ||
-        scale.description.toLowerCase().includes(searchLower) ||
-        scale.category.toLowerCase().includes(searchLower)
-      );
+  // Handle search input changes
+  const handleSearchChange = (value: string) => {
+    setSearchTerm(value);
+    
+    // Optional: Use debounced search with Clean Architecture
+    if (value.trim()) {
+      // searchScales(value); // Could be used for server-side search
     }
-
-    // Ordenar: favoritos primero, luego alfabético
-    filtered.sort((a, b) => {
-      const aIsFavorite = favorites.includes(a.templateId);
-      const bIsFavorite = favorites.includes(b.templateId);
-      
-      if (aIsFavorite && !bIsFavorite) return -1;
-      if (!aIsFavorite && bIsFavorite) return 1;
-      
-      return a.name.localeCompare(b.name, 'es');
-    });
-
-    setFilteredScales(filtered);
   };
 
-  const handleSelectScale = async (scale: ClinimetrixRegistry) => {
+  // Toggle favorites using Clean Architecture
+  const toggleFavorite = async (scaleId: string) => {
+    try {
+      if (isScaleFavorite(scaleId)) {
+        await removeFromFavorites(scaleId);
+      } else {
+        await addToFavorites(scaleId);
+      }
+    } catch (error) {
+      console.error('Error toggling favorite:', error);
+    }
+  };
+
+  const handleSelectScale = async (scale: ScaleViewModel) => {
     try {
       setSelectedScale(scale);
       
       console.log(`🚀 Iniciando evaluación ${scale.abbreviation} para ${patient.first_name}...`);
       
-      // Create return URL with patient context
-      const returnUrl = `${window.location.origin}/hubs/expedix/patients/${patient.id}`;
+      // Use Clean Architecture assessment hook
+      const assessmentUrl = await startAssessment(scale.id, patient.id);
       
-      // Use unified client with Django-first strategy
-      const result = await unifiedClinimetrixClient.startAssessment(
-        patient, 
-        scale.abbreviation || scale.templateId, 
-        returnUrl,
-        {
-          useDjangoFirst: true,
-          fallbackToReact: true,
-          onFallback: () => {
-            console.log('🔄 Fallback activado: usando React Assessment Modal...');
-            setShowAssessment(true);
-          }
-        }
-      );
+      console.log('✅ Assessment URL generated:', assessmentUrl);
       
-      if (result.method === 'django') {
-        // Django redirection handled by client, nothing to do here
-        console.log('✅ Redirigiendo a Django focused_take...');
-      } else if (result.method === 'react') {
-        // React modal will be shown by onFallback callback
-        console.log('✅ Usando React Assessment Modal...');
+      // For hybrid system: redirect to Django focused_take
+      if (assessmentUrl.includes('focused-take')) {
+        // Create return URL with patient context
+        const returnUrl = `${window.location.origin}/hubs/expedix/patients/${patient.id}`;
+        const urlWithReturn = `${assessmentUrl}?return_url=${encodeURIComponent(returnUrl)}`;
+        
+        window.location.href = urlWithReturn;
+      } else {
+        // Fallback to React modal (if implemented)
+        console.log('🔄 Fallback activado: usando React Assessment Modal...');
+        setShowAssessment(true);
       }
       
     } catch (error) {
@@ -160,7 +149,7 @@ export default function ClinimetrixScaleSelector({
       
       const assessmentData = {
         assessmentId: results.assessmentId,
-        templateId: selectedScale?.templateId || '',
+        templateId: selectedScale?.id || '',
         scaleName: selectedScale?.name || '',
         scaleAbbreviation: selectedScale?.abbreviation,
         results: {
@@ -235,15 +224,9 @@ export default function ClinimetrixScaleSelector({
     setSelectedScale(null);
   };
 
-  const getCategoryColor = (category: string) => {
-    const colors: { [key: string]: string } = {
-      'Ansiedad': 'bg-yellow-50 text-yellow-700 border-yellow-200',
-      'Depresión': 'bg-blue-50 text-blue-700 border-blue-200',
-      'Esquizofrenia y Trastornos Psicóticos': 'bg-purple-50 text-purple-700 border-purple-200',
-      'Trastornos del Sueño': 'bg-green-50 text-green-700 border-green-200',
-      'general': 'bg-gray-50 text-gray-700 border-gray-200'
-    };
-    return colors[category] || colors['general'];
+  // Category color now comes from the presenter in the ViewModel
+  const getCategoryColor = (scale: ScaleViewModel) => {
+    return scale.ui.color || 'bg-gray-50 text-gray-700 border-gray-200';
   };
 
   if (loading) {
@@ -255,10 +238,30 @@ export default function ClinimetrixScaleSelector({
     );
   }
 
+  if (error || assessmentError) {
+    return (
+      <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+        <div className="flex items-center">
+          <XMarkIcon className="h-5 w-5 text-red-400 mr-2" />
+          <h3 className="text-sm font-medium text-red-800">Error al cargar escalas</h3>
+        </div>
+        <p className="text-sm text-red-700 mt-1">
+          {error || assessmentError}
+        </p>
+        <button
+          onClick={onClose}
+          className="mt-3 text-sm text-red-800 underline hover:text-red-900"
+        >
+          Cerrar
+        </button>
+      </div>
+    );
+  }
+
   if (showAssessment && selectedScale) {
     return (
       <ClinimetrixProAssessmentModal
-        templateId={selectedScale.templateId}
+        templateId={selectedScale.id}
         scaleName={selectedScale.name}
         scaleAbbreviation={selectedScale.abbreviation}
         onComplete={handleAssessmentComplete}
@@ -302,7 +305,7 @@ export default function ClinimetrixScaleSelector({
           type="text"
           placeholder="Buscar escalas por nombre, abreviación o categoría..."
           value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
+          onChange={(e) => handleSearchChange(e.target.value)}
           className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
         />
       </div>
@@ -333,11 +336,11 @@ export default function ClinimetrixScaleSelector({
           </div>
         ) : (
           filteredScales.map((scale) => {
-            const isFavorite = favorites.includes(scale.templateId);
+            const isFavorite = isScaleFavorite(scale.id);
             
             return (
               <div
-                key={scale.templateId}
+                key={scale.id}
                 className="border border-gray-200 rounded-lg p-4 hover:border-purple-400 hover:shadow-md transition-all cursor-pointer group"
                 onClick={() => handleSelectScale(scale)}
               >
@@ -347,12 +350,16 @@ export default function ClinimetrixScaleSelector({
                       {isFavorite && (
                         <StarSolidIcon className="h-4 w-4 text-yellow-500" />
                       )}
+                      <span className="text-lg mr-1">{scale.ui.icon}</span>
                       <h3 className="font-semibold text-gray-900 group-hover:text-purple-700">
                         {scale.name}
                       </h3>
-                      {scale.abbreviation && (
-                        <span className="text-xs font-mono text-purple-600 bg-purple-50 px-2 py-0.5 rounded">
-                          {scale.abbreviation}
+                      <span className="text-xs font-mono text-purple-600 bg-purple-50 px-2 py-0.5 rounded">
+                        {scale.abbreviation}
+                      </span>
+                      {scale.isFeatured && (
+                        <span className="text-xs bg-yellow-100 text-yellow-800 px-2 py-0.5 rounded">
+                          Destacada
                         </span>
                       )}
                     </div>
@@ -362,16 +369,21 @@ export default function ClinimetrixScaleSelector({
                     </p>
                     
                     <div className="flex items-center gap-4 text-xs text-gray-500">
-                      <span className={`px-2 py-1 rounded-full border ${getCategoryColor(scale.category)}`}>
+                      <span className={`px-2 py-1 rounded-full border ${getCategoryColor(scale)}`}>
                         {scale.category}
                       </span>
                       <span className="flex items-center gap-1">
                         <ClockIcon className="h-3 w-3" />
-                        {scale.administrationTime || '5-10'} min
+                        {scale.estimatedTime}
                       </span>
                       <span>
-                        {scale.totalItems || 'N/A'} ítems
+                        {scale.totalItems} ítems
                       </span>
+                      {scale.hasSubscales && (
+                        <span className="text-purple-600">
+                          {scale.subscaleCount} subscalas
+                        </span>
+                      )}
                     </div>
                   </div>
                   
@@ -379,7 +391,7 @@ export default function ClinimetrixScaleSelector({
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
-                        toggleFavorite(scale.templateId);
+                        toggleFavorite(scale.id);
                       }}
                       className="p-1 hover:bg-gray-100 rounded transition-colors"
                     >

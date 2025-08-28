@@ -236,8 +236,8 @@ export default function ResourcesPage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Resources - Biblioteca de Documentos"
-        description="Gestiona y organiza tus recursos médicos y educativos"
+        title="Resources"
+        description="Gestiona, organiza y envía tus recursos médicos y educativos"
         icon={DocumentTextIcon}
         iconColor="text-blue-600"
         actions={[

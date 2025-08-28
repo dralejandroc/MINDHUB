@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { PageHeader } from '@/components/layout/PageHeader';
 import { 
   DocumentChartBarIcon,
   ClockIcon,
@@ -336,28 +337,23 @@ export default function ClinimetrixPage() {
 
   return (
     <div className="space-y-6">
-      {/* Compact Header - MindHub Style */}
-      <div className="bg-white rounded-lg shadow-sm border border-purple-100 p-3 mb-4">
-        <div className="flex items-center justify-between">
+      <PageHeader
+        title="ClinimetrixPro"
+        description="Evaluaciones y escalas clinimétricas automatizadas científicamente validadas"
+        icon={DocumentChartBarIcon}
+        actions={
           <div className="flex items-center space-x-2">
-            <DocumentChartBarIcon className="h-5 w-5 text-purple-600" />
-            <div>
-              <h1 className="text-lg font-bold text-dark-green">Clinimetrix - Escalas Clínicas</h1>
-              <p className="text-xs text-gray-600">Evaluaciones psicológicas y escalas científicamente validadas</p>
-            </div>
-          </div>
-          <div className="flex items-center space-x-2">
-            <Button variant="outline" size="sm" className="h-8 px-2 text-xs">
-              <Cog6ToothIcon className="h-3 w-3 mr-1" />
-              Config
+            <Button variant="outline" size="sm">
+              <Cog6ToothIcon className="h-4 w-4 mr-1" />
+              Configuración
             </Button>
-            <Button variant="primary" size="sm" className="h-8 px-2 text-xs bg-purple-600 hover:bg-purple-700">
-              <BeakerIcon className="h-3 w-3 mr-1" />
+            <Button variant="primary" size="sm" className="bg-purple-600 hover:bg-purple-700">
+              <BeakerIcon className="h-4 w-4 mr-1" />
               Nueva Evaluación
             </Button>
           </div>
-        </div>
-      </div>
+        }
+      />
 
       {/* Search Bar - Compact */}
       <div className="bg-white p-3 rounded-xl shadow-lg border border-purple-100">

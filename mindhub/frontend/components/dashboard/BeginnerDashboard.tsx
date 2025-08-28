@@ -229,11 +229,11 @@ export function BeginnerDashboard({ onNavigate }: BeginnerDashboardProps) {
     <div className="space-y-6">
       {/* Welcome Header with Date */}
       <div className="text-center py-4">
-        <h1 className="text-2xl font-bold text-gray-900 mb-2">
-          Dashboard Clínico - {isClient ? new Date().toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }) : ''}
+        <h1 className="text-xl font-bold text-gray-900 mb-2">
+          Dashboard
         </h1>
-        <p className="text-sm text-gray-600 max-w-2xl mx-auto">
-          Resumen ejecutivo de tu práctica clínica con métricas clave y agenda del día
+        <p className="text-base text-gray-600 max-w-2xl mx-auto">
+          {isClient ? new Date().toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }) : ''}
         </p>
       </div>
 

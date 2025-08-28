@@ -46,7 +46,7 @@ export default function FormXPage() {
       case 'assignments':
         return 'Gestión de Asignaciones';
       default:
-        return 'FormX - Generador de Formularios';
+        return 'FormX';
     }
   };
 
@@ -65,7 +65,7 @@ export default function FormXPage() {
       case 'assignments':
         return 'Gestiona las asignaciones de formularios y tokens de acceso';
       default:
-        return 'Sistema completo para crear y gestionar formularios médicos personalizados';
+        return 'Sistema para crear y gestionar formularios, encuestas y consentimientos médicos personalizados';
     }
   };
 

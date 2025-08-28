@@ -32,11 +32,11 @@ export function PageHeader({
             </div>
           )}
           <div className="flex-1 min-w-0">
-            <h1 className="text-2xl font-bold text-gray-900 sm:text-3xl">
+            <h1 className="text-xl font-bold text-gray-900 sm:text-2xl">
               {title}
             </h1>
             {description && (
-              <p className="mt-2 text-lg text-gray-600">
+              <p className="mt-2 text-base text-gray-600">
                 {description}
               </p>
             )}

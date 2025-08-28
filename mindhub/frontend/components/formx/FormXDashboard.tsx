@@ -38,7 +38,6 @@ export function FormXDashboard({ onNavigate }: FormXDashboardProps) {
   
   const [recentTemplates, setRecentTemplates] = useState<FormXTemplate[]>([]);
   const [loading, setLoading] = useState(true);
-  const [connectionStatus, setConnectionStatus] = useState<'checking' | 'connected' | 'error'>('checking');
 
   useEffect(() => {
     loadDashboardData();
@@ -47,30 +46,18 @@ export function FormXDashboard({ onNavigate }: FormXDashboardProps) {
   const loadDashboardData = async () => {
     try {
       setLoading(true);
-      setConnectionStatus('checking');
-
-      // Test connection to Django backend
-      // const isConnected = await FormXDjangoClient.testConnection();
-      // if (!isConnected) {
-      //   setConnectionStatus('error');
-      //   toast.error('No se puede conectar con el backend FormX Django');
-      //   return;
-      // }
-      
-      setConnectionStatus('connected');
 
       // Load dashboard stats
       try {
-        // const dashboardStats = await FormXDjangoClient.getDashboardStats();
-        // setStats(dashboardStats);
+        // API calls will go here when implemented
       } catch (error) {
         console.warn('Error loading stats, using defaults:', error);
       }
 
-      // Load recent templates
+      // Load recent templates  
       try {
-        // const catalog = await FormXDjangoClient.getTemplatesCatalog();
-        // setRecentTemplates(catalog.templates.slice(0, 5));
+        // API calls will go here when implemented
+        setRecentTemplates([]);
       } catch (error) {
         console.warn('Error loading templates, using empty array:', error);
         setRecentTemplates([]);
@@ -78,7 +65,6 @@ export function FormXDashboard({ onNavigate }: FormXDashboardProps) {
 
     } catch (error) {
       console.error('Error loading dashboard data:', error);
-      setConnectionStatus('error');
       toast.error('Error al cargar datos del dashboard');
     } finally {
       setLoading(false);
@@ -120,19 +106,8 @@ export function FormXDashboard({ onNavigate }: FormXDashboardProps) {
 
   return (
     <div className="space-y-6">
-      {/* Connection Status */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center space-x-2">
-          <div className={`w-2 h-2 rounded-full ${
-            connectionStatus === 'connected' ? 'bg-green-500' : 
-            connectionStatus === 'error' ? 'bg-red-500' : 'bg-yellow-500'
-          }`} />
-          <span className="text-sm text-gray-600">
-            {connectionStatus === 'connected' ? 'Conectado a Django FormX' : 
-             connectionStatus === 'error' ? 'Error de conexión' : 'Verificando conexión...'}
-          </span>
-        </div>
-        
+      {/* Header Actions */}
+      <div className="flex justify-end">
         <Button
           onClick={loadDashboardData}
           variant="outline"
@@ -316,43 +291,6 @@ export function FormXDashboard({ onNavigate }: FormXDashboardProps) {
         )}
       </Card>
 
-      {/* Integration Status */}
-      <Card className="p-6">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">Estado de Integraciones</h3>
-        <div className="space-y-3">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-2">
-              <div className="w-2 h-2 bg-green-500 rounded-full" />
-              <span className="text-sm text-gray-700">Django Backend FormX</span>
-            </div>
-            <span className="text-sm font-medium text-green-600">Conectado</span>
-          </div>
-          
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-2">
-              <div className="w-2 h-2 bg-green-500 rounded-full" />
-              <span className="text-sm text-gray-700">Supabase PostgreSQL</span>
-            </div>
-            <span className="text-sm font-medium text-green-600">Activo</span>
-          </div>
-          
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-2">
-              <div className="w-2 h-2 bg-green-500 rounded-full" />
-              <span className="text-sm text-gray-700">Auto-sync Expedix</span>
-            </div>
-            <span className="text-sm font-medium text-green-600">Habilitado</span>
-          </div>
-          
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-2">
-              <div className="w-2 h-2 bg-blue-500 rounded-full" />
-              <span className="text-sm text-gray-700">Email Service</span>
-            </div>
-            <span className="text-sm font-medium text-blue-600">Configurado</span>
-          </div>
-        </div>
-      </Card>
     </div>
   );
 }

@@ -94,8 +94,8 @@ export function AdvancedDashboard({ onCustomizeLayout }: AdvancedDashboardProps)
       {/* Header with Customization */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Panel de Control</h1>
-          <p className="text-gray-600">Acceso rápido a tus herramientas principales</p>
+          <h1 className="text-xl font-bold text-gray-900">Dashboard</h1>
+          <p className="text-base text-gray-600">{new Date().toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}</p>
         </div>
         <Button
           onClick={() => setShowCustomization(!showCustomization)}

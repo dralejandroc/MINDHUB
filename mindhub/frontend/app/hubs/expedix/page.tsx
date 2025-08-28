@@ -128,43 +128,6 @@ function ExpedixContent() {
   };
 
 
-  // Get page header info based on current view and patient
-  const getPageHeaderInfo = () => {
-    if (viewMode === 'expedient' && selectedPatient) {
-      switch (detailView) {
-        case 'dashboard':
-          return {
-            title: `Expediente - ${selectedPatient.first_name} ${selectedPatient.paternal_last_name}`,
-            description: 'Historial clínico completo y timeline del paciente',
-            icon: FolderOpenIcon,
-            iconColor: 'text-primary-600'
-          };
-        case 'consultation':
-          return {
-            title: `${selectedPatient.first_name} ${selectedPatient.paternal_last_name}`,
-            description: `Expediente médico • ${selectedPatient.age} años`,
-            icon: UserIcon,
-            iconColor: 'text-primary-600'
-          };
-        case 'assessment':
-          return {
-            title: `Evaluación - ${selectedPatient.first_name} ${selectedPatient.paternal_last_name}`,
-            description: 'Escalas psicológicas y evaluaciones clínicas',
-            icon: DocumentTextIcon,
-            iconColor: 'text-purple-600'
-          };
-      }
-    }
-    
-    return {
-      title: 'Expedix - Sistema de Expedientes',
-      description: 'Gestión completa de pacientes y expedientes médicos',
-      icon: UserGroupIcon,
-      iconColor: 'text-primary-600'
-    };
-  };
-
-  const headerInfo = getPageHeaderInfo();
 
   return (
     <div className="space-y-6">
@@ -175,34 +138,27 @@ function ExpedixContent() {
         </div>
       )}
 
-      {/* Compact Header - Agenda Style */}
-      <div className="bg-white rounded-lg shadow-sm border border-primary-100 p-3 mb-4">
-        <div className="flex items-center justify-between">
+      <PageHeader
+        title="Expedix"
+        icon={UserGroupIcon}
+        actions={
           <div className="flex items-center space-x-2">
             {viewMode === 'expedient' && selectedPatient && (
-              <Button onClick={handleBackToList} variant="outline" size="sm" className="h-8 px-2 text-xs mr-2">
+              <Button onClick={handleBackToList} variant="outline" size="sm">
                 ← Volver
               </Button>
             )}
-            <UserGroupIcon className="h-5 w-5 text-primary-600" />
-            <h1 className="text-lg font-bold text-dark-green">
-              {viewMode === 'expedient' && selectedPatient 
-                ? `${selectedPatient.first_name} ${selectedPatient.paternal_last_name}` 
-                : 'Expedix - Sistema de Expedientes'}
-            </h1>
-          </div>
-          <div className="flex items-center space-x-2">
-            <Button onClick={handleSettings} variant="outline" size="sm" className="h-8 px-2 text-xs">
-              <UserIcon className="h-3 w-3 mr-1" />
-              Config
+            <Button onClick={handleSettings} variant="outline" size="sm">
+              <UserIcon className="h-4 w-4 mr-1" />
+              Configuración
             </Button>
-            <Button onClick={handleNewPatient} variant="primary" size="sm" className="h-8 px-2 text-xs">
-              <PlusIcon className="h-3 w-3 mr-1" />
+            <Button onClick={handleNewPatient} variant="primary" size="sm">
+              <PlusIcon className="h-4 w-4 mr-1" />
               Nuevo Paciente
             </Button>
           </div>
-        </div>
-      </div>
+        }
+      />
       
       {/* View Mode Selector with Search - Only show when not in expedient detail */}
       {viewMode !== 'expedient' && (

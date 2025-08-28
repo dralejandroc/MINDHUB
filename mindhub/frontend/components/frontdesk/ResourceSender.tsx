@@ -1,5 +1,5 @@
 'use client';
-// 🚀 FORCE REBUILD: 2025-08-26 - Removed ALL mock data and connected to real Django backend APIs
+// 🚀 REFACTORED: Clean Architecture implementation for FrontDesk ResourceSender
 
 import { useState, useEffect } from 'react';
 import { 
@@ -16,14 +16,12 @@ import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
+import { usePatientManagement } from '@/src/modules/frontdesk/hooks/usePatientManagement';
+import type { PatientSearchRequest } from '@/src/modules/frontdesk/usecases/ManagePatientCheckInUseCase';
 
-interface Patient {
-  id: string;
-  first_name: string;
-  paternal_last_name: string;
-  maternal_last_name?: string;
-  cell_phone: string;
-  email?: string;
+interface ResourceSenderProps {
+  clinicId?: string;
+  workspaceId?: string;
 }
 
 interface Resource {
@@ -46,17 +44,21 @@ interface SendingData {
   trackDelivery: boolean;
 }
 
-export default function ResourceSender() {
+export default function ResourceSender({ 
+  clinicId, 
+  workspaceId 
+}: ResourceSenderProps = {}) {
   const [currentStep, setCurrentStep] = useState<'patient' | 'resources' | 'delivery'>('patient');
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null);
-  const [patients, setPatients] = useState<Patient[]>([]);
   const [availableResources, setAvailableResources] = useState<Resource[]>([]);
   const [selectedResources, setSelectedResources] = useState<string[]>([]);
   const [resourceSearch, setResourceSearch] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [loading, setLoading] = useState(false);
   const [processing, setProcessing] = useState(false);
+  
+  // Use Clean Architecture hook
+  const patientManagement = usePatientManagement(clinicId, workspaceId);
 
   const [sendingData, setSendingData] = useState<SendingData>({
     patientId: '',
@@ -103,9 +105,14 @@ export default function ResourceSender() {
 
   useEffect(() => {
     if (searchTerm.length >= 2) {
-      searchPatients();
+      const searchRequest: PatientSearchRequest = {
+        searchTerm,
+        clinicId,
+        workspaceId,
+      };
+      patientManagement.actions.searchPatients(searchRequest);
     } else {
-      setPatients([]);
+      patientManagement.actions.clearSearchResults();
     }
   }, [searchTerm]);
 
@@ -114,30 +121,16 @@ export default function ResourceSender() {
   }, []);
 
   useEffect(() => {
-    if (selectedPatient) {
-      setSendingData(prev => ({ ...prev, patientId: selectedPatient.id }));
+    if (patientManagement.state.selectedPatient) {
+      setSendingData(prev => ({ ...prev, patientId: patientManagement.state.selectedPatient!.id }));
     }
-  }, [selectedPatient]);
+  }, [patientManagement.state.selectedPatient]);
 
   useEffect(() => {
     setSendingData(prev => ({ ...prev, resourceIds: selectedResources }));
   }, [selectedResources]);
 
-  const searchPatients = async () => {
-    try {
-      setLoading(true);
-      const response = await fetch(`/api/expedix/patients?search=${encodeURIComponent(searchTerm)}`);
-      const data = await response.json();
-      
-      if (data.patients) {
-        setPatients(data.patients.slice(0, 8));
-      }
-    } catch (error) {
-      console.error('Error searching patients:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
+  // Removed - now handled by Clean Architecture hook
 
   const loadAvailableResources = async () => {
     try {
@@ -175,8 +168,8 @@ export default function ResourceSender() {
     }
   };
 
-  const handlePatientSelect = (patient: Patient) => {
-    setSelectedPatient(patient);
+  const handlePatientSelect = (patientId: string) => {
+    patientManagement.actions.selectPatient(patientId);
     setCurrentStep('resources');
   };
 
@@ -250,7 +243,7 @@ export default function ResourceSender() {
 
   const resetForm = () => {
     setCurrentStep('patient');
-    setSelectedPatient(null);
+    patientManagement.actions.clearSelectedPatient();
     setSearchTerm('');
     setSelectedResources([]);
     setResourceSearch('');
@@ -280,28 +273,28 @@ export default function ResourceSender() {
           <MagnifyingGlassIcon className="h-5 w-5 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
         </div>
 
-        {loading && (
+        {patientManagement.state.searchLoading && (
           <div className="mt-4 flex items-center justify-center">
             <LoadingSpinner size="sm" />
             <span className="ml-2 text-gray-600">Buscando...</span>
           </div>
         )}
 
-        {patients.length > 0 && (
+        {patientManagement.state.searchResults.length > 0 && (
           <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-3 max-h-96 overflow-y-auto">
-            {patients.map((patient) => (
+            {patientManagement.state.searchResults.map((patient) => (
               <button
                 key={patient.id}
-                onClick={() => handlePatientSelect(patient)}
+                onClick={() => handlePatientSelect(patient.id)}
                 className="p-4 text-left border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
               >
                 <div className="flex items-center">
                   <UserIcon className="h-5 w-5 text-gray-400 mr-3" />
                   <div>
                     <div className="font-medium text-gray-900">
-                      {patient.first_name} {patient.paternal_last_name} {patient.maternal_last_name || ''}
+                      {patient.fullName}
                     </div>
-                    <div className="text-sm text-gray-600">{patient.cell_phone}</div>
+                    <div className="text-sm text-gray-600">{patient.phoneNumber}</div>
                     {patient.email && (
                       <div className="text-sm text-gray-500">{patient.email}</div>
                     )}
@@ -324,16 +317,16 @@ export default function ResourceSender() {
         </Button>
       </div>
 
-      {selectedPatient && (
+      {patientManagement.state.selectedPatient && (
         <Card className="p-4 bg-blue-50 border-blue-200">
           <div className="flex items-center">
             <CheckCircleIcon className="h-5 w-5 text-blue-600 mr-2" />
             <div>
               <div className="font-medium text-blue-900">
-                {selectedPatient.first_name} {selectedPatient.paternal_last_name}
+                {patientManagement.state.selectedPatient.fullName}
               </div>
               <div className="text-sm text-blue-700">
-                {selectedPatient.cell_phone} {selectedPatient.email && `• ${selectedPatient.email}`}
+                {patientManagement.state.selectedPatient.phoneNumber} {patientManagement.state.selectedPatient.email && `• ${patientManagement.state.selectedPatient.email}`}
               </div>
             </div>
           </div>
@@ -456,10 +449,10 @@ export default function ResourceSender() {
         <Card className="p-4 bg-green-50 border-green-200">
           <h5 className="font-medium text-green-900 mb-2">Paciente</h5>
           <div className="text-sm text-green-800">
-            {selectedPatient?.first_name} {selectedPatient?.paternal_last_name}
+            {patientManagement.state.selectedPatient?.fullName}
           </div>
           <div className="text-sm text-green-700">
-            {selectedPatient?.cell_phone} {selectedPatient?.email && `• ${selectedPatient.email}`}
+            {patientManagement.state.selectedPatient?.phoneNumber} {patientManagement.state.selectedPatient?.email && `• ${patientManagement.state.selectedPatient.email}`}
           </div>
         </Card>
 
@@ -600,7 +593,7 @@ export default function ResourceSender() {
           const IconComponent = step.icon;
           const isActive = currentStep === step.key;
           const isCompleted = 
-            (step.key === 'patient' && selectedPatient) ||
+            (step.key === 'patient' && patientManagement.state.selectedPatient) ||
             (step.key === 'resources' && selectedResources.length > 0) ||
             (step.key === 'delivery' && currentStep === 'delivery');
 

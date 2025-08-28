@@ -118,7 +118,7 @@ export default function FinancePage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Finance - Gestión Financiera"
+        title="Finance"
         description="Control integral de ingresos, gastos y rendimiento financiero"
         icon={CurrencyDollarIcon}
         iconColor="text-secondary-600"

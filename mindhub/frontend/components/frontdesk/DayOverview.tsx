@@ -13,25 +13,21 @@ import {
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
+import { useAppointmentFlow } from '@/src/modules/frontdesk/hooks/useAppointmentFlow';
+import { usePatientManagement } from '@/src/modules/frontdesk/hooks/usePatientManagement';
 
 interface DayOverviewProps {
-  stats: {
+  clinicId?: string;
+  workspaceId?: string;
+  professionalId?: string;
+  onRefresh?: () => void;
+  stats?: {
     appointments: number;
     payments: number;
     pendingPayments: number;
     resourcesSent: number;
     patients: number;
   };
-  onRefresh: () => void;
-}
-
-interface TodaysAppointment {
-  id: string;
-  patientName: string;
-  time: string;
-  status: 'scheduled' | 'in-progress' | 'completed' | 'cancelled';
-  paymentStatus: 'paid' | 'pending' | 'partial';
-  amount: number;
 }
 
 interface PendingTask {
@@ -43,52 +39,58 @@ interface PendingTask {
   dueTime?: string;
 }
 
-export default function DayOverview({ stats, onRefresh }: DayOverviewProps) {
-  const [appointments, setAppointments] = useState<TodaysAppointment[]>([]);
+export default function DayOverview({ 
+  clinicId, 
+  workspaceId, 
+  professionalId, 
+  onRefresh 
+}: DayOverviewProps) {
   const [pendingTasks, setPendingTasks] = useState<PendingTask[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
+  const [tasksLoading, setTasksLoading] = useState(false);
+  
+  // Use Clean Architecture hooks
+  const appointmentFlow = useAppointmentFlow(clinicId, workspaceId, professionalId);
+  const patientManagement = usePatientManagement(clinicId, workspaceId);
 
   useEffect(() => {
-    loadTodaysData();
+    loadPendingTasks();
   }, []);
 
-  const loadTodaysData = async () => {
+  const loadPendingTasks = async () => {
     try {
-      const [appointmentsRes, tasksRes] = await Promise.all([
-        fetch(`/api/frontdesk/appointments/today`),
-        fetch(`/api/frontdesk/tasks/pending`)
-      ]);
-
-      const appointmentsData = await appointmentsRes.json();
-      const tasksData = await tasksRes.json();
-
-      if (appointmentsData.success && Array.isArray(appointmentsData.data)) {
-        setAppointments(appointmentsData.data);
-      } else {
-        setAppointments([]);
-      }
-
-      if (tasksData.success && Array.isArray(tasksData.data)) {
-        setPendingTasks(tasksData.data);
-      } else {
-        setPendingTasks([]);
-      }
+      setTasksLoading(true);
+      // Mock pending tasks for now - would connect to real API
+      const mockTasks: PendingTask[] = [
+        {
+          id: '1',
+          type: 'payment',
+          description: 'Pago pendiente de consulta',
+          patientName: 'Juan Pérez',
+          priority: 'high',
+          dueTime: '14:00'
+        },
+        {
+          id: '2',
+          type: 'followup',
+          description: 'Seguimiento post-consulta',
+          patientName: 'María García',
+          priority: 'medium'
+        }
+      ];
+      setPendingTasks(mockTasks);
     } catch (error) {
-      console.error('Error loading todays data:', error);
-      // Set empty arrays as fallback
-      setAppointments([]);
+      console.error('Error loading pending tasks:', error);
       setPendingTasks([]);
     } finally {
-      setLoading(false);
+      setTasksLoading(false);
     }
   };
 
   const handleRefresh = async () => {
-    setRefreshing(true);
-    await loadTodaysData();
-    onRefresh();
-    setRefreshing(false);
+    await appointmentFlow.actions.refreshDashboard();
+    await patientManagement.actions.refreshWaitingRoom();
+    await loadPendingTasks();
+    onRefresh?.();
   };
 
   const getStatusColor = (status: string) => {
@@ -129,7 +131,7 @@ export default function DayOverview({ stats, onRefresh }: DayOverviewProps) {
     }
   };
 
-  if (loading) {
+  if (appointmentFlow.state.dashboardLoading) {
     return (
       <div className="flex items-center justify-center py-12">
         <LoadingSpinner size="lg" />
@@ -137,6 +139,9 @@ export default function DayOverview({ stats, onRefresh }: DayOverviewProps) {
       </div>
     );
   }
+
+  const dashboard = appointmentFlow.state.dashboard;
+  const appointments = appointmentFlow.state.appointments;
 
   return (
     <div className="space-y-6">
@@ -152,11 +157,11 @@ export default function DayOverview({ stats, onRefresh }: DayOverviewProps) {
         </div>
         <Button
           onClick={handleRefresh}
-          disabled={refreshing}
+          disabled={appointmentFlow.state.loading}
           variant="outline"
           size="sm"
         >
-          {refreshing ? (
+          {appointmentFlow.state.loading ? (
             <LoadingSpinner size="sm" className="mr-2" />
           ) : (
             <ArrowPathIcon className="h-4 w-4 mr-2" />
@@ -189,26 +194,13 @@ export default function DayOverview({ stats, onRefresh }: DayOverviewProps) {
                           {appointment.patientName}
                         </h5>
                         <span className="text-sm font-medium text-gray-600">
-                          {appointment.time}
+                          {appointment.appointmentTime}
                         </span>
                       </div>
                       
                       <div className="flex items-center space-x-2">
-                        <span className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(appointment.status)}`}>
-                          {appointment.status === 'scheduled' ? 'Programada' :
-                           appointment.status === 'in-progress' ? 'En curso' :
-                           appointment.status === 'completed' ? 'Completada' :
-                           'Cancelada'}
-                        </span>
-                        
-                        <span className={`px-2 py-1 text-xs font-medium rounded-full ${getPaymentStatusColor(appointment.paymentStatus)}`}>
-                          {appointment.paymentStatus === 'paid' ? 'Pagado' :
-                           appointment.paymentStatus === 'partial' ? 'Parcial' :
-                           'Pendiente'}
-                        </span>
-                        
-                        <span className="text-sm font-semibold text-green-600">
-                          ${typeof appointment.amount === 'number' ? appointment.amount.toLocaleString() : '0'}
+                        <span className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusBadgeColor(appointment.statusColor)}`}>
+                          {appointment.statusDisplay || appointment.status}
                         </span>
                       </div>
                     </div>
@@ -279,27 +271,39 @@ export default function DayOverview({ stats, onRefresh }: DayOverviewProps) {
         <h4 className="text-lg font-semibold text-gray-900 mb-4">Resumen del Día</h4>
         <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
           <div className="text-center">
-            <div className="text-2xl font-bold text-blue-600">{stats.appointments}</div>
+            <div className="text-2xl font-bold text-blue-600">{dashboard?.todayStats?.total || 0}</div>
             <div className="text-sm text-gray-600">Citas</div>
           </div>
           <div className="text-center">
-            <div className="text-2xl font-bold text-green-600">{stats.payments}</div>
-            <div className="text-sm text-gray-600">Cobros</div>
+            <div className="text-2xl font-bold text-green-600">{dashboard?.todayStats?.completed || 0}</div>
+            <div className="text-sm text-gray-600">Completadas</div>
           </div>
           <div className="text-center">
-            <div className="text-2xl font-bold text-orange-600">{stats.pendingPayments}</div>
+            <div className="text-2xl font-bold text-orange-600">{dashboard?.todayStats?.inProgress || 0}</div>
+            <div className="text-sm text-gray-600">En Curso</div>
+          </div>
+          <div className="text-center">
+            <div className="text-2xl font-bold text-purple-600">{patientManagement.state.waitingRoom?.totalWaiting || 0}</div>
+            <div className="text-sm text-gray-600">En Espera</div>
+          </div>
+          <div className="text-center">
+            <div className="text-2xl font-bold text-indigo-600">{dashboard?.todayStats?.scheduled || 0}</div>
             <div className="text-sm text-gray-600">Pendientes</div>
-          </div>
-          <div className="text-center">
-            <div className="text-2xl font-bold text-purple-600">{stats.resourcesSent}</div>
-            <div className="text-sm text-gray-600">Recursos</div>
-          </div>
-          <div className="text-center">
-            <div className="text-2xl font-bold text-indigo-600">{stats.patients}</div>
-            <div className="text-sm text-gray-600">Pacientes</div>
           </div>
         </div>
       </Card>
     </div>
   );
+}
+
+function getStatusBadgeColor(statusColor: 'green' | 'yellow' | 'red' | 'blue' | 'gray' | 'orange'): string {
+  const colors = {
+    green: 'text-green-800 bg-green-100',
+    yellow: 'text-yellow-800 bg-yellow-100', 
+    red: 'text-red-800 bg-red-100',
+    blue: 'text-blue-800 bg-blue-100',
+    gray: 'text-gray-800 bg-gray-100',
+    orange: 'text-orange-800 bg-orange-100'
+  };
+  return colors[statusColor] || 'text-gray-600 bg-gray-100';
 }

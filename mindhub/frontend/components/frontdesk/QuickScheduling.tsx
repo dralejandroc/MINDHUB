@@ -14,18 +14,16 @@ import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
+import { usePatientManagement } from '@/src/modules/frontdesk/hooks/usePatientManagement';
+import { useAppointmentFlow } from '@/src/modules/frontdesk/hooks/useAppointmentFlow';
+import type { PatientSearchRequest } from '@/src/modules/frontdesk/usecases/ManagePatientCheckInUseCase';
+import type { StartConsultationRequest } from '@/src/modules/frontdesk/usecases/ManageAppointmentFlowUseCase';
 
 interface QuickSchedulingProps {
+  clinicId?: string;
+  workspaceId?: string;
+  professionalId?: string;
   onAppointmentScheduled: () => void;
-}
-
-interface Patient {
-  id: string;
-  first_name: string;
-  paternal_last_name: string;
-  maternal_last_name?: string;
-  cell_phone: string;
-  email?: string;
 }
 
 interface TimeSlot {
@@ -44,16 +42,23 @@ interface AppointmentData {
   reminderEnabled: boolean;
 }
 
-export default function QuickScheduling({ onAppointmentScheduled }: QuickSchedulingProps) {
+export default function QuickScheduling({ 
+  clinicId, 
+  workspaceId, 
+  professionalId, 
+  onAppointmentScheduled 
+}: QuickSchedulingProps) {
   const [currentStep, setCurrentStep] = useState<'patient' | 'datetime' | 'details'>('patient');
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null);
-  const [patients, setPatients] = useState<Patient[]>([]);
   const [selectedDate, setSelectedDate] = useState('');
   const [availableSlots, setAvailableSlots] = useState<TimeSlot[]>([]);
   const [loading, setLoading] = useState(false);
   const [processing, setProcessing] = useState(false);
   const [showNewPatientForm, setShowNewPatientForm] = useState(false);
+  
+  // Use Clean Architecture hooks
+  const patientManagement = usePatientManagement(clinicId, workspaceId);
+  const appointmentFlow = useAppointmentFlow(clinicId, workspaceId, professionalId);
 
   // New patient form state
   const [newPatient, setNewPatient] = useState({
@@ -87,9 +92,14 @@ export default function QuickScheduling({ onAppointmentScheduled }: QuickSchedul
 
   useEffect(() => {
     if (searchTerm.length >= 2) {
-      searchPatients();
+      const searchRequest: PatientSearchRequest = {
+        searchTerm,
+        clinicId,
+        workspaceId
+      };
+      patientManagement.actions.searchPatients(searchRequest);
     } else {
-      setPatients([]);
+      patientManagement.actions.clearSearchResults();
     }
   }, [searchTerm]);
 
@@ -125,21 +135,7 @@ export default function QuickScheduling({ onAppointmentScheduled }: QuickSchedul
     return dates;
   };
 
-  const searchPatients = async () => {
-    try {
-      setLoading(true);
-      const response = await fetch(`/api/expedix/patients?search=${encodeURIComponent(searchTerm)}`);
-      const data = await response.json();
-      
-      if (data.patients) {
-        setPatients(data.patients.slice(0, 8));
-      }
-    } catch (error) {
-      console.error('Error searching patients:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
+  // Removed - now handled by Clean Architecture hook
 
   const loadAvailableSlots = async (date: string) => {
     try {
@@ -170,9 +166,9 @@ export default function QuickScheduling({ onAppointmentScheduled }: QuickSchedul
     }
   };
 
-  const handlePatientSelect = (patient: Patient) => {
-    setSelectedPatient(patient);
-    setAppointmentData(prev => ({ ...prev, patientId: patient.id }));
+  const handlePatientSelect = (patientId: string) => {
+    patientManagement.actions.selectPatient(patientId);
+    setAppointmentData(prev => ({ ...prev, patientId }));
     setCurrentStep('datetime');
   };
 
@@ -194,6 +190,7 @@ export default function QuickScheduling({ onAppointmentScheduled }: QuickSchedul
     try {
       setProcessing(true);
       
+      // This would use a patient creation use case in full Clean Architecture
       const response = await fetch(`/api/expedix/patients`, {
         method: 'POST',
         headers: {
@@ -206,7 +203,8 @@ export default function QuickScheduling({ onAppointmentScheduled }: QuickSchedul
       
       if (data.success) {
         const createdPatient = data.data;
-        setSelectedPatient(createdPatient);
+        // Select the newly created patient
+        await patientManagement.actions.selectPatient(createdPatient.id);
         setAppointmentData(prev => ({ ...prev, patientId: createdPatient.id }));
         setShowNewPatientForm(false);
         setCurrentStep('datetime');
@@ -253,7 +251,7 @@ export default function QuickScheduling({ onAppointmentScheduled }: QuickSchedul
 
   const resetForm = () => {
     setCurrentStep('patient');
-    setSelectedPatient(null);
+    patientManagement.actions.clearSelectedPatient();
     setSearchTerm('');
     setSelectedDate('');
     setAvailableSlots([]);
@@ -296,28 +294,28 @@ export default function QuickScheduling({ onAppointmentScheduled }: QuickSchedul
           </Button>
         </div>
 
-        {loading && (
+        {patientManagement.state.searchLoading && (
           <div className="flex items-center justify-center py-4">
             <LoadingSpinner size="sm" />
             <span className="ml-2 text-gray-600">Buscando...</span>
           </div>
         )}
 
-        {patients.length > 0 && (
+        {patientManagement.state.searchResults.length > 0 && (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-96 overflow-y-auto">
-            {patients.map((patient) => (
+            {patientManagement.state.searchResults.map((patient) => (
               <button
                 key={patient.id}
-                onClick={() => handlePatientSelect(patient)}
+                onClick={() => handlePatientSelect(patient.id)}
                 className="p-4 text-left border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
               >
                 <div className="flex items-center">
                   <UserIcon className="h-5 w-5 text-gray-400 mr-3" />
                   <div>
                     <div className="font-medium text-gray-900">
-                      {patient.first_name} {patient.paternal_last_name} {patient.maternal_last_name || ''}
+                      {patient.fullName}
                     </div>
-                    <div className="text-sm text-gray-600">{patient.cell_phone}</div>
+                    <div className="text-sm text-gray-600">{patient.phoneNumber}</div>
                     {patient.email && (
                       <div className="text-sm text-gray-500">{patient.email}</div>
                     )}
@@ -453,15 +451,15 @@ export default function QuickScheduling({ onAppointmentScheduled }: QuickSchedul
         </Button>
       </div>
 
-      {selectedPatient && (
+      {patientManagement.state.selectedPatient && (
         <Card className="p-4 bg-blue-50 border-blue-200">
           <div className="flex items-center">
             <CheckCircleIcon className="h-5 w-5 text-blue-600 mr-2" />
             <div>
               <div className="font-medium text-blue-900">
-                {selectedPatient.first_name} {selectedPatient.paternal_last_name}
+                {patientManagement.state.selectedPatient.fullName}
               </div>
-              <div className="text-sm text-blue-700">{selectedPatient.cell_phone}</div>
+              <div className="text-sm text-blue-700">{patientManagement.state.selectedPatient.phoneNumber}</div>
             </div>
           </div>
         </Card>
@@ -537,7 +535,7 @@ export default function QuickScheduling({ onAppointmentScheduled }: QuickSchedul
           <div className="flex items-center">
             <UserIcon className="h-4 w-4 text-green-600 mr-2" />
             <span className="font-medium text-green-900">
-              {selectedPatient?.first_name} {selectedPatient?.paternal_last_name}
+              {patientManagement.state.selectedPatient?.fullName}
             </span>
           </div>
           <div className="flex items-center">
@@ -657,7 +655,7 @@ export default function QuickScheduling({ onAppointmentScheduled }: QuickSchedul
           const IconComponent = step.icon;
           const isActive = currentStep === step.key;
           const isCompleted = 
-            (step.key === 'patient' && selectedPatient) ||
+            (step.key === 'patient' && patientManagement.state.selectedPatient) ||
             (step.key === 'datetime' && appointmentData.time) ||
             (step.key === 'details' && currentStep === 'details');
 

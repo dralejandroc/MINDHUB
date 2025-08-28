@@ -20,17 +20,13 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import PatientServiceAssignment from '@/components/finance/PatientServiceAssignment';
+import { usePatientManagement } from '@/src/modules/frontdesk/hooks/usePatientManagement';
+import type { PatientSearchRequest } from '@/src/modules/frontdesk/usecases/ManagePatientCheckInUseCase';
 
 interface QuickPaymentProps {
+  clinicId?: string;
+  workspaceId?: string;
   onPaymentComplete: () => void;
-}
-
-interface Patient {
-  id: string;
-  first_name: string;
-  paternal_last_name: string;
-  maternal_last_name?: string;
-  cell_phone: string;
 }
 
 interface PendingPayment {
@@ -43,14 +39,18 @@ interface PendingPayment {
   type: 'consultation' | 'advance' | 'balance';
 }
 
-export default function QuickPayment({ onPaymentComplete }: QuickPaymentProps) {
+export default function QuickPayment({ 
+  clinicId, 
+  workspaceId, 
+  onPaymentComplete 
+}: QuickPaymentProps) {
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null);
-  const [patients, setPatients] = useState<Patient[]>([]);
   const [pendingPayments, setPendingPayments] = useState<PendingPayment[]>([]);
-  const [loading, setLoading] = useState(false);
   const [processing, setProcessing] = useState(false);
   const [showServiceAssignment, setShowServiceAssignment] = useState(false);
+  
+  // Use Clean Architecture hook
+  const patientManagement = usePatientManagement(clinicId, workspaceId);
   
   // Payment form state
   const [paymentData, setPaymentData] = useState({
@@ -79,33 +79,24 @@ export default function QuickPayment({ onPaymentComplete }: QuickPaymentProps) {
 
   useEffect(() => {
     if (searchTerm.length >= 2) {
-      searchPatients();
+      const searchRequest: PatientSearchRequest = {
+        searchTerm,
+        clinicId,
+        workspaceId
+      };
+      patientManagement.actions.searchPatients(searchRequest);
     } else {
-      setPatients([]);
+      patientManagement.actions.clearSearchResults();
     }
   }, [searchTerm]);
 
   useEffect(() => {
-    if (selectedPatient) {
-      loadPendingPayments(selectedPatient.id);
+    if (patientManagement.state.selectedPatient) {
+      loadPendingPayments(patientManagement.state.selectedPatient.id);
     }
-  }, [selectedPatient]);
+  }, [patientManagement.state.selectedPatient]);
 
-  const searchPatients = async () => {
-    try {
-      setLoading(true);
-      const response = await fetch(`/api/expedix/patients?search=${encodeURIComponent(searchTerm)}`);
-      const data = await response.json();
-      
-      if (data.patients) {
-        setPatients(data.patients.slice(0, 10)); // Limit to 10 results
-      }
-    } catch (error) {
-      console.error('Error searching patients:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
+  // Removed - now handled by Clean Architecture hook
 
   const loadPendingPayments = async (patientId: string) => {
     try {
@@ -120,10 +111,13 @@ export default function QuickPayment({ onPaymentComplete }: QuickPaymentProps) {
     }
   };
 
-  const handlePatientSelect = (patient: Patient) => {
-    setSelectedPatient(patient);
-    setSearchTerm(`${patient.first_name} ${patient.paternal_last_name}`);
-    setPatients([]);
+  const handlePatientSelect = (patientId: string) => {
+    patientManagement.actions.selectPatient(patientId);
+    const patient = patientManagement.state.searchResults.find(p => p.id === patientId);
+    if (patient) {
+      setSearchTerm(patient.fullName);
+      patientManagement.actions.clearSearchResults();
+    }
   };
 
   const handleConceptChange = (conceptId: string) => {
@@ -136,7 +130,7 @@ export default function QuickPayment({ onPaymentComplete }: QuickPaymentProps) {
   };
 
   const processPayment = async () => {
-    if (!selectedPatient || !paymentData.amount) {
+    if (!patientManagement.state.selectedPatient || !paymentData.amount) {
       alert('Por favor selecciona un paciente y monto');
       return;
     }
@@ -150,7 +144,7 @@ export default function QuickPayment({ onPaymentComplete }: QuickPaymentProps) {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          patientId: selectedPatient.id,
+          patientId: patientManagement.state.selectedPatient.id,
           amount: parseFloat(paymentData.amount),
           concept: paymentData.concept,
           paymentMethod: paymentData.paymentMethod,
@@ -177,7 +171,7 @@ export default function QuickPayment({ onPaymentComplete }: QuickPaymentProps) {
   };
 
   const resetForm = () => {
-    setSelectedPatient(null);
+    patientManagement.actions.clearSelectedPatient();
     setSearchTerm('');
     setPendingPayments([]);
     setPaymentData({
@@ -208,7 +202,7 @@ export default function QuickPayment({ onPaymentComplete }: QuickPaymentProps) {
       
       if (data.success) {
         alert('Pago pendiente registrado exitosamente');
-        loadPendingPayments(selectedPatient!.id);
+        loadPendingPayments(patientManagement.state.selectedPatient!.id);
         onPaymentComplete();
       } else {
         alert('Error al procesar el pago: ' + data.message);
@@ -250,28 +244,28 @@ export default function QuickPayment({ onPaymentComplete }: QuickPaymentProps) {
             <MagnifyingGlassIcon className="h-5 w-5 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
           </div>
 
-          {loading && (
+          {patientManagement.state.searchLoading && (
             <div className="mt-4 flex items-center justify-center">
               <LoadingSpinner size="sm" />
               <span className="ml-2 text-gray-600">Buscando...</span>
             </div>
           )}
 
-          {patients.length > 0 && (
+          {patientManagement.state.searchResults.length > 0 && (
             <div className="mt-4 max-h-60 overflow-y-auto">
-              {patients.map((patient) => (
+              {patientManagement.state.searchResults.map((patient) => (
                 <button
                   key={patient.id}
-                  onClick={() => handlePatientSelect(patient)}
+                  onClick={() => handlePatientSelect(patient.id)}
                   className="w-full text-left p-3 hover:bg-gray-100 rounded-lg transition-colors"
                 >
                   <div className="flex items-center">
                     <UserIcon className="h-5 w-5 text-gray-400 mr-3" />
                     <div>
                       <div className="font-medium text-gray-900">
-                        {patient.first_name} {patient.paternal_last_name} {patient.maternal_last_name || ''}
+                        {patient.fullName}
                       </div>
-                      <div className="text-sm text-gray-600">{patient.cell_phone}</div>
+                      <div className="text-sm text-gray-600">{patient.phoneNumber}</div>
                     </div>
                   </div>
                 </button>
@@ -279,16 +273,16 @@ export default function QuickPayment({ onPaymentComplete }: QuickPaymentProps) {
             </div>
           )}
 
-          {selectedPatient && (
+          {patientManagement.state.selectedPatient && (
             <Card className="mt-4 p-4 bg-blue-50 border-blue-200">
               <div className="flex items-center justify-between">
                 <div className="flex items-center">
                   <CheckCircleIcon className="h-5 w-5 text-blue-600 mr-2" />
                   <div>
                     <div className="font-medium text-blue-900">
-                      {selectedPatient.first_name} {selectedPatient.paternal_last_name}
+                      {patientManagement.state.selectedPatient.fullName}
                     </div>
-                    <div className="text-sm text-blue-700">{selectedPatient.cell_phone}</div>
+                    <div className="text-sm text-blue-700">{patientManagement.state.selectedPatient.phoneNumber}</div>
                   </div>
                 </div>
                 <div className="flex items-center space-x-2">
@@ -318,7 +312,7 @@ export default function QuickPayment({ onPaymentComplete }: QuickPaymentProps) {
         <Card className="p-6">
           <h4 className="text-lg font-medium text-gray-900 mb-4">Nuevo Cobro</h4>
           
-          {!selectedPatient ? (
+          {!patientManagement.state.selectedPatient ? (
             <div className="text-center py-8 text-gray-500">
               <UserIcon className="h-12 w-12 mx-auto mb-3 text-gray-300" />
               <p>Selecciona un paciente para continuar</p>
@@ -442,10 +436,10 @@ export default function QuickPayment({ onPaymentComplete }: QuickPaymentProps) {
       </div>
 
       {/* Pending Payments */}
-      {selectedPatient && pendingPayments.length > 0 && (
+      {patientManagement.state.selectedPatient && pendingPayments.length > 0 && (
         <Card className="p-6">
           <h4 className="text-lg font-medium text-gray-900 mb-4">
-            Pagos Pendientes de {selectedPatient.first_name}
+            Pagos Pendientes de {patientManagement.state.selectedPatient.fullName.split(' ')[0]}
           </h4>
           
           <div className="space-y-3">
@@ -476,13 +470,13 @@ export default function QuickPayment({ onPaymentComplete }: QuickPaymentProps) {
       )}
 
       {/* Service Assignment Modal */}
-      {showServiceAssignment && selectedPatient && (
+      {showServiceAssignment && patientManagement.state.selectedPatient && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded-lg shadow-xl max-w-6xl w-full max-h-[90vh] overflow-y-auto">
             <div className="p-6">
               <PatientServiceAssignment
-                patientId={selectedPatient.id}
-                patientName={`${selectedPatient.first_name} ${selectedPatient.paternal_last_name}`}
+                patientId={patientManagement.state.selectedPatient.id}
+                patientName={patientManagement.state.selectedPatient.fullName}
                 onClose={() => setShowServiceAssignment(false)}
               />
             </div>

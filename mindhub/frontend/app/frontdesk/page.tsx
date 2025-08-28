@@ -155,7 +155,7 @@ export default function FrontDeskPage() {
     <div className="min-h-screen bg-gray-50">
       <PageHeader
         title="FrontDesk"
-        description="Sistema de gestión para recepción y secretarias"
+        description="Sistema de gestión para recepción y asistente"
         icon={ClipboardDocumentListIcon}
         iconColor="text-blue-600"
         actions={
