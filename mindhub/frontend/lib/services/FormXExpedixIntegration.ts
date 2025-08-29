@@ -185,9 +185,9 @@ export class FormXExpedixIntegration {
     const matchReasons: string[] = [];
 
     // Match por nombre completo (peso: 60%)
-    if (formPatientInfo.fullName && expedixPatient.first_name && expedixPatient.last_name) {
+    if (formPatientInfo.fullName && expedixPatient.first_name && expedixPatient.paternal_last_name) {
       const formName = this.normalizeString(formPatientInfo.fullName);
-      const patientName = this.normalizeString(`${expedixPatient.first_name} ${expedixPatient.last_name}`);
+      const patientName = this.normalizeString(`${expedixPatient.first_name} ${expedixPatient.paternal_last_name}`);
       
       const nameMatch = this.calculateStringSimilarity(formName, patientName);
       confidence += nameMatch * 60;
@@ -198,9 +198,9 @@ export class FormXExpedixIntegration {
     }
 
     // Match por fecha de nacimiento (peso: 30%)
-    if (formPatientInfo.birthDate && expedixPatient.date_of_birth) {
+    if (formPatientInfo.birthDate && expedixPatient.birth_date) {
       const formDate = this.normalizeBirthDate(formPatientInfo.birthDate);
-      const patientDate = expedixPatient.date_of_birth;
+      const patientDate = expedixPatient.birth_date;
       
       if (formDate === patientDate) {
         confidence += 30;

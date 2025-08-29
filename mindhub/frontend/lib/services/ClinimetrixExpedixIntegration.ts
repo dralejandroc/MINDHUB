@@ -76,7 +76,7 @@ export class ClinimetrixExpedixIntegration {
 
       // 2. Verificar que el paciente existe en Expedix
       const patientResponse = await expedixApi.getPatient(patientId);
-      if (!patientResponse.success || !patientResponse.data) {
+      if (!patientResponse || !patientResponse.data) {
         throw new Error(`Patient ${patientId} not found in Expedix`);
       }
 
@@ -149,7 +149,9 @@ export class ClinimetrixExpedixIntegration {
         results: {
           totalScore: assessment.totalScore || 0,
           severityLevel: assessment.severityLevel || 'unknown',
-          interpretation: assessment.interpretation || '',
+          interpretation: {
+            primaryInterpretation: typeof assessment.interpretation === 'string' ? assessment.interpretation : ''
+          },
           scoringResults: assessment.scoringResults,
           subscaleScores: assessment.subscaleScores,
           validityIndicators: assessment.validityIndicators,
@@ -317,7 +319,7 @@ export class ClinimetrixExpedixIntegration {
    * Comparar niveles de severidad
    */
   private compareSeverity(current: string, previous: string): 'improved' | 'worsened' | 'same' | 'unknown' {
-    const severityOrder = {
+    const severityOrder: { [key: string]: number } = {
       'minimal': 0,
       'normal': 0,
       'mild': 1,

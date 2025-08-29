@@ -73,7 +73,7 @@ class DataCache {
     });
   }
 
-  private async processBatch(): void {
+  private async processBatch(): Promise<void> {
     const currentBatch = [...this.batchQueue];
     this.batchQueue.length = 0;
     this.batchTimeout = null;
@@ -223,7 +223,7 @@ export function useOptimizedExpedixData(options: UseOptimizedExpedixDataOptions 
 
   // Función para refresh de datos específicos
   const refreshSection = useCallback(async (section: keyof ExpedixDataState, id: string) => {
-    if (!id || loading) return;
+    if (!id || state.loading) return;
 
     const baseKey = cacheKey || `patient-${id}`;
     const sectionKey = `${baseKey}-${section}`;
@@ -252,7 +252,7 @@ export function useOptimizedExpedixData(options: UseOptimizedExpedixDataOptions 
     } catch (error) {
       console.error(`Error refreshing ${section}:`, error);
     }
-  }, [cacheKey, loading]);
+  }, [cacheKey, state.loading]);
 
   // Auto-load cuando cambia patientId
   useEffect(() => {
