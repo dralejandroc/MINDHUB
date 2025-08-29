@@ -534,29 +534,29 @@ export const ClinimetrixProAssessmentModal: React.FC<ClinimetrixProAssessmentMod
             scaleName: templateData?.name || scaleName || 'Evaluación Clínica',
             scaleAbbreviation: templateData?.abbreviation || scaleAbbreviation || '',
             results: {
-              totalScore: results.totalScore,
-              severityLevel: results.interpretation?.severity || 'unknown',
+              totalScore: results?.totalScore || 0,
+              severityLevel: results?.interpretation?.severity || 'unknown',
               interpretation: {
-                primaryInterpretation: results.interpretation?.label || '',
-                description: results.interpretation?.description || '',
-                recommendations: results.interpretation?.recommendations || null
+                primaryInterpretation: results?.interpretation?.label || '',
+                description: results?.interpretation?.description || '',
+                recommendations: results?.interpretation?.recommendations || null
               },
-              subscaleScores: results.subscaleScores || {},
+              subscaleScores: results?.subscaleScores || {},
               validityIndicators: null,
-              completionPercentage: results.completionPercentage || 100
+              completionPercentage: results?.completionPercentage || 100
             },
-            responses: results.responses?.map((response: any) => ({
+            responses: results?.responses?.map((response: any) => ({
               questionId: response.itemNumber?.toString() || '',
               responseValue: response.value,
               responseType: 'selection'
             })) || [],
             metadata: {
-              completionTime: results.completionTime || null,
-              startedAt: new Date(Date.now() - (results.completionTime || 0)).toISOString(),
+              completionTime: results?.completionTime || undefined,
+              startedAt: new Date(Date.now() - (results?.completionTime || 0)).toISOString(),
               completedAt: new Date().toISOString(),
               mode: selectedAdminMode || 'professional',
               templateVersion: '1.0',
-              templateCategory: templateData?.category || 'general'
+              templateCategory: (templateData as any)?.category || 'general'
             }
           };
 

@@ -104,7 +104,7 @@ export class ConsultationApiAdapter implements ConsultationRepository {
 export class MedicationApiAdapter implements MedicationRepository {
   async search(query: string): Promise<any[]> {
     try {
-      return await expedixMedicationsApi.search(query);
+      return await (expedixMedicationsApi as any).search(query);
     } catch (error) {
       console.error('Error searching medications:', error);
       return [];
@@ -114,7 +114,7 @@ export class MedicationApiAdapter implements MedicationRepository {
   async getByIds(ids: number[]): Promise<any[]> {
     try {
       const results = await Promise.all(
-        ids.map(id => expedixMedicationsApi.getById(id))
+        ids.map(id => (expedixMedicationsApi as any).getById(id))
       );
       return results.filter(Boolean);
     } catch (error) {

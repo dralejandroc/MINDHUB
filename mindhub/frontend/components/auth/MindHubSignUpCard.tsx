@@ -4,8 +4,8 @@ import React, { useState } from "react";
 import { Eye, EyeOff, Heart, Brain, User, Mail, Lock, Building } from "lucide-react";
 import { motion } from "framer-motion";
 import { HealthcareNetworkMap } from "@/components/ui/healthcare-network-map";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/Button";
+import { Input } from "@/components/ui/Input";
 
 // Helper function to merge class names
 const cn = (...classes: string[]) => {
