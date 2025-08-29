@@ -64,7 +64,12 @@ export default function ConsultationForm({ patient, onSave, onCancel }: Consulta
       if (mounted) {
         setTemplates(templates);
         if (defaultTemplate) {
-          setConsultationData(prev => ({ ...prev, noteType: defaultTemplate.id }));
+          setConsultationData(prev => {
+            // Create a new instance to maintain class methods
+            const newData = Object.assign(Object.create(Object.getPrototypeOf(prev)), prev);
+            newData.noteType = defaultTemplate.id;
+            return newData;
+          });
         }
       }
     });

@@ -161,7 +161,7 @@ export default function FormXSubmissionReview({ onSubmissionProcessed }: FormXSu
 
       const createResult = await expedixApi.createPatient(newPatient);
       
-      if (createResult.success && createResult.data) {
+      if (createResult?.data) {
         // Confirmar match con el nuevo paciente
         await handleConfirmMatch(submissionId, createResult.data.id);
       }
