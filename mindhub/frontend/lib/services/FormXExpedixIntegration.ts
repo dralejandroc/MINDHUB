@@ -292,7 +292,7 @@ export class FormXExpedixIntegration {
   /**
    * Procesa match automático de alta confianza
    */
-  private async processAutomaticMatch(submission: FormXSubmission, patient: Patient): Promise<void> {
+  async processAutomaticMatch(submission: FormXSubmission, patient: Patient): Promise<void> {
     try {
       // 1. Generar y guardar PDF del formulario
       const pdfUrl = await this.generateAndStorePDF(submission, patient);

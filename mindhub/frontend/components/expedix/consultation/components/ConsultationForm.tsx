@@ -21,7 +21,7 @@ import {
   TemplateApiAdapter 
 } from '../adapters/ConsultationApiAdapter';
 import { Patient } from '@/lib/api/expedix-client';
-import { Save, CheckCircle, AlertTriangle, ExclamationTriangleIcon, XCircle } from 'lucide-react';
+import { Save, CheckCircle, AlertTriangle, XCircle } from 'lucide-react';
 import { validateConsultationSafety, type DrugInteraction } from '@/lib/validations/medical-validations';
 import VitalSignsSection from './VitalSignsSection';
 import MedicationsSection from './MedicationsSection';

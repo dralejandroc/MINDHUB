@@ -14,7 +14,8 @@ import {
   CheckCircleIcon,
   ExclamationTriangleIcon,
   ArrowRightIcon,
-  EyeIcon
+  EyeIcon,
+  MagnifyingGlassIcon
 } from '@heroicons/react/24/outline';
 import { clinimetrixProClient } from '@/lib/api/clinimetrix-pro-client';
 import type { ClinimetrixRegistry } from '@/lib/api/clinimetrix-pro-client';
