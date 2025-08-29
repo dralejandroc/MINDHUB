@@ -151,10 +151,12 @@ export default function FormXSubmissionReview({ onSubmissionProcessed }: FormXSu
       // Crear nuevo paciente basado en información del formulario
       const newPatient = {
         first_name: submission.patientName?.split(' ')[0] || '',
-        last_name: submission.patientName?.split(' ').slice(1).join(' ') || '',
-        date_of_birth: submission.birthDate || '',
+        paternal_last_name: submission.patientName?.split(' ')[1] || '',
+        maternal_last_name: submission.patientName?.split(' ').slice(2).join(' ') || '',
+        birth_date: submission.birthDate || '',
         email: submission.email || '',
-        phone: submission.phone || '',
+        cell_phone: submission.phone || '',
+        gender: 'male' as const, // Default value, should be collected from form
         created_from_formx: true,
         formx_submission_id: submissionId
       };
@@ -277,10 +279,10 @@ export default function FormXSubmissionReview({ onSubmissionProcessed }: FormXSu
                         <div className="flex items-center justify-between">
                           <div>
                             <p className="font-medium text-gray-900">
-                              {match.patient.first_name} {match.patient.last_name}
+                              {match.patient.first_name} {match.patient.paternal_last_name}
                             </p>
                             <p className="text-sm text-gray-600">
-                              Nacido: {match.patient.date_of_birth}
+                              Nacido: {match.patient.birth_date}
                             </p>
                             <p className="text-xs text-gray-500 mt-1">
                               {match.matchReasons.join(' • ')}
