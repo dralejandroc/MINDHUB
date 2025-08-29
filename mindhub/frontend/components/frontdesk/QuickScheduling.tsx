@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { authGet, authPost } from '@/lib/api/auth-fetch';
 import { 
   CalendarDaysIcon,
   ClockIcon,
@@ -169,7 +170,7 @@ export default function QuickScheduling({
   const loadAvailableSlots = async (date: string) => {
     try {
       setLoading(true);
-      const response = await fetch(`/api/frontdesk/appointments/slots/${date}`);
+      const response = await authGet(`/api/frontdesk/appointments/slots/${date}`);
       const data = await response.json();
       
       if (data.success) {
@@ -253,13 +254,7 @@ export default function QuickScheduling({
     try {
       setProcessing(true);
       
-      const response = await fetch(`/api/frontdesk/appointments/schedule`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(appointmentData),
-      });
+      const response = await authPost(`/api/frontdesk/appointments/schedule`, appointmentData);
 
       const data = await response.json();
       

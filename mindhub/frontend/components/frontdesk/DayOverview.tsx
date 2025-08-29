@@ -13,6 +13,7 @@ import {
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
+import { authGet } from '@/lib/api/auth-fetch';
 // Clean Architecture imports temporarily removed for compilation
 // import { useAppointmentFlow } from '@/src/modules/frontdesk/hooks/useAppointmentFlow';
 // import { usePatientManagement } from '@/src/modules/frontdesk/hooks/usePatientManagement';
@@ -101,9 +102,9 @@ export default function DayOverview({
       // Load pending tasks from real APIs
       const [paymentsResponse, appointmentsResponse] = await Promise.allSettled([
         // Get pending payments
-        fetch('/api/finance/stats'),
+        authGet('/api/finance/stats'),
         // Get follow-up appointments
-        fetch('/api/frontdesk/tasks/pending')
+        authGet('/api/frontdesk/tasks/pending')
       ]);
       
       const tasks: PendingTask[] = [];

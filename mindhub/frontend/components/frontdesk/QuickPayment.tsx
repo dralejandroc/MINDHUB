@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { authGet, authPost } from '@/lib/api/auth-fetch';
 import { 
   CurrencyDollarIcon,
   MagnifyingGlassIcon,
@@ -118,7 +119,7 @@ export default function QuickPayment({
 
   const loadPendingPayments = async (patientId: string) => {
     try {
-      const response = await fetch(`/api/frontdesk/payments/pending/${patientId}`);
+      const response = await authGet(`/api/frontdesk/payments/pending/${patientId}`);
       const data = await response.json();
       
       if (data.success) {
@@ -156,19 +157,13 @@ export default function QuickPayment({
     try {
       setProcessing(true);
       
-      const response = await fetch(`/api/frontdesk/payments/process`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          patientId: patientManagement.state.selectedPatient.id,
-          amount: parseFloat(paymentData.amount),
-          concept: paymentData.concept,
-          paymentMethod: paymentData.paymentMethod,
-          notes: paymentData.notes,
-          isAdvancePayment: paymentData.isAdvancePayment
-        }),
+      const response = await authPost(`/api/frontdesk/payments/process`, {
+        patientId: patientManagement.state.selectedPatient.id,
+        amount: parseFloat(paymentData.amount),
+        concept: paymentData.concept,
+        paymentMethod: paymentData.paymentMethod,
+        notes: paymentData.notes,
+        isAdvancePayment: paymentData.isAdvancePayment
       });
 
       const data = await response.json();
@@ -205,15 +200,9 @@ export default function QuickPayment({
     try {
       setProcessing(true);
       
-      const response = await fetch(`/api/frontdesk/payments/pay-pending/${pendingPayment.id}`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          paymentMethod: paymentData.paymentMethod,
-          notes: paymentData.notes
-        }),
+      const response = await authPost(`/api/frontdesk/payments/pay-pending/${pendingPayment.id}`, {
+        paymentMethod: paymentData.paymentMethod,
+        notes: paymentData.notes
       });
 
       const data = await response.json();

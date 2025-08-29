@@ -43,6 +43,7 @@ export function UserMetricsProvider({ children }: { children: React.ReactNode })
   const [dashboardMode, setDashboardMode] = useState<'beginner' | 'advanced'>(() => metricsManager.getDashboardMode());
   const [realDashboardData, setRealDashboardData] = useState<DashboardData | null>(null);
   const [isLoadingDashboardData, setIsLoadingDashboardData] = useState(false);
+  const [hasInitialized, setHasInitialized] = useState(false);
 
   const refreshPreferences = () => {
     const newPreferences = metricsManager.getUserPreferences();
@@ -58,13 +59,19 @@ export function UserMetricsProvider({ children }: { children: React.ReactNode })
       return;
     }
 
+    // Prevent multiple simultaneous requests
+    if (isLoadingDashboardData) {
+      console.log('[UserMetrics] Dashboard data fetch already in progress, skipping');
+      return;
+    }
+
     setIsLoadingDashboardData(true);
     try {
       console.log('[UserMetrics] Fetching dashboard data for authenticated user:', user.id);
-      // Force refresh to get latest data
-      const data = await dashboardDataService.forceRefresh();
+      // Use normal fetch with cache instead of forceRefresh to prevent excessive API calls
+      const data = await dashboardDataService.fetchDashboardData(user.id);
       setRealDashboardData(data);
-      console.log('[UserMetrics] Dashboard data refreshed:', data);
+      console.log('[UserMetrics] Dashboard data loaded:', data);
     } catch (error) {
       console.error('[UserMetrics] Error fetching dashboard data:', error);
     } finally {
@@ -74,18 +81,20 @@ export function UserMetricsProvider({ children }: { children: React.ReactNode })
 
   // Record login on mount and fetch dashboard data only when authenticated
   useEffect(() => {
-    if (!authLoading) {
+    if (!authLoading && !hasInitialized) {
       if (user && session) {
-        console.log('[UserMetrics] User authenticated, recording login and fetching data');
+        console.log('[UserMetrics] User authenticated, initializing metrics (one-time)');
         metricsManager.recordLogin();
         refreshPreferences();
         refreshDashboardData();
+        setHasInitialized(true);
       } else {
         console.log('[UserMetrics] User not authenticated, skipping data fetch');
         refreshPreferences(); // Still refresh preferences (local data)
+        setHasInitialized(true);
       }
     }
-  }, [user, session, authLoading]);
+  }, [user, session, authLoading, hasInitialized]);
 
   const recordLogin = () => {
     metricsManager.recordLogin();
