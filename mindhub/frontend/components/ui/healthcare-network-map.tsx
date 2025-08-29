@@ -140,6 +140,7 @@ export const HealthcareNetworkMap = () => {
 
     // Draw background nodes
     function drawNodes() {
+      if (!ctx) return;
       ctx.clearRect(0, 0, dimensions.width, dimensions.height);
       
       // Draw the healthcare network nodes
@@ -153,6 +154,7 @@ export const HealthcareNetworkMap = () => {
 
     // Draw animated data flow routes
     function drawDataFlow() {
+      if (!ctx) return;
       const currentTime = (Date.now() - startTime) / 1000; // Time in seconds
       
       routes.forEach(route => {

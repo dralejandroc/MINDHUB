@@ -228,7 +228,7 @@ export default function PatientTimelineEnhanced({
 
       // Process appointments
       if (appointments.status === 'fulfilled' && appointments.value) {
-        appointments.value.forEach((appointment: any) => {
+        appointments.value.data?.forEach((appointment: any) => {
           events.push({
             id: `appointment-${appointment.id}`,
             title: 'Cita Médica',
@@ -314,7 +314,7 @@ export default function PatientTimelineEnhanced({
                 <Button
                   key={mode.value}
                   onClick={() => setViewMode(mode.value)}
-                  variant={viewMode === mode.value ? 'default' : 'outline'}
+                  variant={viewMode === mode.value ? 'primary' : 'outline'}
                   size="sm"
                   className="flex items-center gap-2"
                 >
@@ -353,7 +353,7 @@ export default function PatientTimelineEnhanced({
                   <Button
                     key={filter.value}
                     onClick={() => setSelectedFilter(filter.value)}
-                    variant={selectedFilter === filter.value ? 'default' : 'outline'}
+                    variant={selectedFilter === filter.value ? 'primary' : 'outline'}
                     size="sm"
                     className="flex items-center gap-2"
                   >
@@ -383,9 +383,7 @@ export default function PatientTimelineEnhanced({
           ) : (
             <div style={{ maxHeight }} className="overflow-y-auto">
               <Timeline 
-                entries={filteredEvents}
-                showMetadata={true}
-                emptyMessage="No hay eventos para mostrar"
+                data={filteredEvents}
               />
             </div>
           )}

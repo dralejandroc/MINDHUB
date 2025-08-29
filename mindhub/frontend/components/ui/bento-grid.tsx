@@ -87,17 +87,13 @@ const BentoCard = ({
         "pointer-events-none absolute bottom-0 flex w-full translate-y-10 transform-gpu flex-row items-center p-4 opacity-0 transition-all duration-300 group-hover:translate-y-0 group-hover:opacity-100",
       )}
     >
-      <Button 
-        variant="ghost" 
-        size="sm" 
-        className="pointer-events-auto bg-gradient-to-r from-teal-600 to-cyan-600 text-white hover:from-teal-700 hover:to-cyan-700"
-        asChild
+      <a 
+        href={href}
+        className="pointer-events-auto inline-flex items-center px-3 py-1.5 text-sm font-medium rounded-md bg-gradient-to-r from-teal-600 to-cyan-600 text-white hover:from-teal-700 hover:to-cyan-700 transition-colors"
       >
-        <a href={href}>
-          {cta}
-          <ArrowRight className="ml-2 h-4 w-4" />
-        </a>
-      </Button>
+        {cta}
+        <ArrowRight className="ml-2 h-4 w-4" />
+      </a>
     </div>
     
     <div className="pointer-events-none absolute inset-0 transform-gpu transition-all duration-300 group-hover:bg-gradient-to-t group-hover:from-teal-50/50 group-hover:to-transparent dark:group-hover:from-teal-950/20" />

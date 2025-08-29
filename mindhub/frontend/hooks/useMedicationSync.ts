@@ -63,12 +63,8 @@ export function useMedicationSync(options: MedicationSyncOptions) {
     try {
       // Obtener datos de consultas y recetas desde la última sincronización
       const [consultationsResult, prescriptionsResult] = await Promise.allSettled([
-        expedixApi.getPatientConsultationForms(patientId, {
-          since: lastSyncRef.current
-        }),
-        expedixApi.getPatientPrescriptions(patientId, {
-          since: lastSyncRef.current
-        })
+        expedixApi.getPatientConsultationForms(patientId),
+        expedixApi.getPatientPrescriptions(patientId)
       ]);
 
       const consultations = consultationsResult.status === 'fulfilled' ? consultationsResult.value?.data || [] : [];
