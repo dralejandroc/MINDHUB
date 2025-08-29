@@ -378,13 +378,10 @@ export default function PatientDashboard({
           <div>
             {activeTab === 'timeline' && (
               <PatientTimeline
-                patient={{
-                  id: patient.id,
-                  first_name: patient.first_name,
-                  paternal_last_name: patient.paternal_last_name,
-                  age: patient.age
-                }}
-                onNewConsultation={onNewConsultation}
+                patientId={patient.id}
+                patientName={`${patient.first_name} ${patient.paternal_last_name} ${patient.maternal_last_name || ''}`.trim()}
+                showHeader={true}
+                showFilters={true}
               />
             )}
 

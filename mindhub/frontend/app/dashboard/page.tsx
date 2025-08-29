@@ -2,24 +2,26 @@
 
 import { useAuth } from '@/hooks/useAuth';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
-import { redirect } from 'next/navigation';
-import { useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import { useEffect, useRef } from 'react';
 
 export default function DashboardPage() {
   const { isLoaded, isSignedIn } = useAuth();
+  const router = useRouter();
+  const hasRedirected = useRef(false);
 
   useEffect(() => {
-    if (isLoaded) {
+    if (isLoaded && !hasRedirected.current) {
+      hasRedirected.current = true;
+      
       if (!isSignedIn) {
-        redirect('/sign-in');
+        router.replace('/auth/sign-in');
       } else {
-        // Has Auth auth, redirect to app
-        redirect('/app');
+        router.replace('/app');
       }
     }
-  }, [isLoaded, isSignedIn]);
+  }, [isLoaded, isSignedIn, router]);
 
-  // Always show loading while redirecting
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-teal-50 flex items-center justify-center">
       <LoadingSpinner size="lg" />

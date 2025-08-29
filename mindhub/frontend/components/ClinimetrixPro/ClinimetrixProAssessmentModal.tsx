@@ -6,6 +6,7 @@ import { clinimetrixProClient } from '@/lib/api/clinimetrix-pro-client';
 import type { ClinimetrixRegistry } from '@/lib/api/clinimetrix-pro-client';
 import { useExpedixApi } from '@/lib/api/expedix-client';
 import type { Patient as ExpedixPatient } from '@/lib/api/expedix-client';
+import { clinimetrixExpedixIntegration } from '@/lib/services/ClinimetrixExpedixIntegration';
 
 interface ClinimetrixProAssessmentModalProps {
   templateId: string;
@@ -516,6 +517,66 @@ export const ClinimetrixProAssessmentModal: React.FC<ClinimetrixProAssessmentMod
     try {
       const results = calculateResults();
       setAssessmentResults(results);
+      
+      // 🔗 INTEGRACIÓN AUTOMÁTICA - Guardar en Expedix
+      if (selectedPatient && selectedPatient !== 'none') {
+        try {
+          console.log('🔗 Auto-saving assessment to Expedix...', {
+            patientId: selectedPatient,
+            templateId,
+            results
+          });
+
+          // Crear datos de evaluación para Expedix
+          const assessmentData = {
+            assessmentId: `clinimetrix_${templateId}_${Date.now()}`, // ID temporal
+            templateId,
+            scaleName: templateData?.name || scaleName || 'Evaluación Clínica',
+            scaleAbbreviation: templateData?.abbreviation || scaleAbbreviation || '',
+            results: {
+              totalScore: results.totalScore,
+              severityLevel: results.interpretation?.severity || 'unknown',
+              interpretation: {
+                primaryInterpretation: results.interpretation?.label || '',
+                description: results.interpretation?.description || '',
+                recommendations: results.interpretation?.recommendations || null
+              },
+              subscaleScores: results.subscaleScores || {},
+              validityIndicators: null,
+              completionPercentage: results.completionPercentage || 100
+            },
+            responses: results.responses?.map((response: any) => ({
+              questionId: response.itemNumber?.toString() || '',
+              responseValue: response.value,
+              responseType: 'selection'
+            })) || [],
+            metadata: {
+              completionTime: results.completionTime || null,
+              startedAt: new Date(Date.now() - (results.completionTime || 0)).toISOString(),
+              completedAt: new Date().toISOString(),
+              mode: selectedAdminMode || 'professional',
+              templateVersion: '1.0',
+              templateCategory: templateData?.category || 'general'
+            }
+          };
+
+          // Importar el cliente de integración
+          const expedixAssessments = await import('@/lib/api/expedix-assessments-client');
+          const saveResult = await expedixAssessments.saveAssessmentToPatient(selectedPatient, assessmentData);
+
+          if (saveResult.success) {
+            console.log('✅ Assessment successfully saved to Expedix patient record');
+            // Mostrar notificación de éxito (opcional)
+          } else {
+            console.warn('⚠️ Failed to save assessment to Expedix:', saveResult.error);
+          }
+
+        } catch (integrationError) {
+          console.error('❌ Error during ClinimetrixPro-Expedix integration:', integrationError);
+          // La evaluación continúa normalmente aunque falle la integración
+        }
+      }
+      
       setCurrentCard(templateData ? templateData.totalItems + 2 : 999); // Card de resultados
     } catch (error) {
       console.error('Error completing assessment:', error);
@@ -2316,10 +2377,32 @@ export const ClinimetrixProAssessmentModal: React.FC<ClinimetrixProAssessmentMod
           </button>
           
           <button
-            onClick={onExit}
+            onClick={async () => {
+              // Llamar al callback onComplete con los resultados
+              if (assessmentResults && onComplete) {
+                try {
+                  const completeResults = {
+                    ...assessmentResults,
+                    patientId: selectedPatient,
+                    scaleName: templateData?.name || scaleName,
+                    scaleAbbreviation: templateData?.abbreviation || scaleAbbreviation,
+                    templateId: templateId,
+                    completedAt: new Date().toISOString()
+                  };
+                  
+                  await onComplete(completeResults);
+                  console.log('✅ Assessment results passed to parent component');
+                } catch (error) {
+                  console.error('❌ Error calling onComplete:', error);
+                }
+              }
+              
+              // Cerrar el modal
+              onExit();
+            }}
             style={{
               flex: 1,
-              background: 'linear-gradient(135deg, #6b7280, #374151)',
+              background: 'linear-gradient(135deg, #10b981, #059669)',
               color: 'white',
               border: 'none',
               borderRadius: '10px',
@@ -2330,7 +2413,7 @@ export const ClinimetrixProAssessmentModal: React.FC<ClinimetrixProAssessmentMod
               transition: 'all 0.3s ease'
             }}
           >
-            🏠 Finalizar
+            ✅ Finalizar y Guardar
           </button>
         </div>
       </div>

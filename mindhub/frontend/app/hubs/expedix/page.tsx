@@ -240,9 +240,20 @@ function ExpedixContent() {
       
       {/* Timeline View */}
       {viewMode === 'timeline' && (
-        <PatientTimeline
-          onSelectPatient={handleSelectPatient}
-        />
+        <div className="bg-white rounded-xl p-6 border shadow">
+          <h3 className="text-lg font-bold mb-4 text-gray-900">Vista Timeline Global</h3>
+          <p className="text-gray-600 text-center py-8">
+            Selecciona un paciente específico para ver su timeline médico completo
+          </p>
+          <div className="text-center">
+            <button
+              onClick={() => setViewMode('list')}
+              className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg"
+            >
+              Ver Lista de Pacientes
+            </button>
+          </div>
+        </div>
       )}
       
       {/* Expedient Detail Views */}

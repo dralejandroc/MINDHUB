@@ -1,3 +1,8 @@
+/**
+ * COMPONENTE MEJORADO - PatientTimeline con Historial de Medicamentos
+ * Integra vista de timeline general y vista especializada de medicamentos
+ */
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -7,6 +12,7 @@ import { patientTimelineApi } from '@/lib/api/patient-timeline-client';
 import { clinimetrixProClient } from '@/lib/api/clinimetrix-pro-client';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { Button } from '@/components/ui/Button';
+import MedicationHistory from './MedicationHistory';
 import {
   FunnelIcon,
   ArrowPathIcon,
@@ -14,38 +20,58 @@ import {
   DocumentTextIcon,
   ClipboardDocumentCheckIcon,
   BeakerIcon,
-  ChartBarIcon
+  ChartBarIcon,
+  CubeIcon // Para medicamentos
 } from '@heroicons/react/24/outline';
 
-interface PatientTimelineProps {
+interface PatientTimelineEnhancedProps {
   patientId: string;
   patientName?: string;
   showHeader?: boolean;
   maxHeight?: string;
   showFilters?: boolean;
+  onMedicationReuse?: (medication: any) => void;
 }
 
 type EventType = 'all' | 'consultation' | 'prescription' | 'lab' | 'assessment' | 'note' | 'appointment' | 'vital' | 'diagnosis';
+type ViewMode = 'timeline' | 'medications';
 
-export default function PatientTimeline({ 
+export default function PatientTimelineEnhanced({ 
   patientId, 
   patientName = 'Paciente',
   showHeader = true,
   maxHeight,
-  showFilters = true
-}: PatientTimelineProps) {
+  showFilters = true,
+  onMedicationReuse
+}: PatientTimelineEnhancedProps) {
   const [timelineEvents, setTimelineEvents] = useState<TimelineEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedFilter, setSelectedFilter] = useState<EventType>('all');
+  const [viewMode, setViewMode] = useState<ViewMode>('timeline');
   const [dateRange, setDateRange] = useState<{ start: Date | null; end: Date | null }>({
     start: null,
     end: null
   });
 
+  const eventFilters = [
+    { value: 'all' as EventType, label: 'Todo', icon: CalendarDaysIcon, count: 0 },
+    { value: 'consultation' as EventType, label: 'Consultas', icon: ClipboardDocumentCheckIcon, count: 0 },
+    { value: 'prescription' as EventType, label: 'Recetas', icon: DocumentTextIcon, count: 0 },
+    { value: 'assessment' as EventType, label: 'Evaluaciones', icon: ChartBarIcon, count: 0 },
+    { value: 'lab' as EventType, label: 'Laboratorio', icon: BeakerIcon, count: 0 }
+  ];
+
+  const viewModes = [
+    { value: 'timeline' as ViewMode, label: 'Timeline Completo', icon: CalendarDaysIcon },
+    { value: 'medications' as ViewMode, label: 'Solo Medicamentos', icon: CubeIcon }
+  ];
+
   useEffect(() => {
-    loadTimelineData();
-  }, [patientId]);
+    if (viewMode === 'timeline') {
+      loadTimelineData();
+    }
+  }, [patientId, viewMode]);
 
   const loadTimelineData = async () => {
     try {
@@ -201,159 +227,176 @@ export default function PatientTimeline({
       }
 
       // Process appointments
-      if (appointments.status === 'fulfilled' && appointments.value?.data) {
-        appointments.value.data.forEach((appointment: any) => {
+      if (appointments.status === 'fulfilled' && appointments.value) {
+        appointments.value.forEach((appointment: any) => {
           events.push({
             id: `appointment-${appointment.id}`,
             title: 'Cita Médica',
-            date: appointment.date,
+            date: appointment.date || appointment.scheduled_at,
             type: 'appointment',
             content: (
               <div className="space-y-2">
                 <p className="text-sm text-gray-700 dark:text-gray-300">
-                  <span className="font-medium">Hora:</span> {appointment.time}
-                </p>
-                <p className="text-sm text-gray-700 dark:text-gray-300">
-                  <span className="font-medium">Motivo:</span> {appointment.reason || 'Consulta de seguimiento'}
+                  <span className="font-medium">Tipo:</span> {appointment.appointment_type || 'Consulta general'}
                 </p>
                 {appointment.notes && (
                   <p className="text-sm text-gray-600 dark:text-gray-400 italic">
                     {appointment.notes}
                   </p>
                 )}
-                <div className="flex items-center gap-2">
-                  <span className={`px-2 py-1 text-xs rounded-full ${
+                <div className="flex items-center justify-between text-xs text-gray-500">
+                  <span>📅 {appointment.time || 'Hora no especificada'}</span>
+                  <span className={`px-2 py-1 rounded-full ${
                     appointment.status === 'completed' ? 'bg-green-100 text-green-700' :
                     appointment.status === 'cancelled' ? 'bg-red-100 text-red-700' :
-                    appointment.status === 'no_show' ? 'bg-gray-100 text-gray-700' :
+                    appointment.status === 'no-show' ? 'bg-yellow-100 text-yellow-700' :
                     'bg-blue-100 text-blue-700'
                   }`}>
-                    {appointment.status === 'completed' ? 'Completada' :
-                     appointment.status === 'cancelled' ? 'Cancelada' :
-                     appointment.status === 'no_show' ? 'No asistió' :
-                     'Programada'}
+                    {appointment.status || 'scheduled'}
                   </span>
                 </div>
               </div>
             ),
             metadata: {
-              professional: appointment.professional_name,
-              status: appointment.status
+              professional: appointment.professional_name || appointment.doctor_name,
+              status: appointment.status || 'scheduled'
             }
           });
         });
       }
 
       // Sort events by date (most recent first)
-      events.sort((a, b) => {
-        const dateA = new Date(a.date);
-        const dateB = new Date(b.date);
-        return dateB.getTime() - dateA.getTime();
+      const sortedEvents = events.sort((a, b) => {
+        return new Date(b.date).getTime() - new Date(a.date).getTime();
       });
 
-      setTimelineEvents(events);
+      setTimelineEvents(sortedEvents);
     } catch (err) {
-      console.error('Error loading timeline:', err);
-      setError('Error al cargar el historial del paciente');
+      setError(err instanceof Error ? err.message : 'Error desconocido al cargar datos');
     } finally {
       setLoading(false);
     }
   };
 
-  // Filter events based on selected type
   const filteredEvents = timelineEvents.filter(event => {
     if (selectedFilter === 'all') return true;
     return event.type === selectedFilter;
   });
 
-  // Filter by date range if specified
-  const finalEvents = dateRange.start || dateRange.end
-    ? filteredEvents.filter(event => {
-        const eventDate = new Date(event.date);
-        if (dateRange.start && eventDate < dateRange.start) return false;
-        if (dateRange.end && eventDate > dateRange.end) return false;
-        return true;
-      })
-    : filteredEvents;
-
-  const filterButtons = [
-    { value: 'all' as const, label: 'Todos', icon: CalendarDaysIcon },
-    { value: 'consultation' as const, label: 'Consultas', icon: DocumentTextIcon },
-    { value: 'prescription' as const, label: 'Recetas', icon: DocumentTextIcon },
-    { value: 'assessment' as const, label: 'Evaluaciones', icon: ClipboardDocumentCheckIcon },
-    { value: 'lab' as const, label: 'Laboratorios', icon: BeakerIcon },
-    { value: 'diagnosis' as const, label: 'Diagnósticos', icon: ChartBarIcon },
-  ];
-
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center py-12">
-        <LoadingSpinner size="lg" />
-        <span className="ml-3 text-gray-600">Cargando historial médico...</span>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-        <p className="text-red-800">{error}</p>
-        <Button
-          onClick={loadTimelineData}
-          variant="outline"
-          size="sm"
-          className="mt-2"
-        >
-          <ArrowPathIcon className="h-4 w-4 mr-1" />
-          Reintentar
-        </Button>
-      </div>
-    );
-  }
+  const handleRefresh = () => {
+    if (viewMode === 'timeline') {
+      loadTimelineData();
+    }
+    // Para medications, el componente MedicationHistory maneja su propio refresh
+  };
 
   return (
-    <div className="w-full">
-      {showFilters && (
-        <div className="mb-6 px-4">
-          <div className="flex items-center gap-2 flex-wrap">
-            <FunnelIcon className="h-5 w-5 text-gray-500" />
-            {filterButtons.map(({ value, label, icon: Icon }) => (
-              <button
-                key={value}
-                onClick={() => setSelectedFilter(value)}
-                className={`px-3 py-1.5 text-sm rounded-lg transition-colors flex items-center gap-1.5 ${
-                  selectedFilter === value
-                    ? 'bg-blue-600 text-white'
-                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                }`}
-              >
-                <Icon className="h-4 w-4" />
-                {label}
-                {value !== 'all' && (
-                  <span className="ml-1 text-xs opacity-75">
-                    ({timelineEvents.filter(e => e.type === value).length})
-                  </span>
-                )}
-              </button>
-            ))}
+    <div className="space-y-4">
+      {showHeader && (
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+          <div>
+            <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
+              Timeline de {patientName}
+            </h2>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+              {viewMode === 'timeline' 
+                ? 'Historial completo del paciente' 
+                : 'Historial detallado de medicamentos'
+              }
+            </p>
+          </div>
+          
+          {/* Selector de Vista */}
+          <div className="flex items-center gap-2">
+            {viewModes.map((mode) => {
+              const Icon = mode.icon;
+              return (
+                <Button
+                  key={mode.value}
+                  onClick={() => setViewMode(mode.value)}
+                  variant={viewMode === mode.value ? 'default' : 'outline'}
+                  size="sm"
+                  className="flex items-center gap-2"
+                >
+                  <Icon className="w-4 h-4" />
+                  {mode.label}
+                </Button>
+              );
+            })}
+            
+            <Button
+              onClick={handleRefresh}
+              variant="outline"
+              size="sm"
+              className="flex items-center gap-2"
+            >
+              <ArrowPathIcon className="w-4 h-4" />
+              Actualizar
+            </Button>
           </div>
         </div>
       )}
 
-      <div className={maxHeight ? `overflow-y-auto ${maxHeight}` : ''}>
-        {finalEvents.length === 0 ? (
-          <div className="text-center py-12">
-            <CalendarDaysIcon className="h-12 w-12 text-gray-300 mx-auto mb-3" />
-            <p className="text-gray-500">No hay eventos en el historial</p>
-          </div>
-        ) : (
-          <Timeline 
-            data={finalEvents}
-            title={showHeader ? `Historial de ${patientName}` : undefined}
-            subtitle={showHeader ? `${finalEvents.length} eventos registrados` : undefined}
-          />
-        )}
-      </div>
+      {/* Contenido basado en la vista seleccionada */}
+      {viewMode === 'timeline' ? (
+        <>
+          {/* Filtros para Timeline */}
+          {showFilters && (
+            <div className="flex flex-wrap gap-2 pb-4 border-b dark:border-gray-700">
+              {eventFilters.map((filter) => {
+                const Icon = filter.icon;
+                const count = filter.value === 'all' ? 
+                  timelineEvents.length : 
+                  timelineEvents.filter(e => e.type === filter.value).length;
+                
+                return (
+                  <Button
+                    key={filter.value}
+                    onClick={() => setSelectedFilter(filter.value)}
+                    variant={selectedFilter === filter.value ? 'default' : 'outline'}
+                    size="sm"
+                    className="flex items-center gap-2"
+                  >
+                    <Icon className="w-4 h-4" />
+                    {filter.label}
+                    <span className="bg-white/20 rounded-full px-2 py-0.5 text-xs">
+                      {count}
+                    </span>
+                  </Button>
+                );
+              })}
+            </div>
+          )}
+
+          {/* Timeline Component */}
+          {loading ? (
+            <div className="flex justify-center py-8">
+              <LoadingSpinner size="lg" />
+            </div>
+          ) : error ? (
+            <div className="text-center py-8">
+              <p className="text-red-600 mb-4">{error}</p>
+              <Button onClick={loadTimelineData} variant="outline">
+                Reintentar
+              </Button>
+            </div>
+          ) : (
+            <div style={{ maxHeight }} className="overflow-y-auto">
+              <Timeline 
+                entries={filteredEvents}
+                showMetadata={true}
+                emptyMessage="No hay eventos para mostrar"
+              />
+            </div>
+          )}
+        </>
+      ) : (
+        /* Vista de Medicamentos */
+        <MedicationHistory 
+          patientId={patientId}
+          onMedicationReuse={onMedicationReuse}
+        />
+      )}
     </div>
   );
 }

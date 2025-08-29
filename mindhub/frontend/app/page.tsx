@@ -3,7 +3,9 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { LandingNavbar } from '@/components/landing/LandingNavbar';
-import { HeroSection } from '@/components/landing/HeroSection';
+import { HeroScrollSection } from '@/components/landing/HeroScrollSection';
+import { AnimatedStatsSection } from '@/components/landing/AnimatedStatsSection';
+import { BentoFeaturesSection } from '@/components/landing/BentoFeaturesSection';
 import { StorytellingSection } from '@/components/landing/StorytellingSection';
 import { FeaturesSection } from '@/components/landing/FeaturesSection';
 import { PlansSection } from '@/components/landing/PlansSection';
@@ -25,9 +27,10 @@ export default function LandingPage() {
       <LandingNavbar onBetaClick={() => setShowBetaModal(true)} />
       
       <main>
-        <HeroSection onBetaClick={() => setShowBetaModal(true)} />
+        <HeroScrollSection onBetaClick={() => setShowBetaModal(true)} />
+        <AnimatedStatsSection />
+        <BentoFeaturesSection />
         <StorytellingSection />
-        <FeaturesSection />
         <PlansSection onBetaClick={() => setShowBetaModal(true)} />
         <EarlyAccessExplanationSection onEarlyAccessClick={() => setShowBetaModal(true)} />
       </main>

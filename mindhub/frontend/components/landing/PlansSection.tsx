@@ -1,75 +1,79 @@
 'use client';
 
+import { PricingSection } from '@/components/ui/pricing-section';
+import type { PricingTier } from '@/components/ui/pricing-card';
+
 interface PlansSectionProps {
   onBetaClick: () => void;
 }
 
+const pricingTiers: PricingTier[] = [
+  {
+    name: 'Profesional Individual',
+    description: 'Perfecto para psicólogos y psiquiatras independientes',
+    price: {
+      monthly: 0,
+      yearly: 0,
+    },
+    features: [
+      'Gestión de pacientes ilimitada',
+      'Sistema de expedientes digitales',
+      'ClinimetrixPro: 29+ escalas psicométricas',
+      'Agenda de citas inteligente',
+      'Recetas digitales',
+      'Portal para pacientes',
+      'Reportes y estadísticas',
+      'Soporte por email',
+      'Acceso móvil completo',
+    ],
+    popular: true,
+    buttonText: '🚀 Acceso Beta Gratuito',
+  },
+  {
+    name: 'Clínica y Equipos',
+    description: 'Diseñado para clínicas y equipos de salud mental',
+    price: {
+      monthly: 0,
+      yearly: 0,
+    },
+    features: [
+      'Todo lo del plan Individual',
+      'Gestión multi-usuario',
+      'Roles y permisos avanzados',
+      'Dashboard administrativo',
+      'Facturación integrada',
+      'Recursos psicoeducativos',
+      'Plantillas personalizadas',
+      'Soporte prioritario',
+      'Capacitación del equipo',
+    ],
+    buttonText: '🏥 Acceso Beta Gratuito',
+  },
+];
+
 export function PlansSection({ onBetaClick }: PlansSectionProps) {
   return (
     <section id="plans" className="py-20 bg-gray-50">
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-        {/* Section Header */}
-        <div className="mb-12">
-          <h2 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-8">
-            Planes y Precios
-          </h2>
-          
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 max-w-4xl mx-auto">
-            {/* Coming Soon Notice */}
-            <div className="bg-gradient-to-br from-primary-teal/5 to-primary-blue/5 rounded-2xl p-8 border border-primary-teal/20 shadow-lg hover:shadow-xl transition-all duration-300">
-              <div className="flex items-center mb-6">
-                <svg className="w-10 h-10 text-primary-teal mr-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-                <div>
-                  <div className="text-2xl font-bold text-primary-teal mb-1">
-                    Próximamente
-                  </div>
-                  <div className="text-gray-600">
-                    Planes comerciales en desarrollo
-                  </div>
-                </div>
-              </div>
-              <p className="text-gray-700 mb-6">
-                Estamos diseñando planes específicos para psicólogos, psiquiatras y clínicas. 
-                Cada plan tendrá las herramientas exactas que necesitas.
-              </p>
-              <div className="text-sm text-gray-500">
-                Lanzamiento: Q2 2025
-              </div>
-            </div>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <PricingSection
+          title="Planes y Precios"
+          subtitle="Durante la Beta, ambos planes están completamente gratis. Tu feedback nos ayudará a crear la mejor plataforma para profesionales de salud mental."
+          tiers={pricingTiers}
+          frequencies={['Mensual', 'Anual']}
+        />
 
-            {/* Beta Notice */}
-            <div className="bg-gradient-to-br from-white to-gray-50 rounded-2xl p-8 border border-gray-200 shadow-lg hover:shadow-xl transition-all duration-300">
-              <div className="flex items-center mb-6">
-                <div className="w-10 h-10 bg-gradient-to-r from-primary-teal to-primary-blue rounded-full flex items-center justify-center mr-4">
-                  <span className="text-white font-bold text-lg">β</span>
-                </div>
-                <div>
-                  <div className="text-2xl font-bold text-gray-900 mb-1">
-                    Beta Gratuito
-                  </div>
-                  <div className="text-gray-600">
-                    3 meses de acceso completo
-                  </div>
-                </div>
-              </div>
-              <p className="text-gray-700 mb-6">
-                Acceso completo a toda la plataforma MindHub. Tu feedback nos ayudará a 
-                crear los mejores planes para profesionales de salud mental.
-              </p>
-              <button
-                onClick={onBetaClick}
-                className="w-full bg-gradient-to-r from-primary-teal to-primary-blue text-white py-3 px-6 rounded-xl hover:shadow-lg hover:scale-105 transition-all duration-300 font-semibold"
-              >
-                🚀 Registrarse Ahora
-              </button>
-            </div>
+        {/* Beta Notice */}
+        <div className="mt-12 text-center">
+          <div className="inline-flex items-center px-6 py-3 bg-gradient-to-r from-green-50 to-blue-50 border border-green-200 rounded-full">
+            <span className="text-2xl mr-2">🎉</span>
+            <span className="text-green-800 font-medium">
+              Beta Gratuito hasta Q2 2025 - ¡Regístrate ahora!
+            </span>
           </div>
         </div>
 
         {/* Contact Notice */}
-        <div className="text-center">
+        <div className="text-center mt-8">
           <p className="text-gray-600 mb-4">
             ¿Tienes preguntas sobre nuestros futuros planes?
           </p>
