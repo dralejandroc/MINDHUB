@@ -166,7 +166,7 @@ export default function ConsultationForm({ patient, onSave, onCancel }: Consulta
           <Card className="mb-6 border-red-200 bg-red-50">
             <div className="p-4">
               <div className="flex items-start">
-                <ExclamationTriangleIcon className="w-5 h-5 text-red-500 mt-0.5 mr-3 flex-shrink-0" />
+                <AlertTriangle className="w-5 h-5 text-red-500 mt-0.5 mr-3 flex-shrink-0" />
                 <div className="flex-1">
                   <h3 className="text-sm font-semibold text-red-800 mb-2">
                     ⚠️ Alertas de Seguridad Médica
@@ -193,10 +193,10 @@ export default function ConsultationForm({ patient, onSave, onCancel }: Consulta
                         {drugInteractions.map((interaction, index) => (
                           <li key={index} className="flex items-start">
                             <span className="w-1.5 h-1.5 bg-red-500 rounded-full mt-2 mr-2 flex-shrink-0"></span>
-                            <strong>{interaction.drug1}</strong> + <strong>{interaction.drug2}</strong>: {interaction.description}
+                            <strong>{interaction.medication1}</strong> + <strong>{interaction.medication2}</strong>: {interaction.description}
                             <span className={`ml-2 px-1.5 py-0.5 text-xs rounded ${
-                              interaction.severity === 'high' ? 'bg-red-100 text-red-800' :
-                              interaction.severity === 'moderate' ? 'bg-yellow-100 text-yellow-800' :
+                              interaction.severity === 'severa' || interaction.severity === 'contraindicada' ? 'bg-red-100 text-red-800' :
+                              interaction.severity === 'moderada' ? 'bg-yellow-100 text-yellow-800' :
                               'bg-gray-100 text-gray-800'
                             }`}>
                               {interaction.severity}
@@ -332,6 +332,6 @@ function debounce<T extends (...args: any[]) => any>(func: T, wait: number): T {
   let timeout: NodeJS.Timeout;
   return ((...args: Parameters<T>) => {
     clearTimeout(timeout);
-    timeout = setTimeout(() => func.apply(this, args), wait);
+    timeout = setTimeout(() => func(...args), wait);
   }) as T;
 }

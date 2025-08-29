@@ -136,14 +136,20 @@ export default function PatientDashboardOptimized({
       case 'resources':
         return (
           <Suspense fallback={<LoadingFallback message="Cargando recursos..." />}>
-            <ResourcesTimeline patient={patientData} />
+            <ResourcesTimeline 
+              patientId={patientData.id} 
+              patientName={`${patientData.first_name} ${patientData.paternal_last_name}`}
+            />
           </Suspense>
         );
 
       case 'documents':
         return (
           <Suspense fallback={<LoadingFallback message="Cargando documentos..." />}>
-            <PatientDocuments patient={patientData} />
+            <PatientDocuments 
+              patientId={patientData.id} 
+              patientName={`${patientData.first_name} ${patientData.paternal_last_name}`}
+            />
           </Suspense>
         );
 
@@ -160,10 +166,10 @@ export default function PatientDashboardOptimized({
           <div className="flex justify-between items-center">
             <div>
               <h2 className="text-2xl font-bold text-gray-900">
-                {patientData.first_name} {patientData.last_name}
+                {patientData.first_name} {patientData.paternal_last_name}
               </h2>
               <p className="text-sm text-gray-600 mt-1">
-                ID: {patientData.id} | Edad: {calculateAge(patientData.date_of_birth)} años
+                ID: {patientData.id} | Edad: {calculateAge(patientData.birth_date)} años
               </p>
             </div>
             
@@ -256,14 +262,14 @@ const PatientConfigSection = React.memo(({
         <label className="block text-sm font-medium text-gray-700 mb-1">
           Nombre Completo
         </label>
-        <p className="text-gray-900">{patient.first_name} {patient.last_name}</p>
+        <p className="text-gray-900">{patient.first_name} {patient.paternal_last_name}</p>
       </div>
       
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-1">
           Fecha de Nacimiento
         </label>
-        <p className="text-gray-900">{formatDate(patient.date_of_birth)}</p>
+        <p className="text-gray-900">{formatDate(patient.birth_date)}</p>
       </div>
       
       <div>
