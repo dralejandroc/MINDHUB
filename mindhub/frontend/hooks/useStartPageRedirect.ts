@@ -123,12 +123,38 @@ export function useStartPageRedirect() {
 
   // Check if should redirect (call this on app startup)
   const shouldRedirect = (currentPath: string): boolean => {
-    if (loading || currentPath === '/settings' || currentPath.startsWith('/settings')) {
+    if (loading) {
       return false;
     }
 
+    // NEVER redirect when user is working on forms, consultations, or any important content
+    const workingPaths = [
+      '/settings',
+      '/hubs/expedix',
+      '/hubs/agenda', 
+      '/hubs/clinimetrix',
+      '/hubs/formx',
+      '/hubs/finance',
+      '/hubs/resources',
+      '/reports',
+      '/clinic',
+      '/auth',
+      '/forms',
+      '/assessment'
+    ];
+
+    // Check if user is on any working path
+    const isWorkingOnContent = workingPaths.some(path => 
+      currentPath === path || currentPath.startsWith(path)
+    );
+
+    if (isWorkingOnContent) {
+      return false;
+    }
+
+    // Only redirect if explicitly on /app home page AND auto-redirect is enabled
     const targetRoute = getTargetRoute();
-    return currentPath === '/app' && targetRoute !== '/app';
+    return currentPath === '/app' && targetRoute !== '/app' && preferences.autoRedirectEnabled;
   };
 
   return {

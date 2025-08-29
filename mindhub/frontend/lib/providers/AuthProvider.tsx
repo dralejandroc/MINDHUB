@@ -43,6 +43,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setUser(session?.user ?? null)
         setLoading(false)
 
+        // DISABLED: No automatic redirects to preserve user work
+        // Users should handle navigation manually
+        /*
         if (event === 'SIGNED_IN') {
           router.push('/app')
         }
@@ -50,6 +53,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         if (event === 'SIGNED_OUT') {
           router.push('/')
         }
+        */
       }
     )
 

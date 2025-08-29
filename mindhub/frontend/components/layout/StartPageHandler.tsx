@@ -49,12 +49,15 @@ export function StartPageHandler() {
     }
   }, [pathname, saveLastVisitedPage]);
 
-  // Check for redirect when on app home page
+  // DISABLED: No automatic redirects to preserve user work
+  // Users can manually navigate using the sidebar or quick actions
+  /*
   useEffect(() => {
     if (!loading && pathname === '/app' && shouldRedirect(pathname)) {
       performRedirect();
     }
   }, [loading, pathname, shouldRedirect, performRedirect]);
+  */
 
   // Don't show anything if not redirecting or loading
   if (loading || !isRedirecting || pathname !== '/app') {
