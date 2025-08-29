@@ -94,15 +94,17 @@ export const MainDashboard: React.FC<MainDashboardProps> = ({ user }) => {
         scheduledAppointments: dashboardData.weeklyStats.consultations,
       });
       
-      // Convert recent activity to component format
-      const recentActivityFormatted = dashboardData.recentActivity.map((activity, index) => ({
-        id: `activity-${index}`,
-        type: activity.type as 'assessment' | 'consultation' | 'patient_registration',
-        description: activity.description,
-        timestamp: new Date(activity.timestamp),
-        patientName: 'Unknown', // Extract from description if needed
-        status: 'completed' as const,
-      }));
+      // Convert recent activity to component format with defensive checks
+      const recentActivityFormatted = Array.isArray(dashboardData?.recentActivity) 
+        ? dashboardData.recentActivity.map((activity, index) => ({
+            id: `activity-${index}`,
+            type: activity.type as 'assessment' | 'consultation' | 'patient_registration',
+            description: activity.description,
+            timestamp: new Date(activity.timestamp),
+            patientName: 'Unknown', // Extract from description if needed
+            status: 'completed' as const,
+          }))
+        : [];
       
       setRecentActivity(recentActivityFormatted);
     } catch (error) {

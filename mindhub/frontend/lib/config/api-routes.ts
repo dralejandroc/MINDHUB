@@ -54,9 +54,9 @@ const API_ROUTES = {
     // Forms
     consultationTemplates: '/expedix/forms/consultation-templates',
     createConsultationForm: '/expedix/forms/consultation-forms',
-    consultationFormById: (formId: string) => `/expedix/forms/forms/${formId}`,
-    completeConsultationForm: (formId: string) => `/expedix/forms/forms/${formId}/complete`,
-    patientConsultationForms: (patientId: string) => `/expedix/forms/forms/patient/${patientId}`,
+    consultationFormById: (formId: string) => `/expedix/forms/${formId}`,
+    completeConsultationForm: (formId: string) => `/expedix/forms/${formId}/complete`,
+    patientConsultationForms: (patientId: string) => `/expedix/forms/patient/${patientId}`,
     // Schedule Configuration
     scheduleConfig: '/expedix/schedule-config',
     // Agenda
@@ -66,6 +66,7 @@ const API_ROUTES = {
     // Current-generation system
     templates: '/clinimetrix-pro/templates',
     assessments: '/clinimetrix-pro/assessments',
+    patientAssessments: (patientId: string) => `/clinimetrix-pro/assessments/patient/${patientId}`,
     templateCatalog: '/clinimetrix-pro/templates/catalog',
     templateById: (id: string) => `/clinimetrix-pro/templates/${id}`,
     remoteAssessments: '/clinimetrix-pro/remote-assessments',

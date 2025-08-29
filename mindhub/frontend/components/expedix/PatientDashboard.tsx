@@ -973,7 +973,7 @@ export default function PatientDashboard({
                   </div>
                 ) : (
                   <div className="space-y-4">
-                    {dashboardData.consultations.map((consultation, index) => (
+                    {Array.isArray(dashboardData?.consultations) ? dashboardData.consultations.map((consultation, index) => (
                       <div key={consultation.id || index} className="border border-gray-200 rounded-lg p-4">
                         <div className="flex items-start justify-between mb-2">
                           <h4 className="font-medium text-gray-900">
@@ -1017,7 +1017,9 @@ export default function PatientDashboard({
                           </div>
                         )}
                       </div>
-                    ))}
+                    )) : (
+                      <p className="text-gray-500 text-center py-4">No hay consultas registradas</p>
+                    )}
                   </div>
                 )}
               </div>

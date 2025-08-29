@@ -260,7 +260,7 @@ export default function PatientDashboard({
                   </Button>
                 </div>
                 <div className="space-y-4">
-                  {dashboardData.appointments.map((appointment) => (
+                  {Array.isArray(dashboardData?.appointments) ? dashboardData.appointments.map((appointment) => (
                     <div key={appointment.id} className="border border-gray-200 rounded-lg p-4">
                       <div className="flex items-center justify-between">
                         <div>
@@ -278,7 +278,9 @@ export default function PatientDashboard({
                         </span>
                       </div>
                     </div>
-                  ))}
+                  )) : (
+                    <p className="text-gray-500 text-center py-4">No hay citas programadas</p>
+                  )}
                 </div>
               </Card>
             )}
@@ -287,7 +289,7 @@ export default function PatientDashboard({
               <Card className="p-6">
                 <h3 className="text-lg font-semibold text-gray-900 mb-6">Historial de Recetas</h3>
                 <div className="space-y-4">
-                  {dashboardData.prescriptions.map((prescription) => (
+                  {Array.isArray(dashboardData?.prescriptions) ? dashboardData.prescriptions.map((prescription) => (
                     <div key={prescription.id} className="border border-gray-200 rounded-lg p-4">
                       <div className="flex items-center justify-between">
                         <div>
@@ -295,9 +297,9 @@ export default function PatientDashboard({
                             Receta del {new Date(prescription.date).toLocaleDateString('es-MX')}
                           </h4>
                           <div className="mt-2 space-y-1">
-                            {prescription.medications.map((med: string, index: number) => (
+                            {Array.isArray(prescription?.medications) ? prescription.medications.map((med: string, index: number) => (
                               <p key={index} className="text-sm text-gray-600">• {med}</p>
-                            ))}
+                            )) : <p className="text-sm text-gray-600">Sin medicamentos registrados</p>}
                           </div>
                         </div>
                         <span className={`px-2 py-1 text-xs font-medium rounded-full ${
@@ -309,7 +311,9 @@ export default function PatientDashboard({
                         </span>
                       </div>
                     </div>
-                  ))}
+                  )) : (
+                    <p className="text-gray-500 text-center py-4">No hay recetas registradas</p>
+                  )}
                 </div>
               </Card>
             )}
@@ -324,7 +328,7 @@ export default function PatientDashboard({
                   </Button>
                 </div>
                 <div className="space-y-4">
-                  {dashboardData.assessments.map((assessment) => (
+                  {Array.isArray(dashboardData?.assessments) ? dashboardData.assessments.map((assessment) => (
                     <div key={assessment.id} className="border border-gray-200 rounded-lg p-4">
                       <div className="flex items-center justify-between">
                         <div>
@@ -339,7 +343,9 @@ export default function PatientDashboard({
                         <Button size="sm" variant="outline">Ver detalles</Button>
                       </div>
                     </div>
-                  ))}
+                  )) : (
+                    <p className="text-gray-500 text-center py-4">No hay evaluaciones registradas</p>
+                  )}
                 </div>
               </Card>
             )}
@@ -354,7 +360,7 @@ export default function PatientDashboard({
                   </Button>
                 </div>
                 <div className="space-y-4">
-                  {dashboardData.documents.map((document) => (
+                  {Array.isArray(dashboardData?.documents) ? dashboardData.documents.map((document) => (
                     <div key={document.id} className="border border-gray-200 rounded-lg p-4">
                       <div className="flex items-center justify-between">
                         <div className="flex items-center">
@@ -369,7 +375,9 @@ export default function PatientDashboard({
                         <Button size="sm" variant="outline">Descargar</Button>
                       </div>
                     </div>
-                  ))}
+                  )) : (
+                    <p className="text-gray-500 text-center py-4">No hay documentos registrados</p>
+                  )}
                 </div>
               </Card>
             )}

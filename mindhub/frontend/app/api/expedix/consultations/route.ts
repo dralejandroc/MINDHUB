@@ -256,7 +256,8 @@ export async function POST(request: Request) {
         chief_complaint: body.chief_complaint || body.subjective?.substring(0, 500) || '',
         history_present_illness: body.history_present_illness || body.subjective || body.currentCondition || '',
         physical_examination: body.physical_examination || body.objective || body.physicalExamination || '',
-        assessment_plan: body.assessment || body.analysis || body.assessment_plan || '',
+        assessment: body.assessment || body.analysis || body.assessment_plan || '',
+        plan: body.plan || body.treatment_plan || '',
         notes: body.notes || '',
         status: body.status || 'completed',
         // Dual system context

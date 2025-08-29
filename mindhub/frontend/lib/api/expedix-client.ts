@@ -393,31 +393,31 @@ class ExpedixApiClient {
   }
 
   async createConsultationForm(formData: { templateId: string; patientId: string; title?: string; consultationId?: string }): Promise<{ success: boolean; data: any }> {
-    return this.makeRequest<{ success: boolean; data: any }>('/expedix/forms/forms', {
+    return this.makeRequest<{ success: boolean; data: any }>('/expedix/forms', {
       method: 'POST',
       body: JSON.stringify(formData),
     });
   }
 
   async getConsultationForm(formId: string): Promise<{ success: boolean; data: any }> {
-    return this.makeRequest<{ success: boolean; data: any }>(`/expedix/forms/forms/${formId}`);
+    return this.makeRequest<{ success: boolean; data: any }>(`/expedix/forms/${formId}`);
   }
 
   async updateConsultationForm(formId: string, fieldId: string, value: any): Promise<{ success: boolean; data: any }> {
-    return this.makeRequest<{ success: boolean; data: any }>(`/expedix/forms/forms/${formId}`, {
+    return this.makeRequest<{ success: boolean; data: any }>(`/expedix/forms/${formId}`, {
       method: 'PUT',
       body: JSON.stringify({ fieldId, value }),
     });
   }
 
   async completeConsultationForm(formId: string): Promise<{ success: boolean; data: any }> {
-    return this.makeRequest<{ success: boolean; data: any }>(`/expedix/forms/forms/${formId}/complete`, {
+    return this.makeRequest<{ success: boolean; data: any }>(`/expedix/forms/${formId}/complete`, {
       method: 'POST',
     });
   }
 
   async getPatientConsultationForms(patientId: string): Promise<{ success: boolean; data: any[] }> {
-    return this.makeRequest<{ success: boolean; data: any[] }>(`/expedix/forms/forms/patient/${patientId}`);
+    return this.makeRequest<{ success: boolean; data: any[] }>(`/expedix/forms/patient/${patientId}`);
   }
 
   // Consultation Template Management

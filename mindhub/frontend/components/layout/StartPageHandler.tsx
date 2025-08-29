@@ -44,20 +44,20 @@ export function StartPageHandler() {
 
   // Save current page when navigating
   useEffect(() => {
-    if (pathname && pathname !== '/') {
+    if (pathname && pathname !== '/app') {
       saveLastVisitedPage(pathname);
     }
   }, [pathname, saveLastVisitedPage]);
 
-  // Check for redirect when on home page
+  // Check for redirect when on app home page
   useEffect(() => {
-    if (!loading && pathname === '/' && shouldRedirect(pathname)) {
+    if (!loading && pathname === '/app' && shouldRedirect(pathname)) {
       performRedirect();
     }
   }, [loading, pathname, shouldRedirect, performRedirect]);
 
   // Don't show anything if not redirecting or loading
-  if (loading || !isRedirecting || pathname !== '/') {
+  if (loading || !isRedirecting || pathname !== '/app') {
     return null;
   }
 
@@ -129,7 +129,7 @@ export function StartPageHandler() {
                   return (
                     <button
                       key={key}
-                      onClick={() => forceRedirect(`/${key === 'dashboard' ? '' : key === 'reports' ? 'reports' : `hubs/${key}`}`)}
+                      onClick={() => forceRedirect(`/${key === 'dashboard' ? 'app' : key === 'reports' ? 'reports' : `hubs/${key}`}`)}
                       className={`p-2 rounded-lg hover:bg-gray-100 transition-colors ${option.color}`}
                       title={option.name}
                     >

@@ -22,7 +22,7 @@ const DEFAULT_PREFERENCES: StartPagePreferences = {
 };
 
 const START_PAGE_ROUTES = {
-  dashboard: '/',
+  dashboard: '/app',
   reports: '/reports',
   expedix: '/hubs/expedix',
   finance: '/hubs/finance',
@@ -69,21 +69,21 @@ export function useStartPageRedirect() {
   const getTargetRoute = (): string => {
     if (preferences.rememberLastVisited) {
       const lastVisited = localStorage.getItem('lastVisitedPage');
-      if (lastVisited && lastVisited !== '/') {
+      if (lastVisited && lastVisited !== '/app') {
         return lastVisited;
       }
     }
     
     const route = START_PAGE_ROUTES[preferences.selectedStartPage as keyof typeof START_PAGE_ROUTES];
-    return route || '/';
+    return route || '/app';
   };
 
   // Perform redirect with optional countdown
   const performRedirect = (targetRoute?: string) => {
     const route = targetRoute || getTargetRoute();
     
-    if (route === '/') {
-      // Already on dashboard/home, no need to redirect
+    if (route === '/app') {
+      // Already on app home, no need to redirect
       return;
     }
 
@@ -128,7 +128,7 @@ export function useStartPageRedirect() {
     }
 
     const targetRoute = getTargetRoute();
-    return currentPath === '/' && targetRoute !== '/';
+    return currentPath === '/app' && targetRoute !== '/app';
   };
 
   return {

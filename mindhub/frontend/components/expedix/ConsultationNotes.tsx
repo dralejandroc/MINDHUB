@@ -13,6 +13,8 @@ import { useConsultationTemplates, NoteTemplate } from '@/hooks/useConsultationT
 import Link from 'next/link';
 import { SettingsIcon, Save, CheckCircle, AlertTriangle, Clock } from 'lucide-react';
 import DynamicConsultationForm from './DynamicConsultationForm';
+import { authFetch } from '@/lib/api/auth-fetch';
+import { useTenantContext } from '@/hooks/useTenantContext';
 
 // Using Patient interface from expedix-client
 
@@ -131,6 +133,9 @@ interface ConsultationNotesProps {
 // NOTE_TEMPLATES are now loaded dynamically from the database
 
 export default function ConsultationNotes({ patient, onSaveConsultation, onCancel }: ConsultationNotesProps) {
+  // Tenant context for proper API authentication
+  const { getCurrentTenantId, getCurrentTenantType } = useTenantContext();
+  
   // Load dynamic templates from database
   const { noteTemplates, loading: templatesLoading, getDefaultTemplate } = useConsultationTemplates();
   
@@ -306,10 +311,11 @@ export default function ConsultationNotes({ patient, onSaveConsultation, onCance
         setNoteTypeReason(reason);
 
         // Create new consultation in backend
-        const response = await fetch('/api/expedix/consultations/', {
+        const response = await authFetch('/api/expedix/consultations/', {
           method: 'POST',
           headers: {
-            'Content-Type': 'application/json',
+            'X-Tenant-ID': getCurrentTenantId() || '',
+            'X-Tenant-Type': getCurrentTenantType() || ''
           },
           body: JSON.stringify({
             patient_id: patient.id,
