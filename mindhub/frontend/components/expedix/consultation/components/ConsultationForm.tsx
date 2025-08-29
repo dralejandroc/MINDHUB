@@ -106,7 +106,8 @@ export default function ConsultationForm({ patient, onSave, onCancel }: Consulta
   // Handler optimizado para cambios de datos
   const handleDataChange = useCallback((updates: Partial<ConsultationData>) => {
     setConsultationData(prev => {
-      const newData = { ...prev, ...updates };
+      // Create a new instance to maintain class methods
+      const newData = Object.assign(Object.create(Object.getPrototypeOf(prev)), prev, updates);
       
       // Validación médica en tiempo real
       validateMedicalData(newData);

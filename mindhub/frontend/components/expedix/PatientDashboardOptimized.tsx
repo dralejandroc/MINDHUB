@@ -96,7 +96,7 @@ export default function PatientDashboardOptimized({
       case 'timeline':
         return (
           <Suspense fallback={<LoadingFallback message="Cargando timeline del paciente..." />}>
-            <PatientTimeline patient={patientData} />
+            <PatientTimeline patientId={patientData.id} patientName={`${patientData.first_name} ${patientData.paternal_last_name}`} />
           </Suspense>
         );
 
