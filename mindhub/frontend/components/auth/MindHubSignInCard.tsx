@@ -4,7 +4,7 @@ import React, { useState } from "react";
 import { Eye, EyeOff, Heart, Brain } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { HealthcareNetworkMap } from "@/components/ui/healthcare-network-map";
-import { Button } from "@/components/ui/button";
+import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/input";
 
 // Helper function to merge class names

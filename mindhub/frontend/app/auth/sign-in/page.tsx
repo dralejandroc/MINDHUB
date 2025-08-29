@@ -1,14 +1,26 @@
 'use client'
 
 import { useRouter } from 'next/navigation'
+import { useEffect } from 'react'
 import { signIn, signInWithGoogle } from '@/lib/supabase/client'
 import { toast } from 'react-hot-toast'
 import { MindHubSignInCard } from '@/components/auth/MindHubSignInCard'
 import { useState } from 'react'
 
+// Clean Architecture: Domain entities for authentication
+interface SignInData {
+  email: string;
+  password: string;
+}
+
 export default function SignInPage() {
   const [loading, setLoading] = useState(false)
   const router = useRouter()
+
+  // Clean Architecture: Set document title (UI layer concern)
+  useEffect(() => {
+    document.title = 'Iniciar Sesión - MindHub'
+  }, [])
 
   const handleSignIn = async (email: string, password: string) => {
     setLoading(true)

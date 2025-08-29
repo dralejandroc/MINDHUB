@@ -2,7 +2,14 @@
 
 import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
+
+// Clean Architecture: UI Layer imports
 import { PageHeader } from '@/components/layout/PageHeader';
+import { LoadingState, PageLoadingSpinner } from '@/components/ui/loading/LoadingStates';
+import { ErrorBoundary } from '@/components/ui/error/ErrorBoundary';
+import { ErrorMessageResolver } from '@/components/ui/error/ErrorMessages';
+
+// Clean Architecture: Feature component imports
 import ExpedientsGrid from '@/components/expedix/ExpedientsGrid';
 import PatientDashboard from '@/components/expedix/PatientDashboard';
 import ConsultationNotes from '@/components/expedix/ConsultationNotes';
@@ -21,23 +28,45 @@ import {
   ClockIcon,
   MagnifyingGlassIcon
 } from '@heroicons/react/24/outline';
+// Clean Architecture: API Layer imports
 import { expedixApi } from '@/lib/api/expedix-client';
 import type { Patient } from '@/lib/api/expedix-client';
 import { Button } from '@/components/ui/Button';
 
+// Clean Architecture: Domain entities and types
 type ViewMode = 'list' | 'cards' | 'timeline' | 'expedient';
 type DetailView = 'dashboard' | 'consultation' | 'assessment';
 
+interface ExpedixState {
+  viewMode: ViewMode;
+  detailView: DetailView;
+  selectedPatient: Patient | null;
+  loading: boolean;
+  error: string | null;
+  searchTerm: string;
+  showNewPatientModal: boolean;
+}
+
+// Clean Architecture: Use Cases - Expedix business logic
 function ExpedixContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
-  // Use singleton API client with automatic auth handling
-  const [viewMode, setViewMode] = useState<ViewMode>('cards');
-  const [detailView, setDetailView] = useState<DetailView>('dashboard');
-  const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [showNewPatientModal, setShowNewPatientModal] = useState(false);
-  const [searchTerm, setSearchTerm] = useState('');
+  
+  // Clean Architecture: State management (Clean State)
+  const [state, setState] = useState<ExpedixState>({
+    viewMode: 'cards',
+    detailView: 'dashboard',
+    selectedPatient: null,
+    loading: false,
+    error: null,
+    searchTerm: '',
+    showNewPatientModal: false
+  });
+
+  // Clean Architecture: Set document title (UI layer concern)
+  useEffect(() => {
+    document.title = 'Gestión de Pacientes - Expedix - MindHub';
+  }, []);
 
   // Load patient from URL parameters
   useEffect(() => {
@@ -49,68 +78,87 @@ function ExpedixContent() {
     }
   }, [searchParams]);
 
+  // Clean Architecture: Use Case - Load patient data
   const loadPatient = async (patientId: string, action: string | null = null) => {
     try {
-      setLoading(true);
+      setState(prev => ({ ...prev, loading: true, error: null }));
+      
       const response = await expedixApi.getPatient(patientId);
+      
       if (response.data) {
-        setSelectedPatient(response.data);
-        
-        // Set view based on action parameter
-        setViewMode('expedient');
-        if (action === 'consultation') {
-          setDetailView('consultation');
-        } else if (action === 'assessment') {
-          setDetailView('assessment');
-        } else {
-          setDetailView('dashboard');
-        }
+        setState(prev => ({
+          ...prev,
+          selectedPatient: response.data,
+          viewMode: 'expedient',
+          detailView: action === 'consultation' ? 'consultation' : 
+                     action === 'assessment' ? 'assessment' : 'dashboard',
+          loading: false,
+          error: null
+        }));
       } else {
-        // Patient not found, just log the error but don't redirect
+        setState(prev => ({
+          ...prev,
+          loading: false,
+          error: 'Paciente no encontrado'
+        }));
         console.warn('Patient not found with ID:', patientId);
-        // Don't automatically redirect - let user decide
       }
     } catch (error) {
       console.error('Error loading patient:', error);
-      // On error, just log but don't redirect automatically
-      // The user can manually go back if needed
-    } finally {
-      setLoading(false);
+      setState(prev => ({
+        ...prev,
+        loading: false,
+        error: error instanceof Error ? error.message : 'Error al cargar el paciente'
+      }));
     }
   };
 
+  // Clean Architecture: UI Event handlers
   const handleSelectPatient = (patient: Patient) => {
-    setSelectedPatient(patient);
-    setViewMode('expedient');
-    setDetailView('dashboard');
+    setState(prev => ({
+      ...prev,
+      selectedPatient: patient,
+      viewMode: 'expedient',
+      detailView: 'dashboard'
+    }));
   };
 
   const handleNewConsultation = (patient: Patient) => {
-    setSelectedPatient(patient);
-    setViewMode('expedient');
-    setDetailView('consultation');
+    setState(prev => ({
+      ...prev,
+      selectedPatient: patient,
+      viewMode: 'expedient',
+      detailView: 'consultation'
+    }));
   };
 
   const handleClinicalAssessment = (patient: Patient) => {
-    setSelectedPatient(patient);
-    setViewMode('expedient');
-    setDetailView('assessment');
+    setState(prev => ({
+      ...prev,
+      selectedPatient: patient,
+      viewMode: 'expedient',
+      detailView: 'assessment'
+    }));
   };
 
   const handleBackToList = () => {
-    setSelectedPatient(null);
-    setViewMode('cards'); // Reset to default view
-    setDetailView('dashboard');
-    // Update URL to remove patient parameter
+    setState(prev => ({
+      ...prev,
+      selectedPatient: null,
+      viewMode: 'cards',
+      detailView: 'dashboard',
+      error: null
+    }));
+    // Clean URL
     window.history.pushState({}, '', '/hubs/expedix');
   };
 
   const handleBackToPatientDashboard = () => {
-    setDetailView('dashboard');
+    setState(prev => ({ ...prev, detailView: 'dashboard' }));
   };
   
   const handleNewPatient = () => {
-    setShowNewPatientModal(true);
+    setState(prev => ({ ...prev, showNewPatientModal: true }));
   };
   
   const handlePatientCreated = (newPatient: Patient) => {
@@ -129,13 +177,20 @@ function ExpedixContent() {
 
 
 
+  // Clean Architecture: Error handling logic
+  const handleRetry = () => {
+    setState(prev => ({ ...prev, error: null }));
+    const patientId = searchParams?.get('patient');
+    if (patientId) {
+      loadPatient(patientId, searchParams?.get('action'));
+    }
+  };
+
   return (
     <div className="space-y-6">
-      {loading && (
-        <div className="flex items-center justify-center py-8">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-          <span className="ml-3 text-gray-600">Cargando paciente...</span>
-        </div>
+      {/* Clean Architecture: Error display */}
+      {state.error && (
+        <ErrorMessageResolver error={state.error} onRetry={handleRetry} />
       )}
 
       <PageHeader
@@ -143,7 +198,7 @@ function ExpedixContent() {
         icon={UserGroupIcon}
         actions={
           <div className="flex items-center space-x-2">
-            {viewMode === 'expedient' && selectedPatient && (
+            {state.viewMode === 'expedient' && state.selectedPatient && (
               <Button onClick={handleBackToList} variant="outline" size="sm">
                 ← Volver
               </Button>
@@ -160,66 +215,72 @@ function ExpedixContent() {
         }
       />
       
-      {/* View Mode Selector with Search - Only show when not in expedient detail */}
-      {viewMode !== 'expedient' && (
-        <div className="bg-white p-3 rounded-xl shadow-lg border border-primary-100">
-          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
-            {/* View Mode Buttons */}
-            <div className="flex items-center space-x-0.5 bg-primary-50 p-0.5 rounded-lg border border-primary-200">
-              <button
-                onClick={() => setViewMode('list')}
-                className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all duration-200 ${
-                  viewMode === 'list' 
-                    ? 'gradient-primary text-white shadow-primary' 
-                    : 'text-primary-600 hover:bg-primary-100'
-                }`}
-              >
-                <TableCellsIcon className="h-3 w-3 inline mr-1" />
-                Lista
-              </button>
-              <button
-                onClick={() => setViewMode('cards')}
-                className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all duration-200 ${
-                  viewMode === 'cards' 
-                    ? 'gradient-primary text-white shadow-primary' 
-                    : 'text-primary-600 hover:bg-primary-100'
-                }`}
-              >
-                <Squares2X2Icon className="h-3 w-3 inline mr-1" />
-                Tarjetas
-              </button>
-              <button
-                onClick={() => setViewMode('timeline')}
-                className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all duration-200 ${
-                  viewMode === 'timeline' 
-                    ? 'gradient-primary text-white shadow-primary' 
-                    : 'text-primary-600 hover:bg-primary-100'
-                }`}
-              >
-                <ClockIcon className="h-3 w-3 inline mr-1" />
-                Timeline
-              </button>
-            </div>
-            
-            {/* Search Bar */}
-            <div className="flex-1 w-full sm:w-auto">
-              <div className="relative">
-                <MagnifyingGlassIcon className="h-4 w-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
-                <input
-                  type="text"
-                  placeholder="Buscar pacientes..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full pl-9 pr-4 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                />
+      {/* Clean Architecture: View Mode Selector - Only show when not in expedient detail */}
+      <LoadingState
+        isLoading={state.loading}
+        error={null} // We handle error above
+        loadingMessage="Cargando información del paciente..."
+      >
+        {state.viewMode !== 'expedient' && (
+          <div className="bg-white p-3 rounded-xl shadow-lg border border-primary-100">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
+              {/* View Mode Buttons */}
+              <div className="flex items-center space-x-0.5 bg-primary-50 p-0.5 rounded-lg border border-primary-200">
+                <button
+                  onClick={() => setState(prev => ({ ...prev, viewMode: 'list' }))}
+                  className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all duration-200 ${
+                    state.viewMode === 'list' 
+                      ? 'gradient-primary text-white shadow-primary' 
+                      : 'text-primary-600 hover:bg-primary-100'
+                  }`}
+                >
+                  <TableCellsIcon className="h-3 w-3 inline mr-1" />
+                  Lista
+                </button>
+                <button
+                  onClick={() => setState(prev => ({ ...prev, viewMode: 'cards' }))}
+                  className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all duration-200 ${
+                    state.viewMode === 'cards' 
+                      ? 'gradient-primary text-white shadow-primary' 
+                      : 'text-primary-600 hover:bg-primary-100'
+                  }`}
+                >
+                  <Squares2X2Icon className="h-3 w-3 inline mr-1" />
+                  Tarjetas
+                </button>
+                <button
+                  onClick={() => setState(prev => ({ ...prev, viewMode: 'timeline' }))}
+                  className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all duration-200 ${
+                    state.viewMode === 'timeline' 
+                      ? 'gradient-primary text-white shadow-primary' 
+                      : 'text-primary-600 hover:bg-primary-100'
+                  }`}
+                >
+                  <ClockIcon className="h-3 w-3 inline mr-1" />
+                  Timeline
+                </button>
+              </div>
+              
+              {/* Search Bar */}
+              <div className="flex-1 w-full sm:w-auto">
+                <div className="relative">
+                  <MagnifyingGlassIcon className="h-4 w-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+                  <input
+                    type="text"
+                    placeholder="Buscar pacientes..."
+                    value={state.searchTerm}
+                    onChange={(e) => setState(prev => ({ ...prev, searchTerm: e.target.value }))}
+                    className="w-full pl-9 pr-4 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                  />
+                </div>
               </div>
             </div>
           </div>
-        </div>
-      )}
+        )}
+      </LoadingState>
       
-      {/* List View */}
-      {viewMode === 'list' && (
+      {/* Clean Architecture: Different view modes */}
+      {state.viewMode === 'list' && (
         <PatientManagementAdvanced
           onSelectPatient={handleSelectPatient}
           onNewPatient={handleNewPatient}
@@ -227,19 +288,17 @@ function ExpedixContent() {
           onClinicalAssessment={handleClinicalAssessment}
           onScheduleAppointment={handleScheduleAppointment}
           onSettings={handleSettings}
-          onChangeView={setViewMode}
+          onChangeView={(mode: ViewMode) => setState(prev => ({ ...prev, viewMode: mode }))}
         />
       )}
       
-      {/* Cards View */}
-      {viewMode === 'cards' && (
+      {state.viewMode === 'cards' && (
         <ExpedientsGrid
           onSelectPatient={handleSelectPatient}
         />
       )}
       
-      {/* Timeline View */}
-      {viewMode === 'timeline' && (
+      {state.viewMode === 'timeline' && (
         <div className="bg-white rounded-xl p-6 border shadow">
           <h3 className="text-lg font-bold mb-4 text-gray-900">Vista Timeline Global</h3>
           <p className="text-gray-600 text-center py-8">
@@ -247,8 +306,8 @@ function ExpedixContent() {
           </p>
           <div className="text-center">
             <button
-              onClick={() => setViewMode('list')}
-              className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg"
+              onClick={() => setState(prev => ({ ...prev, viewMode: 'list' }))}
+              className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors"
             >
               Ver Lista de Pacientes
             </button>
@@ -256,21 +315,21 @@ function ExpedixContent() {
         </div>
       )}
       
-      {/* Expedient Detail Views */}
-      {viewMode === 'expedient' && selectedPatient && (
+      {/* Clean Architecture: Expedient Detail Views */}
+      {state.viewMode === 'expedient' && state.selectedPatient && (
         <>
-          {detailView === 'dashboard' && (
+          {state.detailView === 'dashboard' && (
             <PatientDashboard
-              patient={selectedPatient}
+              patient={state.selectedPatient}
               onClose={handleBackToList}
-              onNewConsultation={() => handleNewConsultation(selectedPatient)}
-              onClinicalAssessment={() => handleClinicalAssessment(selectedPatient)}
+              onNewConsultation={() => handleNewConsultation(state.selectedPatient!)}
+              onClinicalAssessment={() => handleClinicalAssessment(state.selectedPatient!)}
             />
           )}
 
-          {detailView === 'consultation' && (
+          {state.detailView === 'consultation' && (
             <ConsultationNotes
-              patient={selectedPatient}
+              patient={state.selectedPatient}
               onSaveConsultation={(data) => {
                 console.log('Consulta guardada:', data);
                 handleBackToPatientDashboard();
@@ -279,42 +338,39 @@ function ExpedixContent() {
             />
           )}
 
-          {detailView === 'assessment' && (
+          {state.detailView === 'assessment' && (
             <ClinimetrixScaleSelector
               patient={{
-                id: selectedPatient.id,
-                first_name: selectedPatient.first_name,
-                paternal_last_name: selectedPatient.paternal_last_name,
-                maternal_last_name: selectedPatient.maternal_last_name,
-                age: selectedPatient.age
+                id: state.selectedPatient.id,
+                first_name: state.selectedPatient.first_name,
+                paternal_last_name: state.selectedPatient.paternal_last_name,
+                maternal_last_name: state.selectedPatient.maternal_last_name,
+                age: state.selectedPatient.age
               }}
               onClose={handleBackToPatientDashboard}
-              consultationId={undefined} // TODO: Pasar ID de consulta si hay una abierta
+              consultationId={undefined}
             />
           )}
         </>
       )}
       
-      {/* New Patient Modal */}
+      {/* Clean Architecture: Modal Management */}
       <NewPatientModal
-        isOpen={showNewPatientModal}
-        onClose={() => setShowNewPatientModal(false)}
+        isOpen={state.showNewPatientModal}
+        onClose={() => setState(prev => ({ ...prev, showNewPatientModal: false }))}
         onSuccess={handlePatientCreated}
       />
     </div>
   );
 }
 
-// Main component with Suspense boundary
+// Clean Architecture: Main component with proper error boundaries and loading states
 export default function ExpedixPage() {
   return (
-    <Suspense fallback={
-      <div className="flex items-center justify-center py-8">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-        <span className="ml-3 text-gray-600">Cargando...</span>
-      </div>
-    }>
-      <ExpedixContent />
-    </Suspense>
+    <ErrorBoundary>
+      <Suspense fallback={<PageLoadingSpinner message="Cargando Expedix..." />}>
+        <ExpedixContent />
+      </Suspense>
+    </ErrorBoundary>
   );
 }

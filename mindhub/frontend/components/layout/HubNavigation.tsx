@@ -11,7 +11,13 @@ import {
   CogIcon,
   ArrowLeftOnRectangleIcon,
   ChevronDownIcon,
-  ChevronRightIcon
+  ChevronRightIcon,
+  CalendarDaysIcon,
+  ClipboardDocumentCheckIcon,
+  CurrencyDollarIcon,
+  BuildingOfficeIcon,
+  Bars3Icon,
+  XMarkIcon
 } from '@heroicons/react/24/outline';
 
 interface Hub {
@@ -24,6 +30,7 @@ interface Hub {
   features: string[];
 }
 
+// Clean Architecture: Domain entities for navigation
 const HUBS: Hub[] = [
   {
     id: 'expedix',
@@ -34,51 +41,85 @@ const HUBS: Hub[] = [
     status: 'active',
     features: [
       'Gestión de Pacientes',
-      'Consultas Médicas',
+      'Consultas Médicas', 
       'Recetas Digitales',
-      'Historial Clínico'
+      'Historial Clínico',
+      'Portal de Pacientes'
+    ]
+  },
+  {
+    id: 'agenda',
+    name: 'Agenda',
+    description: 'Sistema de Citas y Programación',
+    icon: CalendarDaysIcon,
+    href: '/hubs/agenda',
+    status: 'active',
+    features: [
+      'Programación de Citas',
+      'Gestión de Horarios',
+      'Lista de Espera',
+      'Notificaciones Automáticas',
+      'Drag & Drop'
     ]
   },
   {
     id: 'clinimetrix',
-    name: 'Clinimetrix',
-    description: 'Sistema de Evaluación Clínica',
-    icon: DocumentChartBarIcon,
+    name: 'ClinimetrixPro',
+    description: 'Sistema de Evaluaciones Psicométricas',
+    icon: ClipboardDocumentCheckIcon,
     href: '/hubs/clinimetrix',
-    status: 'beta',
+    status: 'active',
     features: [
-      '50+ Escalas Clínicas',
-      'PHQ-9, GAD-7, Beck',
+      '29+ Escalas Psicométricas',
+      'PHQ-9, BDI, GADI, HARS',
       'Scoring Automático',
-      'Enlaces Seguros'
+      'Integración con Expedix',
+      'Reportes Clínicos'
     ]
   },
   {
     id: 'formx',
-    name: 'Formx',
+    name: 'FormX',
     description: 'Constructor de Formularios',
     icon: DocumentTextIcon,
     href: '/hubs/formx',
-    status: 'coming-soon',
+    status: 'active',
     features: [
-      'Editor Drag & Drop',
-      'Importar PDF',
-      'Compatibilidad JotForm',
-      'Enlaces Públicos'
+      'Templates Médicos',
+      'Formularios Personalizados',
+      'Validación Automática',
+      'Integración con Consultas',
+      'Exportación de Datos'
     ]
   },
   {
-    id: 'resources',
-    name: 'Resources',
-    description: 'Biblioteca Psicoeducacional',
-    icon: BookOpenIcon,
-    href: '/hubs/resources',
-    status: 'coming-soon',
+    id: 'finance',
+    name: 'Finance',
+    description: 'Gestión Financiera y Facturación',
+    icon: CurrencyDollarIcon,
+    href: '/hubs/finance',
+    status: 'active',
     features: [
-      'Catálogo Categorizado',
-      'Descargas Seguras',
-      'Control de Versiones',
-      'Análisis de Uso'
+      'Sistema de Facturación',
+      'Gestión de Servicios',
+      'Cortes de Caja',
+      'Reportes Financieros',
+      'Multi-métodos de Pago'
+    ]
+  },
+  {
+    id: 'frontdesk',
+    name: 'FrontDesk',
+    description: 'Recepción y Gestión de Flujo',
+    icon: BuildingOfficeIcon,
+    href: '/hubs/frontdesk',
+    status: 'active',
+    features: [
+      'Dashboard de Recepción',
+      'Check-in de Pacientes',
+      'Gestión de Esperas',
+      'Comunicación Interna',
+      'Vista Multi-profesional'
     ]
   }
 ];
@@ -96,6 +137,7 @@ export default function HubNavigation({ currentUser, onLogout }: HubNavigationPr
   const pathname = usePathname();
   const [expandedHub, setExpandedHub] = useState<string | null>(null);
   const [showUserMenu, setShowUserMenu] = useState(false);
+  const [showMobileMenu, setShowMobileMenu] = useState(false); // Clean Architecture: Mobile state management
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -222,8 +264,23 @@ export default function HubNavigation({ currentUser, onLogout }: HubNavigationPr
             })}
           </div>
 
-          {/* User Menu */}
-          <div className="flex items-center space-x-4">
+          {/* Mobile Menu Button */}
+          <div className="md:hidden flex items-center">
+            <button
+              onClick={() => setShowMobileMenu(!showMobileMenu)}
+              className="p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
+              aria-label="Toggle mobile menu"
+            >
+              {showMobileMenu ? (
+                <XMarkIcon className="w-6 h-6" />
+              ) : (
+                <Bars3Icon className="w-6 h-6" />
+              )}
+            </button>
+          </div>
+
+          {/* Desktop User Menu */}
+          <div className="hidden md:flex items-center space-x-4">
             {currentUser ? (
               <div className="relative">
                 <button
@@ -282,38 +339,104 @@ export default function HubNavigation({ currentUser, onLogout }: HubNavigationPr
         </div>
       </div>
 
-      {/* Mobile Navigation (if needed) */}
-      <div className="md:hidden border-t border-gray-200">
-        <div className="px-4 py-3 space-y-2">
-          {HUBS.map((hub) => {
-            const Icon = hub.icon;
-            const isCurrent = isCurrentHub(hub.href);
-            
-            return (
-              <Link
-                key={hub.id}
-                href={hub.status === 'active' ? hub.href : '#'}
-                className={`
-                  flex items-center px-3 py-2 text-sm font-medium rounded-md
-                  ${isCurrent 
-                    ? 'bg-blue-100 text-blue-700' 
-                    : hub.status === 'active'
-                      ? 'text-gray-700 hover:bg-gray-100'
-                      : 'text-gray-400'
-                  }
-                `}
-                onClick={hub.status !== 'active' ? (e) => e.preventDefault() : undefined}
-              >
-                <Icon className="w-5 h-5 mr-3" />
-                <span>{hub.name}</span>
-                <div className="ml-auto">
-                  {getStatusBadge(hub.status)}
+      {/* Mobile Navigation - Only show when menu is open */}
+      {showMobileMenu && (
+        <div className="md:hidden border-t border-gray-200 bg-white shadow-lg">
+          {/* Mobile User Info */}
+          {currentUser && (
+            <div className="px-4 py-3 border-b border-gray-200">
+              <div className="flex items-center space-x-3">
+                <div className="w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center">
+                  <span className="text-white font-medium text-sm">
+                    {currentUser.name.charAt(0).toUpperCase()}
+                  </span>
                 </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-gray-900 truncate">{currentUser.name}</p>
+                  <p className="text-xs text-gray-500 truncate">{currentUser.email}</p>
+                  <p className="text-xs text-blue-600 capitalize">{currentUser.role}</p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Mobile Hub Navigation */}
+          <div className="px-4 py-3 space-y-2">
+            {HUBS.map((hub) => {
+              const Icon = hub.icon;
+              const isCurrent = isCurrentHub(hub.href);
+              
+              return (
+                <Link
+                  key={hub.id}
+                  href={hub.status === 'active' ? hub.href : '#'}
+                  className={`
+                    flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-colors
+                    ${isCurrent 
+                      ? 'bg-blue-100 text-blue-700 border border-blue-200' 
+                      : hub.status === 'active'
+                        ? 'text-gray-700 hover:bg-gray-100 hover:text-gray-900'
+                        : 'text-gray-400 cursor-not-allowed'
+                    }
+                  `}
+                  onClick={(e) => {
+                    if (hub.status !== 'active') {
+                      e.preventDefault();
+                    } else {
+                      setShowMobileMenu(false); // Close menu when navigating
+                    }
+                  }}
+                >
+                  <Icon className="w-5 h-5 mr-3 flex-shrink-0" />
+                  <span className="flex-1">{hub.name}</span>
+                  <div className="ml-2">
+                    {getStatusBadge(hub.status)}
+                  </div>
+                </Link>
+              );
+            })}
+          </div>
+
+          {/* Mobile User Actions */}
+          {currentUser && (
+            <div className="px-4 py-3 border-t border-gray-200 space-y-2">
+              <Link
+                href="/settings"
+                className="flex items-center px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+                onClick={() => setShowMobileMenu(false)}
+              >
+                <CogIcon className="w-4 h-4 mr-3" />
+                Configuración
               </Link>
-            );
-          })}
+              {onLogout && (
+                <button
+                  onClick={() => {
+                    setShowMobileMenu(false);
+                    onLogout();
+                  }}
+                  className="flex items-center w-full px-3 py-2 text-sm text-red-700 hover:bg-red-50 rounded-lg transition-colors"
+                >
+                  <ArrowLeftOnRectangleIcon className="w-4 h-4 mr-3" />
+                  Cerrar Sesión
+                </button>
+              )}
+            </div>
+          )}
+
+          {/* Mobile Sign In - Show when no user */}
+          {!currentUser && (
+            <div className="px-4 py-3 border-t border-gray-200">
+              <Link
+                href="/auth/sign-in"
+                className="block w-full text-center bg-blue-600 text-white px-4 py-2.5 rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors"
+                onClick={() => setShowMobileMenu(false)}
+              >
+                Iniciar Sesión
+              </Link>
+            </div>
+          )}
         </div>
-      </div>
+      )}
     </div>
   );
 }

@@ -1,23 +1,32 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { signUp, signUpWithGoogle } from '@/lib/supabase/client'
 import { toast } from 'react-hot-toast'
 import { MindHubSignUpCard } from '@/components/auth/MindHubSignUpCard'
 
+// Clean Architecture: Domain entities for registration
+interface SignUpData {
+  firstName: string;
+  lastName: string;
+  email: string;
+  password: string;
+  clinicName: string;
+}
+
 export default function SignUpPage() {
   const [loading, setLoading] = useState(false)
   const router = useRouter()
 
+  // Clean Architecture: Set document title (UI layer concern)
+  useEffect(() => {
+    document.title = 'Crear Cuenta - MindHub'
+  }, [])
 
-  const handleSignUp = async (data: {
-    firstName: string;
-    lastName: string;
-    email: string;
-    password: string;
-    clinicName: string;
-  }) => {
+
+  // Clean Architecture: Use Case - Handle user registration
+  const handleSignUp = async (data: SignUpData) => {
     setLoading(true)
 
     try {

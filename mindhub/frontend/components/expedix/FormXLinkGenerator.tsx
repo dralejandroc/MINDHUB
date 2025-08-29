@@ -382,7 +382,7 @@ export default function FormXLinkGenerator() {
               </div>
               <div>
                 <p className="font-medium">Procesamiento automático</p>
-                <p className="text-gray-600">Si la confianza es alta (>85%), se procesa automáticamente. Si no, requiere confirmación manual</p>
+                <p className="text-gray-600">Si la confianza es alta (&gt;85%), se procesa automáticamente. Si no, requiere confirmación manual</p>
               </div>
             </div>
           </div>
