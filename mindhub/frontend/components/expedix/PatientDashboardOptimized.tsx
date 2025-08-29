@@ -119,7 +119,14 @@ export default function PatientDashboardOptimized({
       case 'assessments':
         return (
           <Suspense fallback={<LoadingFallback message="Cargando evaluaciones..." />}>
-            <PatientAssessments patient={patientData} />
+            <PatientAssessments 
+              patientId={patientData.id} 
+              patientName={`${patientData.first_name} ${patientData.paternal_last_name}`}
+              onNewAssessment={() => {
+                // Could trigger a refresh or navigate to assessment creation
+                console.log('New assessment requested for patient:', patientData.id);
+              }}
+            />
           </Suspense>
         );
 

@@ -145,7 +145,7 @@ export default function ConsultationForm({ patient, onSave, onCancel }: Consulta
       <Card className="p-6">
         <div className="flex justify-between items-center mb-6">
           <h2 className="text-2xl font-bold">
-            Nueva Consulta - {patient.first_name} {patient.last_name}
+            Nueva Consulta - {patient.first_name} {patient.paternal_last_name}
           </h2>
           <div className="flex space-x-2">
             <Button variant="outline" onClick={onCancel}>
