@@ -1,21 +1,21 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/Card';
+import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/badge';
-import { Input } from '@/components/ui/input';
+import { Input } from '@/components/ui/Input';
 import { toast } from 'react-hot-toast';
 import { 
   UsersIcon,
-  RefreshCw,
   MagnifyingGlassIcon,
   FunnelIcon,
   UserCircleIcon,
-  TrendingUpIcon,
-  TrendingDownIcon,
+  ArrowTrendingUpIcon,
+  ArrowTrendingDownIcon,
   CalendarIcon
 } from '@heroicons/react/24/outline';
+import { RefreshCw } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface PatientClassification {
