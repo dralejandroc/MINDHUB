@@ -20,14 +20,19 @@ export async function GET() {
       try {
         console.log(`[DEBUG] Testing ${test.name}: ${test.url}`);
         
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 10000);
+        
         const response = await fetch(test.url, {
           method: 'GET',
           headers: {
             'Authorization': `Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY}`,
             'Content-Type': 'application/json',
           },
-          timeout: 10000,
+          signal: controller.signal,
         });
+        
+        clearTimeout(timeoutId);
         
         const statusText = response.statusText;
         let body = '';
@@ -48,11 +53,12 @@ export async function GET() {
         });
         
       } catch (error) {
+        const errorMessage = error.name === 'AbortError' ? 'Request timeout (10s)' : error.message;
         results.push({
           name: test.name,
           url: test.url,
           status: 'ERROR',
-          error: error.message,
+          error: errorMessage,
         });
       }
     }
