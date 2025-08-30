@@ -53,7 +53,9 @@ export async function GET() {
         });
         
       } catch (error) {
-        const errorMessage = error.name === 'AbortError' ? 'Request timeout (10s)' : error.message;
+        const errorMessage = error instanceof Error 
+          ? (error.name === 'AbortError' ? 'Request timeout (10s)' : error.message)
+          : 'Unknown error occurred';
         results.push({
           name: test.name,
           url: test.url,
