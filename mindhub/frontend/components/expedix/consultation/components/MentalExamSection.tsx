@@ -29,24 +29,45 @@ const MentalExamSection = memo(function MentalExamSection({
     });
   };
 
+  // Check if any mental exam fields have data
+  const hasData = Object.values(mentalExam).some(value => value && value.trim() !== '');
+  const completedFieldsCount = Object.values(mentalExam).filter(value => value && value.trim() !== '').length;
+
   // Lazy loading - solo renderizar cuando esté expandido
   if (!isExpanded) {
     return (
-      <Card className="p-4 mb-6">
+      <Card className={`p-4 mb-6 border-2 ${hasData 
+        ? 'border-green-200 bg-gradient-to-r from-green-50 to-emerald-50' 
+        : 'border-blue-200 bg-gradient-to-r from-blue-50 to-indigo-50'
+      }`}>
         <div className="flex justify-between items-center">
-          <h3 className="text-lg font-semibold">Examen Mental</h3>
+          <div>
+            <h3 className={`text-lg font-semibold ${hasData ? 'text-green-900' : 'text-blue-900'}`}>
+              🧠 Examen Mental
+              {hasData && <span className="ml-2 text-sm font-normal">({completedFieldsCount}/12 campos)</span>}
+            </h3>
+            <p className={`text-sm mt-1 ${hasData ? 'text-green-700' : 'text-blue-700'}`}>
+              {hasData 
+                ? 'Evaluación iniciada - Click para continuar editando' 
+                : 'Evaluación psiquiátrica completa - Recomendado completar'
+              }
+            </p>
+          </div>
           <Button
-            variant="ghost"
+            variant="default"
             onClick={() => setIsExpanded(true)}
-            className="flex items-center"
+            className={`flex items-center text-white ${hasData 
+              ? 'bg-green-600 hover:bg-green-700' 
+              : 'bg-blue-600 hover:bg-blue-700'
+            }`}
           >
             <ChevronDown className="w-4 h-4 mr-2" />
-            Expandir
+            {hasData ? 'Continuar' : 'Completar Examen'}
           </Button>
         </div>
-        <p className="text-sm text-gray-600 mt-2">
-          Click para expandir y completar el examen mental
-        </p>
+        <div className={`mt-3 text-xs ${hasData ? 'text-green-600' : 'text-blue-600'}`}>
+          ✓ Apariencia • ✓ Actitud • ✓ Conciencia • ✓ Orientación • ✓ Atención • ✓ Pensamiento
+        </div>
       </Card>
     );
   }
