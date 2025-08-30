@@ -15,7 +15,7 @@ SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-vercel-deployment-key
 # Override base settings for Vercel
 DEBUG = False
 
-# Application definition - MINIMAL CLINIMETRIX SUPPORT FOR VERCEL
+# Application definition - COMPLETE MINDHUB APPS FOR PRODUCTION
 INSTALLED_APPS = [
     'django.contrib.admin',
     'django.contrib.auth',
@@ -23,12 +23,25 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'django.contrib.sites',
     'rest_framework',
     'corsheaders',
-    # Core apps only
-    'expedix',  # Patient Management
+    'allauth',
+    'allauth.account',
+    'allauth.socialaccount',
+    'guardian',
+    'django_filters',
+    'drf_spectacular',
+    # MindHub Complete Apps
+    'psychometric_scales',  # Scale Data Management  
     'assessments',  # ClinimetrixPro Assessment Engine
-    'psychometric_scales',  # Scale Data Management
+    'accounts',  # User accounts
+    'formx',  # FormX - Dynamic Form Builder
+    'expedix',  # Expedix - Patient Management System
+    'agenda',  # Agenda - Appointment Scheduling
+    'resources',  # Resources - Medical Resources Management
+    'clinics',  # Multi-user Clinic Management System
+    'finance',  # Finance - Financial Management & Income Tracking
 ]
 
 MIDDLEWARE = [
@@ -39,9 +52,10 @@ MIDDLEWARE = [
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
+    'allauth.account.middleware.AccountMiddleware',
+    'middleware.supabase_auth.SupabaseAuthMiddleware',  # Re-enabled for production
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
-    # 'middleware.supabase_auth.SupabaseAuthMiddleware',  # Temporarily disabled for debugging
 ]
 
 ROOT_URLCONF = 'clinimetrix_django.urls'
@@ -88,8 +102,25 @@ USE_I18N = True
 USE_L10N = True
 USE_TZ = True
 
-# Site ID for django.contrib.sites
+# Site ID for django.contrib.sites  
 SITE_ID = 1
+
+# Authentication
+AUTH_USER_MODEL = 'accounts.User'
+
+# Authentication backends
+AUTHENTICATION_BACKENDS = [
+    'django.contrib.auth.backends.ModelBackend',
+    'allauth.account.auth_backends.AuthenticationBackend', 
+    'guardian.backends.ObjectPermissionBackend',
+]
+
+# Django Allauth settings
+ACCOUNT_EMAIL_VERIFICATION = 'none'
+ACCOUNT_LOGIN_METHODS = ['email']
+ACCOUNT_SIGNUP_FIELDS = ['email', 'first_name', 'last_name', 'password1', 'password2']
+LOGIN_REDIRECT_URL = '/dashboard/'
+LOGOUT_REDIRECT_URL = '/'
 
 # Default primary key field type
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
@@ -101,7 +132,7 @@ REST_FRAMEWORK = {
         'rest_framework.authentication.TokenAuthentication',
     ],
     'DEFAULT_PERMISSION_CLASSES': [
-        'rest_framework.permissions.AllowAny',
+        'rest_framework.permissions.IsAuthenticated',
     ],
     'DEFAULT_RENDERER_CLASSES': [
         'rest_framework.renderers.JSONRenderer',
