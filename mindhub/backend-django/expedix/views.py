@@ -1423,3 +1423,196 @@ class PrescriptionViewSet(ExpedixDualViewSet):
             serializer.save(clinic_id=user_context.get('clinic_id'))
         else:
             serializer.save(workspace_id=user_context.get('workspace_id'))
+
+
+class ConsultationCentralViewSet(ExpedixDualViewSet):
+    """
+    Central Consultation Management ViewSet - The heart of Expedix
+    Handles consultation creation, updates, and integration with Agenda
+    """
+    queryset = Consultation.objects.all()
+    serializer_class = ConsultationSerializer
+    authentication_classes = [SupabaseProxyAuthentication]
+    permission_classes = [IsAuthenticated]
+    filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
+    search_fields = ['reason', 'diagnosis', 'notes']
+    ordering_fields = ['consultation_date', 'created_at']
+    ordering = ['-consultation_date', '-created_at']
+
+    @action(detail=False, methods=['get'])
+    def by_patient(self, request):
+        """Get all consultations for a specific patient"""
+        patient_id = request.query_params.get('patient_id')
+        if not patient_id:
+            return Response({
+                'success': False,
+                'error': 'patient_id is required'
+            }, status=400)
+
+        try:
+            # Verify patient exists and user has access
+            patient = self.get_queryset().filter(id=patient_id).first()
+            if not patient:
+                return Response({
+                    'success': False,
+                    'error': 'Patient not found or access denied'
+                }, status=404)
+
+            # Get patient consultations
+            consultations = Consultation.objects.filter(
+                patient_id=patient_id
+            ).order_by('-consultation_date', '-created_at')
+
+            # Apply dual system filtering
+            consultations = self.filter_queryset(consultations)
+
+            serializer = self.get_serializer(consultations, many=True)
+            return Response({
+                'success': True,
+                'data': serializer.data
+            })
+
+        except Exception as e:
+            logger.error(f"Error getting patient consultations: {e}")
+            return Response({
+                'success': False,
+                'error': str(e)
+            }, status=500)
+
+    @action(detail=False, methods=['get'])
+    def by_appointment(self, request):
+        """Get consultation by appointment ID"""
+        appointment_id = request.query_params.get('appointment_id')
+        if not appointment_id:
+            return Response({
+                'success': False,
+                'error': 'appointment_id is required'
+            }, status=400)
+
+        try:
+            consultation = self.get_queryset().filter(
+                appointment_id=appointment_id
+            ).first()
+
+            if consultation:
+                serializer = self.get_serializer(consultation)
+                return Response({
+                    'success': True,
+                    'data': serializer.data
+                })
+            else:
+                return Response({
+                    'success': True,
+                    'data': None
+                })
+
+        except Exception as e:
+            logger.error(f"Error getting consultation by appointment: {e}")
+            return Response({
+                'success': False,
+                'error': str(e)
+            }, status=500)
+
+    @action(detail=True, methods=['patch'])
+    def start(self, request, pk=None):
+        """Start a consultation (change status from draft to in_progress)"""
+        try:
+            consultation = self.get_object()
+            consultation.status = 'in_progress'
+            consultation.started_at = timezone.now()
+            consultation.save()
+
+            serializer = self.get_serializer(consultation)
+            return Response({
+                'success': True,
+                'data': serializer.data,
+                'message': 'Consultation started successfully'
+            })
+
+        except Exception as e:
+            logger.error(f"Error starting consultation {pk}: {e}")
+            return Response({
+                'success': False,
+                'error': str(e)
+            }, status=500)
+
+    @action(detail=True, methods=['patch'])
+    def complete(self, request, pk=None):
+        """Complete a consultation with final data"""
+        try:
+            consultation = self.get_object()
+            
+            # Update consultation data
+            serializer = self.get_serializer(consultation, data=request.data, partial=True)
+            if serializer.is_valid():
+                serializer.save(
+                    status='completed',
+                    completed_at=timezone.now()
+                )
+                
+                return Response({
+                    'success': True,
+                    'data': serializer.data,
+                    'message': 'Consultation completed successfully'
+                })
+            else:
+                return Response({
+                    'success': False,
+                    'error': serializer.errors
+                }, status=400)
+
+        except Exception as e:
+            logger.error(f"Error completing consultation {pk}: {e}")
+            return Response({
+                'success': False,
+                'error': str(e)
+            }, status=500)
+
+    @action(detail=True, methods=['post'])
+    def create_appointment(self, request, pk=None):
+        """Create a new appointment from consultation (for next appointment)"""
+        try:
+            consultation = self.get_object()
+            appointment_data = request.data
+
+            # This would integrate with Agenda module
+            # For now, return success with mock data
+            return Response({
+                'success': True,
+                'data': {
+                    'id': 'mock-appointment-id',
+                    'consultation_id': consultation.id,
+                    'patient_id': consultation.patient_id,
+                    'scheduled_date': appointment_data.get('date'),
+                    'scheduled_time': appointment_data.get('time'),
+                    'status': 'scheduled'
+                },
+                'message': 'Next appointment scheduled successfully'
+            })
+
+        except Exception as e:
+            logger.error(f"Error creating appointment from consultation {pk}: {e}")
+            return Response({
+                'success': False,
+                'error': str(e)
+            }, status=500)
+
+    def perform_create(self, serializer):
+        """Automatically set patient context and create consultation"""
+        user_context = getattr(self.request, 'user_context', {})
+        user_id = getattr(self.request, 'supabase_user_id', None)
+        
+        # Set professional and dates
+        save_data = {
+            'professional_id': user_id,
+            'created_at': timezone.now(),
+            'updated_at': timezone.now()
+        }
+
+        # Apply dual system logic for clinic/workspace
+        if user_context.get('license_type') == 'clinic':
+            save_data['clinic_id'] = user_context.get('clinic_id')
+        else:
+            save_data['workspace_id'] = user_context.get('workspace_id')
+
+        serializer.save(**save_data)

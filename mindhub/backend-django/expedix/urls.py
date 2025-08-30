@@ -25,6 +25,8 @@ router.register(r'consultation-templates', views.ConsultationTemplateViewSet, ba
 # Medication and diagnosis endpoints
 router.register(r'medications', MedicationViewSet, basename='medications')
 router.register(r'diagnoses', DiagnosisViewSet, basename='diagnoses')
+# Centralized consultation management
+router.register(r'consultation-central', views.ConsultationCentralViewSet, basename='consultation-central')
 
 # URL patterns that match Node.js API routes
 urlpatterns = [

@@ -20,6 +20,8 @@ import {
   ClipboardIcon
 } from '@heroicons/react/24/outline';
 import { useExpedixApi, type Patient } from '@/lib/api/expedix-client';
+import { format } from 'date-fns';
+import { es } from 'date-fns/locale';
 import ResourcesTimeline from './ResourcesTimeline';
 import PatientTimeline from './PatientTimeline';
 import PatientDocuments from './PatientDocuments';
@@ -54,6 +56,15 @@ interface AdministrativeData {
   };
 }
 
+interface NextAppointment {
+  id: string;
+  date: string;
+  time: string;
+  type: string;
+  status: string;
+  reason?: string;
+}
+
 export default function PatientDashboard({ 
   patient, 
   onClose, 
@@ -86,6 +97,8 @@ export default function PatientDashboard({
       transactions: []
     }
   });
+
+  const [nextAppointment, setNextAppointment] = useState<NextAppointment | null>(null);
 
   const tabs = [
     { id: 'timeline', name: 'Timeline', icon: ClipboardDocumentListIcon },
@@ -170,10 +183,25 @@ export default function PatientDashboard({
         // Update local patient data with fresh data
         setPatientData(patientData);
       }
+
+      // Load next appointment
+      await fetchNextAppointment();
+      
     } catch (error) {
       console.error('Error fetching dashboard data:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchNextAppointment = async () => {
+    try {
+      const response = await expedixApi.getPatientNextAppointment(patient.id);
+      if (response?.data) {
+        setNextAppointment(response.data);
+      }
+    } catch (error) {
+      console.error('Error fetching next appointment:', error);
     }
   };
 
@@ -377,12 +405,56 @@ export default function PatientDashboard({
         ) : (
           <div>
             {activeTab === 'timeline' && (
-              <PatientTimeline
-                patientId={patient.id}
-                patientName={`${patient.first_name} ${patient.paternal_last_name} ${patient.maternal_last_name || ''}`.trim()}
-                showHeader={true}
-                showFilters={true}
-              />
+              <div className="space-y-6">
+                {/* Next Appointment Card */}
+                {nextAppointment && (
+                  <div className="bg-gradient-to-r from-primary-50 to-primary-100 rounded-xl p-6 border border-primary-200">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center space-x-3">
+                        <div className="w-12 h-12 bg-primary-200 rounded-full flex items-center justify-center">
+                          <CalendarIcon className="h-6 w-6 text-primary-700" />
+                        </div>
+                        <div>
+                          <h4 className="text-lg font-semibold text-primary-900">Próxima Cita</h4>
+                          <p className="text-primary-700">
+                            {format(new Date(nextAppointment.date), 'dd MMMM yyyy', { locale: es })} 
+                            {nextAppointment.time && ` a las ${nextAppointment.time}`}
+                          </p>
+                          <p className="text-sm text-primary-600 mt-1">
+                            {nextAppointment.type} • {nextAppointment.status}
+                            {nextAppointment.reason && ` • ${nextAppointment.reason}`}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="border-primary-300 text-primary-700 hover:bg-primary-200"
+                        >
+                          Reagendar
+                        </Button>
+                        <Button
+                          variant="primary"
+                          size="sm"
+                          onClick={onNewConsultation}
+                          className="bg-primary-600 hover:bg-primary-700"
+                        >
+                          Iniciar Consulta
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Patient Timeline */}
+                <PatientTimeline
+                  patientId={patient.id}
+                  patientName={`${patient.first_name} ${patient.paternal_last_name} ${patient.maternal_last_name || ''}`.trim()}
+                  showHeader={true}
+                  showFilters={true}
+                />
+              </div>
             )}
 
             {activeTab === 'config' && (

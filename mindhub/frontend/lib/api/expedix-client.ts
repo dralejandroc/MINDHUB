@@ -445,6 +445,89 @@ class ExpedixApiClient {
       method: 'DELETE',
     });
   }
+
+  // Consultation Management - Central Integration with Agenda
+  async getPatientConsultations(patientId: string): Promise<{ data: any[] }> {
+    return this.makeRequest<{ data: any[] }>(`/expedix/patients/${patientId}/consultations`);
+  }
+
+  async createConsultation(consultationData: any): Promise<{ data: any }> {
+    return this.makeRequest<{ data: any }>('/expedix/consultations', {
+      method: 'POST',
+      body: JSON.stringify(consultationData),
+    });
+  }
+
+  async createConsultationCentral(consultationData: any): Promise<{ data: any }> {
+    return this.makeRequest<{ data: any }>('/expedix/consultation-central/', {
+      method: 'POST',
+      body: JSON.stringify(consultationData),
+    });
+  }
+
+  async updateConsultation(consultationId: string, consultationData: any): Promise<{ data: any }> {
+    return this.makeRequest<{ data: any }>(`/expedix/consultations/${consultationId}`, {
+      method: 'PUT',
+      body: JSON.stringify(consultationData),
+    });
+  }
+
+  async updateConsultationCentral(consultationId: string, consultationData: any): Promise<{ data: any }> {
+    return this.makeRequest<{ data: any }>(`/expedix/consultation-central/${consultationId}/`, {
+      method: 'PATCH',
+      body: JSON.stringify(consultationData),
+    });
+  }
+
+  async deleteConsultation(consultationId: string): Promise<{ success: boolean }> {
+    return this.makeRequest<{ success: boolean }>(`/expedix/consultations/${consultationId}`, {
+      method: 'DELETE',
+    });
+  }
+
+  async deleteConsultationCentral(consultationId: string): Promise<{ success: boolean }> {
+    return this.makeRequest<{ success: boolean }>(`/expedix/consultation-central/${consultationId}/`, {
+      method: 'DELETE',
+    });
+  }
+
+  async getConsultationByAppointmentId(appointmentId: string): Promise<{ data: any | null }> {
+    return this.makeRequest<{ data: any | null }>(`/expedix/consultations/by-appointment/${appointmentId}`);
+  }
+
+  async getConsultationByAppointmentIdCentral(appointmentId: string): Promise<{ data: any | null }> {
+    try {
+      return this.makeRequest<{ data: any }>(`/expedix/consultation-central/by_appointment/?appointment_id=${appointmentId}`);
+    } catch (error) {
+      console.warn('Consultation not found for appointment:', appointmentId);
+      return { data: null };
+    }
+  }
+
+  async startConsultation(consultationId: string): Promise<{ data: any }> {
+    return this.makeRequest<{ data: any }>(`/expedix/consultations/${consultationId}/start`, {
+      method: 'PATCH',
+    });
+  }
+
+  async completeConsultation(consultationId: string, consultationData: any): Promise<{ data: any }> {
+    return this.makeRequest<{ data: any }>(`/expedix/consultations/${consultationId}/complete`, {
+      method: 'PATCH',
+      body: JSON.stringify(consultationData),
+    });
+  }
+
+  // Next Appointment Integration
+  async getPatientNextAppointment(patientId: string): Promise<{ data: any | null }> {
+    return this.makeRequest<{ data: any | null }>(`/expedix/patients/${patientId}/next-appointment`);
+  }
+
+  async createAppointmentFromConsultation(consultationId: string, appointmentData: any): Promise<{ data: any }> {
+    return this.makeRequest<{ data: any }>(`/expedix/consultations/${consultationId}/create-appointment`, {
+      method: 'POST',
+      body: JSON.stringify(appointmentData),
+    });
+  }
 }
 
 // Export simple singleton instance - authentication handled by backend cookies
@@ -515,6 +598,35 @@ export function useExpedixApi() {
     },
     getTodayPrescriptions: () => {
       return apiClient.getTodayPrescriptions();
+    },
+
+    // Consultation Management - Central Integration
+    getPatientConsultations: async (patientId: string) => {
+      return apiClient.getPatientConsultations(patientId);
+    },
+    createConsultation: async (consultationData: any) => {
+      return apiClient.createConsultation(consultationData);
+    },
+    updateConsultation: async (consultationId: string, consultationData: any) => {
+      return apiClient.updateConsultation(consultationId, consultationData);
+    },
+    deleteConsultation: async (consultationId: string) => {
+      return apiClient.deleteConsultation(consultationId);
+    },
+    getConsultationByAppointmentId: async (appointmentId: string) => {
+      return apiClient.getConsultationByAppointmentId(appointmentId);
+    },
+    startConsultation: async (consultationId: string) => {
+      return apiClient.startConsultation(consultationId);
+    },
+    completeConsultation: async (consultationId: string, consultationData: any) => {
+      return apiClient.completeConsultation(consultationId, consultationData);
+    },
+    getPatientNextAppointment: async (patientId: string) => {
+      return apiClient.getPatientNextAppointment(patientId);
+    },
+    createAppointmentFromConsultation: async (consultationId: string, appointmentData: any) => {
+      return apiClient.createAppointmentFromConsultation(consultationId, appointmentData);
     },
   };
 }

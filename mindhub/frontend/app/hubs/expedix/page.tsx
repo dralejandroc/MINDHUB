@@ -13,6 +13,7 @@ import { ErrorMessageResolver } from '@/components/ui/error/ErrorMessages';
 import ExpedientsGrid from '@/components/expedix/ExpedientsGrid';
 import PatientDashboard from '@/components/expedix/PatientDashboard';
 import ConsultationNotes from '@/components/expedix/ConsultationNotes';
+import CentralizedConsultationInterface from '@/components/expedix/consultation/CentralizedConsultationInterface';
 import PatientManagementAdvanced from '@/components/expedix/PatientManagementAdvanced';
 import PatientTimeline from '@/components/expedix/PatientTimeline';
 import NewPatientModal from '@/components/expedix/NewPatientModal';
@@ -328,13 +329,14 @@ function ExpedixContent() {
           )}
 
           {state.detailView === 'consultation' && (
-            <ConsultationNotes
+            <CentralizedConsultationInterface
               patient={state.selectedPatient}
-              onSaveConsultation={(data) => {
+              consultationId={searchParams?.get('consultation') || undefined}
+              onClose={handleBackToPatientDashboard}
+              onSave={(data) => {
                 console.log('Consulta guardada:', data);
                 handleBackToPatientDashboard();
               }}
-              onCancel={handleBackToPatientDashboard}
             />
           )}
 
