@@ -231,8 +231,10 @@ export const ClinimetrixProAssessmentModal: React.FC<ClinimetrixProAssessmentMod
         fullTemplateDataKeys: Object.keys(templateData || {})
       });
       
-      // Extraer todos los items de todas las secciones y mapear response options
+      // Extraer todos los items - try multiple data structure formats
       const allItems: any[] = [];
+      
+      // Try format 1: structure.sections[].items[]
       if (structure.sections && Array.isArray(structure.sections)) {
         structure.sections.forEach((section: any) => {
           if (section.items && Array.isArray(section.items)) {
@@ -255,6 +257,30 @@ export const ClinimetrixProAssessmentModal: React.FC<ClinimetrixProAssessmentMod
           }
         });
       }
+      
+      // Try format 2: Direct items array from API response
+      if (allItems.length === 0 && templateData.items && Array.isArray(templateData.items)) {
+        console.log('📋 Using direct items array from API response:', templateData.items.length);
+        templateData.items.forEach((item: any) => {
+          // Ensure proper structure for each item
+          const processedItem = {
+            id: item.id || `item_${item.itemNumber || Math.random()}`,
+            itemNumber: item.itemNumber || item.item_number,
+            questionText: item.questionText || item.question_text || item.text,
+            responseOptions: item.responseOptions || item.response_options || [],
+            specificOptions: item.specificOptions || item.response_options || [],
+            helpText: item.helpText || item.help_text,
+            instructionText: item.instructionText || item.instruction_text,
+            required: item.required !== false, // default to true
+            subscale: item.subscale,
+            ...item
+          };
+          
+          allItems.push(processedItem);
+        });
+      }
+      
+      console.log('📝 Total items extracted:', allItems.length);
       
       // Transformar datos para compatibilidad con la estructura esperada
       const transformedData: any = {
