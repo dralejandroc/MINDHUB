@@ -26,6 +26,7 @@ import { DashboardSettings } from '@/components/settings/DashboardSettings';
 import { AgendaConfigurationSettings } from '@/components/settings/AgendaConfigurationSettings';
 import { ClinicManagement } from '@/components/settings/ClinicManagement';
 import AnalyticsSettings from '@/components/settings/AnalyticsSettings';
+import ConsultationTemplateManager from '@/components/expedix/ConsultationTemplateManager';
 
 interface ClinicConfiguration {
   clinicInfo: {
@@ -570,10 +571,140 @@ export default function GeneralSettingsPage() {
           {/* Expedix Configuration Tab */}
           {activeTab === 'expedix' && (
             <div className="space-y-6">
+              {/* Consultation Templates Management */}
+              <div className="bg-white border border-gray-200 rounded-lg shadow-sm p-6">
+                <div className="flex items-center gap-2 mb-4">
+                  <DocumentTextIcon className="h-5 w-5 text-blue-600" />
+                  <h2 className="text-xl font-semibold">Plantillas de Consulta</h2>
+                </div>
+                <p className="text-gray-600 mb-4">
+                  Gestiona las plantillas de consulta para agilizar la creación de expedientes médicos. 
+                  Personaliza los campos que aparecerán en cada tipo de consulta.
+                </p>
+                <ConsultationTemplateManager showActions={true} />
+              </div>
+
+              {/* Medical Record Fields Configuration */}
+              <div className="bg-white border border-gray-200 rounded-lg shadow-sm p-6">
+                <div className="flex items-center gap-2 mb-4">
+                  <HeartIcon className="h-5 w-5 text-red-600" />
+                  <h2 className="text-xl font-semibold">Configuración de Expedientes Médicos</h2>
+                </div>
+                <div className="space-y-6">
+                  {/* Patient Demographics */}
+                  <div>
+                    <h3 className="text-lg font-semibold mb-3 text-gray-700">Datos Demográficos del Paciente</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {[
+                        { key: 'showCURP', label: 'Mostrar CURP' },
+                        { key: 'showRFC', label: 'Mostrar RFC' },
+                        { key: 'showBloodType', label: 'Mostrar tipo de sangre' },
+                        { key: 'showAllergies', label: 'Mostrar alergias' },
+                        { key: 'showEmergencyContact', label: 'Mostrar contacto de emergencia' },
+                        { key: 'requireEmergencyContact', label: 'Requerir contacto de emergencia' },
+                      ].map((option) => (
+                        <div key={option.key} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                          <label className="text-sm font-medium text-gray-700">{option.label}</label>
+                          <input
+                            type="checkbox"
+                            checked={config.medicalRecordFields.patientDemographics[option.key as keyof typeof config.medicalRecordFields.patientDemographics] as boolean}
+                            onChange={(e) => updateNestedConfig('medicalRecordFields', 'patientDemographics', option.key, e.target.checked)}
+                            className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                          />
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Consultation Fields */}
+                  <div>
+                    <h3 className="text-lg font-semibold mb-3 text-gray-700">Campos de Consulta</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {[
+                        { key: 'showVitalSigns', label: 'Mostrar signos vitales' },
+                        { key: 'showPhysicalExam', label: 'Mostrar examen físico' },
+                        { key: 'showDiagnostics', label: 'Mostrar diagnósticos' },
+                        { key: 'showTreatmentPlan', label: 'Mostrar plan de tratamiento' },
+                        { key: 'showFollowUp', label: 'Mostrar seguimiento' },
+                      ].map((option) => (
+                        <div key={option.key} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                          <label className="text-sm font-medium text-gray-700">{option.label}</label>
+                          <input
+                            type="checkbox"
+                            checked={config.medicalRecordFields.consultationFields[option.key as keyof typeof config.medicalRecordFields.consultationFields] as boolean}
+                            onChange={(e) => updateNestedConfig('medicalRecordFields', 'consultationFields', option.key, e.target.checked)}
+                            className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                          />
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Prescription Settings */}
+                  <div>
+                    <h3 className="text-lg font-semibold mb-3 text-gray-700">Configuración de Recetas</h3>
+                    <div className="space-y-4">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">Duración predeterminada</label>
+                          <select
+                            value={config.prescriptionSettings.defaultDuration}
+                            onChange={(e) => updateConfig('prescriptionSettings', 'defaultDuration', e.target.value)}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          >
+                            <option value="3 días">3 días</option>
+                            <option value="5 días">5 días</option>
+                            <option value="7 días">7 días</option>
+                            <option value="10 días">10 días</option>
+                            <option value="14 días">14 días</option>
+                            <option value="30 días">30 días</option>
+                          </select>
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">Frecuencia predeterminada</label>
+                          <select
+                            value={config.prescriptionSettings.defaultFrequency}
+                            onChange={(e) => updateConfig('prescriptionSettings', 'defaultFrequency', e.target.value)}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          >
+                            <option value="Una vez al día">Una vez al día</option>
+                            <option value="Cada 12 horas">Cada 12 horas</option>
+                            <option value="Cada 8 horas">Cada 8 horas</option>
+                            <option value="Cada 6 horas">Cada 6 horas</option>
+                            <option value="Cada 4 horas">Cada 4 horas</option>
+                            <option value="Según se necesite">Según se necesite</option>
+                          </select>
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                          <label className="text-sm font-medium text-gray-700">Mostrar advertencias de interacciones</label>
+                          <input
+                            type="checkbox"
+                            checked={config.prescriptionSettings.showInteractionWarnings}
+                            onChange={(e) => updateConfig('prescriptionSettings', 'showInteractionWarnings', e.target.checked)}
+                            className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                          />
+                        </div>
+                        <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                          <label className="text-sm font-medium text-gray-700">Requerir indicación clínica</label>
+                          <input
+                            type="checkbox"
+                            checked={config.prescriptionSettings.requireClinicalIndication}
+                            onChange={(e) => updateConfig('prescriptionSettings', 'requireClinicalIndication', e.target.checked)}
+                            className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
               {/* Print Configuration */}
               <div className="bg-white border border-gray-200 rounded-lg shadow-sm p-6">
                 <div className="flex items-center gap-2 mb-4">
-                  <DocumentTextIcon className="h-5 w-5" />
+                  <DocumentTextIcon className="h-5 w-5 text-gray-600" />
                   <h2 className="text-xl font-semibold">Configuración de Impresión - Expedix</h2>
                 </div>
                 <div className="space-y-6">
