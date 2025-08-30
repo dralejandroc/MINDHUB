@@ -47,7 +47,7 @@ export async function GET() {
       return new Response(JSON.stringify({
         success: false,
         error: 'Database query failed',
-        details: error.message,
+        details: error instanceof Error ? error.message : error?.message || 'Unknown database error',
         timestamp: new Date().toISOString()
       }), {
         status: 500,
@@ -73,7 +73,7 @@ export async function GET() {
     return new Response(JSON.stringify({
       success: false,
       error: 'Connection failed',
-      details: error.message,
+      details: error instanceof Error ? error.message : 'Unknown error occurred',
       timestamp: new Date().toISOString()
     }), {
       status: 500,
