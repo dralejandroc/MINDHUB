@@ -62,12 +62,19 @@ class DualSystemFilterMixin:
                 return queryset.none()
                 
         elif license_type == 'individual':
-            # For individual licenses, filter by workspace_id (dual system)
+            # For individual licenses, filter by workspace_id OR created_by if no workspace_id
             workspace_id = user_context.get('workspace_id')
+            user_id = getattr(self.request, 'supabase_user_id', None)
+            
             if workspace_id:
+                # Proper workspace filtering
                 return queryset.filter(workspace_id=workspace_id)
+            elif user_id:
+                # Fallback: filter by created_by for individual users without workspace_id
+                logger.info(f'Individual license: Filtering by created_by={user_id} (no workspace_id)')
+                return queryset.filter(created_by=user_id)
             else:
-                logger.error(f'Individual license but no workspace_id found for filtering')
+                logger.error(f'Individual license but no workspace_id or user_id found for filtering')
                 return queryset.none()
         
         logger.warning(f'Unknown license type: {license_type} - returning empty queryset')
@@ -96,16 +103,21 @@ class DualSystemFilterMixin:
                 logger.error('Cannot create object - clinic license but no clinic_id')
                 
         elif license_type == 'individual':
-            # For individual licenses, set workspace_id
+            # For individual licenses, set workspace_id if available, otherwise use created_by only
             workspace_id = user_context.get('workspace_id')
-            if workspace_id and user_id:
-                serializer.save(
-                    clinic_id=None,
-                    workspace_id=workspace_id,
-                    created_by=user_id
-                )
+            if user_id:
+                save_data = {
+                    'clinic_id': None,
+                    'created_by': user_id
+                }
+                # Add workspace_id only if it exists
+                if workspace_id:
+                    save_data['workspace_id'] = workspace_id
+                    
+                serializer.save(**save_data)
+                logger.info(f'Individual license object created: workspace_id={workspace_id}, created_by={user_id}')
             else:
-                logger.error('Cannot create object - individual license but no workspace_id or user_id')
+                logger.error('Cannot create object - individual license but no user_id')
 
 
 class DualSystemQueryHelper:
@@ -125,9 +137,15 @@ class DualSystemQueryHelper:
             return queryset.filter(clinic_id=clinic_id) if clinic_id else queryset.none()
             
         elif license_type == 'individual':
-            # For individual licenses, filter by workspace_id (dual system)
+            # For individual licenses, filter by workspace_id OR created_by fallback
             workspace_id = user_context.get('workspace_id')
-            return queryset.filter(workspace_id=workspace_id) if workspace_id else queryset.none()
+            if workspace_id:
+                return queryset.filter(workspace_id=workspace_id)
+            elif user_id:
+                # Fallback for individual users without workspace_id
+                return queryset.filter(created_by=user_id)
+            else:
+                return queryset.none()
         
         return queryset.none()
     
@@ -146,13 +164,16 @@ class DualSystemQueryHelper:
             }
             
         elif license_type == 'individual':
-            # For individual licenses, set workspace_id
+            # For individual licenses, set workspace_id if available
             workspace_id = user_context.get('workspace_id')
-            return {
+            data = {
                 'clinic_id': None,
-                'workspace_id': workspace_id,
                 'created_by': user_id
             }
+            # Only add workspace_id if it exists
+            if workspace_id:
+                data['workspace_id'] = workspace_id
+            return data
         
         return {
             'clinic_id': None,
