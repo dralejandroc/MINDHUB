@@ -15,7 +15,7 @@ SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-vercel-deployment-key
 # Override base settings for Vercel
 DEBUG = False
 
-# Application definition - SIMPLIFIED FOR VERCEL
+# Application definition - UPDATED WITH CLINIMETRIX SUPPORT
 INSTALLED_APPS = [
     'django.contrib.admin',
     'django.contrib.auth',
@@ -25,7 +25,16 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'rest_framework',
     'corsheaders',
-    'expedix',  # Only core Expedix for now
+    # Core apps
+    'expedix',  # Patient Management
+    'assessments',  # ClinimetrixPro Assessment Engine
+    'psychometric_scales',  # Scale Data Management
+    # Additional modules
+    'agenda',  # Appointment System
+    'resources',  # Medical Resources
+    'finance',  # Financial Management
+    'clinics',  # Multi-user Management
+    'formx',  # Dynamic Forms
 ]
 
 MIDDLEWARE = [
