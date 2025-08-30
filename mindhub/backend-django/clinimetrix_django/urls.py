@@ -23,6 +23,7 @@ def api_root(request):
             '/api/clinics/ - Multi-user Management',
             '/api/finance/ - Financial Management',
             '/api/formx/ - Dynamic Form Builder',
+            '/api/analytics/ - Healthcare Indicators & KPIs (NEW)',
             '/assessments/ - ClinimetrixPro Assessment Engine (ACTIVE)',
             '/scales/ - Psychometric Scale Data (ACTIVE)',
             '/admin/ - Django Admin'
@@ -49,6 +50,7 @@ urlpatterns = [
     path('api/finance/', include('finance.urls')),  # Finance
     path('api/clinics/', include('clinics.urls')),  # Multi-user
     path('api/formx/', include('formx.urls')),  # FormX - Dynamic Forms
+    path('api/analytics/', include('analytics.urls')),  # Analytics - Healthcare KPIs
 ]
 
 # Serve media files in development

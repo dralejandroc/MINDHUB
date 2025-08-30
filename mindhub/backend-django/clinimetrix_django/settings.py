@@ -56,6 +56,7 @@ LOCAL_APPS = [
     'resources',  # Resources - Medical Resources Management
     'clinics',  # Clinics - Multi-user Clinic Management System
     'finance',  # Finance - Financial Management & Income Tracking
+    'analytics',  # Analytics - Healthcare Indicators & KPI System
 ]
 
 INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS

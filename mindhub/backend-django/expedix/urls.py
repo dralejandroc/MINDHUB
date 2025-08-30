@@ -36,6 +36,7 @@ urlpatterns = [
     # Specific endpoints to match Node.js API exactly
     path('patients/search/', views.PatientViewSet.as_view({'get': 'search'}), name='patient-search'),
     path('patients/stats/', views.PatientViewSet.as_view({'get': 'stats'}), name='patient-stats'),
+    path('patients/<uuid:pk>/next-appointment/', views.PatientViewSet.as_view({'get': 'next_appointment'}), name='patient-next-appointment'),
     path('consultations/upcoming/', views.ConsultationViewSet.as_view({'get': 'upcoming'}), name='consultations-upcoming'),
     path('consultations/by-patient/', views.ConsultationViewSet.as_view({'get': 'by_patient'}), name='consultations-by-patient'),
     path('medical-history/by-patient/', views.MedicalHistoryViewSet.as_view({'get': 'by_patient'}), name='medical-history-by-patient'),

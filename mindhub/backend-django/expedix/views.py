@@ -175,6 +175,47 @@ class PatientViewSet(ExpedixDualViewSet):  # 🎯 RESTORED DUAL SYSTEM after fix
         serializer = ConsultationSerializer(consultations, many=True)
         return Response(serializer.data)
 
+    @action(detail=True, methods=['get'], url_path='next-appointment')
+    def next_appointment(self, request, pk=None):
+        """Get patient's next upcoming appointment"""
+        try:
+            from django.db import connection
+            with connection.cursor() as cursor:
+                cursor.execute("""
+                    SELECT 
+                        id, patient_id, professional_id, consultation_date,
+                        status, chief_complaint, created_at
+                    FROM consultations 
+                    WHERE patient_id = %s 
+                      AND consultation_date > NOW()
+                      AND status IN ('scheduled', 'confirmed')
+                    ORDER BY consultation_date ASC 
+                    LIMIT 1
+                """, [pk])
+                
+                columns = [col[0] for col in cursor.description]
+                result = cursor.fetchone()
+                
+                if result:
+                    appointment_dict = dict(zip(columns, result))
+                    return Response({
+                        'success': True,
+                        'appointment': appointment_dict
+                    })
+                else:
+                    return Response({
+                        'success': True,
+                        'appointment': None,
+                        'message': 'No upcoming appointments found'
+                    })
+                    
+        except Exception as e:
+            logger.error(f'Error fetching next appointment: {str(e)}')
+            return Response({
+                'success': False,
+                'error': str(e)
+            }, status=500)
+
     @action(detail=False, methods=['get'])
     def stats(self, request):
         """Dashboard statistics"""

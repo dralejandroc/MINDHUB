@@ -89,8 +89,8 @@ class ScaleTag(models.Model):
 
 class PsychometricScale(models.Model):
     """
-    Main model for psychometric scales
-    This model needs to work with Supabase clinimetrix_registry table structure
+    Main model for psychometric scales - SIMPLIFIED to match actual database structure
+    Based on clinimetrix_registry table structure from sync_scales_from_json_raw.py
     """
     
     class ApplicationType(models.TextChoices):
@@ -105,111 +105,79 @@ class PsychometricScale(models.Model):
         ELDERLY = 'elderly', _('Adultos mayores')
         ALL = 'all', _('Todas las edades')
     
-    # Primary key - use text field to match Supabase
-    id = models.TextField(primary_key=True)
-    
-    # Basic Information
-    template_id = models.TextField(null=True, blank=True)
-    name = models.CharField(max_length=200)
+    # Core fields that actually exist in clinimetrix_registry
+    id = models.TextField(primary_key=True)  # scale_id from sync command
     abbreviation = models.CharField(max_length=20, unique=True)
-    
-    # Classification
+    name = models.CharField(max_length=200)
     category = models.CharField(max_length=100, null=True, blank=True)
     subcategory = models.CharField(max_length=100, null=True, blank=True)
-    category_id = models.BigIntegerField(null=True, blank=True)
-    
-    # Description and metadata  
     description = models.TextField(blank=True)
     version = models.CharField(max_length=20, default='1.0')
     language = models.CharField(max_length=10, default='es')
     
-    # Authors and Publication
+    # JSON fields
     authors = models.JSONField(default=list)
-    year = models.PositiveIntegerField(null=True, blank=True)
+    target_population = models.JSONField(default=dict)
+    tags = models.JSONField(default=list)
     
-    # Administration and usage
+    # Integer fields
+    year = models.PositiveIntegerField(null=True, blank=True)
+    estimated_duration_minutes = models.PositiveIntegerField(default=10)
+    total_items = models.PositiveIntegerField(default=0)
+    score_range_min = models.IntegerField(default=0)
+    score_range_max = models.IntegerField(default=100)
+    usage_count = models.PositiveIntegerField(default=0)
+    
+    # Administration mode
     administration_mode = models.CharField(
         max_length=20,
         choices=ApplicationType.choices,
         default=ApplicationType.AUTO
     )
-    estimated_duration_minutes = models.PositiveIntegerField(default=10)
     
-    # Population and structure
-    target_population = models.JSONField(default=dict)
-    total_items = models.PositiveIntegerField(default=0)
-    score_range_min = models.IntegerField(default=0)
-    score_range_max = models.IntegerField(default=100)
-    
-    # Psychometric Properties
-    psychometric_properties = models.JSONField(default=dict)
-    clinical_validation = models.JSONField(default=dict)
-    
-    # Status and visibility
+    # Status flags
+    is_active = models.BooleanField(default=True)
     is_public = models.BooleanField(default=True)
     is_featured = models.BooleanField(default=False)
-    is_active = models.BooleanField(default=True)
-    
-    # Tags and validation
-    tags = models.JSONField(default=list)
-    last_validated = models.DateTimeField(null=True, blank=True)
-    
-    # File References (for backwards compatibility with Django views)
-    json_file_path = models.CharField(max_length=255, blank=True)
-    
-    # Legacy fields for compatibility
-    indication = models.TextField(blank=True, help_text="Indicaciones clínicas")
-    population = models.CharField(
-        max_length=20,
-        choices=PopulationType.choices,
-        default=PopulationType.ADULT
-    )
-    
-    # Additional psychometric fields
-    reliability_alpha = models.FloatField(
-        null=True, blank=True,
-        validators=[MinValueValidator(0), MaxValueValidator(1)]
-    )
-    sensitivity = models.FloatField(
-        null=True, blank=True,
-        validators=[MinValueValidator(0), MaxValueValidator(1)]
-    )
-    specificity = models.FloatField(
-        null=True, blank=True,
-        validators=[MinValueValidator(0), MaxValueValidator(1)]
-    )
-    test_retest_reliability = models.FloatField(
-        null=True, blank=True,
-        validators=[MinValueValidator(0), MaxValueValidator(1)]
-    )
-    
-    # Usage and Status
     is_validated = models.BooleanField(default=False)
-    requires_training = models.CharField(
-        max_length=20,
-        choices=[
-            ('minimal', 'Mínimo'),
-            ('moderate', 'Moderado'),
-            ('high', 'Alto'),
-            ('very_high', 'Muy alto')
-        ],
-        default='minimal'
-    )
-    
-    # Copyright and Licensing
-    copyright_info = models.TextField(blank=True)
-    license_required = models.BooleanField(default=False)
-    
-    # Scientific References
-    primary_reference = models.TextField(blank=True)
-    additional_references = models.JSONField(default=list)
-    
-    # Usage Statistics
-    usage_count = models.PositiveIntegerField(default=0)
     
     # Timestamps
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+    
+    # COMPATIBILITY PROPERTIES for existing code
+    @property 
+    def application_type(self):
+        return self.administration_mode
+    
+    @property
+    def population(self):
+        return self.PopulationType.ADULT  # Default fallback
+    
+    @property
+    def json_file_path(self):
+        """Generate JSON file path for scale data"""
+        return f"scales/{self.abbreviation.lower()}-json.json"
+    
+    @property
+    def requires_training(self):
+        return 'minimal'
+    
+    @property
+    def reliability_alpha(self):
+        return None
+    
+    @property
+    def sensitivity(self):
+        return None
+    
+    @property
+    def specificity(self):
+        return None
+    
+    @property
+    def test_retest_reliability(self):
+        return None
     
     class Meta:
         verbose_name = _('Escala psicométrica')
@@ -221,6 +189,7 @@ class PsychometricScale(models.Model):
             models.Index(fields=['category']),
             models.Index(fields=['is_active']),
         ]
+        managed = False  # Don't let Django manage this table structure
     
     def __str__(self):
         return f"{self.abbreviation} - {self.name}"
@@ -228,6 +197,14 @@ class PsychometricScale(models.Model):
     def get_full_name(self):
         """Get the full scale name with abbreviation"""
         return f"{self.name} ({self.abbreviation})"
+    
+    def get_population_display(self):
+        """Compatibility method for population display"""
+        return "Todas las edades"
+    
+    def get_application_type_display(self):
+        """Compatibility method for application type display"""
+        return self.get_administration_mode_display()
     
     def increment_usage(self):
         """Increment usage counter"""

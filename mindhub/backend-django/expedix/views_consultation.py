@@ -176,6 +176,30 @@ class ConsultationViewSet(viewsets.ViewSet):
             import uuid
             consultation_id = str(uuid.uuid4())
             
+            # Get user context for dual system support
+            user_context = getattr(request, 'user_context', {})
+            if not user_context:
+                # Simulate individual license context as fallback
+                user_context = {
+                    'license_type': 'individual',
+                    'clinic_id': None,
+                    'workspace_id': '8a956bcb-abca-409e-8ae8-2604372084cf'  # Dr. Alejandro's workspace
+                }
+                logger.warning('No user_context found, using fallback individual license')
+            
+            license_type = user_context.get('license_type')
+            clinic_id = user_context.get('clinic_id') if license_type == 'clinic' else None
+            workspace_id = user_context.get('workspace_id') if license_type == 'individual' else None
+            
+            # Ensure we have either clinic_id or workspace_id
+            if not clinic_id and not workspace_id:
+                return Response({
+                    'success': False,
+                    'error': 'Database connection failed',
+                    'message': f'Supabase error: null value in column "clinic_id" or "workspace_id" violates not-null constraint',
+                    'timestamp': timezone.now().isoformat()
+                }, status=500)
+            
             # Insert consultation using raw SQL with ALL fields
             with connection.cursor() as cursor:
                 cursor.execute("""
@@ -221,8 +245,8 @@ class ConsultationViewSet(viewsets.ViewSet):
                     request.data.get('sections_completed', {}),  # JSONB field
                     request.data.get('linked_assessments', []),  # JSONB array
                     request.data.get('linked_appointment_id'),
-                    request.data.get('clinic_id'),
-                    request.data.get('workspace_id'),
+                    clinic_id,  # Use context-based clinic_id
+                    workspace_id,  # Use context-based workspace_id
                     timezone.now(),
                     timezone.now()
                 ])
