@@ -179,13 +179,14 @@ class ConsultationViewSet(viewsets.ViewSet):
             # Get user context for dual system support
             user_context = getattr(request, 'user_context', {})
             if not user_context:
-                # Simulate individual license context as fallback
+                # Use clinic license as fallback (safer since patients table has clinic_id NOT NULL)
                 user_context = {
-                    'license_type': 'individual',
-                    'clinic_id': None,
-                    'workspace_id': '8a956bcb-abca-409e-8ae8-2604372084cf'  # Dr. Alejandro's workspace
+                    'license_type': 'clinic',
+                    'clinic_id': '1',  # Match middleware fallback
+                    'workspace_id': None,
+                    'clinic_role': 'professional'
                 }
-                logger.warning('No user_context found, using fallback individual license')
+                logger.warning('No user_context found, using fallback clinic license (clinic_id=1)')
             
             license_type = user_context.get('license_type')
             clinic_id = user_context.get('clinic_id') if license_type == 'clinic' else None
