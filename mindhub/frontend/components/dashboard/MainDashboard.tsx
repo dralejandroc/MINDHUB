@@ -14,6 +14,9 @@ import {
 } from '@heroicons/react/24/outline';
 import { dashboardDataService } from '@/lib/dashboard-data-service';
 import { AnimatedGradient } from '@/components/ui/animated-gradient';
+import AnalyticsWidget from './widgets/AnalyticsWidget';
+import PatientClassificationWidget from './widgets/PatientClassificationWidget';
+import SatisfactionSurveyWidget from './widgets/SatisfactionSurveyWidget';
 
 // Types for dashboard data
 interface DashboardStats {
@@ -446,6 +449,15 @@ export const MainDashboard: React.FC<MainDashboardProps> = ({ user }) => {
                 </div>
               )}
             </div>
+          </div>
+        </div>
+
+        {/* Analytics Widgets */}
+        <div className="mt-8 mb-8">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <AnalyticsWidget className="lg:col-span-1" />
+            <PatientClassificationWidget className="lg:col-span-1" />
+            <SatisfactionSurveyWidget className="lg:col-span-1" />
           </div>
         </div>
 

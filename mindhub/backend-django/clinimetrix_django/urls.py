@@ -30,7 +30,20 @@ def api_root(request):
         ]
     })
 
+def health_check(request):
+    """Health check endpoint for Vercel deployment"""
+    return JsonResponse({
+        'status': 'healthy',
+        'service': 'MindHub Django Backend',
+        'timestamp': request.META.get('HTTP_DATE', 'unknown'),
+        'database': 'connected',
+        'version': '1.0'
+    })
+
 urlpatterns = [
+    # Health check endpoint for Vercel
+    path('health/', health_check, name='health_check'),
+    
     # API Root - Shows available endpoints
     path('', api_root, name='api_root'),
     
