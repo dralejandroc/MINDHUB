@@ -11,7 +11,7 @@ import { FeaturesSection } from '@/components/landing/FeaturesSection';
 import { PlansSection } from '@/components/landing/PlansSection';
 import { EarlyAccessExplanationSection } from '@/components/landing/EarlyAccessExplanationSection';
 import { EarlyAccessRegistrationModal } from '@/components/landing/EarlyAccessRegistrationModal';
-import { Footer } from '@/components/landing/Footer';
+import { MindHubFooter } from '@/components/ui/footer';
 
 export default function LandingPage() {
   const router = useRouter();
@@ -35,7 +35,7 @@ export default function LandingPage() {
         <EarlyAccessExplanationSection onEarlyAccessClick={() => setShowBetaModal(true)} />
       </main>
 
-      <Footer />
+      <MindHubFooter variant="full" />
 
       {showBetaModal && (
         <EarlyAccessRegistrationModal onClose={() => setShowBetaModal(false)} />

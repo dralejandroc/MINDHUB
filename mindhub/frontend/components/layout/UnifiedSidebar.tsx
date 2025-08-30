@@ -4,6 +4,8 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
+import { MindHubFooter } from '@/components/ui/footer';
+import { useFooterConfig } from '@/hooks/useFooterVariant';
 // // import { useAuth } from '@supabase/nextjs';
 import {
   UserGroupIcon,
@@ -94,6 +96,7 @@ export function UnifiedSidebar({ children }: UnifiedSidebarProps) {
   const pathname = usePathname();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [isCollapsed, setIsCollapsed] = useState(true); // Default to collapsed
+  const footerConfig = useFooterConfig();
 
   // Keep sidebar collapsed when navigating between pages
   useEffect(() => {
@@ -411,11 +414,21 @@ export function UnifiedSidebar({ children }: UnifiedSidebarProps) {
         </div>
 
         {/* Main content */}
-        <main className="py-6">
-          <div className="px-4 sm:px-6 lg:px-8">
-            {children}
-          </div>
-        </main>
+        <div className="flex flex-col min-h-[calc(100vh-4rem)]">
+          <main className="flex-1 py-6">
+            <div className="px-4 sm:px-6 lg:px-8">
+              {children}
+            </div>
+          </main>
+          
+          {/* Adaptive Footer */}
+          {footerConfig.show && (
+            <MindHubFooter 
+              variant={footerConfig.variant} 
+              className={footerConfig.className}
+            />
+          )}
+        </div>
       </div>
 
       {/* Mobile overlay - only on very small screens */}
