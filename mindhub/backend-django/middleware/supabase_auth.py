@@ -238,10 +238,36 @@ class SupabaseAuthMiddleware(MiddlewareMixin):
     
     def validate_with_supabase(self, token, request):
         """
-        Validate token with Supabase API
+        Validate token with Supabase API - Updated with new JWT secret for local validation
         """
         try:
-            # Try to validate as actual JWT token first
+            # First try local JWT validation with new secret key
+            jwt_secret = getattr(settings, 'SUPABASE_JWT_SECRET', None)
+            if jwt_secret:
+                try:
+                    import jwt
+                    decoded_token = jwt.decode(token, jwt_secret, algorithms=['HS256'])
+                    logger.info(f'Valid JWT token decoded locally: {decoded_token.get("email")}')
+                    return {
+                        'id': decoded_token.get('sub'),
+                        'email': decoded_token.get('email'),
+                        'user_metadata': {
+                            'first_name': decoded_token.get('user_metadata', {}).get('first_name', ''),
+                            'last_name': decoded_token.get('user_metadata', {}).get('last_name', '')
+                        },
+                        'aud': decoded_token.get('aud'),
+                        'role': decoded_token.get('role', 'authenticated')
+                    }
+                except jwt.ExpiredSignatureError:
+                    logger.warning('JWT token has expired')
+                    return None
+                except jwt.InvalidTokenError as e:
+                    logger.debug(f'JWT validation failed: {e}')
+                    # Continue to Supabase API validation
+                except ImportError:
+                    logger.warning('PyJWT not installed, falling back to Supabase API validation')
+            
+            # Fallback to Supabase API validation
             supabase_headers = {
                 'Authorization': f'Bearer {token}',
                 'apikey': getattr(settings, 'SUPABASE_ANON_KEY', ''),
@@ -256,7 +282,7 @@ class SupabaseAuthMiddleware(MiddlewareMixin):
                 )
                 
                 if response.status_code == 200:
-                    logger.info('Valid Supabase JWT token detected')
+                    logger.info('Valid Supabase JWT token detected via API')
                     return response.json()
                     
             except requests.RequestException:
