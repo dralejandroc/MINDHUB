@@ -15,7 +15,7 @@ import {
   EyeIcon,
   PencilIcon
 } from '@heroicons/react/24/outline';
-import { expedixApi, type Patient } from '@/lib/api/expedix-client';
+import { expedixApi, type Patient, type Prescription } from '@/lib/api/expedix-client';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 
@@ -33,17 +33,6 @@ interface Consultation {
   created_at: string;
 }
 
-interface Prescription {
-  id: string;
-  consultationId: string;
-  date: string;
-  medications: Array<{
-    name: string;
-    presentation: string;
-    prescription: string;
-  }>;
-  additionalInstructions: string;
-}
 
 interface CentralizedConsultationInterfaceProps {
   patient: Patient;
@@ -261,7 +250,7 @@ export default function CentralizedConsultationInterface({
                 {patient.first_name} {patient.paternal_last_name}
               </h2>
               <p className="text-sm text-gray-600">
-                {patient.age} años • #{patient.medical_record_number || 'S/N'}
+                {patient.age} años • #{patient.id.slice(0, 8)}
               </p>
             </div>
           </div>
@@ -347,13 +336,13 @@ export default function CentralizedConsultationInterface({
                       Receta #{prescription.id.slice(0, 8)}
                     </span>
                     <span className="text-xs text-gray-500">
-                      {format(new Date(prescription.date), 'dd MMM', { locale: es })}
+                      {format(new Date(prescription.created_at), 'dd MMM', { locale: es })}
                     </span>
                   </div>
                   <div className="space-y-1">
                     {prescription.medications.map((med, index) => (
                       <p key={index} className="text-xs text-gray-700">
-                        • {med.name} - {med.presentation}
+                        • {med.name} - {med.dosage}
                       </p>
                     ))}
                   </div>
