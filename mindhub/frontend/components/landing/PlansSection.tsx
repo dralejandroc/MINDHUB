@@ -1,6 +1,7 @@
 'use client';
 
 import { PricingSection } from '@/components/ui/pricing-section';
+import { FlickeringGrid } from '@/components/ui/flickering-grid';
 import type { PricingTier } from '@/components/ui/pricing-card';
 
 interface PlansSectionProps {
@@ -53,8 +54,20 @@ const pricingTiers: PricingTier[] = [
 
 export function PlansSection({ onBetaClick }: PlansSectionProps) {
   return (
-    <section id="plans" className="py-20 bg-gray-50">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <section id="plans" className="relative py-20 bg-gradient-to-br from-teal-50 via-cyan-50 to-blue-50 overflow-hidden">
+      {/* FlickeringGrid Background */}
+      <div className="absolute inset-0 z-0">
+        <FlickeringGrid
+          squareSize={3}
+          gridGap={7}
+          flickerChance={0.4}
+          color="rgb(20, 184, 166)" // teal-500
+          maxOpacity={0.12}
+          className="w-full h-full"
+        />
+      </div>
+      
+      <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <PricingSection
           title="Planes y Precios"
           subtitle="Durante la Beta, ambos planes están completamente gratis. Tu feedback nos ayudará a crear la mejor plataforma para profesionales de salud mental."
@@ -64,9 +77,9 @@ export function PlansSection({ onBetaClick }: PlansSectionProps) {
 
         {/* Beta Notice */}
         <div className="mt-12 text-center">
-          <div className="inline-flex items-center px-6 py-3 bg-gradient-to-r from-green-50 to-blue-50 border border-green-200 rounded-full">
+          <div className="inline-flex items-center px-6 py-3 bg-gradient-to-r from-teal-50 to-cyan-50 border border-teal-200 rounded-full">
             <span className="text-2xl mr-2">🎉</span>
-            <span className="text-green-800 font-medium">
+            <span className="text-teal-800 font-medium">
               Beta Gratuito hasta Q2 2025 - ¡Regístrate ahora!
             </span>
           </div>
@@ -79,7 +92,7 @@ export function PlansSection({ onBetaClick }: PlansSectionProps) {
           </p>
           <a 
             href="mailto:planes@mindhub.cloud"
-            className="text-primary-teal hover:text-primary-blue font-medium transition-colors"
+            className="text-teal-600 hover:text-cyan-600 font-medium transition-colors"
           >
             Escríbenos y te mantendremos al tanto
           </a>

@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import { motion, useInView } from 'framer-motion';
 import { useRef } from 'react';
+import { FlickeringGrid } from '@/components/ui/flickering-grid';
 import { 
   Users, 
   Activity, 
@@ -35,24 +36,24 @@ const stats: Stat[] = [
     value: 45000,
     suffix: '+',
     icon: Activity,
-    color: 'text-purple-600',
-    bgColor: 'bg-gradient-to-br from-purple-50 to-pink-50',
+    color: 'text-cyan-600',
+    bgColor: 'bg-gradient-to-br from-cyan-50 to-blue-50',
   },
   {
     label: 'Satisfacción',
     value: 98,
     suffix: '%',
     icon: Award,
-    color: 'text-emerald-600',
-    bgColor: 'bg-gradient-to-br from-emerald-50 to-green-50',
+    color: 'text-blue-600',
+    bgColor: 'bg-gradient-to-br from-blue-50 to-teal-50',
   },
   {
     label: 'Tiempo Ahorrado',
     value: 40,
     suffix: '%',
     icon: TrendingUp,
-    color: 'text-orange-600',
-    bgColor: 'bg-gradient-to-br from-orange-50 to-yellow-50',
+    color: 'text-teal-600',
+    bgColor: 'bg-gradient-to-br from-teal-50 to-cyan-50',
   },
 ];
 
@@ -109,6 +110,18 @@ export function AnimatedStatsSection() {
     <section className="relative py-20 px-4 sm:px-6 lg:px-8 overflow-hidden">
       {/* Background with gradient */}
       <div className="absolute inset-0 bg-gradient-to-b from-white via-teal-50/30 to-white dark:from-gray-900 dark:via-teal-950/20 dark:to-gray-900" />
+      
+      {/* FlickeringGrid Background */}
+      <div className="absolute inset-0 z-0">
+        <FlickeringGrid
+          squareSize={3}
+          gridGap={5}
+          flickerChance={0.5}
+          color="rgb(37, 99, 235)" // blue-600
+          maxOpacity={0.1}
+          className="w-full h-full"
+        />
+      </div>
       
       {/* Animated particles */}
       <div className="absolute inset-0">

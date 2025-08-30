@@ -246,13 +246,17 @@ export async function POST(request: Request) {
         }
       }
 
-      // Prepare consultation data for Supabase
+      // Prepare consultation data for Supabase - Use consultation_date as timestamp (not consultation_time)
+      const consultationDateTime = body.consultation_date 
+        ? new Date(body.consultation_date).toISOString() 
+        : new Date().toISOString();
+
       const consultationData = {
         id: crypto.randomUUID(),
         patient_id: body.patient_id,
         professional_id: user.id,
-        consultation_date: body.consultation_date || new Date().toISOString().split('T')[0],
-        consultation_time: body.consultation_time || new Date().toTimeString().split(' ')[0],
+        consultation_date: consultationDateTime, // This is timestamp with time zone in DB
+        consultation_type: body.consultation_type || 'general',
         chief_complaint: body.chief_complaint || body.subjective?.substring(0, 500) || '',
         history_present_illness: body.history_present_illness || body.subjective || body.currentCondition || '',
         physical_examination: body.physical_examination || body.objective || body.physicalExamination || '',
@@ -260,6 +264,7 @@ export async function POST(request: Request) {
         plan: body.plan || body.treatment_plan || '',
         notes: body.notes || '',
         status: body.status || 'completed',
+        duration_minutes: body.duration_minutes || 60,
         // Dual system context
         clinic_id,
         workspace_id,

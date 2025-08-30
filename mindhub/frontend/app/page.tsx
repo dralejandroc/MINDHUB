@@ -23,7 +23,7 @@ export default function LandingPage() {
   }, [router]);
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-gradient-to-br from-teal-50 via-cyan-50 to-blue-50">
       <LandingNavbar onBetaClick={() => setShowBetaModal(true)} />
       
       <main>

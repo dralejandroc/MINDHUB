@@ -420,6 +420,11 @@ class ExpedixApiClient {
     return this.makeRequest<{ success: boolean; data: any[] }>(`/expedix/forms/patient/${patientId}`);
   }
 
+  async getConsultations(patientId?: string): Promise<{ success: boolean; data: any[] }> {
+    const params = patientId ? `?patient_id=${patientId}` : '';
+    return this.makeRequest<{ success: boolean; data: any[] }>(`/expedix/consultations${params}`);
+  }
+
   // Consultation Template Management
   async createConsultationTemplate(templateData: any): Promise<{ data: any }> {
     return this.makeRequest<{ data: any }>('/expedix/consultation-templates/', {

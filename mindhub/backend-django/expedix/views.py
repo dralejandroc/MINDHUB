@@ -98,44 +98,41 @@ class PatientViewSet(ExpedixDualViewSet):  # 🎯 RESTORED DUAL SYSTEM after fix
     def _get_or_create_configuration(self):
         """Get or create Expedix configuration for current user context"""
         try:
-            # Get user context from request (set by middleware)
+            # TEMPORARY: Skip database configuration lookup since table doesn't exist
+            # Just return a default configuration object (not saved to database)
             user_context = getattr(self.request, 'user_context', {})
+            license_type = user_context.get('license_type', 'clinic')
             
-            if user_context.get('license_type') == 'clinic':
-                clinic_id = user_context.get('clinic_id')
-                if clinic_id:
-                    config, created = ExpedixConfiguration.objects.get_or_create(
-                        clinic_id=clinic_id,
-                        defaults={
-                            'user_id': getattr(self.request, 'supabase_user_id', None) or 'unknown',
-                            'configuration_type': 'clinic',
-                            'required_patient_fields': [],  # Will use defaults
-                            'consultation_templates_enabled': True,
-                        }
-                    )
-                    return config
-            else:
-                workspace_id = user_context.get('workspace_id')
-                if workspace_id:
-                    config, created = ExpedixConfiguration.objects.get_or_create(
-                        workspace_id=workspace_id,
-                        defaults={
-                            'user_id': getattr(self.request, 'supabase_user_id', None) or 'unknown',
-                            'configuration_type': 'individual',
-                            'required_patient_fields': [],  # Will use defaults
-                            'consultation_templates_enabled': True,
-                        }
-                    )
-                    return config
+            # Return a mock configuration object with defaults
+            class MockConfiguration:
+                def __init__(self, license_type):
+                    self.configuration_type = license_type
+                    self.required_patient_fields = []
+                    self.consultation_templates_enabled = True
+                
+                def get_required_fields(self):
+                    """Return default required fields"""
+                    return [
+                        'first_name',
+                        'paternal_last_name', 
+                        'maternal_last_name',
+                        'email',
+                        'phone',
+                        'date_of_birth',
+                        'gender'
+                    ]
+            
+            return MockConfiguration(license_type)
+            
         except Exception as e:
             logger.error(f"Error getting configuration: {e}")
         
         # Fallback: create a default configuration object (not saved)
-        return ExpedixConfiguration(
-            configuration_type='clinic',
-            required_patient_fields=[],
-            consultation_templates_enabled=True,
-        )
+        class MockConfiguration:
+            def get_required_fields(self):
+                return ['first_name', 'email']
+        
+        return MockConfiguration()
 
     # ✅ DUAL SYSTEM: get_queryset() and perform_create() are now handled by ExpedixDualViewSet
     # Automatic filtering: clinic_id or workspace_id based on license type

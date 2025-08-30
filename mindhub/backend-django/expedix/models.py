@@ -8,6 +8,7 @@ import json
 from django.db import models
 from django.contrib.auth.models import AbstractUser
 from django.core.validators import EmailValidator
+from django.contrib.postgres.fields import ArrayField
 from django.utils import timezone
 
 
@@ -95,11 +96,11 @@ class Patient(models.Model):
     rfc = models.TextField(blank=True, null=True)
     blood_type = models.TextField(blank=True, null=True)
     
-    # Array fields (PostgreSQL specific) - Using SafeJSONField to handle corrupted data
-    allergies = SafeJSONField(blank=True, null=True, default=list)  # ARRAY field
-    chronic_conditions = SafeJSONField(blank=True, null=True, default=list)  # ARRAY field
-    current_medications = SafeJSONField(blank=True, null=True, default=list)  # ARRAY field
-    tags = SafeJSONField(blank=True, null=True, default=list)  # ARRAY field
+    # Array fields (PostgreSQL specific) - Use proper ArrayField for PostgreSQL arrays
+    allergies = ArrayField(models.TextField(), blank=True, null=True, default=list)
+    chronic_conditions = ArrayField(models.TextField(), blank=True, null=True, default=list) 
+    current_medications = ArrayField(models.TextField(), blank=True, null=True, default=list)
+    tags = ArrayField(models.TextField(), blank=True, null=True, default=list)
     
     # Emergency contact fields
     emergency_contact_name = models.TextField(blank=True, null=True)

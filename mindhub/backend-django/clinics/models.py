@@ -6,6 +6,7 @@ Manages clinic registration, team members, and multi-user access
 import uuid
 from django.db import models
 from django.core.validators import EmailValidator
+from django.utils import timezone
 
 
 class Clinic(models.Model):
@@ -18,26 +19,26 @@ class Clinic(models.Model):
     ]
     
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    name = models.CharField(max_length=200)
-    legal_name = models.CharField(max_length=200, blank=True, null=True)
-    rfc = models.CharField(max_length=13, blank=True, null=True)  # RFC mexicano
-    license_number = models.CharField(max_length=100, blank=True, null=True)  # Licencia sanitaria
+    name = models.CharField(max_length=255)  # NOT NULL in actual DB
+    legal_name = models.CharField(max_length=255, blank=True, null=True)
+    rfc = models.CharField(max_length=255, blank=True, null=True)
+    license_number = models.CharField(max_length=255, blank=True, null=True)
     address = models.TextField(blank=True, null=True)
-    city = models.CharField(max_length=100, blank=True, null=True)
-    state = models.CharField(max_length=100, blank=True, null=True)
-    postal_code = models.CharField(max_length=10, blank=True, null=True)
-    phone = models.CharField(max_length=20, blank=True, null=True)
-    email = models.EmailField(validators=[EmailValidator()], blank=True, null=True)
-    website = models.URLField(blank=True, null=True)
+    city = models.CharField(max_length=255, blank=True, null=True)
+    state = models.CharField(max_length=255, blank=True, null=True)
+    postal_code = models.CharField(max_length=255, blank=True, null=True)
+    phone = models.CharField(max_length=255, blank=True, null=True)
+    email = models.CharField(max_length=255, blank=True, null=True)
+    website = models.CharField(max_length=255, blank=True, null=True)
     
-    # Subscription and limits
-    subscription_plan = models.CharField(max_length=50, choices=SUBSCRIPTION_CHOICES, default='basic')
-    max_users = models.IntegerField(default=5)
-    max_patients = models.IntegerField(default=100)
+    # Subscription and limits - Match ACTUAL schema
+    subscription_plan = models.CharField(max_length=255, blank=True, null=True)
+    max_users = models.IntegerField(blank=True, null=True)
+    max_patients = models.IntegerField(blank=True, null=True)
     
-    # Status and ownership
-    is_active = models.BooleanField(default=True)
-    created_by = models.UUIDField()  # Supabase user ID of clinic owner
+    # Status and ownership - Match ACTUAL schema
+    is_active = models.BooleanField(blank=True, null=True)
+    created_by = models.UUIDField(blank=True, null=True)  # ACTUAL field name
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -164,3 +165,60 @@ class ClinicProfile(models.Model):
     def is_active(self):
         """Compatibility property"""
         return True  # All profiles in table are considered active
+
+
+class IndividualWorkspace(models.Model):
+    """
+    Individual workspace model - matches ACTUAL Supabase schema
+    For professionals with individual licenses
+    """
+    
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    owner_id = models.UUIDField(blank=True, null=True)
+    workspace_name = models.CharField(max_length=255, blank=True, null=True)
+    business_name = models.CharField(max_length=255, blank=True, null=True)
+    tax_id = models.CharField(max_length=255, blank=True, null=True)
+    settings = models.JSONField(blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = 'individual_workspaces'
+        managed = False  # Use existing Supabase table
+
+    def __str__(self):
+        return f"{self.workspace_name} ({self.business_name})"
+
+
+class TenantMembership(models.Model):
+    """
+    Tenant membership model - matches ACTUAL Supabase schema
+    For multi-professional clinic management
+    """
+    
+    ROLE_CHOICES = [
+        ('member', 'Member'),
+        ('admin', 'Admin'),
+        ('owner', 'Owner'),
+    ]
+    
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    user_id = models.UUIDField()  # FK to auth.users
+    clinic_id = models.UUIDField()  # FK to clinics
+    role = models.CharField(max_length=20, choices=ROLE_CHOICES, default='member')
+    permissions = models.JSONField(default=dict)
+    is_active = models.BooleanField(default=True)
+    invited_by = models.UUIDField(blank=True, null=True)
+    joined_at = models.DateTimeField(default=timezone.now)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = 'tenant_memberships'
+        managed = False  # Use existing Supabase table
+        constraints = [
+            models.UniqueConstraint(fields=['user_id', 'clinic_id'], name='unique_user_clinic')
+        ]
+
+    def __str__(self):
+        return f"User {self.user_id} - Clinic {self.clinic_id} ({self.role})"

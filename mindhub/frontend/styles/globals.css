@@ -578,3 +578,23 @@
     border: 0;
   }
 }
+
+/* Animated Gradient Animation */
+@keyframes background-gradient {
+  0%, 100% {
+    transform: translate(0, 0);
+  }
+  25% {
+    transform: translate(calc(var(--tx-1, 0) * 100px), calc(var(--ty-1, 0) * 100px));
+  }
+  50% {
+    transform: translate(calc(var(--tx-2, 0) * 100px), calc(var(--ty-2, 0) * 100px));
+  }
+  75% {
+    transform: translate(calc(var(--tx-3, 0) * 100px), calc(var(--ty-3, 0) * 100px));
+  }
+}
+
+.animate-background-gradient {
+  animation: background-gradient var(--background-gradient-speed, 5s) ease-in-out infinite;
+}

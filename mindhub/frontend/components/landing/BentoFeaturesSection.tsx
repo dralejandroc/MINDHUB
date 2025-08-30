@@ -2,6 +2,7 @@
 
 import React from 'react';
 import { motion } from 'framer-motion';
+import { FlickeringGrid } from '@/components/ui/flickering-grid';
 import {
   Brain,
   Calendar,
@@ -60,7 +61,7 @@ const features = [
     background: (
       <div className="absolute inset-0">
         <PulseCircle className="opacity-20" />
-        <div className="absolute inset-0 bg-gradient-to-tr from-purple-500/10 to-pink-500/10" />
+        <div className="absolute inset-0 bg-gradient-to-tr from-cyan-500/10 to-blue-500/10" />
       </div>
     ),
   },
@@ -78,9 +79,9 @@ const features = [
           className="absolute top-0 left-0 w-full h-full"
           animate={{
             background: [
-              "radial-gradient(circle at 20% 80%, rgba(249, 115, 22, 0.15) 0%, transparent 50%)",
-              "radial-gradient(circle at 80% 20%, rgba(249, 115, 22, 0.15) 0%, transparent 50%)",
-              "radial-gradient(circle at 20% 80%, rgba(249, 115, 22, 0.15) 0%, transparent 50%)",
+              "radial-gradient(circle at 20% 80%, rgba(20, 184, 166, 0.15) 0%, transparent 50%)",
+              "radial-gradient(circle at 80% 20%, rgba(20, 184, 166, 0.15) 0%, transparent 50%)",
+              "radial-gradient(circle at 20% 80%, rgba(20, 184, 166, 0.15) 0%, transparent 50%)",
             ],
           }}
           transition={{
@@ -102,7 +103,7 @@ const features = [
     background: (
       <div className="absolute inset-0">
         <WavePattern className="opacity-40" />
-        <div className="absolute inset-0 bg-gradient-to-b from-transparent to-emerald-500/10" />
+        <div className="absolute inset-0 bg-gradient-to-b from-transparent to-teal-500/10" />
       </div>
     ),
   },
@@ -121,7 +122,7 @@ const features = [
             y="60%"
             width="15%"
             height="30%"
-            fill="rgba(8, 145, 178, 0.1)"
+            fill="rgba(20, 184, 166, 0.1)"
             animate={{ height: ["30%", "50%", "30%"] }}
             transition={{ duration: 2, repeat: Infinity }}
           />
@@ -130,7 +131,7 @@ const features = [
             y="40%"
             width="15%"
             height="50%"
-            fill="rgba(41, 169, 140, 0.1)"
+            fill="rgba(6, 182, 212, 0.1)"
             animate={{ height: ["50%", "70%", "50%"] }}
             transition={{ duration: 2, delay: 0.2, repeat: Infinity }}
           />
@@ -139,7 +140,7 @@ const features = [
             y="50%"
             width="15%"
             height="40%"
-            fill="rgba(236, 115, 103, 0.1)"
+            fill="rgba(59, 130, 246, 0.1)"
             animate={{ height: ["40%", "60%", "40%"] }}
             transition={{ duration: 2, delay: 0.4, repeat: Infinity }}
           />
@@ -148,7 +149,7 @@ const features = [
             y="45%"
             width="15%"
             height="45%"
-            fill="rgba(168, 85, 247, 0.1)"
+            fill="rgba(37, 99, 235, 0.1)"
             animate={{ height: ["45%", "65%", "45%"] }}
             transition={{ duration: 2, delay: 0.6, repeat: Infinity }}
           />
@@ -169,10 +170,10 @@ const features = [
           className="absolute inset-0"
           animate={{
             background: [
-              "linear-gradient(45deg, rgba(8, 145, 178, 0.05) 0%, transparent 100%)",
-              "linear-gradient(135deg, rgba(8, 145, 178, 0.05) 0%, transparent 100%)",
-              "linear-gradient(225deg, rgba(8, 145, 178, 0.05) 0%, transparent 100%)",
-              "linear-gradient(315deg, rgba(8, 145, 178, 0.05) 0%, transparent 100%)",
+              "linear-gradient(45deg, rgba(20, 184, 166, 0.05) 0%, transparent 100%)",
+              "linear-gradient(135deg, rgba(20, 184, 166, 0.05) 0%, transparent 100%)",
+              "linear-gradient(225deg, rgba(20, 184, 166, 0.05) 0%, transparent 100%)",
+              "linear-gradient(315deg, rgba(20, 184, 166, 0.05) 0%, transparent 100%)",
             ],
           }}
           transition={{
@@ -194,7 +195,7 @@ const features = [
     className: "lg:col-span-2",
     background: (
       <div className="absolute inset-0">
-        <div className="absolute inset-0 bg-gradient-to-br from-blue-500/10 via-transparent to-indigo-500/10" />
+        <div className="absolute inset-0 bg-gradient-to-br from-teal-500/10 via-transparent to-cyan-500/10" />
         <motion.div
           className="absolute top-1/2 left-1/2 w-32 h-32 -translate-x-1/2 -translate-y-1/2"
           animate={{
@@ -208,7 +209,7 @@ const features = [
             ease: "easeInOut",
           }}
         >
-          <div className="w-full h-full rounded-full bg-gradient-to-r from-blue-400 to-indigo-400" />
+          <div className="w-full h-full rounded-full bg-gradient-to-r from-teal-400 to-cyan-400" />
         </motion.div>
       </div>
     ),
@@ -220,6 +221,18 @@ export function BentoFeaturesSection() {
     <section className="relative py-20 px-4 sm:px-6 lg:px-8 overflow-hidden">
       {/* Background decoration */}
       <div className="absolute inset-0 bg-gradient-to-br from-teal-50 via-white to-cyan-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900" />
+      
+      {/* FlickeringGrid Background */}
+      <div className="absolute inset-0 z-0">
+        <FlickeringGrid
+          squareSize={4}
+          gridGap={8}
+          flickerChance={0.4}
+          color="rgb(6, 182, 212)" // cyan-500
+          maxOpacity={0.15}
+          className="w-full h-full"
+        />
+      </div>
       
       {/* Animated background elements */}
       <motion.div
@@ -235,7 +248,7 @@ export function BentoFeaturesSection() {
         }}
       />
       <motion.div
-        className="absolute bottom-20 right-10 w-96 h-96 bg-gradient-to-r from-purple-400/20 to-pink-400/20 rounded-full filter blur-3xl"
+        className="absolute bottom-20 right-10 w-96 h-96 bg-gradient-to-r from-cyan-400/20 to-blue-400/20 rounded-full filter blur-3xl"
         animate={{
           x: [0, -100, 0],
           y: [0, 100, 0],

@@ -54,7 +54,7 @@ export default function PatientTimeline({
 
       // Load all patient data in parallel
       const [consultations, prescriptions, assessments, appointments] = await Promise.allSettled([
-        expedixApi.getPatientConsultationForms(patientId),
+        expedixApi.getConsultations(patientId), // Fix: Use getConsultations instead of getPatientConsultationForms
         expedixApi.getPatientPrescriptions(patientId),
         clinimetrixProClient.getPatientAssessments(patientId),
         expedixApi.getAppointments(patientId)
@@ -63,7 +63,7 @@ export default function PatientTimeline({
       const events: TimelineEntry[] = [];
 
       // Process consultations
-      if (consultations.status === 'fulfilled' && consultations.value?.data) {
+      if (consultations.status === 'fulfilled' && consultations.value?.data && Array.isArray(consultations.value.data)) {
         consultations.value.data.forEach((consultation: any) => {
           events.push({
             id: `consultation-${consultation.id}`,
@@ -115,7 +115,7 @@ export default function PatientTimeline({
       }
 
       // Process prescriptions
-      if (prescriptions.status === 'fulfilled' && prescriptions.value?.data) {
+      if (prescriptions.status === 'fulfilled' && prescriptions.value?.data && Array.isArray(prescriptions.value.data)) {
         prescriptions.value.data.forEach((prescription: any) => {
           const medicationsList = prescription.medications || [];
           events.push({
@@ -157,7 +157,7 @@ export default function PatientTimeline({
       }
 
       // Process assessments
-      if (assessments.status === 'fulfilled' && assessments.value) {
+      if (assessments.status === 'fulfilled' && assessments.value && Array.isArray(assessments.value)) {
         assessments.value.forEach((assessment: any) => {
           events.push({
             id: `assessment-${assessment.id}`,
@@ -201,7 +201,7 @@ export default function PatientTimeline({
       }
 
       // Process appointments
-      if (appointments.status === 'fulfilled' && appointments.value?.data) {
+      if (appointments.status === 'fulfilled' && appointments.value?.data && Array.isArray(appointments.value.data)) {
         appointments.value.data.forEach((appointment: any) => {
           events.push({
             id: `appointment-${appointment.id}`,

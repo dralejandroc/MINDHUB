@@ -13,6 +13,7 @@ import {
   MagnifyingGlassIcon
 } from '@heroicons/react/24/outline';
 import { dashboardDataService } from '@/lib/dashboard-data-service';
+import { AnimatedGradient } from '@/components/ui/animated-gradient';
 
 // Types for dashboard data
 interface DashboardStats {
@@ -263,8 +264,13 @@ export const MainDashboard: React.FC<MainDashboardProps> = ({ user }) => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Statistics Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-8">
-          <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-200">
-            <div className="flex items-center">
+          <div className="relative bg-white rounded-xl shadow-sm p-6 border border-gray-200 overflow-hidden">
+            <AnimatedGradient
+              colors={['rgba(59, 130, 246, 0.1)', 'rgba(37, 99, 235, 0.1)', 'rgba(29, 78, 216, 0.1)']}
+              speed={8}
+              blur="light"
+            />
+            <div className="relative z-10 flex items-center">
               <div className="p-3 rounded-lg bg-blue-100">
                 <UserGroupIcon className="h-6 w-6 text-blue-600" />
               </div>
@@ -275,20 +281,30 @@ export const MainDashboard: React.FC<MainDashboardProps> = ({ user }) => {
             </div>
           </div>
 
-          <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-200">
-            <div className="flex items-center">
+          <div className="relative bg-white rounded-xl shadow-sm p-6 border border-gray-200 overflow-hidden">
+            <AnimatedGradient
+              colors={['rgba(34, 197, 94, 0.1)', 'rgba(22, 163, 74, 0.1)', 'rgba(21, 128, 61, 0.1)']}
+              speed={9}
+              blur="light"
+            />
+            <div className="relative z-10 flex items-center">
               <div className="p-3 rounded-lg bg-green-100">
                 <ArrowTrendingUpIcon className="h-6 w-6 text-green-600" />
               </div>
               <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">Pacientes Activos</p>
-                <p className="text-2xl font-bold text-gray-900">{stats?.activePatients || 0}</p>
+                <p className="text-sm font-medium text-gray-600">Consultas</p>
+                <p className="text-2xl font-bold text-gray-900">{stats?.scheduledAppointments || 0}</p>
               </div>
             </div>
           </div>
 
-          <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-200">
-            <div className="flex items-center">
+          <div className="relative bg-white rounded-xl shadow-sm p-6 border border-gray-200 overflow-hidden">
+            <AnimatedGradient
+              colors={['rgba(251, 191, 36, 0.1)', 'rgba(245, 158, 11, 0.1)', 'rgba(217, 119, 6, 0.1)']}
+              speed={7}
+              blur="light"
+            />
+            <div className="relative z-10 flex items-center">
               <div className="p-3 rounded-lg bg-yellow-100">
                 <ExclamationTriangleIcon className="h-6 w-6 text-yellow-600" />
               </div>
@@ -299,8 +315,13 @@ export const MainDashboard: React.FC<MainDashboardProps> = ({ user }) => {
             </div>
           </div>
 
-          <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-200">
-            <div className="flex items-center">
+          <div className="relative bg-white rounded-xl shadow-sm p-6 border border-gray-200 overflow-hidden">
+            <AnimatedGradient
+              colors={['rgba(147, 51, 234, 0.1)', 'rgba(126, 34, 206, 0.1)', 'rgba(107, 33, 168, 0.1)']}
+              speed={10}
+              blur="light"
+            />
+            <div className="relative z-10 flex items-center">
               <div className="p-3 rounded-lg bg-purple-100">
                 <ClipboardDocumentCheckIcon className="h-6 w-6 text-purple-600" />
               </div>
@@ -311,8 +332,13 @@ export const MainDashboard: React.FC<MainDashboardProps> = ({ user }) => {
             </div>
           </div>
 
-          <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-200">
-            <div className="flex items-center">
+          <div className="relative bg-white rounded-xl shadow-sm p-6 border border-gray-200 overflow-hidden">
+            <AnimatedGradient
+              colors={['rgba(99, 102, 241, 0.1)', 'rgba(79, 70, 229, 0.1)', 'rgba(67, 56, 202, 0.1)']}
+              speed={6}
+              blur="light"
+            />
+            <div className="relative z-10 flex items-center">
               <div className="p-3 rounded-lg bg-indigo-100">
                 <CalendarDaysIcon className="h-6 w-6 text-indigo-600" />
               </div>

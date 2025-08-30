@@ -1,6 +1,7 @@
 'use client';
 
 import { ContainerScroll } from '@/components/ui/container-scroll';
+import { FlickeringGrid } from '@/components/ui/flickering-grid';
 import Image from 'next/image';
 
 interface HeroScrollSectionProps {
@@ -9,20 +10,33 @@ interface HeroScrollSectionProps {
 
 export function HeroScrollSection({ onBetaClick }: HeroScrollSectionProps) {
   return (
-    <div className="flex flex-col overflow-hidden">
-      <ContainerScroll
-        titleComponent={
+    <div className="flex flex-col overflow-hidden relative">
+      {/* FlickeringGrid Background */}
+      <div className="absolute inset-0 z-0">
+        <FlickeringGrid
+          squareSize={4}
+          gridGap={6}
+          flickerChance={0.6}
+          color="rgb(20, 184, 166)" // teal-500
+          maxOpacity={0.2}
+          className="w-full h-full"
+        />
+      </div>
+      
+      <div className="relative z-10">
+        <ContainerScroll
+          titleComponent={
           <>
             {/* Beta Badge */}
-            <div className="inline-flex items-center px-4 py-2 rounded-full bg-primary-blue/10 text-primary-blue text-sm font-medium mb-8">
-              <span className="w-2 h-2 bg-primary-blue rounded-full mr-2 animate-pulse"></span>
+            <div className="inline-flex items-center px-4 py-2 rounded-full bg-gradient-to-r from-teal-100 to-cyan-100 text-teal-700 text-sm font-medium mb-8 border border-teal-200">
+              <span className="w-2 h-2 bg-teal-500 rounded-full mr-2 animate-pulse"></span>
               Beta Abierto - Registro Gratuito
             </div>
 
             {/* Main Heading */}
             <h1 className="text-4xl md:text-6xl font-bold text-gray-900 mb-6">
               La plataforma integral para
-              <span className="block text-transparent bg-clip-text bg-gradient-to-r from-primary-blue to-primary-teal">
+              <span className="block text-transparent bg-clip-text bg-gradient-to-r from-teal-600 via-cyan-600 to-blue-600">
                 profesionales de salud mental
               </span>
             </h1>
@@ -38,13 +52,13 @@ export function HeroScrollSection({ onBetaClick }: HeroScrollSectionProps) {
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-8">
               <button
                 onClick={onBetaClick}
-                className="w-full sm:w-auto bg-gradient-to-r from-primary-teal to-primary-blue text-white px-8 py-4 rounded-xl hover:shadow-2xl hover:scale-105 transition-all duration-300 font-semibold text-lg shadow-lg"
+                className="w-full sm:w-auto bg-gradient-to-r from-teal-500 via-cyan-500 to-blue-500 text-white px-8 py-4 rounded-xl hover:shadow-2xl hover:scale-105 transition-all duration-300 font-semibold text-lg shadow-lg hover:from-teal-600 hover:via-cyan-600 hover:to-blue-600"
               >
                 🚀 Únete al Beta Gratuito
               </button>
               <button
                 onClick={onBetaClick}
-                className="w-full sm:w-auto border-2 border-primary-teal text-primary-teal px-8 py-4 rounded-xl hover:bg-primary-teal hover:text-white hover:shadow-lg transition-all duration-300 font-semibold text-lg"
+                className="w-full sm:w-auto bg-white border-2 border-teal-300 text-teal-700 px-8 py-4 rounded-xl hover:bg-teal-50 hover:border-teal-400 hover:shadow-lg transition-all duration-300 font-semibold text-lg"
               >
                 Más Información
               </button>
@@ -54,12 +68,12 @@ export function HeroScrollSection({ onBetaClick }: HeroScrollSectionProps) {
       >
         {/* MindHub Platform Preview */}
         <div className="mx-auto rounded-2xl object-cover h-full w-full">
-          <div className="bg-gradient-to-br from-primary-teal/5 to-primary-blue/5 h-full w-full rounded-2xl border border-gray-200 p-4">
+          <div className="bg-white/80 backdrop-blur-sm h-full w-full rounded-2xl border border-gray-100 shadow-2xl p-4">
             {/* Simulated MindHub Interface */}
             <div className="bg-white rounded-xl h-full w-full shadow-inner border border-gray-100 overflow-hidden">
               
               {/* Header Bar */}
-              <div className="bg-gradient-to-r from-primary-teal to-primary-blue p-4 text-white">
+              <div className="bg-gradient-to-r from-teal-500 via-cyan-500 to-blue-500 p-4 text-white">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-3">
                     <div className="w-8 h-8 bg-white/20 rounded-lg flex items-center justify-center">
@@ -145,7 +159,8 @@ export function HeroScrollSection({ onBetaClick }: HeroScrollSectionProps) {
             </div>
           </div>
         </div>
-      </ContainerScroll>
+        </ContainerScroll>
+      </div>
     </div>
   );
 }
