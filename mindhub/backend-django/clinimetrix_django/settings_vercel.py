@@ -42,6 +42,7 @@ INSTALLED_APPS = [
     'resources',  # Resources - Medical Resources Management
     'clinics',  # Multi-user Clinic Management System
     'finance',  # Finance - Financial Management & Income Tracking
+    'analytics',  # Analytics - Healthcare KPIs and Indicators
 ]
 
 MIDDLEWARE = [
@@ -155,7 +156,8 @@ ALLOWED_HOSTS = [
     '.vercel.app',
     'mindhub.cloud',
     'www.mindhub.cloud',
-    '.mindhub.cloud'
+    '.mindhub.cloud',
+    'testserver'  # For Django testing
 ]
 
 # Database - Use Supabase PostgreSQL (Transaction Pooler for Serverless)

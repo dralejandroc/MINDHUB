@@ -1,10 +1,13 @@
 /**
  * Dashboard Data Service
- * Fetches real statistics from backend APIs for dashboard display
- * Updated to use direct backend API clients instead of broken proxy routes
+ * Fetches real statistics from GraphQL APIs for dashboard display
+ * Updated to use GraphQL directly instead of broken Django backend
  */
 
-import { simpleApiClient } from './api/simple-api-client';
+import { GET_PATIENTS } from './apollo/queries/expedix/patients';
+import { GET_TODAY_APPOINTMENTS, GET_APPOINTMENTS_BY_PATIENT } from './apollo/queries/agenda/appointments';
+import { client } from './apollo/client';
+import type { GetPatientsQuery, GetPatientsQueryVariables, GetTodayAppointmentsQuery, GetTodayAppointmentsQueryVariables } from './apollo/types/generated';
 
 export interface DashboardData {
   totalPatients: number;
@@ -92,11 +95,11 @@ class DashboardDataService {
       oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
 
       const weeklyConsultations = consultations.filter((c: any) => 
-        new Date(c.consultationDate || c.createdAt) >= oneWeekAgo
+        new Date(c.appointment_date || c.created_at) >= oneWeekAgo
       ).length;
 
       const weeklyAssessments = scaleApplications.filter((a: any) => 
-        new Date(a.administrationDate || a.createdAt) >= oneWeekAgo
+        new Date(a.created_at || a.updated_at) >= oneWeekAgo
       ).length;
 
       // Create recent activity from available sources only
@@ -166,85 +169,59 @@ class DashboardDataService {
 
   private async fetchPatients(): Promise<any[]> {
     try {
-      console.log('[DashboardService] Starting to fetch patients...');
-      const response = await simpleApiClient.getExpedixPatients();
-      console.log('[DashboardService] Raw response:', response);
+      console.log('[DashboardService] Fetching patients via GraphQL...');
       
-      // Handle both formats: { data: [] } and { results: [] }
-      const patients = response?.data || response?.results || [];
-      console.log('[DashboardService] Extracted patients:', patients.length, 'patients');
-      
-      // Log first patient to debug structure
-      if (patients.length > 0) {
-        console.log('[DashboardService] First patient sample:', patients[0]);
-      }
+      const result = await client.query<GetPatientsQuery, GetPatientsQueryVariables>({
+        query: GET_PATIENTS,
+        variables: {
+          first: 100, // Get more for better dashboard stats
+          filter: { is_active: { eq: true } }
+        },
+        fetchPolicy: 'cache-first'
+      });
+
+      const patients = result.data?.patientsCollection?.edges?.map(edge => edge.node) || [];
+      console.log('[DashboardService] GraphQL patients loaded:', patients.length);
       
       return patients;
     } catch (error) {
-      console.error('[DashboardService] Error fetching patients:', error);
+      console.error('[DashboardService] Error fetching patients via GraphQL:', error);
       return [];
     }
   }
 
   private async fetchConsultations(): Promise<any[]> {
     try {
-      // Try to get consultations directly first
-      const response = await simpleApiClient.getExpedixConsultations();
-      // Handle both formats: { data: [] } and { results: [] }
-      const consultations = response?.data || response?.results || [];
+      console.log('[DashboardService] Fetching appointments via GraphQL...');
       
-      if (consultations.length > 0) {
-        console.log('[DashboardService] Fetched consultations:', consultations.length);
-        return consultations;
-      }
-      
-      // Fallback: extract consultations from patient data
-      const patientsResponse = await simpleApiClient.getExpedixPatients();
-      const patients = patientsResponse?.data || patientsResponse?.results || [];
-      const allConsultations: any[] = [];
-      
-      patients.forEach((patient: any) => {
-        if (patient.consultations && patient.consultations.length > 0) {
-          allConsultations.push(...patient.consultations);
-        }
+      const today = new Date().toISOString().split('T')[0];
+      const result = await client.query<GetTodayAppointmentsQuery, GetTodayAppointmentsQueryVariables>({
+        query: GET_TODAY_APPOINTMENTS,
+        variables: {
+          date: today
+        },
+        fetchPolicy: 'cache-first'
       });
+
+      const appointments = result.data?.appointmentsCollection?.edges?.map(edge => edge.node) || [];
+      console.log('[DashboardService] GraphQL appointments loaded:', appointments.length);
       
-      console.log('[DashboardService] Fetched consultations from patients:', allConsultations.length);
-      return allConsultations;
+      return appointments;
     } catch (error) {
-      console.error('Error fetching consultations:', error);
+      console.error('[DashboardService] Error fetching appointments via GraphQL:', error);
       return [];
     }
   }
 
   private async fetchScaleApplications(): Promise<any[]> {
     try {
-      // Get all scale administrations from all patients to calculate dashboard stats
-      // We'll aggregate data from all patients for dashboard metrics
-      const patients = await this.fetchPatients();
-      let allAssessments: any[] = [];
-      
-      // Get assessments for each patient (limited to avoid too many requests)
-      const patientSample = patients.slice(0, 10); // Sample first 10 patients
-      
-      for (const patient of patientSample) {
-        try {
-          // For now, extract assessments from patient data if available
-          if (patient.assessments && patient.assessments.length > 0) {
-            allAssessments = allAssessments.concat(patient.assessments);
-          }
-          // TODO: Implement proper assessments endpoint when clinimetrix integration is complete
-        } catch (err) {
-          console.log(`Failed to extract assessments for patient ${patient.id}:`, err instanceof Error ? err.message : 'Unknown error');
-          continue;
-        }
-      }
-      
-      console.log('Dashboard assessments loaded:', allAssessments.length);
-      return allAssessments;
+      console.log('[DashboardService] Scale applications via GraphQL not implemented yet');
+      // TODO: Implement ClinimetrixPro GraphQL queries when ready
+      // For now return empty array to prevent dashboard errors
+      return [];
       
     } catch (error) {
-      console.error('Error fetching scale applications:', error);
+      console.error('[DashboardService] Error with scale applications:', error);
       return [];
     }
   }
@@ -261,30 +238,30 @@ class DashboardDataService {
   ): Array<{ type: string; description: string; timestamp: string }> {
     const activities: Array<{ type: string; description: string; timestamp: string }> = [];
 
-    // Add recent patients (last 5)
+    // Add recent patients (last 5) - using GraphQL field names
     patients.slice(-5).forEach(patient => {
       activities.push({
         type: 'patient',
-        description: `Nuevo paciente registrado: ${patient.firstName} ${patient.lastName}`,
-        timestamp: patient.createdAt
+        description: `Nuevo paciente registrado: ${patient.first_name} ${patient.last_name}`,
+        timestamp: patient.created_at
       });
     });
 
-    // Add recent consultations (last 5)
-    consultations.slice(-5).forEach(consultation => {
+    // Add recent appointments (last 5) - using GraphQL field names
+    consultations.slice(-5).forEach(appointment => {
       activities.push({
         type: 'consultation',
-        description: `Consulta completada: ${consultation.reason || 'Consulta médica'}`,
-        timestamp: consultation.consultationDate || consultation.createdAt
+        description: `Cita programada: ${appointment.reason || 'Consulta médica'}`,
+        timestamp: appointment.appointment_date || appointment.created_at
       });
     });
 
-    // Add recent scale applications (last 5)
+    // Add recent scale applications (last 5) 
     scaleApplications.slice(-5).forEach(assessment => {
       activities.push({
         type: 'assessment',
-        description: `Escala aplicada: ${assessment.scale?.name || 'Evaluación clínica'}`,
-        timestamp: assessment.administrationDate || assessment.createdAt
+        description: `Evaluación clínica aplicada`,
+        timestamp: assessment.created_at || assessment.updated_at
       });
     });
 
@@ -305,28 +282,28 @@ class DashboardDataService {
     const twoMonthsAgo = new Date();
     twoMonthsAgo.setDate(now.getDate() - 60);
 
-    // Count items in last 30 days vs previous 30 days
+    // Count items in last 30 days vs previous 30 days - using GraphQL field names
     const recentPatients = patients.filter(p => 
-      new Date(p.createdAt) >= oneMonthAgo
+      new Date(p.created_at) >= oneMonthAgo
     ).length;
     const previousPatients = patients.filter(p => 
-      new Date(p.createdAt) >= twoMonthsAgo && new Date(p.createdAt) < oneMonthAgo
+      new Date(p.created_at) >= twoMonthsAgo && new Date(p.created_at) < oneMonthAgo
     ).length;
 
     const recentConsultations = consultations.filter(c => 
-      new Date(c.consultationDate || c.createdAt) >= oneMonthAgo
+      new Date(c.appointment_date || c.created_at) >= oneMonthAgo
     ).length;
     const previousConsultations = consultations.filter(c => 
-      new Date(c.consultationDate || c.createdAt) >= twoMonthsAgo && 
-      new Date(c.consultationDate || c.createdAt) < oneMonthAgo
+      new Date(c.appointment_date || c.created_at) >= twoMonthsAgo && 
+      new Date(c.appointment_date || c.created_at) < oneMonthAgo
     ).length;
 
     const recentAssessments = scaleApplications.filter(a => 
-      new Date(a.administrationDate || a.createdAt) >= oneMonthAgo
+      new Date(a.created_at || a.updated_at) >= oneMonthAgo
     ).length;
     const previousAssessments = scaleApplications.filter(a => 
-      new Date(a.administrationDate || a.createdAt) >= twoMonthsAgo && 
-      new Date(a.administrationDate || a.createdAt) < oneMonthAgo
+      new Date(a.created_at || a.updated_at) >= twoMonthsAgo && 
+      new Date(a.created_at || a.updated_at) < oneMonthAgo
     ).length;
 
     return {

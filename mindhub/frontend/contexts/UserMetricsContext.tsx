@@ -3,7 +3,7 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { UserMetricsManager } from '@/lib/user-metrics';
 import { UserPreferences, DashboardConfig, AdminDashboardSettings } from '@/types/user-metrics';
-import { dashboardDataService, DashboardData } from '@/lib/dashboard-data-service';
+import { dashboardGraphQLService as dashboardDataService, DashboardData } from '@/lib/dashboard-graphql-service';
 import { useAuth } from '@/lib/providers/AuthProvider';
 
 interface UserMetricsContextType {

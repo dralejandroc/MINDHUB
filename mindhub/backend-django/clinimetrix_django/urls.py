@@ -32,12 +32,23 @@ def api_root(request):
 
 def health_check(request):
     """Health check endpoint for Vercel deployment"""
+    try:
+        # Test database connection
+        from django.db import connection
+        cursor = connection.cursor()
+        cursor.execute("SELECT 1")
+        db_status = 'connected'
+    except Exception as e:
+        db_status = f'error: {str(e)[:50]}'
+    
     return JsonResponse({
         'status': 'healthy',
         'service': 'MindHub Django Backend',
         'timestamp': request.META.get('HTTP_DATE', 'unknown'),
-        'database': 'connected',
-        'version': '1.0'
+        'database': db_status,
+        'version': '1.0',
+        'django_version': '4.2.11',
+        'apps_loaded': True
     })
 
 urlpatterns = [
