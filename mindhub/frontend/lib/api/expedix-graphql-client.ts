@@ -27,26 +27,27 @@ class ExpedixGraphQLService {
   async getPatients(searchTerm?: string): Promise<{ data: Patient[]; total: number }> {
     try {
       console.log('🚀 [ExpedixGraphQL] Fetching patients via GraphQL...');
+      console.log('📊 [ExpedixGraphQL] Search term:', searchTerm || 'none');
       
-      // Build filter based on search term
-      let filter: any = { is_active: { eq: true } };
+      // Build filter - START SIMPLE, just get ALL patients first
+      let filter: any = {};
+      
+      // TEMPORARILY REMOVE is_active filter to see if we get ANY patients
+      // let filter: any = { is_active: { eq: true } };
       
       if (searchTerm) {
         // Search in first name, last names, or email
         filter = {
-          and: [
-            { is_active: { eq: true } },
-            {
-              or: [
-                { first_name: { ilike: `%${searchTerm}%` } },
-                { paternal_last_name: { ilike: `%${searchTerm}%` } },
-                { maternal_last_name: { ilike: `%${searchTerm}%` } },
-                { email: { ilike: `%${searchTerm}%` } }
-              ]
-            }
+          or: [
+            { first_name: { ilike: `%${searchTerm}%` } },
+            { paternal_last_name: { ilike: `%${searchTerm}%` } },
+            { maternal_last_name: { ilike: `%${searchTerm}%` } },
+            { email: { ilike: `%${searchTerm}%` } }
           ]
         };
       }
+
+      console.log('🔍 [ExpedixGraphQL] Using filter:', JSON.stringify(filter));
 
       const result = await client.query<GetPatientsQuery, GetPatientsQueryVariables>({
         query: GET_PATIENTS,
@@ -54,9 +55,12 @@ class ExpedixGraphQLService {
           first: 100, // Limit for performance
           filter: filter
         },
-        fetchPolicy: 'cache-first', // Use cache for better performance
+        fetchPolicy: 'network-only', // Force fresh data to debug
         errorPolicy: 'all'
       });
+      
+      console.log('📦 [ExpedixGraphQL] Raw GraphQL result:', result);
+      console.log('📋 [ExpedixGraphQL] Edges count:', result.data?.patientsCollection?.edges?.length || 0);
 
       const patients = result.data?.patientsCollection?.edges?.map(edge => {
         // Calculate age from date_of_birth

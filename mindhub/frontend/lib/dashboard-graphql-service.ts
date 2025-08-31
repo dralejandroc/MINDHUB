@@ -131,18 +131,21 @@ class DashboardGraphQLService {
     try {
       console.log('👥 [GraphQL Dashboard] Fetching patients via GraphQL...');
       
+      // Remove filter temporarily to see ALL patients
       const result = await client.query<GetPatientsQuery, GetPatientsQueryVariables>({
         query: GET_PATIENTS,
         variables: {
-          first: 100,
-          filter: { is_active: { eq: true } }
+          first: 100
+          // REMOVED filter to see ALL patients: filter: { is_active: { eq: true } }
         },
         fetchPolicy: 'network-only', // Always get fresh data for dashboard
         errorPolicy: 'all'
       });
 
+      console.log('📦 [GraphQL Dashboard] Raw result:', result);
       const patients = result.data?.patientsCollection?.edges?.map(edge => edge.node) || [];
       console.log('✅ [GraphQL Dashboard] Patients loaded via GraphQL:', patients.length);
+      console.log('🔍 [GraphQL Dashboard] First patient (if any):', patients[0]);
       
       return patients;
     } catch (error) {
