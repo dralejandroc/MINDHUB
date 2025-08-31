@@ -4,6 +4,7 @@ import { Toaster } from 'react-hot-toast';
 import { SpeedInsights } from '@vercel/speed-insights/next';
 import { AuthProvider } from '@/lib/providers/AuthProvider';
 import { ThemeProvider } from '@/contexts/ThemeContext';
+import { GraphQLProvider } from '@/lib/apollo/provider';
 import StartupCleanup from '@/components/StartupCleanup';
 import './globals.css';
 import '../styles/themes.css';
@@ -104,9 +105,11 @@ export default function RootLayout({
           <StartupCleanup />
           <ThemeProvider>
             <AuthProvider>
-              <div id="root" className="min-h-screen bg-theme-secondary">
-                {children}
-              </div>
+              <GraphQLProvider>
+                <div id="root" className="min-h-screen bg-theme-secondary">
+                  {children}
+                </div>
+              </GraphQLProvider>
             </AuthProvider>
           </ThemeProvider>
         

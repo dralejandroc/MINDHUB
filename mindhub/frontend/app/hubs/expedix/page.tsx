@@ -18,6 +18,7 @@ import PatientManagementAdvanced from '@/components/expedix/PatientManagementAdv
 import PatientTimeline from '@/components/expedix/PatientTimeline';
 import NewPatientModal from '@/components/expedix/NewPatientModal';
 import ClinimetrixScaleSelector from '@/components/expedix/ClinimetrixScaleSelector';
+import GraphQLPatientsDemo from '@/components/expedix/patients/GraphQLPatientsDemo';
 import { 
   DocumentTextIcon, 
   UserIcon,
@@ -215,6 +216,11 @@ function ExpedixContent() {
           </div>
         }
       />
+      
+      {/* GraphQL Demo - Temporary for testing */}
+      {process.env.NODE_ENV === 'development' && (
+        <GraphQLPatientsDemo />
+      )}
       
       {/* Clean Architecture: View Mode Selector - Only show when not in expedient detail */}
       <LoadingState
