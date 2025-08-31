@@ -161,7 +161,7 @@ class ResourcesHybridService {
 
         // Apply search filter if needed
         const filteredResources = searchQuery ? 
-          transformedResources.filter(r => 
+          transformedResources.filter((r: any) => 
             r.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
             r.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
             r.tags.some((tag: string) => tag.toLowerCase().includes(searchQuery.toLowerCase()))

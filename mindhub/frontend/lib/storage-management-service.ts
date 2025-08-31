@@ -58,10 +58,10 @@ interface UploadOptions {
   customPath?: string
 }
 
-interface StorageUsage {
+export interface StorageUsage {
   totalSize: number
   fileCount: number
-  quota: typeof STORAGE_QUOTAS.individual
+  quota: typeof STORAGE_QUOTAS.individual | typeof STORAGE_QUOTAS.clinic | typeof STORAGE_QUOTAS.premium
   usage: {
     percentage: number
     remaining: number

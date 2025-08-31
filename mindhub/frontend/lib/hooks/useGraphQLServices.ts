@@ -282,7 +282,7 @@ export function usePatients(searchText?: string, clinicId?: string, workspaceId?
       const result = await client.query({
         query,
         variables,
-        fetchPolicy: 'cache-and-network'
+        fetchPolicy: 'network-only'
       })
 
       const patientsData = result.data?.patientsCollection?.edges?.map((edge: any) => edge.node) || []
@@ -345,7 +345,7 @@ export function useAssessments(patientId?: string, evaluatorId?: string) {
       const result = await client.query({
         query,
         variables,
-        fetchPolicy: 'cache-and-network'
+        fetchPolicy: 'network-only'
       })
 
       const assessmentsData = result.data?.assessmentsCollection?.edges?.map((edge: any) => edge.node) || []
@@ -424,7 +424,7 @@ export function useFormSubmissions(patientId?: string, templateId?: string) {
       const result = await client.query({
         query,
         variables,
-        fetchPolicy: 'cache-and-network'
+        fetchPolicy: 'network-only'
       })
 
       const submissionsData = result.data?.form_submissionsCollection?.edges?.map((edge: any) => edge.node) || []
@@ -508,7 +508,7 @@ export function useScales(category?: string, language = 'es') {
       const result = await client.query({
         query,
         variables,
-        fetchPolicy: 'cache-and-network'
+        fetchPolicy: 'network-only'
       })
 
       const scalesData = result.data?.psychometric_scalesCollection?.edges?.map((edge: any) => edge.node) || []
@@ -530,7 +530,7 @@ export function useScales(category?: string, language = 'es') {
       const result = await client.query({
         query: GET_SCALE_WITH_ITEMS,
         variables: { id: scaleId },
-        fetchPolicy: 'cache-and-network'
+        fetchPolicy: 'network-only'
       })
 
       return result.data?.psychometric_scalesCollection?.edges?.[0]?.node
@@ -597,7 +597,7 @@ export function useResources(
       const result = await client.query({
         query,
         variables,
-        fetchPolicy: 'cache-and-network'
+        fetchPolicy: 'network-only'
       })
 
       const resourcesData = result.data?.medical_resourcesCollection?.edges?.map((edge: any) => edge.node) || []

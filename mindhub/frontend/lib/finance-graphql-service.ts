@@ -199,7 +199,7 @@ class FinanceGraphQLService {
         fetchPolicy: 'network-only'
       })
 
-      return result.data?.finance_incomeCollection?.edges?.map(edge => ({
+      return result.data?.finance_incomeCollection?.edges?.map((edge: any) => ({
         id: edge.node.id,
         amount: parseFloat(edge.node.amount || '0'),
         paymentMethod: edge.node.payment_method || 'cash',
@@ -226,7 +226,7 @@ class FinanceGraphQLService {
         fetchPolicy: 'network-only'
       })
 
-      return result.data?.finance_incomeCollection?.edges?.map(edge => ({
+      return result.data?.finance_incomeCollection?.edges?.map((edge: any) => ({
         id: edge.node.id,
         amount: parseFloat(edge.node.amount || '0'),
         paymentMethod: edge.node.payment_method || 'cash',
@@ -284,7 +284,7 @@ class FinanceGraphQLService {
         fetchPolicy: 'network-only'
       })
 
-      return result.data?.finance_incomeCollection?.edges?.reduce((sum, edge) => {
+      return result.data?.finance_incomeCollection?.edges?.reduce((sum: number, edge: any) => {
         return sum + parseFloat(edge.node.amount || '0')
       }, 0) || 0
 
@@ -314,7 +314,7 @@ class FinanceGraphQLService {
         fetchPolicy: 'network-only'
       })
 
-      return result.data?.finance_cash_register_cutsCollection?.edges?.map(edge => ({
+      return result.data?.finance_cash_register_cutsCollection?.edges?.map((edge: any) => ({
         id: edge.node.id,
         cutDate: edge.node.cut_date,
         openingAmount: parseFloat(edge.node.opening_amount || '0'),
