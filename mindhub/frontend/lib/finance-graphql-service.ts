@@ -20,11 +20,7 @@ import {
   GET_LATEST_CASH_REGISTER_CUT, 
   GET_TODAY_CASH_STATS 
 } from './apollo/queries/finance/cash-register'
-import type { 
-  GetFinanceServicesQuery, 
-  GetFinanceIncomeQuery,
-  GetCashRegisterCutsQuery 
-} from './apollo/types/generated'
+// Note: Using 'any' types for now until GraphQL types are properly generated
 
 export interface FinanceStats {
   totalRevenue: number
@@ -166,7 +162,7 @@ class FinanceGraphQLService {
         fetchPolicy: 'network-only'
       })
 
-      return result.data?.finance_servicesCollection?.edges?.map(edge => ({
+      return result.data?.finance_servicesCollection?.edges?.map((edge: any) => ({
         id: edge.node.id,
         name: edge.node.name,
         price: parseFloat(edge.node.price || '0'),

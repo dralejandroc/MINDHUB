@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
+import { formXHybridService } from '@/lib/formx-hybrid-service';
 // import { MobileFormRenderer } from '@/components/formx/MobileFormRenderer';
 import { 
   ExclamationTriangleIcon, 
@@ -57,32 +58,38 @@ export default function PatientFormPage() {
   const loadForm = async () => {
     try {
       setLoading(true);
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/formx/forms/token/${token}`);
+      console.log('📝 [FormX Page] Loading form via Hybrid Service - Django ONLY (complex business logic)');
       
-      if (response.status === 404) {
+      const result = await formXHybridService.getFormByToken(token);
+      
+      if (!result) {
+        setError('Error al cargar el formulario. Intente nuevamente.');
+        return;
+      }
+
+      if (result.status === 'not_found') {
         setError('Formulario no encontrado o token inválido');
         return;
       }
       
-      if (response.status === 410) {
+      if (result.status === 'expired') {
         setIsExpired(true);
         return;
       }
       
-      if (response.ok) {
-        const data = await response.json();
-        
-        if (data.data.status === 'completed') {
-          setIsCompleted(true);
-          return;
-        }
-        
-        setFormData(data.data);
+      if (result.status === 'completed') {
+        setIsCompleted(true);
+        return;
+      }
+      
+      if (result.status === 'active' && result.data) {
+        console.log('✅ [FormX Page] Form loaded successfully via hybrid service');
+        setFormData(result.data);
       } else {
         throw new Error('Error al cargar el formulario');
       }
     } catch (error) {
-      console.error('Error loading form:', error);
+      console.error('❌ [FormX Page] Critical error loading form via hybrid service:', error);
       setError('Error al cargar el formulario. Intente nuevamente.');
     } finally {
       setLoading(false);
@@ -91,49 +98,38 @@ export default function PatientFormPage() {
 
   const handleSubmit = async (responses: Record<string, any>) => {
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/formx/forms/token/${token}/submit`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          responses,
-          submittedAt: new Date().toISOString(),
-          completionTime: Date.now() // This would be calculated properly
-        })
-      });
-
-      if (response.ok) {
+      console.log('📤 [FormX Page] Submitting form via Hybrid Service - Django ONLY (complex business logic)');
+      
+      const success = await formXHybridService.submitForm(token, responses);
+      if (success) {
+        console.log('✅ [FormX Page] Form submitted successfully via hybrid service');
         setIsSubmitted(true);
         toast.success('Formulario enviado exitosamente');
       } else {
         throw new Error('Error al enviar');
       }
     } catch (error) {
-      console.error('Error submitting form:', error);
+      console.error('❌ [FormX Page] Critical error submitting form via hybrid service:', error);
       throw error; // Re-throw to be handled by MobileFormRenderer
     }
   };
 
   const handleSaveDraft = async (responses: Record<string, any>) => {
     try {
-      await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/formx/forms/token/${token}/draft`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          responses,
-          savedAt: new Date().toISOString()
-        })
-      });
+      console.log('💾 [FormX Page] Saving draft via Hybrid Service - Django ONLY (complex business logic)');
       
-      toast.success('Borrador guardado', { 
-        duration: 2000,
-        position: 'bottom-center'
-      });
+      const success = await formXHybridService.saveDraft(token, responses);
+      if (success) {
+        console.log('✅ [FormX Page] Draft saved successfully via hybrid service');
+        toast.success('Borrador guardado', { 
+          duration: 2000,
+          position: 'bottom-center'
+        });
+      } else {
+        throw new Error('Failed to save draft');
+      }
     } catch (error) {
-      console.error('Error saving draft:', error);
+      console.error('❌ [FormX Page] Critical error saving draft via hybrid service:', error);
       toast.error('Error al guardar borrador');
     }
   };

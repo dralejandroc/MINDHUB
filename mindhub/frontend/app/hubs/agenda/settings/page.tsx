@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
+import { agendaSettingsHybridService } from '@/lib/agenda-settings-hybrid-service';
 import { 
   CalendarIcon,
   ClockIcon,
@@ -110,44 +111,37 @@ export default function AgendaSettingsPage() {
 
   const loadSettings = async () => {
     try {
-      const response = await fetch(`/api/expedix/schedule-config`);
-      if (response.ok) {
-        const data = await response.json();
-        console.log('🔄 Loaded settings from API:', data);
-        if (data.success && data.data) {
-          setSettings(data.data);
-        }
+      console.log('📅 [Agenda Settings Page] Loading via Hybrid Service - Django PRIMARY + GraphQL fallback');
+      
+      const settingsData = await agendaSettingsHybridService.getScheduleSettings();
+      if (settingsData) {
+        console.log('✅ [Agenda Settings Page] Settings loaded via hybrid service:', settingsData);
+        setSettings(settingsData);
+      } else {
+        console.log('⚠️ [Agenda Settings Page] Using default settings - hybrid service returned null');
       }
     } catch (error) {
-      console.log('Could not load settings, using defaults:', error);
+      console.error('❌ [Agenda Settings Page] Critical error loading settings via hybrid service:', error);
     }
   };
 
   const handleSaveSettings = async () => {
     setIsSaving(true);
     try {
-      console.log('💾 Saving settings:', settings);
-      const response = await fetch(`/api/expedix/schedule-config`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(settings)
-      });
-
-      const data = await response.json();
-      console.log('📡 Save response:', data);
-
-      if (response.ok && data.success) {
+      console.log('💾 [Agenda Settings Page] Saving settings via Hybrid Service - Django ONLY');
+      
+      const success = await agendaSettingsHybridService.saveScheduleSettings(settings);
+      if (success) {
+        console.log('✅ [Agenda Settings Page] Settings saved successfully via hybrid service');
         alert('Configuración guardada exitosamente');
         router.push('/hubs/agenda');
       } else {
-        console.error('Save failed:', data);
-        alert(`Error al guardar la configuración: ${data.error || 'Unknown error'}`);
+        console.error('❌ [Agenda Settings Page] Save failed via hybrid service');
+        alert('Error al guardar la configuración - Conexión híbrida fallida');
       }
     } catch (error) {
-      console.error('Error saving settings:', error);
-      alert('Error al guardar la configuración');
+      console.error('❌ [Agenda Settings Page] Critical error saving settings via hybrid service:', error);
+      alert('Error al guardar la configuración - Error crítico');
     } finally {
       setIsSaving(false);
     }

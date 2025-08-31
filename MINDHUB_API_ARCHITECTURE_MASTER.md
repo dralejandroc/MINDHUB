@@ -1,33 +1,46 @@
-# 🏥 MINDHUB - ARQUITECTURA API DUAL SYSTEM DOCUMENTATION
-## FUENTE DE VERDAD ÚNICA - ARQUITECTURA DJANGO DUAL (CLÍNICAS + INDIVIDUALES)
+# 🏥 MINDHUB - ARQUITECTURA API HÍBRIDA GRAPHQL + DJANGO
+## FUENTE DE VERDAD ÚNICA - SISTEMA HÍBRIDO COMPLETAMENTE IMPLEMENTADO
 
-**Fecha:** 26 Agosto 2025  
-**Versión:** v9.0-multitenant-system-complete  
-**Estado:** ✅ ARQUITECTURA MULTITENANT COMPLETA + PERFORMANCE OPTIMIZADA
+**Fecha:** 31 Agosto 2025  
+**Versión:** v11.0-hybrid-graphql-django-complete  
+**Estado:** ✅ ARQUITECTURA HÍBRIDA GRAPHQL + DJANGO COMPLETAMENTE FUNCIONAL
 
 ---
 
-## 🏗️ **ARQUITECTURA DUAL SYSTEM - LICENCIAS CLÍNICAS + INDIVIDUALES**
+## 🏗️ **ARQUITECTURA HÍBRIDA - GRAPHQL + DJANGO SPECIALIZED SYSTEM**
 
-### **🎯 EVOLUCIÓN ARQUITECTÓNICA: DUAL SYSTEM IMPLEMENTATION**
-Sistema dual implementado para soportar dos tipos de licencias:
-- **LICENCIA CLÍNICA**: Multi-usuario (hasta 15 profesionales) con datos compartidos  
-- **LICENCIA INDIVIDUAL**: Usuario único con workspace personal y múltiples sucursales
+### **🎯 EVOLUCIÓN ARQUITECTÓNICA: HYBRID IMPLEMENTATION**
+Sistema híbrido implementado con especialización por tipo de operación:
+- **GRAPHQL PRIMARY**: Operaciones simples, estadísticas, consultas básicas
+- **DJANGO PRIMARY**: Lógica de negocio compleja, workflows especializados
+- **DJANGO ONLY**: Operaciones críticas que requieren lógica de backend completa
 
 ```
-┌─ Frontend Next.js ────────── Vercel (https://mindhub.cloud)
+┌─ Frontend Next.js + Apollo Client ─── Vercel (https://mindhub.cloud)
 │  ├─ React UI + TypeScript
 │  ├─ Supabase Auth Client  
-│  ├─ License Type Detection ──────────────┐
-│  └─ API Proxy Routes (/api/*/django/) ───┤
-│                                          │
-├─ Django Backend ─────────────────────────┘
+│  ├─ Hybrid Service Layer ──────────────┐ (NUEVO)
+│  │   ├─ resources-hybrid-service.ts    │
+│  │   ├─ agenda-settings-hybrid.ts      │
+│  │   ├─ formx-hybrid-service.ts        │
+│  │   ├─ clinimetrix-pro-hybrid.ts      │
+│  │   └─ dashboard-graphql-service.ts   │
+│  └─ API Strategy Router ───────────────┘
+│
+├─ GraphQL Layer (Supabase) ──────────────┐
+│  ├─ Apollo Client Integration           │
+│  ├─ Real-time Subscriptions             │
+│  ├─ Simple CRUD Operations              │
+│  └─ Fallback for Django API failures    │
+│
+├─ Django Backend (Complex Logic) ────────┘
 │  ├─ Django REST Framework
-│  ├─ DUAL SYSTEM Middleware ──────────────┐ (NUEVO)
-│  │   ├─ License Type Detection           │
-│  │   ├─ Workspace vs Clinic Resolution   │  
-│  │   └─ Universal Query Pattern          │
-│  ├─ 6 Módulos con Dual Support:          │
+│  ├─ Business Logic Engine ──────────────┐
+│  │   ├─ FormX Token Management          │
+│  │   ├─ ClinimetrixPro Scoring          │
+│  │   ├─ Resources File Upload           │
+│  │   └─ Consultation Workflows          │
+│  ├─ 6 Módulos con Hybrid Support:       │
 │  │   ├─ Expedix (Patient Management)     │
 │  │   ├─ ClinimetrixPro (29 Scales)       │
 │  │   ├─ Agenda (Appointments)            │

@@ -6,6 +6,7 @@ import { ArrowLeftIcon, DocumentTextIcon, ChartBarIcon, BeakerIcon, CheckCircleI
 import { ClinimetrixProAssessmentModal } from '@/components/ClinimetrixPro/ClinimetrixProAssessmentModal';
 import { useAuth } from '@/lib/providers/AuthProvider';
 import { supabase } from '@/lib/supabase/client';
+import { clinimetrixProHybridService } from '@/lib/clinimetrix-pro-hybrid-service';
 
 interface ScaleDocumentation {
   id: string;
@@ -66,28 +67,23 @@ export default function ScaleDetailPage() {
     try {
       setLoading(true);
       setError(null);
+      console.log('🧠 [ClinimetrixPro Page] Loading scale details via Hybrid Service - Django ONLY (complex psychometric logic)');
       
       // Use session from context
       if (!session) {
         throw new Error('Not authenticated');
       }
       
-      const response = await fetch(`/api/clinimetrix-pro/templates/${scaleId}`, {
-        headers: {
-          'Authorization': `Bearer ${session.access_token}`,
-          'Content-Type': 'application/json',
-        },
-      });
-      
-      if (!response.ok) {
+      const scaleData = await clinimetrixProHybridService.getScaleTemplate(scaleId, session);
+      if (scaleData) {
+        console.log('✅ [ClinimetrixPro Page] Scale details loaded successfully via hybrid service');
+        setScaleData(scaleData);
+      } else {
         throw new Error('Failed to load scale details');
       }
       
-      const result = await response.json();
-      setScaleData(result.data || result);
-      
     } catch (err) {
-      console.error('Error loading scale:', err);
+      console.error('❌ [ClinimetrixPro Page] Critical error loading scale details via hybrid service:', err);
       setError('Error al cargar los detalles de la escala');
     } finally {
       setLoading(false);

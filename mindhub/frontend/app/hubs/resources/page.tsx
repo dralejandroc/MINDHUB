@@ -10,6 +10,7 @@ import { SendResourceModal } from '@/components/resources/SendResourceModal';
 import { WatermarkEditor } from '@/components/resources/WatermarkEditor';
 import { Breadcrumbs } from '@/components/ui/Breadcrumbs';
 import { LibraryTypeExplainer } from '@/components/resources/LibraryTypeExplainer';
+import { resourcesHybridService } from '@/lib/resources-hybrid-service';
 import { 
   DocumentTextIcon, 
   PlusIcon, 
@@ -80,51 +81,34 @@ export default function ResourcesPage() {
   const loadData = async () => {
     setLoading(true);
     try {
-      // Load resources
-      const resourcesResponse = await fetch(
-        `/api/resources?` + new URLSearchParams({
-          libraryType: libraryType,
-          ...(searchQuery && { q: searchQuery }),
-          ...(selectedCategory && { categoryId: selectedCategory }),
-          limit: '50'
-        })
+      console.log('📚 [Resources Page] Loading via Hybrid Service - Django PRIMARY + GraphQL fallback');
+
+      // Load resources using hybrid service
+      const isPublic = libraryType === 'public' ? true : libraryType === 'private' ? false : undefined;
+      const resourcesData = await resourcesHybridService.getResources(
+        selectedCategory || undefined,
+        isPublic,
+        searchQuery || undefined
       );
+      
+      // Ensure we always have an array
+      const resourcesArray = Array.isArray(resourcesData) ? resourcesData : [];
+      setResources(resourcesArray);
+      console.log(`✅ [Resources Page] Loaded ${resourcesArray.length} resources via hybrid service`);
 
-      if (resourcesResponse.ok) {
-        const resourcesData = await resourcesResponse.json();
-        // Ensure we always have an array
-        const resourcesArray = Array.isArray(resourcesData) 
-          ? resourcesData 
-          : Array.isArray(resourcesData.data) 
-            ? resourcesData.data 
-            : [];
-        setResources(resourcesArray);
-      } else {
-        console.error('Failed to fetch resources:', resourcesResponse.status);
-        setResources([]);
-      }
-
-      // Load categories
-      const categoriesResponse = await fetch(`/api/resources/categories`);
-      if (categoriesResponse.ok) {
-        const categoriesData = await categoriesResponse.json();
-        // Ensure categories is always an array
-        const categoriesArray = Array.isArray(categoriesData) 
-          ? categoriesData 
-          : Array.isArray(categoriesData.data) 
-            ? categoriesData.data 
-            : [];
-        setCategories(categoriesArray);
-      } else {
-        console.error('Failed to fetch categories:', categoriesResponse.status);
-        setCategories([]);
-      }
+      // Load categories using hybrid service
+      const categoriesData = await resourcesHybridService.getResourceCategories();
+      const categoriesArray = Array.isArray(categoriesData) ? categoriesData : [];
+      setCategories(categoriesArray);
+      console.log(`✅ [Resources Page] Loaded ${categoriesArray.length} categories via hybrid service`);
 
       // Calculate stats
       calculateStats();
     } catch (error) {
-      console.error('Error loading data:', error);
-      toast.error('Error al cargar los recursos');
+      console.error('❌ [Resources Page] Critical error loading data via hybrid service:', error);
+      toast.error('Error al cargar los recursos - Conexión híbrida fallida');
+      setResources([]);
+      setCategories([]);
     } finally {
       setLoading(false);
     }

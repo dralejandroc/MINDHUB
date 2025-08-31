@@ -353,7 +353,7 @@ class DashboardGraphQLService {
         fetchPolicy: 'network-only'
       });
 
-      const assessmentsData = assessments.data?.assessmentsCollection?.edges?.map(edge => edge.node) || [];
+      const assessmentsData = assessments.data?.assessmentsCollection?.edges?.map((edge: any) => edge.node) || [];
       
       const oneWeekAgo = new Date();
       oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
@@ -394,7 +394,7 @@ class DashboardGraphQLService {
         fetchPolicy: 'network-only'
       });
 
-      const scalesData = scales.data?.psychometric_scalesCollection?.edges?.map(edge => edge.node) || [];
+      const scalesData = scales.data?.psychometric_scalesCollection?.edges?.map((edge: any) => edge.node) || [];
 
       const scaleData = {
         totalScales: scalesData.length,

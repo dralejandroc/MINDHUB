@@ -1,25 +1,25 @@
-# 🔒 MINDHUB - ARQUITECTURA DE SEGURIDAD DUAL SYSTEM
-## MATRIZ COMPLETA DE RELACIONES Y AISLAMIENTO DE DATOS - SISTEMA DUAL
+# 🔒 MINDHUB - ARQUITECTURA DE SEGURIDAD HÍBRIDA GRAPHQL + DJANGO
+## MATRIZ COMPLETA DE SEGURIDAD EN SISTEMA HÍBRIDO
 
-**Fecha:** 26 Agosto 2025  
-**Versión:** v5.0-multitenant-security-complete  
-**Criticidad:** ✅ **ARQUITECTURA MULTITENANT COMPLETA + RLS OPTIMIZADA**
+**Fecha:** 31 Agosto 2025  
+**Versión:** v6.0-hybrid-security-complete  
+**Criticidad:** ✅ **ARQUITECTURA HÍBRIDA SEGURA + RLS + JWT MULTITENANT**
 
 ---
 
-## 🏗️ **NUEVA ARQUITECTURA DUAL SYSTEM**
+## 🏗️ **ARQUITECTURA DE SEGURIDAD HÍBRIDA**
 
-### 🎯 **SISTEMA DUAL IMPLEMENTADO:**
-1. **LICENCIA CLÍNICA** - Multi-usuario con datos compartidos (hasta 15 usuarios)
-2. **LICENCIA INDIVIDUAL** - Usuario único con workspace personal y sucursales
-3. **AISLAMIENTO PERFECTO** - Cada licencia tiene su propio universo de datos
-4. **SUCURSALES FLEXIBLES** - Organizacionales, no restrictivas de seguridad
+### 🎯 **SEGURIDAD EN SISTEMA HÍBRIDO IMPLEMENTADO:**
+1. **GRAPHQL SECURITY** - RLS policies + JWT validation en Supabase GraphQL
+2. **DJANGO SECURITY** - Middleware JWT + ORM filtering en backend
+3. **HYBRID AUTHENTICATION** - Single JWT token válido en ambos sistemas
+4. **MULTITENANT ISOLATION** - Aislamiento perfecto clinic_id/workspace_id
 
-### 🔑 **CONCEPTOS CLAVE DUAL:**
-- **`license_type`**: `'clinic' | 'individual'` - Determina la lógica de acceso
-- **`clinic_id`**: Para licencias de clínica (datos compartidos entre usuarios)
-- **`workspace_id`**: Para licencias individuales (datos exclusivos del profesional)
-- **`practice_locations`**: Sucursales organizacionales (no afectan acceso a datos)
+### 🔑 **COMPONENTES DE SEGURIDAD HÍBRIDA:**
+- **JWT Token**: Supabase Auth → válido para GraphQL + Django simultaneously
+- **RLS Policies**: Supabase database level security para GraphQL queries
+- **Django Middleware**: JWT validation + automatic filtering para REST endpoints
+- **Hybrid Services**: Security context propagated entre GraphQL y Django calls
 
 ---
 

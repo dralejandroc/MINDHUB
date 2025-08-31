@@ -1,30 +1,40 @@
 # 🏗️ MINDHUB ARCHITECTURE MASTER - COMPLETE REFERENCE
-**Última actualización**: 2025-08-27  
-**Versión**: v10.0-production-ready  
-**Estado**: ✅ COMPLETAMENTE FUNCIONAL
+**Última actualización**: 2025-08-31  
+**Versión**: v11.0-hybrid-graphql-django  
+**Estado**: ✅ SISTEMA HÍBRIDO COMPLETAMENTE FUNCIONAL
 
 > ⚡ **REFERENCIA CRÍTICA**: Este documento es la fuente de verdad para TODA la arquitectura de MindHub.  
-> SIEMPRE consultar antes de hacer cambios. Actualizar cuando se modifique cualquier endpoint, tabla o conexión.
+> SIEMPRE consultar antes de hacer cambios. Sistema híbrido GraphQL + Django implementado.
 
 ---
 
-## 📊 **ARQUITECTURA ACTUAL - DJANGO + REACT HÍBRIDO**
+## 📊 **ARQUITECTURA ACTUAL - HÍBRIDO GRAPHQL + DJANGO**
 
 ```
 ┌─ Frontend React/Next.js ──────── Vercel (https://mindhub.cloud)
-│  ├─ API Proxy Routes ─────────── Next.js (/api/*/django/) 
-│  ├─ Direct Supabase APIs ────── Next.js (/api/*)
-│  └─ Client Components ────────── React + TypeScript
+│  ├─ Hybrid Services ─────────── GraphQL PRIMARY + Django fallback
+│  ├─ Resources Hybrid ───────── Django primary, GraphQL fallback
+│  ├─ Agenda Settings Hybrid ──── Django primary, GraphQL fallback
+│  ├─ FormX Hybrid ──────────── Django ONLY (complex business logic)
+│  ├─ ClinimetrixPro Hybrid ───── Django ONLY (psychometric logic)
+│  └─ Apollo GraphQL Client ────── Direct Supabase GraphQL endpoint
 │
-├─ Django Backend ─────────────── Django REST API 
-│  ├─ Expedix Module ─────────── Patient Management + Consultations
+├─ Django Backend ─────────────── Django REST API (ALL modules)
+│  ├─ Complex Business Logic ──── FormX tokens, ClinimetrixPro scoring
+│  ├─ Workflow Management ──────── Expedix consultations, Agenda scheduling
 │  ├─ Authentication ──────────── Supabase JWT validation
-│  └─ Views & Serializers ────── Complete consultation system
+│  └─ File Operations ─────────── Resources upload, FormX documents
+│
+├─ GraphQL Layer ──────────────── Supabase GraphQL API
+│  ├─ Apollo Client ───────────── Frontend GraphQL operations
+│  ├─ Real-time Subscriptions ──── Live dashboard updates
+│  ├─ Simple CRUD Operations ───── Basic data retrieval/updates
+│  └─ Fallback Mechanism ──────── When Django APIs unavailable
 │
 ├─ Database ───────────────────── Supabase PostgreSQL
-│  ├─ Core Tables ──────────────── patients, appointments, consultations
-│  ├─ System Tables ───────────── tenant_memberships, profiles
-│  └─ Extended Fields ─────────── mental_exam, template_config
+│  ├─ All Module Tables ────────── patients, appointments, consultations, resources
+│  ├─ Hybrid Data Access ──────── Django ORM + GraphQL queries
+│  └─ RLS Security ────────────── Row Level Security policies
 │
 └─ Authentication ─────────────── Supabase Auth + JWT validation
    ├─ Frontend Auth ───────────── @supabase/auth-helpers-nextjs
@@ -33,48 +43,68 @@
 
 ---
 
-## 🛣️ **API ENDPOINTS MATRIX - COMPLETE MAPPING**
+## 🛣️ **HYBRID API ARCHITECTURE - COMPLETE MAPPING**
 
-### **1. FRONTEND API ROUTES (Next.js - 62 endpoints)**
+### **🔄 HYBRID SERVICE LAYER (Frontend Services)**
 
-#### 🩺 **EXPEDIX MODULE (Patient Management)**
+#### **1. Resources Hybrid Service** `lib/resources-hybrid-service.ts`
+- **Strategy**: Django PRIMARY + GraphQL fallback
+- **Complex Logic**: File uploads, storage management, categories
+- **GraphQL Fallback**: Simple resource listing when Django unavailable
+
+#### **2. Agenda Settings Hybrid Service** `lib/agenda-settings-hybrid-service.ts`
+- **Strategy**: Django PRIMARY + GraphQL fallback  
+- **Complex Logic**: Schedule configuration, working hours, consultation types
+- **GraphQL Fallback**: Basic settings retrieval
+
+#### **3. FormX Hybrid Service** `lib/formx-hybrid-service.ts`
+- **Strategy**: Django ONLY (NO GraphQL fallback for complex operations)
+- **Complex Logic**: Form tokens, expiration, mobile rendering, submission workflows
+- **Reasoning**: Form business logic too complex for GraphQL
+
+#### **4. ClinimetrixPro Hybrid Service** `lib/clinimetrix-pro-hybrid-service.ts`
+- **Strategy**: Django ONLY (NO GraphQL fallback for psychometric operations)
+- **Complex Logic**: 29+ scales, scoring algorithms, clinical interpretations
+- **Reasoning**: Psychometric calculations require Django backend logic
+
+#### **5. Dashboard GraphQL Service** `lib/dashboard-graphql-service.ts`
+- **Strategy**: GraphQL PRIMARY + error fallback
+- **Simple Logic**: Statistics aggregation, real-time dashboard updates
+- **Error Handling**: -999 values for connection errors vs 0 for empty data
+
+### **📡 DJANGO REST API ENDPOINTS (Complex Business Logic ONLY)**
+
 ```bash
-# DIRECT SUPABASE ROUTES (Legacy)
-GET    /api/expedix/patients                     # List patients with search/filter
-POST   /api/expedix/patients                     # Create new patient
-GET    /api/expedix/patients/[id]                # Get patient details
-PUT    /api/expedix/patients/[id]                # Update patient
-GET    /api/expedix/patients/[id]/administrative # Patient admin data
-GET    /api/expedix/patients/[id]/assessments    # Patient assessments
-GET    /api/expedix/patients/[id]/tags           # Patient tags
-GET    /api/expedix/patients-simple              # Simplified patient list
+# 🚨 CRITICAL BUSINESS LOGIC - Django backend mantiene TODA la lógica compleja
 
-# CONSULTATION SYSTEM (Fixed - Django Integration)
+# FORMX - Token & Form Management (Django ONLY)
+GET    /api/formx/forms/token/[token]            # ✅ Get form by token (expiration logic)
+POST   /api/formx/forms/token/[token]/submit     # ✅ Submit form (workflow logic)
+POST   /api/formx/forms/token/[token]/draft      # ✅ Save form draft (session mgmt)
+GET    /api/formx/forms                          # ✅ List dynamic forms (admin)
+POST   /api/formx/forms                          # ✅ Create dynamic form
+
+# CLINIMETRIX PRO - Psychometric Assessment (Django ONLY) 
+GET    /api/clinimetrix-pro/templates/[scaleId]  # ✅ Scale template (29+ scales)
+POST   /api/clinimetrix-pro/assessments/start    # ✅ Start assessment (state mgmt)
+POST   /api/clinimetrix-pro/assessments/[id]/submit # ✅ Submit & score (algorithms)
+GET    /api/clinimetrix-pro/scales               # ✅ Available scales (metadata)
+
+# RESOURCES - File Management (Django PRIMARY)
+POST   /api/resources/upload                     # ✅ File upload (storage logic)
+GET    /api/resources/categories                 # ✅ Categories (hybrid: Django→GraphQL)
+GET    /api/resources                            # ✅ List resources (hybrid: Django→GraphQL)
+
+# AGENDA SETTINGS - Schedule Configuration (Django PRIMARY)
+GET    /api/expedix/schedule-config              # ✅ Get settings (hybrid: Django→GraphQL)
+PUT    /api/expedix/schedule-config              # ✅ Save settings (Django ONLY)
+
+# EXPEDIX CONSULTATION SYSTEM (Django backend)
 GET    /api/expedix/consultations                # ✅ List consultations - Django backend
 POST   /api/expedix/consultations                # ✅ Create consultation - Django backend
-GET    /api/expedix/consultations-simple         # Simplified consultation list
-GET    /api/expedix/dynamic-consultations        # Dynamic consultation templates
-GET    /api/expedix/consultation-templates       # Consultation templates
-
-# PRESCRIPTIONS
-GET    /api/expedix/prescriptions                # List prescriptions
-POST   /api/expedix/prescriptions                # Create prescription
-GET    /api/expedix/prescriptions/[id]           # Get prescription details
-
-# APPOINTMENTS (Agenda System)
-GET    /api/expedix/appointments                 # List appointments
-GET    /api/expedix/agenda/appointments          # ✅ Full appointment management
-POST   /api/expedix/agenda/appointments          # ✅ Create appointment
-GET    /api/expedix/agenda/appointments/[id]     # ✅ Get appointment
-PUT    /api/expedix/agenda/appointments/[id]     # ✅ Update appointment (drag & drop)
-PUT    /api/expedix/agenda/appointments/[id]/status # ✅ Update appointment status
-GET    /api/expedix/agenda/daily-stats           # Daily statistics
-GET    /api/expedix/agenda/waiting-list          # Waiting list management
-
-# CONFIGURATION
-GET    /api/expedix/clinic-configuration         # Clinic configuration
-GET    /api/expedix/clinic-configuration/default # Default configuration
-GET    /api/expedix/schedule-config              # Schedule configuration
+GET    /api/expedix/consultation-templates       # ✅ Consultation templates
+GET    /api/expedix/prescriptions                # ✅ Prescription system
+GET    /api/expedix/agenda/appointments          # ✅ Appointment management
 ```
 
 #### 🔀 **DJANGO PROXY ROUTES**
@@ -148,6 +178,40 @@ GET    /api/debug/tables                        # Debug table information
 POST   /api/feedback                            # User feedback
 POST   /api/admin/run-migration                 # Run database migrations
 GET    /api/agenda/django                       # Agenda Django integration
+```
+
+### **🚀 SUPABASE GRAPHQL API ENDPOINTS (Simple Operations & Fallbacks)**
+
+```graphql
+# Apollo Client queries via lib/apollo/queries/
+
+# DASHBOARD STATISTICS (GraphQL PRIMARY)
+query GetPatients($filter: patientsFilter, $first: Int)
+query GetAppointments($filter: appointmentsFilter, $first: Int) 
+query GetConsultations($filter: consultationsFilter, $first: Int)
+query GetAssessments($filter: assessmentsFilter, $first: Int)
+
+# RESOURCES (GraphQL FALLBACK cuando Django falla)
+query GetMedicalResources($filter: medical_resourcesFilter, $first: Int)
+mutation CreateMedicalResource($objects: [medical_resourcesInsertInput!]!)
+
+# AGENDA SETTINGS (GraphQL FALLBACK)
+query GetSettings($filter: settingsFilter)
+mutation CreateSetting($objects: [settingsInsertInput!]!)
+mutation UpdateSetting($id: BigInt!, $set: settingsUpdateInput!)
+
+# FORMX ADMIN (GraphQL FALLBACK para admin)
+query GetDynamicForms($filter: dynamic_formsFilter, $first: Int)
+query GetFormResponses($filter: form_responsesFilter, $first: Int)
+
+# CLINIMETRIX ASSESSMENTS (GraphQL FALLBACK para historial)
+query GetClinimetrixAssessments($filter: clinimetrix_assessmentsFilter, $first: Int)
+query GetClinimetrixScales($filter: clinimetrix_scalesFilter, $first: Int)
+
+# FINANCE STATISTICS (GraphQL PRIMARY)
+query GetFinanceServices($filter: finance_servicesFilter, $first: Int)
+query GetFinanceIncome($filter: finance_incomeFilter, $first: Int)
+query GetCashRegisterCuts($filter: cash_register_cutsFilter, $first: Int)
 ```
 
 ---
@@ -687,6 +751,27 @@ handleStartConsultation → POST /api/expedix/consultations
 
 ## 📝 **CHANGE LOG**
 
+### v11.0 (2025-08-31) - Hybrid GraphQL + Django Architecture Complete
+- ✅ **Sistema Híbrido Implementado**: GraphQL + Django specialized by operation type
+- ✅ **Hybrid Services Creados**: 5 servicios híbridos implementados completamente
+- ✅ **Resources Hybrid**: Django primary + GraphQL fallback para recursos médicos
+- ✅ **Agenda Settings Hybrid**: Django primary + GraphQL fallback para configuración
+- ✅ **FormX Hybrid**: Django ONLY para lógica compleja de tokens y formularios
+- ✅ **ClinimetrixPro Hybrid**: Django ONLY para algoritmos psicométricos (29+ escalas)
+- ✅ **Dashboard GraphQL**: GraphQL primary para estadísticas en tiempo real
+- ✅ **Apollo Client Integration**: Cliente GraphQL integrado con error handling -999
+- ✅ **Error Handling Mejorado**: Valores -999 para errores vs 0 para datos vacíos
+- ✅ **TypeScript Compilation**: Todos los errores de compilación resueltos
+- ✅ **Architecture Documentation**: Documentación completa actualizada para sistema híbrido
+
+### Hybrid Strategy Implementation:
+- ✅ **GraphQL PRIMARY**: Dashboard statistics, simple CRUD, real-time subscriptions
+- ✅ **Django PRIMARY**: Complex business logic, file operations, workflow management  
+- ✅ **Django ONLY**: Critical operations (FormX tokens, ClinimetrixPro scoring)
+- ✅ **Fallback Mechanisms**: GraphQL backup when Django APIs unavailable
+- ✅ **Single Authentication**: JWT token válido para ambos GraphQL y Django
+- ✅ **Hybrid Services**: All modules now using specialized hybrid architecture
+
 ### v10.0 (2025-08-27) - Complete Architecture Documentation
 - ✅ Documented all 62 frontend API endpoints
 - ✅ Mapped complete Django backend REST API
@@ -695,14 +780,6 @@ handleStartConsultation → POST /api/expedix/consultations
 - ✅ Fixed drag & drop appointment system
 - ✅ Resolved TypeScript compilation issues
 - ✅ Implemented complete tenant context system
-
-### Key Functionality Status:
-- ✅ **Consultation System**: Complete with mental exam support
-- ✅ **Appointment Management**: Full CRUD + drag & drop
-- ✅ **Django Backend**: Production-ready with Supabase integration
-- ✅ **Authentication**: Supabase Auth + Django middleware
-- ✅ **Tenant System**: Multi-clinic and workspace support
-- ✅ **TypeScript**: All compilation errors resolved
 
 ---
 
