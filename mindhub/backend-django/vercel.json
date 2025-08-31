@@ -12,6 +12,10 @@
   ],
   "routes": [
     {
+      "src": "/api/hello",
+      "dest": "/api/hello.py"
+    },
+    {
       "src": "/static/(.*)",
       "dest": "/static/$1"
     },
