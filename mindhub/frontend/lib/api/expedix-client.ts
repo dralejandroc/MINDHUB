@@ -2,6 +2,7 @@
 import { useAuthenticatedFetch } from './supabase-auth';
 import { createApiUrl, createApiUrlWithParams, API_ROUTES, logApiCall } from './api-url-builders';
 import { useAuthenticatedApiCall, AuthenticationError, NetworkError } from './auth-retry';
+import { expedixGraphQLClient } from './expedix-graphql-client';
 
 export interface Patient {
   id: string;
@@ -201,36 +202,63 @@ class ExpedixApiClient {
 
   // Patient Management - Authentication handled by Vercel proxy
   async getPatients(searchTerm?: string): Promise<{ data: Patient[]; total: number }> {
-    // Usar la ruta base y agregar parámetros si es necesario
-    const baseRoute = API_ROUTES.expedix.patients;
-    const queryParams = searchTerm ? `?search=${encodeURIComponent(searchTerm)}` : '';
-    const fullRoute = `${baseRoute}${queryParams}`;
-    
-    const response = await this.makeRequest<{ 
-      success?: boolean; 
-      data?: Patient[]; 
-      pagination?: { total: number };
-      // Django format
-      results?: Patient[];
-      count?: number;
-    }>(fullRoute);
-    
-    // Handle both formats: legacy (data/pagination) and Django (results/count)
-    const patients = response.results || response.data || [];
-    const total = response.count || response.pagination?.total || 0;
-    
-    return {
-      data: patients,
-      total: total
-    };
+    try {
+      console.log('🔄 [ExpedixAPI] Using GraphQL for getPatients to avoid 401 errors');
+      // Use GraphQL client instead of REST API to eliminate 401 errors
+      return await expedixGraphQLClient.getPatients(searchTerm);
+    } catch (error) {
+      console.error('❌ [ExpedixAPI] GraphQL failed, trying REST as fallback:', error);
+      
+      // Fallback to REST API only if GraphQL fails
+      try {
+        const baseRoute = API_ROUTES.expedix.patients;
+        const queryParams = searchTerm ? `?search=${encodeURIComponent(searchTerm)}` : '';
+        const fullRoute = `${baseRoute}${queryParams}`;
+        
+        const response = await this.makeRequest<{ 
+          success?: boolean; 
+          data?: Patient[]; 
+          pagination?: { total: number };
+          // Django format
+          results?: Patient[];
+          count?: number;
+        }>(fullRoute);
+        
+        // Handle both formats: legacy (data/pagination) and Django (results/count)
+        const patients = response.results || response.data || [];
+        const total = response.count || response.pagination?.total || 0;
+        
+        return {
+          data: patients,
+          total: total
+        };
+      } catch (restError) {
+        console.error('❌ [ExpedixAPI] Both GraphQL and REST failed:', restError);
+        return { data: [], total: 0 };
+      }
+    }
   }
 
   async getPatient(id: string): Promise<{ data: Patient }> {
-    const response = await this.makeRequest<{ success: boolean; data: Patient }>(API_ROUTES.expedix.patientById(id));
-    
-    return {
-      data: response.data
-    };
+    try {
+      console.log('🔄 [ExpedixAPI] Using GraphQL for getPatient to avoid 401 errors');
+      // Use GraphQL client instead of REST API to eliminate 401 errors
+      return await expedixGraphQLClient.getPatientById(id);
+    } catch (error) {
+      console.error('❌ [ExpedixAPI] GraphQL failed, trying REST as fallback:', error);
+      
+      // Fallback to REST API only if GraphQL fails
+      try {
+        const response = await this.makeRequest<{ success: boolean; data: Patient }>(API_ROUTES.expedix.patientById(id));
+        
+        return {
+          data: response.data
+        };
+      } catch (restError) {
+        console.error('❌ [ExpedixAPI] Both GraphQL and REST failed for getPatient:', restError);
+        throw restError;
+      }
+    }
   }
 
   async createPatient(patientData: Partial<Patient>): Promise<{ data: Patient }> {
