@@ -58,6 +58,17 @@ export const GRAPHQL_OPERATIONS = {
   }
 } as const;
 
+// Types for Apollo Cache merge functions
+interface CacheCollectionEdge {
+  edges: Array<{ node: any; cursor?: string }>;
+  pageInfo?: {
+    hasNextPage: boolean;
+    hasPreviousPage: boolean;
+    startCursor?: string;
+    endCursor?: string;
+  };
+}
+
 // Cache Configuration for Apollo Client
 export const CACHE_CONFIG = {
   typePolicies: {
@@ -66,7 +77,7 @@ export const CACHE_CONFIG = {
         // Patient pagination
         patientsCollection: {
           keyArgs: ['filter'],
-          merge(existing = { edges: [] }, incoming) {
+          merge(existing: CacheCollectionEdge = { edges: [] }, incoming: CacheCollectionEdge) {
             return {
               ...incoming,
               edges: [...existing.edges, ...incoming.edges],
@@ -76,7 +87,7 @@ export const CACHE_CONFIG = {
         // Appointments pagination
         appointmentsCollection: {
           keyArgs: ['filter'],
-          merge(existing = { edges: [] }, incoming) {
+          merge(existing: CacheCollectionEdge = { edges: [] }, incoming: CacheCollectionEdge) {
             return {
               ...incoming,
               edges: [...existing.edges, ...incoming.edges],
@@ -86,7 +97,7 @@ export const CACHE_CONFIG = {
         // Assessments pagination
         assessmentsCollection: {
           keyArgs: ['filter'],
-          merge(existing = { edges: [] }, incoming) {
+          merge(existing: CacheCollectionEdge = { edges: [] }, incoming: CacheCollectionEdge) {
             return {
               ...incoming,
               edges: [...existing.edges, ...incoming.edges],
@@ -96,7 +107,7 @@ export const CACHE_CONFIG = {
         // Form submissions pagination
         form_submissionsCollection: {
           keyArgs: ['filter'],
-          merge(existing = { edges: [] }, incoming) {
+          merge(existing: CacheCollectionEdge = { edges: [] }, incoming: CacheCollectionEdge) {
             return {
               ...incoming,
               edges: [...existing.edges, ...incoming.edges],

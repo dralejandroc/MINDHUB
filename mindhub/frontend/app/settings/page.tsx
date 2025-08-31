@@ -153,31 +153,27 @@ export default function GeneralSettingsPage() {
   const loadConfiguration = async () => {
     try {
       setConnectionError(false);
-      const response = await fetch(`/api/expedix/clinic-configuration`);
-      if (response.ok) {
-        const data = await response.json();
-        if (data.success && data.data && data.data.configuration) {
-          setConfig(data.data.configuration);
-        } else {
-          throw new Error('Invalid configuration data structure');
-        }
+      console.log('🚀 [Settings GraphQL] Loading configuration via GraphQL...');
+      
+      // Import GraphQL service dynamically to avoid import issues
+      const { settingsGraphQLService } = await import('@/lib/settings-graphql-service');
+      
+      // Get user context for clinic/workspace ID
+      const clinicId = user?.user_metadata?.clinic_id;
+      const workspaceId = user?.user_metadata?.workspace_id;
+      
+      const configuration = await settingsGraphQLService.getClinicConfiguration(clinicId, workspaceId);
+      
+      if (configuration) {
+        setConfig(configuration);
+        console.log('✅ [Settings GraphQL] Configuration loaded successfully via GraphQL');
       } else {
-        // Load default configuration if none exists
-        console.log('Loading default configuration...');
-        const defaultResponse = await fetch(`/api/expedix/clinic-configuration/default`);
-        if (defaultResponse.ok) {
-          const defaultData = await defaultResponse.json();
-          setConfig(defaultData.data);
-          setConnectionError(true); // Mark as connection error but still load defaults
-        } else {
-          throw new Error('Failed to load default configuration');
-        }
+        throw new Error('No configuration returned from GraphQL service');
       }
     } catch (error) {
-      console.error('Error loading configuration:', error);
+      console.error('❌ [Settings GraphQL] Error loading configuration:', error);
       setConnectionError(true);
-      // Show minimal error, don't prevent UI from showing
-      console.warn('Using fallback configuration due to connection error');
+      console.warn('🔄 [Settings GraphQL] Using fallback configuration due to GraphQL error');
       
       // Set minimal fallback configuration
       setConfig({
@@ -290,22 +286,34 @@ export default function GeneralSettingsPage() {
 
     setSaving(true);
     try {
-      const response = await fetch(`/api/expedix/clinic-configuration`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ configuration: config }),
-      });
+      console.log('💾 [Settings GraphQL] Saving configuration via GraphQL...');
+      
+      // Import GraphQL service dynamically
+      const { settingsGraphQLService } = await import('@/lib/settings-graphql-service');
+      
+      // Get user context
+      const clinicId = user?.user_metadata?.clinic_id;
+      const workspaceId = user?.user_metadata?.workspace_id;
+      const userId = user?.id;
 
-      if (response.ok) {
-        toast.success('Configuración guardada exitosamente');
+      const success = await settingsGraphQLService.saveClinicConfiguration(
+        config,
+        clinicId,
+        workspaceId,
+        userId
+      );
+
+      if (success) {
+        toast.success('✅ Configuración guardada exitosamente via GraphQL');
+        setConnectionError(false);
+        console.log('✅ [Settings GraphQL] Configuration saved successfully');
       } else {
-        throw new Error('Error al guardar la configuración');
+        throw new Error('Failed to save configuration via GraphQL');
       }
     } catch (error) {
-      console.error('Error saving configuration:', error);
-      toast.error('Error al guardar la configuración');
+      console.error('❌ [Settings GraphQL] Error saving configuration:', error);
+      toast.error('❌ Error al guardar la configuración GraphQL');
+      setConnectionError(true);
     } finally {
       setSaving(false);
     }
