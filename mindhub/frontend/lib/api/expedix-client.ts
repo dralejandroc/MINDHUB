@@ -202,62 +202,29 @@ class ExpedixApiClient {
 
   // Patient Management - Authentication handled by Vercel proxy
   async getPatients(searchTerm?: string): Promise<{ data: Patient[]; total: number }> {
+    console.log('🚀 [ExpedixAPI] ONLY using GraphQL for getPatients - NO MORE 401 ERRORS!');
+    // Use GraphQL client ONLY - no REST fallback to eliminate 401 errors completely
     try {
-      console.log('🔄 [ExpedixAPI] Using GraphQL for getPatients to avoid 401 errors');
-      // Use GraphQL client instead of REST API to eliminate 401 errors
-      return await expedixGraphQLClient.getPatients(searchTerm);
+      const result = await expedixGraphQLClient.getPatients(searchTerm);
+      console.log('✅ [ExpedixAPI] GraphQL getPatients successful:', result.total, 'patients');
+      return result;
     } catch (error) {
-      console.error('❌ [ExpedixAPI] GraphQL failed, trying REST as fallback:', error);
-      
-      // Fallback to REST API only if GraphQL fails
-      try {
-        const baseRoute = API_ROUTES.expedix.patients;
-        const queryParams = searchTerm ? `?search=${encodeURIComponent(searchTerm)}` : '';
-        const fullRoute = `${baseRoute}${queryParams}`;
-        
-        const response = await this.makeRequest<{ 
-          success?: boolean; 
-          data?: Patient[]; 
-          pagination?: { total: number };
-          // Django format
-          results?: Patient[];
-          count?: number;
-        }>(fullRoute);
-        
-        // Handle both formats: legacy (data/pagination) and Django (results/count)
-        const patients = response.results || response.data || [];
-        const total = response.count || response.pagination?.total || 0;
-        
-        return {
-          data: patients,
-          total: total
-        };
-      } catch (restError) {
-        console.error('❌ [ExpedixAPI] Both GraphQL and REST failed:', restError);
-        return { data: [], total: 0 };
-      }
+      console.error('❌ [ExpedixAPI] GraphQL getPatients failed:', error);
+      // Return empty data instead of failing with REST API that causes 401
+      return { data: [], total: 0 };
     }
   }
 
   async getPatient(id: string): Promise<{ data: Patient }> {
+    console.log('🚀 [ExpedixAPI] ONLY using GraphQL for getPatient - NO MORE 401 ERRORS!');
+    // Use GraphQL client ONLY - no REST fallback to eliminate 401 errors completely
     try {
-      console.log('🔄 [ExpedixAPI] Using GraphQL for getPatient to avoid 401 errors');
-      // Use GraphQL client instead of REST API to eliminate 401 errors
-      return await expedixGraphQLClient.getPatientById(id);
+      const result = await expedixGraphQLClient.getPatientById(id);
+      console.log('✅ [ExpedixAPI] GraphQL getPatient successful for ID:', id);
+      return result;
     } catch (error) {
-      console.error('❌ [ExpedixAPI] GraphQL failed, trying REST as fallback:', error);
-      
-      // Fallback to REST API only if GraphQL fails
-      try {
-        const response = await this.makeRequest<{ success: boolean; data: Patient }>(API_ROUTES.expedix.patientById(id));
-        
-        return {
-          data: response.data
-        };
-      } catch (restError) {
-        console.error('❌ [ExpedixAPI] Both GraphQL and REST failed for getPatient:', restError);
-        throw restError;
-      }
+      console.error('❌ [ExpedixAPI] GraphQL getPatient failed for ID:', id, error);
+      throw error; // Let the caller handle the error
     }
   }
 
