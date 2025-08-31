@@ -74,7 +74,7 @@ export const MainDashboard: React.FC<MainDashboardProps> = ({ user }) => {
       setLoading(true);
       
       // Use the dashboard data service with cookie authentication (no token needed)
-      const dashboardData = await dashboardDataService.fetchDashboardData(user.id);
+      const dashboardData = await dashboardDataService.fetchDashboardData();
       
       // LOG RECEIVED DATA FROM DASHBOARD SERVICE
       console.log('[MainDashboard] Received dashboard data:', dashboardData);

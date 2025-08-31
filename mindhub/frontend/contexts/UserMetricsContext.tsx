@@ -69,7 +69,7 @@ export function UserMetricsProvider({ children }: { children: React.ReactNode })
     try {
       console.log('[UserMetrics] Fetching dashboard data for authenticated user:', user.id);
       // Use normal fetch with cache instead of forceRefresh to prevent excessive API calls
-      const data = await dashboardDataService.fetchDashboardData(user.id);
+      const data = await dashboardDataService.fetchDashboardData();
       setRealDashboardData(data);
       console.log('[UserMetrics] Dashboard data loaded:', data);
     } catch (error) {

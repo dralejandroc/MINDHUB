@@ -76,8 +76,8 @@ export function BeginnerDashboard({ onNavigate }: BeginnerDashboardProps) {
 
   const fetchRealDashboardData = async (userId: string) => {
     try {
-      // Use the dashboard data service with cookie authentication (no token needed)
-      const dashboardData = await dashboardDataService.fetchDashboardData(userId);
+      // Use the GraphQL dashboard service - no userId needed, uses auth context
+      const dashboardData = await dashboardDataService.fetchDashboardData();
       
       // Update dashboard stats with real data
       setWeeklyStats({
