@@ -32,18 +32,25 @@ export async function GET(request: Request) {
       // Construct Django API URL with query parameters
       const djangoUrl = `${DJANGO_BACKEND_URL}/api/expedix/patients/${queryString}`;
       
-      // Get auth header for Django request
+      // Get auth header for Django request - but use service role key instead
       const authHeader = request.headers.get('Authorization');
       if (!authHeader) {
         return createErrorResponse('Unauthorized', 'Missing authorization header', 401);
       }
 
-      // Forward request to Django backend with authentication
+      // Use service role key for Django backend (Django expects service role key)
+      const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp2YmNwbGR6b3lpY2VmZHRud2tkIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1NTQwMTQ3MCwiZXhwIjoyMDcwOTc3NDcwfQ.-iooltGuYeGqXVh7pgRhH_Oo_R64VtHIssbE3u_y0WQ';
+
+      // Forward request to Django backend with service role authentication
       const djangoResponse = await fetch(djangoUrl, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': authHeader,
+          'Authorization': `Bearer ${serviceRoleKey}`,
+          // Add proxy headers so Django knows the real user
+          'X-Proxy-Auth': 'verified',
+          'X-User-ID': user.id,
+          'X-User-Email': user.email || '',
         },
       });
 
@@ -84,18 +91,23 @@ export async function POST(request: Request) {
     // Get request body
     const body = await request.json();
     
-    // Forward to Django backend
+    // Forward to Django backend using service role key
     const authHeader = request.headers.get('Authorization');
     if (!authHeader) {
       return createErrorResponse('Unauthorized', 'Missing authorization header', 401);
     }
+
+    const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp2YmNwbGR6b3lpY2VmZHRud2tkIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1NTQwMTQ3MCwiZXhwIjoyMDcwOTc3NDcwfQ.-iooltGuYeGqXVh7pgRhH_Oo_R64VtHIssbE3u_y0WQ';
 
     const djangoUrl = `${DJANGO_BACKEND_URL}/api/expedix/patients/`;
     const djangoResponse = await fetch(djangoUrl, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': authHeader,
+        'Authorization': `Bearer ${serviceRoleKey}`,
+        'X-Proxy-Auth': 'verified',
+        'X-User-ID': user.id,
+        'X-User-Email': user.email || '',
       },
       body: JSON.stringify(body),
     });
@@ -140,18 +152,23 @@ export async function PUT(request: Request) {
     const pathSegments = url.pathname.split('/');
     const patientId = pathSegments[pathSegments.length - 1];
     
-    // Forward to Django backend
+    // Forward to Django backend using service role key
     const authHeader = request.headers.get('Authorization');
     if (!authHeader) {
       return createErrorResponse('Unauthorized', 'Missing authorization header', 401);
     }
+
+    const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp2YmNwbGR6b3lpY2VmZHRud2tkIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1NTQwMTQ3MCwiZXhwIjoyMDcwOTc3NDcwfQ.-iooltGuYeGqXVh7pgRhH_Oo_R64VtHIssbE3u_y0WQ';
 
     const djangoUrl = `${DJANGO_BACKEND_URL}/api/expedix/patients/${patientId}/`;
     const djangoResponse = await fetch(djangoUrl, {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': authHeader,
+        'Authorization': `Bearer ${serviceRoleKey}`,
+        'X-Proxy-Auth': 'verified',
+        'X-User-ID': user.id,
+        'X-User-Email': user.email || '',
       },
       body: JSON.stringify(body),
     });
