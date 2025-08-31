@@ -1,6 +1,12 @@
 /**
- * Centralized API Endpoint Configuration
- * All API endpoints and base URLs are defined here to ensure consistency
+ * ⚠️ DEPRECATED - REST API Configuration
+ * 
+ * 🚫 DO NOT USE - This file is deprecated in favor of GraphQL-only architecture
+ * 
+ * ✅ USE INSTEAD: /lib/config/graphql-endpoints.ts
+ * 
+ * This file remains for legacy reference only.
+ * All new development should use GraphQL exclusively.
  */
 
 // Base URLs

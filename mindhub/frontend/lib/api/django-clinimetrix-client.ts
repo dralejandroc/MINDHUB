@@ -3,6 +3,21 @@
  * Bridge client for connecting React frontend to Django backend
  */
 
+/**
+ * ⚠️ DEPRECATED - REST API Client
+ * 
+ * 🚫 DO NOT USE - This file is deprecated in favor of GraphQL-only architecture
+ * 
+ * ✅ USE INSTEAD: GraphQL queries with Apollo Client (/lib/apollo/)
+ * ✅ USE HOOKS: /lib/hooks/useGraphQLServices.ts
+ * 
+ * This file remains for legacy reference only.
+ * All new development should use GraphQL exclusively.
+ */
+
+// DEPRECATED FILE - SEE HEADER ABOVE
+
+
 interface PatientData {
   id: string;
   first_name: string;

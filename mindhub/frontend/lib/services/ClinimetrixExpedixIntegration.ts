@@ -10,6 +10,21 @@
  * - Cálculo de trends y comparaciones históricas
  */
 
+/**
+ * ⚠️ DEPRECATED - REST API Client
+ * 
+ * 🚫 DO NOT USE - This file is deprecated in favor of GraphQL-only architecture
+ * 
+ * ✅ USE INSTEAD: GraphQL queries with Apollo Client (/lib/apollo/)
+ * ✅ USE HOOKS: /lib/hooks/useGraphQLServices.ts
+ * 
+ * This file remains for legacy reference only.
+ * All new development should use GraphQL exclusively.
+ */
+
+// DEPRECATED FILE - SEE HEADER ABOVE
+
+
 'use client';
 
 import { clinimetrixProClient, type ClinimetrixAssessment, type ScoringResults } from '@/lib/api/clinimetrix-pro-client';

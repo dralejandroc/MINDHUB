@@ -1,6 +1,13 @@
 /**
- * MindHub Hybrid API Client
- * Intelligently routes requests between Supabase (fast) and Django (complex operations)
+ * ⚠️ DEPRECATED - MindHub Hybrid API Client
+ * 
+ * 🚫 DO NOT USE - This file is deprecated in favor of GraphQL-only architecture
+ * 
+ * ✅ USE INSTEAD: GraphQL queries with Apollo Client (/lib/apollo/)
+ * ✅ USE HOOKS: /lib/hooks/useGraphQLServices.ts
+ * 
+ * This file remains for legacy reference only.
+ * All new development should use GraphQL exclusively.
  */
 
 import { createClient } from '@supabase/supabase-js'

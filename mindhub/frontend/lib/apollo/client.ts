@@ -1,10 +1,11 @@
 import { ApolloClient, InMemoryCache, createHttpLink, from } from '@apollo/client'
 import { setContext } from '@apollo/client/link/context'
 import { createClient } from '@/lib/supabase/client'
+import { GRAPHQL_CONFIG, CACHE_CONFIG } from '@/lib/config/graphql-endpoints'
 
-// Supabase GraphQL endpoint
+// Pure GraphQL endpoint - no REST API dependencies
 const httpLink = createHttpLink({
-  uri: `${process.env.NEXT_PUBLIC_SUPABASE_URL}/graphql/v1`,
+  uri: GRAPHQL_CONFIG.ENDPOINT,
 })
 
 // Auth link que agrega headers de autenticación
@@ -16,42 +17,15 @@ const authLink = setContext(async (_, { headers }) => {
     headers: {
       ...headers,
       'Authorization': session ? `Bearer ${session.access_token}` : '',
-      'apikey': process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '',
-      'Content-Type': 'application/json',
+      ...GRAPHQL_CONFIG.HEADERS,
     },
   }
 })
 
-// Apollo Client configuration
+// Pure GraphQL Apollo Client - no REST API dependencies
 const client = new ApolloClient({
   link: from([authLink, httpLink]),
-  cache: new InMemoryCache({
-    typePolicies: {
-      Query: {
-        fields: {
-          // Configuración para paginación y cache
-          patients: {
-            keyArgs: ['filter'],
-            merge(existing = { edges: [] }, incoming) {
-              return {
-                ...incoming,
-                edges: [...existing.edges, ...incoming.edges],
-              }
-            },
-          },
-          appointments: {
-            keyArgs: ['filter'],
-            merge(existing = { edges: [] }, incoming) {
-              return {
-                ...incoming,
-                edges: [...existing.edges, ...incoming.edges],
-              }
-            },
-          },
-        },
-      },
-    },
-  }),
+  cache: new InMemoryCache(CACHE_CONFIG),
   defaultOptions: {
     watchQuery: {
       fetchPolicy: 'cache-and-network',
