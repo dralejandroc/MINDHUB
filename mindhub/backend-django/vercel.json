@@ -5,7 +5,7 @@
       "src": "clinimetrix_django/wsgi.py",
       "use": "@vercel/python",
       "config": {
-        "maxLambdaSize": "15mb",
+        "maxLambdaSize": "50mb",
         "runtime": "python3.11"
       }
     }
@@ -26,10 +26,9 @@
   ],
   "env": {
     "PYTHONPATH": "/var/task",
-    "DJANGO_SETTINGS_MODULE": "clinimetrix_django.settings_vercel"
+    "DJANGO_SETTINGS_MODULE": "clinimetrix_django.settings_vercel_minimal"
   },
-  "installCommand": "pip install -r requirements.txt",
-  "buildCommand": "python manage.py collectstatic --noinput",
+  "installCommand": "pip install -r requirements_minimal.txt",
   "devCommand": "python manage.py runserver",
   "outputDirectory": ".",
   "framework": null
