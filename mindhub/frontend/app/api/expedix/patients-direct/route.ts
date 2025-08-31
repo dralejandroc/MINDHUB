@@ -47,7 +47,7 @@ export async function GET() {
       return new Response(JSON.stringify({
         success: false,
         error: 'Database query failed',
-        details: error instanceof Error ? error.message : error?.message || 'Unknown database error',
+        details: error.message || String(error),
         timestamp: new Date().toISOString()
       }), {
         status: 500,

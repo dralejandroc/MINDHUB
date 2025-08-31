@@ -116,7 +116,7 @@ export async function POST(request: Request) {
 
     if (error) {
       console.error('[resources API] Supabase error:', error);
-      throw new Error(error.message);
+      throw new Error(String(error));
     }
 
     console.log('[resources API] Successfully created record:', record.id);

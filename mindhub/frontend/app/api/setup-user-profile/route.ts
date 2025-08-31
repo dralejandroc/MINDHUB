@@ -73,7 +73,7 @@ export async function POST() {
     return new Response(JSON.stringify({
       success: false,
       error: 'Setup failed',
-      details: error.message,
+      details: String(error),
       timestamp: new Date().toISOString()
     }), {
       status: 500,

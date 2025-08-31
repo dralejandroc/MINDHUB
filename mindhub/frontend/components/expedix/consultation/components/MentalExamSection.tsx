@@ -54,7 +54,7 @@ const MentalExamSection = memo(function MentalExamSection({
             </p>
           </div>
           <Button
-            variant="default"
+            variant="primary"
             onClick={() => setIsExpanded(true)}
             className={`flex items-center text-white ${hasData 
               ? 'bg-green-600 hover:bg-green-700' 

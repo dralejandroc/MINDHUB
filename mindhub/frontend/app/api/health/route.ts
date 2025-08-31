@@ -14,7 +14,7 @@ export async function GET() {
       .limit(1);
     
     if (error) {
-      throw new Error(`Database error: ${error.message}`);
+      throw new Error(`Database error: ${String(error)}`);
     }
     
     return new Response(JSON.stringify({
