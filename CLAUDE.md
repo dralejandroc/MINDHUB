@@ -382,3 +382,5 @@ Agenda → Expedix → ClinimetrixPro → FormX → Finance → FrontDesk
 - ✅ **Deploy completado**: Django backend en producción (Vercel)
 - ✅ **Clean Architecture**: Principios documentados para React frontend
 - ✅ **Documentación completa**: APIs y base de datos completamente documentadas
+- no se arreglan los problemas con soluciones temporales ni simplificando cosas, se arreglan de fondo hasta que funcione como deberia.
+- Cuando te muestre errores de la consola, identifica de donde vienen los problemas, como solucionarlo de fondo, revisa bien alrededor los apis, endpoint, autenticacion, si es algo que tiene que ver con settings de supabase o vercel y no lo puedes hacer tu desde aqui, dame un script para hacerlo yo manualmente, asegurate cuando hagas esto ultimo que tu informacion al respecto de vercel y supabase este actualizado
