@@ -290,7 +290,7 @@ export function ConfigurableDashboard() {
             <Button
               key={widget.id}
               onClick={() => toggleWidgetVisibility(widget.id)}
-              variant={widget.isVisible ? "default" : "outline"}
+              variant={widget.isVisible ? "primary" : "outline"}
               size="sm"
               className="flex items-center gap-1 text-xs"
             >
