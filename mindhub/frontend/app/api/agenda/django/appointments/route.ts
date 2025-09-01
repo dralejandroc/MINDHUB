@@ -23,7 +23,7 @@ export async function GET(request: Request) {
     const queryParams = url.searchParams.toString();
     
     // Forward request to Django appointments endpoint
-    const djangoUrl = `${DJANGO_API_BASE}/api/agenda/appointments/${queryParams ? '?' + queryParams : ''}`;
+    const djangoUrl = `${DJANGO_API_BASE}/api/agenda/appointments${queryParams ? '?' + queryParams : ''}`;
     console.log('[AGENDA APPOINTMENTS] Forwarding to Django:', djangoUrl);
     
     const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;

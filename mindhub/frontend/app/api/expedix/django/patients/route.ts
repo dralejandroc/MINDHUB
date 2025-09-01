@@ -23,7 +23,7 @@ export async function GET(request: Request) {
     const queryParams = url.searchParams.toString();
     
     // Forward request to Django patients endpoint
-    const djangoUrl = `${DJANGO_API_BASE}/api/expedix/patients/${queryParams ? '?' + queryParams : ''}`;
+    const djangoUrl = `${DJANGO_API_BASE}/api/expedix/patients${queryParams ? '?' + queryParams : ''}`;
     console.log('[EXPEDIX PATIENTS] Forwarding to Django:', djangoUrl);
     
     const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
