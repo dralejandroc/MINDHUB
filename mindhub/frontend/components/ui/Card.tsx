@@ -11,14 +11,9 @@ const Card = forwardRef<HTMLDivElement, CardProps>(
       <div
         ref={ref}
         className={clsx(
-          `
-          bg-white rounded-2xl shadow-lg border border-primary-100
-          overflow-hidden transition-all duration-300 ease-in-out
-          relative
-          before:absolute before:top-0 before:left-0 before:right-0 before:h-1
-          before:border-gradient
-          `,
-          hoverable && 'hover-lift hover:shadow-xl hover:shadow-primary-200/50',
+          'card-theme rounded-2xl overflow-hidden transition-all duration-300 ease-in-out relative',
+          'before:absolute before:top-0 before:left-0 before:right-0 before:h-1 before:border-gradient',
+          hoverable && 'hover-lift hover:shadow-theme-xl',
           className
         )}
         {...props}
@@ -33,7 +28,7 @@ const CardHeader = forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElemen
     <div
       ref={ref}
       className={clsx(
-        'px-4 py-3 gradient-background border-b border-primary-100 font-medium text-dark-green text-sm',
+        'px-4 py-3 bg-theme-surface border-b border-theme-primary font-medium text-theme-primary text-sm',
         className
       )}
       {...props}
@@ -46,7 +41,7 @@ const CardTitle = forwardRef<HTMLParagraphElement, React.HTMLAttributes<HTMLHead
   ({ className, ...props }, ref) => (
     <h3
       ref={ref}
-      className={clsx('text-lg font-semibold leading-none tracking-tight text-gray-900', className)}
+      className={clsx('text-lg font-semibold leading-none tracking-tight text-theme-primary', className)}
       {...props}
     />
   )
@@ -57,7 +52,7 @@ const CardDescription = forwardRef<HTMLParagraphElement, React.HTMLAttributes<HT
   ({ className, ...props }, ref) => (
     <p
       ref={ref}
-      className={clsx('text-sm text-gray-500', className)}
+      className={clsx('text-sm text-theme-secondary', className)}
       {...props}
     />
   )
@@ -83,7 +78,7 @@ const CardFooter = forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElemen
     <div
       ref={ref}
       className={clsx(
-        'px-4 py-3 gradient-background border-t border-primary-100',
+        'px-4 py-3 bg-theme-surface border-t border-theme-primary',
         className
       )}
       {...props}

@@ -39,8 +39,12 @@ export default function ThemeToggle() {
   return (
     <Menu as="div" className="relative inline-block text-left">
       <div>
-        <Menu.Button className="inline-flex items-center justify-center w-9 h-9 rounded-lg bg-theme-secondary hover:bg-theme-tertiary border border-theme-primary text-theme-primary transition-colors">
-          <CurrentIcon className="h-4 w-4" aria-hidden="true" />
+        <Menu.Button 
+          className="inline-flex items-center justify-center w-7 h-7 rounded-lg bg-theme-secondary hover:bg-theme-tertiary border border-theme-primary text-theme-primary transition-colors"
+          aria-label="Tema de la aplicación"
+          title="Cambiar tema"
+        >
+          <CurrentIcon className="h-3 w-3" aria-hidden="true" />
         </Menu.Button>
       </div>
 

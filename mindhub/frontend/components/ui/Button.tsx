@@ -44,8 +44,8 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(
         hover:before:translate-x-[100%]
       `,
       outline: `
-        bg-white text-primary-600 border-2 border-primary-600
-        hover:bg-primary-50 hover:shadow-md
+        bg-theme-card text-primary border-2 border-primary
+        hover:bg-theme-tertiary hover:shadow-theme-md
       `,
       purple: `
         gradient-purple text-white shadow-purple

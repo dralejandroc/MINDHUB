@@ -101,12 +101,12 @@ export default function RootLayout({
           
           {/* Preconnect to external services - Google Fonts temporarily disabled */}
         </head>
-        <body className="bg-theme-secondary antialiased">
+        <body className="bg-theme-primary text-theme-primary antialiased">
           <StartupCleanup />
           <ThemeProvider>
             <AuthProvider>
               <GraphQLProvider>
-                <div id="root" className="min-h-screen bg-theme-secondary">
+                <div id="root" className="min-h-screen bg-theme-primary text-theme-primary">
                   {children}
                 </div>
               </GraphQLProvider>
@@ -118,10 +118,8 @@ export default function RootLayout({
           position="top-right"
           toastOptions={{
             duration: 5000,
+            className: 'bg-theme-card text-theme-primary border-theme-primary',
             style: {
-              background: '#fff',
-              color: '#374151',
-              border: '1px solid #e5e7eb',
               borderRadius: '0.5rem',
               fontSize: '0.875rem',
             },

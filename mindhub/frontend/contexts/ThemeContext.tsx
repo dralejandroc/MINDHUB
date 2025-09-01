@@ -13,7 +13,7 @@ interface ThemeContextType {
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
-  const [theme, setThemeState] = useState<Theme>('system');
+  const [theme, setThemeState] = useState<Theme>('light'); // Start with 'light' as default
   const [effectiveTheme, setEffectiveTheme] = useState<'light' | 'dark'>('light');
 
   // Detect system preference
@@ -37,12 +37,24 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
       
       setEffectiveTheme(newEffectiveTheme);
       
-      // Update document class and data attribute
+      // Update document class and data attribute with smooth transition
       if (typeof window !== 'undefined') {
         const root = document.documentElement;
+        
+        // Add switching flag to disable transitions temporarily
+        root.setAttribute('data-theme-switching', 'true');
+        
+        // Update theme
         root.classList.remove('light', 'dark');
         root.classList.add(newEffectiveTheme);
         root.setAttribute('data-theme', newEffectiveTheme);
+        
+        // Re-enable transitions after a brief delay
+        requestAnimationFrame(() => {
+          requestAnimationFrame(() => {
+            root.removeAttribute('data-theme-switching');
+          });
+        });
       }
     };
 
@@ -57,12 +69,17 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     }
   }, [theme]);
 
-  // Load theme from localStorage on mount
+  // Load theme from localStorage on mount and apply initial theme
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const storedTheme = localStorage.getItem('mindhub-theme') as Theme;
       if (storedTheme && ['light', 'dark', 'system'].includes(storedTheme)) {
         setThemeState(storedTheme);
+      } else {
+        // Apply default theme immediately
+        const root = document.documentElement;
+        root.classList.add('light');
+        root.setAttribute('data-theme', 'light');
       }
     }
   }, []);
