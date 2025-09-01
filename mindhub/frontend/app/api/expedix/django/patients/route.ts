@@ -35,7 +35,7 @@ export async function GET(request: Request) {
         'Authorization': `Bearer ${serviceKey}`,
         'Content-Type': 'application/json',
         'X-Proxy-Auth': 'verified',
-        'X-User-Id': user.id,
+        'X-User-ID': user.id,
         'X-User-Email': user.email || '',
         'X-MindHub-Dual-System': 'enabled',
       },
