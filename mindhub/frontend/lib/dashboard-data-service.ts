@@ -1,13 +1,15 @@
 /**
  * Dashboard Data Service
- * Fetches real statistics from GraphQL APIs for dashboard display
- * Updated to use GraphQL directly instead of broken Django backend
+ * TEMPORARY: Uses Django REST APIs instead of broken GraphQL
+ * Will switch back to GraphQL once authentication issues are resolved
  */
 
-import { GET_PATIENTS } from './apollo/queries/expedix/patients';
-import { GET_TODAY_APPOINTMENTS, GET_APPOINTMENTS_BY_PATIENT } from './apollo/queries/agenda/appointments';
-import { client } from './apollo/client';
-import type { GetPatientsQuery, GetPatientsQueryVariables, GetTodayAppointmentsQuery, GetTodayAppointmentsQueryVariables } from './apollo/types/generated';
+import { createClient } from '@/lib/supabase/client';
+// Temporarily disabled GraphQL imports due to 500 errors
+// import { GET_PATIENTS } from './apollo/queries/expedix/patients';
+// import { GET_TODAY_APPOINTMENTS, GET_APPOINTMENTS_BY_PATIENT } from './apollo/queries/agenda/appointments';
+// import { client } from './apollo/client';
+// import type { GetPatientsQuery, GetPatientsQueryVariables, GetTodayAppointmentsQuery, GetTodayAppointmentsQueryVariables } from './apollo/types/generated';
 
 export interface DashboardData {
   totalPatients: number;
@@ -169,59 +171,102 @@ class DashboardDataService {
 
   private async fetchPatients(): Promise<any[]> {
     try {
-      console.log('[DashboardService] Fetching patients via GraphQL...');
+      console.log('[DashboardService] Fetching patients via Django REST API (fallback)...');
       
-      const result = await client.query<GetPatientsQuery, GetPatientsQueryVariables>({
-        query: GET_PATIENTS,
-        variables: {
-          first: 100, // Get more for better dashboard stats
-          filter: { is_active: { eq: true } }
-        },
-        fetchPolicy: 'cache-first'
+      const supabase = createClient();
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (!session?.access_token) {
+        console.log('[DashboardService] No session token, returning empty patients');
+        return [];
+      }
+
+      const response = await fetch('/api/expedix/django/patients/', {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`,
+          'Content-Type': 'application/json',
+        }
       });
 
-      const patients = result.data?.patientsCollection?.edges?.map(edge => edge.node) || [];
-      console.log('[DashboardService] GraphQL patients loaded:', patients.length);
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+
+      const patients = await response.json();
+      console.log('[DashboardService] Django REST patients loaded:', patients?.length || 0);
       
-      return patients;
+      return Array.isArray(patients) ? patients : [];
     } catch (error) {
-      console.error('[DashboardService] Error fetching patients via GraphQL:', error);
+      console.error('[DashboardService] Error fetching patients via Django REST:', error);
       return [];
     }
   }
 
   private async fetchConsultations(): Promise<any[]> {
     try {
-      console.log('[DashboardService] Fetching appointments via GraphQL...');
+      console.log('[DashboardService] Fetching appointments via Django REST API (fallback)...');
       
-      const today = new Date().toISOString().split('T')[0];
-      const result = await client.query<GetTodayAppointmentsQuery, GetTodayAppointmentsQueryVariables>({
-        query: GET_TODAY_APPOINTMENTS,
-        variables: {
-          date: today
-        },
-        fetchPolicy: 'cache-first'
+      const supabase = createClient();
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (!session?.access_token) {
+        console.log('[DashboardService] No session token, returning empty appointments');
+        return [];
+      }
+
+      const response = await fetch('/api/agenda/django/appointments/', {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`,
+          'Content-Type': 'application/json',
+        }
       });
 
-      const appointments = result.data?.appointmentsCollection?.edges?.map(edge => edge.node) || [];
-      console.log('[DashboardService] GraphQL appointments loaded:', appointments.length);
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+
+      const appointments = await response.json();
+      console.log('[DashboardService] Django REST appointments loaded:', appointments?.length || 0);
       
-      return appointments;
+      return Array.isArray(appointments) ? appointments : [];
     } catch (error) {
-      console.error('[DashboardService] Error fetching appointments via GraphQL:', error);
+      console.error('[DashboardService] Error fetching appointments via Django REST:', error);
       return [];
     }
   }
 
   private async fetchScaleApplications(): Promise<any[]> {
     try {
-      console.log('[DashboardService] Scale applications via GraphQL not implemented yet');
-      // TODO: Implement ClinimetrixPro GraphQL queries when ready
-      // For now return empty array to prevent dashboard errors
-      return [];
+      console.log('[DashboardService] Fetching scale applications via Django REST API (fallback)...');
       
+      const supabase = createClient();
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (!session?.access_token) {
+        console.log('[DashboardService] No session token, returning empty scale applications');
+        return [];
+      }
+
+      const response = await fetch('/api/clinimetrix/django/assessments/', {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`,
+          'Content-Type': 'application/json',
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+
+      const assessments = await response.json();
+      console.log('[DashboardService] Django REST assessments loaded:', assessments?.length || 0);
+      
+      return Array.isArray(assessments) ? assessments : [];
     } catch (error) {
-      console.error('[DashboardService] Error with scale applications:', error);
+      console.error('[DashboardService] Error fetching assessments via Django REST:', error);
       return [];
     }
   }

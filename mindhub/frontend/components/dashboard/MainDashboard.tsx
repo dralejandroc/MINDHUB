@@ -12,7 +12,7 @@ import {
   ExclamationTriangleIcon,
   MagnifyingGlassIcon
 } from '@heroicons/react/24/outline';
-import { dashboardGraphQLService as dashboardDataService } from '@/lib/dashboard-graphql-service';
+import { dashboardDataService } from '@/lib/dashboard-data-service';
 import { AnimatedGradient } from '@/components/ui/animated-gradient';
 import AnalyticsWidget from './widgets/AnalyticsWidget';
 import PatientClassificationWidget from './widgets/PatientClassificationWidget';

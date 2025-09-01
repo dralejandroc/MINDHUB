@@ -16,7 +16,7 @@ import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import Link from 'next/link';
 import { clinimetrixProClient } from '../../lib/api/clinimetrix-pro-client';
-import { dashboardGraphQLService as dashboardDataService } from '../../lib/dashboard-graphql-service';
+import { dashboardDataService } from '../../lib/dashboard-data-service';
 
 interface BeginnerDashboardProps {
   onNavigate?: (path: string) => void;
