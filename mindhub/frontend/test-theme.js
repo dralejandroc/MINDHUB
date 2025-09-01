@@ -7,8 +7,8 @@ async function inspectThemeImplementation() {
   console.log('🔍 Starting theme inspection...');
   
   try {
-    // Navegar al dashboard
-    await page.goto('http://localhost:3002/app');
+    // Navegar al dashboard en producción
+    await page.goto('https://mindhub.cloud/app');
     
     // Esperar a que cargue
     await page.waitForTimeout(3000);
@@ -40,8 +40,14 @@ async function inspectThemeImplementation() {
     console.log(`📱 Theme Toggle presente: ${hasThemeToggle}`);
     
     if (hasThemeToggle) {
+      console.log('🎯 Haciendo click en el Theme Toggle...');
       await themeToggle.click();
-      await page.waitForTimeout(1000);
+      await page.waitForTimeout(2000);
+      
+      // Verificar el estado después del click
+      const newDataTheme = await page.locator('html').getAttribute('data-theme');
+      const newClasses = await page.locator('html').getAttribute('class');
+      console.log(`🎯 Después del click - data-theme: ${newDataTheme}, classes: ${newClasses}`);
     }
     
     // Inspeccionar el HTML actual
@@ -61,18 +67,31 @@ async function inspectThemeImplementation() {
     console.log(`🌈 Elementos con bg-theme-*: ${elementsWithBgTheme}`);
     console.log(`📝 Elementos con text-theme-*: ${elementsWithTextTheme}`);
     
-    // Verificar CSS variables
-    const rootStyles = await page.evaluate(() => {
+    // Verificar CSS variables y archivos CSS cargados
+    const diagnostics = await page.evaluate(() => {
       const root = document.documentElement;
       const computedStyles = getComputedStyle(root);
+      
+      // Verificar si el archivo themes.css está cargado
+      const stylesheets = Array.from(document.styleSheets);
+      const themeCSS = stylesheets.find(sheet => 
+        sheet.href && sheet.href.includes('themes.css')
+      );
+      
       return {
-        bgPrimary: computedStyles.getPropertyValue('--color-bg-primary').trim(),
-        textPrimary: computedStyles.getPropertyValue('--color-text-primary').trim(),
-        borderPrimary: computedStyles.getPropertyValue('--color-border-primary').trim()
+        cssVariables: {
+          bgPrimary: computedStyles.getPropertyValue('--color-bg-primary').trim(),
+          textPrimary: computedStyles.getPropertyValue('--color-text-primary').trim(),
+          borderPrimary: computedStyles.getPropertyValue('--color-border-primary').trim()
+        },
+        themeCSS: !!themeCSS,
+        totalStylesheets: stylesheets.length,
+        stylesheetHrefs: stylesheets.map(s => s.href).filter(Boolean)
       };
     });
     
-    console.log('🎯 CSS Variables:', rootStyles);
+    console.log('🎯 CSS Diagnostics:', diagnostics);
+    console.log('📄 Stylesheets cargadas:', diagnostics.stylesheetHrefs);
     
     // Capturar screenshot del estado actual
     await page.screenshot({ path: './theme-light.png', fullPage: true });
@@ -125,7 +144,7 @@ async function inspectThemeImplementation() {
     
     for (const pageCheck of pagesToCheck) {
       try {
-        await page.goto(`http://localhost:3002${pageCheck.url}`);
+        await page.goto(`https://mindhub.cloud${pageCheck.url}`);
         await page.waitForTimeout(2000);
         
         const pageDataTheme = await page.locator('html').getAttribute('data-theme');

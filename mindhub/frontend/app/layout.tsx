@@ -7,7 +7,7 @@ import { ThemeProvider } from '@/contexts/ThemeContext';
 import { GraphQLProvider } from '@/lib/apollo/provider';
 import StartupCleanup from '@/components/StartupCleanup';
 import './globals.css';
-import '../styles/themes.css';
+import '@/styles/themes.css';
 
 // const inter = Inter({ subsets: ['latin'], variable: '--font-inter' }); // Temporalmente deshabilitado
 
