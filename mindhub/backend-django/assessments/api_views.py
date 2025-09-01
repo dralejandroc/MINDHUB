@@ -618,13 +618,16 @@ def assessments_list_api(request):
     """
     try:
         # Verify authentication from Supabase middleware
-        if not hasattr(request, 'supabase_user_id') or not request.supabase_user_id:
+        if not hasattr(request, 'user') or not request.user:
             return JsonResponse({
                 'success': False,
-                'error': 'Authentication required'
+                'error': 'Authentication required - no user'
             }, status=401)
         
-        logger.info(f'[AssessmentsListAPI] Getting assessments for user {request.supabase_user_id}')
+        # Get user ID from middleware-set user object
+        user_id = request.user.get('id') if isinstance(request.user, dict) else getattr(request.user, 'id', None)
+        
+        logger.info(f'[AssessmentsListAPI] Getting assessments for user {user_id}')
         
         # Get user context for filtering
         user_context = getattr(request, 'user_context', {})
