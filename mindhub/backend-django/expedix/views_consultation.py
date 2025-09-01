@@ -178,15 +178,11 @@ class ConsultationViewSet(viewsets.ViewSet):
             
             # Get user context for dual system support
             user_context = getattr(request, 'user_context', {})
-            if not user_context:
-                # Use clinic license as fallback (safer since patients table has clinic_id NOT NULL)
-                user_context = {
-                    'license_type': 'clinic',
-                    'clinic_id': '1',  # Match middleware fallback
-                    'workspace_id': None,
-                    'clinic_role': 'professional'
-                }
-                logger.warning('No user_context found, using fallback clinic license (clinic_id=1)')
+            if not user_context or not user_context.get('license_type'):
+                # No fallback context - authentication middleware should have set this
+                logger.error('No valid user_context found - authentication required')
+                from rest_framework.exceptions import PermissionDenied
+                raise PermissionDenied('Authentication required - no valid user context found')
             
             license_type = user_context.get('license_type')
             clinic_id = user_context.get('clinic_id') if license_type == 'clinic' else None

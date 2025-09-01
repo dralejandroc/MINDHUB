@@ -133,32 +133,50 @@ class SupabaseAuthMiddleware(MiddlewareMixin):
                     }
                 
                 # Default to clinic license if the user wasn't found in profiles
-                # This is safer since patients table has clinic_id as NOT NULL
+                # Use the first clinic available as fallback
                 logger.warning(f'User {user_id} not found in profiles, using fallback context')
-                return {
-                    'license_type': 'clinic',
-                    'access_type': 'clinic',
-                    'filter_field': 'clinic_id',
-                    'filter_value': '1',  # Default to clinic_id = 1 for backwards compatibility
-                    'clinic_id': '1',
-                    'workspace_id': None,
-                    'clinic_role': 'professional',
-                    'shared_access': True
-                }
+                cursor.execute("SELECT id FROM clinics LIMIT 1")
+                fallback_clinic = cursor.fetchone()
+                fallback_clinic_id = str(fallback_clinic[0]) if fallback_clinic else None
+                
+                if fallback_clinic_id:
+                    return {
+                        'license_type': 'clinic',
+                        'access_type': 'clinic',
+                        'filter_field': 'clinic_id',
+                        'filter_value': fallback_clinic_id,
+                        'clinic_id': fallback_clinic_id,
+                        'workspace_id': None,
+                        'clinic_role': 'professional',
+                        'shared_access': True
+                    }
+                else:
+                    # If no clinics exist, return None context to prevent errors
+                    logger.error(f'No clinics found for fallback, user {user_id} cannot be authenticated')
+                    return {
+                        'license_type': None,
+                        'access_type': None,
+                        'filter_field': None,
+                        'filter_value': None,
+                        'clinic_id': None,
+                        'workspace_id': None,
+                        'clinic_role': None,
+                        'shared_access': False
+                    }
                 
         except Exception as e:
             logger.error(f'Error detecting user license type for {user_id}: {e}')
-            # Fallback to safe empty context on database errors
+            # Fallback to safe empty context on database errors - do NOT use invalid UUIDs
             logger.error(f'Database error for user {user_id}, using empty context')
             return {
-                'license_type': 'clinic',
-                'access_type': 'clinic', 
-                'filter_field': 'clinic_id',
-                'filter_value': '1',  # Default to clinic_id = 1 for backwards compatibility
-                'clinic_id': '1',
+                'license_type': None,
+                'access_type': None,
+                'filter_field': None,
+                'filter_value': None,
+                'clinic_id': None,
                 'workspace_id': None,
-                'clinic_role': 'professional',
-                'shared_access': True
+                'clinic_role': None,
+                'shared_access': False
             }
     
     def should_process_auth(self, request):
@@ -178,14 +196,12 @@ class SupabaseAuthMiddleware(MiddlewareMixin):
             '/assessments/api/create-from-react/',  # ✅ ACTIVAR validación
             '/assessments/api/patient/',            # ✅ AGREGAR validación patient assessments
             '/assessments/',                        # ✅ AGREGAR validación para dashboard assessments
-            '/api/expedix/patients',                # ✅ RESTORED according to architecture
-            '/api/expedix/consultations',           # ✅ AGREGAR validación
-            '/api/expedix/medical-history',         # ✅ AGREGAR validación
-            '/api/expedix/users',                   # ✅ AGREGAR validación
-            '/api/expedix/schedule-config',         # ✅ AGREGAR validación
+            '/api/expedix/',                        # ✅ RESTORED according to architecture (covers all expedix endpoints)
             '/api/agenda/',                         # ✅ AGREGAR validación  
             '/api/resources/',                      # ✅ RESTORED according to architecture
             '/api/clinics/',                        # ✅ AGREGAR validación clinic management
+            '/api/finance/',                        # ✅ AGREGAR validación finance management
+            '/api/formx/',                          # ✅ AGREGAR validación FormX
         ]
         
         return any(request.path.startswith(path) for path in bridge_paths)

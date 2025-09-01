@@ -27,15 +27,10 @@ class DualSystemModelViewSet(DualSystemFilterMixin, viewsets.ModelViewSet):
     def list(self, request, *args, **kwargs):
         """Override list to add dual system context to response"""
         # Ensure user_context exists before calling super().list()
-        if not hasattr(request, 'user_context'):
-            logger.warning('No user_context found in list, using fallback clinic context')
-            request.user_context = {
-                'license_type': 'clinic',
-                'clinic_id': '1',  # Default clinic
-                'workspace_id': None,
-                'clinic_role': 'professional',
-                'shared_access': True
-            }
+        if not hasattr(request, 'user_context') or not request.user_context.get('license_type'):
+            logger.error('No valid user_context found in list - authentication middleware failed')
+            from rest_framework.exceptions import PermissionDenied
+            raise PermissionDenied('Authentication required - no valid user context found')
         
         response = super().list(request, *args, **kwargs)
         
@@ -63,16 +58,10 @@ class DualSystemModelViewSet(DualSystemFilterMixin, viewsets.ModelViewSet):
     
     def create(self, request, *args, **kwargs):
         """Override create to ensure proper dual system association"""
-        if not hasattr(request, 'user_context'):
-            # Provide fallback context instead of failing
-            logger.warning('No user_context found in create, using fallback clinic context')
-            request.user_context = {
-                'license_type': 'clinic',
-                'clinic_id': '1',  # Default clinic
-                'workspace_id': None,
-                'clinic_role': 'professional',
-                'shared_access': True
-            }
+        if not hasattr(request, 'user_context') or not request.user_context.get('license_type'):
+            logger.error('No valid user_context found in create - authentication middleware failed')
+            from rest_framework.exceptions import PermissionDenied
+            raise PermissionDenied('Authentication required - no valid user context found')
         
         return super().create(request, *args, **kwargs)
 
