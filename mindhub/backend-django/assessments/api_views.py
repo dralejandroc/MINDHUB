@@ -436,11 +436,18 @@ def create_and_start_assessment_from_react(request):
                 'error': 'No se pudieron procesar los datos del paciente'
             }, status=400)
         
+        # Get dual system context for assessment creation
+        user_context = getattr(request, 'user_context', {})
+        clinic_id = user_context.get('clinic_id') if user_context.get('license_type') == 'clinic' else None
+        workspace_id = user_context.get('workspace_id') if user_context.get('license_type') == 'individual' else None
+        
         # Crear assessment
         assessment = Assessment.objects.create(
             patient=patient,
             scale=scale,
             created_by=request.user if hasattr(request, 'user') and request.user.is_authenticated else None,
+            clinic_id=clinic_id,
+            workspace_id=workspace_id,
             total_items=scale.total_items,
             status='not_started',
             mode='self_administered'
@@ -644,6 +651,10 @@ def assessments_list_api(request):
         elif filter_field == 'workspace_id' and filter_value:
             # For individual users, filter by workspace_id
             assessments_query = assessments_query.filter(workspace_id=filter_value)
+        else:
+            # Fallback: filter by created_by if no valid dual system context
+            logger.warning(f'[AssessmentsListAPI] No valid dual system context, filtering by user_id: {user_id}')
+            assessments_query = assessments_query.filter(created_by_id=user_id)
         
         # Get limited results for dashboard (last 50)
         assessments = assessments_query[:50]

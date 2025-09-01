@@ -153,6 +153,19 @@ class Assessment(models.Model):
         related_name='conducted_assessments'
     )
     
+    # 🎯 DUAL SYSTEM: Multi-tenant fields for clinic and individual workspaces
+    clinic_id = models.UUIDField(
+        null=True,
+        blank=True,
+        help_text='Clinic UUID from Supabase for clinic license users'
+    )
+    
+    workspace_id = models.UUIDField(
+        null=True,
+        blank=True,
+        help_text='Individual workspace UUID for individual license users'
+    )
+    
     # Assessment Configuration
     mode = models.CharField(
         max_length=20,
@@ -207,6 +220,9 @@ class Assessment(models.Model):
             models.Index(fields=['scale']),
             models.Index(fields=['status']),
             models.Index(fields=['created_by']),
+            # 🎯 DUAL SYSTEM: Indexes for multi-tenant filtering
+            models.Index(fields=['clinic_id']),
+            models.Index(fields=['workspace_id']),
         ]
     
     def __str__(self):

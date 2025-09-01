@@ -22,8 +22,8 @@ export async function GET(request: Request) {
     const url = new URL(request.url);
     const queryParams = url.searchParams.toString();
     
-    // Forward request to Django assessments endpoint
-    const djangoUrl = `${DJANGO_API_BASE}/assessments${queryParams ? '?' + queryParams : ''}`;
+    // Forward request to Django assessments dashboard endpoint
+    const djangoUrl = `${DJANGO_API_BASE}/assessments/api/assessments/dashboard${queryParams ? '?' + queryParams : ''}`;
     console.log('[CLINIMETRIX ASSESSMENTS] Forwarding to Django:', djangoUrl);
     
     const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;

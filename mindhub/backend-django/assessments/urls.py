@@ -1,15 +1,24 @@
 """
 URLs for assessments app
 """
-from django.urls import path
-from . import views, api_views, react_api_views
+from django.urls import path, include
+from rest_framework.routers import DefaultRouter
+from . import views, api_views, react_api_views, viewsets
 from django.views.generic import TemplateView
+
+# Create router for DRF viewsets
+router = DefaultRouter()
+router.register(r'api/assessments', viewsets.AssessmentViewSet)
+router.register(r'api/patients', viewsets.PatientViewSet)
 
 app_name = 'core'  # Changed to match template references
 
 urlpatterns = [
+    # DRF router URLs (includes dashboard endpoint)
+    path('', include(router.urls)),
+    
     # API endpoint for dashboard - MUST be first to take priority
-    path('', api_views.assessments_list_api, name='api_list'),
+    path('legacy/', api_views.assessments_list_api, name='api_list'),
     
     # Public home page - moved to /home/
     path('home/', views.HomeView.as_view(), name='home'),
