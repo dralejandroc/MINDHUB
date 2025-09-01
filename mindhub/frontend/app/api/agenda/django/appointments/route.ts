@@ -12,8 +12,11 @@ export async function GET(request: Request) {
     // Verify authentication
     const { user, error: authError } = await getAuthenticatedUser(request);
     if (authError || !user) {
+      console.error('[AGENDA APPOINTMENTS] Authentication failed:', authError);
       return createErrorResponse('Unauthorized', 'Valid authentication required', 401);
     }
+
+    console.log('[AGENDA APPOINTMENTS] User authenticated:', user.id, user.email);
 
     // Extract query parameters
     const url = new URL(request.url);
@@ -21,11 +24,15 @@ export async function GET(request: Request) {
     
     // Forward request to Django appointments endpoint
     const djangoUrl = `${DJANGO_API_BASE}/api/agenda/appointments/${queryParams ? '?' + queryParams : ''}`;
+    console.log('[AGENDA APPOINTMENTS] Forwarding to Django:', djangoUrl);
+    
+    const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+    console.log('[AGENDA APPOINTMENTS] Service key configured:', !!serviceKey, 'length:', serviceKey?.length || 0);
     
     const response = await fetch(djangoUrl, {
       method: 'GET',
       headers: {
-        'Authorization': `Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY}`,
+        'Authorization': `Bearer ${serviceKey}`,
         'Content-Type': 'application/json',
         'X-Proxy-Auth': 'verified',
         'X-User-Id': user.id,
@@ -33,9 +40,17 @@ export async function GET(request: Request) {
         'X-MindHub-Dual-System': 'enabled',
       },
     });
+    
+    console.log('[AGENDA APPOINTMENTS] Django response status:', response.status, response.statusText);
 
     if (!response.ok) {
-      throw new Error(`Django API error: ${response.status} ${response.statusText}`);
+      const errorText = await response.text();
+      console.error('[AGENDA APPOINTMENTS] Django error response:', {
+        status: response.status,
+        statusText: response.statusText,
+        body: errorText
+      });
+      throw new Error(`Django API error: ${response.status} ${response.statusText} - ${errorText}`);
     }
 
     const data = await response.json();
