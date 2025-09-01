@@ -177,6 +177,7 @@ class SupabaseAuthMiddleware(MiddlewareMixin):
         bridge_paths = [
             '/assessments/api/create-from-react/',  # ✅ ACTIVAR validación
             '/assessments/api/patient/',            # ✅ AGREGAR validación patient assessments
+            '/assessments/',                        # ✅ AGREGAR validación para dashboard assessments
             '/api/expedix/patients',                # ✅ RESTORED according to architecture
             '/api/expedix/consultations',           # ✅ AGREGAR validación
             '/api/expedix/medical-history',         # ✅ AGREGAR validación

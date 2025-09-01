@@ -30,9 +30,9 @@
   ],
   "env": {
     "PYTHONPATH": "/var/task",
-    "DJANGO_SETTINGS_MODULE": "clinimetrix_django.settings_vercel_minimal"
+    "DJANGO_SETTINGS_MODULE": "clinimetrix_django.settings_vercel"
   },
-  "installCommand": "pip install -r requirements_minimal.txt",
+  "installCommand": "pip install -r requirements.txt",
   "devCommand": "python manage.py runserver",
   "outputDirectory": ".",
   "framework": null
