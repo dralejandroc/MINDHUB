@@ -8,8 +8,11 @@ from django.views.generic import TemplateView
 app_name = 'core'  # Changed to match template references
 
 urlpatterns = [
-    # Public home page
-    path('', views.HomeView.as_view(), name='home'),
+    # API endpoint for dashboard - MUST be first to take priority
+    path('', api_views.assessments_list_api, name='api_list'),
+    
+    # Public home page - moved to /home/
+    path('home/', views.HomeView.as_view(), name='home'),
     
     # Core pages
     path('dashboard/', TemplateView.as_view(template_name='core/dashboard.html'), name='dashboard'),

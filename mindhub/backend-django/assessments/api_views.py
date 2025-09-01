@@ -609,4 +609,85 @@ class PatientAssessmentsView(View):
             }, status=500)
 
 
+# Dashboard API endpoint for listing all assessments
+@login_required
+@require_http_methods(["GET"])
+def assessments_list_api(request):
+    """
+    API endpoint for dashboard - returns all assessments for authenticated user
+    This endpoint is used by the React frontend dashboard
+    """
+    try:
+        # Verify authentication from Supabase middleware
+        if not hasattr(request, 'supabase_user_id') or not request.supabase_user_id:
+            return JsonResponse({
+                'success': False,
+                'error': 'Authentication required'
+            }, status=401)
+        
+        logger.info(f'[AssessmentsListAPI] Getting assessments for user {request.supabase_user_id}')
+        
+        # Get user context for filtering
+        user_context = getattr(request, 'user_context', {})
+        filter_field = user_context.get('filter_field', 'clinic_id')
+        filter_value = user_context.get('filter_value')
+        
+        # Base query for assessments
+        assessments_query = Assessment.objects.select_related('scale').order_by('-created_at')
+        
+        # Apply filtering based on user context (clinic or individual workspace)
+        if filter_field == 'clinic_id' and filter_value:
+            # For clinic users, filter by clinic_id
+            assessments_query = assessments_query.filter(clinic_id=filter_value)
+        elif filter_field == 'workspace_id' and filter_value:
+            # For individual users, filter by workspace_id
+            assessments_query = assessments_query.filter(workspace_id=filter_value)
+        
+        # Get limited results for dashboard (last 50)
+        assessments = assessments_query[:50]
+        
+        # Serialize assessments data
+        assessments_data = []
+        for assessment in assessments:
+            # Get scoring result if exists
+            scoring_result = None
+            try:
+                scoring_result = assessment.scoring_results.latest('created_at')
+            except ScoringResult.DoesNotExist:
+                pass
+            
+            assessments_data.append({
+                'id': str(assessment.id),
+                'scale_name': assessment.scale.name if assessment.scale else 'Unknown Scale',
+                'scale_abbreviation': assessment.scale.abbreviation if assessment.scale else 'N/A',
+                'status': assessment.status,
+                'score': scoring_result.score if scoring_result else None,
+                'interpretation': scoring_result.interpretation if scoring_result else None,
+                'severity_level': scoring_result.severity_level if scoring_result else None,
+                'created_at': assessment.created_at.isoformat(),
+                'completed_at': assessment.completed_at.isoformat() if assessment.completed_at else None,
+                'current_item': assessment.current_item,
+                'total_items': assessment.total_items,
+                'patient_id': str(assessment.patient_id) if assessment.patient_id else None,
+                'clinic_id': str(assessment.clinic_id) if hasattr(assessment, 'clinic_id') and assessment.clinic_id else None,
+                'workspace_id': str(assessment.workspace_id) if hasattr(assessment, 'workspace_id') and assessment.workspace_id else None
+            })
+        
+        return JsonResponse({
+            'success': True,
+            'results': assessments_data,
+            'assessments': assessments_data,  # Alternative key for compatibility
+            'count': len(assessments_data),
+            'user_context': user_context,
+            'message': f'Found {len(assessments_data)} assessments'
+        })
+        
+    except Exception as e:
+        logger.error(f'[AssessmentsListAPI] Error: {str(e)}')
+        return JsonResponse({
+            'success': False,
+            'error': f'Error retrieving assessments: {str(e)}'
+        }, status=500)
+
+
 # AÑADIENDO ENDPOINTS PARA COMPATIBILIDAD CON REACT
