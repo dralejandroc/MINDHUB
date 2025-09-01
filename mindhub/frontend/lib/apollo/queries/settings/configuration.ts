@@ -2,13 +2,10 @@ import { gql } from '@apollo/client'
 
 // Query para obtener configuración de clínica/usuario
 export const GET_CLINIC_CONFIGURATION = gql`
-  query GetClinicConfiguration($clinicId: UUID, $workspaceId: UUID) {
+  query GetClinicConfiguration($clinicName: String) {
     clinic_configurationsCollection(
       filter: {
-        or: [
-          { clinic_id: { eq: $clinicId } }
-          { workspace_id: { eq: $workspaceId } }
-        ]
+        clinic_name: { eq: $clinicName }
       }
       first: 1
       orderBy: [{ updated_at: DescNullsLast }]
@@ -16,19 +13,15 @@ export const GET_CLINIC_CONFIGURATION = gql`
       edges {
         node {
           id
-          clinic_id
-          workspace_id
-          configuration_data
-          clinic_info
-          print_configuration
-          digital_signature
-          medical_record_fields
-          prescription_settings
-          user_preferences
-          is_active
+          clinic_name
+          address
+          email
+          phone
+          tax_id
+          logo_url
+          settings
           created_at
           updated_at
-          created_by
         }
       }
     }
@@ -38,24 +31,22 @@ export const GET_CLINIC_CONFIGURATION = gql`
 // Query para obtener configuración por defecto
 export const GET_DEFAULT_CONFIGURATION = gql`
   query GetDefaultConfiguration {
-    default_configurationsCollection(
-      filter: { is_active: { eq: true } }
+    clinic_configurationsCollection(
       first: 1
       orderBy: [{ created_at: DescNullsLast }]
     ) {
       edges {
         node {
           id
-          configuration_type
-          configuration_data
-          clinic_info
-          print_configuration
-          digital_signature
-          medical_record_fields
-          prescription_settings
-          user_preferences
-          description
-          is_active
+          clinic_name
+          address
+          email
+          phone
+          tax_id
+          logo_url
+          settings
+          created_at
+          updated_at
         }
       }
     }
@@ -64,65 +55,40 @@ export const GET_DEFAULT_CONFIGURATION = gql`
 
 // Query para obtener todas las configuraciones disponibles
 export const GET_ALL_CONFIGURATIONS = gql`
-  query GetAllConfigurations($clinicId: UUID, $workspaceId: UUID) {
+  query GetAllConfigurations {
     clinic_configurationsCollection(
-      filter: {
-        and: [
-          { is_active: { eq: true } }
-          {
-            or: [
-              { clinic_id: { eq: $clinicId } }
-              { workspace_id: { eq: $workspaceId } }
-            ]
-          }
-        ]
-      }
       orderBy: [{ updated_at: DescNullsLast }]
     ) {
       edges {
         node {
           id
-          clinic_id
-          workspace_id
-          configuration_data
-          clinic_info
-          print_configuration
-          digital_signature
-          medical_record_fields
-          prescription_settings
-          user_preferences
-          is_active
+          clinic_name
+          address
+          email
+          phone
+          tax_id
+          logo_url
+          settings
           created_at
           updated_at
-          created_by
         }
       }
     }
   }
 `
 
-// Query para obtener configuraciones de usuario específico
+// Query simplificada para configuraciones de usuario (usando clinic_configurations)
 export const GET_USER_SETTINGS = gql`
-  query GetUserSettings($userId: UUID!) {
-    user_settingsCollection(
-      filter: { user_id: { eq: $userId } }
+  query GetUserSettings {
+    clinic_configurationsCollection(
       first: 1
       orderBy: [{ updated_at: DescNullsLast }]
     ) {
       edges {
         node {
           id
-          user_id
-          preferences
-          theme
-          language
-          date_format
-          time_format
-          currency
-          timezone
-          default_page
-          notifications_enabled
-          is_active
+          clinic_name
+          settings
           created_at
           updated_at
         }

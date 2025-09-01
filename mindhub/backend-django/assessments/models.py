@@ -46,21 +46,9 @@ class Patient(models.Model):
     # Clinical Notes
     notes = models.TextField(blank=True)
     
-    # Data Management
-    created_by = models.ForeignKey(
-        settings.AUTH_USER_MODEL,
-        on_delete=models.SET_NULL,
-        null=True,
-        related_name='created_patients'
-    )
-    
-    assigned_clinician = models.ForeignKey(
-        settings.AUTH_USER_MODEL,
-        on_delete=models.SET_NULL,
-        null=True,
-        blank=True,
-        related_name='assigned_patients'
-    )
+    # Data Management - use UUID fields to match database
+    created_by_id = models.UUIDField(null=True, blank=True)
+    assigned_clinician_id = models.UUIDField(null=True, blank=True)
     
     # Privacy and Consent
     consent_given = models.BooleanField(default=False)
@@ -77,12 +65,10 @@ class Patient(models.Model):
     class Meta:
         verbose_name = _('Paciente')
         verbose_name_plural = _('Pacientes')
-        db_table = 'clinimetrix_patients'
+        db_table = 'patients'  # Use existing patients table
         ordering = ['last_name', 'first_name']
         indexes = [
             models.Index(fields=['medical_record']),
-            models.Index(fields=['created_by']),
-            models.Index(fields=['assigned_clinician']),
         ]
     
     def __str__(self):
@@ -107,7 +93,7 @@ class Patient(models.Model):
 
 class Assessment(models.Model):
     """
-    Main assessment model
+    Main assessment model - Mapped to clinimetrix_assessments table
     """
     
     class Status(models.TextChoices):
@@ -122,35 +108,35 @@ class Assessment(models.Model):
         INTERVIEWER_ADMINISTERED = 'interviewer', _('Heteroaplicada')
         MIXED = 'mixed', _('Mixta')
     
-    # Identification
+    # Primary key
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     
-    # Relationships
-    patient = models.ForeignKey(
-        Patient,
-        on_delete=models.CASCADE,
-        related_name='assessments'
-    )
-    
-    scale = models.ForeignKey(
-        'psychometric_scales.PsychometricScale',
-        on_delete=models.CASCADE,
-        related_name='assessments'
-    )
-    
-    created_by = models.ForeignKey(
-        settings.AUTH_USER_MODEL,
-        on_delete=models.SET_NULL,
-        null=True,
-        related_name='created_assessments'
-    )
-    
-    evaluator = models.ForeignKey(
-        settings.AUTH_USER_MODEL,
-        on_delete=models.SET_NULL,
+    # Core fields mapped to actual database columns
+    template_id = models.CharField(
+        max_length=50,
         null=True,
         blank=True,
-        related_name='conducted_assessments'
+        help_text='Template ID from clinimetrix_templates table'
+    )
+    
+    patient_id = models.UUIDField(
+        null=True,
+        blank=True,
+        db_column='patient_id',
+        help_text='Patient UUID'
+    )
+    
+    administrator_id = models.UUIDField(
+        null=True,
+        blank=True,
+        db_column='administrator_id',
+        help_text='UUID of the user who created this assessment'
+    )
+    
+    consultation_id = models.UUIDField(
+        null=True,
+        blank=True,
+        help_text='Related consultation if applicable'
     )
     
     # 🎯 DUAL SYSTEM: Multi-tenant fields for clinic and individual workspaces
@@ -166,49 +152,51 @@ class Assessment(models.Model):
         help_text='Individual workspace UUID for individual license users'
     )
     
-    # Assessment Configuration
+    # Assessment data
     mode = models.CharField(
         max_length=20,
         choices=Mode.choices,
-        default=Mode.SELF_ADMINISTERED
+        default=Mode.SELF_ADMINISTERED,
+        null=True,
+        blank=True
     )
     
-    instructions = models.TextField(blank=True)
-    
-    # Status and Timing
     status = models.CharField(
         max_length=20,
         choices=Status.choices,
-        default=Status.NOT_STARTED
+        default=Status.NOT_STARTED,
+        null=True,
+        blank=True
     )
     
-    started_at = models.DateTimeField(null=True, blank=True)
-    completed_at = models.DateTimeField(null=True, blank=True)
-    expires_at = models.DateTimeField(null=True, blank=True)
+    # JSON fields for assessment data
+    responses = models.JSONField(default=dict, null=True, blank=True)
+    scores = models.JSONField(default=dict, null=True, blank=True)
+    interpretation = models.JSONField(default=dict, null=True, blank=True)
+    subscale_scores = models.JSONField(default=dict, null=True, blank=True)
+    validity_indicators = models.JSONField(default=dict, null=True, blank=True)
+    metadata = models.JSONField(default=dict, null=True, blank=True)
     
-    duration_minutes = models.FloatField(null=True, blank=True)
+    # Numeric scores and progress
+    total_score = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    severity_level = models.CharField(max_length=50, null=True, blank=True)
+    current_step = models.IntegerField(null=True, blank=True, db_column='current_step')
+    completion_time_seconds = models.IntegerField(null=True, blank=True)
+    percentile = models.IntegerField(null=True, blank=True)
+    completion_percentage = models.IntegerField(null=True, blank=True)
+    time_taken_minutes = models.IntegerField(null=True, blank=True)
     
-    # Progress Tracking
-    current_item = models.PositiveIntegerField(default=0)
-    total_items = models.PositiveIntegerField()
-    
-    # Session Information
-    session_data = models.JSONField(default=dict)
-    ip_address = models.GenericIPAddressField(null=True, blank=True)
-    user_agent = models.TextField(blank=True)
-    
-    # Quality Control
-    response_time_data = models.JSONField(default=list)
-    is_valid = models.BooleanField(default=True)
-    validity_notes = models.TextField(blank=True)
-    
-    # Clinical Context
-    assessment_reason = models.TextField(blank=True)
-    clinical_context = models.TextField(blank=True)
+    # Text fields
+    notes = models.TextField(blank=True, null=True)
+    clinical_notes = models.TextField(blank=True, null=True)
+    observations = models.TextField(blank=True, null=True)
     
     # Timestamps
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
+    started_at = models.DateTimeField(null=True, blank=True)
+    completed_at = models.DateTimeField(null=True, blank=True)
+    assessment_date = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(null=True, blank=True)
+    updated_at = models.DateTimeField(null=True, blank=True)
     
     class Meta:
         verbose_name = _('Evaluación')
@@ -216,23 +204,26 @@ class Assessment(models.Model):
         db_table = 'clinimetrix_assessments'
         ordering = ['-created_at']
         indexes = [
-            models.Index(fields=['patient']),
-            models.Index(fields=['scale']),
+            models.Index(fields=['patient_id']),
+            models.Index(fields=['template_id']),
             models.Index(fields=['status']),
-            models.Index(fields=['created_by']),
+            models.Index(fields=['administrator_id']),
             # 🎯 DUAL SYSTEM: Indexes for multi-tenant filtering
             models.Index(fields=['clinic_id']),
             models.Index(fields=['workspace_id']),
         ]
     
     def __str__(self):
-        return f"{self.patient.get_full_name()} - {self.scale.abbreviation} ({self.get_status_display()})"
+        patient_name = self.patient.get_full_name() if self.patient else "Unknown Patient"
+        scale_abbr = self.scale.abbreviation if self.scale else "N/A"
+        return f"{patient_name} - {scale_abbr} ({self.get_status_display()})"
     
     @property
     def progress_percentage(self):
-        if self.total_items == 0:
-            return 0
-        return (self.current_item / self.total_items) * 100
+        # Return completion_percentage if available, otherwise calculate
+        if self.completion_percentage is not None:
+            return self.completion_percentage
+        return 0
     
     @property
     def is_started(self):
@@ -245,7 +236,59 @@ class Assessment(models.Model):
     def calculate_duration(self):
         if self.started_at and self.completed_at:
             delta = self.completed_at - self.started_at
-            self.duration_minutes = delta.total_seconds() / 60
+            self.time_taken_minutes = int(delta.total_seconds() / 60)
+    
+    @property 
+    def scale(self):
+        """Get scale info from template - compatibility property"""
+        # This is a temporary compatibility property for existing code
+        # In the future, should directly use template data
+        class TemplateScale:
+            def __init__(self, template_id):
+                self.id = template_id
+                self.name = template_id.replace('_', ' ').title() if template_id else 'Unknown'
+                self.abbreviation = template_id.upper() if template_id else 'N/A'
+        
+        return TemplateScale(self.template_id) if self.template_id else None
+    
+    @property
+    def patient(self):
+        """Get patient object - compatibility property"""
+        if self.patient_id:
+            try:
+                return Patient.objects.get(id=self.patient_id)
+            except Patient.DoesNotExist:
+                return None
+        return None
+    
+    @property
+    def scoring_result(self):
+        """Get scoring result from scores field - compatibility property"""
+        if self.scores:
+            # Create a mock scoring result object from JSON data
+            class MockScoringResult:
+                def __init__(self, scores_data, total_score, interpretation):
+                    self.total_score = total_score
+                    self.interpretation_label = interpretation.get('label', '') if interpretation else ''
+                    self.severity_level = scores_data.get('severity_level', '')
+                    self.subscale_scores = scores_data.get('subscales', {})
+            
+            return MockScoringResult(self.scores, self.total_score, self.interpretation)
+        return None
+    
+    @property
+    def total_items(self):
+        """Get total items from metadata or responses"""
+        if self.metadata and 'total_items' in self.metadata:
+            return self.metadata['total_items']
+        if self.responses:
+            return len(self.responses)
+        return 0
+    
+    @property
+    def current_item(self):
+        """Get current item from current_step"""
+        return self.current_step or 0
 
 
 class AssessmentResponse(models.Model):
@@ -255,7 +298,7 @@ class AssessmentResponse(models.Model):
     assessment = models.ForeignKey(
         Assessment,
         on_delete=models.CASCADE,
-        related_name='responses'
+        related_name='response_items'
     )
     
     item_number = models.PositiveIntegerField()

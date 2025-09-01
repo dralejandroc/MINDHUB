@@ -19,6 +19,7 @@ import {
   ArrowUpTrayIcon
 } from '@heroicons/react/24/outline';
 import { DashboardSettings } from '@/components/settings/DashboardSettings';
+import { UserMetricsProvider } from '@/contexts/UserMetricsContext';
 import { AgendaConfigurationSettings } from '@/components/settings/AgendaConfigurationSettings';
 import { ClinicManagement } from '@/components/settings/ClinicManagement';
 import AnalyticsSettings from '@/components/settings/AnalyticsSettings';
@@ -121,7 +122,11 @@ export default function GeneralSettingsPage() {
       id: 'dashboard',
       label: 'Dashboard',
       icon: ComputerDesktopIcon,
-      content: <DashboardSettings />
+      content: (
+        <UserMetricsProvider>
+          <DashboardSettings />
+        </UserMetricsProvider>
+      )
     },
     {
       id: 'analytics',

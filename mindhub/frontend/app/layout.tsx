@@ -100,6 +100,32 @@ export default function RootLayout({
           <link rel="manifest" href="/manifest.json" />
           
           {/* Preconnect to external services - Google Fonts temporarily disabled */}
+          
+          {/* Error handling for browser extensions */}
+          <script dangerouslySetInnerHTML={{
+            __html: `
+              // Handle browser extension listener errors
+              if (typeof window !== 'undefined') {
+                window.addEventListener('error', function(e) {
+                  if (e.message && e.message.includes('listener indicated an asynchronous response')) {
+                    e.preventDefault();
+                    return false;
+                  }
+                });
+                
+                // Suppress console warnings from extensions
+                const originalConsoleWarn = console.warn;
+                console.warn = function(...args) {
+                  const message = args.join(' ');
+                  if (message.includes('listener indicated an asynchronous response') || 
+                      message.includes('message channel closed')) {
+                    return;
+                  }
+                  originalConsoleWarn.apply(console, args);
+                };
+              }
+            `
+          }} />
         </head>
         <body className="bg-theme-primary text-theme-primary antialiased">
           <StartupCleanup />

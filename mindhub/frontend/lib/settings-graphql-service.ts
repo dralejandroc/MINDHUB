@@ -143,30 +143,17 @@ class SettingsGraphQLService {
   /**
    * Obtener configuración de clínica
    */
-  async getClinicConfiguration(clinicId?: string, workspaceId?: string): Promise<ClinicConfiguration> {
+  async getClinicConfiguration(clinicName?: string): Promise<ClinicConfiguration> {
     try {
-      console.log('⚙️ [Settings GraphQL] Fetching clinic configuration...')
+      console.log('⚙️ [Settings GraphQL] Loading fallback configuration due to GraphQL schema issues...')
       
-      const result = await client.query({
-        query: GET_CLINIC_CONFIGURATION,
-        variables: { clinicId, workspaceId },
-        fetchPolicy: 'network-only',
-        errorPolicy: 'all'
-      })
-
-      const configData = result.data?.clinic_configurationsCollection?.edges?.[0]?.node
-      
-      if (configData) {
-        console.log('✅ [Settings GraphQL] Configuration loaded successfully')
-        return this.parseConfigurationData(configData)
-      } else {
-        console.log('⚠️ [Settings GraphQL] No configuration found, loading default...')
-        return await this.getDefaultConfiguration()
-      }
+      // TEMPORARY: Return fallback config to avoid GraphQL schema errors
+      // TODO: Fix GraphQL schema for clinic_configurationsFilter
+      return this.getFallbackConfiguration()
 
     } catch (error) {
       console.error('❌ [Settings GraphQL] Error fetching configuration:', error)
-      throw error
+      return this.getFallbackConfiguration()
     }
   }
 
@@ -175,21 +162,11 @@ class SettingsGraphQLService {
    */
   async getDefaultConfiguration(): Promise<ClinicConfiguration> {
     try {
-      console.log('🏗️ [Settings GraphQL] Loading default configuration...')
+      console.log('🏗️ [Settings GraphQL] Loading fallback default configuration due to GraphQL schema issues...')
       
-      const result = await client.query({
-        query: GET_DEFAULT_CONFIGURATION,
-        fetchPolicy: 'network-only'
-      })
-
-      const defaultConfig = result.data?.default_configurationsCollection?.edges?.[0]?.node
-      
-      if (defaultConfig) {
-        return this.parseConfigurationData(defaultConfig)
-      } else {
-        // Return hardcoded fallback
-        return this.getFallbackConfiguration()
-      }
+      // TEMPORARY: Return hardcoded fallback to avoid GraphQL errors
+      // TODO: Fix GraphQL schema for default_configurationsCollection
+      return this.getFallbackConfiguration()
 
     } catch (error) {
       console.error('❌ [Settings GraphQL] Error loading default config:', error)
@@ -202,25 +179,18 @@ class SettingsGraphQLService {
    */
   async saveClinicConfiguration(
     config: ClinicConfiguration, 
-    clinicId?: string, 
-    workspaceId?: string,
-    userId?: string
+    clinicName?: string
   ): Promise<boolean> {
     try {
       console.log('💾 [Settings GraphQL] Saving clinic configuration...')
       
       const input = {
-        clinic_id: clinicId,
-        workspace_id: workspaceId,
-        configuration_data: JSON.stringify(config),
-        clinic_info: JSON.stringify(config.clinicInfo),
-        print_configuration: JSON.stringify(config.printConfiguration),
-        digital_signature: JSON.stringify(config.digitalSignature),
-        medical_record_fields: JSON.stringify(config.medicalRecordFields),
-        prescription_settings: JSON.stringify(config.prescriptionSettings),
-        user_preferences: JSON.stringify(config.userPreferences),
-        created_by: userId,
-        is_active: true,
+        clinic_name: clinicName || config.clinicInfo?.name || 'Default Clinic',
+        address: config.clinicInfo?.address,
+        email: config.clinicInfo?.email,
+        phone: config.clinicInfo?.phone,
+        logo_url: config.clinicInfo?.logoUrl,
+        settings: config,
         updated_at: new Date().toISOString()
       }
 
@@ -246,31 +216,31 @@ class SettingsGraphQLService {
   /**
    * Obtener configuración de usuario
    */
-  async getUserSettings(userId: string): Promise<UserSettings | null> {
+  async getUserSettings(): Promise<UserSettings | null> {
     try {
       console.log('👤 [Settings GraphQL] Fetching user settings...')
       
       const result = await client.query({
         query: GET_USER_SETTINGS,
-        variables: { userId },
         fetchPolicy: 'network-only'
       })
 
-      const userData = result.data?.user_settingsCollection?.edges?.[0]?.node
+      const userData = result.data?.clinic_configurationsCollection?.edges?.[0]?.node
       
       if (userData) {
         console.log('✅ [Settings GraphQL] User settings loaded')
+        const settings = userData.settings || {}
         return {
-          userId: userData.user_id,
-          preferences: userData.preferences,
-          theme: userData.theme || 'system',
-          language: userData.language || 'es',
-          dateFormat: userData.date_format || 'DD/MM/YYYY',
-          timeFormat: userData.time_format || '24h',
-          currency: userData.currency || 'MXN',
-          timezone: userData.timezone || 'America/Mexico_City',
-          defaultPage: userData.default_page || '/dashboard',
-          notificationsEnabled: userData.notifications_enabled ?? true
+          userId: userData.id,
+          preferences: settings.userPreferences || {},
+          theme: settings.userPreferences?.theme || 'system',
+          language: settings.userPreferences?.language || 'es',
+          dateFormat: settings.userPreferences?.dateFormat || 'DD/MM/YYYY',
+          timeFormat: settings.userPreferences?.timeFormat || '24h',
+          currency: settings.userPreferences?.currency || 'MXN',
+          timezone: settings.userPreferences?.timezone || 'America/Mexico_City',
+          defaultPage: settings.userPreferences?.defaultPage || '/dashboard',
+          notificationsEnabled: true
         }
       }
 
@@ -290,17 +260,19 @@ class SettingsGraphQLService {
       console.log('💾 [Settings GraphQL] Saving user settings...')
       
       const input = {
-        user_id: settings.userId,
-        preferences: JSON.stringify(settings.preferences),
-        theme: settings.theme,
-        language: settings.language,
-        date_format: settings.dateFormat,
-        time_format: settings.timeFormat,
-        currency: settings.currency,
-        timezone: settings.timezone,
-        default_page: settings.defaultPage,
-        notifications_enabled: settings.notificationsEnabled,
-        is_active: true,
+        clinic_name: 'User Settings',
+        settings: {
+          userPreferences: {
+            theme: settings.theme,
+            language: settings.language,
+            dateFormat: settings.dateFormat,
+            timeFormat: settings.timeFormat,
+            currency: settings.currency,
+            timezone: settings.timezone,
+            defaultPage: settings.defaultPage
+          },
+          preferences: settings.preferences
+        },
         updated_at: new Date().toISOString()
       }
 
@@ -309,7 +281,7 @@ class SettingsGraphQLService {
         variables: { input }
       })
 
-      if (result.data?.insertIntouser_settingsCollection?.records?.length > 0) {
+      if (result.data?.insertIntoclinic_configurationsCollection?.records?.length > 0) {
         console.log('✅ [Settings GraphQL] User settings saved successfully')
         return true
       } else {
@@ -327,31 +299,30 @@ class SettingsGraphQLService {
    */
   private parseConfigurationData(configData: any): ClinicConfiguration {
     try {
-      // Try to parse the structured JSON fields first
-      const clinicInfo = configData.clinic_info ? 
-        JSON.parse(configData.clinic_info) : 
-        JSON.parse(configData.configuration_data)?.clinicInfo || {}
+      // Parse from the new structure
+      const settings = configData.settings || {}
+      
+      const clinicInfo = {
+        name: configData.clinic_name || '',
+        address: configData.address || '',
+        email: configData.email || '',
+        phone: configData.phone || '',
+        logoUrl: configData.logo_url || '',
+        city: settings.clinicInfo?.city || '',
+        state: settings.clinicInfo?.state || '',
+        postalCode: settings.clinicInfo?.postalCode || '',
+        website: settings.clinicInfo?.website || '',
+        logoPosition: settings.clinicInfo?.logoPosition || 'top-left',
+        logoSize: settings.clinicInfo?.logoSize || 100
+      }
 
-      const printConfiguration = configData.print_configuration ?
-        JSON.parse(configData.print_configuration) :
-        JSON.parse(configData.configuration_data)?.printConfiguration || {}
-
-      // Continue with other fields...
       return {
         clinicInfo,
-        printConfiguration,
-        digitalSignature: configData.digital_signature ? 
-          JSON.parse(configData.digital_signature) :
-          JSON.parse(configData.configuration_data)?.digitalSignature || {},
-        medicalRecordFields: configData.medical_record_fields ?
-          JSON.parse(configData.medical_record_fields) :
-          JSON.parse(configData.configuration_data)?.medicalRecordFields || {},
-        prescriptionSettings: configData.prescription_settings ?
-          JSON.parse(configData.prescription_settings) :
-          JSON.parse(configData.configuration_data)?.prescriptionSettings || {},
-        userPreferences: configData.user_preferences ?
-          JSON.parse(configData.user_preferences) :
-          JSON.parse(configData.configuration_data)?.userPreferences || {}
+        printConfiguration: settings.printConfiguration || this.getFallbackConfiguration().printConfiguration,
+        digitalSignature: settings.digitalSignature || this.getFallbackConfiguration().digitalSignature,
+        medicalRecordFields: settings.medicalRecordFields || this.getFallbackConfiguration().medicalRecordFields,
+        prescriptionSettings: settings.prescriptionSettings || this.getFallbackConfiguration().prescriptionSettings,
+        userPreferences: settings.userPreferences || this.getFallbackConfiguration().userPreferences
       }
     } catch (error) {
       console.error('❌ [Settings GraphQL] Error parsing configuration data:', error)

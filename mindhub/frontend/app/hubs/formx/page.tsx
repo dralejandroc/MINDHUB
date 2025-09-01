@@ -1,30 +1,30 @@
 'use client';
 
 import { useState } from 'react';
-import { PageHeader } from '@/components/layout/PageHeader';
-import { DocumentTextIcon, ArrowLeftIcon } from '@heroicons/react/24/outline';
+import { ArrowLeftIcon } from '@heroicons/react/24/outline';
 import { Button } from '@/components/ui/Button';
-import { 
-  FormXDashboard, 
-  FormXBuilder, 
-  FormXTemplates, 
-  FormXPatientAssignment 
-} from '@/components/formx';
-import { FormXTemplate } from '@/lib/api/formx-unified-client';
+import { FormXDashboard } from '@/components/formx/FormXDashboard';
+import { FormXFormBuilder } from '@/components/formx/FormXFormBuilder';
+import { FormXTemplateManager } from '@/components/formx/FormXTemplateManager';
+import { FormXResponsesManager } from '@/components/formx/FormXResponsesManager';
+import { FormXFormViewer } from '@/components/formx/FormXFormViewer';
+import { TEMPLATE_MAP } from '@/components/formx/templates';
+import toast from 'react-hot-toast';
 
-type FormXView = 'dashboard' | 'form-builder' | 'templates' | 'assign-form' | 'responses' | 'assignments';
+type FormXView = 'dashboard' | 'templates' | 'builder' | 'responses' | 'form-viewer';
 
 interface NavigationData {
-  editingTemplate?: FormXTemplate;
-  template?: FormXTemplate;
+  templateId?: string;
+  formData?: any;
+  patientId?: string;
 }
 
 export default function FormXPage() {
   const [currentView, setCurrentView] = useState<FormXView>('dashboard');
   const [navigationData, setNavigationData] = useState<NavigationData>({});
 
-  const handleNavigate = (view: string, data?: any) => {
-    setCurrentView(view as FormXView);
+  const handleNavigate = (view: FormXView, data?: NavigationData) => {
+    setCurrentView(view);
     setNavigationData(data || {});
   };
 
@@ -33,131 +33,145 @@ export default function FormXPage() {
     setNavigationData({});
   };
 
-  const getPageTitle = () => {
+  const renderBreadcrumb = () => {
+    const paths = [];
+    
     switch (currentView) {
-      case 'form-builder':
-        return navigationData.editingTemplate ? 'Editar Formulario' : 'Constructor de Formularios';
       case 'templates':
-        return 'Templates de Formularios';
-      case 'assign-form':
-        return 'Asignar Formulario a Pacientes';
+        paths.push({ name: 'FormX', href: '#', onClick: handleBackToDashboard });
+        paths.push({ name: 'Gestión de Templates', href: '#' });
+        break;
+      case 'builder':
+        paths.push({ name: 'FormX', href: '#', onClick: handleBackToDashboard });
+        paths.push({ name: 'Constructor de Formularios', href: '#' });
+        break;
       case 'responses':
-        return 'Respuestas de Pacientes';
-      case 'assignments':
-        return 'Gestión de Asignaciones';
+        paths.push({ name: 'FormX', href: '#', onClick: handleBackToDashboard });
+        paths.push({ name: 'Respuestas de Pacientes', href: '#' });
+        break;
+      case 'form-viewer':
+        paths.push({ name: 'FormX', href: '#', onClick: handleBackToDashboard });
+        paths.push({ name: 'Llenar Formulario', href: '#' });
+        break;
       default:
-        return 'FormX';
+        paths.push({ name: 'FormX - Generador de Formularios Médicos', href: '#' });
+    }
+
+    return (
+      <nav className="mb-6">
+        <ol className="flex items-center space-x-2 text-sm">
+          {paths.map((path, index) => (
+            <li key={index} className="flex items-center">
+              {index > 0 && <span className="mx-2 text-gray-400">/</span>}
+              <button
+                onClick={path.onClick}
+                className={`${
+                  path.onClick 
+                    ? 'text-blue-600 hover:text-blue-800 font-medium' 
+                    : 'text-gray-900 font-semibold'
+                }`}
+              >
+                {path.name}
+              </button>
+            </li>
+          ))}
+        </ol>
+      </nav>
+    );
+  };
+
+  const renderBackButton = () => {
+    if (currentView === 'dashboard') return null;
+    
+    return (
+      <div className="mb-4">
+        <Button
+          onClick={handleBackToDashboard}
+          variant="outline"
+          className="flex items-center gap-2"
+        >
+          <ArrowLeftIcon className="h-4 w-4" />
+          Volver al Panel Principal
+        </Button>
+      </div>
+    );
+  };
+
+  const handleFormSubmit = async (responses: { [key: string]: any }) => {
+    try {
+      const response = await fetch('/api/formx/django/submissions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          template_id: navigationData.templateId,
+          patient_id: navigationData.patientId,
+          responses: responses,
+          submitted_at: new Date().toISOString()
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Error enviando formulario');
+      }
+
+      toast.success('Formulario enviado exitosamente');
+      handleBackToDashboard();
+    } catch (error) {
+      console.error('Error submitting form:', error);
+      throw error; // Re-throw para que FormXFormViewer lo maneje
     }
   };
 
-  const getPageDescription = () => {
+  const renderContent = () => {
     switch (currentView) {
-      case 'form-builder':
-        return navigationData.editingTemplate 
-          ? 'Modifica los campos y configuración del formulario'
-          : 'Crea formularios médicos personalizados con el constructor visual';
       case 'templates':
-        return 'Explora y gestiona todos tus templates de formularios médicos';
-      case 'assign-form':
-        return 'Envía formularios específicos a pacientes por email';
-      case 'responses':
-        return 'Analiza las respuestas enviadas por los pacientes';
-      case 'assignments':
-        return 'Gestiona las asignaciones de formularios y tokens de acceso';
-      default:
-        return 'Sistema para crear y gestionar formularios, encuestas y consentimientos médicos personalizados';
-    }
-  };
-
-  const renderCurrentView = () => {
-    switch (currentView) {
-      case 'form-builder':
+        return <FormXTemplateManager onNavigate={handleNavigate} />;
+      
+      case 'builder':
         return (
-          <FormXBuilder
-            editingTemplate={navigationData.editingTemplate}
+          <FormXFormBuilder 
+            templateId={navigationData.templateId}
+            onNavigate={(view, data) => handleNavigate(view as FormXView, data)}
             onSave={handleBackToDashboard}
-            onCancel={handleBackToDashboard}
-          />
-        );
-      
-      case 'templates':
-        return (
-          <FormXTemplates
-            onCreateNew={() => handleNavigate('form-builder')}
-            onEditTemplate={(template) => handleNavigate('form-builder', { editingTemplate: template })}
-            onAssignTemplate={(template) => handleNavigate('assign-form', { template })}
-          />
-        );
-      
-      case 'assign-form':
-        return (
-          <FormXPatientAssignment
-            template={navigationData.template}
-            onComplete={handleBackToDashboard}
-            onCancel={handleBackToDashboard}
           />
         );
       
       case 'responses':
-        return (
-          <div className="text-center py-12">
-            <DocumentTextIcon className="h-16 w-16 text-gray-300 mx-auto mb-4" />
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">Análisis de Respuestas</h3>
-            <p className="text-gray-600 mb-6">
-              Esta sección permitirá analizar y exportar las respuestas de los pacientes.
-            </p>
-            <p className="text-sm text-gray-500">
-              Funcionalidad en desarrollo - Fase 3
-            </p>
-          </div>
-        );
+        return <FormXResponsesManager onNavigate={(view, data) => handleNavigate(view as FormXView, data)} />;
       
-      case 'assignments':
+      case 'form-viewer':
+        const templateId = navigationData.templateId;
+        const template = templateId ? TEMPLATE_MAP[templateId as keyof typeof TEMPLATE_MAP] : null;
+        
+        if (!template) {
+          toast.error('Template no encontrado');
+          handleBackToDashboard();
+          return null;
+        }
+        
         return (
-          <div className="text-center py-12">
-            <DocumentTextIcon className="h-16 w-16 text-gray-300 mx-auto mb-4" />
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">Gestión de Asignaciones</h3>
-            <p className="text-gray-600 mb-6">
-              Aquí podrás gestionar todas las asignaciones de formularios y revisar el estado de los tokens.
-            </p>
-            <p className="text-sm text-gray-500">
-              Funcionalidad en desarrollo - Fase 3
-            </p>
-          </div>
+          <FormXFormViewer
+            template={template}
+            patientId={navigationData.patientId}
+            onBack={handleBackToDashboard}
+            onSubmit={handleFormSubmit}
+          />
         );
       
       default:
-        return (
-          <FormXDashboard
-            onNavigate={handleNavigate}
-          />
-        );
+        return <FormXDashboard onNavigate={(view, data) => handleNavigate(view as FormXView, data)} />;
     }
   };
 
   return (
-    <div className="space-y-6">
-      <PageHeader
-        title={getPageTitle()}
-        description={getPageDescription()}
-        icon={DocumentTextIcon}
-        iconColor="text-emerald-600"
-        actions={currentView !== 'dashboard' ? [
-          <Button
-            key="back"
-            onClick={handleBackToDashboard}
-            variant="outline"
-            className="flex items-center"
-          >
-            <ArrowLeftIcon className="h-4 w-4 mr-1" />
-            Volver al Dashboard
-          </Button>
-        ] : []}
-      />
-
-      {/* Django Integration Status */}
-
-      {renderCurrentView()}
+    <div className="min-h-screen bg-gray-50">
+      <div className="max-w-7xl mx-auto p-6">
+        {renderBreadcrumb()}
+        {renderBackButton()}
+        {renderContent()}
+      </div>
     </div>
   );
 }

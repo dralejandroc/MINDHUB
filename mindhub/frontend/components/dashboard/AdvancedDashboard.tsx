@@ -14,10 +14,7 @@ import {
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { useUserMetrics } from '@/contexts/UserMetricsContext';
-import { FavoriteScalesWidget } from './widgets/FavoriteScalesWidget';
-import { FollowupPatientsWidget } from './widgets/FollowupPatientsWidget';
-import { QuickStatsWidget } from './widgets/QuickStatsWidget';
-import { RecentActivityWidget } from './widgets/RecentActivityWidget';
+import { ConfigurableDashboard } from './ConfigurableDashboard';
 import Link from 'next/link';
 
 interface AdvancedDashboardProps {
@@ -26,42 +23,10 @@ interface AdvancedDashboardProps {
 
 export function AdvancedDashboard({ onCustomizeLayout }: AdvancedDashboardProps) {
   const { preferences, realDashboardData } = useUserMetrics();
-  const [showCustomization, setShowCustomization] = useState(false);
 
   // Use real dashboard data if available, fallback to localStorage
   const useRealData = realDashboardData !== null;
   
-  const stats = [
-    {
-      label: 'Pacientes Totales',
-      value: useRealData ? realDashboardData.totalPatients : (preferences.metrics.patientsAdded || 0),
-      icon: UserGroupIcon,
-      color: 'text-blue-600',
-      bgColor: 'bg-blue-100'
-    },
-    {
-      label: 'Escalas Aplicadas',
-      value: useRealData ? realDashboardData.totalScaleApplications : (preferences.metrics.scalesApplied || 0),
-      icon: ClipboardDocumentListIcon,
-      color: 'text-purple-600',
-      bgColor: 'bg-purple-100'
-    },
-    {
-      label: 'Formularios Creados',
-      value: useRealData ? realDashboardData.totalFormInstances : (preferences.metrics.formsCreated || 0),
-      icon: DocumentTextIcon,
-      color: 'text-emerald-600',
-      bgColor: 'bg-emerald-100'
-    },
-    {
-      label: 'Recursos Subidos',
-      value: useRealData ? realDashboardData.totalResources : (preferences.metrics.resourcesUploaded || 0),
-      icon: BookOpenIcon,
-      color: 'text-orange-600',
-      bgColor: 'bg-orange-100'
-    }
-  ];
-
   const quickActions = [
     { 
       name: 'Nuevo Paciente', 
@@ -91,22 +56,6 @@ export function AdvancedDashboard({ onCustomizeLayout }: AdvancedDashboardProps)
 
   return (
     <div className="space-y-6">
-      {/* Header with Customization */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-xl font-bold text-gray-900">Dashboard</h1>
-          <p className="text-base text-gray-600">{new Date().toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}</p>
-        </div>
-        <Button
-          onClick={() => setShowCustomization(!showCustomization)}
-          variant="outline"
-          className="flex items-center space-x-2"
-        >
-          <Cog6ToothIcon className="h-4 w-4" />
-          <span>Personalizar</span>
-        </Button>
-      </div>
-
       {/* Quick Actions */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {quickActions.map((action) => (
@@ -119,30 +68,8 @@ export function AdvancedDashboard({ onCustomizeLayout }: AdvancedDashboardProps)
         ))}
       </div>
 
-      {/* Stats Grid */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        {stats.map((stat) => (
-          <Card key={stat.label} className="p-4">
-            <div className="flex items-center">
-              <div className={`w-10 h-10 rounded-lg ${stat.bgColor} flex items-center justify-center`}>
-                <stat.icon className={`h-5 w-5 ${stat.color}`} />
-              </div>
-              <div className="ml-3">
-                <p className="text-2xl font-bold text-gray-900">{stat.value}</p>
-                <p className="text-xs text-gray-600">{stat.label}</p>
-              </div>
-            </div>
-          </Card>
-        ))}
-      </div>
-
-      {/* Widgets Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-4 gap-6">
-        <QuickStatsWidget />
-        <FavoriteScalesWidget />
-        <FollowupPatientsWidget />
-        <RecentActivityWidget />
-      </div>
+      {/* Configurable Dashboard with All Widgets */}
+      <ConfigurableDashboard />
 
       {/* Hub Access Cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">

@@ -1,296 +1,359 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { 
   DocumentTextIcon, 
   PlusIcon, 
   ClipboardDocumentListIcon,
   ChartBarIcon,
-  UserGroupIcon,
-  Cog6ToothIcon
+  PencilSquareIcon,
+  PlayIcon
 } from '@heroicons/react/24/outline';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
-import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
-import { FormXTemplate, FormXStats } from '@/lib/api/formx-unified-client';
 import toast from 'react-hot-toast';
+import { PSYCHIATRIC_TEMPLATES } from './templates';
+import { FormXTestModal } from './FormXTestModal';
 
 interface FormXDashboardProps {
   onNavigate: (view: string, data?: any) => void;
 }
 
 export function FormXDashboard({ onNavigate }: FormXDashboardProps) {
-  const [stats, setStats] = useState<FormXStats>({
-    totalTemplates: 0,
-    total_templates: 0,
-    activeTemplates: 0,
-    totalSubmissions: 0,
-    total_submissions: 0,
-    processed_submissions: 0,
-    synced_submissions: 0,
-    pendingAssignments: 0,
-    completedToday: 0,
-    averageCompletionTime: 0,
-    recent_submissions: 0,
-    processing_rate: 0,
-    sync_rate: 0
+  const [stats, setStats] = useState({
+    totalForms: 0,
+    activeForms: 0,
+    responses: 0,
+    templates: 0
   });
-  
-  const [recentTemplates, setRecentTemplates] = useState<FormXTemplate[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [showTestModal, setShowTestModal] = useState(false);
 
   useEffect(() => {
-    loadDashboardData();
+    fetchFormXStats();
   }, []);
 
-  const loadDashboardData = async () => {
+  const fetchFormXStats = async () => {
     try {
-      setLoading(true);
-
-      // Load dashboard stats
-      try {
-        // API calls will go here when implemented
-      } catch (error) {
-        console.warn('Error loading stats, using defaults:', error);
+      const response = await fetch('/api/formx/django');
+      if (response.ok) {
+        const data = await response.json();
+        setStats({
+          totalForms: data.total_templates || 0,
+          activeForms: data.active_templates || 0,
+          responses: data.total_submissions || 0,
+          templates: data.total_templates || 0
+        });
       }
-
-      // Load recent templates  
-      try {
-        // API calls will go here when implemented
-        setRecentTemplates([]);
-      } catch (error) {
-        console.warn('Error loading templates, using empty array:', error);
-        setRecentTemplates([]);
-      }
-
     } catch (error) {
-      console.error('Error loading dashboard data:', error);
-      toast.error('Error al cargar datos del dashboard');
-    } finally {
-      setLoading(false);
+      console.error('Error fetching FormX stats:', error);
+      // Keep default values on error
     }
   };
 
-  const handleCreateNewForm = () => {
-    onNavigate('form-builder');
+  const quickActions = [
+    {
+      title: 'Crear Nuevo Formulario',
+      description: 'Diseña un formulario personalizado desde cero con nuestro constructor intuitivo',
+      icon: PlusIcon,
+      action: () => onNavigate('builder'),
+      color: 'bg-blue-500 hover:bg-blue-600',
+      textColor: 'text-white'
+    },
+    {
+      title: 'Gestionar Templates',
+      description: 'Explora, edita y organiza tus templates de formularios predefinidos',
+      icon: ClipboardDocumentListIcon,
+      action: () => onNavigate('templates'),
+      color: 'bg-green-500 hover:bg-green-600',
+      textColor: 'text-white'
+    },
+    {
+      title: 'Ver Respuestas',
+      description: 'Analiza las respuestas recibidas de pacientes y genera reportes',
+      icon: ChartBarIcon,
+      action: () => onNavigate('responses'),
+      color: 'bg-purple-500 hover:bg-purple-600',
+      textColor: 'text-white'
+    },
+    {
+      title: 'Probar Formulario',
+      description: 'Prueba cualquier formulario con datos de ejemplo para verificar su funcionamiento',
+      icon: PlayIcon,
+      action: () => setShowTestModal(true),
+      color: 'bg-orange-500 hover:bg-orange-600',
+      textColor: 'text-white'
+    }
+  ];
+
+  const predefinedTemplates = [
+    {
+      id: 'adult-psychiatric',
+      name: 'Formulario de Primera Vez - Adulto (18-60 años)',
+      description: 'Formulario completo de admisión psiquiátrica para adultos',
+      category: 'Psiquiatría Adultos',
+      questions: PSYCHIATRIC_TEMPLATES[0].fields.length,
+      estimatedTime: PSYCHIATRIC_TEMPLATES[0].estimatedTime
+    },
+    {
+      id: 'adolescent-psychiatric',
+      name: 'Formulario de Primera Vez - Adolescente (12-17 años)',
+      description: 'Formulario completo de admisión psiquiátrica para adolescentes',
+      category: 'Psiquiatría Adolescentes',
+      questions: PSYCHIATRIC_TEMPLATES[1].fields.length,
+      estimatedTime: PSYCHIATRIC_TEMPLATES[1].estimatedTime
+    },
+    {
+      id: 'child-psychiatric',
+      name: 'Formulario de Primera Vez - Niño (5-11 años)',
+      description: 'Formulario completo de admisión psiquiátrica para niños (llenado por padres/tutores)',
+      category: 'Psiquiatría Infantil',
+      questions: PSYCHIATRIC_TEMPLATES[2].fields.length,
+      estimatedTime: PSYCHIATRIC_TEMPLATES[2].estimatedTime
+    },
+    {
+      id: 'mature-psychiatric',
+      name: 'Formulario de Primera Vez - Adulto Maduro (61+ años)',
+      description: 'Formulario completo de admisión psiquiátrica para adultos mayores',
+      category: 'Psiquiatría Geriátrica',
+      questions: PSYCHIATRIC_TEMPLATES[3].fields.length,
+      estimatedTime: PSYCHIATRIC_TEMPLATES[3].estimatedTime
+    }
+  ];
+
+  const handleUseTemplate = (template: any) => {
+    // Mostrar un mensaje de éxito claro
+    toast.success(`Iniciando constructor con template: "${template.name}"`);
+    
+    // Navegar al constructor con el template seleccionado
+    onNavigate('builder', { templateId: template.id });
   };
 
-  const handleViewTemplates = () => {
-    onNavigate('templates');
+  const handleStartTest = (templateId: string, testPatient: any) => {
+    toast.success(`Iniciando prueba del formulario con paciente: "${testPatient.name}"`);
+    onNavigate('form-viewer', { 
+      templateId: templateId, 
+      patientId: testPatient.id 
+    });
   };
-
-  const handleManageAssignments = () => {
-    onNavigate('assignments');
-  };
-
-  const handleViewResponses = () => {
-    onNavigate('responses');
-  };
-
-  const handleEditTemplate = (template: FormXTemplate) => {
-    onNavigate('form-builder', { editingTemplate: template });
-  };
-
-  const handleAssignTemplate = (template: FormXTemplate) => {
-    onNavigate('assign-form', { template });
-  };
-
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-96">
-        <LoadingSpinner />
-        <span className="ml-2 text-gray-600">Cargando FormX Dashboard...</span>
-      </div>
-    );
-  }
 
   return (
-    <div className="space-y-6">
-      {/* Header Actions */}
-      <div className="flex justify-end">
-        <Button
-          onClick={loadDashboardData}
-          variant="outline"
-          size="sm"
-          disabled={loading}
-        >
-          Actualizar
-        </Button>
+    <div className="space-y-8">
+      {/* Header Section */}
+      <div className="text-center">
+        <div className="flex justify-center mb-4">
+          <div className="p-3 bg-blue-100 rounded-full">
+            <DocumentTextIcon className="h-10 w-10 text-blue-600" />
+          </div>
+        </div>
+        <h1 className="text-3xl font-bold text-gray-900 mb-2">
+          FormX - Generador de Formularios Médicos
+        </h1>
+        <p className="text-lg text-gray-600 max-w-3xl mx-auto">
+          Crea, personaliza y gestiona formularios médicos para optimizar la recolección de información 
+          de tus pacientes de manera eficiente y profesional.
+        </p>
+      </div>
+
+      {/* Stats Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+        <Card className="p-6 text-center">
+          <div className="text-2xl font-bold text-blue-600">{stats.totalForms}</div>
+          <div className="text-sm text-gray-600">Formularios Totales</div>
+        </Card>
+        <Card className="p-6 text-center">
+          <div className="text-2xl font-bold text-green-600">{stats.activeForms}</div>
+          <div className="text-sm text-gray-600">Formularios Activos</div>
+        </Card>
+        <Card className="p-6 text-center">
+          <div className="text-2xl font-bold text-purple-600">{stats.responses}</div>
+          <div className="text-sm text-gray-600">Respuestas Recibidas</div>
+        </Card>
+        <Card className="p-6 text-center">
+          <div className="text-2xl font-bold text-orange-600">{predefinedTemplates.length}</div>
+          <div className="text-sm text-gray-600">Templates Disponibles</div>
+        </Card>
       </div>
 
       {/* Quick Actions */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card className="p-4 hover:shadow-lg transition-shadow border-emerald-200">
-          <div className="flex items-center justify-between mb-3">
-            <h3 className="font-semibold text-gray-900">Crear Formulario</h3>
-            <PlusIcon className="h-5 w-5 text-emerald-600" />
-          </div>
-          <p className="text-sm text-gray-600 mb-4">
-            Constructor avanzado con campos médicos especializados
-          </p>
-          <Button 
-            onClick={handleCreateNewForm}
-            variant="outline" 
-            size="sm"
-            className="w-full"
-          >
-            Nuevo Formulario
-          </Button>
-        </Card>
-
-        <Card className="p-4 hover:shadow-lg transition-shadow border-blue-200">
-          <div className="flex items-center justify-between mb-3">
-            <h3 className="font-semibold text-gray-900">Templates Médicos</h3>
-            <ClipboardDocumentListIcon className="h-5 w-5 text-blue-600" />
-          </div>
-          <p className="text-sm text-gray-600 mb-4">
-            Formularios predefinidos listos para usar
-          </p>
-          <Button 
-            onClick={handleViewTemplates}
-            variant="outline" 
-            size="sm"
-            className="w-full"
-          >
-            Ver Templates
-          </Button>
-        </Card>
-
-        <Card className="p-4 hover:shadow-lg transition-shadow border-orange-200">
-          <div className="flex items-center justify-between mb-3">
-            <h3 className="font-semibold text-gray-900">Asignar Pacientes</h3>
-            <UserGroupIcon className="h-5 w-5 text-orange-600" />
-          </div>
-          <p className="text-sm text-gray-600 mb-4">
-            Envía formularios específicos a pacientes
-          </p>
-          <Button 
-            onClick={handleManageAssignments}
-            variant="outline" 
-            size="sm"
-            className="w-full"
-          >
-            Gestionar
-          </Button>
-        </Card>
-
-        <Card className="p-4 hover:shadow-lg transition-shadow border-purple-200">
-          <div className="flex items-center justify-between mb-3">
-            <h3 className="font-semibold text-gray-900">Analizar Respuestas</h3>
-            <ChartBarIcon className="h-5 w-5 text-purple-600" />
-          </div>
-          <p className="text-sm text-gray-600 mb-4">
-            Revisa y analiza respuestas de pacientes
-          </p>
-          <Button 
-            onClick={handleViewResponses}
-            variant="outline" 
-            size="sm"
-            className="w-full"
-          >
-            Ver Análisis
-          </Button>
-        </Card>
+      <div>
+        <h2 className="text-xl font-semibold text-gray-900 mb-4">Acciones Rápidas</h2>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {quickActions.map((action, index) => {
+            const Icon = action.icon;
+            return (
+              <Card 
+                key={index}
+                className={`${action.color} ${action.textColor} p-6 cursor-pointer transform transition-all duration-200 hover:scale-105 hover:shadow-lg`}
+                onClick={action.action}
+              >
+                <div className="flex items-center mb-3">
+                  <Icon className="h-6 w-6 mr-3" />
+                  <h3 className="font-semibold text-lg">{action.title}</h3>
+                </div>
+                <p className="opacity-90 text-sm leading-relaxed">
+                  {action.description}
+                </p>
+              </Card>
+            );
+          })}
+        </div>
       </div>
 
-      {/* Stats Overview */}
-      <Card className="p-6">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">Estadísticas de FormX</h3>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <div className="text-center p-4 bg-emerald-50 rounded-lg">
-            <div className="text-2xl font-bold text-emerald-600">{stats.total_templates}</div>
-            <div className="text-sm text-emerald-700">Templates Totales</div>
-          </div>
-          <div className="text-center p-4 bg-blue-50 rounded-lg">
-            <div className="text-2xl font-bold text-blue-600">{stats.total_submissions}</div>
-            <div className="text-sm text-blue-700">Total Respuestas</div>
-          </div>
-          <div className="text-center p-4 bg-orange-50 rounded-lg">
-            <div className="text-2xl font-bold text-orange-600">{stats.processed_submissions}</div>
-            <div className="text-sm text-orange-700">Procesadas</div>
-          </div>
-          <div className="text-center p-4 bg-purple-50 rounded-lg">
-            <div className="text-2xl font-bold text-purple-600">{stats.synced_submissions}</div>
-            <div className="text-sm text-purple-700">Sincronizadas</div>
-          </div>
-        </div>
-        
-        {/* Rates */}
-        <div className="mt-4 pt-4 border-t border-gray-200">
-          <div className="grid grid-cols-2 gap-4">
-            <div className="flex justify-between">
-              <span className="text-sm text-gray-600">Tasa de procesamiento:</span>
-              <span className="text-sm font-medium text-gray-900">{(stats.processing_rate || 0).toFixed(1)}%</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-sm text-gray-600">Tasa de sincronización:</span>
-              <span className="text-sm font-medium text-gray-900">{(stats.sync_rate || 0).toFixed(1)}%</span>
-            </div>
-          </div>
-        </div>
-      </Card>
-
-      {/* Recent Templates */}
-      <Card className="p-6">
+      {/* Predefined Templates */}
+      <div>
         <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-semibold text-gray-900">Templates Recientes</h3>
-          <Button onClick={handleViewTemplates} variant="outline" size="sm">
-            Ver Todos
+          <h2 className="text-xl font-semibold text-gray-900">Templates Predefinidos</h2>
+          <Button 
+            onClick={() => onNavigate('templates')}
+            variant="outline"
+            className="flex items-center gap-2"
+          >
+            <PencilSquareIcon className="h-4 w-4" />
+            Ver Todos los Templates
           </Button>
         </div>
         
-        {recentTemplates.length > 0 ? (
-          <div className="space-y-3">
-            {recentTemplates.map((template) => (
-              <div 
-                key={template.id} 
-                className="flex items-center justify-between p-3 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
-              >
-                <div className="flex items-center space-x-3">
-                  <DocumentTextIcon className="h-5 w-5 text-emerald-600" />
-                  <div>
-                    <div className="font-medium text-gray-900">{template.name}</div>
-                    <div className="text-sm text-gray-500">
-                      {template.form_type} • {template.total_fields} campos • {template.total_submissions} respuestas
-                    </div>
-                  </div>
-                </div>
-                <div className="flex space-x-2">
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    onClick={() => handleEditTemplate(template)}
-                  >
-                    Editar
-                  </Button>
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    onClick={() => handleAssignTemplate(template)}
-                  >
-                    Asignar
-                  </Button>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {predefinedTemplates.map((template) => (
+            <Card key={template.id} className="p-6 hover:shadow-lg transition-shadow">
+              <div className="flex items-start justify-between mb-3">
+                <div className="flex-1">
+                  <h3 className="font-semibold text-gray-900 mb-1">{template.name}</h3>
+                  <span className="inline-block px-2 py-1 text-xs bg-blue-100 text-blue-800 rounded-full">
+                    {template.category}
+                  </span>
                 </div>
               </div>
-            ))}
-          </div>
-        ) : (
-          <div className="text-center py-8 text-gray-500">
-            <DocumentTextIcon className="h-12 w-12 text-gray-300 mx-auto mb-3" />
-            <p className="text-sm">No hay templates creados aún</p>
-            <Button 
-              onClick={handleCreateNewForm} 
-              variant="primary" 
-              size="sm" 
-              className="mt-3"
-            >
-              <PlusIcon className="h-4 w-4 mr-1" />
-              Crear Primer Template
-            </Button>
-          </div>
-        )}
-      </Card>
+              
+              <p className="text-gray-600 text-sm mb-4 leading-relaxed">
+                {template.description}
+              </p>
+              
+              <div className="flex items-center justify-between text-sm text-gray-500 mb-4">
+                <span>{template.questions} preguntas</span>
+                <span>{template.estimatedTime}</span>
+              </div>
+              
+              <div className="flex gap-2">
+                <Button 
+                  onClick={() => handleUseTemplate(template)}
+                  className="flex-1"
+                  variant="outline"
+                >
+                  Editar Template
+                </Button>
+                <Button 
+                  onClick={() => onNavigate('form-viewer', { templateId: template.id })}
+                  className="flex-1"
+                  variant="primary"
+                >
+                  Llenar Formulario
+                </Button>
+                <Button 
+                  onClick={() => onNavigate('templates')}
+                  variant="ghost"
+                  className="px-3"
+                >
+                  <PencilSquareIcon className="h-4 w-4" />
+                </Button>
+              </div>
+            </Card>
+          ))}
+        </div>
+      </div>
 
+      {/* Test Modal */}
+      <FormXTestModal
+        isOpen={showTestModal}
+        onClose={() => setShowTestModal(false)}
+        onStartTest={handleStartTest}
+        templates={predefinedTemplates}
+      />
+
+      {/* Help Section */}
+      <Card className="p-6 bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200">
+        <h3 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
+          <div className="w-8 h-8 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center">
+            📚
+          </div>
+          ¿Cómo usar FormX? - Guía paso a paso
+        </h3>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-sm">
+          <div className="flex items-start gap-3">
+            <div className="w-8 h-8 bg-blue-600 text-white rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0">
+              1
+            </div>
+            <div>
+              <div className="font-semibold text-gray-900 mb-2">📝 Crear o Elegir Template</div>
+              <div className="text-gray-700 leading-relaxed">
+                <strong>Opción A:</strong> Usa el botón "Crear Nuevo Formulario" para diseñar desde cero<br/>
+                <strong>Opción B:</strong> Selecciona un template predefinido y personalízalo
+              </div>
+              <div className="mt-2 text-xs text-blue-700 bg-blue-100 px-2 py-1 rounded">
+                💡 Los templates ahorran tiempo con configuraciones predefinidas
+              </div>
+            </div>
+          </div>
+          <div className="flex items-start gap-3">
+            <div className="w-8 h-8 bg-green-600 text-white rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0">
+              2
+            </div>
+            <div>
+              <div className="font-semibold text-gray-900 mb-2">⚙️ Personalizar y Configurar</div>
+              <div className="text-gray-700 leading-relaxed">
+                <strong>Wizard paso a paso:</strong><br/>
+                • Información básica del formulario<br/>
+                • Agregar y configurar campos<br/>
+                • Ajustar configuraciones avanzadas<br/>
+                • Vista previa antes de guardar
+              </div>
+              <div className="mt-2 text-xs text-green-700 bg-green-100 px-2 py-1 rounded">
+                ✅ Interface intuitiva con instrucciones claras
+              </div>
+            </div>
+          </div>
+          <div className="flex items-start gap-3">
+            <div className="w-8 h-8 bg-purple-600 text-white rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0">
+              3
+            </div>
+            <div>
+              <div className="font-semibold text-gray-900 mb-2">📊 Usar y Analizar</div>
+              <div className="text-gray-700 leading-relaxed">
+                <strong>Una vez guardado:</strong><br/>
+                • Formulario se integra automáticamente en consultas<br/>
+                • Pacientes completan via web o tablet<br/>
+                • Analiza respuestas en tiempo real<br/>
+                • Exporta datos para reportes
+              </div>
+              <div className="mt-2 text-xs text-purple-700 bg-purple-100 px-2 py-1 rounded">
+                📈 Análisis automático con puntuaciones y tendencias
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <div className="mt-6 p-4 bg-white rounded-lg border border-blue-200">
+          <h4 className="font-medium text-gray-900 mb-2">🎯 ¿Qué tipos de formularios puedes crear?</h4>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-xs">
+            <div className="text-gray-700">
+              <strong>📋 Admisión:</strong><br/>
+              Datos personales, antecedentes médicos
+            </div>
+            <div className="text-gray-700">
+              <strong>🔄 Seguimiento:</strong><br/>
+              Evolución, síntomas, medicamentos
+            </div>
+            <div className="text-gray-700">
+              <strong>👶 Infantiles:</strong><br/>
+              Preguntas adaptadas por edad
+            </div>
+            <div className="text-gray-700">
+              <strong>🔍 Screening:</strong><br/>
+              Evaluaciones específicas
+            </div>
+          </div>
+        </div>
+      </Card>
     </div>
   );
 }

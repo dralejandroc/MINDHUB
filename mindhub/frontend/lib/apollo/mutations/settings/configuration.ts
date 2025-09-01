@@ -6,29 +6,23 @@ export const UPSERT_CLINIC_CONFIGURATION = gql`
     insertIntoclinic_configurationsCollection(
       objects: [$input]
       onConflict: {
-        constraint: clinic_configurations_clinic_id_workspace_id_key
+        constraint: clinic_configurations_pkey
         updateColumns: [
-          configuration_data, clinic_info, print_configuration,
-          digital_signature, medical_record_fields, prescription_settings,
-          user_preferences, updated_at
+          clinic_name, address, email, phone, tax_id, logo_url, settings, updated_at
         ]
       }
     ) {
       records {
         id
-        clinic_id
-        workspace_id
-        configuration_data
-        clinic_info
-        print_configuration
-        digital_signature
-        medical_record_fields
-        prescription_settings
-        user_preferences
-        is_active
+        clinic_name
+        address
+        email
+        phone
+        tax_id
+        logo_url
+        settings
         created_at
         updated_at
-        created_by
       }
     }
   }
@@ -43,16 +37,14 @@ export const UPDATE_CLINIC_CONFIGURATION = gql`
     ) {
       records {
         id
-        clinic_id
-        workspace_id
-        configuration_data
-        clinic_info
-        print_configuration
-        digital_signature
-        medical_record_fields
-        prescription_settings
-        user_preferences
-        is_active
+        clinic_name
+        address
+        email
+        phone
+        tax_id
+        logo_url
+        settings
+        created_at
         updated_at
       }
     }
@@ -65,50 +57,34 @@ export const CREATE_CLINIC_CONFIGURATION = gql`
     insertIntoclinic_configurationsCollection(objects: [$input]) {
       records {
         id
-        clinic_id
-        workspace_id
-        configuration_data
-        clinic_info
-        print_configuration
-        digital_signature
-        medical_record_fields
-        prescription_settings
-        user_preferences
-        is_active
+        clinic_name
+        address
+        email
+        phone
+        tax_id
+        logo_url
+        settings
         created_at
         updated_at
-        created_by
       }
     }
   }
 `
 
-// Mutation para configuración de usuario
+// Mutation para configuración de usuario (usando clinic_configurations)
 export const UPSERT_USER_SETTINGS = gql`
-  mutation UpsertUserSettings($input: user_settingsInsertInput!) {
-    insertIntouser_settingsCollection(
+  mutation UpsertUserSettings($input: clinic_configurationsInsertInput!) {
+    insertIntoclinic_configurationsCollection(
       objects: [$input]
       onConflict: {
-        constraint: user_settings_user_id_key
-        updateColumns: [
-          preferences, theme, language, date_format, time_format,
-          currency, timezone, default_page, notifications_enabled, updated_at
-        ]
+        constraint: clinic_configurations_pkey
+        updateColumns: [settings, updated_at]
       }
     ) {
       records {
         id
-        user_id
-        preferences
-        theme
-        language
-        date_format
-        time_format
-        currency
-        timezone
-        default_page
-        notifications_enabled
-        is_active
+        clinic_name
+        settings
         updated_at
       }
     }

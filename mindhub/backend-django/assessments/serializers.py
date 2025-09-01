@@ -44,29 +44,46 @@ class ScoringResultSerializer(serializers.ModelSerializer):
 class AssessmentSerializer(serializers.ModelSerializer):
     """Assessment serializer for API responses"""
     patient = PatientSerializer(read_only=True)
-    patient_id = serializers.UUIDField(write_only=True)
+    patient_id = serializers.UUIDField(required=False, allow_null=True)
     scale_name = serializers.CharField(source='scale.name', read_only=True)
     scale_abbreviation = serializers.CharField(source='scale.abbreviation', read_only=True)
-    scoring_result = ScoringResultSerializer(read_only=True)
+    template_id = serializers.CharField(required=False, allow_null=True)
+    scoring_result = serializers.SerializerMethodField()
     progress_percentage = serializers.SerializerMethodField()
     
     class Meta:
         model = Assessment
         fields = [
-            'id', 'patient', 'patient_id', 'scale', 'scale_name', 'scale_abbreviation',
-            'mode', 'instructions', 'status', 'started_at', 'completed_at',
-            'expires_at', 'duration_minutes', 'current_item', 'total_items',
-            'progress_percentage', 'is_valid', 'validity_notes',
-            'assessment_reason', 'clinical_context', 'scoring_result',
+            'id', 'patient', 'patient_id', 'template_id', 'scale_name', 'scale_abbreviation',
+            'administrator_id', 'consultation_id', 'mode', 'status', 
+            'responses', 'scores', 'total_score', 'severity_level', 'interpretation',
+            'subscale_scores', 'validity_indicators', 'current_step', 'completion_time_seconds',
+            'metadata', 'notes', 'clinical_notes', 'observations',
+            'started_at', 'completed_at', 'assessment_date',
+            'percentile', 'completion_percentage', 'time_taken_minutes',
+            'progress_percentage', 'scoring_result',
             'clinic_id', 'workspace_id', 'created_at', 'updated_at'
         ]
         read_only_fields = [
-            'id', 'started_at', 'completed_at', 'duration_minutes',
-            'progress_percentage', 'scoring_result', 'created_at', 'updated_at'
+            'id', 'started_at', 'completed_at', 'scoring_result', 
+            'created_at', 'updated_at', 'progress_percentage'
         ]
     
     def get_progress_percentage(self, obj):
         return obj.progress_percentage
+    
+    def get_scoring_result(self, obj):
+        """Get scoring result from assessment scores"""
+        if obj.scores or obj.total_score:
+            return {
+                'total_score': float(obj.total_score) if obj.total_score else None,
+                'subscale_scores': obj.subscale_scores or {},
+                'interpretation_label': obj.interpretation.get('label', '') if obj.interpretation else '',
+                'severity_level': obj.severity_level or '',
+                'percentile': obj.percentile,
+                'is_valid': True
+            }
+        return None
     
     def validate(self, data):
         """Validate dual system constraints"""
@@ -84,7 +101,7 @@ class AssessmentSerializer(serializers.ModelSerializer):
 
 class AssessmentListSerializer(serializers.ModelSerializer):
     """Simplified serializer for list views"""
-    patient_name = serializers.CharField(source='patient.get_full_name', read_only=True)
+    patient_name = serializers.SerializerMethodField()
     scale_name = serializers.CharField(source='scale.name', read_only=True)
     scale_abbreviation = serializers.CharField(source='scale.abbreviation', read_only=True)
     progress_percentage = serializers.SerializerMethodField()
@@ -94,22 +111,24 @@ class AssessmentListSerializer(serializers.ModelSerializer):
     class Meta:
         model = Assessment
         fields = [
-            'id', 'patient_name', 'scale_name', 'scale_abbreviation',
+            'id', 'patient_id', 'patient_name', 'template_id', 'scale_name', 'scale_abbreviation',
             'status', 'progress_percentage', 'score', 'interpretation',
-            'created_at', 'completed_at', 'current_item', 'total_items'
+            'created_at', 'completed_at', 'current_step', 'completion_percentage',
+            'total_score', 'severity_level', 'clinic_id', 'workspace_id'
         ]
+    
+    def get_patient_name(self, obj):
+        if obj.patient:
+            return obj.patient.get_full_name()
+        return 'Unknown Patient'
     
     def get_progress_percentage(self, obj):
         return obj.progress_percentage
     
     def get_score(self, obj):
-        try:
-            return obj.scoring_result.total_score
-        except:
-            return None
+        return float(obj.total_score) if obj.total_score else None
     
     def get_interpretation(self, obj):
-        try:
-            return obj.scoring_result.interpretation_label
-        except:
-            return None
+        if obj.interpretation:
+            return obj.interpretation.get('label', '')
+        return ''

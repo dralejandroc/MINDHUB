@@ -14,7 +14,7 @@ interface StartPagePreferences {
 
 const DEFAULT_PREFERENCES: StartPagePreferences = {
   selectedStartPage: 'dashboard',
-  showWelcomeMessage: true,
+  showWelcomeMessage: false,
   quickAccessEnabled: true,
   rememberLastVisited: false,
   autoRedirectEnabled: false,

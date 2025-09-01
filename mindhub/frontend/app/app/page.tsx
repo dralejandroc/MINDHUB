@@ -4,7 +4,7 @@ import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/providers/AuthProvider';
 import { UnifiedSidebar } from '@/components/layout/UnifiedSidebar';
-import { DashboardSwitcher } from '@/components/dashboard/DashboardSwitcher';
+import { ConfigurableDashboard } from '@/components/dashboard/ConfigurableDashboard';
 import { StartPageHandler } from '@/components/layout/StartPageHandler';
 import { UserMetricsProvider } from '@/contexts/UserMetricsContext';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
@@ -59,7 +59,10 @@ export default function AppHome() {
   return (
     <UserMetricsProvider>
       <UnifiedSidebar>
-        <DashboardSwitcher />
+        <div className="space-y-6">
+          {/* Quick Actions */}
+          <ConfigurableDashboard />
+        </div>
         <StartPageHandler />
       </UnifiedSidebar>
     </UserMetricsProvider>

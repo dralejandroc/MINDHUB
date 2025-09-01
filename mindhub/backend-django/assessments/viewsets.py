@@ -40,19 +40,19 @@ class AssessmentViewSet(DualSystemModelViewSet):
                 # Individual license: filter by workspace_id  
                 queryset = queryset.filter(workspace_id=filter_value)
             else:
-                # Fallback: filter by created_by
+                # Fallback: filter by administrator_id
                 user_id = getattr(self.request, 'supabase_user_id', None)
                 if user_id:
-                    queryset = queryset.filter(created_by_id=user_id)
+                    queryset = queryset.filter(administrator_id=user_id)
                 else:
                     # No valid context, return empty queryset for security
                     logger.warning('No valid user context for assessment filtering')
                     queryset = queryset.none()
         
-        return queryset.select_related('scale', 'patient').order_by('-created_at')
+        return queryset.order_by('-created_at')
     
     def perform_create(self, serializer):
-        """Set dual system fields and created_by on create"""
+        """Set dual system fields and administrator_id on create"""
         user_context = getattr(self.request, 'user_context', {})
         clinic_id = user_context.get('clinic_id') if user_context.get('license_type') == 'clinic' else None
         workspace_id = user_context.get('workspace_id') if user_context.get('license_type') == 'individual' else None
@@ -60,7 +60,7 @@ class AssessmentViewSet(DualSystemModelViewSet):
         
         # Save with dual system context
         serializer.save(
-            created_by_id=user_id,
+            administrator_id=user_id,
             clinic_id=clinic_id,
             workspace_id=workspace_id
         )
@@ -87,18 +87,22 @@ class AssessmentViewSet(DualSystemModelViewSet):
                 
                 assessments_data.append({
                     'id': str(assessment.id),
+                    'template_id': assessment.template_id,
                     'scale_name': assessment.scale.name if assessment.scale else 'Unknown Scale',
                     'scale_abbreviation': assessment.scale.abbreviation if assessment.scale else 'N/A',
-                    'status': assessment.status,
-                    'score': scoring_result.total_score if scoring_result else None,
-                    'interpretation': scoring_result.interpretation_label if scoring_result else None,
-                    'severity_level': scoring_result.severity_level if scoring_result else None,
-                    'created_at': assessment.created_at.isoformat(),
+                    'status': assessment.status or 'not_started',
+                    'score': float(assessment.total_score) if assessment.total_score else None,
+                    'interpretation': assessment.interpretation.get('label', '') if assessment.interpretation else None,
+                    'severity_level': assessment.severity_level,
+                    'created_at': assessment.created_at.isoformat() if assessment.created_at else None,
                     'completed_at': assessment.completed_at.isoformat() if assessment.completed_at else None,
-                    'current_item': assessment.current_item,
+                    'current_step': assessment.current_step or 0,
+                    'completion_percentage': assessment.completion_percentage or 0,
                     'total_items': assessment.total_items,
                     'patient_id': str(assessment.patient_id) if assessment.patient_id else None,
                     'patient_name': assessment.patient.get_full_name() if assessment.patient else None,
+                    'clinic_id': str(assessment.clinic_id) if assessment.clinic_id else None,
+                    'workspace_id': str(assessment.workspace_id) if assessment.workspace_id else None,
                 })
             
             # Add license context to response
