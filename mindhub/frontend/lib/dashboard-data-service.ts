@@ -181,7 +181,7 @@ class DashboardDataService {
         return [];
       }
 
-      const response = await fetch('/api/expedix/django/patients/', {
+      const response = await fetch('/api/expedix/django/patients', {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${session.access_token}`,
@@ -215,7 +215,7 @@ class DashboardDataService {
         return [];
       }
 
-      const response = await fetch('/api/agenda/django/appointments/', {
+      const response = await fetch('/api/agenda/django/appointments', {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${session.access_token}`,
@@ -249,7 +249,7 @@ class DashboardDataService {
         return [];
       }
 
-      const response = await fetch('/api/clinimetrix/django/assessments/', {
+      const response = await fetch('/api/clinimetrix/django/assessments', {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${session.access_token}`,
