@@ -610,7 +610,6 @@ class PatientAssessmentsView(View):
 
 
 # Dashboard API endpoint for listing all assessments
-@login_required
 @require_http_methods(["GET"])
 def assessments_list_api(request):
     """
