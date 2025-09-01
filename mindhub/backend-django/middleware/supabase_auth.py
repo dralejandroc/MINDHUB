@@ -15,6 +15,45 @@ import logging
 logger = logging.getLogger(__name__)
 
 
+class MockDjangoUser:
+    """
+    Mock Django User object compatible with DRF authentication
+    Wraps Supabase user data in Django User interface
+    """
+    def __init__(self, supabase_data):
+        self.id = supabase_data.get('id')
+        self.email = supabase_data.get('email')
+        self.username = supabase_data.get('email')
+        self.user_metadata = supabase_data.get('user_metadata', {})
+        self.first_name = self.user_metadata.get('first_name', '')
+        self.last_name = self.user_metadata.get('last_name', '')
+        self.is_active = True  # Required by DRF SessionAuthentication
+        self.is_authenticated = True
+        self.is_anonymous = False
+        self.is_staff = False
+        self.is_superuser = False
+        self.date_joined = None
+        self.last_login = None
+    
+    def __str__(self):
+        return self.email or str(self.id)
+    
+    def get_full_name(self):
+        return f"{self.first_name} {self.last_name}".strip()
+    
+    def get_short_name(self):
+        return self.first_name or self.email
+    
+    def has_perm(self, perm, obj=None):
+        return False
+    
+    def has_perms(self, perm_list, obj=None):
+        return False
+    
+    def has_module_perms(self, package_name):
+        return False
+
+
 class SupabaseAuthMiddleware(MiddlewareMixin):
     """
     Middleware to validate Supabase JWT tokens from React frontend
@@ -34,8 +73,9 @@ class SupabaseAuthMiddleware(MiddlewareMixin):
                     'error': auth_result['error']
                 }, status=401)
             
-            # Set authenticated user data (Supabase user, not Django user)
-            request.user = auth_result['user']
+            # Create mock Django User compatible with DRF
+            mock_user = MockDjangoUser(auth_result['supabase_data'])
+            request.user = mock_user
             request.supabase_user = auth_result['supabase_data']
             
             # Set user context for filtering (simulate RLS behavior)
