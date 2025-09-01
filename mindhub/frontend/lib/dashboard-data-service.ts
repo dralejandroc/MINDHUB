@@ -1,7 +1,7 @@
 /**
  * Dashboard Data Service
- * TEMPORARY: Uses Django REST APIs instead of broken GraphQL
- * Will switch back to GraphQL once authentication issues are resolved
+ * Uses direct Supabase queries for reliable data access (same as Expedix approach)
+ * Fallback endpoints available for API integration testing
  */
 
 import { createClient } from '@/lib/supabase/client';
@@ -171,102 +171,78 @@ class DashboardDataService {
 
   private async fetchPatients(): Promise<any[]> {
     try {
-      console.log('[DashboardService] Fetching patients via Django REST API (fallback)...');
+      console.log('[DashboardService] Fetching patients via direct Supabase access (like Expedix)...');
       
       const supabase = createClient();
-      const { data: { session } } = await supabase.auth.getSession();
       
-      if (!session?.access_token) {
-        console.log('[DashboardService] No session token, returning empty patients');
+      // Use the same approach as Expedix - direct Supabase query
+      const { data: patients, error } = await supabase
+        .from('patients')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        console.error('[DashboardService] Supabase patients error:', error);
         return [];
       }
 
-      const response = await fetch('/api/expedix/django/patients', {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${session.access_token}`,
-          'Content-Type': 'application/json',
-        }
-      });
-
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-      }
-
-      const patients = await response.json();
-      console.log('[DashboardService] Django REST patients loaded:', patients?.length || 0);
+      console.log('[DashboardService] Supabase patients loaded:', patients?.length || 0);
+      return patients || [];
       
-      return Array.isArray(patients) ? patients : [];
     } catch (error) {
-      console.error('[DashboardService] Error fetching patients via Django REST:', error);
+      console.error('[DashboardService] Error fetching patients via Supabase:', error);
       return [];
     }
   }
 
   private async fetchConsultations(): Promise<any[]> {
     try {
-      console.log('[DashboardService] Fetching appointments via Django REST API (fallback)...');
+      console.log('[DashboardService] Fetching appointments via direct Supabase access...');
       
       const supabase = createClient();
-      const { data: { session } } = await supabase.auth.getSession();
       
-      if (!session?.access_token) {
-        console.log('[DashboardService] No session token, returning empty appointments');
+      // Use direct Supabase query for appointments
+      const { data: appointments, error } = await supabase
+        .from('appointments')
+        .select('*')
+        .order('appointment_date', { ascending: false });
+
+      if (error) {
+        console.error('[DashboardService] Supabase appointments error:', error);
         return [];
       }
 
-      const response = await fetch('/api/agenda/django/appointments', {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${session.access_token}`,
-          'Content-Type': 'application/json',
-        }
-      });
-
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-      }
-
-      const appointments = await response.json();
-      console.log('[DashboardService] Django REST appointments loaded:', appointments?.length || 0);
+      console.log('[DashboardService] Supabase appointments loaded:', appointments?.length || 0);
+      return appointments || [];
       
-      return Array.isArray(appointments) ? appointments : [];
     } catch (error) {
-      console.error('[DashboardService] Error fetching appointments via Django REST:', error);
+      console.error('[DashboardService] Error fetching appointments via Supabase:', error);
       return [];
     }
   }
 
   private async fetchScaleApplications(): Promise<any[]> {
     try {
-      console.log('[DashboardService] Fetching scale applications via Django REST API (fallback)...');
+      console.log('[DashboardService] Fetching assessments via direct Supabase access...');
       
       const supabase = createClient();
-      const { data: { session } } = await supabase.auth.getSession();
       
-      if (!session?.access_token) {
-        console.log('[DashboardService] No session token, returning empty scale applications');
+      // Use direct Supabase query for assessments
+      const { data: assessments, error } = await supabase
+        .from('clinimetrix_assessments')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        console.error('[DashboardService] Supabase assessments error:', error);
         return [];
       }
 
-      const response = await fetch('/api/clinimetrix/django/assessments', {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${session.access_token}`,
-          'Content-Type': 'application/json',
-        }
-      });
-
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-      }
-
-      const assessments = await response.json();
-      console.log('[DashboardService] Django REST assessments loaded:', assessments?.length || 0);
+      console.log('[DashboardService] Supabase assessments loaded:', assessments?.length || 0);
+      return assessments || [];
       
-      return Array.isArray(assessments) ? assessments : [];
     } catch (error) {
-      console.error('[DashboardService] Error fetching assessments via Django REST:', error);
+      console.error('[DashboardService] Error fetching assessments via Supabase:', error);
       return [];
     }
   }
