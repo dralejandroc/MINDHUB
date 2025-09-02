@@ -98,11 +98,6 @@ class ScalesV3TemplateLoader:
             for catalog_file in catalog_files:
                 try:
                     scale_id = catalog_file.stem.replace('-catalog', '')
-                    # Skip known problematic JSON files until they're fixed
-                    problematic_scales = {'gds-15', 'ia_json', 'vanderbilt'}
-                    if any(problem in scale_id for problem in problematic_scales):
-                        logger.warning(f"Skipping {scale_id} due to known JSON syntax issues")
-                        continue
                     
                     catalog = self._load_catalog(scale_id)
                     
@@ -124,7 +119,7 @@ class ScalesV3TemplateLoader:
                             'targetPopulation': catalog['metadata']['targetPopulation'],
                             'isActive': True,
                             'isFeatured': scale_id in ['phq9', 'gadi', 'bdi-13'],  # Feature popular scales
-                            'lastUpdated': catalog['documentation']['lastUpdated']
+                            'lastUpdated': catalog['documentation'].get('lastUpdated', catalog['documentation'].get('last_updated', '2024-09-02'))
                         })
                 except Exception as e:
                     logger.error(f"Error loading scale {scale_id}: {str(e)}")
