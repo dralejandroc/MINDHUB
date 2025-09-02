@@ -289,11 +289,54 @@ export default function ScaleDetailPage() {
                 <div className="mb-6 p-4 bg-cyan-50 rounded-lg">
                   <h3 className="font-semibold text-gray-700 mb-3">Validez</h3>
                   <div className="text-gray-700">
-                    {typeof psychometric.validity === 'object'
-                      ? <pre className="text-sm bg-white p-3 rounded overflow-x-auto">
-                          {JSON.stringify(psychometric.validity, null, 2)}
-                        </pre>
-                      : psychometric.validity}
+                    {typeof psychometric.validity === 'object' ? (
+                      <div className="space-y-3">
+                        {psychometric.validity.construct && (
+                          <div className="bg-white p-3 rounded-lg">
+                            <p className="font-medium text-gray-800 mb-1">Validez de Constructo</p>
+                            <p className="text-sm text-gray-600">{psychometric.validity.construct}</p>
+                          </div>
+                        )}
+                        {psychometric.validity.criterion && (
+                          <div className="bg-white p-3 rounded-lg">
+                            <p className="font-medium text-gray-800 mb-1">Validez de Criterio</p>
+                            <p className="text-sm text-gray-600">{psychometric.validity.criterion}</p>
+                          </div>
+                        )}
+                        {psychometric.validity.discriminant && (
+                          <div className="bg-white p-3 rounded-lg">
+                            <p className="font-medium text-gray-800 mb-1">Validez Discriminante</p>
+                            <p className="text-sm text-gray-600">{psychometric.validity.discriminant}</p>
+                          </div>
+                        )}
+                        {psychometric.validity.sensitivity && (
+                          <div className="bg-white p-3 rounded-lg">
+                            <p className="font-medium text-gray-800 mb-1">Sensibilidad</p>
+                            <p className="text-lg font-bold text-cyan-600">{psychometric.validity.sensitivity}</p>
+                          </div>
+                        )}
+                        {psychometric.validity.specificity && (
+                          <div className="bg-white p-3 rounded-lg">
+                            <p className="font-medium text-gray-800 mb-1">Especificidad</p>
+                            <p className="text-lg font-bold text-cyan-600">{psychometric.validity.specificity}</p>
+                          </div>
+                        )}
+                        {psychometric.validity.positivePredicativeValue && (
+                          <div className="bg-white p-3 rounded-lg">
+                            <p className="font-medium text-gray-800 mb-1">Valor Predictivo Positivo</p>
+                            <p className="text-lg font-bold text-cyan-600">{psychometric.validity.positivePredicativeValue}</p>
+                          </div>
+                        )}
+                        {psychometric.validity.negativePredicativeValue && (
+                          <div className="bg-white p-3 rounded-lg">
+                            <p className="font-medium text-gray-800 mb-1">Valor Predictivo Negativo</p>
+                            <p className="text-lg font-bold text-cyan-600">{psychometric.validity.negativePredicativeValue}</p>
+                          </div>
+                        )}
+                      </div>
+                    ) : (
+                      <p className="text-sm text-gray-600">{psychometric.validity}</p>
+                    )}
                   </div>
                 </div>
               )}
