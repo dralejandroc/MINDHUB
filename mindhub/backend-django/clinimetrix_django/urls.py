@@ -65,8 +65,11 @@ urlpatterns = [
     path('api/expedix/', include('expedix.urls')),  # Expedix - Patient Management
     
     # Clinimetrix Assessment Engine - ADDED FOR SCALE APPLICATIONS
-    path('assessments/', include('assessments.urls')),  # Assessment Engine
-    path('scales/', include('psychometric_scales.urls')),  # Scale Data
+    path('assessments/', include('assessments.urls')),  # Assessment Engine (Legacy)
+    path('scales/', include('psychometric_scales.urls')),  # Scale Data (Legacy)
+    
+    # ScalesV3 - New JSON-based template system
+    path('api/clinimetrix/', include('assessments.urls_v3')),  # ScalesV3 API
     
     # Additional modules
     path('api/agenda/', include('agenda.urls')),  # Agenda - Appointments
