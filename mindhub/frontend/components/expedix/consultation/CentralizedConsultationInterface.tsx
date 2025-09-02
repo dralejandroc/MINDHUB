@@ -44,6 +44,22 @@ interface CentralizedConsultationInterfaceProps {
 
 type SidebarView = 'consultations' | 'prescriptions' | 'appointments';
 
+// Safe date formatting function to avoid Invalid time value errors
+const safeFormatDate = (dateString: string | null | undefined, formatStr: string = 'dd MMM yyyy'): string => {
+  if (!dateString) return 'Fecha no disponible';
+  
+  try {
+    const date = new Date(dateString);
+    if (isNaN(date.getTime())) {
+      return 'Fecha inválida';
+    }
+    return format(date, formatStr, { locale: es });
+  } catch (error) {
+    console.warn('Date formatting error:', error, 'for date:', dateString);
+    return 'Fecha no válida';
+  }
+};
+
 export default function CentralizedConsultationInterface({
   patient,
   consultationId,
@@ -153,7 +169,7 @@ export default function CentralizedConsultationInterface({
     try {
       // Auto-create consultation when opened
       const newConsultation = {
-        patientId: patient.id,
+        patient_id: patient.id, // Changed from patientId to patient_id to match backend
         date: new Date().toISOString(),
         noteType: 'Consulta General',
         status: 'draft',
@@ -343,7 +359,7 @@ export default function CentralizedConsultationInterface({
                     </span>
                   </div>
                   <p className="text-xs text-gray-600 mb-2">
-                    {format(new Date(consultation.date), 'dd MMM yyyy', { locale: es })}
+                    {safeFormatDate(consultation.date, 'dd MMM yyyy')}
                   </p>
                   <p className="text-xs text-gray-700 line-clamp-2">
                     {consultation.diagnosis || consultation.currentCondition || 'Sin diagnóstico'}
@@ -366,7 +382,7 @@ export default function CentralizedConsultationInterface({
                       Receta #{prescription.id.slice(0, 8)}
                     </span>
                     <span className="text-xs text-gray-500">
-                      {format(new Date(prescription.created_at), 'dd MMM', { locale: es })}
+                      {safeFormatDate(prescription.created_at, 'dd MMM')}
                     </span>
                   </div>
                   <div className="space-y-1">
@@ -391,7 +407,7 @@ export default function CentralizedConsultationInterface({
                     <span className="text-sm font-medium text-green-900">Próxima cita</span>
                   </div>
                   <p className="text-sm text-green-800">
-                    {format(new Date(nextAppointment.date), 'dd MMMM yyyy', { locale: es })}
+                    {safeFormatDate(nextAppointment.date, 'dd MMMM yyyy')}
                   </p>
                   <p className="text-sm text-green-700">{nextAppointment.time}</p>
                 </div>
