@@ -5,6 +5,8 @@
 
 import { NextRequest, NextResponse } from 'next/server'
 
+export const dynamic = 'force-dynamic'
+
 const DJANGO_BASE_URL = process.env.DJANGO_API_URL || 'https://mindhub-django-backend.vercel.app'
 
 export async function PUT(
