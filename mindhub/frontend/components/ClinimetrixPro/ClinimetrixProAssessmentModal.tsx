@@ -212,7 +212,7 @@ export const ClinimetrixProAssessmentModal: React.FC<ClinimetrixProAssessmentMod
       
       // El backend devuelve el templateData como un campo anidado con estructura específica
       // Handle both wrapped and direct template responses
-      const templateData = (template?.success && template?.data) ? template.data : (template || {});
+      const templateData = ((template as any)?.success && (template as any)?.data) ? (template as any).data : (template || {});
       
       // Mapear la estructura real de la base de datos
       const metadata = templateData?.metadata || {};
