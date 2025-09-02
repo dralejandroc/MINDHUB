@@ -3,6 +3,8 @@
  * Replaces the organization-client-stub with actual Django backend calls
  */
 
+import { supabase } from '@/lib/supabase/client';
+
 export interface Organization {
   id: string;
   name: string;
@@ -50,10 +52,15 @@ export async function getMyOrganization(): Promise<{
   try {
     console.log('[CLINIC CLIENT] Fetching user organization...');
     
+    // Get auth token from Supabase
+    const { data: { session } } = await supabase.auth.getSession();
+    const token = session?.access_token;
+    
     const response = await fetch('/api/clinic', {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
+        ...(token && { 'Authorization': `Bearer ${token}` })
       },
     });
 
@@ -115,10 +122,15 @@ export async function createOrganization(data: {
   try {
     console.log('[CLINIC CLIENT] Creating organization:', data);
     
+    // Get auth token from Supabase
+    const { data: { session } } = await supabase.auth.getSession();
+    const token = session?.access_token;
+    
     const response = await fetch('/api/clinic', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
+        ...(token && { 'Authorization': `Bearer ${token}` })
       },
       body: JSON.stringify({
         name: data.name,
@@ -161,10 +173,15 @@ export async function updateOrganization(data: {
   try {
     console.log('[CLINIC CLIENT] Updating organization:', data);
 
+    // Get auth token from Supabase
+    const { data: { session } } = await supabase.auth.getSession();
+    const token = session?.access_token;
+    
     const response = await fetch('/api/clinic', {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
+        ...(token && { 'Authorization': `Bearer ${token}` })
       },
       body: JSON.stringify({
         name: data.name
@@ -212,11 +229,14 @@ export async function inviteUser(data: {
   try {
     console.log('[CLINIC CLIENT] Inviting user:', data);
     
+    // Get auth token from Supabase
+    const { data: { session } } = await supabase.auth.getSession();
+    
     const response = await fetch('/api/clinics/django/invitations', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${localStorage.getItem('access_token')}`,
+        'Authorization': `Bearer ${session?.access_token || ''}`,
       },
       body: JSON.stringify({
         email: data.email,
@@ -260,11 +280,14 @@ export async function removeUser(userId: string): Promise<{ success: boolean; me
   try {
     console.log('[CLINIC CLIENT] Removing user:', userId);
     
+    // Get auth token from Supabase
+    const { data: { session } } = await supabase.auth.getSession();
+    
     const response = await fetch(`/api/clinics/django/clinics`, {
       method: 'DELETE',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${localStorage.getItem('access_token')}`,
+        'Authorization': `Bearer ${session?.access_token || ''}`,
       },
       body: JSON.stringify({
         user_id: userId
@@ -356,11 +379,14 @@ export async function acceptInvitation(data: {
   try {
     console.log('[CLINIC CLIENT] Accepting invitation:', data.token);
     
+    // Get auth token from Supabase
+    const { data: { session } } = await supabase.auth.getSession();
+    
     const response = await fetch('/api/clinics/django/invitations/accept', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${localStorage.getItem('access_token')}`,
+        'Authorization': `Bearer ${session?.access_token || ''}`,
       },
       body: JSON.stringify({
         token: data.token
