@@ -24,6 +24,10 @@
       "dest": "/media/$1"
     },
     {
+      "src": "/scalesV3/(.*)",
+      "dest": "/static/scalesV3/$1"
+    },
+    {
       "src": "/(.*)",
       "dest": "clinimetrix_django/wsgi.py"
     }

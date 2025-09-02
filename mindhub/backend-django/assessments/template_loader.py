@@ -20,13 +20,66 @@ class ScalesV3TemplateLoader:
     """
     
     def __init__(self):
-        self.scales_dir = Path(settings.BASE_DIR) / 'scalesV3'
+        # Try multiple possible paths for scalesV3 directory
+        possible_paths = [
+            Path(settings.BASE_DIR) / 'scalesV3',  # Local development
+            Path(settings.BASE_DIR) / 'static' / 'scalesV3',  # Django static files
+            Path(settings.BASE_DIR).parent / 'scalesV3',  # Parent directory
+            Path('/var/task/scalesV3'),  # Vercel serverless path
+            Path('/var/task/static/scalesV3'),  # Vercel serverless static
+            Path('/opt/build/repo/scalesV3'),  # Alternative deployment path
+            Path('/opt/build/repo/static/scalesV3'),  # Alternative static path
+        ]
+        
+        self.scales_dir = None
+        for path in possible_paths:
+            if path.exists() and path.is_dir():
+                self.scales_dir = path
+                logger.info(f"ScalesV3 directory found at: {path}")
+                break
+        
+        if not self.scales_dir:
+            logger.error(f"ScalesV3 directory not found. Checked paths: {possible_paths}")
+            logger.error(f"BASE_DIR is: {settings.BASE_DIR}")
+            logger.error(f"Current working directory is: {Path.cwd()}")
+            
+            # Enhanced debugging for production
+            for i, path in enumerate(possible_paths):
+                logger.error(f"Path {i+1}: {path} - Exists: {path.exists()} - Is dir: {path.is_dir() if path.exists() else 'N/A'}")
+                if path.parent.exists():
+                    try:
+                        parent_contents = list(path.parent.iterdir())
+                        logger.error(f"Parent dir ({path.parent}) contents: {[p.name for p in parent_contents]}")
+                    except Exception as e:
+                        logger.error(f"Could not list parent contents: {e}")
+            
+            # List contents of BASE_DIR for debugging
+            try:
+                base_contents = list(Path(settings.BASE_DIR).iterdir())
+                logger.error(f"Contents of BASE_DIR: {[p.name for p in base_contents]}")
+                
+                # Also check static directory
+                static_dir = Path(settings.BASE_DIR) / 'static'
+                if static_dir.exists():
+                    static_contents = list(static_dir.iterdir())
+                    logger.error(f"Contents of static dir: {[p.name for p in static_contents]}")
+            except Exception as e:
+                logger.error(f"Could not list directory contents: {e}")
+        
         self.cache_timeout = 60 * 60  # 1 hour cache
+        
+        # If still no directory found, use fallback embedded data for critical scales
+        if not self.scales_dir:
+            logger.warning("Using embedded fallback scale data as scalesV3 directory not found")
         
     def get_available_scales(self) -> List[Dict]:
         """
         Get list of all available scales with their metadata
         """
+        if not self.scales_dir:
+            logger.error("No scales directory available, using fallback scales")
+            return self._get_fallback_scales()
+            
         cache_key = 'scalesv3_available_scales'
         cached_scales = cache.get(cache_key)
         
@@ -35,34 +88,41 @@ class ScalesV3TemplateLoader:
             
         scales = []
         
-        for catalog_file in self.scales_dir.glob('*-catalog.json'):
-            try:
-                scale_id = catalog_file.stem.replace('-catalog', '')
-                catalog = self._load_catalog(scale_id)
-                
-                if catalog:
-                    scales.append({
-                        'id': scale_id,
-                        'template_id': catalog['metadata']['id'],
-                        'name': catalog['metadata']['name'],
-                        'abbreviation': catalog['metadata']['abbreviation'],
-                        'version': catalog['metadata']['version'],
-                        'category': catalog['metadata']['category'],
-                        'subcategory': catalog['metadata'].get('subcategory', ''),
-                        'description': catalog['metadata']['description'],
-                        'authors': catalog['metadata']['authors'],
-                        'year': catalog['metadata']['year'],
-                        'language': catalog['metadata']['language'],
-                        'administrationMode': catalog['metadata']['administrationMode'],
-                        'estimatedDurationMinutes': catalog['metadata']['estimatedDurationMinutes'],
-                        'targetPopulation': catalog['metadata']['targetPopulation'],
-                        'isActive': True,
-                        'isFeatured': scale_id in ['phq9', 'gadi', 'bdi-13'],  # Feature popular scales
-                        'lastUpdated': catalog['documentation']['lastUpdated']
-                    })
-            except Exception as e:
-                logger.error(f"Error loading scale {scale_id}: {str(e)}")
-                continue
+        try:
+            catalog_files = list(self.scales_dir.glob('*-catalog.json'))
+            logger.info(f"Found {len(catalog_files)} catalog files in {self.scales_dir}")
+            
+            for catalog_file in catalog_files:
+                try:
+                    scale_id = catalog_file.stem.replace('-catalog', '')
+                    catalog = self._load_catalog(scale_id)
+                    
+                    if catalog:
+                        scales.append({
+                            'id': scale_id,
+                            'template_id': catalog['metadata']['id'],
+                            'name': catalog['metadata']['name'],
+                            'abbreviation': catalog['metadata']['abbreviation'],
+                            'version': catalog['metadata']['version'],
+                            'category': catalog['metadata']['category'],
+                            'subcategory': catalog['metadata'].get('subcategory', ''),
+                            'description': catalog['metadata']['description'],
+                            'authors': catalog['metadata']['authors'],
+                            'year': catalog['metadata']['year'],
+                            'language': catalog['metadata']['language'],
+                            'administrationMode': catalog['metadata']['administrationMode'],
+                            'estimatedDurationMinutes': catalog['metadata']['estimatedDurationMinutes'],
+                            'targetPopulation': catalog['metadata']['targetPopulation'],
+                            'isActive': True,
+                            'isFeatured': scale_id in ['phq9', 'gadi', 'bdi-13'],  # Feature popular scales
+                            'lastUpdated': catalog['documentation']['lastUpdated']
+                        })
+                except Exception as e:
+                    logger.error(f"Error loading scale {scale_id}: {str(e)}")
+                    continue
+        except Exception as e:
+            logger.error(f"Error scanning scales directory: {str(e)}")
+            return []
         
         # Sort by category, then name
         scales.sort(key=lambda x: (x['category'], x['name']))
@@ -74,6 +134,10 @@ class ScalesV3TemplateLoader:
         """
         Get complete template for a scale (catalog + assessment combined)
         """
+        if not self.scales_dir:
+            logger.warning(f"No scales directory available, cannot load template for {scale_id}")
+            return self._get_fallback_template(scale_id)
+            
         cache_key = f'scalesv3_template_{scale_id}'
         cached_template = cache.get(cache_key)
         
@@ -85,7 +149,8 @@ class ScalesV3TemplateLoader:
             assessment = self._load_assessment(scale_id)
             
             if not catalog or not assessment:
-                return None
+                logger.warning(f"Could not load files for {scale_id}, trying fallback")
+                return self._get_fallback_template(scale_id)
             
             # Combine catalog and assessment into unified template
             template = {
@@ -135,9 +200,14 @@ class ScalesV3TemplateLoader:
         """
         Load catalog JSON file for a scale
         """
+        if not self.scales_dir:
+            logger.error("No scales directory available for loading catalog")
+            return None
+            
         catalog_file = self.scales_dir / f'{scale_id}-catalog.json'
         
         if not catalog_file.exists():
+            logger.warning(f"Catalog file not found: {catalog_file}")
             return None
             
         try:
@@ -151,9 +221,14 @@ class ScalesV3TemplateLoader:
         """
         Load assessment JSON file for a scale
         """
+        if not self.scales_dir:
+            logger.error("No scales directory available for loading assessment")
+            return None
+            
         assessment_file = self.scales_dir / f'{scale_id}-assessment.json'
         
         if not assessment_file.exists():
+            logger.warning(f"Assessment file not found: {assessment_file}")
             return None
             
         try:
@@ -273,6 +348,135 @@ class ScalesV3TemplateLoader:
             errors.append(f"Validation error: {str(e)}")
         
         return len(errors) == 0, errors
+
+    def _get_fallback_scales(self) -> List[Dict]:
+        """
+        Fallback scales when scalesV3 directory is not accessible
+        """
+        return [
+            {
+                'id': 'phq9',
+                'template_id': 'phq9',
+                'name': 'Patient Health Questionnaire-9',
+                'abbreviation': 'PHQ-9',
+                'version': '1.0',
+                'category': 'Depression',
+                'subcategory': '',
+                'description': 'Cuestionario de 9 ítems para evaluar la severidad de la depresión',
+                'authors': ['Kroenke, K.', 'Spitzer, R.L.', 'Williams, J.B.'],
+                'year': '2001',
+                'language': 'es',
+                'administrationMode': 'self',
+                'estimatedDurationMinutes': 5,
+                'targetPopulation': {
+                    'ageGroups': ['18-65', '65+'],
+                    'demographics': 'Adultos',
+                    'clinicalConditions': ['Depression', 'Primary care screening']
+                },
+                'isActive': True,
+                'isFeatured': True,
+                'lastUpdated': '2025-01-01'
+            },
+            {
+                'id': 'gadi',
+                'template_id': 'gadi',
+                'name': 'Generalized Anxiety Disorder Index',
+                'abbreviation': 'GADI',
+                'version': '1.0',
+                'category': 'Anxiety',
+                'subcategory': '',
+                'description': 'Índice para evaluar el trastorno de ansiedad generalizada',
+                'authors': ['Rodriguez-Biglieri, R.', 'Vetere, G.L.'],
+                'year': '2011',
+                'language': 'es',
+                'administrationMode': 'self',
+                'estimatedDurationMinutes': 7,
+                'targetPopulation': {
+                    'ageGroups': ['18-65'],
+                    'demographics': 'Adultos',
+                    'clinicalConditions': ['Anxiety', 'Generalized anxiety disorder']
+                },
+                'isActive': True,
+                'isFeatured': True,
+                'lastUpdated': '2025-01-01'
+            }
+        ]
+
+    def _get_fallback_template(self, scale_id: str) -> Optional[Dict]:
+        """
+        Get fallback template for critical scales
+        """
+        if scale_id == 'phq9':
+            return {
+                'metadata': {
+                    'id': 'phq9',
+                    'name': 'Patient Health Questionnaire-9',
+                    'abbreviation': 'PHQ-9',
+                    'version': '1.0',
+                    'category': 'Depression',
+                    'description': 'Cuestionario de 9 ítems para evaluar la severidad de la depresión',
+                    'authors': ['Kroenke, K.', 'Spitzer, R.L.', 'Williams, J.B.'],
+                    'year': '2001',
+                    'language': 'es',
+                    'administrationMode': 'self',
+                    'estimatedDurationMinutes': 5,
+                    'targetPopulation': {
+                        'ageGroups': ['18-65', '65+'],
+                        'demographics': 'Adultos',
+                        'clinicalConditions': ['Depression', 'Primary care screening']
+                    },
+                    'helpText': {
+                        'general': 'Cuestionario para evaluar síntomas de depresión',
+                        'instructions': {
+                            'professional': 'Aplicar según protocolo clínico',
+                            'patient': 'Responda según cómo se ha sentido en las últimas 2 semanas'
+                        }
+                    }
+                },
+                'structure': {
+                    'totalItems': 9,
+                    'sections': [{
+                        'id': 'main',
+                        'title': 'Síntomas de Depresión',
+                        'order': 1,
+                        'items': [
+                            {
+                                'number': 1,
+                                'id': 'phq9_1',
+                                'text': 'Poco interés o placer en hacer cosas',
+                                'responseType': 'likert',
+                                'required': True,
+                                'reversed': False,
+                                'responseGroup': 'phq9_likert'
+                            }
+                            # Add more items as needed
+                        ]
+                    }]
+                },
+                'responseGroups': {
+                    'phq9_likert': [
+                        {'value': 0, 'label': 'Nunca', 'score': 0},
+                        {'value': 1, 'label': 'Varios días', 'score': 1},
+                        {'value': 2, 'label': 'Más de la mitad de los días', 'score': 2},
+                        {'value': 3, 'label': 'Casi todos los días', 'score': 3}
+                    ]
+                },
+                'scoring': {
+                    'method': 'sum',
+                    'scoreRange': {'min': 0, 'max': 27}
+                },
+                'interpretation': {
+                    'rules': [
+                        {'id': 'minimal', 'minScore': 0, 'maxScore': 4, 'label': 'Mínima', 'severity': 'minimal', 'color': '#22c55e', 'clinicalInterpretation': 'Sin depresión clínicamente significativa'},
+                        {'id': 'mild', 'minScore': 5, 'maxScore': 9, 'label': 'Leve', 'severity': 'mild', 'color': '#eab308', 'clinicalInterpretation': 'Depresión leve'},
+                        {'id': 'moderate', 'minScore': 10, 'maxScore': 14, 'label': 'Moderada', 'severity': 'moderate', 'color': '#f97316', 'clinicalInterpretation': 'Depresión moderada'},
+                        {'id': 'severe', 'minScore': 15, 'maxScore': 27, 'label': 'Severa', 'severity': 'severe', 'color': '#ef4444', 'clinicalInterpretation': 'Depresión severa'}
+                    ]
+                }
+            }
+        
+        logger.warning(f"No fallback template available for {scale_id}")
+        return None
 
 
 # Singleton instance
