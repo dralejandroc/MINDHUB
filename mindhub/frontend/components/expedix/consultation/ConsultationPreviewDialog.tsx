@@ -7,7 +7,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogFooter,
-} from '@/components/ui/Dialog';
+} from '@/components/ui/dialog';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { format } from 'date-fns';
@@ -33,6 +33,20 @@ interface ConsultationData {
   medications: any[];
   additionalInstructions: string;
   nextAppointment: { date: string; time: string };
+  mentalExam: {
+    descripcionInspeccion: string;
+    apariencia: string;
+    actitud: string;
+    conciencia: string;
+    orientacion: string;
+    atencion: string;
+    lenguaje: string;
+    afecto: string;
+    sensopercepcion: string;
+    memoria: string;
+    pensamientoPrincipal: string;
+    pensamientoDetalles: string;
+  };
 }
 
 interface ConsultationPreviewDialogProps {
@@ -183,6 +197,75 @@ export default function ConsultationPreviewDialog({
             <Card className="p-4">
               <h3 className="text-lg font-semibold text-gray-800 mb-3">Diagnóstico</h3>
               <p className="text-gray-700 whitespace-pre-wrap">{consultationData.diagnosis}</p>
+            </Card>
+          )}
+
+          {/* Mental Exam */}
+          {(consultationData.mentalExam && Object.values(consultationData.mentalExam).some(v => v && v.trim())) && (
+            <Card className="p-4">
+              <h3 className="text-lg font-semibold text-gray-800 mb-3">🧠 Examen Mental</h3>
+              <div className="grid grid-cols-2 gap-3 text-sm">
+                {consultationData.mentalExam.descripcionInspeccion && (
+                  <div className="col-span-2">
+                    <span className="font-medium">Descripción General:</span> {consultationData.mentalExam.descripcionInspeccion}
+                  </div>
+                )}
+                {consultationData.mentalExam.apariencia && (
+                  <div>
+                    <span className="font-medium">Apariencia:</span> {consultationData.mentalExam.apariencia}
+                  </div>
+                )}
+                {consultationData.mentalExam.actitud && (
+                  <div>
+                    <span className="font-medium">Actitud:</span> {consultationData.mentalExam.actitud}
+                  </div>
+                )}
+                {consultationData.mentalExam.conciencia && (
+                  <div>
+                    <span className="font-medium">Conciencia:</span> {consultationData.mentalExam.conciencia}
+                  </div>
+                )}
+                {consultationData.mentalExam.orientacion && (
+                  <div>
+                    <span className="font-medium">Orientación:</span> {consultationData.mentalExam.orientacion}
+                  </div>
+                )}
+                {consultationData.mentalExam.atencion && (
+                  <div>
+                    <span className="font-medium">Atención:</span> {consultationData.mentalExam.atencion}
+                  </div>
+                )}
+                {consultationData.mentalExam.lenguaje && (
+                  <div>
+                    <span className="font-medium">Lenguaje:</span> {consultationData.mentalExam.lenguaje}
+                  </div>
+                )}
+                {consultationData.mentalExam.afecto && (
+                  <div>
+                    <span className="font-medium">Afecto:</span> {consultationData.mentalExam.afecto}
+                  </div>
+                )}
+                {consultationData.mentalExam.sensopercepcion && (
+                  <div>
+                    <span className="font-medium">Sensopercepción:</span> {consultationData.mentalExam.sensopercepcion}
+                  </div>
+                )}
+                {consultationData.mentalExam.memoria && (
+                  <div>
+                    <span className="font-medium">Memoria:</span> {consultationData.mentalExam.memoria}
+                  </div>
+                )}
+                {consultationData.mentalExam.pensamientoPrincipal && (
+                  <div className="col-span-2">
+                    <span className="font-medium">Pensamiento:</span> {consultationData.mentalExam.pensamientoPrincipal}
+                  </div>
+                )}
+                {consultationData.mentalExam.pensamientoDetalles && (
+                  <div className="col-span-2">
+                    <span className="font-medium">Detalles del Pensamiento:</span> {consultationData.mentalExam.pensamientoDetalles}
+                  </div>
+                )}
+              </div>
             </Card>
           )}
 

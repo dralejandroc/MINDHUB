@@ -190,7 +190,21 @@ export default function CentralizedConsultationInterface({
       physicalExamination: '',
       medications: [],
       additionalInstructions: '',
-      nextAppointment: consultation.nextAppointment || { date: '', time: '' }
+      nextAppointment: consultation.nextAppointment || { date: '', time: '' },
+      mentalExam: {
+        descripcionInspeccion: '',
+        apariencia: '',
+        actitud: '',
+        conciencia: '',
+        orientacion: '',
+        atencion: '',
+        lenguaje: '',
+        afecto: '',
+        sensopercepcion: '',
+        memoria: '',
+        pensamientoPrincipal: '',
+        pensamientoDetalles: ''
+      }
     });
   };
 
