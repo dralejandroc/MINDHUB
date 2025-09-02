@@ -99,7 +99,10 @@ def get_template(request, template_id):
         # Increment usage counter
         scale.increment_usage()
         
-        return JsonResponse(template_data)
+        return JsonResponse({
+            'success': True,
+            'data': template_data
+        })
         
     except Exception as e:
         return JsonResponse({
