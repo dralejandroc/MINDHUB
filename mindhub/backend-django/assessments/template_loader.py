@@ -22,11 +22,14 @@ class ScalesV3TemplateLoader:
     def __init__(self):
         # Try multiple possible paths for scalesV3 directory
         possible_paths = [
+            Path(__file__).parent / 'scalesV3',  # Inside assessments app (most reliable)
             Path(settings.BASE_DIR) / 'scalesV3',  # Local development
             Path(settings.BASE_DIR) / 'static' / 'scalesV3',  # Django static files
             Path(settings.BASE_DIR).parent / 'scalesV3',  # Parent directory
+            Path('/var/task/assessments/scalesV3'),  # Vercel assessments app path
             Path('/var/task/scalesV3'),  # Vercel serverless path
             Path('/var/task/static/scalesV3'),  # Vercel serverless static
+            Path('/opt/build/repo/assessments/scalesV3'),  # Alternative app path
             Path('/opt/build/repo/scalesV3'),  # Alternative deployment path
             Path('/opt/build/repo/static/scalesV3'),  # Alternative static path
         ]
@@ -95,6 +98,12 @@ class ScalesV3TemplateLoader:
             for catalog_file in catalog_files:
                 try:
                     scale_id = catalog_file.stem.replace('-catalog', '')
+                    # Skip known problematic JSON files until they're fixed
+                    problematic_scales = {'gds-15', 'ia_json', 'vanderbilt'}
+                    if any(problem in scale_id for problem in problematic_scales):
+                        logger.warning(f"Skipping {scale_id} due to known JSON syntax issues")
+                        continue
+                    
                     catalog = self._load_catalog(scale_id)
                     
                     if catalog:
