@@ -218,6 +218,17 @@ export default function ExpedixSettingsPage() {
               />
               <span className="text-sm text-gray-700">Incluir examen mental</span>
             </label>
+
+            <div className="pt-3 border-t">
+              <Button
+                onClick={() => router.push('/hubs/expedix/templates')}
+                variant="outline"
+                className="w-full"
+              >
+                <DocumentTextIcon className="h-4 w-4 mr-2" />
+                Gestionar Plantillas de Consulta
+              </Button>
+            </div>
           </div>
         </div>
 

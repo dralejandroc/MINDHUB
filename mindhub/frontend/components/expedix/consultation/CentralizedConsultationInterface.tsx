@@ -18,6 +18,7 @@ import {
 import { expedixApi, type Patient, type Prescription } from '@/lib/api/expedix-client';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
+import ConsultationPreviewDialog from './ConsultationPreviewDialog';
 
 interface Consultation {
   id: string;
@@ -58,6 +59,7 @@ export default function CentralizedConsultationInterface({
   // Navigation states
   const [sidebarView, setSidebarView] = useState<SidebarView>('consultations');
   const [currentConsultationIndex, setCurrentConsultationIndex] = useState(0);
+  const [showPreviewDialog, setShowPreviewDialog] = useState(false);
   
   // Form states
   const [consultationData, setConsultationData] = useState({
@@ -77,7 +79,21 @@ export default function CentralizedConsultationInterface({
     physicalExamination: '',
     medications: [],
     additionalInstructions: '',
-    nextAppointment: { date: '', time: '' }
+    nextAppointment: { date: '', time: '' },
+    mentalExam: {
+      descripcionInspeccion: '',
+      apariencia: '',
+      actitud: '',
+      conciencia: '',
+      orientacion: '',
+      atencion: '',
+      lenguaje: '',
+      afecto: '',
+      sensopercepcion: '',
+      memoria: '',
+      pensamientoPrincipal: '',
+      pensamientoDetalles: ''
+    }
   });
 
   // Load patient data and consultations
@@ -413,7 +429,7 @@ export default function CentralizedConsultationInterface({
               )}
             </div>
             <div className="flex items-center space-x-2">
-              <Button variant="outline" onClick={() => {}}>
+              <Button variant="outline" onClick={() => setShowPreviewDialog(true)}>
                 <EyeIcon className="h-4 w-4 mr-1" />
                 Vista previa
               </Button>
@@ -623,6 +639,204 @@ export default function CentralizedConsultationInterface({
               />
             </Card>
 
+            {/* Mental Exam */}
+            <Card className="p-6">
+              <h3 className="text-lg font-medium text-gray-900 mb-4">🧠 Examen Mental</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Descripción General/Inspección
+                  </label>
+                  <textarea
+                    value={consultationData.mentalExam.descripcionInspeccion}
+                    onChange={(e) => setConsultationData(prev => ({ 
+                      ...prev, 
+                      mentalExam: { ...prev.mentalExam, descripcionInspeccion: e.target.value }
+                    }))}
+                    rows={2}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-primary-500 focus:border-primary-500"
+                    placeholder="Descripción general del estado mental..."
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Apariencia
+                  </label>
+                  <textarea
+                    value={consultationData.mentalExam.apariencia}
+                    onChange={(e) => setConsultationData(prev => ({ 
+                      ...prev, 
+                      mentalExam: { ...prev.mentalExam, apariencia: e.target.value }
+                    }))}
+                    rows={2}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-primary-500 focus:border-primary-500"
+                    placeholder="Apariencia física y presentación..."
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Actitud
+                  </label>
+                  <textarea
+                    value={consultationData.mentalExam.actitud}
+                    onChange={(e) => setConsultationData(prev => ({ 
+                      ...prev, 
+                      mentalExam: { ...prev.mentalExam, actitud: e.target.value }
+                    }))}
+                    rows={2}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-primary-500 focus:border-primary-500"
+                    placeholder="Actitud durante la entrevista..."
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Conciencia
+                  </label>
+                  <textarea
+                    value={consultationData.mentalExam.conciencia}
+                    onChange={(e) => setConsultationData(prev => ({ 
+                      ...prev, 
+                      mentalExam: { ...prev.mentalExam, conciencia: e.target.value }
+                    }))}
+                    rows={2}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-primary-500 focus:border-primary-500"
+                    placeholder="Estado de conciencia..."
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Orientación
+                  </label>
+                  <textarea
+                    value={consultationData.mentalExam.orientacion}
+                    onChange={(e) => setConsultationData(prev => ({ 
+                      ...prev, 
+                      mentalExam: { ...prev.mentalExam, orientacion: e.target.value }
+                    }))}
+                    rows={2}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-primary-500 focus:border-primary-500"
+                    placeholder="Orientación temporal, espacial y personal..."
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Atención
+                  </label>
+                  <textarea
+                    value={consultationData.mentalExam.atencion}
+                    onChange={(e) => setConsultationData(prev => ({ 
+                      ...prev, 
+                      mentalExam: { ...prev.mentalExam, atencion: e.target.value }
+                    }))}
+                    rows={2}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-primary-500 focus:border-primary-500"
+                    placeholder="Capacidad de atención y concentración..."
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Lenguaje
+                  </label>
+                  <textarea
+                    value={consultationData.mentalExam.lenguaje}
+                    onChange={(e) => setConsultationData(prev => ({ 
+                      ...prev, 
+                      mentalExam: { ...prev.mentalExam, lenguaje: e.target.value }
+                    }))}
+                    rows={2}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-primary-500 focus:border-primary-500"
+                    placeholder="Características del lenguaje..."
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Afecto
+                  </label>
+                  <textarea
+                    value={consultationData.mentalExam.afecto}
+                    onChange={(e) => setConsultationData(prev => ({ 
+                      ...prev, 
+                      mentalExam: { ...prev.mentalExam, afecto: e.target.value }
+                    }))}
+                    rows={2}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-primary-500 focus:border-primary-500"
+                    placeholder="Estado emocional y afectivo..."
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Sensopercepción
+                  </label>
+                  <textarea
+                    value={consultationData.mentalExam.sensopercepcion}
+                    onChange={(e) => setConsultationData(prev => ({ 
+                      ...prev, 
+                      mentalExam: { ...prev.mentalExam, sensopercepcion: e.target.value }
+                    }))}
+                    rows={2}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-primary-500 focus:border-primary-500"
+                    placeholder="Alucinaciones, ilusiones..."
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Memoria
+                  </label>
+                  <textarea
+                    value={consultationData.mentalExam.memoria}
+                    onChange={(e) => setConsultationData(prev => ({ 
+                      ...prev, 
+                      mentalExam: { ...prev.mentalExam, memoria: e.target.value }
+                    }))}
+                    rows={2}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-primary-500 focus:border-primary-500"
+                    placeholder="Memoria reciente, remota, de trabajo..."
+                  />
+                </div>
+
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Pensamiento (Contenido Principal)
+                  </label>
+                  <textarea
+                    value={consultationData.mentalExam.pensamientoPrincipal}
+                    onChange={(e) => setConsultationData(prev => ({ 
+                      ...prev, 
+                      mentalExam: { ...prev.mentalExam, pensamientoPrincipal: e.target.value }
+                    }))}
+                    rows={2}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-primary-500 focus:border-primary-500"
+                    placeholder="Ideas principales, temas dominantes..."
+                  />
+                </div>
+
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Pensamiento (Detalles y Observaciones)
+                  </label>
+                  <textarea
+                    value={consultationData.mentalExam.pensamientoDetalles}
+                    onChange={(e) => setConsultationData(prev => ({ 
+                      ...prev, 
+                      mentalExam: { ...prev.mentalExam, pensamientoDetalles: e.target.value }
+                    }))}
+                    rows={2}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-primary-500 focus:border-primary-500"
+                    placeholder="Curso del pensamiento, asociaciones, coherencia..."
+                  />
+                </div>
+              </div>
+            </Card>
+
             {/* Additional Instructions */}
             <Card className="p-6">
               <h3 className="text-lg font-medium text-gray-900 mb-4">Instrucciones Adicionales</h3>
@@ -675,6 +889,16 @@ export default function CentralizedConsultationInterface({
           </div>
         </div>
       </div>
+
+      {/* Preview Dialog */}
+      <ConsultationPreviewDialog
+        isOpen={showPreviewDialog}
+        onClose={() => setShowPreviewDialog(false)}
+        patient={patient}
+        consultationData={consultationData}
+        professionalName="Dr. Alejandro"
+        clinicName="MindHub Clínica"
+      />
     </div>
   );
 }
