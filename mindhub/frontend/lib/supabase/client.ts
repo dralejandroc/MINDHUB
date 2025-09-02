@@ -17,6 +17,23 @@ if (!supabaseUrl || !supabaseAnonKey) {
 // Create a single supabase client for interacting with your database
 export const supabase = createBrowserClient(supabaseUrl, supabaseAnonKey)
 
+// Auto-refresh and handle session expiration
+supabase.auth.onAuthStateChange((event, session) => {
+  if (event === 'TOKEN_REFRESHED') {
+    console.log('🔄 JWT token refreshed successfully')
+  }
+  
+  if (event === 'SIGNED_OUT' || (event === 'TOKEN_REFRESHED' && !session)) {
+    console.log('🚪 User signed out or token expired')
+    // Clear any local storage or cached data if needed
+    localStorage.removeItem('mindhub-user-preferences')
+  }
+  
+  if (event === 'SIGNED_IN' && session) {
+    console.log('🔐 User signed in, token expires at:', new Date(session.expires_at! * 1000))
+  }
+})
+
 // Export createClient function for compatibility
 export const createClient = () => supabase
 
@@ -96,6 +113,20 @@ export const signUpWithGoogle = async () => {
         prompt: 'consent',
       },
     },
+  })
+  return { data, error }
+}
+
+export const updatePassword = async (newPassword: string) => {
+  const { data, error } = await supabase.auth.updateUser({
+    password: newPassword
+  })
+  return { data, error }
+}
+
+export const updateUserEmail = async (newEmail: string) => {
+  const { data, error } = await supabase.auth.updateUser({
+    email: newEmail
   })
   return { data, error }
 }

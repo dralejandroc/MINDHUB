@@ -16,7 +16,8 @@ import {
   ChartBarIcon,
   ComputerDesktopIcon,
   CalendarIcon,
-  ArrowUpTrayIcon
+  ArrowUpTrayIcon,
+  ShieldCheckIcon
 } from '@heroicons/react/24/outline';
 import { DashboardSettings } from '@/components/settings/DashboardSettings';
 import { UserMetricsProvider } from '@/contexts/UserMetricsContext';
@@ -25,6 +26,7 @@ import { ClinicManagement } from '@/components/settings/ClinicManagement';
 import AnalyticsSettings from '@/components/settings/AnalyticsSettings';
 import ConsultationTemplateManager from '@/components/expedix/ConsultationTemplateManager';
 import { ExpandableTabs } from '@/components/ui/ExpandableTabs';
+import { UserSecuritySettings } from '@/components/settings/UserSecuritySettings';
 import type { ClinicConfiguration } from '@/lib/settings-graphql-service';
 
 export default function GeneralSettingsPage() {
@@ -320,6 +322,12 @@ export default function GeneralSettingsPage() {
           </div>
         </div>
       ) : null
+    },
+    {
+      id: 'security',
+      label: 'Seguridad',
+      icon: ShieldCheckIcon,
+      content: <UserSecuritySettings />
     }
   ];
 
