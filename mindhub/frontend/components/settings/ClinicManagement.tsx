@@ -11,7 +11,7 @@ import {
   type Organization,
   type OrganizationUser,
   type OrganizationStats 
-} from '@/lib/api/organizations-client-stub';
+} from '@/lib/api/clinic-client';
 
 export function ClinicManagement() {
   const [organization, setOrganization] = useState<Organization | null>(null);

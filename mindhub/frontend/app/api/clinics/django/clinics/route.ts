@@ -15,21 +15,27 @@ export async function GET(request: NextRequest) {
     const { data: { session } } = await supabase.auth.getSession();
 
     if (!session?.access_token) {
-      return NextResponse.json({ error: 'No authentication token' }, { status: 401 });
+      console.log('[CLINICS API] No session token, checking headers...');
+      // Try to get token from Authorization header as fallback
+      const authHeader = request.headers.get('Authorization');
+      if (!authHeader || !authHeader.startsWith('Bearer ')) {
+        return NextResponse.json({ error: 'No authentication token' }, { status: 401 });
+      }
     }
 
     const url = new URL(request.url);
     const queryString = url.searchParams.toString();
     const djangoUrl = `${DJANGO_BASE_URL}/api/clinics/clinics/${queryString ? `?${queryString}` : ''}`;
 
+    const authToken = session?.access_token || request.headers.get('Authorization')?.replace('Bearer ', '');
     const response = await fetch(djangoUrl, {
       method: 'GET',
       headers: {
-        'Authorization': `Bearer ${session.access_token}`,
+        'Authorization': `Bearer ${authToken}`,
         'Content-Type': 'application/json',
         'X-Proxy-Auth': 'verified',
-        'X-User-ID': session.user.id,
-        'X-User-Email': session.user.email || '',
+        'X-User-ID': session?.user?.id || '',
+        'X-User-Email': session?.user?.email || '',
       },
     });
 
@@ -66,14 +72,15 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const djangoUrl = `${DJANGO_BASE_URL}/api/clinics/clinics/`;
 
+    const authToken = session?.access_token || request.headers.get('Authorization')?.replace('Bearer ', '');
     const response = await fetch(djangoUrl, {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${session.access_token}`,
+        'Authorization': `Bearer ${authToken}`,
         'Content-Type': 'application/json',
         'X-Proxy-Auth': 'verified',
-        'X-User-ID': session.user.id,
-        'X-User-Email': session.user.email || '',
+        'X-User-ID': session?.user?.id || '',
+        'X-User-Email': session?.user?.email || '',
       },
       body: JSON.stringify(body),
     });

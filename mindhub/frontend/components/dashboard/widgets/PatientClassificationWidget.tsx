@@ -63,16 +63,23 @@ export default function PatientClassificationWidget({
       }
 
       const data = await response.json();
-      setClassifications(data.results || data);
+      
+      // Handle the structured response format from the API route
+      const classificationsArray = data.classifications || data.results || data || [];
+      setClassifications(classificationsArray);
       
       // Calculate statistics
       const classificationCounts: { [key: string]: number } = {};
-      data.forEach((item: PatientClassification) => {
-        const display = item.classification_display || item.classification;
-        classificationCounts[display] = (classificationCounts[display] || 0) + 1;
-      });
+      
+      // Check if we have actual patient data or just default classification structure
+      if (Array.isArray(classificationsArray) && classificationsArray.length > 0) {
+        classificationsArray.forEach((item: any) => {
+          const display = item.name || item.classification_display || item.classification || 'Sin clasificar';
+          classificationCounts[display] = item.count || (classificationCounts[display] || 0) + 1;
+        });
+      }
 
-      const total = data.length;
+      const total = Object.values(classificationCounts).reduce((sum, count) => sum + count, 0);
       const calculatedStats = Object.entries(classificationCounts).map(([classification, count]) => ({
         classification,
         count,
