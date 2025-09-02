@@ -7,6 +7,12 @@ export async function GET(request: Request) {
   try {
     console.log('[NEXT APPOINTMENTS] Processing next appointments request');
     
+    // Verify authentication FIRST
+    const { user, error: authError } = await getAuthenticatedUser(request);
+    if (authError || !user) {
+      return createErrorResponse('Unauthorized', 'Valid authentication required', 401);
+    }
+
     // Extract patientId from query parameters
     const url = new URL(request.url);
     const patientId = url.searchParams.get('patientId');

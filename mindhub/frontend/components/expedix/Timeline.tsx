@@ -108,16 +108,25 @@ export const Timeline = ({
   const heightTransform = useTransform(scrollYProgress, [0, 1], [0, height]);
   const opacityTransform = useTransform(scrollYProgress, [0, 0.1], [0, 1]);
 
-  // Format date for display
-  const formatDate = (date: Date | string) => {
-    const d = typeof date === 'string' ? new Date(date) : date;
-    return d.toLocaleDateString('es-MX', {
-      day: '2-digit',
-      month: 'short',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    });
+  // Format date for display with error handling
+  const formatDate = (date: Date | string | null | undefined) => {
+    if (!date) return 'Fecha no disponible';
+    
+    try {
+      const d = typeof date === 'string' ? new Date(date) : date;
+      if (isNaN(d.getTime())) return 'Fecha inválida';
+      
+      return d.toLocaleDateString('es-MX', {
+        day: '2-digit',
+        month: 'short',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+    } catch (error) {
+      console.warn('Date formatting error:', error, 'for date:', date);
+      return 'Fecha no válida';
+    }
   };
 
   return (

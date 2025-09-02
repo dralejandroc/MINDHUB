@@ -13,12 +13,17 @@ import {
   CalendarIcon,
   PlusIcon,
   EyeIcon,
-  PencilIcon
+  PencilIcon,
+  PrinterIcon,
+  CogIcon
 } from '@heroicons/react/24/outline';
 import { expedixApi, type Patient, type Prescription } from '@/lib/api/expedix-client';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import ConsultationPreviewDialog from './ConsultationPreviewDialog';
+import { MentalExamFormatter, type MentalExamData } from '@/lib/utils/mental-exam-formatter';
+import { PrintConfigManager, type PrintConfig } from '@/lib/utils/print-config';
+import PrintConfigDialog from '../PrintConfigDialog';
 
 interface Consultation {
   id: string;
@@ -77,6 +82,10 @@ export default function CentralizedConsultationInterface({
   const [currentConsultationIndex, setCurrentConsultationIndex] = useState(0);
   const [showPreviewDialog, setShowPreviewDialog] = useState(false);
   
+  // Print states
+  const [showPrintMenu, setShowPrintMenu] = useState(false);
+  const [showPrintConfig, setShowPrintConfig] = useState(false);
+  
   // Form states
   const [consultationData, setConsultationData] = useState({
     noteType: 'Consulta General',
@@ -97,18 +106,39 @@ export default function CentralizedConsultationInterface({
     additionalInstructions: '',
     nextAppointment: { date: '', time: '' },
     mentalExam: {
-      descripcionInspeccion: '',
-      apariencia: '',
-      actitud: '',
-      conciencia: '',
-      orientacion: '',
-      atencion: '',
-      lenguaje: '',
-      afecto: '',
-      sensopercepcion: '',
-      memoria: '',
-      pensamientoPrincipal: '',
-      pensamientoDetalles: ''
+      // Apariencia y Comportamiento
+      appearance: '',
+      attitude: '',
+      consciousness: '',
+      customAppearance: '',
+      // Habla y Lenguaje
+      speechRate: '',
+      speechVolume: '',
+      speechFluency: '',
+      customSpeech: '',
+      // Afecto y Estado de Ánimo
+      affectIntensity: '',
+      affectQuality: '',
+      moodState: '',
+      customAffect: '',
+      // Pensamiento
+      thoughtProcess: '',
+      thoughtContent: '',
+      customThought: '',
+      // Percepción
+      perceptions: '',
+      customPerceptions: '',
+      // Cognición
+      orientation: '',
+      attention: '',
+      memory: '',
+      customCognition: '',
+      // Insight y Juicio
+      insight: '',
+      judgment: '',
+      customInsightJudgment: '',
+      // Resumen general (campo libre)
+      generalSummary: ''
     }
   });
 
@@ -208,18 +238,39 @@ export default function CentralizedConsultationInterface({
       additionalInstructions: '',
       nextAppointment: consultation.nextAppointment || { date: '', time: '' },
       mentalExam: {
-        descripcionInspeccion: '',
-        apariencia: '',
-        actitud: '',
-        conciencia: '',
-        orientacion: '',
-        atencion: '',
-        lenguaje: '',
-        afecto: '',
-        sensopercepcion: '',
-        memoria: '',
-        pensamientoPrincipal: '',
-        pensamientoDetalles: ''
+        // Apariencia y Comportamiento
+        appearance: '',
+        attitude: '',
+        consciousness: '',
+        customAppearance: '',
+        // Habla y Lenguaje
+        speechRate: '',
+        speechVolume: '',
+        speechFluency: '',
+        customSpeech: '',
+        // Afecto y Estado de Ánimo
+        affectIntensity: '',
+        affectQuality: '',
+        moodState: '',
+        customAffect: '',
+        // Pensamiento
+        thoughtProcess: '',
+        thoughtContent: '',
+        customThought: '',
+        // Percepción
+        perceptions: '',
+        customPerceptions: '',
+        // Cognición
+        orientation: '',
+        attention: '',
+        memory: '',
+        customCognition: '',
+        // Insight y Juicio
+        insight: '',
+        judgment: '',
+        customInsightJudgment: '',
+        // Resumen general (campo libre)
+        generalSummary: ''
       }
     });
   };
@@ -228,11 +279,24 @@ export default function CentralizedConsultationInterface({
     if (!currentConsultation) return;
     
     try {
+      // Formatear examen mental para almacenamiento
+      const formattedMentalExam = MentalExamFormatter.formatForStorage(consultationData.mentalExam as MentalExamData);
+      
       const updateData = {
         ...consultationData,
+        // Guardar tanto la estructura como el resumen en el campo mental_exam
+        mental_exam: {
+          structured: formattedMentalExam.structuredData,
+          readable: formattedMentalExam.readableSummary,
+          compact: formattedMentalExam.compactSummary,
+          hasContent: MentalExamFormatter.hasSignificantContent(consultationData.mentalExam as MentalExamData),
+          lastUpdated: new Date().toISOString()
+        },
         status: 'completed',
         updatedAt: new Date().toISOString()
       };
+      
+      console.log('💾 Saving consultation with structured mental exam:', updateData.mental_exam);
       
       await expedixApi.updateConsultation(currentConsultation.id, updateData);
       
@@ -243,9 +307,317 @@ export default function CentralizedConsultationInterface({
         onSave(updateData);
       }
       
+      // Show success message
+      console.log('✅ Consultation saved successfully with mental exam data');
+      
     } catch (error) {
-      console.error('Error saving consultation:', error);
+      console.error('❌ Error saving consultation:', error);
     }
+  };
+
+  // Print handlers
+  const handlePrintConsultation = () => {
+    if (!currentConsultation) {
+      console.warn('No consultation available for printing');
+      return;
+    }
+    
+    const printData = {
+      type: 'consultation',
+      consultation: currentConsultation,
+      consultationData,
+      patient,
+      formattedMentalExam: MentalExamFormatter.formatForStorage(consultationData.mentalExam as MentalExamData)
+    };
+    
+    // Abrir ventana de impresión
+    openPrintWindow(printData);
+    setShowPrintMenu(false);
+  };
+
+  const handlePrintPrescription = () => {
+    if (!consultationData.medications || consultationData.medications.length === 0) {
+      alert('No hay medicamentos en esta consulta para imprimir');
+      return;
+    }
+    
+    const printData = {
+      type: 'prescription',
+      consultation: currentConsultation,
+      consultationData,
+      patient,
+      medications: consultationData.medications
+    };
+    
+    openPrintWindow(printData);
+    setShowPrintMenu(false);
+  };
+
+  const handlePrintMedicalRecord = () => {
+    const printData = {
+      type: 'medical_record',
+      patient,
+      consultations,
+      prescriptions,
+      currentConsultation
+    };
+    
+    openPrintWindow(printData);
+    setShowPrintMenu(false);
+  };
+
+  const openPrintWindow = (printData: any) => {
+    // Crear una nueva ventana para impresión
+    const printWindow = window.open('', '_blank', 'width=800,height=600');
+    if (!printWindow) {
+      alert('Por favor permite ventanas emergentes para imprimir');
+      return;
+    }
+    
+    // Generar HTML para impresión
+    const html = generatePrintHTML(printData);
+    printWindow.document.write(html);
+    printWindow.document.close();
+    
+    // Esperar a que se cargue completamente antes de imprimir
+    printWindow.onload = () => {
+      setTimeout(() => {
+        printWindow.print();
+        // No cerrar automáticamente para que el usuario pueda revisar
+      }, 500);
+    };
+  };
+
+  const generatePrintHTML = (printData: any): string => {
+    const { type, patient, consultation, consultationData: formData, formattedMentalExam } = printData;
+    
+    // Obtener configuración de impresión
+    const config = PrintConfigManager.getCurrentConfig();
+    const styles = `<style>${PrintConfigManager.generateStyles(config)}</style>`;
+    
+    if (type === 'consultation') {
+      return generateConsultationHTML(styles, config, patient, formData, formattedMentalExam);
+    } else if (type === 'prescription') {
+      return generatePrescriptionHTML(styles, config, patient, formData);
+    } else if (type === 'medical_record') {
+      return generateMedicalRecordHTML(styles, config, printData);
+    }
+    
+    return '';
+  };
+
+  const generateConsultationHTML = (styles: string, config: PrintConfig, patient: Patient, formData: any, formattedMentalExam: any): string => {
+    const currentDate = format(new Date(), 'dd/MM/yyyy HH:mm', { locale: es });
+    
+    return `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="UTF-8">
+        <title>Nota de Consulta - ${patient.first_name} ${patient.paternal_last_name}</title>
+        ${styles}
+      </head>
+      <body>
+        <div class="header">
+          <div class="clinic-name">${config.clinicName}</div>
+          <div class="clinic-info">${config.doctorName} • Cédula Prof: ${config.professionalId}</div>
+          <div class="clinic-info">Tel: ${config.phone} • Email: ${config.email}</div>
+        </div>
+        
+        <div class="patient-info">
+          <div><strong>${patient.first_name} ${patient.paternal_last_name} ${patient.maternal_last_name || ''}</strong></div>
+          <div>Edad: ${patient.age} años</div>
+          <div>Fecha: ${currentDate}</div>
+          <div>Tipo: ${formData.noteType}</div>
+        </div>
+        
+        ${formData.currentCondition ? `
+        <div class="section">
+          <div class="section-title">Padecimiento Actual</div>
+          <div class="section-content">${formData.currentCondition}</div>
+        </div>
+        ` : ''}
+        
+        ${(formData.vitalSigns.height || formData.vitalSigns.weight || formData.vitalSigns.temperature) ? `
+        <div class="section">
+          <div class="section-title">Signos Vitales</div>
+          <div class="compact-row">
+            ${formData.vitalSigns.height ? `<div>Altura: ${formData.vitalSigns.height} cm</div>` : ''}
+            ${formData.vitalSigns.weight ? `<div>Peso: ${formData.vitalSigns.weight} kg</div>` : ''}
+            ${formData.vitalSigns.temperature ? `<div>Temp: ${formData.vitalSigns.temperature}°C</div>` : ''}
+          </div>
+          <div class="compact-row">
+            ${formData.vitalSigns.bloodPressure.systolic ? `<div>PA: ${formData.vitalSigns.bloodPressure.systolic}/${formData.vitalSigns.bloodPressure.diastolic} mmHg</div>` : ''}
+            ${formData.vitalSigns.heartRate ? `<div>FC: ${formData.vitalSigns.heartRate} lpm</div>` : ''}
+            ${formData.vitalSigns.oxygenSaturation ? `<div>SpO2: ${formData.vitalSigns.oxygenSaturation}%</div>` : ''}
+          </div>
+        </div>
+        ` : ''}
+        
+        ${formData.physicalExamination ? `
+        <div class="section">
+          <div class="section-title">Exploración Física</div>
+          <div class="section-content">${formData.physicalExamination}</div>
+        </div>
+        ` : ''}
+        
+        ${formattedMentalExam && formattedMentalExam.compactSummary && formattedMentalExam.compactSummary !== 'Examen mental dentro de parámetros normales' ? `
+        <div class="section">
+          <div class="section-title">Examen Mental</div>
+          <div class="section-content">${config.consultation.includeFullMentalExam ? formattedMentalExam.readableSummary : formattedMentalExam.compactSummary}</div>
+        </div>
+        ` : ''}
+        
+        ${formData.diagnosis ? `
+        <div class="section">
+          <div class="section-title">Diagnóstico</div>
+          <div class="section-content">${formData.diagnosis}</div>
+        </div>
+        ` : ''}
+        
+        ${formData.additionalInstructions ? `
+        <div class="section">
+          <div class="section-title">Plan de Tratamiento</div>
+          <div class="section-content">${formData.additionalInstructions}</div>
+        </div>
+        ` : ''}
+        
+        ${config.consultation.includeNextAppointment && (formData.nextAppointment.date || formData.nextAppointment.time) ? `
+        <div class="section">
+          <div class="section-title">Próxima Cita</div>
+          <div class="section-content">
+            ${formData.nextAppointment.date ? `Fecha: ${format(new Date(formData.nextAppointment.date), 'dd/MM/yyyy', { locale: es })}` : ''}
+            ${formData.nextAppointment.time ? ` - Hora: ${formData.nextAppointment.time}` : ''}
+          </div>
+        </div>
+        ` : ''}
+        
+        <div class="signature-area">
+          <div class="signature-line"></div>
+          <div>${config.doctorName}</div>
+          <div>Cédula Profesional: ${config.professionalId}</div>
+        </div>
+        
+        <div class="footer">
+          Documento generado por MindHub • ${currentDate}
+        </div>
+      </body>
+      </html>
+    `;
+  };
+
+  const generatePrescriptionHTML = (styles: string, config: PrintConfig, patient: Patient, formData: any): string => {
+    const currentDate = format(new Date(), 'dd/MM/yyyy', { locale: es });
+    
+    return `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="UTF-8">
+        <title>Receta Médica - ${patient.first_name} ${patient.paternal_last_name}</title>
+        ${styles}
+        <style>
+          .prescription-header { text-align: center; font-size: 18px; font-weight: bold; margin-bottom: 15px; }
+          .rx-symbol { font-size: 24px; font-weight: bold; margin: 10px 0; }
+          .medication { margin: 8px 0; padding: 6px; border-left: 3px solid #007bff; }
+          .medication-name { font-weight: bold; font-size: 12px; }
+          .medication-details { font-size: 10px; margin-left: 10px; }
+        </style>
+      </head>
+      <body>
+        <div class="header">
+          <div class="clinic-name">${config.clinicName}</div>
+          <div class="clinic-info">${config.doctorName} • Cédula Prof: 12345678</div>
+          <div class="clinic-info">Tel: (555) 123-4567</div>
+        </div>
+        
+        ${config.prescription.includeHeader ? `<div class="prescription-header">RECETA MÉDICA</div>` : ''}
+        
+        ${config.prescription.includePatientInfo ? `
+        <div class="patient-info">
+          <div><strong>${patient.first_name} ${patient.paternal_last_name}</strong></div>
+          ${config.prescription.includeAge ? `<div>Edad: ${patient.age} años</div>` : ''}
+          ${config.prescription.includeDate ? `<div>Fecha: ${currentDate}</div>` : ''}
+        </div>
+        ` : ''}
+        
+        ${config.prescription.rxSymbol ? `<div class="rx-symbol">℞</div>` : ''}
+        
+        ${(formData.medications || []).map((med: any, index: number) => `
+          <div class="medication">
+            <div class="medication-name">${config.prescription.numberedMedications ? `${index + 1}. ` : ''}${med.name || 'Medicamento'}</div>
+            <div class="medication-details">
+              ${med.dosage ? `Dosis: ${med.dosage}` : ''}<br>
+              ${med.frequency ? `Frecuencia: ${med.frequency}` : ''}<br>
+              ${med.duration ? `Duración: ${med.duration}` : ''}<br>
+              ${med.instructions ? `Instrucciones: ${med.instructions}` : ''}
+            </div>
+          </div>
+        `).join('')}
+        
+        <div class="signature-area">
+          <div class="signature-line"></div>
+          <div>${config.doctorName}</div>
+          <div>Cédula Profesional: ${config.professionalId}</div>
+        </div>
+      </body>
+      </html>
+    `;
+  };
+
+  const generateMedicalRecordHTML = (styles: string, config: PrintConfig, printData: any): string => {
+    const { patient, consultations } = printData;
+    const currentDate = format(new Date(), 'dd/MM/yyyy', { locale: es });
+    
+    return `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="UTF-8">
+        <title>Expediente Médico - ${patient.first_name} ${patient.paternal_last_name}</title>
+        ${styles}
+        <style>
+          .record-header { font-size: 14px; font-weight: bold; text-align: center; margin-bottom: 10px; }
+          .consultation-item { margin: 6px 0; padding: 4px; border-bottom: 1px solid #eee; }
+          .consultation-date { font-weight: bold; font-size: 10px; }
+          .consultation-summary { font-size: 9px; margin-left: 10px; }
+        </style>
+      </head>
+      <body>
+        <div class="header">
+          <div class="clinic-name">${config.clinicName}</div>
+          <div class="clinic-info">${config.doctorName}</div>
+        </div>
+        
+        <div class="record-header">EXPEDIENTE MÉDICO</div>
+        
+        <div class="patient-info">
+          <div><strong>${patient.first_name} ${patient.paternal_last_name}</strong></div>
+          <div>Fecha de nacimiento: ${safeFormatDate(patient.birth_date)}</div>
+          <div>Edad: ${patient.age} años</div>
+          <div>Teléfono: ${patient.cell_phone || 'No registrado'}</div>
+          <div>Email: ${patient.email || 'No registrado'}</div>
+        </div>
+        
+        <div class="section">
+          <div class="section-title">Historial de Consultas</div>
+          ${(consultations || []).map((consultation: any) => `
+            <div class="consultation-item">
+              <div class="consultation-date">${safeFormatDate(consultation.date)} - ${consultation.noteType}</div>
+              <div class="consultation-summary">
+                ${consultation.currentCondition ? `Motivo: ${consultation.currentCondition.substring(0, 100)}...` : ''}
+                ${consultation.diagnosis ? `Diagnóstico: ${consultation.diagnosis}` : ''}
+              </div>
+            </div>
+          `).join('')}
+        </div>
+        
+        <div class="footer">
+          Expediente impreso el ${currentDate} • MindHub
+        </div>
+      </body>
+      </html>
+    `;
   };
 
   const handleNavigateConsultation = (direction: 'prev' | 'next') => {
@@ -463,6 +835,63 @@ export default function CentralizedConsultationInterface({
                 <EyeIcon className="h-4 w-4 mr-1" />
                 Vista previa
               </Button>
+              
+              {/* Print Menu */}
+              <div className="relative">
+                <Button
+                  variant="outline"
+                  onClick={() => setShowPrintMenu(!showPrintMenu)}
+                  disabled={!currentConsultation}
+                >
+                  <PrinterIcon className="h-4 w-4 mr-1" />
+                  Imprimir
+                </Button>
+                
+                {showPrintMenu && (
+                  <>
+                    <div 
+                      className="fixed inset-0 z-10" 
+                      onClick={() => setShowPrintMenu(false)}
+                    ></div>
+                    <div className="absolute right-0 top-full mt-1 w-56 bg-white border border-gray-200 rounded-md shadow-lg z-20">
+                      <div className="py-1">
+                        <button
+                          onClick={handlePrintConsultation}
+                          className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center"
+                        >
+                          <DocumentTextIcon className="h-4 w-4 mr-2" />
+                          Nota de Consulta
+                        </button>
+                        <button
+                          onClick={handlePrintPrescription}
+                          className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center"
+                          disabled={!consultationData.medications || consultationData.medications.length === 0}
+                        >
+                          📋 Receta Médica
+                        </button>
+                        <button
+                          onClick={handlePrintMedicalRecord}
+                          className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center"
+                        >
+                          📁 Expediente Completo
+                        </button>
+                        <div className="border-t border-gray-100 my-1"></div>
+                        <button
+                          onClick={() => {
+                            setShowPrintConfig(true);
+                            setShowPrintMenu(false);
+                          }}
+                          className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center"
+                        >
+                          <CogIcon className="h-4 w-4 mr-2" />
+                          Configurar Impresión
+                        </button>
+                      </div>
+                    </div>
+                  </>
+                )}
+              </div>
+              
               <Button variant="primary" onClick={handleSaveConsultation}>
                 Guardar consulta
               </Button>
@@ -669,200 +1098,485 @@ export default function CentralizedConsultationInterface({
               />
             </Card>
 
-            {/* Mental Exam */}
+            {/* Mental Exam - Modern Dropdown Interface */}
             <Card className="p-6">
-              <h3 className="text-lg font-medium text-gray-900 mb-4">🧠 Examen Mental</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Descripción General/Inspección
-                  </label>
-                  <textarea
-                    value={consultationData.mentalExam.descripcionInspeccion}
-                    onChange={(e) => setConsultationData(prev => ({ 
-                      ...prev, 
-                      mentalExam: { ...prev.mentalExam, descripcionInspeccion: e.target.value }
-                    }))}
-                    rows={2}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-primary-500 focus:border-primary-500"
-                    placeholder="Descripción general del estado mental..."
-                  />
-                </div>
-                
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Apariencia
-                  </label>
-                  <textarea
-                    value={consultationData.mentalExam.apariencia}
-                    onChange={(e) => setConsultationData(prev => ({ 
-                      ...prev, 
-                      mentalExam: { ...prev.mentalExam, apariencia: e.target.value }
-                    }))}
-                    rows={2}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-primary-500 focus:border-primary-500"
-                    placeholder="Apariencia física y presentación..."
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Actitud
-                  </label>
-                  <textarea
-                    value={consultationData.mentalExam.actitud}
-                    onChange={(e) => setConsultationData(prev => ({ 
-                      ...prev, 
-                      mentalExam: { ...prev.mentalExam, actitud: e.target.value }
-                    }))}
-                    rows={2}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-primary-500 focus:border-primary-500"
-                    placeholder="Actitud durante la entrevista..."
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Conciencia
-                  </label>
-                  <textarea
-                    value={consultationData.mentalExam.conciencia}
-                    onChange={(e) => setConsultationData(prev => ({ 
-                      ...prev, 
-                      mentalExam: { ...prev.mentalExam, conciencia: e.target.value }
-                    }))}
-                    rows={2}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-primary-500 focus:border-primary-500"
-                    placeholder="Estado de conciencia..."
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Orientación
-                  </label>
-                  <textarea
-                    value={consultationData.mentalExam.orientacion}
-                    onChange={(e) => setConsultationData(prev => ({ 
-                      ...prev, 
-                      mentalExam: { ...prev.mentalExam, orientacion: e.target.value }
-                    }))}
-                    rows={2}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-primary-500 focus:border-primary-500"
-                    placeholder="Orientación temporal, espacial y personal..."
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Atención
-                  </label>
-                  <textarea
-                    value={consultationData.mentalExam.atencion}
-                    onChange={(e) => setConsultationData(prev => ({ 
-                      ...prev, 
-                      mentalExam: { ...prev.mentalExam, atencion: e.target.value }
-                    }))}
-                    rows={2}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-primary-500 focus:border-primary-500"
-                    placeholder="Capacidad de atención y concentración..."
-                  />
+              <h3 className="text-lg font-medium text-gray-900 mb-6 flex items-center">
+                🧠 Examen Mental 
+                <span className="text-sm font-normal text-gray-500 ml-2">Selección estructurada con opciones personalizables</span>
+              </h3>
+              
+              <div className="space-y-6">
+                {/* Apariencia y Comportamiento */}
+                <div className="border-l-4 border-blue-500 pl-4">
+                  <h4 className="font-medium text-gray-900 mb-4">1. Apariencia y Comportamiento</h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Apariencia General</label>
+                      <select
+                        value={consultationData.mentalExam.appearance}
+                        onChange={(e) => setConsultationData(prev => ({ 
+                          ...prev, 
+                          mentalExam: { ...prev.mentalExam, appearance: e.target.value }
+                        }))}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-primary-500 focus:border-primary-500"
+                      >
+                        <option value="">Seleccionar...</option>
+                        <option value="bien cuidado">Bien cuidado</option>
+                        <option value="descuidado">Descuidado</option>
+                        <option value="excesivamente arreglado">Excesivamente arreglado</option>
+                        <option value="inapropiado para la ocasión">Inapropiado para la ocasión</option>
+                        <option value="normal para la edad">Normal para la edad</option>
+                        <option value="personalizado">Personalizado (especificar abajo)</option>
+                      </select>
+                    </div>
+                    
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Actitud hacia el Examinador</label>
+                      <select
+                        value={consultationData.mentalExam.attitude}
+                        onChange={(e) => setConsultationData(prev => ({ 
+                          ...prev, 
+                          mentalExam: { ...prev.mentalExam, attitude: e.target.value }
+                        }))}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-primary-500 focus:border-primary-500"
+                      >
+                        <option value="">Seleccionar...</option>
+                        <option value="cooperativo">Cooperativo</option>
+                        <option value="hostil">Hostil</option>
+                        <option value="defensivo">Defensivo</option>
+                        <option value="suspicaz">Suspicaz</option>
+                        <option value="evasivo">Evasivo</option>
+                        <option value="apático">Apático</option>
+                        <option value="fácilmente distraído">Fácilmente distraído</option>
+                        <option value="enfocado">Enfocado</option>
+                        <option value="personalizado">Personalizado (especificar abajo)</option>
+                      </select>
+                    </div>
+                    
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Nivel de Conciencia</label>
+                      <select
+                        value={consultationData.mentalExam.consciousness}
+                        onChange={(e) => setConsultationData(prev => ({ 
+                          ...prev, 
+                          mentalExam: { ...prev.mentalExam, consciousness: e.target.value }
+                        }))}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-primary-500 focus:border-primary-500"
+                      >
+                        <option value="">Seleccionar...</option>
+                        <option value="alerta">Alerta</option>
+                        <option value="vigilante">Vigilante</option>
+                        <option value="somnoliento">Somnoliento</option>
+                        <option value="letárgico">Letárgico</option>
+                        <option value="estuporoso">Estuporoso</option>
+                        <option value="confuso">Confuso</option>
+                        <option value="fluctuante">Fluctuante</option>
+                      </select>
+                    </div>
+                    
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Observaciones Adicionales</label>
+                      <textarea
+                        value={consultationData.mentalExam.customAppearance}
+                        onChange={(e) => setConsultationData(prev => ({ 
+                          ...prev, 
+                          mentalExam: { ...prev.mentalExam, customAppearance: e.target.value }
+                        }))}
+                        rows={2}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-primary-500 focus:border-primary-500"
+                        placeholder="Detalles específicos sobre apariencia y comportamiento..."
+                      />
+                    </div>
+                  </div>
                 </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Lenguaje
-                  </label>
-                  <textarea
-                    value={consultationData.mentalExam.lenguaje}
-                    onChange={(e) => setConsultationData(prev => ({ 
-                      ...prev, 
-                      mentalExam: { ...prev.mentalExam, lenguaje: e.target.value }
-                    }))}
-                    rows={2}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-primary-500 focus:border-primary-500"
-                    placeholder="Características del lenguaje..."
-                  />
+                {/* Habla y Lenguaje */}
+                <div className="border-l-4 border-green-500 pl-4">
+                  <h4 className="font-medium text-gray-900 mb-4">2. Habla y Lenguaje</h4>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Velocidad del Habla</label>
+                      <select
+                        value={consultationData.mentalExam.speechRate}
+                        onChange={(e) => setConsultationData(prev => ({ 
+                          ...prev, 
+                          mentalExam: { ...prev.mentalExam, speechRate: e.target.value }
+                        }))}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-primary-500 focus:border-primary-500"
+                      >
+                        <option value="">Seleccionar...</option>
+                        <option value="normal">Normal</option>
+                        <option value="rápido">Rápido</option>
+                        <option value="lento">Lento</option>
+                        <option value="presionado">Presionado</option>
+                        <option value="tartamudeante">Tartamudeante</option>
+                      </select>
+                    </div>
+                    
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Volumen</label>
+                      <select
+                        value={consultationData.mentalExam.speechVolume}
+                        onChange={(e) => setConsultationData(prev => ({ 
+                          ...prev, 
+                          mentalExam: { ...prev.mentalExam, speechVolume: e.target.value }
+                        }))}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-primary-500 focus:border-primary-500"
+                      >
+                        <option value="">Seleccionar...</option>
+                        <option value="normal">Normal</option>
+                        <option value="alto">Alto</option>
+                        <option value="bajo">Bajo</option>
+                        <option value="monótono">Monótono</option>
+                        <option value="débil">Débil</option>
+                        <option value="fuerte">Fuerte</option>
+                      </select>
+                    </div>
+                    
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Fluidez</label>
+                      <select
+                        value={consultationData.mentalExam.speechFluency}
+                        onChange={(e) => setConsultationData(prev => ({ 
+                          ...prev, 
+                          mentalExam: { ...prev.mentalExam, speechFluency: e.target.value }
+                        }))}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-primary-500 focus:border-primary-500"
+                      >
+                        <option value="">Seleccionar...</option>
+                        <option value="clara">Clara</option>
+                        <option value="arrastrada">Arrastrada</option>
+                        <option value="vacilante">Vacilante</option>
+                        <option value="buena articulación">Buena articulación</option>
+                        <option value="afásico">Afásico</option>
+                      </select>
+                    </div>
+                    
+                    <div className="md:col-span-3">
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Observaciones sobre Habla</label>
+                      <textarea
+                        value={consultationData.mentalExam.customSpeech}
+                        onChange={(e) => setConsultationData(prev => ({ 
+                          ...prev, 
+                          mentalExam: { ...prev.mentalExam, customSpeech: e.target.value }
+                        }))}
+                        rows={2}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-primary-500 focus:border-primary-500"
+                        placeholder="Detalles específicos sobre el habla y lenguaje..."
+                      />
+                    </div>
+                  </div>
                 </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Afecto
-                  </label>
-                  <textarea
-                    value={consultationData.mentalExam.afecto}
-                    onChange={(e) => setConsultationData(prev => ({ 
-                      ...prev, 
-                      mentalExam: { ...prev.mentalExam, afecto: e.target.value }
-                    }))}
-                    rows={2}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-primary-500 focus:border-primary-500"
-                    placeholder="Estado emocional y afectivo..."
-                  />
+                {/* Afecto y Estado de Ánimo */}
+                <div className="border-l-4 border-yellow-500 pl-4">
+                  <h4 className="font-medium text-gray-900 mb-4">3. Afecto y Estado de Ánimo</h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Intensidad del Afecto</label>
+                      <select
+                        value={consultationData.mentalExam.affectIntensity}
+                        onChange={(e) => setConsultationData(prev => ({ 
+                          ...prev, 
+                          mentalExam: { ...prev.mentalExam, affectIntensity: e.target.value }
+                        }))}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-primary-500 focus:border-primary-500"
+                      >
+                        <option value="">Seleccionar...</option>
+                        <option value="normal">Normal</option>
+                        <option value="embotado">Embotado</option>
+                        <option value="plano">Plano</option>
+                        <option value="hiper-energizado">Hiper-energizado</option>
+                        <option value="restringido">Restringido</option>
+                        <option value="lábil">Lábil</option>
+                        <option value="expansivo">Expansivo</option>
+                      </select>
+                    </div>
+                    
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Cualidad del Afecto</label>
+                      <select
+                        value={consultationData.mentalExam.affectQuality}
+                        onChange={(e) => setConsultationData(prev => ({ 
+                          ...prev, 
+                          mentalExam: { ...prev.mentalExam, affectQuality: e.target.value }
+                        }))}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-primary-500 focus:border-primary-500"
+                      >
+                        <option value="">Seleccionar...</option>
+                        <option value="eutímico">Eutímico</option>
+                        <option value="triste">Triste</option>
+                        <option value="ansioso">Ansioso</option>
+                        <option value="irritable">Irritable</option>
+                        <option value="eufórico">Eufórico</option>
+                        <option value="hostil">Hostil</option>
+                        <option value="indiferente">Indiferente</option>
+                        <option value="animado">Animado</option>
+                        <option value="disfórico">Disfórico</option>
+                      </select>
+                    </div>
+                    
+                    <div className="md:col-span-2">
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Estado de Ánimo Reportado</label>
+                      <input
+                        type="text"
+                        value={consultationData.mentalExam.moodState}
+                        onChange={(e) => setConsultationData(prev => ({ 
+                          ...prev, 
+                          mentalExam: { ...prev.mentalExam, moodState: e.target.value }
+                        }))}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-primary-500 focus:border-primary-500"
+                        placeholder="Cómo describe el paciente su estado de ánimo..."
+                      />
+                    </div>
+                    
+                    <div className="md:col-span-2">
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Observaciones Emocionales</label>
+                      <textarea
+                        value={consultationData.mentalExam.customAffect}
+                        onChange={(e) => setConsultationData(prev => ({ 
+                          ...prev, 
+                          mentalExam: { ...prev.mentalExam, customAffect: e.target.value }
+                        }))}
+                        rows={2}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-primary-500 focus:border-primary-500"
+                        placeholder="Detalles sobre el estado emocional y afectivo..."
+                      />
+                    </div>
+                  </div>
                 </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Sensopercepción
-                  </label>
-                  <textarea
-                    value={consultationData.mentalExam.sensopercepcion}
-                    onChange={(e) => setConsultationData(prev => ({ 
-                      ...prev, 
-                      mentalExam: { ...prev.mentalExam, sensopercepcion: e.target.value }
-                    }))}
-                    rows={2}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-primary-500 focus:border-primary-500"
-                    placeholder="Alucinaciones, ilusiones..."
-                  />
+                {/* Pensamiento */}
+                <div className="border-l-4 border-purple-500 pl-4">
+                  <h4 className="font-medium text-gray-900 mb-4">4. Pensamiento</h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Proceso del Pensamiento</label>
+                      <select
+                        value={consultationData.mentalExam.thoughtProcess}
+                        onChange={(e) => setConsultationData(prev => ({ 
+                          ...prev, 
+                          mentalExam: { ...prev.mentalExam, thoughtProcess: e.target.value }
+                        }))}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-primary-500 focus:border-primary-500"
+                      >
+                        <option value="">Seleccionar...</option>
+                        <option value="lineal y dirigido al objetivo">Lineal y dirigido al objetivo</option>
+                        <option value="circunstancial">Circunstancial</option>
+                        <option value="tangencial">Tangencial</option>
+                        <option value="incoherente">Incoherente</option>
+                        <option value="fuga de ideas">Fuga de ideas</option>
+                        <option value="bloqueo del pensamiento">Bloqueo del pensamiento</option>
+                        <option value="perseveración">Perseveración</option>
+                        <option value="asociaciones libres">Asociaciones libres</option>
+                        <option value="ensalada de palabras">Ensalada de palabras</option>
+                      </select>
+                    </div>
+                    
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Contenido del Pensamiento</label>
+                      <input
+                        type="text"
+                        value={consultationData.mentalExam.thoughtContent}
+                        onChange={(e) => setConsultationData(prev => ({ 
+                          ...prev, 
+                          mentalExam: { ...prev.mentalExam, thoughtContent: e.target.value }
+                        }))}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-primary-500 focus:border-primary-500"
+                        placeholder="Ideas dominantes, preocupaciones, obsesiones..."
+                      />
+                    </div>
+                    
+                    <div className="md:col-span-2">
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Observaciones del Pensamiento</label>
+                      <textarea
+                        value={consultationData.mentalExam.customThought}
+                        onChange={(e) => setConsultationData(prev => ({ 
+                          ...prev, 
+                          mentalExam: { ...prev.mentalExam, customThought: e.target.value }
+                        }))}
+                        rows={2}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-primary-500 focus:border-primary-500"
+                        placeholder="Detalles sobre el curso y contenido del pensamiento..."
+                      />
+                    </div>
+                  </div>
                 </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Memoria
-                  </label>
-                  <textarea
-                    value={consultationData.mentalExam.memoria}
-                    onChange={(e) => setConsultationData(prev => ({ 
-                      ...prev, 
-                      mentalExam: { ...prev.mentalExam, memoria: e.target.value }
-                    }))}
-                    rows={2}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-primary-500 focus:border-primary-500"
-                    placeholder="Memoria reciente, remota, de trabajo..."
-                  />
+                {/* Percepción */}
+                <div className="border-l-4 border-red-500 pl-4">
+                  <h4 className="font-medium text-gray-900 mb-4">5. Percepción</h4>
+                  <div className="grid grid-cols-1 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Alteraciones Perceptuales</label>
+                      <select
+                        value={consultationData.mentalExam.perceptions}
+                        onChange={(e) => setConsultationData(prev => ({ 
+                          ...prev, 
+                          mentalExam: { ...prev.mentalExam, perceptions: e.target.value }
+                        }))}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-primary-500 focus:border-primary-500"
+                      >
+                        <option value="">Sin alteraciones reportadas</option>
+                        <option value="alucinaciones auditivas">Alucinaciones auditivas</option>
+                        <option value="alucinaciones visuales">Alucinaciones visuales</option>
+                        <option value="alucinaciones táctiles">Alucinaciones táctiles</option>
+                        <option value="ilusiones">Ilusiones</option>
+                        <option value="despersonalización">Despersonalización</option>
+                        <option value="desrealización">Desrealización</option>
+                        <option value="personalizado">Personalizado (especificar abajo)</option>
+                      </select>
+                    </div>
+                    
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Detalles sobre Percepción</label>
+                      <textarea
+                        value={consultationData.mentalExam.customPerceptions}
+                        onChange={(e) => setConsultationData(prev => ({ 
+                          ...prev, 
+                          mentalExam: { ...prev.mentalExam, customPerceptions: e.target.value }
+                        }))}
+                        rows={2}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-primary-500 focus:border-primary-500"
+                        placeholder="Descripción detallada de alteraciones perceptuales..."
+                      />
+                    </div>
+                  </div>
                 </div>
 
-                <div className="md:col-span-2">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Pensamiento (Contenido Principal)
-                  </label>
-                  <textarea
-                    value={consultationData.mentalExam.pensamientoPrincipal}
-                    onChange={(e) => setConsultationData(prev => ({ 
-                      ...prev, 
-                      mentalExam: { ...prev.mentalExam, pensamientoPrincipal: e.target.value }
-                    }))}
-                    rows={2}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-primary-500 focus:border-primary-500"
-                    placeholder="Ideas principales, temas dominantes..."
-                  />
+                {/* Cognición */}
+                <div className="border-l-4 border-indigo-500 pl-4">
+                  <h4 className="font-medium text-gray-900 mb-4">6. Cognición</h4>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Orientación</label>
+                      <input
+                        type="text"
+                        value={consultationData.mentalExam.orientation}
+                        onChange={(e) => setConsultationData(prev => ({ 
+                          ...prev, 
+                          mentalExam: { ...prev.mentalExam, orientation: e.target.value }
+                        }))}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-primary-500 focus:border-primary-500"
+                        placeholder="Tiempo, lugar, persona..."
+                      />
+                    </div>
+                    
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Atención</label>
+                      <input
+                        type="text"
+                        value={consultationData.mentalExam.attention}
+                        onChange={(e) => setConsultationData(prev => ({ 
+                          ...prev, 
+                          mentalExam: { ...prev.mentalExam, attention: e.target.value }
+                        }))}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-primary-500 focus:border-primary-500"
+                        placeholder="Concentración, distraibilidad..."
+                      />
+                    </div>
+                    
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Memoria</label>
+                      <input
+                        type="text"
+                        value={consultationData.mentalExam.memory}
+                        onChange={(e) => setConsultationData(prev => ({ 
+                          ...prev, 
+                          mentalExam: { ...prev.mentalExam, memory: e.target.value }
+                        }))}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-primary-500 focus:border-primary-500"
+                        placeholder="Inmediata, reciente, remota..."
+                      />
+                    </div>
+                    
+                    <div className="md:col-span-3">
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Evaluación Cognitiva Adicional</label>
+                      <textarea
+                        value={consultationData.mentalExam.customCognition}
+                        onChange={(e) => setConsultationData(prev => ({ 
+                          ...prev, 
+                          mentalExam: { ...prev.mentalExam, customCognition: e.target.value }
+                        }))}
+                        rows={2}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-primary-500 focus:border-primary-500"
+                        placeholder="Cálculo, abstracción, función ejecutiva..."
+                      />
+                    </div>
+                  </div>
                 </div>
 
-                <div className="md:col-span-2">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Pensamiento (Detalles y Observaciones)
-                  </label>
-                  <textarea
-                    value={consultationData.mentalExam.pensamientoDetalles}
-                    onChange={(e) => setConsultationData(prev => ({ 
-                      ...prev, 
-                      mentalExam: { ...prev.mentalExam, pensamientoDetalles: e.target.value }
-                    }))}
-                    rows={2}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-primary-500 focus:border-primary-500"
-                    placeholder="Curso del pensamiento, asociaciones, coherencia..."
-                  />
+                {/* Insight y Juicio */}
+                <div className="border-l-4 border-orange-500 pl-4">
+                  <h4 className="font-medium text-gray-900 mb-4">7. Insight y Juicio</h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Insight (Conciencia de Enfermedad)</label>
+                      <select
+                        value={consultationData.mentalExam.insight}
+                        onChange={(e) => setConsultationData(prev => ({ 
+                          ...prev, 
+                          mentalExam: { ...prev.mentalExam, insight: e.target.value }
+                        }))}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-primary-500 focus:border-primary-500"
+                      >
+                        <option value="">Seleccionar...</option>
+                        <option value="pobre">Pobre</option>
+                        <option value="regular">Regular</option>
+                        <option value="bueno">Bueno</option>
+                        <option value="excelente">Excelente</option>
+                      </select>
+                    </div>
+                    
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Juicio</label>
+                      <select
+                        value={consultationData.mentalExam.judgment}
+                        onChange={(e) => setConsultationData(prev => ({ 
+                          ...prev, 
+                          mentalExam: { ...prev.mentalExam, judgment: e.target.value }
+                        }))}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-primary-500 focus:border-primary-500"
+                      >
+                        <option value="">Seleccionar...</option>
+                        <option value="alterado">Alterado</option>
+                        <option value="pobre">Pobre</option>
+                        <option value="bueno">Bueno</option>
+                      </select>
+                    </div>
+                    
+                    <div className="md:col-span-2">
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Observaciones sobre Insight y Juicio</label>
+                      <textarea
+                        value={consultationData.mentalExam.customInsightJudgment}
+                        onChange={(e) => setConsultationData(prev => ({ 
+                          ...prev, 
+                          mentalExam: { ...prev.mentalExam, customInsightJudgment: e.target.value }
+                        }))}
+                        rows={2}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-primary-500 focus:border-primary-500"
+                        placeholder="Detalles sobre la conciencia de enfermedad y capacidad de juicio..."
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Resumen General */}
+                <div className="border-l-4 border-gray-500 pl-4">
+                  <h4 className="font-medium text-gray-900 mb-4">8. Resumen General del Examen Mental</h4>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Impresión General</label>
+                    <textarea
+                      value={consultationData.mentalExam.generalSummary}
+                      onChange={(e) => setConsultationData(prev => ({ 
+                        ...prev, 
+                        mentalExam: { ...prev.mentalExam, generalSummary: e.target.value }
+                      }))}
+                      rows={3}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-primary-500 focus:border-primary-500"
+                      placeholder="Resumen integrado del estado mental, impresiones clínicas principales y observaciones relevantes..."
+                    />
+                  </div>
                 </div>
               </div>
             </Card>
@@ -925,10 +1639,37 @@ export default function CentralizedConsultationInterface({
         isOpen={showPreviewDialog}
         onClose={() => setShowPreviewDialog(false)}
         patient={patient}
-        consultationData={consultationData}
+        consultationData={{
+          ...consultationData,
+          mentalExam: {
+            descripcionInspeccion: consultationData.mentalExam.customAppearance || consultationData.mentalExam.appearance || '',
+            apariencia: consultationData.mentalExam.appearance || consultationData.mentalExam.customAppearance || '',
+            actitud: consultationData.mentalExam.attitude || '',
+            conciencia: consultationData.mentalExam.consciousness || '',
+            orientacion: consultationData.mentalExam.orientation || '',
+            atencion: consultationData.mentalExam.attention || '',
+            lenguaje: consultationData.mentalExam.customSpeech || `${consultationData.mentalExam.speechRate} ${consultationData.mentalExam.speechVolume} ${consultationData.mentalExam.speechFluency}`.trim() || '',
+            afecto: consultationData.mentalExam.customAffect || `${consultationData.mentalExam.affectIntensity} ${consultationData.mentalExam.affectQuality}`.trim() || '',
+            sensopercepcion: consultationData.mentalExam.customPerceptions || consultationData.mentalExam.perceptions || '',
+            memoria: consultationData.mentalExam.memory || '',
+            pensamientoPrincipal: consultationData.mentalExam.thoughtContent || '',
+            pensamientoDetalles: consultationData.mentalExam.customThought || consultationData.mentalExam.thoughtProcess || ''
+          }
+        }}
         professionalName="Dr. Alejandro"
-        clinicName="MindHub Clínica"
+        clinicName="${config.clinicName}"
       />
+
+      {/* Print Configuration Dialog */}
+      {showPrintConfig && (
+        <PrintConfigDialog
+          onClose={() => setShowPrintConfig(false)}
+          onSave={(config) => {
+            console.log('✅ Print configuration saved:', config);
+            // La configuración ya se guarda automáticamente en PrintConfigDialog
+          }}
+        />
+      )}
     </div>
   );
 }
