@@ -31,28 +31,21 @@ def get_template_catalog(request):
                 'id': str(scale.id),
                 'name': scale.name,
                 'abbreviation': scale.abbreviation,
-                'category': getattr(scale.category, 'name', 'General') if hasattr(scale, 'category') and scale.category else 'General',
+                'category': scale.category or 'General',
                 'description': scale.description,
                 'authors': scale.authors,
                 'year': scale.year,
-                'language': 'es',  # Assume Spanish for now
+                'language': scale.language or 'es',
                 'totalItems': scale.total_items,
                 'administrationTime': scale.estimated_duration_minutes,
-                'targetPopulation': scale.get_population_display(),
-                'applicationType': scale.get_application_type_display(),
+                'targetPopulation': scale.get_population_display() if hasattr(scale, 'get_population_display') else 'General',
+                'applicationType': scale.get_application_type_display() if hasattr(scale, 'get_application_type_display') else 'Profesional',
                 'isActive': scale.is_active,
-                'isValidated': scale.is_validated,
-                'requiresTraining': scale.requires_training,
-                'tags': [tag.name for tag in scale.tags.all()],
-                'usageCount': scale.usage_count,
-                'createdAt': scale.created_at.isoformat(),
-                'updatedAt': scale.updated_at.isoformat(),
-                'psychometricProperties': {
-                    'reliabilityAlpha': scale.reliability_alpha,
-                    'sensitivity': scale.sensitivity,
-                    'specificity': scale.specificity,
-                    'testRetestReliability': scale.test_retest_reliability
-                } if any([scale.reliability_alpha, scale.sensitivity, scale.specificity]) else None
+                'isPublic': getattr(scale, 'is_public', True),
+                'tags': scale.tags if isinstance(scale.tags, list) else [],
+                'usageCount': getattr(scale, 'usage_count', 0),
+                'createdAt': getattr(scale, 'created_at', '').isoformat() if hasattr(getattr(scale, 'created_at', ''), 'isoformat') else '',
+                'updatedAt': getattr(scale, 'updated_at', '').isoformat() if hasattr(getattr(scale, 'updated_at', ''), 'isoformat') else '',
             }
             
             catalog.append(scale_data)

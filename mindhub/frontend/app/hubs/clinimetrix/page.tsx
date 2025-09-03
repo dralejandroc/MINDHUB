@@ -193,6 +193,12 @@ export default function ClinimetrixPage() {
       
       const scalesData = await clinimetrixProClient.getTemplateCatalog();
       
+      // DEBUG: Verificar estructura de datos
+      console.log('📊 Scales data received:', scalesData);
+      if (scalesData.length > 0) {
+        console.log('🔍 First scale structure:', scalesData[0]);
+      }
+      
       // Cargar favoritos desde localStorage
       const favorites = JSON.parse(localStorage.getItem('clinimetrix-favorites') || '[]');
       const scalesWithFavorites = scalesData.map(scale => ({
