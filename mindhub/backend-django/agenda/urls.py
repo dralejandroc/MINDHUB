@@ -27,6 +27,7 @@ urlpatterns = [
     path('appointments/provider-schedule/', views.AppointmentViewSet.as_view({'get': 'provider_schedule'}), name='provider-schedule'),
     path('appointments/<uuid:pk>/confirm/', views.AppointmentViewSet.as_view({'post': 'confirm'}), name='appointment-confirm'),
     path('appointments/<uuid:pk>/cancel/', views.AppointmentViewSet.as_view({'post': 'cancel'}), name='appointment-cancel'),
+    path('appointments/<uuid:pk>/status/', views.AppointmentViewSet.as_view({'put': 'status'}), name='appointment-status'),
     
     # Waiting list specific endpoints
     path('waiting-list/<uuid:pk>/contact/', views.WaitingListViewSet.as_view({'post': 'contact'}), name='waiting-list-contact'),

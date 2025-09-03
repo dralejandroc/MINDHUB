@@ -387,6 +387,144 @@ class AppointmentViewSet(AgendaDualViewSet):
         
         return slots
 
+    @action(detail=True, methods=['put'])
+    def status(self, request, pk=None):
+        """Update appointment status - compatible with frontend PUT /appointments/{id}/status"""
+        appointment = self.get_object()
+        new_status = request.data.get('status')
+        with_deposit = request.data.get('withDeposit', False)
+        deposit_amount = request.data.get('depositAmount', 0)
+        payment_method = request.data.get('paymentMethod', 'cash')
+        
+        if not new_status:
+            return Response(
+                {'error': 'Status is required'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        # Handle different status updates
+        if new_status == 'confirmed':
+            # Validate appointment can be confirmed
+            if not appointment.can_be_confirmed:
+                return Response(
+                    {'error': 'Cannot confirm this appointment'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            
+            # Update appointment status
+            appointment.status = 'confirmed'
+            appointment.confirmation_sent = True
+            appointment.confirmation_date = timezone.now()
+            appointment.save()
+            
+            # Handle deposit logic
+            if with_deposit and deposit_amount > 0:
+                # Create payment record in Finance
+                try:
+                    from finance.models import Income, Service
+                    
+                    # Get or create service for deposit
+                    service, created = Service.objects.get_or_create(
+                        name=f"Depósito - {appointment.appointment_type or 'Consulta'}",
+                        defaults={
+                            'price': deposit_amount,
+                            'category': 'Depósitos',
+                            'description': f'Depósito para cita médica'
+                        }
+                    )
+                    
+                    # Create income record
+                    income = Income.objects.create(
+                        patient_id=appointment.patient.id,
+                        service=service,
+                        amount=deposit_amount,
+                        payment_method=payment_method,
+                        description=f'Depósito para cita del {appointment.start_datetime.strftime("%d/%m/%Y")}',
+                        appointment_id=appointment.id
+                    )
+                    
+                    # Update appointment with deposit info
+                    appointment.notes = f"{appointment.notes or ''}\nDepósito recibido: ${deposit_amount} ({payment_method})"
+                    appointment.save()
+                    
+                except Exception as e:
+                    # Log error but don't fail the confirmation
+                    print(f"Error creating payment record: {e}")
+            
+            else:
+                # Create debt record for patient (no deposit)
+                try:
+                    from finance.models import Service
+                    
+                    # Get service price for this appointment type
+                    service = Service.objects.filter(
+                        name__icontains=appointment.appointment_type or 'consulta'
+                    ).first()
+                    
+                    if service:
+                        # Create pending payment record
+                        from finance.models import Income
+                        Income.objects.create(
+                            patient_id=appointment.patient.id,
+                            service=service,
+                            amount=service.price,
+                            payment_method='pending',
+                            description=f'Consulta confirmada sin depósito - {appointment.start_datetime.strftime("%d/%m/%Y")}',
+                            appointment_id=appointment.id,
+                            is_paid=False
+                        )
+                        
+                        appointment.notes = f"{appointment.notes or ''}\nCita confirmada sin depósito - Deuda pendiente: ${service.price}"
+                        appointment.save()
+                        
+                except Exception as e:
+                    print(f"Error creating debt record: {e}")
+            
+            # Create confirmation record
+            AppointmentConfirmation.objects.create(
+                appointment=appointment,
+                confirmation_type='staff',
+                confirmation_method='system',
+                confirmed_by=request.user,
+                notes=f'Confirmed via API - Deposit: {"Yes" if with_deposit else "No"}'
+            )
+            
+            # Create history entry
+            AppointmentHistory.objects.create(
+                appointment=appointment,
+                action='CONFIRMED',
+                changes={
+                    'status': 'confirmed',
+                    'with_deposit': with_deposit,
+                    'deposit_amount': deposit_amount if with_deposit else 0
+                },
+                modified_by=request.user,
+                notes=f'Status updated to confirmed via API'
+            )
+            
+        else:
+            # Handle other status changes
+            appointment.status = new_status
+            appointment.save()
+            
+            # Create history entry
+            AppointmentHistory.objects.create(
+                appointment=appointment,
+                action=f'STATUS_CHANGED_TO_{new_status.upper()}',
+                changes={'status': new_status},
+                modified_by=request.user,
+                notes=f'Status updated to {new_status} via API'
+            )
+        
+        # Return updated appointment
+        serializer = self.get_serializer(appointment)
+        return Response({
+            'appointment': serializer.data,
+            'message': f'Appointment status updated to {new_status}',
+            'with_deposit': with_deposit,
+            'deposit_amount': deposit_amount if with_deposit else 0
+        })
+
 
 class AppointmentHistoryViewSet(DualSystemReadOnlyViewSet):
     """🎯 DUAL SYSTEM Appointment history ViewSet"""
