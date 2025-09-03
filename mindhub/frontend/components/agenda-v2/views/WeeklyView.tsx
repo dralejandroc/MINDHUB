@@ -296,51 +296,57 @@ export const WeeklyView: React.FC<WeeklyViewProps> = ({
                                 <div
                                   key={appointment.id}
                                   className="absolute inset-1"
-                                  onMouseDown={(e) => {
-                                    // Prevent propagation to time slot
+                                  onClick={(e) => {
+                                    // CRITICAL: Stop all propagation to prevent time slot click
                                     e.stopPropagation();
+                                    e.preventDefault();
+                                    console.log('Appointment clicked, showing context menu');
+                                    onAppointmentClick?.(appointment, e);
+                                  }}
+                                  onMouseDown={(e) => {
+                                    // Prevent bubbling to time slot
+                                    e.stopPropagation();
+                                    e.preventDefault();
                                     
                                     let holdTimer: NodeJS.Timeout;
                                     let isHolding = false;
-                                    let isDragging = false;
+                                    let hasClicked = false;
                                     
                                     // Start hold timer (1 second)
                                     holdTimer = setTimeout(() => {
-                                      isHolding = true;
-                                      setHoldingAppointment(appointment.id);
-                                      // Enable draggable on the AppointmentCard
-                                      const cardElement = e.currentTarget.querySelector('[data-appointment-card]') as HTMLElement;
-                                      if (cardElement) {
-                                        cardElement.draggable = true;
-                                        cardElement.style.cursor = 'grab';
+                                      if (!hasClicked) {
+                                        isHolding = true;
+                                        setHoldingAppointment(appointment.id);
+                                        console.log('Hold mode activated for', appointment.id);
+                                        // Enable draggable
+                                        const cardElement = e.currentTarget.querySelector('[data-appointment-card]') as HTMLElement;
+                                        if (cardElement) {
+                                          cardElement.draggable = true;
+                                          cardElement.style.cursor = 'grab';
+                                        }
                                       }
                                     }, 1000);
                                     
-                                    const handleMouseMove = () => {
-                                      if (isHolding) {
-                                        isDragging = true;
-                                      }
-                                    };
-                                    
-                                    const handleMouseUp = () => {
+                                    const handleMouseUp = (upEvent: MouseEvent) => {
                                       clearTimeout(holdTimer);
-                                      document.removeEventListener('mousemove', handleMouseMove);
                                       document.removeEventListener('mouseup', handleMouseUp);
                                       
-                                      if (!isHolding && !isDragging) {
-                                        // It was a quick click, show context menu
-                                        onAppointmentClick?.(appointment, e as any);
+                                      if (!isHolding) {
+                                        hasClicked = true;
+                                        console.log('Quick click detected, context menu should show');
                                       }
                                       
                                       // Reset holding state
-                                      setHoldingAppointment(null);
-                                      const cardElement = e.currentTarget.querySelector('[data-appointment-card]') as HTMLElement;
-                                      if (cardElement) {
-                                        cardElement.draggable = false;
+                                      if (isHolding) {
+                                        setHoldingAppointment(null);
+                                        const cardElement = e.currentTarget.querySelector('[data-appointment-card]') as HTMLElement;
+                                        if (cardElement) {
+                                          cardElement.draggable = false;
+                                          cardElement.style.cursor = '';
+                                        }
                                       }
                                     };
                                     
-                                    document.addEventListener('mousemove', handleMouseMove);
                                     document.addEventListener('mouseup', handleMouseUp);
                                   }}
                                 >
@@ -348,12 +354,17 @@ export const WeeklyView: React.FC<WeeklyViewProps> = ({
                                     appointment={appointment}
                                     size="compact"
                                     draggable={false}
-                                    onClick={() => {}} // Handled by wrapper
+                                    onClick={() => {
+                                      // Empty - handled by parent wrapper
+                                      console.log('AppointmentCard onClick (should be empty)');
+                                    }}
                                     onDragStart={(e) => {
+                                      console.log('Drag started for', appointment.id);
                                       e.dataTransfer.setData('text/plain', appointment.id);
                                       handleAppointmentDragStart(appointment);
                                     }}
                                     onDragEnd={(e) => {
+                                      console.log('Drag ended for', appointment.id);
                                       handleAppointmentDragEnd();
                                       setHoldingAppointment(null);
                                     }}

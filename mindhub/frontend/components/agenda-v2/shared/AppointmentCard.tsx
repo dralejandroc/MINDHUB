@@ -180,7 +180,11 @@ export const AppointmentCard: React.FC<AppointmentCardProps> = ({
           ${draggable ? 'cursor-grab active:cursor-grabbing' : ''}
           ${className}
         `}
-        onClick={onClick}
+        onClick={(e) => {
+          e.stopPropagation();
+          e.preventDefault();
+          onClick?.(e);
+        }}
         draggable={draggable}
         onDragStart={onDragStart}
         onDragEnd={onDragEnd}
@@ -206,7 +210,11 @@ export const AppointmentCard: React.FC<AppointmentCardProps> = ({
           cursor-pointer transition-all duration-200 overflow-hidden
           ${getPriorityBorder(appointment.priority)} ${className}
         `}
-        onClick={onClick}
+        onClick={(e) => {
+          e.stopPropagation();
+          e.preventDefault();
+          onClick?.(e);
+        }}
         draggable={draggable}
         onDragStart={onDragStart}
         onDragEnd={onDragEnd}
