@@ -218,13 +218,13 @@ export const ClinimetrixProAssessmentModal: React.FC<ClinimetrixProAssessmentMod
       const metadata = templateData?.metadata || {};
       const structure = templateData?.structure || {};
       // const interpretation = templateData?.interpretation || {};
-      // const responseGroups = templateData?.responseGroups || {};
+      const responseGroups = templateData?.responseGroups || {};
       
       console.log('🔧 Debug template data structure:', {
         hasMetadata: !!metadata,
         hasStructure: !!structure,
-        // hasResponseGroups: !!responseGroups,
-        // responseGroupsKeys: Object.keys(responseGroups),
+        hasResponseGroups: !!responseGroups,
+        responseGroupsKeys: Object.keys(responseGroups),
         structureSections: structure?.sections?.length || 0,
         // hasInterpretation: !!interpretation,
         // interpretationKeys: Object.keys(interpretation),
@@ -241,10 +241,10 @@ export const ClinimetrixProAssessmentModal: React.FC<ClinimetrixProAssessmentMod
           if (section.items && Array.isArray(section.items)) {
             section.items.forEach((item: any) => {
               // Mapear las opciones de respuesta desde responseGroups
-              // if (item.responseGroup && responseGroups[item.responseGroup]) {
-              //   item.specificOptions = responseGroups[item.responseGroup];
-              // } else 
-              if (item.specificOptions && Array.isArray(item.specificOptions)) {
+              if (item.responseGroup && responseGroups[item.responseGroup]) {
+                item.specificOptions = responseGroups[item.responseGroup];
+                console.log(`✅ Mapped responseGroup "${item.responseGroup}" for item ${item.number}:`, item.specificOptions);
+              } else if (item.specificOptions && Array.isArray(item.specificOptions)) {
                 // Mantener opciones específicas si ya existen
                 item.specificOptions = item.specificOptions;
               } else {
