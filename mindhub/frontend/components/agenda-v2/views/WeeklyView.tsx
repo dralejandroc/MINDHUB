@@ -38,6 +38,7 @@ export interface WeeklyViewProps {
   onTimeSlotClick?: (date: Date, hour: number, minute: number) => void;
   onAppointmentDragStart?: (appointment: AppointmentData) => void;
   onAppointmentDrop?: (appointment: AppointmentData, newDate: Date, newHour: number, newMinute: number) => void;
+  dragModeEnabled?: string | null; // appointmentId that can be dragged
   
   className?: string;
 }
@@ -61,6 +62,7 @@ export const WeeklyView: React.FC<WeeklyViewProps> = ({
   onTimeSlotClick,
   onAppointmentDragStart,
   onAppointmentDrop,
+  dragModeEnabled,
   className = ''
 }) => {
   const [draggedAppointment, setDraggedAppointment] = useState<AppointmentData | null>(null);
@@ -296,12 +298,22 @@ export const WeeklyView: React.FC<WeeklyViewProps> = ({
                                   key={appointment.id}
                                   appointment={appointment}
                                   size="compact"
-                                  draggable={false}
+                                  draggable={dragModeEnabled === appointment.id}
                                   onClick={(event) => {
+                                    if (dragModeEnabled === appointment.id) {
+                                      // In drag mode, show instruction
+                                      event?.preventDefault();
+                                      return;
+                                    }
                                     // Show context menu on left click
                                     onAppointmentClick?.(appointment, event);
                                   }}
-                                  className="absolute inset-1"
+                                  onDragStart={dragModeEnabled === appointment.id ? (e) => {
+                                    e.dataTransfer.setData('text/plain', appointment.id);
+                                    handleAppointmentDragStart(appointment);
+                                  } : undefined}
+                                  onDragEnd={dragModeEnabled === appointment.id ? handleAppointmentDragEnd : undefined}
+                                  className={`absolute inset-1 ${dragModeEnabled === appointment.id ? 'ring-2 ring-blue-400 ring-opacity-75' : ''}`}
                                 />
                               ))}
                           </div>

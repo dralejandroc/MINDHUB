@@ -55,6 +55,9 @@ export default function AgendaV2Page() {
     position: { x: number; y: number };
   } | null>(null);
   
+  // Drag mode state
+  const [dragModeEnabled, setDragModeEnabled] = useState<string | null>(null); // appointmentId when in drag mode
+  
   // Popup states
   const [showSendScalePopup, setShowSendScalePopup] = useState(false);
   const [showSendFormPopup, setShowSendFormPopup] = useState(false);
@@ -400,6 +403,8 @@ export default function AgendaV2Page() {
 
       if (response.ok) {
         toast.success('Cita reagendada exitosamente');
+        // Disable drag mode
+        setDragModeEnabled(null);
         // Refresh appointments to show the updated time
         loadAppointments();
       } else {
@@ -444,11 +449,19 @@ export default function AgendaV2Page() {
   };
 
   const handleReschedule = (appointmentId: string) => {
-    const appointment = appointments.find(a => a.id === appointmentId);
-    if (appointment) {
-      // Open appointment modal in edit mode
-      setShowNewAppointment(true);
-    }
+    // Enable drag mode for this appointment
+    setDragModeEnabled(appointmentId);
+    setContextMenuData(null); // Close context menu
+    
+    // Show instructions to user
+    toast.success('Modo de arrastrar activado - Haz clic y arrastra la cita a un nuevo horario', {
+      duration: 4000
+    });
+    
+    // Disable drag mode after 10 seconds if not used
+    setTimeout(() => {
+      setDragModeEnabled(null);
+    }, 10000);
   };
 
   const handleGoToRecord = (patientId: string) => {
@@ -573,6 +586,7 @@ export default function AgendaV2Page() {
             onTimeSlotClick={handleTimeSlotClick}
             onAppointmentDragStart={handleAppointmentDragStart}
             onAppointmentDrop={handleAppointmentDrop}
+            dragModeEnabled={dragModeEnabled}
           />
         )}
 
