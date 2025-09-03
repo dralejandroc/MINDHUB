@@ -9,7 +9,21 @@ export async function GET(request: NextRequest) {
   try {
     const searchParams = request.nextUrl.searchParams;
     const queryString = searchParams.toString();
-    const backendUrl = `${BACKEND_URL}/api/clinimetrix-pro${queryString ? `?${queryString}` : ''}`;
+    // Map frontend URL to correct Django backend URL
+    const path = request.nextUrl.pathname.replace('/api/clinimetrix-pro', '');
+    let djangoEndpoint = '/assessments'; // Default endpoint
+    
+    // Map specific endpoints
+    if (path.includes('/templates/catalog')) {
+      djangoEndpoint = '/assessments/template-catalog';
+    } else if (path.startsWith('/templates/')) {
+      const templateId = path.replace('/templates/', '');
+      djangoEndpoint = `/assessments/template/${templateId}`;
+    } else if (path.includes('/assessments')) {
+      djangoEndpoint = `/assessments${path.replace('/assessments', '')}`;
+    }
+    
+    const backendUrl = `${BACKEND_URL}${djangoEndpoint}${queryString ? `?${queryString}` : ''}`;
 
     // Forward authentication headers
     const headers: HeadersInit = {
@@ -47,7 +61,19 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const backendUrl = `${BACKEND_URL}/api/clinimetrix-pro`;
+    
+    // Map frontend URL to correct Django backend URL
+    const path = request.nextUrl.pathname.replace('/api/clinimetrix-pro', '');
+    let djangoEndpoint = '/assessments'; // Default endpoint
+    
+    // Map specific endpoints for POST
+    if (path.includes('/assessments')) {
+      djangoEndpoint = `/assessments${path.replace('/assessments', '')}`;
+    } else if (path.includes('/templates')) {
+      djangoEndpoint = `/assessments${path}`;
+    }
+    
+    const backendUrl = `${BACKEND_URL}${djangoEndpoint}`;
 
     // Forward authentication headers
     const headers: HeadersInit = {
