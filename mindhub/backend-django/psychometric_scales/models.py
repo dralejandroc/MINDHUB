@@ -126,7 +126,7 @@ class PsychometricScale(models.Model):
     total_items = models.PositiveIntegerField(default=0)
     score_range_min = models.IntegerField(default=0)
     score_range_max = models.IntegerField(default=100)
-    usage_count = models.PositiveIntegerField(default=0)
+    # usage_count = models.PositiveIntegerField(default=0)  # COMMENTED: Field doesn't exist in DB
     
     # Administration mode
     administration_mode = models.CharField(
@@ -139,7 +139,7 @@ class PsychometricScale(models.Model):
     is_active = models.BooleanField(default=True)
     is_public = models.BooleanField(default=True)
     is_featured = models.BooleanField(default=False)
-    is_validated = models.BooleanField(default=False)
+    # is_validated = models.BooleanField(default=False)  # DOESN'T EXIST IN DB
     
     # Timestamps
     created_at = models.DateTimeField(auto_now_add=True)
@@ -161,7 +161,7 @@ class PsychometricScale(models.Model):
     
     @property
     def requires_training(self):
-        return 'minimal'
+        return False  # Default value since field doesn't exist in DB
     
     @property
     def reliability_alpha(self):
@@ -207,6 +207,7 @@ class PsychometricScale(models.Model):
         return self.get_administration_mode_display()
     
     def increment_usage(self):
-        """Increment usage counter"""
-        self.usage_count += 1
-        self.save(update_fields=['usage_count'])
+        """Increment usage counter - DISABLED: usage_count field doesn't exist in DB"""
+        # self.usage_count += 1
+        # self.save(update_fields=['usage_count'])
+        pass  # TODO: Implement usage tracking if needed

@@ -21,41 +21,78 @@ def get_template_catalog(request):
     Devuelve lista de escalas en formato esperado por React
     """
     try:
-        scales = PsychometricScale.objects.filter(is_active=True).prefetch_related('tags')
+        from django.db import connection
+        
+        # Use raw SQL to avoid Django ORM JSON field issues
+        with connection.cursor() as cursor:
+            cursor.execute("""
+                SELECT 
+                    id,
+                    abbreviation,
+                    name,
+                    category,
+                    description,
+                    authors,
+                    year,
+                    language,
+                    total_items,
+                    estimated_duration_minutes,
+                    administration_mode,
+                    target_population,
+                    is_active,
+                    is_public,
+                    tags,
+                    created_at,
+                    updated_at
+                FROM clinimetrix_registry 
+                WHERE is_active = true
+                ORDER BY name
+            """)
+            
+            columns = [col[0] for col in cursor.description]
+            scales_data = [dict(zip(columns, row)) for row in cursor.fetchall()]
         
         catalog = []
-        for scale in scales:
+        for scale in scales_data:
+            # Convert administration_mode to display format
+            admin_mode_display = {
+                'self': 'Autoaplicada',
+                'interviewer': 'Heteroaplicada', 
+                'both': 'Ambas',
+                'clinician_administered': 'Profesional'
+            }.get(scale.get('administration_mode'), 'Profesional')
+            
             # Format compatible with React ClinimetrixRegistry interface
             scale_data = {
-                'templateId': scale.abbreviation.lower(),  # ID único para React
-                'id': str(scale.id),
-                'name': scale.name,
-                'abbreviation': scale.abbreviation,
-                'category': scale.category or 'General',
-                'description': scale.description,
-                'authors': scale.authors,
-                'year': scale.year,
-                'language': scale.language or 'es',
-                'totalItems': scale.total_items,
-                'administrationTime': scale.estimated_duration_minutes,
-                'targetPopulation': scale.get_population_display() if hasattr(scale, 'get_population_display') else 'General',
-                'applicationType': scale.get_application_type_display() if hasattr(scale, 'get_application_type_display') else 'Profesional',
-                'isActive': scale.is_active,
-                'isPublic': getattr(scale, 'is_public', True),
-                'tags': scale.tags if isinstance(scale.tags, list) else [],
-                'usageCount': getattr(scale, 'usage_count', 0),
-                'createdAt': getattr(scale, 'created_at', '').isoformat() if hasattr(getattr(scale, 'created_at', ''), 'isoformat') else '',
-                'updatedAt': getattr(scale, 'updated_at', '').isoformat() if hasattr(getattr(scale, 'updated_at', ''), 'isoformat') else '',
+                'templateId': scale['abbreviation'].lower() if scale['abbreviation'] else 'unknown',
+                'id': str(scale['id']),
+                'name': scale['name'] or 'Escala sin nombre',
+                'abbreviation': scale['abbreviation'] or '',
+                'category': scale['category'] or 'General',
+                'description': scale['description'] or '',
+                'authors': scale['authors'] or [],
+                'year': scale['year'],
+                'language': scale['language'] or 'es',
+                'totalItems': scale['total_items'],
+                'administrationTime': scale['estimated_duration_minutes'],
+                'targetPopulation': 'Todas las edades',  # Default since we don't process target_population JSON
+                'applicationType': admin_mode_display,
+                'isActive': scale['is_active'],
+                'isPublic': scale.get('is_public', True),
+                'tags': scale['tags'] or [],
+                'usageCount': 0,  # Default value
+                'createdAt': scale['created_at'].isoformat() if scale['created_at'] else '',
+                'updatedAt': scale['updated_at'].isoformat() if scale['updated_at'] else '',
             }
             
             catalog.append(scale_data)
         
-        # Sort by name, with favorites potentially first (handled by React)
-        catalog.sort(key=lambda x: x['name'])
-        
         return JsonResponse(catalog, safe=False)
         
     except Exception as e:
+        import traceback
+        print(f"Error in get_template_catalog: {e}")
+        print(traceback.format_exc())
         return JsonResponse({
             'error': f'Error loading template catalog: {str(e)}'
         }, status=500)
