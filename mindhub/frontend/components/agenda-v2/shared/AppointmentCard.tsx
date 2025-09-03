@@ -131,9 +131,41 @@ export const AppointmentCard: React.FC<AppointmentCardProps> = ({
     }
   };
 
+  const getAppointmentTypeColor = (type?: string) => {
+    // Colors by appointment type - override status colors
+    switch (type?.toLowerCase()) {
+      case 'primera vez':
+      case 'primera consulta':
+      case 'nuevo paciente':
+        return 'bg-emerald-500 hover:bg-emerald-600 border-emerald-600'; // Green for new patients
+      case 'consulta subsecuente':
+      case 'seguimiento':
+      case 'control':
+        return 'bg-blue-500 hover:bg-blue-600 border-blue-600'; // Blue for follow-up
+      case 'urgencia':
+      case 'urgente':
+        return 'bg-red-500 hover:bg-red-600 border-red-600'; // Red for urgent
+      case 'terapia':
+      case 'psicoterapia':
+        return 'bg-purple-500 hover:bg-purple-600 border-purple-600'; // Purple for therapy
+      case 'evaluación':
+      case 'evaluacion':
+        return 'bg-orange-500 hover:bg-orange-600 border-orange-600'; // Orange for evaluation
+      case 'interconsulta':
+        return 'bg-teal-500 hover:bg-teal-600 border-teal-600'; // Teal for consultation
+      default:
+        // Fall back to status color if no specific type color
+        return null;
+    }
+  };
+
   const statusConfig = getStatusConfig(appointment.status);
   const StatusIcon = statusConfig.icon;
   const ConsultationIcon = getConsultationTypeIcon(appointment.consultationType);
+  
+  // Use appointment type color if available, otherwise use status color
+  const typeColor = getAppointmentTypeColor(appointment.type);
+  const cardColor = typeColor || statusConfig.color;
   
   const startTime = format(appointment.startTime, 'HH:mm');
   const endTime = format(appointment.endTime, 'HH:mm');
@@ -143,7 +175,7 @@ export const AppointmentCard: React.FC<AppointmentCardProps> = ({
       <div
         className={`
           group relative p-2 rounded-lg cursor-pointer transition-all duration-200
-          ${statusConfig.color} text-white shadow-sm hover:shadow-md
+          ${cardColor} text-white shadow-sm hover:shadow-md
           transform hover:scale-[1.02] ${getPriorityBorder(appointment.priority)}
           ${draggable ? 'cursor-grab active:cursor-grabbing' : ''}
           ${className}
@@ -180,7 +212,7 @@ export const AppointmentCard: React.FC<AppointmentCardProps> = ({
         onDragEnd={onDragEnd}
       >
         {/* Status Bar */}
-        <div className={`h-1 ${statusConfig.color.split(' ')[0]}`}></div>
+        <div className={`h-1 ${cardColor.split(' ')[0]}`}></div>
         
         <div className="p-4">
           {/* Header */}
@@ -194,7 +226,7 @@ export const AppointmentCard: React.FC<AppointmentCardProps> = ({
               {appointment.hasDeposit && (
                 <CurrencyDollarIcon className="w-4 h-4 text-green-500" />
               )}
-              <StatusIcon className={`w-4 h-4 ${statusConfig.color.split(' ')[0].replace('bg-', 'text-')}`} />
+              <StatusIcon className={`w-4 h-4 ${cardColor.split(' ')[0].replace('bg-', 'text-')}`} />
             </div>
           </div>
 
@@ -237,8 +269,8 @@ export const AppointmentCard: React.FC<AppointmentCardProps> = ({
           <div className="flex items-center justify-between mt-3">
             <span className={`
               inline-flex items-center px-2 py-1 rounded-full text-xs font-medium
-              ${statusConfig.color.replace('hover:bg-', 'bg-').split(' ')[0]}/10
-              ${statusConfig.color.replace('bg-', 'text-').split(' ')[0]}
+              ${cardColor.replace('hover:bg-', 'bg-').split(' ')[0]}/10
+              ${cardColor.replace('bg-', 'text-').split(' ')[0]}
             `}>
               {statusConfig.label}
             </span>
@@ -259,7 +291,7 @@ export const AppointmentCard: React.FC<AppointmentCardProps> = ({
     <div
       className={`
         group relative p-3 rounded-lg cursor-pointer transition-all duration-200
-        ${statusConfig.color} text-white shadow-sm hover:shadow-md
+        ${cardColor} text-white shadow-sm hover:shadow-md
         transform hover:scale-[1.02] ${getPriorityBorder(appointment.priority)}
         ${draggable ? 'cursor-grab active:cursor-grabbing' : ''}
         ${className}

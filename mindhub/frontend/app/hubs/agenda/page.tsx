@@ -12,6 +12,8 @@ import { AppointmentData } from '@/components/agenda-v2/shared/AppointmentCard';
 import { ScheduleConfig } from '@/components/agenda-v2/shared/TimeSlotGrid';
 import NewAppointmentModal from '@/components/agenda/NewAppointmentModal';
 import NewPatientModal from '@/components/expedix/NewPatientModal';
+import { SendScalePopup } from '@/components/agenda-v2/popups/SendScalePopup';
+import { SendFormPopup } from '@/components/agenda-v2/popups/SendFormPopup';
 import { 
   CalendarIcon, 
   PlusIcon,
@@ -51,6 +53,16 @@ export default function AgendaV2Page() {
   const [contextMenuData, setContextMenuData] = useState<{
     appointment: AppointmentData;
     position: { x: number; y: number };
+  } | null>(null);
+  
+  // Popup states
+  const [showSendScalePopup, setShowSendScalePopup] = useState(false);
+  const [showSendFormPopup, setShowSendFormPopup] = useState(false);
+  const [selectedPatientForPopup, setSelectedPatientForPopup] = useState<{
+    id: string;
+    name: string;
+    email?: string;
+    phone?: string;
   } | null>(null);
 
   // Schedule configuration
@@ -439,16 +451,38 @@ export default function AgendaV2Page() {
   };
 
   const handleSendForm = (patientId: string) => {
-    router.push(`/hubs/formx?action=send&patient=${patientId}`);
+    const appointment = appointments.find(a => a.patientId === patientId);
+    if (appointment) {
+      setSelectedPatientForPopup({
+        id: patientId,
+        name: appointment.patientName,
+        email: appointment.patientInfo?.email,
+        phone: appointment.patientInfo?.phone
+      });
+      setShowSendFormPopup(true);
+    }
+    setContextMenuData(null); // Close context menu
   };
 
   const handleSendResource = (patientId: string) => {
-    router.push(`/hubs/resources?action=send&patient=${patientId}`);
+    // TODO: Show popup for resource selection and sending
+    console.log('Send resource to patient:', patientId);
   };
 
   const handleSendScale = (patientId: string) => {
-    router.push(`/hubs/clinimetrix?action=send&patient=${patientId}`);
+    const appointment = appointments.find(a => a.patientId === patientId);
+    if (appointment) {
+      setSelectedPatientForPopup({
+        id: patientId,
+        name: appointment.patientName,
+        email: appointment.patientInfo?.email,
+        phone: appointment.patientInfo?.phone
+      });
+      setShowSendScalePopup(true);
+    }
+    setContextMenuData(null); // Close context menu
   };
+
 
   const handleAddComment = async (appointmentId: string) => {
     const comment = prompt('Agregar comentario:');
@@ -759,6 +793,36 @@ export default function AgendaV2Page() {
           setShowNewPatientModal(false);
         }}
       />
+
+      {/* Send Scale Popup */}
+      {showSendScalePopup && selectedPatientForPopup && (
+        <SendScalePopup
+          isOpen={showSendScalePopup}
+          onClose={() => {
+            setShowSendScalePopup(false);
+            setSelectedPatientForPopup(null);
+          }}
+          patientId={selectedPatientForPopup.id}
+          patientName={selectedPatientForPopup.name}
+          patientEmail={selectedPatientForPopup.email}
+          patientPhone={selectedPatientForPopup.phone}
+        />
+      )}
+
+      {/* Send Form Popup */}
+      {showSendFormPopup && selectedPatientForPopup && (
+        <SendFormPopup
+          isOpen={showSendFormPopup}
+          onClose={() => {
+            setShowSendFormPopup(false);
+            setSelectedPatientForPopup(null);
+          }}
+          patientId={selectedPatientForPopup.id}
+          patientName={selectedPatientForPopup.name}
+          patientEmail={selectedPatientForPopup.email}
+          patientPhone={selectedPatientForPopup.phone}
+        />
+      )}
     </div>
   );
 }

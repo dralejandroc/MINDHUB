@@ -313,8 +313,8 @@ export const AppointmentContextMenu: React.FC<AppointmentContextMenuProps> = ({
         ref={menuRef}
         className="absolute bg-white rounded-lg shadow-2xl border border-gray-200 min-w-64 max-w-80 py-2 z-10"
         style={{
-          left: Math.min(position.x, window.innerWidth - 320),
-          top: Math.min(position.y, window.innerHeight - 400)
+          left: Math.min(position.x, (typeof window !== 'undefined' ? window.innerWidth : 1024) - 320),
+          top: Math.max(20, Math.min(position.y, (typeof window !== 'undefined' ? window.innerHeight : 768) - 500))
         }}
       >
         {/* Header */}

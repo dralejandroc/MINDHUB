@@ -271,6 +271,18 @@ export const WeeklyView: React.FC<WeeklyViewProps> = ({
                             key={`${hour}-${minute}`}
                             className="h-12 border-b border-gray-100 hover:bg-gray-50 cursor-pointer relative"
                             onClick={() => handleTimeSlotClick(day, hour, minute)}
+                            onDragOver={(e) => {
+                              e.preventDefault();
+                              e.currentTarget.classList.add('bg-blue-100');
+                            }}
+                            onDragLeave={(e) => {
+                              e.currentTarget.classList.remove('bg-blue-100');
+                            }}
+                            onDrop={(e) => {
+                              e.preventDefault();
+                              e.currentTarget.classList.remove('bg-blue-100');
+                              handleTimeSlotDrop(day, hour, minute);
+                            }}
                           >
                             {/* Appointments for this time slot */}
                             {dayAppointments
@@ -280,18 +292,21 @@ export const WeeklyView: React.FC<WeeklyViewProps> = ({
                                 return aptHour === hour && Math.floor(aptMinute / scheduleConfig.slotDuration) * scheduleConfig.slotDuration === minute;
                               })
                               .map(appointment => (
-                                <div
+                                <AppointmentCard
                                   key={appointment.id}
-                                  className="absolute inset-1 bg-blue-500 text-white text-xs p-1 rounded shadow-sm cursor-pointer hover:bg-blue-600 transition-colors"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
+                                  appointment={appointment}
+                                  size="compact"
+                                  draggable={true}
+                                  onClick={() => {
                                     onAppointmentClick?.(appointment);
                                   }}
-                                  title={`${appointment.patientName} - ${appointment.type}`}
-                                >
-                                  <div className="font-medium truncate">{appointment.patientName}</div>
-                                  <div className="opacity-90 truncate">{appointment.type}</div>
-                                </div>
+                                  onDragStart={(e) => {
+                                    e.dataTransfer.setData('text/plain', appointment.id);
+                                    handleAppointmentDragStart(appointment);
+                                  }}
+                                  onDragEnd={handleAppointmentDragEnd}
+                                  className="absolute inset-1"
+                                />
                               ))}
                           </div>
                         );
