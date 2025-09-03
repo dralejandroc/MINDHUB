@@ -212,11 +212,20 @@ export default function AgendaV2Page() {
   };
 
   // Event handlers
-  const handleAppointmentClick = (appointment: AppointmentData) => {
-    // Show context menu
+  const handleAppointmentClick = (appointment: AppointmentData, event?: React.MouseEvent) => {
+    // Show context menu at cursor position
+    const rect = event?.currentTarget?.getBoundingClientRect();
+    const position = event ? {
+      x: event.clientX,
+      y: event.clientY
+    } : {
+      x: rect?.left ? rect.left + rect.width / 2 : window.innerWidth / 2,
+      y: rect?.top ? rect.top + rect.height / 2 : window.innerHeight / 2
+    };
+    
     setContextMenuData({
       appointment,
-      position: { x: window.innerWidth / 2, y: window.innerHeight / 2 }
+      position
     });
   };
 

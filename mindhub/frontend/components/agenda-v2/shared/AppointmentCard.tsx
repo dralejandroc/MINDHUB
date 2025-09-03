@@ -42,7 +42,7 @@ export interface AppointmentData {
 
 interface AppointmentCardProps {
   appointment: AppointmentData;
-  onClick: () => void;
+  onClick: (event?: React.MouseEvent) => void;
   className?: string;
   size?: 'compact' | 'normal' | 'expanded';
   showPatientInfo?: boolean;

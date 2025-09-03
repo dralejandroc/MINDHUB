@@ -34,7 +34,7 @@ export interface WeeklyViewProps {
   lastRefresh?: Date;
   
   // Event handlers
-  onAppointmentClick?: (appointment: AppointmentData) => void;
+  onAppointmentClick?: (appointment: AppointmentData, event?: React.MouseEvent) => void;
   onTimeSlotClick?: (date: Date, hour: number, minute: number) => void;
   onAppointmentDragStart?: (appointment: AppointmentData) => void;
   onAppointmentDrop?: (appointment: AppointmentData, newDate: Date, newHour: number, newMinute: number) => void;
@@ -296,15 +296,11 @@ export const WeeklyView: React.FC<WeeklyViewProps> = ({
                                   key={appointment.id}
                                   appointment={appointment}
                                   size="compact"
-                                  draggable={true}
-                                  onClick={() => {
-                                    onAppointmentClick?.(appointment);
+                                  draggable={false}
+                                  onClick={(event) => {
+                                    // Show context menu on left click
+                                    onAppointmentClick?.(appointment, event);
                                   }}
-                                  onDragStart={(e) => {
-                                    e.dataTransfer.setData('text/plain', appointment.id);
-                                    handleAppointmentDragStart(appointment);
-                                  }}
-                                  onDragEnd={handleAppointmentDragEnd}
                                   className="absolute inset-1"
                                 />
                               ))}
