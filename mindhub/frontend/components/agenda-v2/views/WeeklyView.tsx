@@ -297,53 +297,32 @@ export const WeeklyView: React.FC<WeeklyViewProps> = ({
                                   key={appointment.id}
                                   className="absolute inset-1"
                                   onClick={(e) => {
-                                    // CRITICAL: Stop all propagation to prevent time slot click
+                                    // ONLY stop propagation to prevent time slot click
                                     e.stopPropagation();
-                                    e.preventDefault();
-                                    console.log('Appointment clicked, showing context menu');
                                     onAppointmentClick?.(appointment, e);
                                   }}
                                   onMouseDown={(e) => {
-                                    // Prevent bubbling to time slot
+                                    // ONLY stop propagation, keep default behavior
                                     e.stopPropagation();
-                                    e.preventDefault();
                                     
                                     let holdTimer: NodeJS.Timeout;
                                     let isHolding = false;
-                                    let hasClicked = false;
                                     
                                     // Start hold timer (1 second)
                                     holdTimer = setTimeout(() => {
-                                      if (!hasClicked) {
-                                        isHolding = true;
-                                        setHoldingAppointment(appointment.id);
-                                        console.log('Hold mode activated for', appointment.id);
-                                        // Enable draggable
-                                        const cardElement = e.currentTarget.querySelector('[data-appointment-card]') as HTMLElement;
-                                        if (cardElement) {
-                                          cardElement.draggable = true;
-                                          cardElement.style.cursor = 'grab';
-                                        }
-                                      }
+                                      isHolding = true;
+                                      setHoldingAppointment(appointment.id);
                                     }, 1000);
                                     
-                                    const handleMouseUp = (upEvent: MouseEvent) => {
+                                    const handleMouseUp = () => {
                                       clearTimeout(holdTimer);
                                       document.removeEventListener('mouseup', handleMouseUp);
                                       
                                       if (!isHolding) {
-                                        hasClicked = true;
-                                        console.log('Quick click detected, context menu should show');
-                                      }
-                                      
-                                      // Reset holding state
-                                      if (isHolding) {
+                                        // Quick click - onClick handler will show context menu
+                                      } else {
+                                        // Reset holding state if was holding
                                         setHoldingAppointment(null);
-                                        const cardElement = e.currentTarget.querySelector('[data-appointment-card]') as HTMLElement;
-                                        if (cardElement) {
-                                          cardElement.draggable = false;
-                                          cardElement.style.cursor = '';
-                                        }
                                       }
                                     };
                                     
@@ -356,30 +335,27 @@ export const WeeklyView: React.FC<WeeklyViewProps> = ({
                                     draggable={false}
                                     onClick={() => {
                                       // Empty - handled by parent wrapper
-                                      console.log('AppointmentCard onClick (should be empty)');
                                     }}
                                     onDragStart={(e) => {
-                                      console.log('Drag started for', appointment.id);
                                       e.dataTransfer.setData('text/plain', appointment.id);
                                       handleAppointmentDragStart(appointment);
                                     }}
                                     onDragEnd={(e) => {
-                                      console.log('Drag ended for', appointment.id);
                                       handleAppointmentDragEnd();
                                       setHoldingAppointment(null);
                                     }}
-                                    className={`w-full h-full transition-all duration-200 ${
+                                    className={`w-full h-full transition-all duration-300 ${
                                       holdingAppointment === appointment.id 
-                                        ? 'ring-2 ring-blue-400 ring-opacity-75 scale-105 shadow-lg cursor-grab' 
-                                        : 'hover:shadow-md'
+                                        ? 'ring-2 ring-white ring-opacity-90 scale-110 shadow-xl opacity-80 cursor-grab' 
+                                        : 'hover:shadow-md hover:scale-[1.02]'
                                     }`}
                                     data-appointment-card="true"
                                   />
                                   
-                                  {/* Visual indicator when holding */}
+                                  {/* Visual indicator when holding - subtle glow effect */}
                                   {holdingAppointment === appointment.id && (
-                                    <div className="absolute top-1 right-1 bg-blue-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs font-bold animate-pulse">
-                                      ⇄
+                                    <div className="absolute inset-0 bg-white bg-opacity-20 rounded-lg animate-pulse pointer-events-none">
+                                      <div className="absolute top-1 right-1 w-2 h-2 bg-white bg-opacity-80 rounded-full animate-ping"></div>
                                     </div>
                                   )}
                                 </div>

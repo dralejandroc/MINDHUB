@@ -181,8 +181,6 @@ export const AppointmentCard: React.FC<AppointmentCardProps> = ({
           ${className}
         `}
         onClick={(e) => {
-          e.stopPropagation();
-          e.preventDefault();
           onClick?.(e);
         }}
         draggable={draggable}
@@ -212,7 +210,6 @@ export const AppointmentCard: React.FC<AppointmentCardProps> = ({
         `}
         onClick={(e) => {
           e.stopPropagation();
-          e.preventDefault();
           onClick?.(e);
         }}
         draggable={draggable}
