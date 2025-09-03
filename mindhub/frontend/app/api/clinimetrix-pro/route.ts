@@ -11,16 +11,18 @@ export async function GET(request: NextRequest) {
     const queryString = searchParams.toString();
     // Map frontend URL to correct Django backend URL
     const path = request.nextUrl.pathname.replace('/api/clinimetrix-pro', '');
-    let djangoEndpoint = '/assessments'; // Default endpoint
+    let djangoEndpoint = '/assessments/react-api'; // Default endpoint
     
-    // Map specific endpoints
+    // Map specific endpoints to react-api URLs
     if (path.includes('/templates/catalog')) {
-      djangoEndpoint = '/assessments/template-catalog';
+      djangoEndpoint = '/assessments/react-api/catalog';
     } else if (path.startsWith('/templates/')) {
       const templateId = path.replace('/templates/', '');
-      djangoEndpoint = `/assessments/template/${templateId}`;
+      djangoEndpoint = `/assessments/react-api/template/${templateId}`;
     } else if (path.includes('/assessments')) {
-      djangoEndpoint = `/assessments${path.replace('/assessments', '')}`;
+      djangoEndpoint = `/assessments/react-api${path.replace('/assessments', '')}`;
+    } else if (path.includes('/health')) {
+      djangoEndpoint = '/assessments/react-api/health';
     }
     
     const backendUrl = `${BACKEND_URL}${djangoEndpoint}${queryString ? `?${queryString}` : ''}`;
@@ -62,15 +64,19 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
     
-    // Map frontend URL to correct Django backend URL
+    // Map frontend URL to correct Django backend URL  
     const path = request.nextUrl.pathname.replace('/api/clinimetrix-pro', '');
-    let djangoEndpoint = '/assessments'; // Default endpoint
+    let djangoEndpoint = '/assessments/react-api'; // Default endpoint
     
     // Map specific endpoints for POST
-    if (path.includes('/assessments')) {
-      djangoEndpoint = `/assessments${path.replace('/assessments', '')}`;
-    } else if (path.includes('/templates')) {
-      djangoEndpoint = `/assessments${path}`;
+    if (path.includes('/assessments/new')) {
+      djangoEndpoint = '/assessments/react-api/assessment/create';
+    } else if (path.includes('/assessments/') && path.includes('/responses')) {
+      const assessmentId = path.split('/')[2]; // Extract assessment ID
+      djangoEndpoint = `/assessments/react-api/assessment/${assessmentId}/responses`;
+    } else if (path.includes('/assessments/') && path.includes('/complete')) {
+      const assessmentId = path.split('/')[2]; // Extract assessment ID
+      djangoEndpoint = `/assessments/react-api/assessment/${assessmentId}/complete`;
     }
     
     const backendUrl = `${BACKEND_URL}${djangoEndpoint}`;
