@@ -601,18 +601,18 @@ function ScaleCard({ scale, onToggleFavorite, onSelect }: {
         <div className="grid grid-cols-3 gap-1.5">
           <div className="text-center p-1 bg-purple-50 rounded">
             <DocumentTextIcon className="h-2.5 w-2.5 text-purple-600 mx-auto mb-0.5" />
-            <div className="text-[9px] font-semibold text-gray-900">N/A</div>
+            <div className="text-[9px] font-semibold text-gray-900">{scale.totalItems || 'N/A'}</div>
             <div className="text-[8px] text-gray-600">ítems</div>
           </div>
           <div className="text-center p-1 bg-blue-50 rounded">
             <ClockIcon className="h-2.5 w-2.5 text-blue-600 mx-auto mb-0.5" />
-            <div className="text-[9px] font-semibold text-gray-900">{scale.administrationTime}</div>
+            <div className="text-[9px] font-semibold text-gray-900">{scale.administrationTime || 'N/A'}</div>
             <div className="text-[8px] text-gray-600">min</div>
           </div>
           <div className="text-center p-1 bg-gray-50 rounded">
             <UserGroupIcon className="h-2.5 w-2.5 text-gray-600 mx-auto mb-0.5" />
             <div className="text-[8px] font-medium text-gray-700 leading-tight">
-              Profesional
+              {scale.applicationType || 'Profesional'}
             </div>
           </div>
         </div>
@@ -690,9 +690,9 @@ function ScaleListItem({ scale, onToggleFavorite, onSelect }: {
           </p>
 
           <div className="flex items-center gap-6 text-xs text-gray-500">
-            <span>N/A ítems</span>
-            <span>{scale.administrationTime}</span>
-            <span>Profesional</span>
+            <span>{scale.totalItems || 'N/A'} ítems</span>
+            <span>{scale.administrationTime || 'N/A'} min</span>
+            <span>{scale.applicationType || 'Profesional'}</span>
           </div>
         </div>
 

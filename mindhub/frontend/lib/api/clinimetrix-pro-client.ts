@@ -185,6 +185,7 @@ export interface ClinimetrixRegistry {
   scoreRangeMin?: number;
   scoreRangeMax?: number;
   estimatedDurationMinutes?: number;
+  applicationType?: string;
 }
 
 export interface ClinimetrixAssessment {
