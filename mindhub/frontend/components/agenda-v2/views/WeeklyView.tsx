@@ -38,7 +38,6 @@ export interface WeeklyViewProps {
   onTimeSlotClick?: (date: Date, hour: number, minute: number) => void;
   onAppointmentDragStart?: (appointment: AppointmentData) => void;
   onAppointmentDrop?: (appointment: AppointmentData, newDate: Date, newHour: number, newMinute: number) => void;
-  dragModeEnabled?: string | null; // appointmentId that can be dragged
   
   className?: string;
 }
@@ -62,10 +61,10 @@ export const WeeklyView: React.FC<WeeklyViewProps> = ({
   onTimeSlotClick,
   onAppointmentDragStart,
   onAppointmentDrop,
-  dragModeEnabled,
   className = ''
 }) => {
   const [draggedAppointment, setDraggedAppointment] = useState<AppointmentData | null>(null);
+  const [holdingAppointment, setHoldingAppointment] = useState<string | null>(null); // appointment being held
   const containerRef = useRef<HTMLDivElement>(null);
 
   // Calculate week days
@@ -294,27 +293,85 @@ export const WeeklyView: React.FC<WeeklyViewProps> = ({
                                 return aptHour === hour && Math.floor(aptMinute / scheduleConfig.slotDuration) * scheduleConfig.slotDuration === minute;
                               })
                               .map(appointment => (
-                                <AppointmentCard
+                                <div
                                   key={appointment.id}
-                                  appointment={appointment}
-                                  size="compact"
-                                  draggable={dragModeEnabled === appointment.id}
-                                  onClick={(event) => {
-                                    if (dragModeEnabled === appointment.id) {
-                                      // In drag mode, show instruction
-                                      event?.preventDefault();
-                                      return;
-                                    }
-                                    // Show context menu on left click
-                                    onAppointmentClick?.(appointment, event);
+                                  className="absolute inset-1"
+                                  onMouseDown={(e) => {
+                                    // Prevent propagation to time slot
+                                    e.stopPropagation();
+                                    
+                                    let holdTimer: NodeJS.Timeout;
+                                    let isHolding = false;
+                                    let isDragging = false;
+                                    
+                                    // Start hold timer (1 second)
+                                    holdTimer = setTimeout(() => {
+                                      isHolding = true;
+                                      setHoldingAppointment(appointment.id);
+                                      // Enable draggable on the AppointmentCard
+                                      const cardElement = e.currentTarget.querySelector('[data-appointment-card]') as HTMLElement;
+                                      if (cardElement) {
+                                        cardElement.draggable = true;
+                                        cardElement.style.cursor = 'grab';
+                                      }
+                                    }, 1000);
+                                    
+                                    const handleMouseMove = () => {
+                                      if (isHolding) {
+                                        isDragging = true;
+                                      }
+                                    };
+                                    
+                                    const handleMouseUp = () => {
+                                      clearTimeout(holdTimer);
+                                      document.removeEventListener('mousemove', handleMouseMove);
+                                      document.removeEventListener('mouseup', handleMouseUp);
+                                      
+                                      if (!isHolding && !isDragging) {
+                                        // It was a quick click, show context menu
+                                        onAppointmentClick?.(appointment, e as any);
+                                      }
+                                      
+                                      // Reset holding state
+                                      setHoldingAppointment(null);
+                                      const cardElement = e.currentTarget.querySelector('[data-appointment-card]') as HTMLElement;
+                                      if (cardElement) {
+                                        cardElement.draggable = false;
+                                      }
+                                    };
+                                    
+                                    document.addEventListener('mousemove', handleMouseMove);
+                                    document.addEventListener('mouseup', handleMouseUp);
                                   }}
-                                  onDragStart={dragModeEnabled === appointment.id ? (e) => {
-                                    e.dataTransfer.setData('text/plain', appointment.id);
-                                    handleAppointmentDragStart(appointment);
-                                  } : undefined}
-                                  onDragEnd={dragModeEnabled === appointment.id ? handleAppointmentDragEnd : undefined}
-                                  className={`absolute inset-1 ${dragModeEnabled === appointment.id ? 'ring-2 ring-blue-400 ring-opacity-75' : ''}`}
-                                />
+                                >
+                                  <AppointmentCard
+                                    appointment={appointment}
+                                    size="compact"
+                                    draggable={false}
+                                    onClick={() => {}} // Handled by wrapper
+                                    onDragStart={(e) => {
+                                      e.dataTransfer.setData('text/plain', appointment.id);
+                                      handleAppointmentDragStart(appointment);
+                                    }}
+                                    onDragEnd={(e) => {
+                                      handleAppointmentDragEnd();
+                                      setHoldingAppointment(null);
+                                    }}
+                                    className={`w-full h-full transition-all duration-200 ${
+                                      holdingAppointment === appointment.id 
+                                        ? 'ring-2 ring-blue-400 ring-opacity-75 scale-105 shadow-lg cursor-grab' 
+                                        : 'hover:shadow-md'
+                                    }`}
+                                    data-appointment-card="true"
+                                  />
+                                  
+                                  {/* Visual indicator when holding */}
+                                  {holdingAppointment === appointment.id && (
+                                    <div className="absolute top-1 right-1 bg-blue-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs font-bold animate-pulse">
+                                      ⇄
+                                    </div>
+                                  )}
+                                </div>
                               ))}
                           </div>
                         );
