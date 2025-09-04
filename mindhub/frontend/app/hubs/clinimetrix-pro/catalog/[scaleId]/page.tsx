@@ -222,33 +222,45 @@ export default function ScaleDetailPage() {
                   {psychometric.normativeData && (
                     <div className="mb-2">
                       <span className="font-medium text-gray-600">Datos Normativos:</span>
-                      <span className="ml-2 text-gray-700">
-                        {typeof psychometric.normativeData === 'object' 
-                          ? JSON.stringify(psychometric.normativeData, null, 2)
-                          : psychometric.normativeData}
-                      </span>
+                      <div className="ml-2 text-gray-700">
+                        {typeof psychometric.normativeData === 'object' ? (
+                          <pre className="bg-gray-100 p-2 rounded text-xs mt-1 overflow-x-auto">
+                            {JSON.stringify(psychometric.normativeData, null, 2)}
+                          </pre>
+                        ) : (
+                          <span>{psychometric.normativeData}</span>
+                        )}
+                      </div>
                     </div>
                   )}
                   
                   {psychometric.demographics && (
                     <div className="mb-2">
                       <span className="font-medium text-gray-600">Demografía:</span>
-                      <span className="ml-2 text-gray-700">
-                        {typeof psychometric.demographics === 'object'
-                          ? JSON.stringify(psychometric.demographics, null, 2)
-                          : psychometric.demographics}
-                      </span>
+                      <div className="ml-2 text-gray-700">
+                        {typeof psychometric.demographics === 'object' ? (
+                          <pre className="bg-gray-100 p-2 rounded text-xs mt-1 overflow-x-auto">
+                            {JSON.stringify(psychometric.demographics, null, 2)}
+                          </pre>
+                        ) : (
+                          <span>{psychometric.demographics}</span>
+                        )}
+                      </div>
                     </div>
                   )}
                   
                   {psychometric.populationNorms && (
                     <div className="mb-2">
                       <span className="font-medium text-gray-600">Normas Poblacionales:</span>
-                      <span className="ml-2 text-gray-700">
-                        {typeof psychometric.populationNorms === 'object'
-                          ? JSON.stringify(psychometric.populationNorms, null, 2)
-                          : psychometric.populationNorms}
-                      </span>
+                      <div className="ml-2 text-gray-700">
+                        {typeof psychometric.populationNorms === 'object' ? (
+                          <pre className="bg-gray-100 p-2 rounded text-xs mt-1 overflow-x-auto">
+                            {JSON.stringify(psychometric.populationNorms, null, 2)}
+                          </pre>
+                        ) : (
+                          <span>{psychometric.populationNorms}</span>
+                        )}
+                      </div>
                     </div>
                   )}
                 </div>
