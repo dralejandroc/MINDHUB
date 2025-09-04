@@ -549,13 +549,13 @@ export default function AgendaV2Page() {
   }
 
   return (
-    <div className="flex flex-col bg-gray-50">
+    <div className="flex flex-col min-h-screen w-full bg-gray-50">
       <PageHeader
         title="Agenda"
         icon={CalendarIcon}
       />
 
-      <div className="flex flex-col">
+      <div className="flex flex-col flex-1 w-full">
         {/* Render appropriate view based on currentView */}
         {currentView === 'week' && (
           <WeeklyView

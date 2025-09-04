@@ -152,7 +152,7 @@ export default function FrontDeskPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen w-full bg-gray-50">
       <PageHeader
         title="FrontDesk"
         description="Sistema de gestión para recepción y asistente"

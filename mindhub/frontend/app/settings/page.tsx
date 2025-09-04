@@ -163,15 +163,15 @@ export default function GeneralSettingsPage() {
       label: 'General',
       icon: CogIcon,
       content: config ? (
-        <div className="bg-white border border-gray-200 rounded-lg shadow-sm p-6">
+        <div className="bg-white border border-gray-200 rounded-lg shadow-sm p-4 sm:p-6">
           <div className="flex items-center gap-2 mb-4">
-            <CogIcon className="h-5 w-5" />
-            <h2 className="text-xl font-semibold">Configuración General</h2>
+            <CogIcon className="h-5 w-5 flex-shrink-0" />
+            <h2 className="text-lg sm:text-xl font-semibold">Configuración General</h2>
           </div>
-          <div className="space-y-8">
+          <div className="space-y-6 sm:space-y-8">
             <div>
-              <h3 className="text-lg font-medium text-gray-900 mb-4">Información de la Clínica</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <h3 className="text-base sm:text-lg font-medium text-gray-900 mb-3 sm:mb-4">Información de la Clínica</h3>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Nombre de la Clínica
@@ -180,7 +180,7 @@ export default function GeneralSettingsPage() {
                     type="text"
                     value={config.clinicInfo.name || ''}
                     onChange={(e) => updateConfig('clinicInfo', 'name', e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2 text-sm sm:text-base border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
                 </div>
                 <div>
@@ -191,7 +191,7 @@ export default function GeneralSettingsPage() {
                     type="text"
                     value={config.clinicInfo.address || ''}
                     onChange={(e) => updateConfig('clinicInfo', 'address', e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2 text-sm sm:text-base border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
                 </div>
                 <div>
@@ -202,7 +202,7 @@ export default function GeneralSettingsPage() {
                     type="text"
                     value={config.clinicInfo.city || ''}
                     onChange={(e) => updateConfig('clinicInfo', 'city', e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2 text-sm sm:text-base border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
                 </div>
                 <div>
@@ -213,7 +213,7 @@ export default function GeneralSettingsPage() {
                     type="email"
                     value={config.clinicInfo.email || ''}
                     onChange={(e) => updateConfig('clinicInfo', 'email', e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2 text-sm sm:text-base border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
                 </div>
               </div>
@@ -222,7 +222,7 @@ export default function GeneralSettingsPage() {
               <Button
                 onClick={saveConfiguration}
                 disabled={saving}
-                className="w-full md:w-auto"
+                className="w-full sm:w-auto"
               >
                 {saving ? 'Guardando...' : 'Guardar Cambios'}
               </Button>
@@ -236,17 +236,17 @@ export default function GeneralSettingsPage() {
       label: 'Clinimetrix',
       icon: ChartBarIcon,
       content: (
-        <div className="bg-white border border-gray-200 rounded-lg shadow-sm p-6">
+        <div className="bg-white border border-gray-200 rounded-lg shadow-sm p-4 sm:p-6">
           <div className="flex items-center gap-2 mb-4">
-            <ChartBarIcon className="h-5 w-5" />
-            <h2 className="text-xl font-semibold">Configuración de Clinimetrix</h2>
+            <ChartBarIcon className="h-5 w-5 flex-shrink-0" />
+            <h2 className="text-lg sm:text-xl font-semibold">Configuración de Clinimetrix</h2>
           </div>
           <div className="space-y-4">
-            <p className="text-gray-600">
+            <p className="text-sm sm:text-base text-gray-600">
               Configuraciones específicas para el módulo de evaluaciones psicométricas Clinimetrix.
             </p>
-            <div className="bg-blue-50 p-4 rounded-lg">
-              <p className="text-blue-800">
+            <div className="bg-blue-50 p-3 sm:p-4 rounded-lg">
+              <p className="text-sm sm:text-base text-blue-800">
                 <strong>Estado:</strong> Módulo activo con escalas psicométricas disponibles.
               </p>
             </div>
@@ -259,17 +259,17 @@ export default function GeneralSettingsPage() {
       label: 'FormX',
       icon: DocumentTextIcon,
       content: (
-        <div className="bg-white border border-gray-200 rounded-lg shadow-sm p-6">
+        <div className="bg-white border border-gray-200 rounded-lg shadow-sm p-4 sm:p-6">
           <div className="flex items-center gap-2 mb-4">
-            <DocumentTextIcon className="h-5 w-5" />
-            <h2 className="text-xl font-semibold">Configuración de FormX</h2>
+            <DocumentTextIcon className="h-5 w-5 flex-shrink-0" />
+            <h2 className="text-lg sm:text-xl font-semibold">Configuración de FormX</h2>
           </div>
           <div className="space-y-4">
-            <p className="text-gray-600">
+            <p className="text-sm sm:text-base text-gray-600">
               Configuraciones para el generador de formularios médicos FormX.
             </p>
-            <div className="bg-blue-50 p-4 rounded-lg">
-              <p className="text-blue-800">
+            <div className="bg-blue-50 p-3 sm:p-4 rounded-lg">
+              <p className="text-sm sm:text-base text-blue-800">
                 <strong>Estado:</strong> Módulo en desarrollo.
               </p>
             </div>
@@ -282,22 +282,22 @@ export default function GeneralSettingsPage() {
       label: 'Preferencias',
       icon: UserIcon,
       content: config ? (
-        <div className="bg-white border border-gray-200 rounded-lg shadow-sm p-6">
+        <div className="bg-white border border-gray-200 rounded-lg shadow-sm p-4 sm:p-6">
           <div className="flex items-center gap-2 mb-4">
-            <UserIcon className="h-5 w-5" />
-            <h2 className="text-xl font-semibold">Preferencias de Usuario</h2>
+            <UserIcon className="h-5 w-5 flex-shrink-0" />
+            <h2 className="text-lg sm:text-xl font-semibold">Preferencias de Usuario</h2>
           </div>
           <div className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label htmlFor="language" className="block text-sm font-medium text-gray-700 mb-1">
+                <label htmlFor="language" className="block text-sm font-medium text-gray-700 mb-2">
                   Idioma
                 </label>
                 <select
                   id="language"
                   value={config.userPreferences.language || 'es'}
                   onChange={(e) => updateConfig('userPreferences', 'language', e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 text-sm sm:text-base border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
                   <option value="es">Español</option>
                   <option value="en">English</option>
@@ -311,7 +311,7 @@ export default function GeneralSettingsPage() {
                   id="theme"
                   value={config.userPreferences.theme || 'system'}
                   onChange={(e) => updateConfig('userPreferences', 'theme', e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 text-sm sm:text-base border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
                   <option value="light">Claro</option>
                   <option value="dark">Oscuro</option>
@@ -345,27 +345,28 @@ export default function GeneralSettingsPage() {
 
   return (
     <UnifiedSidebar>
-      <div className="p-6 max-w-7xl mx-auto">
+      <div className="min-h-screen w-full space-y-4 sm:space-y-6">
         {/* Header */}
-        <div className="mb-6">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">
+        <div className="mb-4 sm:mb-6">
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">
             Configuración del Sistema
           </h1>
-          <p className="text-gray-600">
+          <p className="text-sm sm:text-base text-gray-600">
             Gestiona la configuración de tu clínica, módulos y preferencias personales.
           </p>
           {connectionError && (
-            <div className="mt-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
-              <p className="text-yellow-800">
+            <div className="mt-4 p-3 sm:p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+              <p className="text-sm sm:text-base text-yellow-800">
                 ⚠️ Usando configuración de respaldo debido a problemas de conexión con GraphQL
               </p>
             </div>
           )}
-          <div className="mt-4 flex gap-4">
+          <div className="mt-4 flex flex-col sm:flex-row gap-2 sm:gap-4">
             <Button
               onClick={loadConfiguration}
               disabled={loading}
               variant="outline"
+              className="w-full sm:w-auto"
             >
               {loading ? 'Cargando...' : 'Recargar Configuración'}
             </Button>
@@ -378,7 +379,7 @@ export default function GeneralSettingsPage() {
             tabs={settingsTabs}
             allowMultiple={true}
             defaultExpanded={['dashboard']}
-            className="space-y-4"
+            className="space-y-3 sm:space-y-4"
           />
         </div>
       </div>

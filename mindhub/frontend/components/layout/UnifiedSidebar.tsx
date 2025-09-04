@@ -420,8 +420,8 @@ export function UnifiedSidebar({ children }: UnifiedSidebarProps) {
 
         {/* Main content */}
         <div className="flex flex-col min-h-[calc(100vh-4rem)]">
-          <main className="flex-1 py-6">
-            <div className="px-4 sm:px-6 lg:px-8">
+          <main className="flex-1 py-2 sm:py-4 lg:py-6">
+            <div className="px-2 sm:px-4 lg:px-6 w-full max-w-none">
               {children}
             </div>
           </main>

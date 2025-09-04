@@ -116,7 +116,7 @@ export default function FinancePage() {
 
   // Dashboard view
   return (
-    <div className="space-y-6">
+    <div className="min-h-screen w-full space-y-4 sm:space-y-6">
       <PageHeader
         title="Finance"
         description="Control integral de ingresos, gastos y rendimiento financiero"

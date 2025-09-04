@@ -188,7 +188,7 @@ function ExpedixContent() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="min-h-screen w-full space-y-4 sm:space-y-6">
       {/* Clean Architecture: Error display */}
       {state.error && (
         <ErrorMessageResolver error={state.error} onRetry={handleRetry} />

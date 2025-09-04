@@ -251,7 +251,7 @@ export default function ResourcesPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="min-h-screen w-full space-y-4 sm:space-y-6">
       <PageHeader
         title="Resources"
         description="Gestiona, organiza y envía tus recursos médicos y educativos"

@@ -166,8 +166,8 @@ export default function FormXPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="max-w-7xl mx-auto p-6">
+    <div className="min-h-screen w-full bg-gray-50">
+      <div className="w-full max-w-none p-2 sm:p-4 lg:p-6">
         {renderBreadcrumb()}
         {renderBackButton()}
         {renderContent()}
