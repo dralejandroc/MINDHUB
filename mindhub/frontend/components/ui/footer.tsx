@@ -3,8 +3,6 @@
 import * as React from "react"
 import { Button } from "@/components/ui/Button"
 import { Input } from "@/components/ui/Input"
-import { Label } from "@/components/ui/label"
-import { Switch } from "@/components/ui/switch"
 import {
   Tooltip,
   TooltipContent,
@@ -15,9 +13,7 @@ import {
   Facebook, 
   Instagram, 
   Linkedin, 
-  Moon, 
   Send, 
-  Sun, 
   Twitter,
   Heart,
   Shield,
@@ -25,7 +21,6 @@ import {
   Users
 } from "lucide-react"
 import Link from "next/link"
-import { useTheme } from "@/contexts/ThemeContext"
 import { cn } from "@/lib/utils"
 
 interface MindHubFooterProps {
@@ -34,12 +29,6 @@ interface MindHubFooterProps {
 }
 
 export function MindHubFooter({ variant = "full", className }: MindHubFooterProps) {
-  const { effectiveTheme, setTheme } = useTheme()
-  const [mounted, setMounted] = React.useState(false)
-
-  React.useEffect(() => {
-    setMounted(true)
-  }, [])
 
   if (variant === "hidden") {
     return null
@@ -65,17 +54,6 @@ export function MindHubFooter({ variant = "full", className }: MindHubFooterProp
               <Link href="/terms" className="text-muted-foreground hover:text-primary transition-colors">
                 Términos
               </Link>
-              {mounted && (
-                <div className="flex items-center space-x-2">
-                  <Sun className="h-3 w-3" />
-                  <Switch
-                    checked={effectiveTheme === "dark"}
-                    onCheckedChange={(checked) => setTheme(checked ? "dark" : "light")}
-                    className="scale-75"
-                  />
-                  <Moon className="h-3 w-3" />
-                </div>
-              )}
             </div>
           </div>
         </div>
@@ -224,19 +202,6 @@ export function MindHubFooter({ variant = "full", className }: MindHubFooterProp
               </TooltipProvider>
             </div>
             
-            {mounted && (
-              <div className="flex items-center space-x-2">
-                <Sun className="h-4 w-4" />
-                <Switch
-                  checked={effectiveTheme === "dark"}
-                  onCheckedChange={(checked) => setTheme(checked ? "dark" : "light")}
-                />
-                <Moon className="h-4 w-4" />
-                <Label htmlFor="dark-mode" className="sr-only">
-                  Cambiar tema oscuro
-                </Label>
-              </div>
-            )}
           </div>
         </div>
 

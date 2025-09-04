@@ -27,7 +27,6 @@ import {
   BanknotesIcon
 } from '@heroicons/react/24/outline';
 import { cn } from '@/lib/utils';
-import ThemeToggle from '@/components/ui/ThemeToggle';
 
 const NAVIGATION_ITEMS = [
   {
@@ -304,7 +303,6 @@ export function UnifiedSidebar({ children }: UnifiedSidebarProps) {
               </div>
             </div>
             <div className="flex items-center space-x-1">
-              <ThemeToggle />
               <Link
                 href="/settings"
                 className="p-1 text-theme-secondary hover:text-primary hover:bg-theme-tertiary rounded-lg transition-all duration-200"
@@ -332,9 +330,6 @@ export function UnifiedSidebar({ children }: UnifiedSidebarProps) {
               <span className="text-xs font-bold text-white">
                 {displayUser.name?.charAt(0).toUpperCase() || 'U'}
               </span>
-            </div>
-            <div className="flex items-center justify-center w-7 h-7">
-              <ThemeToggle />
             </div>
             <Link
               href="/settings"
