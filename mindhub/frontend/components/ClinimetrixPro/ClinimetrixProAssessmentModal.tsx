@@ -29,6 +29,7 @@ interface ScaleItem {
   itemNumber: number;
   questionText: string;
   responseOptions?: ResponseOption[];
+  specificOptions?: ResponseOption[];
   helpText?: string;
   instructionText?: string;
   required: boolean;
@@ -243,13 +244,18 @@ export const ClinimetrixProAssessmentModal: React.FC<ClinimetrixProAssessmentMod
               // Mapear las opciones de respuesta desde responseGroups
               if (item.responseGroup && responseGroups[item.responseGroup]) {
                 item.specificOptions = responseGroups[item.responseGroup];
+                item.responseOptions = responseGroups[item.responseGroup]; // También asignar a responseOptions para compatibilidad
                 console.log(`✅ Mapped responseGroup "${item.responseGroup}" for item ${item.number}:`, item.specificOptions);
               } else if (item.specificOptions && Array.isArray(item.specificOptions)) {
                 // Mantener opciones específicas si ya existen
-                item.specificOptions = item.specificOptions;
+                item.responseOptions = item.specificOptions; // También asignar a responseOptions
+              } else if (item.responseOptions && Array.isArray(item.responseOptions)) {
+                // Si tiene responseOptions, usarlas también como specificOptions
+                item.specificOptions = item.responseOptions;
               } else {
                 // Fallback a un arreglo vacío para evitar errores
                 item.specificOptions = [];
+                item.responseOptions = [];
                 console.warn(`⚠️ No response options found for item:`, item);
               }
               
@@ -264,12 +270,13 @@ export const ClinimetrixProAssessmentModal: React.FC<ClinimetrixProAssessmentMod
         console.log('📋 Using direct items array from API response:', templateData.items.length);
         templateData.items.forEach((item: any) => {
           // Ensure proper structure for each item
+          const responseOpts = item.responseOptions || item.response_options || item.specificOptions || [];
           const processedItem = {
             id: item.id || `item_${item.itemNumber || Math.random()}`,
             itemNumber: item.itemNumber || item.item_number,
             questionText: item.questionText || item.question_text || item.text,
-            responseOptions: item.responseOptions || item.response_options || [],
-            specificOptions: item.specificOptions || item.response_options || [],
+            responseOptions: responseOpts,
+            specificOptions: responseOpts, // Use same array for both to ensure compatibility
             helpText: item.helpText || item.help_text,
             instructionText: item.instructionText || item.instruction_text,
             required: item.required !== false, // default to true
@@ -1411,7 +1418,7 @@ export const ClinimetrixProAssessmentModal: React.FC<ClinimetrixProAssessmentMod
     const currentResponse = responses[itemNumber];
     
     // Usar las opciones específicas del ítem desde el JSON real
-    const responseOptions = item.responseOptions || [];
+    const responseOptions = item.specificOptions || item.responseOptions || [];
     
     // Validación de opciones de respuesta
     if (!responseOptions || responseOptions.length === 0) {
