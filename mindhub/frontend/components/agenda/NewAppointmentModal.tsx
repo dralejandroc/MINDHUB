@@ -94,6 +94,17 @@ export default function NewAppointmentModal({ selectedDate, selectedTime, editin
     window.dispatchEvent(event);
   };
 
+  // Update form data when selectedDate or selectedTime changes
+  useEffect(() => {
+    if (selectedDate || selectedTime) {
+      setFormData(prev => ({
+        ...prev,
+        date: getDateString(selectedDate),
+        time: selectedTime || prev.time
+      }));
+    }
+  }, [selectedDate, selectedTime]);
+
   // Cargar pacientes y configuración desde API
   useEffect(() => {
     const loadData = async () => {
