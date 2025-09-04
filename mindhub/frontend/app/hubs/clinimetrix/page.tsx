@@ -629,7 +629,20 @@ function ScaleCard({ scale, onToggleFavorite, onSelect }: {
           {scale.targetPopulation && (
             <div className="text-center">
               <span className="text-[8px] text-gray-500">Población: </span>
-              <span className="text-[8px] font-medium text-gray-700">{scale.targetPopulation}</span>
+              <span className="text-[8px] font-medium text-gray-700">
+                {(() => {
+                  if (typeof scale.targetPopulation === 'string') {
+                    return scale.targetPopulation;
+                  }
+                  if (typeof scale.targetPopulation === 'object' && scale.targetPopulation !== null) {
+                    const popObj = scale.targetPopulation as any;
+                    if (popObj.demographics) return String(popObj.demographics);
+                    if (popObj.ageGroups && Array.isArray(popObj.ageGroups)) return popObj.ageGroups.join(', ');
+                    return 'Adultos';
+                  }
+                  return 'Adultos';
+                })()}
+              </span>
             </div>
           )}
           
@@ -740,7 +753,18 @@ function ScaleListItem({ scale, onToggleFavorite, onSelect }: {
             </span>
             {scale.targetPopulation && (
               <span className="text-blue-600 font-medium">
-                {scale.targetPopulation}
+                {(() => {
+                  if (typeof scale.targetPopulation === 'string') {
+                    return scale.targetPopulation;
+                  }
+                  if (typeof scale.targetPopulation === 'object' && scale.targetPopulation !== null) {
+                    const popObj = scale.targetPopulation as any;
+                    if (popObj.demographics) return String(popObj.demographics);
+                    if (popObj.ageGroups && Array.isArray(popObj.ageGroups)) return popObj.ageGroups.join(', ');
+                    return 'Adultos';
+                  }
+                  return 'Adultos';
+                })()}
               </span>
             )}
           </div>
