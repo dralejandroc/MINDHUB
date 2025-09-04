@@ -1044,53 +1044,142 @@ export default function PatientDashboard({
                     <p className="text-gray-400 text-xs mt-1">Usa el botón "Nueva Consulta" arriba para agregar una</p>
                   </div>
                 ) : (
-                  <div className="space-y-4">
-                    {Array.isArray(dashboardData?.consultations) ? dashboardData.consultations.map((consultation, index) => (
-                      <div key={consultation.id || index} className="border border-gray-200 rounded-lg p-4">
-                        <div className="flex items-start justify-between mb-2">
-                          <h4 className="font-medium text-gray-900">
-                            {consultation.reason || 'Consulta médica'}
-                          </h4>
-                          <span className={`px-2 py-1 text-xs rounded-full ${
-                            consultation.status === 'completed' ? 'bg-green-100 text-green-800' :
-                            consultation.status === 'scheduled' ? 'bg-blue-100 text-blue-800' :
-                            'bg-gray-100 text-gray-800'
-                          }`}>
-                            {consultation.status === 'completed' ? 'Completada' :
-                             consultation.status === 'scheduled' ? 'Programada' : consultation.status}
-                          </span>
+                  <div className="space-y-6">
+                    {/* Pending Consultations */}
+                    {dashboardData.consultations.filter(c => c.status === 'pending').length > 0 && (
+                      <div>
+                        <h4 className="text-sm font-semibold text-gray-700 mb-3">📅 Consultas Pendientes</h4>
+                        <div className="space-y-3">
+                          {dashboardData.consultations.filter(c => c.status === 'pending').map((consultation, index) => (
+                            <div key={consultation.id || `pending-${index}`} className="border-2 border-yellow-200 bg-yellow-50 rounded-lg p-4">
+                              <div className="flex items-start justify-between mb-2">
+                                <h4 className="font-medium text-gray-900">
+                                  {consultation.chief_complaint || consultation.reason || 'Consulta programada'}
+                                </h4>
+                                <div className="flex items-center gap-2">
+                                  <span className="px-2 py-1 text-xs rounded-full bg-yellow-100 text-yellow-800">
+                                    Pendiente
+                                  </span>
+                                  <Button 
+                                    size="sm" 
+                                    variant="primary"
+                                    onClick={() => {
+                                      // Navigate to start this consultation
+                                      window.location.href = `/hubs/expedix?patient=${patient.id}&tab=consultations&consultation=${consultation.id}`;
+                                    }}
+                                  >
+                                    Iniciar Consulta
+                                  </Button>
+                                </div>
+                              </div>
+                              <div className="text-sm text-gray-600">
+                                <div className="flex items-center space-x-4">
+                                  <span className="flex items-center">
+                                    <CalendarIcon className="h-4 w-4 mr-1" />
+                                    {new Date(consultation.consultation_date || consultation.consultationDate).toLocaleDateString('es-ES', {
+                                      weekday: 'long',
+                                      year: 'numeric',
+                                      month: 'long',
+                                      day: 'numeric'
+                                    })}
+                                  </span>
+                                  {consultation.linked_appointment_id && (
+                                    <span className="text-xs text-yellow-700">
+                                      Vinculada a cita #{consultation.linked_appointment_id.slice(-6)}
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                          ))}
                         </div>
-                        <div className="text-sm text-gray-600 mb-2">
-                          <div className="flex items-center space-x-4">
-                            <span className="flex items-center">
-                              <CalendarIcon className="h-4 w-4 mr-1" />
-                              {new Date(consultation.consultationDate).toLocaleDateString('es-ES', {
-                                weekday: 'long',
-                                year: 'numeric',
-                                month: 'long',
-                                day: 'numeric'
-                              })}
-                            </span>
-                            <span className="flex items-center">
-                              <UserIcon className="h-4 w-4 mr-1" />
-                              Dr. Alejandro Contreras
-                            </span>
-                          </div>
-                        </div>
-                        {consultation.diagnosis && (
-                          <div className="text-sm text-gray-700 mb-2">
-                            <strong>Diagnóstico:</strong> {consultation.diagnosis}
-                          </div>
-                        )}
-                        {consultation.notes && (
-                          <div className="text-sm text-gray-600">
-                            <strong>Notas:</strong> {consultation.notes.substring(0, 200)}
-                            {consultation.notes.length > 200 && '...'}
-                          </div>
-                        )}
                       </div>
-                    )) : (
-                      <p className="text-gray-500 text-center py-4">No hay consultas registradas</p>
+                    )}
+                    
+                    {/* In Progress Consultations */}
+                    {dashboardData.consultations.filter(c => c.status === 'in_progress').length > 0 && (
+                      <div>
+                        <h4 className="text-sm font-semibold text-gray-700 mb-3">🔄 Consultas en Progreso</h4>
+                        <div className="space-y-3">
+                          {dashboardData.consultations.filter(c => c.status === 'in_progress').map((consultation, index) => (
+                            <div key={consultation.id || `progress-${index}`} className="border-2 border-blue-200 bg-blue-50 rounded-lg p-4">
+                              <div className="flex items-start justify-between mb-2">
+                                <h4 className="font-medium text-gray-900">
+                                  {consultation.chief_complaint || consultation.reason || 'Consulta en curso'}
+                                </h4>
+                                <div className="flex items-center gap-2">
+                                  <span className="px-2 py-1 text-xs rounded-full bg-blue-100 text-blue-800">
+                                    En Progreso
+                                  </span>
+                                  <Button 
+                                    size="sm" 
+                                    variant="secondary"
+                                    onClick={() => {
+                                      // Navigate to continue this consultation
+                                      window.location.href = `/hubs/expedix?patient=${patient.id}&tab=consultations&consultation=${consultation.id}`;
+                                    }}
+                                  >
+                                    Continuar
+                                  </Button>
+                                </div>
+                              </div>
+                              <div className="text-sm text-gray-600">
+                                <CalendarIcon className="h-4 w-4 mr-1 inline" />
+                                {new Date(consultation.consultation_date || consultation.consultationDate).toLocaleDateString('es-ES')}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    
+                    {/* Completed Consultations */}
+                    {dashboardData.consultations.filter(c => c.status === 'completed' || c.status === 'draft').length > 0 && (
+                      <div>
+                        <h4 className="text-sm font-semibold text-gray-700 mb-3">✅ Consultas Completadas</h4>
+                        <div className="space-y-3">
+                          {dashboardData.consultations.filter(c => c.status === 'completed' || c.status === 'draft').map((consultation, index) => (
+                            <div key={consultation.id || `completed-${index}`} className="border border-gray-200 rounded-lg p-4">
+                              <div className="flex items-start justify-between mb-2">
+                                <h4 className="font-medium text-gray-900">
+                                  {consultation.chief_complaint || consultation.reason || 'Consulta médica'}
+                                </h4>
+                                <span className="px-2 py-1 text-xs rounded-full bg-green-100 text-green-800">
+                                  Completada
+                                </span>
+                              </div>
+                              <div className="text-sm text-gray-600 mb-2">
+                                <div className="flex items-center space-x-4">
+                                  <span className="flex items-center">
+                                    <CalendarIcon className="h-4 w-4 mr-1" />
+                                    {new Date(consultation.consultation_date || consultation.consultationDate).toLocaleDateString('es-ES', {
+                                      weekday: 'long',
+                                      year: 'numeric',
+                                      month: 'long',
+                                      day: 'numeric'
+                                    })}
+                                  </span>
+                                  <span className="flex items-center">
+                                    <UserIcon className="h-4 w-4 mr-1" />
+                                    Dr. Alejandro Contreras
+                                  </span>
+                                </div>
+                              </div>
+                              {consultation.diagnosis && (
+                                <div className="text-sm text-gray-700 mb-2">
+                                  <strong>Diagnóstico:</strong> {consultation.diagnosis}
+                                </div>
+                              )}
+                              {consultation.notes && (
+                                <div className="text-sm text-gray-600">
+                                  <strong>Notas:</strong> {consultation.notes.substring(0, 200)}
+                                  {consultation.notes.length > 200 && '...'}
+                                </div>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
                     )}
                   </div>
                 )}

@@ -284,62 +284,120 @@ export default function AgendaV2Page() {
 
       console.log('[handleStartConsultation] Starting consultation for appointment:', appointmentId, 'patient:', appointment.patientId);
 
-      // Create a new consultation for this appointment
-      const consultationData = {
-        patient_id: appointment.patientId,
-        professional_id: user?.id, // Current user as professional
-        consultation_date: appointment.startTime.toISOString(),
-        consultation_type: appointment.type || 'general',
-        chief_complaint: `Consulta iniciada desde cita: ${appointment.type}`,
-        status: 'draft',
-        is_draft: true,
-        linked_appointment_id: appointmentId,
-        clinic_id: getCurrentTenantType() === 'clinic' ? getCurrentTenantId() : undefined,
-        workspace_id: getCurrentTenantType() === 'workspace' ? getCurrentTenantId() : undefined
-      };
-
-      console.log('[handleStartConsultation] Creating consultation with data:', consultationData);
-
-      // Use authFetch with tenant headers
-      const response = await authFetch('/api/expedix/consultations', {
-        method: 'POST',
-        headers: {
-          'X-Tenant-ID': getCurrentTenantId() || '',
-          'X-Tenant-Type': getCurrentTenantType() || ''
-        },
-        body: JSON.stringify(consultationData)
-      });
+      // First, try to find an existing pending consultation for this appointment
+      let consultationId = null;
       
-      if (response.ok) {
-        const responseData = await response.json();
-        const consultationId = responseData.data?.id || responseData.id;
-        
-        if (consultationId) {
-          console.log('[handleStartConsultation] Consultation created successfully:', consultationId);
-          
-          // Update appointment status to "in-progress" or "active"
-          try {
-            await authPut(`/api/expedix/agenda/appointments/${appointmentId}/status`, {
-              status: 'confirmed'
-            });
-          } catch (updateError) {
-            console.warn('[handleStartConsultation] Failed to update appointment status:', updateError);
-            // Don't block the consultation creation for this
+      try {
+        const searchResponse = await authFetch(`/api/expedix/consultations?patient_id=${appointment.patientId}&status=pending`, {
+          headers: {
+            'X-Tenant-ID': getCurrentTenantId() || '',
+            'X-Tenant-Type': getCurrentTenantType() || ''
           }
-          
-          // Redirect directly to the consultation (not to expedix patient list)
-          router.push(`/hubs/expedix/consultations/${consultationId}?patient=${appointment.patientId}`);
-          toast.success('Consulta iniciada exitosamente');
-        } else {
-          throw new Error('No consultation ID received');
-        }
-      } else {
-        const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
-        console.error('[handleStartConsultation] Failed to create consultation:', errorData);
-        toast.error(`Error al crear la consulta: ${errorData.error || 'Error desconocido'}`);
+        });
         
-        // Fallback: redirect to expedix with patient selected
-        router.push(`/hubs/expedix?patient=${appointment.patientId}&consultation=start`);
+        if (searchResponse.ok) {
+          const searchResult = await searchResponse.json();
+          const pendingConsultations = searchResult.data || [];
+          // Find consultation linked to this appointment
+          const linkedConsultation = pendingConsultations.find((c: any) => 
+            c.linked_appointment_id === appointmentId
+          );
+          
+          if (linkedConsultation) {
+            consultationId = linkedConsultation.id;
+            console.log('[handleStartConsultation] Found existing pending consultation:', consultationId);
+            
+            // Update it to in_progress status
+            const updateResponse = await authFetch('/api/expedix/consultations', {
+              method: 'PUT',
+              headers: {
+                'X-Tenant-ID': getCurrentTenantId() || '',
+                'X-Tenant-Type': getCurrentTenantType() || ''
+              },
+              body: JSON.stringify({
+                id: consultationId,
+                status: 'in_progress',
+                consultation_date: new Date().toISOString() // Update to current time
+              })
+            });
+            
+            if (!updateResponse.ok) {
+              console.warn('[handleStartConsultation] Failed to update consultation status');
+            }
+          }
+        }
+      } catch (searchError) {
+        console.warn('[handleStartConsultation] Error searching for pending consultation:', searchError);
+      }
+      
+      // If no pending consultation found, create a new one
+      if (!consultationId) {
+        console.log('[handleStartConsultation] No pending consultation found, creating new one');
+        
+        const consultationData: any = {
+          patient_id: appointment.patientId,
+          professional_id: user?.id,
+          consultation_date: new Date().toISOString(), // Use current time for active consultation
+          consultation_type: appointment.type || 'general',
+          chief_complaint: appointment.notes || `Consulta iniciada: ${appointment.type || 'General'}`,
+          status: 'in_progress',
+          linked_appointment_id: appointmentId,
+          history_present_illness: '',
+          physical_examination: '',
+          assessment: '',
+          plan: '',
+          notes: appointment.notes || ''
+        };
+        
+        // Add tenant context if available
+        const tenantType = getCurrentTenantType();
+        const tenantId = getCurrentTenantId();
+        if (tenantType === 'clinic' && tenantId) {
+          consultationData.clinic_id = tenantId;
+        } else if (tenantType === 'workspace' && tenantId) {
+          consultationData.workspace_id = tenantId;
+        }
+
+        const response = await authFetch('/api/expedix/consultations', {
+          method: 'POST',
+          headers: {
+            'X-Tenant-ID': getCurrentTenantId() || '',
+            'X-Tenant-Type': getCurrentTenantType() || ''
+          },
+          body: JSON.stringify(consultationData)
+        });
+        
+        if (response.ok) {
+          const responseData = await response.json();
+          consultationId = responseData.data?.id || responseData.id;
+        } else {
+          const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+          console.error('[handleStartConsultation] Failed to create consultation:', errorData);
+          toast.error(`Error al crear la consulta: ${errorData.error || 'Error desconocido'}`);
+          return;
+        }
+      }
+      
+      // Now we have a consultationId (either found or created)
+      if (consultationId) {
+        console.log('[handleStartConsultation] Consultation ready:', consultationId);
+        
+        // Update appointment status to "in-progress" or "active"
+        try {
+          await authPut(`/api/expedix/agenda/appointments/${appointmentId}/status`, {
+            status: 'confirmed'
+          });
+        } catch (updateError) {
+          console.warn('[handleStartConsultation] Failed to update appointment status:', updateError);
+          // Don't block the consultation for this
+        }
+        
+        // Redirect to expedix with patient and consultation selected
+        router.push(`/hubs/expedix?patient=${appointment.patientId}&tab=consultations&consultation=${consultationId}`);
+        toast.success('Consulta iniciada exitosamente');
+      } else {
+        console.error('[handleStartConsultation] No consultation ID available');
+        toast.error('No se pudo iniciar la consulta');
       }
     } catch (error) {
       console.error('[handleStartConsultation] Error starting consultation:', error);
@@ -741,6 +799,55 @@ export default function AgendaV2Page() {
               if (response.ok) {
                 const result = await response.json();
                 console.log('[Agenda] Appointment created:', result);
+                
+                // Create a pending consultation for this appointment
+                try {
+                  const consultationData: any = {
+                    patient_id: appointmentData.patientId,
+                    professional_id: user?.id,
+                    consultation_date: `${appointmentData.date}T${appointmentData.time}:00`, // Combine date and time
+                    consultation_type: appointmentData.type || 'general',
+                    chief_complaint: appointmentData.notes || `Cita programada: ${appointmentData.type}`,
+                    status: 'pending', // Mark as pending until consultation starts
+                    linked_appointment_id: result.data?.id || result.id,
+                    // Empty fields to be filled during consultation
+                    history_present_illness: '',
+                    physical_examination: '',
+                    assessment: '',
+                    plan: '',
+                    notes: ''
+                  };
+                  
+                  // Add tenant context if available
+                  const tenantType = getCurrentTenantType();
+                  const tenantId = getCurrentTenantId();
+                  if (tenantType === 'clinic' && tenantId) {
+                    consultationData.clinic_id = tenantId;
+                  } else if (tenantType === 'workspace' && tenantId) {
+                    consultationData.workspace_id = tenantId;
+                  }
+                  
+                  console.log('[Agenda] Creating pending consultation for appointment:', consultationData);
+                  
+                  const consultationResponse = await authFetch('/api/expedix/consultations', {
+                    method: 'POST',
+                    headers: {
+                      'X-Tenant-ID': getCurrentTenantId() || '',
+                      'X-Tenant-Type': getCurrentTenantType() || ''
+                    },
+                    body: JSON.stringify(consultationData)
+                  });
+                  
+                  if (consultationResponse.ok) {
+                    const consultationResult = await consultationResponse.json();
+                    console.log('[Agenda] Pending consultation created:', consultationResult.data?.id || consultationResult.id);
+                  } else {
+                    console.warn('[Agenda] Failed to create pending consultation, but appointment was created');
+                  }
+                } catch (consultationError) {
+                  console.error('[Agenda] Error creating pending consultation:', consultationError);
+                  // Don't block appointment creation for this
+                }
                 
                 // Create pending charge in Finance system if appointment has a price
                 if (appointmentData.createPendingCharge && appointmentData.price > 0) {
