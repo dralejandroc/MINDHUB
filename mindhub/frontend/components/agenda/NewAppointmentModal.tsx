@@ -55,6 +55,11 @@ export default function NewAppointmentModal({ selectedDate, selectedTime, editin
     notes: editingAppointment?.notes || ''
   });
 
+  // Debug logs for initial props
+  useEffect(() => {
+    console.log('[NewAppointmentModal] Initial render with props:', { selectedDate, selectedTime, editingAppointment });
+  }, []);
+
   const [patients, setPatients] = useState<Patient[]>([]);
   const [filteredPatients, setFilteredPatients] = useState<Patient[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
@@ -96,13 +101,12 @@ export default function NewAppointmentModal({ selectedDate, selectedTime, editin
 
   // Update form data when selectedDate or selectedTime changes
   useEffect(() => {
-    if (selectedDate || selectedTime) {
-      setFormData(prev => ({
-        ...prev,
-        date: getDateString(selectedDate),
-        time: selectedTime || prev.time
-      }));
-    }
+    console.log('[NewAppointmentModal] Props changed:', { selectedDate, selectedTime });
+    setFormData(prev => ({
+      ...prev,
+      date: getDateString(selectedDate),
+      time: selectedTime || prev.time
+    }));
   }, [selectedDate, selectedTime]);
 
   // Cargar pacientes y configuración desde API

@@ -236,7 +236,9 @@ export default function AgendaV2Page() {
     const time = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
     
     // Set selected slot for pre-filling modal
-    setSelectedSlot({ date, time });
+    const selectedSlotData = { date, time };
+    console.log('[handleTimeSlotClick] Setting selected slot:', selectedSlotData);
+    setSelectedSlot(selectedSlotData);
     
     // Open new appointment modal with preselected time
     setShowNewAppointment(true);
@@ -774,6 +776,7 @@ export default function AgendaV2Page() {
         <NewAppointmentModal
           selectedDate={selectedSlot?.date || currentDate || new Date()}
           selectedTime={selectedSlot?.time}
+          editingAppointment={null}
           onClose={() => {
             setShowNewAppointment(false);
             setSelectedSlot(null); // Clear selected slot when closing
