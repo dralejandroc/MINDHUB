@@ -218,7 +218,7 @@ export const ClinimetrixProAssessmentModal: React.FC<ClinimetrixProAssessmentMod
       // Mapear la estructura real de la base de datos
       const metadata = templateData?.metadata || {};
       const structure = templateData?.structure || {};
-      // const interpretation = templateData?.interpretation || {};
+      const interpretation = templateData?.interpretation || templateData?.scoring || {};
       const responseGroups = templateData?.responseGroups || {};
       
       console.log('🔧 Debug template data structure:', {
@@ -227,9 +227,9 @@ export const ClinimetrixProAssessmentModal: React.FC<ClinimetrixProAssessmentMod
         hasResponseGroups: !!responseGroups,
         responseGroupsKeys: Object.keys(responseGroups),
         structureSections: structure?.sections?.length || 0,
-        // hasInterpretation: !!interpretation,
-        // interpretationKeys: Object.keys(interpretation),
-        // interpretationRules: interpretation?.rules?.length || 0,
+        hasInterpretation: !!interpretation,
+        interpretationKeys: Object.keys(interpretation),
+        interpretationRules: interpretation?.rules?.length || interpretation?.interpretationRules?.length || 0,
         fullTemplateDataKeys: Object.keys(templateData || {})
       });
       
@@ -268,13 +268,29 @@ export const ClinimetrixProAssessmentModal: React.FC<ClinimetrixProAssessmentMod
       // Try format 2: Direct items array from API response
       if (allItems.length === 0 && templateData.items && Array.isArray(templateData.items)) {
         console.log('📋 Using direct items array from API response:', templateData.items.length);
-        templateData.items.forEach((item: any) => {
+        console.log('🔍 First item raw data:', templateData.items[0]);
+        console.log('🔍 First item keys:', Object.keys(templateData.items[0] || {}));
+        
+        templateData.items.forEach((item: any, index: number) => {
+          // Log each item's structure for debugging
+          if (index < 3) { // Only log first 3 items to avoid spam
+            console.log(`🔍 Item ${index + 1} raw data:`, item);
+            console.log(`🔍 Item ${index + 1} questionText variants:`, {
+              questionText: item.questionText,
+              question_text: item.question_text,
+              text: item.text,
+              content: item.content,
+              statement: item.statement,
+              item_text: item.item_text
+            });
+          }
+          
           // Ensure proper structure for each item
           const responseOpts = item.responseOptions || item.response_options || item.specificOptions || [];
           const processedItem = {
             id: item.id || `item_${item.itemNumber || Math.random()}`,
-            itemNumber: item.itemNumber || item.item_number,
-            questionText: item.questionText || item.question_text || item.text,
+            itemNumber: item.itemNumber || item.item_number || item.number,
+            questionText: item.questionText || item.question_text || item.text || item.content || item.statement || item.item_text || `Item ${item.itemNumber || item.number || index + 1}`,
             responseOptions: responseOpts,
             specificOptions: responseOpts, // Use same array for both to ensure compatibility
             helpText: item.helpText || item.help_text,
@@ -298,15 +314,15 @@ export const ClinimetrixProAssessmentModal: React.FC<ClinimetrixProAssessmentMod
         description: metadata.description || '',
         items: allItems,
         responseOptions: [],
-        // administrationMode: metadata.administrationMode || 'self_administered',
+        administrationMode: metadata.administrationMode || 'self_administered',
         totalItems: structure.totalItems || allItems.length || 0,
-        // estimatedDurationMinutes: metadata.estimatedDurationMinutes || metadata.duration,
-        // instructionsPatient: metadata.instructionsPatient || null,
-        // instructionsProfessional: metadata.instructionsProfessional || null,
-        // interpretationRules: interpretation.rules || interpretation.interpretationRules || [],
-        // subscales: structure.subscales || [],
+        estimatedDurationMinutes: metadata.estimatedDurationMinutes || metadata.duration,
+        instructionsPatient: metadata.instructionsPatient || null,
+        instructionsProfessional: metadata.instructionsProfessional || null,
+        interpretationRules: interpretation.rules || interpretation.interpretationRules || templateData.interpretationRules || [],
+        subscales: structure.subscales || templateData.subscales || [],
         // Agregar datos adicionales del template
-        scoring: templateData?.scoring || {},
+        scoring: templateData?.scoring || interpretation || {},
         documentation: templateData?.documentation || {}
       };
       
