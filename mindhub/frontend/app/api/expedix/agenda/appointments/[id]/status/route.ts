@@ -1,5 +1,5 @@
-// Simple appointment status update API
-export async function PATCH(request: Request, { params }: { params: { id: string } }) {
+// Simple appointment status update API - supports both PATCH and PUT
+async function updateAppointmentStatus(request: Request, params: { id: string }) {
   try {
     const { id } = params;
     const body = await request.json();
@@ -30,4 +30,12 @@ export async function PATCH(request: Request, { params }: { params: { id: string
       headers: { 'Content-Type': 'application/json' }
     });
   }
+}
+
+export async function PATCH(request: Request, { params }: { params: { id: string } }) {
+  return updateAppointmentStatus(request, params);
+}
+
+export async function PUT(request: Request, { params }: { params: { id: string } }) {
+  return updateAppointmentStatus(request, params);
 }

@@ -210,39 +210,78 @@ export async function POST(request: Request) {
 
       // Get user's workspace/clinic context for dual system
       console.log('[CONSULTATIONS API] Getting user context for dual system...');
-      
-      // Check for individual workspace first
-      const { data: workspace } = await supabaseAdmin
-        .from('individual_workspaces')
-        .select('id')
-        .eq('owner_id', user.id)
-        .single();
+      console.log('[CONSULTATIONS API] Tenant headers received:', { tenantId, tenantType });
       
       let clinic_id = null;
       let workspace_id = null;
       
-      if (workspace) {
-        workspace_id = workspace.id;
-        console.log('[CONSULTATIONS API] Using workspace context:', workspace.id);
+      // First try to use tenant context from headers
+      if (tenantType && tenantId) {
+        if (tenantType === 'clinic') {
+          clinic_id = tenantId;
+          console.log('[CONSULTATIONS API] Using clinic context from headers:', tenantId);
+        } else if (tenantType === 'workspace') {
+          workspace_id = tenantId;
+          console.log('[CONSULTATIONS API] Using workspace context from headers:', tenantId);
+        }
       } else {
-        // Check for clinic membership
-        const { data: membership } = await supabaseAdmin
-          .from('tenant_memberships')
-          .select('clinic_id')
-          .eq('user_id', user.id)
-          .limit(1)
+        // Fallback: Check for individual workspace first
+        const { data: workspace, error: workspaceError } = await supabaseAdmin
+          .from('individual_workspaces')
+          .select('id')
+          .eq('owner_id', user.id)
           .single();
         
-        if (membership) {
-          clinic_id = membership.clinic_id;
-          console.log('[CONSULTATIONS API] Using clinic context:', membership.clinic_id);
+        if (workspace && !workspaceError) {
+          workspace_id = workspace.id;
+          console.log('[CONSULTATIONS API] Using workspace context from DB:', workspace.id);
         } else {
-          console.error('[CONSULTATIONS API] No workspace or clinic context found for user');
-          return createErrorResponse(
-            'Context error',
-            'User workspace or clinic context not found',
-            400
-          );
+          // Check for clinic membership
+          const { data: membership, error: membershipError } = await supabaseAdmin
+            .from('tenant_memberships')
+            .select('clinic_id')
+            .eq('user_id', user.id)
+            .limit(1)
+            .single();
+          
+          if (membership && !membershipError) {
+            clinic_id = membership.clinic_id;
+            console.log('[CONSULTATIONS API] Using clinic context from DB:', membership.clinic_id);
+          } else {
+            console.error('[CONSULTATIONS API] No workspace or clinic context found:', {
+              workspaceError,
+              membershipError,
+              userId: user.id,
+              tenantHeaders: { tenantId, tenantType }
+            });
+            
+            // Last resort: create individual workspace for this user
+            console.log('[CONSULTATIONS API] Creating individual workspace for user:', user.id);
+            
+            const { data: newWorkspace, error: createError } = await supabaseAdmin
+              .from('individual_workspaces')
+              .insert({
+                id: crypto.randomUUID(),
+                owner_id: user.id,
+                name: `Workspace - ${user.email || 'Usuario'}`,
+                created_at: new Date().toISOString(),
+                updated_at: new Date().toISOString()
+              })
+              .select('id')
+              .single();
+            
+            if (newWorkspace && !createError) {
+              workspace_id = newWorkspace.id;
+              console.log('[CONSULTATIONS API] Created new workspace:', newWorkspace.id);
+            } else {
+              console.error('[CONSULTATIONS API] Failed to create workspace:', createError);
+              return createErrorResponse(
+                'Context error',
+                'Unable to establish user workspace or clinic context',
+                500
+              );
+            }
+          }
         }
       }
 
