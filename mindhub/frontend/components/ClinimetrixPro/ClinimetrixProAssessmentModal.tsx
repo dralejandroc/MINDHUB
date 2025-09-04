@@ -240,26 +240,57 @@ export const ClinimetrixProAssessmentModal: React.FC<ClinimetrixProAssessmentMod
       if (structure.sections && Array.isArray(structure.sections)) {
         structure.sections.forEach((section: any) => {
           if (section.items && Array.isArray(section.items)) {
-            section.items.forEach((item: any) => {
-              // Mapear las opciones de respuesta desde responseGroups
-              if (item.responseGroup && responseGroups[item.responseGroup]) {
-                item.specificOptions = responseGroups[item.responseGroup];
-                item.responseOptions = responseGroups[item.responseGroup]; // También asignar a responseOptions para compatibilidad
-                console.log(`✅ Mapped responseGroup "${item.responseGroup}" for item ${item.number}:`, item.specificOptions);
-              } else if (item.specificOptions && Array.isArray(item.specificOptions)) {
-                // Mantener opciones específicas si ya existen
-                item.responseOptions = item.specificOptions; // También asignar a responseOptions
-              } else if (item.responseOptions && Array.isArray(item.responseOptions)) {
-                // Si tiene responseOptions, usarlas también como specificOptions
-                item.specificOptions = item.responseOptions;
-              } else {
-                // Fallback a un arreglo vacío para evitar errores
-                item.specificOptions = [];
-                item.responseOptions = [];
-                console.warn(`⚠️ No response options found for item:`, item);
+            section.items.forEach((item: any, idx: number) => {
+              // Debug the raw item structure
+              if (idx < 3) {
+                console.log(`🔍 Section item ${idx + 1} raw data:`, item);
+                console.log(`🔍 Section item ${idx + 1} text fields:`, {
+                  text: item.text,
+                  questionText: item.questionText,
+                  question: item.question,
+                  content: item.content,
+                  statement: item.statement
+                });
               }
               
-              allItems.push(item);
+              // Normalize the item structure - handle different field names
+              const normalizedItem = {
+                id: item.id || `item-${item.number || idx + 1}`,
+                itemNumber: item.number || item.itemNumber || idx + 1,
+                // Map different possible field names for question text
+                questionText: item.text || item.questionText || item.question || item.content || item.statement || item.question_text || `Ítem ${item.number || idx + 1}`,
+                helpText: item.helpText || item.help_text || item.hint,
+                instructionText: item.instructionText || item.instruction_text || item.instructions,
+                required: item.required !== false,
+                subscale: item.subscale || section.name,
+                responseGroup: item.responseGroup,
+                // Preserve original item properties
+                ...item
+              };
+              
+              // Mapear las opciones de respuesta desde responseGroups
+              if (item.responseGroup && responseGroups[item.responseGroup]) {
+                normalizedItem.specificOptions = responseGroups[item.responseGroup];
+                normalizedItem.responseOptions = responseGroups[item.responseGroup]; // También asignar a responseOptions para compatibilidad
+                console.log(`✅ Mapped responseGroup "${item.responseGroup}" for item ${normalizedItem.itemNumber}:`, normalizedItem.specificOptions);
+              } else if (item.specificOptions && Array.isArray(item.specificOptions)) {
+                // Mantener opciones específicas si ya existen
+                normalizedItem.responseOptions = item.specificOptions; // También asignar a responseOptions
+              } else if (item.responseOptions && Array.isArray(item.responseOptions)) {
+                // Si tiene responseOptions, usarlas también como specificOptions
+                normalizedItem.specificOptions = item.responseOptions;
+              } else {
+                // Fallback a un arreglo vacío para evitar errores
+                normalizedItem.specificOptions = [];
+                normalizedItem.responseOptions = [];
+                console.warn(`⚠️ No response options found for item ${normalizedItem.itemNumber}:`, {
+                  itemId: normalizedItem.id,
+                  responseGroup: item.responseGroup,
+                  availableResponseGroups: Object.keys(responseGroups)
+                });
+              }
+              
+              allItems.push(normalizedItem);
             });
           }
         });
@@ -1424,7 +1455,12 @@ export const ClinimetrixProAssessmentModal: React.FC<ClinimetrixProAssessmentMod
       return <div>No hay datos de la escala</div>;
     }
 
-    const item = templateData.items.find(i => i.itemNumber === itemNumber) || templateData.items[itemNumber - 1];
+    // Find item by itemNumber, number, or by array index
+    const item = templateData.items.find(i => 
+      i.itemNumber === itemNumber || 
+      i.number === itemNumber ||
+      (i.number && parseInt(i.number) === itemNumber)
+    ) || templateData.items[itemNumber - 1];
     
     if (!item) {
       return <div>Ítem {itemNumber} no encontrado</div>;
@@ -1441,8 +1477,12 @@ export const ClinimetrixProAssessmentModal: React.FC<ClinimetrixProAssessmentMod
       console.error(`❌ No response options found for item ${itemNumber}:`, {
         itemId: item.id,
         itemText: item.questionText,
+        itemNumber: item.itemNumber,
+        number: item.number,
         responseGroup: (item as any).responseGroup,
-        hasSpecificOptions: !!(item as any).specificOptions
+        hasSpecificOptions: !!(item as any).specificOptions,
+        hasResponseOptions: !!(item as any).responseOptions,
+        rawItem: item
       });
       
       return (

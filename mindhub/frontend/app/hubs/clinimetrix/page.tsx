@@ -258,6 +258,20 @@ export default function ClinimetrixPage() {
     return colors[category] || 'text-gray-700 bg-gray-50 border-gray-200';
   };
 
+  const getApplicationTypeLabel = (applicationType: string) => {
+    const typeMapping: { [key: string]: string } = {
+      'Paciente': 'Autoaplicada',
+      'Profesional': 'Heteroaplicada', 
+      'Observador': 'Heteroaplicada',
+      'Mixta': 'Mixta',
+      'Self-administered': 'Autoaplicada',
+      'Clinician-administered': 'Heteroaplicada',
+      'Observer': 'Heteroaplicada',
+      'Mixed': 'Mixta'
+    };
+    return typeMapping[applicationType] || 'Heteroaplicada';
+  };
+
   const clearFilters = () => {
     setSearchTerm('');
     setSelectedCategory('all');
@@ -618,7 +632,7 @@ function ScaleCard({ scale, onToggleFavorite, onSelect }: {
           <div className="text-center p-1 bg-gray-50 rounded">
             <UserGroupIcon className="h-2.5 w-2.5 text-gray-600 mx-auto mb-0.5" />
             <div className="text-[8px] font-medium text-gray-700 leading-tight">
-              {scale.applicationType || 'Profesional'}
+              {getApplicationTypeLabel(scale.applicationType || 'Profesional')}
             </div>
           </div>
         </div>
@@ -749,7 +763,7 @@ function ScaleListItem({ scale, onToggleFavorite, onSelect }: {
             </span>
             <span className="flex items-center gap-1">
               <UserGroupIcon className="h-3 w-3" />
-              {scale.applicationType || 'Profesional'}
+              {getApplicationTypeLabel(scale.applicationType || 'Profesional')}
             </span>
             {scale.targetPopulation && (
               <span className="text-blue-600 font-medium">
