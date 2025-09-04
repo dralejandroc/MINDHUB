@@ -774,6 +774,7 @@ export default function AgendaV2Page() {
       {/* New Appointment Modal */}
       {showNewAppointment && (
         <NewAppointmentModal
+          key={selectedSlot ? `slot-${selectedSlot.time}-${selectedSlot.date.getTime()}` : 'general'}
           selectedDate={selectedSlot?.date || currentDate || new Date()}
           selectedTime={selectedSlot?.time}
           editingAppointment={null}

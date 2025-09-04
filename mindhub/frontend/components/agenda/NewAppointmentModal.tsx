@@ -102,11 +102,14 @@ export default function NewAppointmentModal({ selectedDate, selectedTime, editin
   // Update form data when selectedDate or selectedTime changes
   useEffect(() => {
     console.log('[NewAppointmentModal] Props changed:', { selectedDate, selectedTime });
-    setFormData(prev => ({
-      ...prev,
-      date: getDateString(selectedDate),
-      time: selectedTime || prev.time
-    }));
+    if (selectedTime) {
+      console.log('[NewAppointmentModal] Updating formData with selectedTime:', selectedTime);
+      setFormData(prev => ({
+        ...prev,
+        date: getDateString(selectedDate),
+        time: selectedTime
+      }));
+    }
   }, [selectedDate, selectedTime]);
 
   // Cargar pacientes y configuración desde API
