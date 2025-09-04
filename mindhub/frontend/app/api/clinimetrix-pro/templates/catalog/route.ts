@@ -65,9 +65,13 @@ export async function GET(request: Request) {
       language: item.template_data?.metadata?.language || 'es',
       authors: item.template_data?.metadata?.authors || [],
       year: item.template_data?.metadata?.year || new Date().getFullYear(),
-      administration_mode: item.template_data?.metadata?.administrationMode || 'self_administered',
+      administration_mode: item.template_data?.metadata?.administrationMode || 'professional',
       estimated_duration_minutes: item.template_data?.metadata?.estimatedDurationMinutes || 10,
       total_items: item.template_data?.structure?.totalItems || 0,
+      target_population: item.template_data?.metadata?.targetPopulation || 'Adultos',
+      keywords: item.template_data?.metadata?.keywords || item.template_data?.metadata?.tags || [],
+      professional_level: item.template_data?.metadata?.professionalLevel || ['Psicólogo', 'Médico'],
+      difficulty: item.template_data?.metadata?.difficulty || 'Intermedio',
       score_range: {
         min: item.template_data?.scoring?.scoreRange?.min || 0,
         max: item.template_data?.scoring?.scoreRange?.max || 100

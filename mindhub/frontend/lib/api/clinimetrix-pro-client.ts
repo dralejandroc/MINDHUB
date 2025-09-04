@@ -420,13 +420,40 @@ export class ClinimetrixProClient {
     try {
       const response = await this.makeRequest<{
         success: boolean;
-        data: ClinimetrixRegistry[];
+        data: any[];
         message: string;
         timestamp: string;
       }>('/templates/catalog');
       
-      // Ensure we return an array even if data is undefined
-      return response.data || [];
+      // Transform API response to match expected interface
+      const transformedData = (response.data || []).map((item: any) => ({
+        ...item,
+        // Map snake_case API fields to camelCase interface fields
+        totalItems: item.total_items || item.totalItems || 0,
+        administrationTime: item.estimated_duration_minutes ? `${item.estimated_duration_minutes}` : (item.administrationTime || 'N/A'),
+        applicationType: item.administration_mode === 'self_administered' ? 'Paciente' : 
+                        item.administration_mode === 'professional' ? 'Profesional' : 
+                        (item.applicationType || 'Profesional'),
+        targetPopulation: item.target_population || item.targetPopulation || 'Adultos',
+        keywords: item.keywords || [],
+        professionalLevel: item.professional_level || item.professionalLevel || ['Profesional'],
+        difficulty: item.difficulty || 'Intermedio',
+        estimatedDurationMinutes: item.estimated_duration_minutes || item.estimatedDurationMinutes || 10,
+        scoreRangeMin: item.score_range?.min || item.scoreRangeMin || 0,
+        scoreRangeMax: item.score_range?.max || item.scoreRangeMax || 100,
+        // Ensure other fields are properly mapped
+        templateId: item.templateId || item.template_id || item.id,
+        isPublic: item.is_public !== undefined ? item.is_public : (item.isPublic || false),
+        isActive: item.is_active !== undefined ? item.is_active : (item.isActive || true),
+        isFeatured: item.isFeatured || false,
+        createdAt: item.created_at || item.createdAt || new Date().toISOString(),
+        updatedAt: item.updated_at || item.updatedAt || new Date().toISOString(),
+        lastUpdated: item.updated_at || item.updatedAt || item.lastUpdated || new Date().toISOString()
+      }));
+      
+      console.log('🔍 Transformed catalog data sample:', transformedData[0]);
+      
+      return transformedData;
     } catch (error) {
       console.warn('Failed to fetch catalog, returning empty array:', error);
       return [];

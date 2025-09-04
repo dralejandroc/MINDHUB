@@ -622,6 +622,36 @@ function ScaleCard({ scale, onToggleFavorite, onSelect }: {
             </div>
           </div>
         </div>
+
+        {/* Population and Tags */}
+        <div className="space-y-1">
+          {/* Target Population */}
+          {scale.targetPopulation && (
+            <div className="text-center">
+              <span className="text-[8px] text-gray-500">Población: </span>
+              <span className="text-[8px] font-medium text-gray-700">{scale.targetPopulation}</span>
+            </div>
+          )}
+          
+          {/* Keywords/Tags */}
+          {scale.keywords && scale.keywords.length > 0 && (
+            <div className="flex flex-wrap justify-center gap-0.5">
+              {scale.keywords.slice(0, 3).map((keyword, index) => (
+                <span 
+                  key={index}
+                  className="text-[7px] bg-gray-100 text-gray-600 px-1 py-0.5 rounded-md font-medium"
+                >
+                  {keyword}
+                </span>
+              ))}
+              {scale.keywords.length > 3 && (
+                <span className="text-[7px] text-gray-400">
+                  +{scale.keywords.length - 3}
+                </span>
+              )}
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Footer */}
@@ -696,10 +726,43 @@ function ScaleListItem({ scale, onToggleFavorite, onSelect }: {
           </p>
 
           <div className="flex items-center gap-6 text-xs text-gray-500">
-            <span>{scale.totalItems || 'N/A'} ítems</span>
-            <span>{scale.administrationTime || 'N/A'} min</span>
-            <span>{scale.applicationType || 'Profesional'}</span>
+            <span className="flex items-center gap-1">
+              <DocumentTextIcon className="h-3 w-3" />
+              {scale.totalItems || 'N/A'} ítems
+            </span>
+            <span className="flex items-center gap-1">
+              <ClockIcon className="h-3 w-3" />
+              {scale.administrationTime || 'N/A'} min
+            </span>
+            <span className="flex items-center gap-1">
+              <UserGroupIcon className="h-3 w-3" />
+              {scale.applicationType || 'Profesional'}
+            </span>
+            {scale.targetPopulation && (
+              <span className="text-blue-600 font-medium">
+                {scale.targetPopulation}
+              </span>
+            )}
           </div>
+
+          {/* Keywords/Tags for list view */}
+          {scale.keywords && scale.keywords.length > 0 && (
+            <div className="flex flex-wrap gap-1 mt-2">
+              {scale.keywords.slice(0, 5).map((keyword, index) => (
+                <span 
+                  key={index}
+                  className="text-[10px] bg-purple-100 text-purple-700 px-2 py-1 rounded-full font-medium"
+                >
+                  {keyword}
+                </span>
+              ))}
+              {scale.keywords.length > 5 && (
+                <span className="text-[10px] text-gray-400 self-center">
+                  +{scale.keywords.length - 5} más
+                </span>
+              )}
+            </div>
+          )}
         </div>
 
         <div className="flex items-center gap-3 ml-4">
