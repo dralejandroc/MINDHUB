@@ -2336,11 +2336,23 @@ export const ClinimetrixProAssessmentModal: React.FC<ClinimetrixProAssessmentMod
                 // Calcular puntaje máximo dinámicamente para esta subescala
                 const subscaleItems = templateData.items?.filter(item => item.subscale === subscaleName) || [];
                 const maxScore = subscaleItems.reduce((max, item) => {
-                  const responseOptions = (templateData as any).responseOptions?.filter((opt: any) => 
-                    opt.responseGroup === (item as any).responseGroup
-                  ) || [];
-                  const itemMaxScore = Math.max(...responseOptions.map((opt: any) => opt.scoreValue || 0));
-                  return max + (itemMaxScore || 0);
+                  // Obtener opciones de respuesta específicas del ítem
+                  const responseOptions = item.specificOptions || item.responseOptions || [];
+                  
+                  // Si no hay opciones específicas, buscar en responseGroups globales
+                  if (responseOptions.length === 0 && (item as any).responseGroup) {
+                    // Buscar en responseGroups si está disponible
+                    const responseGroup = (item as any).responseGroup;
+                    const globalOptions = (templateData as any).responseGroups?.[responseGroup] || [];
+                    responseOptions.push(...globalOptions);
+                  }
+                  
+                  // Calcular puntaje máximo del ítem
+                  const itemMaxScore = responseOptions.length > 0 
+                    ? Math.max(...responseOptions.map((opt: any) => opt.score || opt.scoreValue || 0))
+                    : 4; // fallback común para escalas Likert
+                    
+                  return max + itemMaxScore;
                 }, 0);
                 
                 // Formatear nombre de subescala más legible
@@ -2403,11 +2415,12 @@ export const ClinimetrixProAssessmentModal: React.FC<ClinimetrixProAssessmentMod
                     prognosticImplications: assessmentResults.interpretation?.prognosticImplications,
                     color: assessmentResults.interpretation?.color
                   },
-                  subscaleScores: assessmentResults.subscaleScores?.map((sub: any) => ({
-                    name: sub.name,
-                    score: sub.score,
-                    severity: sub.severity
-                  })),
+                  subscaleScores: assessmentResults.subscaleScores ? 
+                    Object.entries(assessmentResults.subscaleScores).map(([name, score]) => ({
+                      name,
+                      score: score as number,
+                      severity: 'N/A' // Could be calculated based on subscale interpretation rules
+                    })) : [],
                   completionTime: assessmentResults.completionTime,
                   templateData: templateData
                 };
