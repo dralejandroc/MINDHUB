@@ -27,6 +27,7 @@ interface ClinimetrixProAssessmentModalProps {
 interface ScaleItem {
   id: string;
   itemNumber: number;
+  number?: number | string; // Add support for alternative number field
   questionText: string;
   responseOptions?: ResponseOption[];
   specificOptions?: ResponseOption[];
@@ -34,6 +35,7 @@ interface ScaleItem {
   instructionText?: string;
   required: boolean;
   subscale?: string;
+  responseGroup?: string; // Add support for responseGroup
 }
 
 interface ResponseOption {
@@ -1459,7 +1461,7 @@ export const ClinimetrixProAssessmentModal: React.FC<ClinimetrixProAssessmentMod
     const item = templateData.items.find(i => 
       i.itemNumber === itemNumber || 
       i.number === itemNumber ||
-      (i.number && parseInt(i.number) === itemNumber)
+      (i.number && typeof i.number === 'string' && parseInt(i.number) === itemNumber)
     ) || templateData.items[itemNumber - 1];
     
     if (!item) {

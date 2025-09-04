@@ -23,6 +23,21 @@ import type { ClinimetrixRegistry } from '@/lib/api/clinimetrix-pro-client';
 import { Button } from '@/components/ui/Button';
 import { ClinimetrixProAssessmentModal } from '@/components/ClinimetrixPro/ClinimetrixProAssessmentModal';
 
+// Función para convertir tipos de aplicación a terminología clínica
+function getApplicationTypeLabel(applicationType: string): string {
+  const typeMapping: { [key: string]: string } = {
+    'Paciente': 'Autoaplicada',
+    'Profesional': 'Heteroaplicada', 
+    'Observador': 'Heteroaplicada',
+    'Mixta': 'Mixta',
+    'Self-administered': 'Autoaplicada',
+    'Clinician-administered': 'Heteroaplicada',
+    'Observer': 'Heteroaplicada',
+    'Mixed': 'Mixta'
+  };
+  return typeMapping[applicationType] || 'Heteroaplicada';
+}
+
 // Genera un patrón abstracto único basado en el ID de la escala - FUNCIÓN GLOBAL
 function generateAbstractPattern(scaleId: string, category: string): string {
   // Validar que scaleId existe y no está vacío
@@ -256,20 +271,6 @@ export default function ClinimetrixPage() {
       'general': 'text-gray-700 bg-gray-50 border-gray-200'
     };
     return colors[category] || 'text-gray-700 bg-gray-50 border-gray-200';
-  };
-
-  const getApplicationTypeLabel = (applicationType: string) => {
-    const typeMapping: { [key: string]: string } = {
-      'Paciente': 'Autoaplicada',
-      'Profesional': 'Heteroaplicada', 
-      'Observador': 'Heteroaplicada',
-      'Mixta': 'Mixta',
-      'Self-administered': 'Autoaplicada',
-      'Clinician-administered': 'Heteroaplicada',
-      'Observer': 'Heteroaplicada',
-      'Mixed': 'Mixta'
-    };
-    return typeMapping[applicationType] || 'Heteroaplicada';
   };
 
   const clearFilters = () => {
