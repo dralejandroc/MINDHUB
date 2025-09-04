@@ -1,0 +1,236 @@
+{
+  "version": "1.0",
+  "type": "psychoeducational_document",
+  "document": {
+    "id": "PSY-EDU-001",
+    "metadata": {
+      "title": "Manejo de la Ansiedad: Técnicas de Respiración",
+      "subtitle": "Guía práctica para el control de síntomas ansiosos",
+      "category": "anxiety_management",
+      "subcategory": "breathing_techniques",
+      "language": "es",
+      "reading_level": "general",
+      "estimated_reading_time": 5,
+      "created_date": "2024-01-15",
+      "last_updated": "2024-03-20",
+      "version": "2.1",
+      "author": {
+        "name": "Dr. Alejandro Contreras",
+        "credentials": "Psiquiatra",
+        "institution": "MindHub Clinic"
+      }
+    },
+    "context": {
+      "description": "Este documento proporciona técnicas prácticas de respiración para el manejo inmediato de síntomas de ansiedad",
+      "target_audience": ["patients", "caregivers"],
+      "age_range": {
+        "min": 12,
+        "max": 99
+      },
+      "clinical_conditions": ["anxiety_disorders", "panic_disorder", "generalized_anxiety"],
+      "contraindications": ["severe_respiratory_conditions"],
+      "evidence_level": "high",
+      "therapeutic_approach": ["cognitive_behavioral", "mindfulness"]
+    },
+    "tags": [
+      "ansiedad",
+      "respiración",
+      "técnicas de relajación",
+      "autoayuda",
+      "manejo del estrés",
+      "mindfulness",
+      "TCC"
+    ],
+    "uses": {
+      "primary": [
+        "Material psicoeducativo para pacientes con trastornos de ansiedad",
+        "Complemento para sesiones de psicoterapia",
+        "Herramienta de autoayuda entre sesiones"
+      ],
+      "settings": [
+        "consultation_handout",
+        "homework_assignment",
+        "emergency_toolkit",
+        "group_therapy_material"
+      ],
+      "delivery_methods": [
+        "print",
+        "email",
+        "patient_portal",
+        "whatsapp"
+      ]
+    },
+    "content": {
+      "introduction": {
+        "text": "La ansiedad es una respuesta natural del cuerpo ante situaciones de estrés. Sin embargo, cuando se vuelve excesiva, puede interferir con nuestras actividades diarias. Las técnicas de respiración son herramientas poderosas y accesibles que pueden ayudarte a recuperar el control.",
+        "key_points": [
+          "La respiración consciente activa el sistema nervioso parasimpático",
+          "Puede practicarse en cualquier momento y lugar",
+          "Resultados inmediatos en la reducción de síntomas"
+        ]
+      },
+      "sections": [
+        {
+          "id": "section_1",
+          "title": "¿Por qué funciona la respiración controlada?",
+          "content": "Cuando experimentamos ansiedad, nuestra respiración se vuelve rápida y superficial. Esto envía señales de alarma al cerebro, perpetuando el ciclo de ansiedad. Al controlar conscientemente nuestra respiración, podemos enviar señales de calma al sistema nervioso.",
+          "visual_aid": {
+            "type": "diagram",
+            "description": "Ciclo de respiración y sistema nervioso",
+            "optional": true
+          }
+        },
+        {
+          "id": "section_2",
+          "title": "Técnica 4-7-8",
+          "content": "Esta técnica, desarrollada por el Dr. Andrew Weil, es especialmente efectiva para calmar la ansiedad rápidamente.",
+          "steps": [
+            {
+              "number": 1,
+              "instruction": "Exhala completamente por la boca",
+              "detail": "Vacía tus pulmones de aire completamente"
+            },
+            {
+              "number": 2,
+              "instruction": "Inhala por la nariz contando hasta 4",
+              "detail": "Cuenta mentalmente: 1, 2, 3, 4"
+            },
+            {
+              "number": 3,
+              "instruction": "Mantén la respiración contando hasta 7",
+              "detail": "Retén el aire sin tensión"
+            },
+            {
+              "number": 4,
+              "instruction": "Exhala por la boca contando hasta 8",
+              "detail": "Suelta el aire lentamente"
+            },
+            {
+              "number": 5,
+              "instruction": "Repite el ciclo 3-4 veces",
+              "detail": "No excedas 4 ciclos al principio"
+            }
+          ],
+          "tips": [
+            "Practica dos veces al día para mejores resultados",
+            "Siéntate cómodamente con la espalda recta",
+            "Coloca la lengua detrás de los dientes frontales superiores"
+          ]
+        },
+        {
+          "id": "section_3",
+          "title": "Respiración Diafragmática",
+          "content": "También conocida como respiración abdominal, esta técnica ayuda a usar el diafragma correctamente.",
+          "steps": [
+            {
+              "number": 1,
+              "instruction": "Coloca una mano en el pecho y otra en el abdomen",
+              "detail": "Esto te ayudará a sentir el movimiento correcto"
+            },
+            {
+              "number": 2,
+              "instruction": "Inhala lentamente por la nariz",
+              "detail": "Siente cómo se expande tu abdomen, no tu pecho"
+            },
+            {
+              "number": 3,
+              "instruction": "Exhala lentamente por la boca",
+              "detail": "El abdomen debe contraerse hacia adentro"
+            }
+          ],
+          "practice_schedule": {
+            "frequency": "3 veces al día",
+            "duration": "5-10 minutos",
+            "best_times": ["morning", "afternoon", "before_sleep"]
+          }
+        }
+      ],
+      "exercises": [
+        {
+          "name": "Registro de Práctica",
+          "type": "self_monitoring",
+          "instructions": "Registra tu nivel de ansiedad (0-10) antes y después de cada práctica",
+          "tracking_table": {
+            "headers": ["Fecha", "Hora", "Técnica", "Ansiedad Antes", "Ansiedad Después", "Notas"],
+            "rows_template": 7
+          }
+        }
+      ],
+      "key_takeaways": [
+        "La práctica regular es esencial para dominar estas técnicas",
+        "No esperes hasta estar muy ansioso para practicar",
+        "Cada persona responde diferente; encuentra la técnica que mejor funcione para ti",
+        "Si experimentas mareos, reduce la intensidad o consulta con tu terapeuta"
+      ],
+      "closing": {
+        "text": "Recuerda que estas técnicas son herramientas complementarias a tu tratamiento. Continúa asistiendo a tus sesiones y comunicándote con tu equipo de salud mental sobre tu progreso.",
+        "emergency_note": "Si experimentas síntomas severos de ansiedad o pensamientos de hacerte daño, busca ayuda inmediata llamando a servicios de emergencia o a tu terapeuta."
+      }
+    },
+    "personalization": {
+      "fields": {
+        "patient_name": "{PATIENT_NAME}",
+        "therapist_name": "{THERAPIST_NAME}",
+        "clinic_name": "{CLINIC_NAME}",
+        "next_appointment": "{NEXT_APPOINTMENT}",
+        "emergency_contact": "{EMERGENCY_CONTACT}"
+      },
+      "customizable_sections": [
+        "closing",
+        "emergency_note"
+      ],
+      "branding": {
+        "logo_position": "header",
+        "color_scheme": "clinic_default",
+        "font_family": "system"
+      }
+    },
+    "bibliography": [
+      {
+        "type": "article",
+        "authors": ["Weil, A."],
+        "year": 2015,
+        "title": "Three breathing exercises and techniques",
+        "source": "DrWeil.com",
+        "url": "https://www.drweil.com/health-wellness/body-mind-spirit/stress-anxiety/breathing-three-exercises/"
+      },
+      {
+        "type": "journal",
+        "authors": ["Ma, X.", "Yue, Z. Q.", "Gong, Z. Q."],
+        "year": 2017,
+        "title": "The Effect of Diaphragmatic Breathing on Attention, Negative Affect and Stress in Healthy Adults",
+        "journal": "Frontiers in Psychology",
+        "volume": 8,
+        "pages": "874",
+        "doi": "10.3389/fpsyg.2017.00874"
+      },
+      {
+        "type": "book",
+        "authors": ["Kabat-Zinn, J."],
+        "year": 2013,
+        "title": "Full Catastrophe Living",
+        "publisher": "Bantam Books",
+        "isbn": "978-0345536938"
+      }
+    ],
+    "related_resources": [
+      "PSY-EDU-002",
+      "PSY-EDU-015",
+      "MINDFULNESS-001"
+    ],
+    "distribution": {
+      "license": "CC BY-NC-SA 4.0",
+      "can_modify": true,
+      "requires_attribution": true,
+      "internal_use_only": false
+    },
+    "quality_metrics": {
+      "peer_reviewed": true,
+      "last_review_date": "2024-03-15",
+      "reviewer_ids": ["dr_smith_123", "dr_jones_456"],
+      "patient_feedback_score": 4.7,
+      "usage_count": 234,
+      "effectiveness_rating": 4.5
+    }
+  }
+}

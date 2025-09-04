@@ -8,6 +8,7 @@ import { ResourceSearch } from '@/components/resources/ResourceSearch';
 import { ResourcePreview } from '@/components/resources/ResourcePreview';
 import { SendResourceModal } from '@/components/resources/SendResourceModal';
 import { WatermarkEditor } from '@/components/resources/WatermarkEditor';
+import { PsychoeducationalCatalog } from '@/components/resources/psychoeducational/PsychoeducationalCatalog';
 import { Breadcrumbs } from '@/components/ui/Breadcrumbs';
 import { LibraryTypeExplainer } from '@/components/resources/LibraryTypeExplainer';
 import { resourcesHybridService } from '@/lib/resources-hybrid-service';
@@ -24,7 +25,7 @@ import { Button } from '@/components/ui/Button';
 import toast from 'react-hot-toast';
 
 export default function ResourcesPage() {
-  const [currentView, setCurrentView] = useState<'gallery' | 'upload' | 'watermark'>('gallery');
+  const [currentView, setCurrentView] = useState<'gallery' | 'upload' | 'watermark' | 'psychoeducational'>('gallery');
   const [resources, setResources] = useState<any[]>([]);
   const [categories, setCategories] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -217,6 +218,38 @@ export default function ResourcesPage() {
     );
   }
 
+  if (currentView === 'psychoeducational') {
+    return (
+      <div className="space-y-6">
+        <Breadcrumbs
+          items={[
+            { label: 'Resources', href: '#', current: false },
+            { label: 'Documentos Psicoeducativos', current: true }
+          ]}
+          className="mb-4"
+        />
+        
+        <PageHeader
+          title="Resources - Documentos Psicoeducativos"
+          description="Biblioteca de documentos educativos basados en evidencia"
+          icon={BookOpenIcon}
+          iconColor="text-blue-600"
+          actions={[
+            <Button
+              key="back"
+              onClick={() => setCurrentView('gallery')}
+              variant="outline"
+            >
+              Volver a Galería
+            </Button>
+          ]}
+        />
+        
+        <PsychoeducationalCatalog />
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       <PageHeader
@@ -233,6 +266,15 @@ export default function ResourcesPage() {
           >
             <PlusIcon className="h-4 w-4 mr-2" />
             Subir Archivo
+          </Button>,
+          <Button
+            key="psychoeducational"
+            onClick={() => setCurrentView('psychoeducational')}
+            variant="outline"
+            size="sm"
+          >
+            <BookOpenIcon className="h-4 w-4 mr-2" />
+            Documentos Psicoeducativos
           </Button>,
           <Button
             key="watermark"
