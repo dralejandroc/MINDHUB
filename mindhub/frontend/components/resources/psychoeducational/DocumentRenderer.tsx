@@ -21,6 +21,7 @@ export const DocumentRenderer: React.FC<DocumentRendererProps> = ({
   const [completedSections, setCompletedSections] = useState<Set<string>>(new Set());
 
   const content = document.document;
+  const originalData = (content as any).original_data || content;
 
   const handleSectionComplete = (sectionId: string) => {
     setCompletedSections(prev => new Set([...prev, sectionId]));

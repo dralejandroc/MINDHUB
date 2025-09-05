@@ -44,7 +44,12 @@ async function updateAppointmentStatus(request: Request, params: { id: string })
     }
     
     // Update appointment status
-    const updateData = {
+    const updateData: {
+      status: any;
+      updated_at: string;
+      confirmation_sent?: boolean;
+      confirmation_date?: string;
+    } = {
       status: body.status || 'updated',
       updated_at: new Date().toISOString()
     };

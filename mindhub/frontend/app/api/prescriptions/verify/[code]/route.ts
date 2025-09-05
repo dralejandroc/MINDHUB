@@ -76,15 +76,18 @@ export async function GET(
     const isExpired = currentDate > validUntil;
 
     // Determinar información de la clínica/workspace
-    const organizationInfo = prescription.clinics ? {
+    const clinic = Array.isArray(prescription.clinics) ? prescription.clinics[0] : prescription.clinics;
+    const workspace = Array.isArray(prescription.individual_workspaces) ? prescription.individual_workspaces[0] : prescription.individual_workspaces;
+    
+    const organizationInfo = clinic ? {
       type: 'clinic',
-      name: prescription.clinics.name,
-      address: prescription.clinics.address,
-      phone: prescription.clinics.phone,
-      email: prescription.clinics.email
-    } : prescription.individual_workspaces ? {
+      name: clinic.name,
+      address: clinic.address,
+      phone: clinic.phone,
+      email: clinic.email
+    } : workspace ? {
       type: 'individual',
-      name: prescription.individual_workspaces.workspace_name || prescription.individual_workspaces.business_name,
+      name: workspace.workspace_name || workspace.business_name,
       address: null,
       phone: null,
       email: null
@@ -117,19 +120,19 @@ export async function GET(
       
       // Información del paciente (datos mínimos por privacidad)
       patient: {
-        full_name: `${prescription.patients.first_name} ${prescription.patients.last_name} ${prescription.patients.paternal_last_name || ''} ${prescription.patients.maternal_last_name || ''}`.trim(),
-        date_of_birth: prescription.patients.date_of_birth,
-        gender: prescription.patients.gender,
-        allergies: prescription.patients.allergies || [],
-        chronic_conditions: prescription.patients.chronic_conditions || []
+        full_name: `${(prescription.patients as any).first_name} ${(prescription.patients as any).last_name} ${(prescription.patients as any).paternal_last_name || ''} ${(prescription.patients as any).maternal_last_name || ''}`.trim(),
+        date_of_birth: (prescription.patients as any).date_of_birth,
+        gender: (prescription.patients as any).gender,
+        allergies: (prescription.patients as any).allergies || [],
+        chronic_conditions: (prescription.patients as any).chronic_conditions || []
       },
       
       // Información del médico prescriptor
       prescriber: {
-        full_name: `${prescription.profiles.first_name} ${prescription.profiles.last_name}`,
-        license_number: prescription.profiles.license_number,
-        specialty: prescription.profiles.specialty,
-        phone: prescription.profiles.phone
+        full_name: `${(prescription.profiles as any).first_name} ${(prescription.profiles as any).last_name}`,
+        license_number: (prescription.profiles as any).license_number,
+        specialty: (prescription.profiles as any).specialty,
+        phone: (prescription.profiles as any).phone
       },
       
       // Información de la organización

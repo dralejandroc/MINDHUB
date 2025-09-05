@@ -9,7 +9,10 @@ import {
   TrashIcon,
   DocumentTextIcon,
   Cog6ToothIcon,
-  EyeIcon
+  EyeIcon,
+  SparklesIcon,
+  XMarkIcon,
+  QuestionMarkCircleIcon
 } from '@heroicons/react/24/outline';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
@@ -24,7 +27,7 @@ interface FormXFormBuilderProps {
   onSave: () => void;
 }
 
-type BuilderStep = 'basics' | 'fields' | 'settings' | 'preview';
+type BuilderStep = 'basics' | 'template' | 'fields' | 'settings' | 'preview';
 
 interface FormField {
   id: string;
@@ -53,6 +56,49 @@ interface FormData {
   };
 }
 
+const predefinedTemplates = [
+  {
+    id: 'adult-psychiatric',
+    name: 'Formulario de Primera Vez - Adulto (18-60 años)',
+    description: 'Formulario completo de admisión psiquiátrica para adultos',
+    category: 'Psiquiatría Adultos',
+    icon: '🧑‍⚕️',
+    fields: 25,
+    estimatedTime: '15-20 min',
+    preview: ['Datos personales', 'Historia médica', 'Síntomas actuales', 'Medicamentos', 'Historia familiar']
+  },
+  {
+    id: 'adolescent-psychiatric',
+    name: 'Formulario de Primera Vez - Adolescente (12-17 años)',
+    description: 'Formulario completo de admisión psiquiátrica para adolescentes',
+    category: 'Psiquiatría Adolescentes',
+    icon: '👨‍🎓',
+    fields: 22,
+    estimatedTime: '15-20 min',
+    preview: ['Datos personales', 'Historia escolar', 'Síntomas actuales', 'Antecedentes familiares', 'Desarrollo']
+  },
+  {
+    id: 'child-psychiatric',
+    name: 'Formulario de Primera Vez - Niño (5-11 años)',
+    description: 'Formulario completo de admisión psiquiátrica para niños (llenado por padres/tutores)',
+    category: 'Psiquiatría Infantil',
+    icon: '👶',
+    fields: 20,
+    estimatedTime: '12-15 min',
+    preview: ['Datos del niño', 'Historia del desarrollo', 'Comportamiento', 'Historia familiar', 'Escolar']
+  },
+  {
+    id: 'custom-blank',
+    name: 'Formulario Personalizado',
+    description: 'Crea un formulario completamente personalizado desde cero',
+    category: 'Personalizado',
+    icon: '🎨',
+    fields: 0,
+    estimatedTime: 'Variable',
+    preview: ['Campos personalizados', 'Configuración avanzada', 'Diseño flexible']
+  }
+];
+
 const fieldTypes = [
   { type: 'text', label: 'Texto Corto', icon: '📝', description: 'Campo de texto simple para respuestas cortas' },
   { type: 'textarea', label: 'Texto Largo', icon: '📄', description: 'Área de texto para respuestas extensas' },
@@ -67,7 +113,8 @@ const fieldTypes = [
 ];
 
 export function FormXFormBuilder({ templateId, onNavigate, onSave }: FormXFormBuilderProps) {
-  const [currentStep, setCurrentStep] = useState<BuilderStep>('basics');
+  const [currentStep, setCurrentStep] = useState<BuilderStep>(templateId ? 'basics' : 'template');
+  const [selectedTemplateId, setSelectedTemplateId] = useState<string>('');
   const [formData, setFormData] = useState<FormData>({
     name: '',
     description: '',
@@ -113,26 +160,35 @@ export function FormXFormBuilder({ templateId, onNavigate, onSave }: FormXFormBu
     }
   };
 
-  const steps: { [key in BuilderStep]: { title: string; description: string; } } = {
+  const steps: { [key in BuilderStep]: { title: string; description: string; icon: any } } = {
+    template: {
+      title: 'Seleccionar Template',
+      description: 'Elige un template predefinido o crea uno personalizado',
+      icon: SparklesIcon
+    },
     basics: {
       title: 'Información Básica',
-      description: 'Define el nombre, descripción y categoría de tu formulario'
+      description: 'Define el nombre, descripción y categoría de tu formulario',
+      icon: DocumentTextIcon
     },
     fields: {
       title: 'Campos del Formulario',
-      description: 'Agrega y configura los campos que necesites'
+      description: 'Agrega y configura los campos que necesites',
+      icon: PlusIcon
     },
     settings: {
       title: 'Configuración',
-      description: 'Ajusta las opciones avanzadas del formulario'
+      description: 'Ajusta las opciones avanzadas del formulario',
+      icon: Cog6ToothIcon
     },
     preview: {
       title: 'Vista Previa',
-      description: 'Revisa cómo se verá el formulario antes de guardarlo'
+      description: 'Revisa cómo se verá el formulario antes de guardarlo',
+      icon: EyeIcon
     }
   };
 
-  const stepOrder: BuilderStep[] = ['basics', 'fields', 'settings', 'preview'];
+  const stepOrder: BuilderStep[] = templateId ? ['basics', 'fields', 'settings', 'preview'] : ['template', 'basics', 'fields', 'settings', 'preview'];
   const currentStepIndex = stepOrder.indexOf(currentStep);
 
   const nextStep = () => {
@@ -149,6 +205,8 @@ export function FormXFormBuilder({ templateId, onNavigate, onSave }: FormXFormBu
 
   const canProceed = () => {
     switch (currentStep) {
+      case 'template':
+        return selectedTemplateId.length > 0;
       case 'basics':
         return formData.name.trim() && formData.description.trim() && formData.category.trim();
       case 'fields':
@@ -263,6 +321,114 @@ export function FormXFormBuilder({ templateId, onNavigate, onSave }: FormXFormBu
     };
     return mapping[label.toLowerCase()] || '';
   };
+
+  const handleTemplateSelection = (templateId: string) => {
+    setSelectedTemplateId(templateId);
+    if (templateId === 'custom-blank') {
+      // Start with blank template
+      setFormData(prev => ({
+        ...prev,
+        name: '',
+        description: '',
+        category: '',
+        fields: []
+      }));
+    } else {
+      // Load predefined template
+      loadTemplate(templateId);
+    }
+  };
+
+  const renderTemplateStep = () => (
+    <div className="space-y-6">
+      <Card className="p-6 bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200">
+        <div className="text-center">
+          <div className="flex justify-center mb-4">
+            <SparklesIcon className="h-12 w-12 text-blue-600" />
+          </div>
+          <h3 className="text-lg font-semibold text-gray-900 mb-2">
+            ¡Acelera tu trabajo con templates predefinidos!
+          </h3>
+          <p className="text-gray-700">
+            Selecciona un template profesional que se adapte a tus necesidades o crea uno personalizado desde cero.
+          </p>
+        </div>
+      </Card>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {predefinedTemplates.map((template) => (
+          <Card 
+            key={template.id}
+            className={`p-6 cursor-pointer transition-all duration-200 hover:shadow-lg ${
+              selectedTemplateId === template.id 
+                ? 'border-blue-500 bg-blue-50 shadow-lg' 
+                : 'border-gray-200 hover:border-gray-300'
+            }`}
+            onClick={() => handleTemplateSelection(template.id)}
+          >
+            <div className="flex items-start space-x-4">
+              <div className="text-3xl">{template.icon}</div>
+              <div className="flex-1">
+                <h3 className="font-semibold text-gray-900 mb-2">{template.name}</h3>
+                <p className="text-sm text-gray-600 mb-3 leading-relaxed">
+                  {template.description}
+                </p>
+                
+                <div className="flex items-center justify-between text-xs text-gray-500 mb-3">
+                  <span className="px-2 py-1 bg-gray-100 rounded-full">
+                    {template.category}
+                  </span>
+                  <span>{template.fields} campos • {template.estimatedTime}</span>
+                </div>
+
+                {template.preview && (
+                  <div className="space-y-1">
+                    <p className="text-xs font-medium text-gray-700">Incluye:</p>
+                    <div className="flex flex-wrap gap-1">
+                      {template.preview.slice(0, 3).map((item, index) => (
+                        <span key={index} className="px-2 py-1 text-xs bg-white border rounded">
+                          {item}
+                        </span>
+                      ))}
+                      {template.preview.length > 3 && (
+                        <span className="px-2 py-1 text-xs bg-gray-200 rounded">
+                          +{template.preview.length - 3} más
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {selectedTemplateId === template.id && (
+                  <div className="mt-4 flex items-center text-blue-600">
+                    <CheckIcon className="h-4 w-4 mr-2" />
+                    <span className="text-sm font-medium">Template seleccionado</span>
+                  </div>
+                )}
+              </div>
+            </div>
+          </Card>
+        ))}
+      </div>
+
+      {selectedTemplateId && (
+        <Card className="p-4 bg-green-50 border-green-200">
+          <div className="flex items-center text-green-700">
+            <CheckIcon className="h-5 w-5 mr-2" />
+            <span className="font-medium">
+              {selectedTemplateId === 'custom-blank' 
+                ? 'Listo para crear tu formulario personalizado'
+                : `Template "${predefinedTemplates.find(t => t.id === selectedTemplateId)?.name}" seleccionado`
+              }
+            </span>
+          </div>
+          <p className="text-green-600 text-sm mt-1">
+            Continúa al siguiente paso para personalizar los detalles
+          </p>
+        </Card>
+      )}
+    </div>
+  );
 
   const renderStepProgress = () => (
     <div className="mb-8">
@@ -673,6 +839,8 @@ export function FormXFormBuilder({ templateId, onNavigate, onSave }: FormXFormBu
 
   const renderCurrentStep = () => {
     switch (currentStep) {
+      case 'template':
+        return renderTemplateStep();
       case 'basics':
         return renderBasicsStep();
       case 'fields':

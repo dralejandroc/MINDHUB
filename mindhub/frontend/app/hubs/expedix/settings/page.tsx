@@ -1,7 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { Button } from '@/components/ui/Button';
 import { 
@@ -17,11 +18,14 @@ import {
   CalendarDaysIcon,
   PrinterIcon
 } from '@heroicons/react/24/outline';
+import toast from 'react-hot-toast';
 
 export default function ExpedixSettingsPage() {
   const router = useRouter();
+  const supabase = createClientComponentClient();
   const [loading, setLoading] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [initialLoading, setInitialLoading] = useState(true);
 
   // Configuration states
   const [config, setConfig] = useState({
@@ -65,19 +69,96 @@ export default function ExpedixSettingsPage() {
     printSignature: true,
   });
 
+  // Load settings on component mount
+  useEffect(() => {
+    loadSettings();
+  }, []);
+
+  const loadSettings = async () => {
+    setInitialLoading(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        toast.error('No hay sesión activa');
+        return;
+      }
+
+      const response = await fetch('/api/expedix/settings', {
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`,
+        },
+      });
+
+      const data = await response.json();
+      
+      if (data.success && data.settings) {
+        const settings = data.settings;
+        setConfig({
+          defaultView: settings.default_view || 'cards',
+          patientsPerPage: settings.patients_per_page || 20,
+          autoSaveConsultations: settings.auto_save_consultations ?? true,
+          requireConsultationReason: settings.require_consultation_reason ?? true,
+          useConsultationTemplates: settings.use_consultation_templates ?? true,
+          defaultTemplateId: settings.default_template_id || '',
+          showVitalSigns: settings.show_vital_signs ?? true,
+          showMentalExam: settings.show_mental_exam ?? true,
+          notifyOnNewPatient: settings.notify_on_new_patient ?? true,
+          notifyOnConsultation: settings.notify_on_consultation ?? true,
+          emailNotifications: settings.email_notifications ?? false,
+          requirePasswordForDelete: settings.require_password_for_delete ?? true,
+          auditLogEnabled: settings.audit_log_enabled ?? true,
+          dataRetentionDays: settings.data_retention_days || 365,
+          syncWithAgenda: settings.sync_with_agenda ?? true,
+          syncWithClinimetrix: settings.sync_with_clinimetrix ?? true,
+          syncWithResources: settings.sync_with_resources ?? true,
+          showAge: settings.show_age ?? true,
+          showLastVisit: settings.show_last_visit ?? true,
+          showPhone: settings.show_phone ?? true,
+          showEmail: settings.show_email ?? true,
+          dateFormat: settings.date_format || 'DD/MM/YYYY',
+          printHeader: settings.print_header ?? true,
+          printLogo: settings.print_logo ?? true,
+          printSignature: settings.print_signature ?? true
+        });
+      }
+    } catch (error) {
+      console.error('Error loading settings:', error);
+      toast.error('Error al cargar la configuración');
+    } finally {
+      setInitialLoading(false);
+    }
+  };
+
   const handleSave = async () => {
     setLoading(true);
     try {
-      // TODO: Save configuration to API
-      console.log('Saving config:', config);
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        toast.error('No hay sesión activa');
+        return;
+      }
+
+      const response = await fetch('/api/expedix/settings', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify(config),
+      });
+
+      const data = await response.json();
       
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      setSaved(true);
-      setTimeout(() => setSaved(false), 3000);
+      if (data.success) {
+        setSaved(true);
+        setTimeout(() => setSaved(false), 3000);
+        toast.success('Configuración guardada exitosamente');
+      } else {
+        throw new Error(data.error || 'Error al guardar');
+      }
     } catch (error) {
       console.error('Error saving configuration:', error);
+      toast.error('Error al guardar la configuración');
     } finally {
       setLoading(false);
     }
@@ -86,6 +167,17 @@ export default function ExpedixSettingsPage() {
   const handleBack = () => {
     router.push('/hubs/expedix');
   };
+
+  if (initialLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto"></div>
+          <p className="text-gray-500 mt-4">Cargando configuración de Expedix...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">

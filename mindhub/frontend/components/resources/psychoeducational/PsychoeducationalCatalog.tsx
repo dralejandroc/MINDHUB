@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { PsychoeducationalDocument, DOCUMENT_CATEGORIES, DocumentCategory } from '@/types/psychoeducational-documents';
 import { DocumentRenderer } from './DocumentRenderer';
+import { EscritosRenderer } from './EscritosRenderer';
 import { 
   MagnifyingGlassIcon,
   FunnelIcon,
@@ -36,14 +37,44 @@ export const PsychoeducationalCatalog: React.FC<PsychoeducationalCatalogProps> =
     targetAudience: ''
   });
 
-  // Simular carga de documentos desde archivos JSON
+  // Cargar documentos desde el directorio escritos del backend
   const loadDocuments = async () => {
     setLoading(true);
     try {
-      // Por ahora, cargaremos solo el documento de ejemplo
-      const response = await fetch('/data/psychoeducational-documents/anxiety_management/PSY-EDU-001-breathing-techniques.json');
-      const document = await response.json();
-      setDocuments([document]);
+      const response = await fetch('/api/resources/escritos');
+      const data = await response.json();
+      
+      if (data.success && data.documents) {
+        // Transformar los documentos para que coincidan con la estructura esperada
+        const transformedDocs = data.documents.map((doc: any) => ({
+          version: doc.version || "1.0",
+          type: doc.type || "psychoeducational_document",
+          document: {
+            id: doc.metadata.id,
+            metadata: {
+              title: doc.metadata.title,
+              subtitle: doc.document?.introduction?.content?.substring(0, 150) + '...' || 'Documento psicoeducativo',
+              category: mapCategoryFromEscrito(doc.metadata.category),
+              subcategory: doc.metadata.subcategory,
+              estimated_reading_time: doc.metadata.estimated_reading_time,
+              language: doc.metadata.language
+            },
+            context: {
+              evidence_level: doc.metadata.evidence_level,
+              target_audience: Array.isArray(doc.metadata.target_audience) 
+                ? doc.metadata.target_audience 
+                : [doc.metadata.target_audience]
+            },
+            tags: doc.metadata.tags || [],
+            original_data: doc // Mantener los datos originales para el renderizado
+          }
+        }));
+        
+        setDocuments(transformedDocs);
+        toast.success(`Cargados ${transformedDocs.length} documentos psicoeducativos`);
+      } else {
+        throw new Error(data.error || 'Error al cargar documentos');
+      }
     } catch (error) {
       console.error('Error loading psychoeducational documents:', error);
       toast.error('Error al cargar documentos psicoeducativos');
@@ -51,6 +82,20 @@ export const PsychoeducationalCatalog: React.FC<PsychoeducationalCatalogProps> =
     } finally {
       setLoading(false);
     }
+  };
+
+  // Mapear categorías desde escritos a las categorías del sistema
+  const mapCategoryFromEscrito = (category: string) => {
+    const categoryMap: { [key: string]: string } = {
+      'depression_support': 'depression_anxiety',
+      'self_care': 'anxiety_management',
+      'treatment': 'treatment_support',
+      'crisis': 'crisis_intervention',
+      'education': 'psychoeducation',
+      'family': 'family_support'
+    };
+    
+    return categoryMap[category] || 'general_wellbeing';
   };
 
   useEffect(() => {
@@ -113,6 +158,9 @@ export const PsychoeducationalCatalog: React.FC<PsychoeducationalCatalogProps> =
 
   // Si hay un documento seleccionado, mostrar el renderizador
   if (selectedDocument) {
+    // Determinar si es un documento de escritos (nuevo formato) o documento tradicional
+    const isEscritoDocument = (selectedDocument.document as any)?.original_data;
+    
     return (
       <div>
         <button
@@ -121,12 +169,21 @@ export const PsychoeducationalCatalog: React.FC<PsychoeducationalCatalogProps> =
         >
           ← Volver al catálogo
         </button>
-        <DocumentRenderer
-          document={selectedDocument}
-          patientId={patientId}
-          onDownload={handleDownload}
-          onSendToPatient={showActions ? handleSendToPatient : undefined}
-        />
+        {isEscritoDocument ? (
+          <EscritosRenderer
+            document={(selectedDocument.document as any).original_data}
+            patientId={patientId}
+            onDownload={handleDownload}
+            onSendToPatient={showActions ? handleSendToPatient : undefined}
+          />
+        ) : (
+          <DocumentRenderer
+            document={selectedDocument}
+            patientId={patientId}
+            onDownload={handleDownload}
+            onSendToPatient={showActions ? handleSendToPatient : undefined}
+          />
+        )}
       </div>
     );
   }

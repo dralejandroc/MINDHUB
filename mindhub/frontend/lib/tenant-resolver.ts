@@ -163,11 +163,11 @@ export async function resolveTenantContext(userId: string): Promise<TenantContex
       workspace = newWorkspace;
     }
     
-    console.log(`✅ [Tenant Resolver] Using individual workspace: ${workspace.workspace_name}`);
+    console.log(`✅ [Tenant Resolver] Using individual workspace: ${workspace?.workspace_name}`);
     return {
       type: 'workspace',
-      id: workspace.id,
-      name: workspace.workspace_name,
+      id: workspace?.id || '',
+      name: workspace?.workspace_name || '',
       role: 'owner',
       permissions: {}
     };
@@ -220,9 +220,9 @@ export function addTenantContext<T extends Record<string, any>>(
   context: TenantContext
 ): T & { clinic_id?: string; workspace_id?: string } {
   if (context.type === 'clinic') {
-    return { ...data, clinic_id: context.id, workspace_id: null };
+    return { ...data, clinic_id: context.id, workspace_id: undefined };
   } else {
-    return { ...data, workspace_id: context.id, clinic_id: null };
+    return { ...data, workspace_id: context.id, clinic_id: undefined };
   }
 }
 

@@ -91,7 +91,7 @@ export async function GET(
 
     console.log('[PRESCRIPTION PDF] PDF generated successfully for prescription:', prescription.prescription_number);
 
-    return new Response(pdfBuffer, { headers });
+    return new Response(pdfBuffer as BodyInit, { headers });
 
   } catch (error) {
     console.error('[PRESCRIPTION PDF] Error:', error);
