@@ -1,7 +1,7 @@
 // Expedix consultations API route - Django Backend with Supabase Fallback
 import { getAuthenticatedUser, createResponse, createErrorResponse, supabaseAdmin } from '@/lib/supabase/admin'
 import { API_CONFIG } from '@/lib/config/api-endpoints'
-import { resolveTenantContext, withTenantContext, addTenantContext } from '@/lib/tenant-resolver'
+import { resolveTenantContext, withTenantContext, addConsultationTenantContext, getUserProfile } from '@/lib/tenant-resolver'
 
 export const dynamic = 'force-dynamic';
 
@@ -206,8 +206,12 @@ export async function POST(request: Request) {
     } catch (djangoError) {
       console.error('[CONSULTATIONS API] Django backend failed for POST, using Supabase fallback:', djangoError);
 
-      // FALLBACK: Direct Supabase creation with unified tenant resolver
-      console.log('[CONSULTATIONS API] Using Supabase direct creation with tenant resolver');
+      // FALLBACK: Direct Supabase creation with consultation-specific tenant resolver
+      console.log('[CONSULTATIONS API] Using Supabase direct creation with consultation tenant resolver');
+
+      // Get user profile to ensure we have clinic_id
+      const userProfile = await getUserProfile(user.id);
+      console.log('[CONSULTATIONS API] User profile:', userProfile);
 
       // Use the unified tenant resolver - this NEVER fails
       const tenantContext = await resolveTenantContext(user.id);
@@ -236,8 +240,8 @@ export async function POST(request: Request) {
         updated_at: new Date().toISOString()
       };
 
-      // Add tenant context using unified system
-      const consultationData = addTenantContext(baseConsultationData, tenantContext);
+      // Add consultation-specific tenant context (ensures clinic_id is always present)
+      const consultationData = addConsultationTenantContext(baseConsultationData, tenantContext, userProfile || undefined);
 
       // Insert consultation into Supabase
       const { data: consultation, error } = await supabaseAdmin

@@ -6,6 +6,22 @@
 import { createBrowserClient } from '@supabase/ssr'
 import { handleSupabaseAuthError } from './cleanup'
 
+// Cookie error handler
+const handleCookieError = (error: any) => {
+  if (error?.message?.includes('Unexpected token') || 
+      error?.message?.includes('base64-eyJ') ||
+      error?.message?.includes('not valid JSON')) {
+    console.warn('🍪 Cookie parsing error detected, clearing problematic cookies');
+    // Clear Supabase-related cookies that might be corrupted
+    const cookiesToClear = ['sb-jvbcpldzoyicefdtnwkd-auth-token', 'supabase-auth-token', 'sb-access-token', 'sb-refresh-token'];
+    cookiesToClear.forEach(cookieName => {
+      document.cookie = `${cookieName}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; domain=${window.location.hostname}`;
+    });
+    return true; // Indicates error was handled
+  }
+  return false;
+}
+
 // Environment variables with fallbacks - using the current production anon key
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://jvbcpldzoyicefdtnwkd.supabase.co'
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp2YmNwbGR6b3lpY2VmZHRud2tkIiwicm9sZSI6ImFub24iLCJpYXQiOjE2OTM2MTcwOTEsImV4cCI6MjAwOTE5MzA5MX0.st42ODkomKcaTcT88Xqc3LT_Zo9oVWhkCVwCP07n4NY'
@@ -15,7 +31,52 @@ if (!supabaseUrl || !supabaseAnonKey) {
 }
 
 // Create a single supabase client for interacting with your database
-export const supabase = createBrowserClient(supabaseUrl, supabaseAnonKey)
+export const supabase = createBrowserClient(supabaseUrl, supabaseAnonKey, {
+  cookies: {
+    get: (name: string) => {
+      try {
+        const cookieValue = document.cookie
+          .split('; ')
+          .find(row => row.startsWith(`${name}=`))
+          ?.split('=')[1];
+        
+        if (cookieValue && cookieValue.startsWith('base64-')) {
+          // Handle problematic base64 cookies
+          try {
+            return atob(cookieValue.substring(7)); // Remove 'base64-' prefix
+          } catch {
+            console.warn(`🍪 Invalid base64 cookie detected: ${name}, clearing it`);
+            document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/`;
+            return undefined;
+          }
+        }
+        return cookieValue;
+      } catch (error) {
+        if (handleCookieError(error)) {
+          return undefined;
+        }
+        throw error;
+      }
+    },
+    set: (name: string, value: string, options?: any) => {
+      try {
+        const optionsStr = options 
+          ? Object.entries(options).map(([k, v]) => `${k}=${v}`).join('; ')
+          : '';
+        document.cookie = `${name}=${value}; path=/; ${optionsStr}`;
+      } catch (error) {
+        handleCookieError(error);
+      }
+    },
+    remove: (name: string, options?: any) => {
+      try {
+        document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/`;
+      } catch (error) {
+        handleCookieError(error);
+      }
+    }
+  }
+})
 
 // Auto-refresh and handle session expiration
 supabase.auth.onAuthStateChange((event, session) => {

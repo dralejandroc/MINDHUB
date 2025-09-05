@@ -22,7 +22,7 @@ export interface TenantContext {
 
 export interface UserProfile {
   id: string;
-  email: string;
+  email?: string;
   first_name?: string;
   last_name?: string;
   clinic_id?: string;
@@ -47,6 +47,26 @@ export interface IndividualWorkspace {
   id: string;
   workspace_name: string;
   owner_id: string;
+}
+
+/**
+ * Get user profile with clinic_id information
+ */
+export async function getUserProfile(userId: string): Promise<UserProfile | null> {
+  const supabase = createClient();
+  
+  const { data: profile, error } = await supabase
+    .from('profiles')
+    .select('id, clinic_id, email, first_name, last_name')
+    .eq('id', userId)
+    .single();
+    
+  if (error) {
+    console.error('❌ [Tenant Resolver] Error fetching user profile:', error);
+    return null;
+  }
+  
+  return profile as UserProfile;
 }
 
 /**
@@ -223,6 +243,28 @@ export function addTenantContext<T extends Record<string, any>>(
     return { ...data, clinic_id: context.id, workspace_id: undefined };
   } else {
     return { ...data, workspace_id: context.id, clinic_id: undefined };
+  }
+}
+
+/**
+ * Add tenant context specifically for consultations table
+ * Consultations REQUIRE clinic_id (NOT NULL constraint)
+ * If user has clinic_id, use it. Otherwise, use a default clinic.
+ */
+export function addConsultationTenantContext<T extends Record<string, any>>(
+  data: T,
+  context: TenantContext,
+  userProfile?: { clinic_id?: string }
+): T & { clinic_id: string; workspace_id?: string } {
+  // Always prioritize clinic_id for consultations
+  if (context.type === 'clinic') {
+    return { ...data, clinic_id: context.id, workspace_id: undefined };
+  } else if (userProfile?.clinic_id) {
+    // User has a clinic_id, use it even if they're in workspace mode
+    return { ...data, clinic_id: userProfile.clinic_id, workspace_id: context.id };
+  } else {
+    // Fallback: create a default clinic entry or throw error
+    throw new Error('Consultations require clinic_id but user has no clinic association');
   }
 }
 

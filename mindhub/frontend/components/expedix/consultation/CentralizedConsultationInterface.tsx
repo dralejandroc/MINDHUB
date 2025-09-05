@@ -24,6 +24,79 @@ import ConsultationPreviewDialog from './ConsultationPreviewDialog';
 import { MentalExamFormatter, type MentalExamData } from '@/lib/utils/mental-exam-formatter';
 import { PrintConfigManager, type PrintConfig } from '@/lib/utils/print-config';
 import PrintConfigDialog from '../PrintConfigDialog';
+import { PrescriptionCreator } from '../../prescriptions/PrescriptionCreator';
+import DiagnosesSelector from './components/DiagnosesSelector';
+
+interface Diagnosis {
+  id: string;
+  code?: string;
+  description: string;
+  category?: string;
+  system?: 'CIE-10' | 'DSM-5TR' | 'CIE-11' | 'custom';
+  isPrimary?: boolean;
+  notes?: string;
+}
+
+interface ConsultationData {
+  noteType: string;
+  date: string;
+  currentCondition: string;
+  diagnosis: string;
+  diagnoses: Diagnosis[];
+  vitalSigns: {
+    height: string;
+    weight: string;
+    bloodPressure: { systolic: string; diastolic: string };
+    temperature: string;
+    heartRate: string;
+    respiratoryRate: string;
+    oxygenSaturation: string;
+  };
+  physicalExamination: string;
+  medications: any[];
+  additionalInstructions: string;
+  nextAppointment: { date: string; time: string };
+  mentalExam: {
+    descripcionInspeccion: string;
+    apariencia: string;
+    actitud: string;
+    conciencia: string;
+    orientacion: string;
+    atencion: string;
+    lenguaje: string;
+    afecto: string;
+    sensopercepcion: string;
+    memoria: string;
+    pensamientoPrincipal: string;
+    pensamientoDetalles: string;
+    // Campos adicionales compatibles
+    appearance?: string;
+    attitude?: string;
+    consciousness?: string;
+    customAppearance?: string;
+    speechRate?: string;
+    speechVolume?: string;
+    speechFluency?: string;
+    customSpeech?: string;
+    affectIntensity?: string;
+    affectQuality?: string;
+    customAffect?: string;
+    customPerceptions?: string;
+    perceptions?: string;
+    memory?: string;
+    thoughtContent?: string;
+    customThought?: string;
+    thoughtProcess?: string;
+    customInsightJudgment?: string;
+    generalSummary?: string;
+    moodState?: string;
+    customCognition?: string;
+    orientation?: string;
+    attention?: string;
+    insight?: string;
+    judgment?: string;
+  };
+}
 
 interface Consultation {
   id: string;
@@ -86,12 +159,18 @@ export default function CentralizedConsultationInterface({
   const [showPrintMenu, setShowPrintMenu] = useState(false);
   const [showPrintConfig, setShowPrintConfig] = useState(false);
   
+  // Prescription modal state
+  const [showPrescriptionModal, setShowPrescriptionModal] = useState(false);
+  
   // Form states
-  const [consultationData, setConsultationData] = useState({
+  const [isAutoSaving, setIsAutoSaving] = useState(false);
+  const [lastSaved, setLastSaved] = useState<Date | null>(null);
+  const [consultationData, setConsultationData] = useState<ConsultationData>({
     noteType: 'Consulta General',
     date: new Date().toISOString().split('T')[0],
     currentCondition: '',
     diagnosis: '',
+    diagnoses: [],
     vitalSigns: {
       height: '',
       weight: '',
@@ -106,39 +185,45 @@ export default function CentralizedConsultationInterface({
     additionalInstructions: '',
     nextAppointment: { date: '', time: '' },
     mentalExam: {
-      // Apariencia y Comportamiento
+      // Campos en español (principales)
+      descripcionInspeccion: '',
+      apariencia: '',
+      actitud: '',
+      conciencia: '',
+      orientacion: '',
+      atencion: '',
+      lenguaje: '',
+      afecto: '',
+      sensopercepcion: '',
+      memoria: '',
+      pensamientoPrincipal: '',
+      pensamientoDetalles: '',
+      // Campos adicionales compatibles
       appearance: '',
       attitude: '',
       consciousness: '',
       customAppearance: '',
-      // Habla y Lenguaje
       speechRate: '',
       speechVolume: '',
       speechFluency: '',
       customSpeech: '',
-      // Afecto y Estado de Ánimo
       affectIntensity: '',
       affectQuality: '',
-      moodState: '',
       customAffect: '',
-      // Pensamiento
-      thoughtProcess: '',
+      customPerceptions: '',
+      perceptions: '',
+      memory: '',
       thoughtContent: '',
       customThought: '',
-      // Percepción
-      perceptions: '',
-      customPerceptions: '',
-      // Cognición
+      thoughtProcess: '',
+      customInsightJudgment: '',
+      generalSummary: '',
+      moodState: '',
+      customCognition: '',
       orientation: '',
       attention: '',
-      memory: '',
-      customCognition: '',
-      // Insight y Juicio
       insight: '',
-      judgment: '',
-      customInsightJudgment: '',
-      // Resumen general (campo libre)
-      generalSummary: ''
+      judgment: ''
     }
   });
 
@@ -224,6 +309,7 @@ export default function CentralizedConsultationInterface({
       date: consultation.date?.split('T')[0] || new Date().toISOString().split('T')[0],
       currentCondition: consultation.currentCondition || '',
       diagnosis: consultation.diagnosis || '',
+      diagnoses: [], // Initialize empty diagnoses array for backward compatibility
       vitalSigns: {
         height: '',
         weight: '',
@@ -238,12 +324,24 @@ export default function CentralizedConsultationInterface({
       additionalInstructions: '',
       nextAppointment: consultation.nextAppointment || { date: '', time: '' },
       mentalExam: {
-        // Apariencia y Comportamiento
+        // Campos en español (principales)
+        descripcionInspeccion: '',
+        apariencia: '',
+        actitud: '',
+        conciencia: '',
+        orientacion: '',
+        atencion: '',
+        lenguaje: '',
+        afecto: '',
+        sensopercepcion: '',
+        memoria: '',
+        pensamientoPrincipal: '',
+        pensamientoDetalles: '',
+        // Campos adicionales compatibles
         appearance: '',
         attitude: '',
         consciousness: '',
         customAppearance: '',
-        // Habla y Lenguaje
         speechRate: '',
         speechVolume: '',
         speechFluency: '',
@@ -274,6 +372,95 @@ export default function CentralizedConsultationInterface({
       }
     });
   };
+
+  // Auto-save function
+  const handleAutoSave = useCallback(async () => {
+    if (isAutoSaving) return; // Prevent multiple simultaneous auto-saves
+    
+    try {
+      setIsAutoSaving(true);
+      
+      const mentalExamData: MentalExamData = {
+        appearance: consultationData.mentalExam.appearance || '',
+        attitude: consultationData.mentalExam.attitude || '',
+        consciousness: consultationData.mentalExam.consciousness || '',
+        customAppearance: consultationData.mentalExam.customAppearance || '',
+        speechRate: consultationData.mentalExam.speechRate || '',
+        speechVolume: consultationData.mentalExam.speechVolume || '',
+        speechFluency: consultationData.mentalExam.speechFluency || '',
+        customSpeech: consultationData.mentalExam.customSpeech || '',
+        affectIntensity: consultationData.mentalExam.affectIntensity || '',
+        affectQuality: consultationData.mentalExam.affectQuality || '',
+        moodState: consultationData.mentalExam.moodState || '',
+        customAffect: consultationData.mentalExam.customAffect || '',
+        thoughtProcess: consultationData.mentalExam.thoughtProcess || '',
+        thoughtContent: consultationData.mentalExam.thoughtContent || '',
+        customThought: consultationData.mentalExam.customThought || '',
+        perceptions: consultationData.mentalExam.perceptions || '',
+        customPerceptions: consultationData.mentalExam.customPerceptions || '',
+        orientation: consultationData.mentalExam.orientation || '',
+        attention: consultationData.mentalExam.attention || '',
+        memory: consultationData.mentalExam.memory || '',
+        customCognition: consultationData.mentalExam.customCognition || '',
+        insight: consultationData.mentalExam.insight || '',
+        judgment: consultationData.mentalExam.judgment || '',
+        customInsightJudgment: consultationData.mentalExam.customInsightJudgment || '',
+        generalSummary: consultationData.mentalExam.generalSummary || ''
+      };
+
+      // Preparar diagnósticos para guardado
+      const primaryDiagnosis = consultationData.diagnoses.find(d => d.isPrimary) || consultationData.diagnoses[0];
+      const diagnosesText = consultationData.diagnoses.length > 0 
+        ? consultationData.diagnoses.map(d => {
+            let text = d.code ? `${d.code} - ${d.description}` : d.description;
+            if (d.isPrimary) text = `[PRINCIPAL] ${text}`;
+            if (d.notes) text += ` (${d.notes})`;
+            return text;
+          }).join('\n')
+        : consultationData.diagnosis; // Fallback para compatibilidad
+
+      const updateData = {
+        patient_id: patient.id,
+        subjective: consultationData.currentCondition,
+        objective: `${consultationData.vitalSigns.height ? `Talla: ${consultationData.vitalSigns.height}cm` : ''} ${consultationData.vitalSigns.weight ? `Peso: ${consultationData.vitalSigns.weight}kg` : ''} ${consultationData.vitalSigns.bloodPressure.systolic ? `TA: ${consultationData.vitalSigns.bloodPressure.systolic}/${consultationData.vitalSigns.bloodPressure.diastolic}` : ''} ${consultationData.vitalSigns.temperature ? `Temp: ${consultationData.vitalSigns.temperature}°C` : ''} ${consultationData.vitalSigns.heartRate ? `FC: ${consultationData.vitalSigns.heartRate}bpm` : ''}`.trim(),
+        assessment: diagnosesText,
+        // Agregar los diagnósticos estructurados como campo adicional
+        diagnoses_structured: consultationData.diagnoses,
+        plan: consultationData.additionalInstructions || '',
+        mental_exam: {
+          ...mentalExamData,
+          summary: MentalExamFormatter.formatForStorage(mentalExamData).readableSummary
+        },
+        status: 'draft', // Auto-saved consultations are drafts
+        consultation_type: consultationData.noteType
+      };
+
+      await expedixApi.createConsultation(updateData);
+      setLastSaved(new Date());
+      console.log('✅ Auto-saved consultation data');
+    } catch (error) {
+      console.error('❌ Auto-save failed:', error);
+    } finally {
+      setIsAutoSaving(false);
+    }
+  }, [consultationData, patient.id, isAutoSaving]);
+
+  // Auto-save effect with debounce
+  useEffect(() => {
+    const autoSaveTimeout = setTimeout(() => {
+      // Only auto-save if there's content in key fields
+      const hasContent = consultationData.currentCondition.trim() || 
+                        consultationData.diagnosis.trim() || 
+                        consultationData.diagnoses.length > 0 ||
+                        consultationData.additionalInstructions?.trim();
+      
+      if (hasContent) {
+        handleAutoSave();
+      }
+    }, 5000); // Auto-save after 5 seconds of inactivity
+
+    return () => clearTimeout(autoSaveTimeout);
+  }, [consultationData, handleAutoSave]);
 
   const handleSaveConsultation = async () => {
     if (!currentConsultation) return;
@@ -664,9 +851,24 @@ export default function CentralizedConsultationInterface({
               <UserIcon className="h-6 w-6 text-primary-700" />
             </div>
             <div>
-              <h2 className="font-semibold text-gray-900">
-                {patient.first_name} {patient.paternal_last_name}
-              </h2>
+              <div className="flex items-center space-x-2">
+                <h2 className="font-semibold text-gray-900">
+                  {patient.first_name} {patient.paternal_last_name}
+                </h2>
+                {/* Autosave indicator */}
+                {isAutoSaving && (
+                  <div className="flex items-center space-x-1 text-xs text-blue-600">
+                    <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
+                    <span>Guardando...</span>
+                  </div>
+                )}
+                {lastSaved && !isAutoSaving && (
+                  <div className="text-xs text-green-600 flex items-center space-x-1">
+                    <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                    <span>Guardado {lastSaved.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
+                  </div>
+                )}
+              </div>
               <p className="text-sm text-gray-600">
                 {patient.age} años • #{patient.id.slice(0, 8)}
               </p>
@@ -745,7 +947,18 @@ export default function CentralizedConsultationInterface({
             <div className="p-4 space-y-3">
               <div className="flex items-center justify-between">
                 <h3 className="font-medium text-gray-900">Recetas</h3>
-                <span className="text-sm text-gray-500">{prescriptions.length}</span>
+                <div className="flex items-center space-x-2">
+                  <span className="text-sm text-gray-500">{prescriptions.length}</span>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={() => setShowPrescriptionModal(true)}
+                    className="text-xs"
+                  >
+                    <PlusIcon className="h-3 w-3 mr-1" />
+                    Nueva
+                  </Button>
+                </div>
               </div>
               {prescriptions.map((prescription) => (
                 <div key={prescription.id} className="p-3 rounded-lg border border-gray-200">
@@ -892,9 +1105,6 @@ export default function CentralizedConsultationInterface({
                 )}
               </div>
               
-              <Button variant="primary" onClick={handleSaveConsultation}>
-                Guardar consulta
-              </Button>
             </div>
           </div>
         </div>
@@ -1083,18 +1293,23 @@ export default function CentralizedConsultationInterface({
               />
             </Card>
 
-            {/* Diagnosis */}
+            {/* Diagnosis - Advanced Selector with CIE-10/DSM-5TR Integration */}
             <Card className="p-6">
-              <h3 className="text-lg font-medium text-gray-900 mb-4">Diagnóstico</h3>
-              <textarea
-                value={consultationData.diagnosis}
-                onChange={(e) => setConsultationData(prev => ({ 
-                  ...prev, 
-                  diagnosis: e.target.value 
-                }))}
-                rows={3}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-primary-500 focus:border-primary-500"
-                placeholder="Ingresa el diagnóstico..."
+              <DiagnosesSelector
+                selectedDiagnoses={consultationData.diagnoses}
+                onChange={(diagnoses) => {
+                  setConsultationData(prev => ({ 
+                    ...prev, 
+                    diagnoses,
+                    // Mantener compatibilidad con el campo diagnosis antiguo
+                    diagnosis: diagnoses.length > 0 
+                      ? diagnoses.find(d => d.isPrimary)?.description || diagnoses[0].description
+                      : ''
+                  }));
+                }}
+                maxDiagnoses={8}
+                allowCustom={true}
+                className=""
               />
             </Card>
 
@@ -1630,6 +1845,19 @@ export default function CentralizedConsultationInterface({
                 </div>
               </div>
             </Card>
+            
+            {/* Save Button - Moved to bottom */}
+            <div className="mt-8 flex justify-center sticky bottom-0 bg-white pt-4 pb-2 border-t border-gray-200">
+              <div className="flex space-x-4">
+                <Button variant="outline" onClick={() => setShowPreviewDialog(true)}>
+                  <EyeIcon className="h-4 w-4 mr-2" />
+                  Vista previa
+                </Button>
+                <Button variant="primary" onClick={handleSaveConsultation} className="px-8">
+                  Guardar y terminar consulta
+                </Button>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -1667,6 +1895,31 @@ export default function CentralizedConsultationInterface({
           onSave={(config) => {
             console.log('✅ Print configuration saved:', config);
             // La configuración ya se guarda automáticamente en PrintConfigDialog
+          }}
+        />
+      )}
+      
+      {/* Prescription Creator Modal */}
+      {showPrescriptionModal && (
+        <PrescriptionCreator
+          patient={{
+            ...patient,
+            last_name: patient.paternal_last_name,
+            date_of_birth: patient.birth_date,
+            allergies: patient.allergies ? patient.allergies.split(',').map(a => a.trim()) : undefined,
+            chronic_conditions: patient.medical_history ? patient.medical_history.split(',').map(c => c.trim()) : undefined
+          }}
+          onCancel={() => setShowPrescriptionModal(false)}
+          onSuccess={async (prescriptionData) => {
+            try {
+              console.log('💊 Creating prescription:', prescriptionData);
+              // Refresh prescriptions after creation
+              const prescriptionsResponse = await expedixApi.getPatientPrescriptions(patient.id);
+              setPrescriptions(prescriptionsResponse?.data || []);
+              setShowPrescriptionModal(false);
+            } catch (error) {
+              console.error('❌ Error creating prescription:', error);
+            }
           }}
         />
       )}
