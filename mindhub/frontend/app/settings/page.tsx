@@ -278,6 +278,41 @@ export default function GeneralSettingsPage() {
       )
     },
     {
+      id: 'resources',
+      label: 'Resources',
+      icon: ArrowUpTrayIcon,
+      content: (
+        <div className="bg-white border border-gray-200 rounded-lg shadow-sm p-4 sm:p-6">
+          <div className="flex items-center gap-2 mb-4">
+            <ArrowUpTrayIcon className="h-5 w-5 flex-shrink-0" />
+            <h2 className="text-lg sm:text-xl font-semibold">Configuración de Resources</h2>
+          </div>
+          <div className="space-y-4">
+            <p className="text-sm sm:text-base text-gray-600">
+              Gestión de recursos, documentos y archivos del sistema MindHub.
+            </p>
+            <div className="space-y-3">
+              <div className="bg-green-50 p-3 sm:p-4 rounded-lg">
+                <p className="text-sm sm:text-base text-green-800">
+                  <strong>Estado:</strong> Módulo activo para gestión de recursos.
+                </p>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="p-3 border border-gray-200 rounded-lg">
+                  <h4 className="font-medium text-gray-900 mb-1">Almacenamiento</h4>
+                  <p className="text-sm text-gray-600">Gestión de archivos y documentos médicos</p>
+                </div>
+                <div className="p-3 border border-gray-200 rounded-lg">
+                  <h4 className="font-medium text-gray-900 mb-1">Templates</h4>
+                  <p className="text-sm text-gray-600">Plantillas y formatos reutilizables</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )
+    },
+    {
       id: 'preferences',
       label: 'Preferencias',
       icon: UserIcon,

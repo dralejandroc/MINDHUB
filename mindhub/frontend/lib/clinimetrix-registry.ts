@@ -1,5 +1,13 @@
 // ClinimetrixPro Registry - Comprehensive scale definitions for the MindHub platform
 
+export interface ClinimetrixSubscale {
+  name: string;
+  description: string;
+  items: number[];
+  scoringType?: 'sum' | 'mean' | 'weighted';
+  cutoffPoints?: { [key: string]: number };
+}
+
 export interface ClinimetrixRegistry {
   id: string;
   name: string;
@@ -19,6 +27,7 @@ export interface ClinimetrixRegistry {
   administration?: 'self' | 'interview' | 'both';
   languages?: string[];
   normData?: boolean;
+  subscales?: ClinimetrixSubscale[];
   reliability?: {
     cronbachAlpha?: number;
     testRetest?: number;
@@ -457,7 +466,30 @@ export const CLINIMETRIX_REGISTRY: ClinimetrixRegistry[] = [
     references: ['Kay et al., 1987', 'Peralta & Cuesta, 1994'],
     isValidated: true,
     template: 'panss',
-    administration: 'interview'
+    administration: 'interview',
+    subscales: [
+      {
+        name: 'Positive Symptoms',
+        description: 'Síntomas positivos de la psicosis',
+        items: [1, 2, 3, 4, 5, 6, 7],
+        scoringType: 'sum',
+        cutoffPoints: { minimal: 7, mild: 14, moderate: 21, severe: 28 }
+      },
+      {
+        name: 'Negative Symptoms',
+        description: 'Síntomas negativos de la psicosis',
+        items: [8, 9, 10, 11, 12, 13, 14],
+        scoringType: 'sum',
+        cutoffPoints: { minimal: 7, mild: 14, moderate: 21, severe: 28 }
+      },
+      {
+        name: 'General Psychopathology',
+        description: 'Psicopatología general',
+        items: [15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30],
+        scoringType: 'sum',
+        cutoffPoints: { minimal: 16, mild: 32, moderate: 48, severe: 64 }
+      }
+    ]
   },
 
   // SLEEP SCALES
@@ -477,7 +509,39 @@ export const CLINIMETRIX_REGISTRY: ClinimetrixRegistry[] = [
     references: ['Hays et al., 2005', 'Rejas et al., 2007'],
     isValidated: true,
     template: 'mos-sleep',
-    administration: 'self'
+    administration: 'self',
+    subscales: [
+      {
+        name: 'Sleep Disturbance',
+        description: 'Alteraciones del sueño',
+        items: [1, 2, 3, 4],
+        scoringType: 'mean'
+      },
+      {
+        name: 'Sleep Adequacy', 
+        description: 'Adecuación del sueño',
+        items: [5, 6],
+        scoringType: 'mean'
+      },
+      {
+        name: 'Daytime Somnolence',
+        description: 'Somnolencia diurna',
+        items: [7, 8, 9],
+        scoringType: 'mean'
+      },
+      {
+        name: 'Sleep Quantity',
+        description: 'Cantidad de sueño',
+        items: [10],
+        scoringType: 'sum'
+      },
+      {
+        name: 'Respiratory Problems',
+        description: 'Problemas respiratorios',
+        items: [11, 12],
+        scoringType: 'mean'
+      }
+    ]
   },
 
   // TICS SCALES

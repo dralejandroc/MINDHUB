@@ -387,7 +387,11 @@ function ClinimetrixContent() {
         icon={DocumentChartBarIcon}
         actions={
           <div className="flex items-center space-x-2">
-            <Button variant="outline" size="sm">
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={() => router.push('/hubs/clinimetrix/settings')}
+            >
               <Cog6ToothIcon className="h-4 w-4 mr-1" />
               Configuración
             </Button>
