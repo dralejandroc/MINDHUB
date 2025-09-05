@@ -122,6 +122,8 @@ function ExpedixContent() {
       viewMode: 'expedient',
       detailView: 'dashboard'
     }));
+    // Update URL to reflect selected patient
+    router.push(`/hubs/expedix?patient=${patient.id}`);
   };
 
   const handleNewConsultation = (patient: Patient) => {
@@ -131,6 +133,8 @@ function ExpedixContent() {
       viewMode: 'expedient',
       detailView: 'consultation'
     }));
+    // Update URL to reflect consultation view
+    router.push(`/hubs/expedix?patient=${patient.id}&action=consultation`);
   };
 
   const handleClinicalAssessment = (patient: Patient) => {
@@ -140,6 +144,8 @@ function ExpedixContent() {
       viewMode: 'expedient',
       detailView: 'assessment'
     }));
+    // Update URL to reflect assessment view
+    router.push(`/hubs/expedix?patient=${patient.id}&action=assessment`);
   };
 
   const handleBackToList = () => {
@@ -156,6 +162,11 @@ function ExpedixContent() {
 
   const handleBackToPatientDashboard = () => {
     setState(prev => ({ ...prev, detailView: 'dashboard' }));
+    // Update URL to remove action parameter but keep patient
+    const currentPatientId = state.selectedPatient?.id;
+    if (currentPatientId) {
+      router.push(`/hubs/expedix?patient=${currentPatientId}`);
+    }
   };
   
   const handleNewPatient = () => {

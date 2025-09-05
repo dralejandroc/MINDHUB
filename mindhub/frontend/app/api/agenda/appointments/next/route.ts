@@ -1,5 +1,6 @@
 // Agenda Next Appointments API - Get next appointment for patient
 import { getAuthenticatedUser, createResponse, createErrorResponse, supabaseAdmin } from '@/lib/supabase/admin'
+import { resolveTenantContext } from '@/lib/tenant-resolver'
 
 export const dynamic = 'force-dynamic';
 
@@ -24,15 +25,29 @@ export async function GET(request: Request) {
 
     console.log('[NEXT APPOINTMENTS] Looking for next appointment for patient:', patientId);
 
+    // Resolve tenant context for proper data filtering
+    const tenantContext = await resolveTenantContext(user.id);
+    console.log('[NEXT APPOINTMENTS] Resolved tenant context:', tenantContext);
+
     try {
-      // Try to get next appointment from Supabase directly
-      const { data: appointments, error } = await supabaseAdmin
+      // Try to get next appointment from Supabase directly with tenant filtering
+      let query = supabaseAdmin
         .from('appointments')
         .select('*')
         .eq('patient_id', patientId)
         .gte('appointment_date', new Date().toISOString())
         .order('appointment_date', { ascending: true })
         .limit(1);
+
+      // Apply tenant filtering
+      if (tenantContext.type === 'clinic') {
+        query = query.eq('clinic_id', tenantContext.id);
+      } else {
+        // For individual workspaces, filter by workspace_id OR where clinic_id equals workspace_id
+        query = query.or(`workspace_id.eq.${tenantContext.id},clinic_id.eq.${tenantContext.id}`);
+      }
+
+      const { data: appointments, error } = await query;
 
       if (error) {
         console.warn('[NEXT APPOINTMENTS] Supabase query error:', error);

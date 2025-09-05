@@ -255,18 +255,18 @@ export function addConsultationTenantContext<T extends Record<string, any>>(
   data: T,
   context: TenantContext,
   userProfile?: { clinic_id?: string }
-): T & { clinic_id: string; workspace_id?: string } {
-  // Always prioritize clinic_id for consultations
+): T & { clinic_id?: string | null; workspace_id?: string | null } {
+  // DATABASE CONSTRAINT: Only ONE of clinic_id OR workspace_id can have a value (dual ownership)
   if (context.type === 'clinic') {
-    return { ...data, clinic_id: context.id, workspace_id: undefined };
+    // Clinic context: use clinic_id only, workspace_id must be null
+    return { ...data, clinic_id: context.id, workspace_id: null } as T & { clinic_id?: string | null; workspace_id?: string | null };
   } else if (userProfile?.clinic_id) {
-    // User has a clinic_id, use it even if they're in workspace mode
-    return { ...data, clinic_id: userProfile.clinic_id, workspace_id: context.id };
+    // User has direct clinic association: use clinic_id only, workspace_id must be null
+    return { ...data, clinic_id: userProfile.clinic_id, workspace_id: null } as T & { clinic_id?: string | null; workspace_id?: string | null };
   } else {
-    // CRITICAL FIX: Use workspace_id as clinic_id for individual practitioners
-    // This allows consultations to work for users without clinic association
-    console.warn('⚠️ [Tenant Resolver] Using workspace_id as clinic_id for consultation compatibility');
-    return { ...data, clinic_id: context.id, workspace_id: context.id };
+    // Individual workspace: use workspace_id only, clinic_id must be null
+    console.log('🏠 [Tenant Resolver] Using workspace ownership for individual practitioner');
+    return { ...data, clinic_id: null, workspace_id: context.id } as T & { clinic_id?: string | null; workspace_id?: string | null };
   }
 }
 
