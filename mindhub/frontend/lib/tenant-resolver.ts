@@ -248,25 +248,32 @@ export function addTenantContext<T extends Record<string, any>>(
 
 /**
  * Add tenant context specifically for consultations table
- * Consultations REQUIRE clinic_id (NOT NULL constraint)
- * If user has clinic_id, use it. Otherwise, use workspace_id AS clinic_id for compatibility.
+ * Consultations REQUIRE clinic_id (NOT NULL constraint in database)
+ * CRITICAL FIX: clinic_id cannot be NULL due to database constraint
+ * For individual practitioners, we use workspace_id AS clinic_id to satisfy the constraint
  */
 export function addConsultationTenantContext<T extends Record<string, any>>(
   data: T,
   context: TenantContext,
   userProfile?: { clinic_id?: string }
-): T & { clinic_id?: string | null; workspace_id?: string | null } {
-  // DATABASE CONSTRAINT: Only ONE of clinic_id OR workspace_id can have a value (dual ownership)
+): T & { clinic_id: string; workspace_id?: string | null } {
   if (context.type === 'clinic') {
-    // Clinic context: use clinic_id only, workspace_id must be null
-    return { ...data, clinic_id: context.id, workspace_id: null } as T & { clinic_id?: string | null; workspace_id?: string | null };
+    // Clinic context: use clinic_id, workspace_id can be null
+    console.log('🏥 [Tenant Resolver] Using clinic ownership for consultation');
+    return { ...data, clinic_id: context.id, workspace_id: null } as T & { clinic_id: string; workspace_id?: string | null };
   } else if (userProfile?.clinic_id) {
-    // User has direct clinic association: use clinic_id only, workspace_id must be null
-    return { ...data, clinic_id: userProfile.clinic_id, workspace_id: null } as T & { clinic_id?: string | null; workspace_id?: string | null };
+    // User has direct clinic association: use that clinic_id
+    console.log('👤 [Tenant Resolver] Using user profile clinic for consultation');
+    return { ...data, clinic_id: userProfile.clinic_id, workspace_id: null } as T & { clinic_id: string; workspace_id?: string | null };
   } else {
-    // Individual workspace: use workspace_id only, clinic_id must be null
-    console.log('🏠 [Tenant Resolver] Using workspace ownership for individual practitioner');
-    return { ...data, clinic_id: null, workspace_id: context.id } as T & { clinic_id?: string | null; workspace_id?: string | null };
+    // Individual workspace: USE WORKSPACE_ID AS CLINIC_ID to satisfy NOT NULL constraint
+    // This is a workaround for the database constraint while maintaining logical separation
+    console.log('🏠 [Tenant Resolver] Using workspace_id as clinic_id for individual practitioner (constraint workaround)');
+    return { 
+      ...data, 
+      clinic_id: context.id, // Use workspace ID as clinic ID to satisfy constraint
+      workspace_id: context.id // Also set workspace_id for logical consistency
+    } as T & { clinic_id: string; workspace_id?: string | null };
   }
 }
 

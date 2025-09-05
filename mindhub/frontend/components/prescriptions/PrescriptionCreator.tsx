@@ -117,6 +117,18 @@ export function PrescriptionCreator({ patient, consultationId, onSuccess, onCanc
     }
   }, [patient]);
 
+  // Handle escape key to close modal
+  useEffect(() => {
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape' && onCancel) {
+        onCancel();
+      }
+    };
+
+    document.addEventListener('keydown', handleEscape);
+    return () => document.removeEventListener('keydown', handleEscape);
+  }, [onCancel]);
+
   const loadPatients = async () => {
     try {
       setSearchingPatients(true);
@@ -320,7 +332,15 @@ export function PrescriptionCreator({ patient, consultationId, onSuccess, onCanc
   };
 
   return (
-    <div className="max-w-4xl mx-auto bg-white shadow-lg rounded-lg">
+    <div 
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4 overflow-y-auto"
+      onClick={(e) => {
+        if (e.target === e.currentTarget && onCancel) {
+          onCancel();
+        }
+      }}
+    >
+      <div className="max-w-4xl w-full mx-auto bg-white shadow-lg rounded-lg my-8 max-h-[90vh] overflow-y-auto">
       <div className="px-6 py-4 border-b border-gray-200">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-2">
@@ -754,6 +774,7 @@ export function PrescriptionCreator({ patient, consultationId, onSuccess, onCanc
           'Paciente'
         }
       />
+      </div>
     </div>
   );
 }

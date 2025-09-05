@@ -18,6 +18,7 @@ import {
   CogIcon
 } from '@heroicons/react/24/outline';
 import { expedixApi, type Patient, type Prescription } from '@/lib/api/expedix-client';
+import { useAuthenticatedFetch } from '@/lib/api/supabase-auth';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import ConsultationPreviewDialog from './ConsultationPreviewDialog';
@@ -144,6 +145,9 @@ export default function CentralizedConsultationInterface({
   onClose,
   onSave
 }: CentralizedConsultationInterfaceProps) {
+  // Authenticated API client
+  const authenticatedFetch = useAuthenticatedFetch();
+  
   const [loading, setLoading] = useState(true);
   const [currentConsultation, setCurrentConsultation] = useState<Consultation | null>(null);
   const [consultations, setConsultations] = useState<Consultation[]>([]);
@@ -270,10 +274,10 @@ export default function CentralizedConsultationInterface({
   const loadNextAppointment = async () => {
     try {
       // This would call the agenda API to get the next appointment for this patient
-      const response = await fetch(`/api/agenda/appointments/next?patientId=${patient.id}`);
+      const response = await authenticatedFetch(`/api/agenda/appointments/next?patientId=${patient.id}`);
       if (response.ok) {
         const data = await response.json();
-        setNextAppointment(data.data);
+        setNextAppointment(data.nextAppointment || data.data);
       }
     } catch (error) {
       console.error('Error loading next appointment:', error);
