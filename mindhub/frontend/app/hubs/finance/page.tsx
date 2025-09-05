@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { PageHeader } from '@/components/layout/PageHeader';
 import FinanceDashboard from '@/components/finance/FinanceDashboard';
@@ -20,7 +20,7 @@ import { Button } from '@/components/ui/Button';
 
 type FinanceView = 'dashboard' | 'income' | 'reports' | 'cash-register' | 'config';
 
-export default function FinancePage() {
+function FinanceContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [currentView, setCurrentView] = useState<FinanceView>('dashboard');
@@ -254,5 +254,20 @@ export default function FinancePage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function FinancePage() {
+  return (
+    <Suspense fallback={
+      <div className="flex flex-col items-center justify-center py-16 space-y-4">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-500"></div>
+        <div className="text-center">
+          <p className="text-gray-900 font-medium">Cargando Finance...</p>
+        </div>
+      </div>
+    }>
+      <FinanceContent />
+    </Suspense>
   );
 }

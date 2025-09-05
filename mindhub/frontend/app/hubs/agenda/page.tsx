@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { WeeklyView } from '@/components/agenda-v2/views/WeeklyView';
 import { DailyView } from '@/components/agenda-v2/views/DailyView';
@@ -30,7 +30,7 @@ import { useTenantContext } from '@/hooks/useTenantContext';
 
 type ViewType = 'week' | 'day' | 'month' | 'clinic-global' | 'reception';
 
-export default function AgendaV2Page() {
+function AgendaContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { user } = useAuth();
@@ -1006,5 +1006,20 @@ export default function AgendaV2Page() {
         />
       )}
     </div>
+  );
+}
+
+export default function AgendaV2Page() {
+  return (
+    <Suspense fallback={
+      <div className="flex flex-col items-center justify-center py-16 space-y-4">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
+        <div className="text-center">
+          <p className="text-gray-900 font-medium">Cargando Agenda...</p>
+        </div>
+      </div>
+    }>
+      <AgendaContent />
+    </Suspense>
   );
 }

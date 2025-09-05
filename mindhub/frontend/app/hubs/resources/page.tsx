@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { ResourceGallery } from '@/components/resources/ResourceGallery';
@@ -25,7 +25,7 @@ import {
 import { Button } from '@/components/ui/Button';
 import toast from 'react-hot-toast';
 
-export default function ResourcesPage() {
+function ResourcesContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [currentView, setCurrentView] = useState<'gallery' | 'upload' | 'watermark' | 'psychoeducational'>('gallery');
@@ -461,5 +461,20 @@ export default function ResourcesPage() {
         />
       )}
     </div>
+  );
+}
+
+export default function ResourcesPage() {
+  return (
+    <Suspense fallback={
+      <div className="flex flex-col items-center justify-center py-16 space-y-4">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-500"></div>
+        <div className="text-center">
+          <p className="text-gray-900 font-medium">Cargando Resources...</p>
+        </div>
+      </div>
+    }>
+      <ResourcesContent />
+    </Suspense>
   );
 }

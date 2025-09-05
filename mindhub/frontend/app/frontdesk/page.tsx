@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/lib/providers/AuthProvider';
 import { 
@@ -23,7 +23,7 @@ import ResourceSender from '@/components/frontdesk/ResourceSender';
 import DayOverview from '@/components/frontdesk/DayOverview';
 import { simpleApiClient } from '@/lib/api/simple-api-client';
 
-export default function FrontDeskPage() {
+function FrontDeskContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { user, session, loading: authLoading } = useAuth();
@@ -334,5 +334,20 @@ export default function FrontDeskPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function FrontDeskPage() {
+  return (
+    <Suspense fallback={
+      <div className="flex flex-col items-center justify-center py-16 space-y-4">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500"></div>
+        <div className="text-center">
+          <p className="text-gray-900 font-medium">Cargando FrontDesk...</p>
+        </div>
+      </div>
+    }>
+      <FrontDeskContent />
+    </Suspense>
   );
 }

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { ArrowLeftIcon } from '@heroicons/react/24/outline';
 import { Button } from '@/components/ui/Button';
@@ -20,7 +20,7 @@ interface NavigationData {
   patientId?: string;
 }
 
-export default function FormXPage() {
+function FormXContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [currentView, setCurrentView] = useState<FormXView>('dashboard');
@@ -206,5 +206,20 @@ export default function FormXPage() {
         {renderContent()}
       </div>
     </div>
+  );
+}
+
+export default function FormXPage() {
+  return (
+    <Suspense fallback={
+      <div className="flex flex-col items-center justify-center py-16 space-y-4">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
+        <div className="text-center">
+          <p className="text-gray-900 font-medium">Cargando FormX...</p>
+        </div>
+      </div>
+    }>
+      <FormXContent />
+    </Suspense>
   );
 }
