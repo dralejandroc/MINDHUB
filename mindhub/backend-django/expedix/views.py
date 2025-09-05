@@ -1669,12 +1669,10 @@ class ConsultationCentralViewSet(ExpedixDualViewSet):
         elif license_type == 'individual':
             workspace_id = user_context.get('workspace_id')
             if workspace_id:
-                # TEMPORARY WORKAROUND: Use a default clinic_id since DB requires it
-                # This should be fixed by making clinic_id nullable in DB
-                default_clinic_id = 'bf005c17-508f-4d3e-aee0-cb2d87f1a5d0'  # From user's profile
-                save_data['clinic_id'] = default_clinic_id
+                # FIXED: For individual license, ONLY set workspace_id, clinic_id should be NULL
+                save_data['clinic_id'] = None
                 save_data['workspace_id'] = workspace_id
-                logger.warning(f"INDIVIDUAL LICENSE WORKAROUND: Using default clinic_id={default_clinic_id} with workspace_id={workspace_id}")
+                logger.info(f"INDIVIDUAL LICENSE: Using workspace_id={workspace_id}, clinic_id=None")
             else:
                 logger.error("Individual license but no workspace_id found in user_context")
                 raise ValidationError("Individual license requires workspace_id")
