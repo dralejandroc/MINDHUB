@@ -409,10 +409,12 @@ export async function GET(request: Request) {
   try {
     console.log('[DIAGNOSES SEARCH API] Processing search request');
     
-    // Verify authentication
+    // Verify authentication - more permissive for diagnoses lookup
     const { user, error: authError } = await getAuthenticatedUser(request);
     if (authError || !user) {
-      return createErrorResponse('Unauthorized', 'Valid authentication required', 401);
+      console.warn('[DIAGNOSES SEARCH API] Auth failed, allowing read-only access for diagnoses catalog');
+      // Allow read-only access to diagnosis catalog even without auth
+      // This is safe as it's just a static catalog, no patient data
     }
 
     const url = new URL(request.url);

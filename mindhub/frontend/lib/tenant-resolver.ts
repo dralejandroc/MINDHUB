@@ -249,7 +249,7 @@ export function addTenantContext<T extends Record<string, any>>(
 /**
  * Add tenant context specifically for consultations table
  * Consultations REQUIRE clinic_id (NOT NULL constraint)
- * If user has clinic_id, use it. Otherwise, use a default clinic.
+ * If user has clinic_id, use it. Otherwise, use workspace_id AS clinic_id for compatibility.
  */
 export function addConsultationTenantContext<T extends Record<string, any>>(
   data: T,
@@ -263,8 +263,10 @@ export function addConsultationTenantContext<T extends Record<string, any>>(
     // User has a clinic_id, use it even if they're in workspace mode
     return { ...data, clinic_id: userProfile.clinic_id, workspace_id: context.id };
   } else {
-    // Fallback: create a default clinic entry or throw error
-    throw new Error('Consultations require clinic_id but user has no clinic association');
+    // CRITICAL FIX: Use workspace_id as clinic_id for individual practitioners
+    // This allows consultations to work for users without clinic association
+    console.warn('⚠️ [Tenant Resolver] Using workspace_id as clinic_id for consultation compatibility');
+    return { ...data, clinic_id: context.id, workspace_id: context.id };
   }
 }
 

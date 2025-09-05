@@ -19,6 +19,10 @@ export async function GET(request: Request) {
     const url = new URL(request.url);
     const queryParams = url.searchParams.toString();
     
+    // Get tenant context from headers
+    const tenantId = request.headers.get('X-Tenant-ID');
+    const tenantType = request.headers.get('X-Tenant-Type');
+    
     // Forward request to Django
     const djangoUrl = `${DJANGO_API_BASE}/api/agenda/appointments/${queryParams ? '?' + queryParams : ''}`;
     
@@ -29,6 +33,8 @@ export async function GET(request: Request) {
         'Content-Type': 'application/json',
         'X-User-Id': user.id,
         'X-User-Email': user.email || '',
+        'X-Tenant-ID': tenantId || '',
+        'X-Tenant-Type': tenantType || '',
       },
     });
 
@@ -64,6 +70,10 @@ export async function POST(request: Request) {
     // Get request body
     const body = await request.json();
     
+    // Get tenant context from headers
+    const tenantId = request.headers.get('X-Tenant-ID');
+    const tenantType = request.headers.get('X-Tenant-Type');
+    
     // Forward request to Django
     const djangoUrl = `${DJANGO_API_BASE}/api/agenda/appointments/`;
     
@@ -74,6 +84,8 @@ export async function POST(request: Request) {
         'Content-Type': 'application/json',
         'X-User-Id': user.id,
         'X-User-Email': user.email || '',
+        'X-Tenant-ID': tenantId || '',
+        'X-Tenant-Type': tenantType || '',
       },
       body: JSON.stringify(body),
     });

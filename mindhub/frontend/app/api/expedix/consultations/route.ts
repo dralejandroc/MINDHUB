@@ -80,10 +80,14 @@ export async function GET(request: Request) {
     } catch (djangoError) {
       console.error('[CONSULTATIONS API] Django backend failed, using Supabase fallback:', djangoError);
 
-      // FALLBACK: Direct Supabase connection
+      // FALLBACK: Direct Supabase connection with tenant filtering
       console.log('[CONSULTATIONS API] Using Supabase direct connection as fallback');
       
-      // Build Supabase query
+      // Resolve tenant context for proper filtering
+      const tenantContext = await resolveTenantContext(user.id);
+      console.log('[CONSULTATIONS API] Resolved tenant context for query:', tenantContext);
+      
+      // Build Supabase query with tenant filtering
       let query = supabaseAdmin
         .from('consultations')
         .select(`
@@ -99,6 +103,14 @@ export async function GET(request: Request) {
         `, { count: 'exact' })
         .order('created_at', { ascending: false })
         .range(parseInt(offset), parseInt(offset) + parseInt(limit) - 1);
+
+      // Apply tenant filtering based on context type
+      if (tenantContext.type === 'clinic') {
+        query = query.eq('clinic_id', tenantContext.id);
+      } else {
+        // For individual workspaces, filter by workspace_id OR where clinic_id equals workspace_id
+        query = query.or(`workspace_id.eq.${tenantContext.id},clinic_id.eq.${tenantContext.id}`);
+      }
 
       // Filter by patient if specified
       if (patientId) {
