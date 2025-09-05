@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/lib/providers/AuthProvider';
 import { 
   ClipboardDocumentListIcon,
@@ -23,6 +24,8 @@ import DayOverview from '@/components/frontdesk/DayOverview';
 import { simpleApiClient } from '@/lib/api/simple-api-client';
 
 export default function FrontDeskPage() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const { user, session, loading: authLoading } = useAuth();
   const [activeModule, setActiveModule] = useState('overview');
   const [todaysStats, setTodaysStats] = useState({
@@ -33,6 +36,27 @@ export default function FrontDeskPage() {
     patients: 0
   });
   const [loading, setLoading] = useState(true);
+
+  // Handle URL parameters to restore FrontDesk module state
+  useEffect(() => {
+    const module = searchParams?.get('module');
+    
+    if (module && ['overview', 'payments', 'scheduling', 'resources'].includes(module)) {
+      setActiveModule(module);
+    }
+  }, [searchParams]);
+
+  // Handle module change with URL navigation
+  const handleModuleChange = (newModule: string) => {
+    setActiveModule(newModule);
+    
+    // Update URL to reflect current module
+    if (newModule === 'overview') {
+      router.push('/frontdesk');
+    } else {
+      router.push(`/frontdesk?module=${newModule}`);
+    }
+  };
 
   useEffect(() => {
     // Only load stats if user is authenticated
@@ -243,7 +267,7 @@ export default function FrontDeskPage() {
                   return (
                     <button
                       key={module.id}
-                      onClick={() => setActiveModule(module.id)}
+                      onClick={() => handleModuleChange(module.id)}
                       className={`w-full text-left p-4 rounded-lg transition-colors ${
                         activeModule === module.id
                           ? 'bg-blue-100 text-blue-700 border border-blue-200'
@@ -274,7 +298,7 @@ export default function FrontDeskPage() {
               <h3 className="text-lg font-semibold text-gray-900 mb-4">Acciones Rápidas</h3>
               <div className="space-y-3">
                 <Button 
-                  onClick={() => setActiveModule('payments')}
+                  onClick={() => handleModuleChange('payments')}
                   className="w-full bg-green-600 hover:bg-green-700"
                   size="sm"
                 >
@@ -282,7 +306,7 @@ export default function FrontDeskPage() {
                   Cobro Rápido
                 </Button>
                 <Button 
-                  onClick={() => setActiveModule('scheduling')}
+                  onClick={() => handleModuleChange('scheduling')}
                   className="w-full bg-purple-600 hover:bg-purple-700"
                   size="sm"
                 >
@@ -290,7 +314,7 @@ export default function FrontDeskPage() {
                   Nueva Cita
                 </Button>
                 <Button 
-                  onClick={() => setActiveModule('resources')}
+                  onClick={() => handleModuleChange('resources')}
                   className="w-full bg-orange-600 hover:bg-orange-700"
                   size="sm"
                 >

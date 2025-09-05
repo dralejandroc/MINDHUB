@@ -1,6 +1,7 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { ArrowLeftIcon } from '@heroicons/react/24/outline';
 import { Button } from '@/components/ui/Button';
 import { FormXDashboard } from '@/components/formx/FormXDashboard';
@@ -20,17 +21,49 @@ interface NavigationData {
 }
 
 export default function FormXPage() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const [currentView, setCurrentView] = useState<FormXView>('dashboard');
   const [navigationData, setNavigationData] = useState<NavigationData>({});
+
+  // Handle URL parameters to restore FormX view state
+  useEffect(() => {
+    const view = searchParams?.get('view') as FormXView;
+    const templateId = searchParams?.get('templateId');
+    const patientId = searchParams?.get('patientId');
+    
+    if (view && ['dashboard', 'templates', 'builder', 'responses', 'form-viewer'].includes(view)) {
+      setCurrentView(view);
+      setNavigationData({ templateId: templateId || undefined, patientId: patientId || undefined });
+    }
+  }, [searchParams]);
 
   const handleNavigate = (view: FormXView, data?: NavigationData) => {
     setCurrentView(view);
     setNavigationData(data || {});
+    
+    // Update URL to reflect current view and data
+    const params = new URLSearchParams();
+    
+    if (view !== 'dashboard') {
+      params.set('view', view);
+    }
+    
+    if (data?.templateId) {
+      params.set('templateId', data.templateId);
+    }
+    
+    if (data?.patientId) {
+      params.set('patientId', data.patientId);
+    }
+    
+    const queryString = params.toString();
+    const newUrl = queryString ? `/hubs/formx?${queryString}` : '/hubs/formx';
+    router.push(newUrl);
   };
 
   const handleBackToDashboard = () => {
-    setCurrentView('dashboard');
-    setNavigationData({});
+    handleNavigate('dashboard');
   };
 
   const renderBreadcrumb = () => {

@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, useEffect, Suspense } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { 
   DocumentChartBarIcon,
@@ -155,8 +155,9 @@ function generateAbstractPattern(scaleId: string, category: string): string {
   return patterns[variation];
 }
 
-export default function ClinimetrixPage() {
+function ClinimetrixContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [scales, setScales] = useState<ClinimetrixRegistry[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -200,6 +201,21 @@ export default function ClinimetrixPage() {
     setIsMounted(true);
     loadScales();
   }, []);
+
+  // Handle URL parameters to restore assessment state
+  useEffect(() => {
+    const scaleId = searchParams?.get('scale');
+    const scaleName = searchParams?.get('scaleName');
+    
+    if (scaleId && scaleName && scales.length > 0) {
+      // Find the scale in the loaded scales
+      const scale = scales.find(s => s.id === scaleId);
+      if (scale) {
+        setSelectedScale(scale);
+        setShowAssessment(true);
+      }
+    }
+  }, [searchParams, scales]);
 
   const loadScales = async () => {
     try {
@@ -282,11 +298,18 @@ export default function ClinimetrixPage() {
   const handleSelectScale = (scale: ClinimetrixRegistry) => {
     setSelectedScale(scale);
     setShowAssessment(true);
+    // Update URL to reflect selected assessment
+    const params = new URLSearchParams(searchParams?.toString() || '');
+    params.set('scale', scale.id);
+    params.set('scaleName', scale.name);
+    router.push(`/hubs/clinimetrix?${params.toString()}`);
   };
 
   const handleCloseAssessment = () => {
     setShowAssessment(false);
     setSelectedScale(null);
+    // Clear URL parameters
+    router.push('/hubs/clinimetrix');
   };
 
   const handleAssessmentComplete = (results: any) => {
@@ -846,6 +869,21 @@ function ScaleListItem({ scale, onToggleFavorite, onSelect }: {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function ClinimetrixPage() {
+  return (
+    <Suspense fallback={
+      <div className="flex flex-col items-center justify-center py-16 space-y-4">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-teal-500"></div>
+        <div className="text-center">
+          <p className="text-gray-900 font-medium">Cargando Clinimetrix...</p>
+        </div>
+      </div>
+    }>
+      <ClinimetrixContent />
+    </Suspense>
   );
 }
 

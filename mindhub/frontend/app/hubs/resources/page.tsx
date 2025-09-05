@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { ResourceGallery } from '@/components/resources/ResourceGallery';
 import { ResourceUploader } from '@/components/resources/ResourceUploader';
@@ -25,6 +26,8 @@ import { Button } from '@/components/ui/Button';
 import toast from 'react-hot-toast';
 
 export default function ResourcesPage() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const [currentView, setCurrentView] = useState<'gallery' | 'upload' | 'watermark' | 'psychoeducational'>('gallery');
   const [resources, setResources] = useState<any[]>([]);
   const [categories, setCategories] = useState<any[]>([]);
@@ -45,6 +48,30 @@ export default function ResourcesPage() {
   // Bulk operations state
   const [selectedResources, setSelectedResources] = useState<string[]>([]);
   const [bulkActionsEnabled, setBulkActionsEnabled] = useState(false);
+
+  // Handle URL parameters to restore resources view state
+  useEffect(() => {
+    const view = searchParams?.get('view') as 'gallery' | 'upload' | 'watermark' | 'psychoeducational';
+    const library = searchParams?.get('library') as 'all' | 'public' | 'private';
+    const category = searchParams?.get('category');
+    const search = searchParams?.get('search');
+    
+    if (view && ['gallery', 'upload', 'watermark', 'psychoeducational'].includes(view)) {
+      setCurrentView(view);
+    }
+    
+    if (library && ['all', 'public', 'private'].includes(library)) {
+      setLibraryType(library);
+    }
+    
+    if (category) {
+      setSelectedCategory(category);
+    }
+    
+    if (search) {
+      setSearchQuery(search);
+    }
+  }, [searchParams]);
 
   // Load initial data and state persistence
   useEffect(() => {
@@ -78,6 +105,34 @@ export default function ResourcesPage() {
     };
     sessionStorage.setItem('resources-state', JSON.stringify(stateToSave));
   }, [libraryType, searchQuery, selectedCategory]);
+
+  // Handle view change with URL navigation
+  const handleViewChange = (newView: 'gallery' | 'upload' | 'watermark' | 'psychoeducational') => {
+    setCurrentView(newView);
+    
+    // Update URL to reflect current view and filters
+    const params = new URLSearchParams();
+    
+    if (newView !== 'gallery') {
+      params.set('view', newView);
+    }
+    
+    if (libraryType !== 'all') {
+      params.set('library', libraryType);
+    }
+    
+    if (selectedCategory) {
+      params.set('category', selectedCategory);
+    }
+    
+    if (searchQuery) {
+      params.set('search', searchQuery);
+    }
+    
+    const queryString = params.toString();
+    const newUrl = queryString ? `/hubs/resources?${queryString}` : '/hubs/resources';
+    router.push(newUrl);
+  };
 
   const loadData = async () => {
     setLoading(true);
@@ -132,7 +187,7 @@ export default function ResourcesPage() {
   const handleResourceUpload = (newResource: any) => {
     setResources(prev => [newResource, ...prev]);
     toast.success('Recurso subido exitosamente');
-    setCurrentView('gallery');
+    handleViewChange('gallery');
   };
 
   const handleResourceSelect = (resource: any) => {
@@ -170,7 +225,7 @@ export default function ResourcesPage() {
           actions={[
             <Button
               key="back"
-              onClick={() => setCurrentView('gallery')}
+              onClick={() => handleViewChange('gallery')}
               variant="outline"
             >
               Volver a Galería
@@ -205,7 +260,7 @@ export default function ResourcesPage() {
           actions={[
             <Button
               key="back"
-              onClick={() => setCurrentView('gallery')}
+              onClick={() => handleViewChange('gallery')}
               variant="outline"
             >
               Volver a Galería
@@ -237,7 +292,7 @@ export default function ResourcesPage() {
           actions={[
             <Button
               key="back"
-              onClick={() => setCurrentView('gallery')}
+              onClick={() => handleViewChange('gallery')}
               variant="outline"
             >
               Volver a Galería
@@ -260,7 +315,7 @@ export default function ResourcesPage() {
         actions={[
           <Button
             key="upload"
-            onClick={() => setCurrentView('upload')}
+            onClick={() => handleViewChange('upload')}
             variant="primary"
             size="sm"
           >
@@ -269,7 +324,7 @@ export default function ResourcesPage() {
           </Button>,
           <Button
             key="psychoeducational"
-            onClick={() => setCurrentView('psychoeducational')}
+            onClick={() => handleViewChange('psychoeducational')}
             variant="outline"
             size="sm"
           >
@@ -278,7 +333,7 @@ export default function ResourcesPage() {
           </Button>,
           <Button
             key="watermark"
-            onClick={() => setCurrentView('watermark')}
+            onClick={() => handleViewChange('watermark')}
             variant="outline"
             size="sm"
           >

@@ -24,7 +24,7 @@ import {
 } from '@heroicons/react/24/outline';
 import toast from 'react-hot-toast';
 import { authGet, authPost, authPut, authDelete, authFetch } from '@/lib/api/auth-fetch';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
 import { useTenantContext } from '@/hooks/useTenantContext';
 
@@ -32,6 +32,7 @@ type ViewType = 'week' | 'day' | 'month' | 'clinic-global' | 'reception';
 
 export default function AgendaV2Page() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { user } = useAuth();
   const { getCurrentTenantId, getCurrentTenantType } = useTenantContext();
   const [currentView, setCurrentView] = useState<ViewType>('week');
@@ -102,6 +103,37 @@ export default function AgendaV2Page() {
     setCurrentDate(new Date());
     setLastRefresh(new Date());
   }, []);
+
+  // Handle URL parameters to restore agenda state
+  useEffect(() => {
+    const view = searchParams?.get('view') as ViewType;
+    const date = searchParams?.get('date');
+    const action = searchParams?.get('action');
+    const patient = searchParams?.get('patient');
+    const patientName = searchParams?.get('patientName');
+    
+    if (view && ['week', 'day', 'month', 'clinic-global', 'reception'].includes(view)) {
+      setCurrentView(view);
+    }
+    
+    if (date) {
+      const parsedDate = new Date(date);
+      if (!isNaN(parsedDate.getTime())) {
+        setCurrentDate(parsedDate);
+      }
+    }
+    
+    // Handle new appointment creation from URL
+    if (action === 'new') {
+      setSelectedSlot(
+        patient ? {
+          date: date ? new Date(date) : new Date(),
+          time: searchParams?.get('time') || '09:00'
+        } : null
+      );
+      setShowNewAppointment(true);
+    }
+  }, [searchParams]);
 
   // Load appointments
   useEffect(() => {
@@ -248,6 +280,34 @@ export default function AgendaV2Page() {
 
   const handleSettings = () => {
     router.push('/hubs/agenda/settings');
+  };
+
+  // Handle view change with URL navigation
+  const handleViewChange = (newView: ViewType) => {
+    setCurrentView(newView);
+    
+    // Update URL to reflect current view and date
+    const params = new URLSearchParams(searchParams?.toString() || '');
+    params.set('view', newView);
+    if (currentDate) {
+      params.set('date', currentDate.toISOString().split('T')[0]);
+    }
+    
+    router.push(`/hubs/agenda?${params.toString()}`);
+  };
+
+  // Handle date change with URL navigation  
+  const handleDateChange = (newDate: Date) => {
+    setCurrentDate(newDate);
+    
+    // Update URL to reflect current view and date
+    const params = new URLSearchParams(searchParams?.toString() || '');
+    params.set('date', newDate.toISOString().split('T')[0]);
+    if (currentView !== 'week') { // Only add view if not default
+      params.set('view', currentView);
+    }
+    
+    router.push(`/hubs/agenda?${params.toString()}`);
   };
 
   // Handler for new patient modal
@@ -626,7 +686,7 @@ export default function AgendaV2Page() {
             onNewAppointment={() => setShowNewAppointment(true)}
             onRefresh={handleRefresh}
             onSearch={handleSearch}
-            onViewChange={setCurrentView}
+            onViewChange={handleViewChange}
             onSettings={handleSettings}
             todayStats={todayStats}
             isLoading={loading}
@@ -649,7 +709,7 @@ export default function AgendaV2Page() {
             onNewAppointment={() => setShowNewAppointment(true)}
             onRefresh={handleRefresh}
             onSearch={handleSearch}
-            onViewChange={setCurrentView}
+            onViewChange={handleViewChange}
             onSettings={handleSettings}
             todayStats={todayStats}
             isLoading={loading}
@@ -682,13 +742,13 @@ export default function AgendaV2Page() {
             onNewAppointment={() => setShowNewAppointment(true)}
             onRefresh={handleRefresh}
             onSearch={handleSearch}
-            onViewChange={setCurrentView}
+            onViewChange={handleViewChange}
             todayStats={todayStats}
             isLoading={loading}
             lastRefresh={lastRefresh}
             onDayClick={(date) => {
               setCurrentDate(date);
-              setCurrentView('day');
+              handleViewChange('day');
             }}
             onAppointmentClick={handleAppointmentClick}
             onSettings={handleSettings}

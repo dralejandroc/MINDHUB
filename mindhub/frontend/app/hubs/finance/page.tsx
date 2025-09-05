@@ -1,6 +1,7 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { PageHeader } from '@/components/layout/PageHeader';
 import FinanceDashboard from '@/components/finance/FinanceDashboard';
 import IncomeTracker from '@/components/finance/IncomeTracker';
@@ -20,14 +21,37 @@ import { Button } from '@/components/ui/Button';
 type FinanceView = 'dashboard' | 'income' | 'reports' | 'cash-register' | 'config';
 
 export default function FinancePage() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const [currentView, setCurrentView] = useState<FinanceView>('dashboard');
+
+  // Handle URL parameters to restore finance view state
+  useEffect(() => {
+    const view = searchParams?.get('view') as FinanceView;
+    
+    if (view && ['dashboard', 'income', 'reports', 'cash-register', 'config'].includes(view)) {
+      setCurrentView(view);
+    }
+  }, [searchParams]);
 
   const handleNewIncome = () => {
     console.log('New income');
   };
 
+  // Handle view change with URL navigation
+  const handleViewChange = (newView: FinanceView) => {
+    setCurrentView(newView);
+    
+    // Update URL to reflect current view
+    if (newView === 'dashboard') {
+      router.push('/hubs/finance');
+    } else {
+      router.push(`/hubs/finance?view=${newView}`);
+    }
+  };
+
   const handleBackToDashboard = () => {
-    setCurrentView('dashboard');
+    handleViewChange('dashboard');
   };
 
   // Render specific views
@@ -145,7 +169,7 @@ export default function FinancePage() {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <div 
           className="bg-white rounded-2xl shadow-lg border border-secondary-100 p-4 hover-lift transition-all duration-300 cursor-pointer relative before:absolute before:top-0 before:left-0 before:right-0 before:h-1 before:border-gradient-secondary"
-          onClick={() => setCurrentView('income')}
+          onClick={() => handleViewChange('income')}
         >
           <div className="flex items-center justify-between mb-3">
             <h3 className="text-sm font-semibold text-dark-green">Registro de Ingresos</h3>
@@ -161,7 +185,7 @@ export default function FinancePage() {
 
         <div 
           className="bg-white rounded-2xl shadow-lg border border-secondary-100 p-4 hover-lift transition-all duration-300 cursor-pointer relative before:absolute before:top-0 before:left-0 before:right-0 before:h-1 before:border-gradient-secondary"
-          onClick={() => setCurrentView('reports')}
+          onClick={() => handleViewChange('reports')}
         >
           <div className="flex items-center justify-between mb-3">
             <h3 className="text-sm font-semibold text-dark-green">Reportes</h3>
@@ -177,7 +201,7 @@ export default function FinancePage() {
 
         <div 
           className="bg-white rounded-2xl shadow-lg border border-secondary-100 p-4 hover-lift transition-all duration-300 cursor-pointer relative before:absolute before:top-0 before:left-0 before:right-0 before:h-1 before:border-gradient-secondary"
-          onClick={() => setCurrentView('cash-register')}
+          onClick={() => handleViewChange('cash-register')}
         >
           <div className="flex items-center justify-between mb-3">
             <h3 className="text-sm font-semibold text-dark-green">Cortes de Caja</h3>
@@ -193,7 +217,7 @@ export default function FinancePage() {
 
         <div 
           className="bg-white rounded-2xl shadow-lg border border-secondary-100 p-4 hover-lift transition-all duration-300 cursor-pointer relative before:absolute before:top-0 before:left-0 before:right-0 before:h-1 before:border-gradient-secondary"
-          onClick={() => setCurrentView('config')}
+          onClick={() => handleViewChange('config')}
         >
           <div className="flex items-center justify-between mb-3">
             <h3 className="text-sm font-semibold text-dark-green">Configuración</h3>
@@ -212,7 +236,7 @@ export default function FinancePage() {
       <div className="bg-white rounded-2xl shadow-lg border border-secondary-100 p-4 hover-lift relative before:absolute before:top-0 before:left-0 before:right-0 before:h-1 before:border-gradient-secondary">
         <div className="flex items-center justify-between mb-3">
           <h3 className="text-sm font-semibold text-dark-green">Transacciones Recientes</h3>
-          <Button onClick={() => setCurrentView('income')} variant="outline" size="sm">
+          <Button onClick={() => handleViewChange('income')} variant="outline" size="sm">
             Ver Todas
           </Button>
         </div>
@@ -223,7 +247,7 @@ export default function FinancePage() {
             <CurrencyDollarIcon className="h-10 w-10 text-gray-300 mx-auto mb-3" />
             <p className="text-sm font-medium text-gray-700 mb-1">No hay transacciones recientes</p>
             <p className="text-xs text-gray-500 mb-3">Registra tu primer ingreso para comenzar</p>
-            <Button onClick={() => setCurrentView('income')} variant="secondary" size="sm" className="mt-2">
+            <Button onClick={() => handleViewChange('income')} variant="secondary" size="sm" className="mt-2">
               Registrar Primer Ingreso
             </Button>
           </div>
