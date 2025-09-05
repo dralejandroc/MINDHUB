@@ -19,8 +19,9 @@ MindHub es una plataforma integral de gestión sanitaria que integra múltiples 
 
 ### 📁 **DOCUMENTACIÓN ARQUITECTÓNICA**
 
-- **Arquitectura APIs**: `MINDHUB_ARCHITECTURE_MASTER_COMPLETE.md` - 62+ endpoints documentados
-- **Esquema Base de Datos**: `mindhub/backend-django/SUPABASE_TABLES_REFERENCE.md` - Estructura exacta
+- **Arquitectura APIs**: `docs/architecture/MINDHUB_ARCHITECTURE_MASTER_COMPLETE.md` - 62+ endpoints documentados
+- **Esquema Base de Datos**: `docs/architecture/SUPABASE_TABLES_REFERENCE.md` - Estructura exacta
+- **Seguridad**: `docs/architecture/MINDHUB_SECURITY_ARCHITECTURE_MASTER.md` - Patrones de seguridad
 - **Frontend**: React Clean Architecture (ver principios de desarrollo)
 - **Backend**: Django REST Framework con todos los módulos migrados
 
@@ -305,8 +306,8 @@ Frontend React Clean Architecture:
 
 #### **Arquitectura de APIs y Conectividad**
 
-- **Documentación Principal**: `MINDHUB_ARCHITECTURE_MASTER_COMPLETE.md` (62+ endpoints)
-- **Esquema de DB**: `mindhub/backend-django/SUPABASE_TABLES_REFERENCE.md` (estructura exacta)
+- **Documentación Principal**: `docs/architecture/MINDHUB_ARCHITECTURE_MASTER_COMPLETE.md` (62+ endpoints)
+- **Esquema de DB**: `docs/architecture/SUPABASE_TABLES_REFERENCE.md` (estructura exacta)
 - **Patrón de Autenticación**: Supabase JWT → Django middleware → PostgreSQL RLS
 - **Sistema Dual**: `clinic_id` OR `workspace_id` (nunca ambos simultáneamente)
 
@@ -318,7 +319,7 @@ Frontend React Clean Architecture:
 2. **Clean Architecture**: Implementar siguiendo capas (Entities → Use Cases → Adapters → Components)
 3. **Backend Django**: Todos los módulos en Django REST, NO híbridos
 4. **Frontend Completo**: No solo visual, sino funcionalmente integrado
-5. **Database Pattern**: Usar estructura exacta documentada en SUPABASE_TABLES_REFERENCE.md
+5. **Database Pattern**: Usar estructura exacta documentada en docs/architecture/SUPABASE_TABLES_REFERENCE.md
 6. **Testing**: Validar flujo completo Frontend → API → Backend → Database
 7. **Integración**: Asegurar conexión entre módulos (Agenda ↔ Expedix ↔ Finance, etc.)
 

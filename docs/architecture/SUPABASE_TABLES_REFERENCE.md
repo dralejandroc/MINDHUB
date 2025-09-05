@@ -1,245 +1,515 @@
-# MindHub - Supabase Database Tables Reference
+# SUPABASE TABLES REFERENCE - ESTRUCTURA REAL
+**Actualizado: 26/08/2025**  
+**Versión: v9.0-multitenant-system**  
+**Fuente**: `/Users/alekscon/MINDHUB-Pro/SUPABASE_TABLES.txt` (VERIFICADO)
 
-**CRITICAL**: This document contains the REAL table structures from the production Supabase database. All Django models, API endpoints, and frontend clients MUST match these structures exactly.
+> ⚠️ **CRÍTICO**: Este documento contiene la estructura EXACTA de las tablas en Supabase. 
+> SIEMPRE consultar esta referencia antes de crear modelos Django, endpoints o APIs.
+> NUNCA asumir campos o relaciones - VERIFICAR SIEMPRE con este documento.
 
-## 📋 Table of Contents
+## 📋 ÍNDICE DE TABLAS
 
-1. [ClinimetrixPro Tables](#clinimetrixpro-tables)
-2. [Expedix Tables](#expedix-tables) 
-3. [Agenda Tables](#agenda-tables)
-4. [Core Auth Tables](#core-auth-tables)
-5. [Usage Guidelines](#usage-guidelines)
+### 🩺 **CORE HEALTHCARE TABLES**
+- [`patients`](#patients) - Tabla principal de pacientes
+- [`appointments`](#appointments) - Sistema de citas médicas  
+- [`consultations`](#consultations) - Consultas médicas
+- [`prescriptions`](#prescriptions) - Recetas médicas
+
+### 🏥 **ORGANIZATIONAL TABLES**
+- [`clinics`](#clinics) - Clínicas y organizaciones
+- [`individual_workspaces`](#individual_workspaces) - Espacios individuales
+- [`tenant_memberships`](#tenant_memberships) - ✅ NUEVO: Membresías multitenant
+- [`profiles`](#profiles) - Perfiles de usuario
+
+### 📊 **CLINIMETRIX SYSTEM**
+- [`clinimetrix_assessments`](#clinimetrix_assessments) - Evaluaciones psicométricas
+- [`clinimetrix_remote_assessments`](#clinimetrix_remote_assessments) - Evaluaciones remotas
+- [`clinimetrix_responses`](#clinimetrix_responses) - Respuestas de evaluaciones
+- [`psychometric_scales`](#psychometric_scales) - Escalas psicométricas
+
+### 💰 **FINANCE SYSTEM**
+- [`finance_services`](#finance_services) - Servicios financieros
+- [`finance_income`](#finance_income) - Ingresos
+- [`finance_cash_register_cuts`](#finance_cash_register_cuts) - Cortes de caja
+
+### 🏗️ **SYSTEM TABLES**
+- [`consultation_templates`](#consultation_templates) - Plantillas de consulta
+- [`practice_locations`](#practice_locations) - Ubicaciones de práctica
+- [`schedule_config`](#schedule_config) - Configuración de horarios
 
 ---
 
-## 🧠 ClinimetrixPro Tables
+## 🩺 CORE HEALTHCARE TABLES
 
-### `clinimetrix_assessments`
+### `patients`
+**Tabla principal de pacientes - ESTRUCTURA COMPLETA**
+
 ```sql
--- Primary assessment records in ClinimetrixPro system
-CREATE TABLE clinimetrix_assessments (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    template_id TEXT NOT NULL,                    -- Scale code like "PHQ-9", NOT FK!
-    patient_id UUID NOT NULL,                     -- Direct UUID to patients table
-    administrator_id UUID NOT NULL,               -- Direct UUID to profiles table
-    consultation_id UUID,                         -- Optional link to consultations
-    mode TEXT,                                    -- "self" | "assisted"
-    status TEXT,                                  -- "pending" | "completed" | "cancelled"
-    responses JSONB,                              -- Raw response data
-    scores JSONB,                                 -- Calculated scores
-    interpretations JSONB,                        -- Clinical interpretations
-    started_at TIMESTAMPTZ,
-    completed_at TIMESTAMPTZ,
-    created_at TIMESTAMPTZ DEFAULT NOW(),
-    updated_at TIMESTAMPTZ DEFAULT NOW(),
-    -- 🎯 DUAL SYSTEM: Exactly one must be set
-    clinic_id UUID,                               -- For clinic-based system
-    workspace_id UUID                             -- For workspace-based system
-);
+id: uuid (PK)
+medical_record_number: text
+first_name: text (NOT NULL)
+last_name: text
+paternal_last_name: text
+maternal_last_name: text
+date_of_birth: date
+gender: text
+email: text
+phone: text
+address: text
+city: text
+state: text
+postal_code: text
+country: text
+curp: text
+rfc: text
+blood_type: text
+allergies: text[] (ARRAY)
+chronic_conditions: text[] (ARRAY)
+current_medications: text[] (ARRAY)
+emergency_contact_name: text
+emergency_contact_phone: text
+emergency_contact_relationship: text
+consent_to_treatment: boolean
+consent_to_data_processing: boolean
+patient_category: text
+is_active: boolean
+created_by: uuid (FK to users/profiles)
+clinic_id: uuid (FK to clinics)
+created_at: timestamp with time zone
+updated_at: timestamp with time zone
+emergency_contact: varchar (DUPLICADO?)
+emergency_phone: varchar (DUPLICADO?)
+marital_status: varchar
+occupation: varchar
+insurance_provider: varchar
+insurance_number: varchar
+assigned_professional_id: uuid (FK)
+notes: text
+tags: text[] (ARRAY)
+workspace_id: uuid (FK to individual_workspaces)
 ```
 
-### `clinimetrix_responses` 
+**🎯 DUAL SYSTEM**: Un paciente pertenece a `clinic_id` OR `workspace_id` (nunca ambos)
+
+### `appointments`
+**Sistema de citas médicas - ESTRUCTURA REAL**
+
 ```sql
--- Individual question responses within assessments
-CREATE TABLE clinimetrix_responses (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    assessment_id UUID NOT NULL,                 -- Direct UUID to clinimetrix_assessments
-    question_id TEXT NOT NULL,                   -- Question identifier within scale
-    response_value REAL,                         -- Numeric response value
-    response_text TEXT,                          -- Text response (if applicable)
-    created_at TIMESTAMPTZ DEFAULT NOW()
-);
+id: uuid (PK)
+created_at: timestamp with time zone
+updated_at: timestamp with time zone
+patient_id: uuid (FK to patients) NOT NULL
+professional_id: uuid (FK) NOT NULL  -- ⚠️ NO es provider_id!
+appointment_date: date  -- ⚠️ NO es datetime!
+start_time: time without time zone  -- ⚠️ SEPARADO!
+end_time: time without time zone    -- ⚠️ SEPARADO!
+appointment_type: varchar
+status: varchar
+confirmation_sent: boolean
+confirmation_date: timestamp with time zone
+reason: text
+notes: text
+internal_notes: text
+is_recurring: boolean
+recurring_pattern: jsonb
+reminder_sent: boolean
+reminder_date: timestamp with time zone
+clinic_id: uuid (FK to clinics)
+workspace_id: uuid (FK to individual_workspaces)
+```
+
+**🚨 CAMPOS QUE NO EXISTEN**:
+- ❌ `provider_id` (es `professional_id`)
+- ❌ `appointment_time` (está separado en `start_time`/`end_time`)
+- ❌ `duration` (se calcula desde tiempos)
+- ❌ `branch`, `resource`, `professional`, `balance`, `is_paid`
+- ❌ `cancelled_at`, `confirmed_by_id`, `scheduled_by_id`
+
+### `consultations`
+**Consultas médicas realizadas**
+
+```sql
+id: uuid (PK)
+patient_id: uuid (FK to patients)
+professional_id: uuid (FK)
+consultation_date: timestamp with time zone
+consultation_type: text
+chief_complaint: text
+history_present_illness: text
+physical_examination: text
+assessment: text
+plan: text
+notes: text
+diagnosis_codes: text[] (ARRAY)
+follow_up_date: date
+status: text
+created_at: timestamp with time zone
+updated_at: timestamp with time zone
+duration_minutes: integer
+present_illness: text
+physical_exam: text
+treatment_plan: text
+diagnosis: text
+prescriptions: jsonb
+vital_signs: jsonb
+clinic_id: uuid
+workspace_id: uuid
+```
+
+### `prescriptions`
+**Recetas médicas**
+
+```sql
+id: uuid (PK)
+patient_id: uuid (FK to patients)
+professional_id: uuid (FK)
+consultation_id: uuid (FK to consultations)
+prescription_date: timestamp with time zone
+medications: jsonb
+instructions: text
+status: text
+valid_until: date
+created_at: timestamp with time zone
+updated_at: timestamp with time zone
+clinic_id: uuid
+workspace_id: uuid
+```
+
+---
+
+## 🏥 ORGANIZATIONAL TABLES
+
+### `clinics`
+**Clínicas y organizaciones**
+
+```sql
+id: uuid (PK)
+name: text
+business_name: text
+tax_id: text
+address: text
+phone: text
+email: text
+website: text
+logo_url: text
+subscription_plan: varchar
+max_users: integer
+max_patients: integer
+is_active: boolean
+settings: jsonb
+created_at: timestamp with time zone
+updated_at: timestamp with time zone
+owner_id: uuid
+```
+
+### `individual_workspaces` 
+**Espacios de trabajo individuales**
+
+```sql
+id: uuid (PK)
+owner_id: uuid (FK)
+workspace_name: varchar
+business_name: varchar
+tax_id: varchar
+settings: jsonb
+created_at: timestamp with time zone
+updated_at: timestamp with time zone
+```
+
+### `tenant_memberships` ✅ NUEVO
+**Membresías multitenant - Sistema de clínicas multi-profesionales**
+
+```sql
+id: uuid (PK)
+user_id: uuid (FK to auth.users) NOT NULL
+clinic_id: uuid (FK to clinics) NOT NULL
+role: varchar (member|admin|owner) DEFAULT 'member'
+permissions: jsonb DEFAULT '{}'
+is_active: boolean DEFAULT TRUE
+invited_by: uuid (FK to auth.users)
+joined_at: timestamp with time zone DEFAULT NOW()
+created_at: timestamp with time zone DEFAULT NOW()
+updated_at: timestamp with time zone DEFAULT NOW()
+
+-- UNIQUE constraint: Un usuario no puede estar duplicado en la misma clínica
+UNIQUE(user_id, clinic_id)
+```
+
+**🔑 ROLES DISPONIBLES:**
+- `member`: Acceso básico a datos compartidos de la clínica
+- `admin`: Puede invitar usuarios y gestionar membresías
+- `owner`: Control completo de la clínica
+
+**🔐 PERMISSIONS JSONB:**
+```json
+{
+  "can_invite_users": true,
+  "can_manage_patients": true,
+  "can_view_finance": false,
+  "can_manage_schedules": true
+}
+```
+
+### `profiles`
+**Perfiles de usuario (Supabase Auth)**
+
+```sql
+id: uuid (PK) -- Mismo ID que auth.users
+email: text
+first_name: text
+last_name: text
+role: text
+organization: text
+license_number: text
+specialization: text
+is_active: boolean
+email_verified: boolean
+last_login_at: timestamp
+created_at: timestamp
+updated_at: timestamp
+```
+
+---
+
+## 📊 CLINIMETRIX SYSTEM
+
+### `clinimetrix_assessments`
+**Evaluaciones psicométricas aplicadas**
+
+```sql
+id: uuid (PK)
+template_id: text (Scale code like "PHQ-9")
+patient_id: uuid (FK to patients)
+administrator_id: uuid (FK)
+consultation_id: uuid (FK to consultations)
+mode: text ("self" | "assisted")
+status: text ("pending" | "completed" | "cancelled")
+responses: jsonb
+scores: jsonb
+interpretations: jsonb
+started_at: timestamp
+completed_at: timestamp
+created_at: timestamp
+updated_at: timestamp
+clinic_id: uuid
+workspace_id: uuid
 ```
 
 ### `clinimetrix_remote_assessments`
+**Evaluaciones remotas (para pacientes)**
+
 ```sql
--- Remote assessment links for patients
-CREATE TABLE clinimetrix_remote_assessments (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    assessment_id UUID NOT NULL,                 -- Direct UUID to clinimetrix_assessments
-    patient_id UUID NOT NULL,                    -- Direct UUID to patients table
-    access_token TEXT NOT NULL,                  -- Unique access token for patient
-    expires_at TIMESTAMPTZ NOT NULL,             -- When the link expires
-    status TEXT NOT NULL,                        -- Status of remote assessment
-    created_at TIMESTAMPTZ DEFAULT NOW(),
-    updated_at TIMESTAMPTZ DEFAULT NOW()
-);
+id: uuid (PK)
+assessment_id: uuid (FK to clinimetrix_assessments)
+patient_id: uuid (FK to patients)
+access_token: text
+expires_at: timestamp
+status: text
+created_at: timestamp
+updated_at: timestamp
+```
+
+### `clinimetrix_responses`
+**Respuestas individuales de evaluaciones**
+
+```sql
+id: uuid (PK)
+assessment_id: uuid (FK to clinimetrix_assessments)
+question_id: text
+response_value: numeric
+response_text: text
+created_at: timestamp
 ```
 
 ### `psychometric_scales`
+**Escalas psicométricas disponibles**
+
 ```sql
--- Catalog of available psychometric scales
-CREATE TABLE psychometric_scales (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    clinic_id UUID,                              -- Optional clinic association
-    scale_name VARCHAR(255) NOT NULL,            -- Full scale name (NOT name!)
-    abbreviation VARCHAR(255) NOT NULL,          -- Scale code like "PHQ-9" (NOT scale_code!)
-    version VARCHAR(255),                        -- Scale version
-    category VARCHAR(255),                       -- Category like "Depression"
-    description TEXT,                            -- Scale description
-    total_items INTEGER,                         -- Number of questions
-    estimated_duration_minutes INTEGER,          -- Estimated completion time
-    interpretation_notes TEXT,                   -- Clinical interpretation notes
-    is_active BOOLEAN                            -- Whether scale is available
-);
+id: uuid (PK)
+scale_code: text UNIQUE (e.g., "PHQ-9")
+name: text
+description: text
+category: text
+version: text
+language: text
+items_count: integer
+scoring_method: jsonb
+interpretation_rules: jsonb
+is_active: boolean
+created_at: timestamp
+updated_at: timestamp
 ```
 
 ---
 
-## 👥 Expedix Tables
+## 💰 FINANCE SYSTEM
 
-### `patients`
+### `finance_services`
+**Servicios financieros ofrecidos**
+
 ```sql
--- Main patient records
-CREATE TABLE patients (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    first_name VARCHAR(100) NOT NULL,
-    last_name VARCHAR(100),
-    paternal_last_name VARCHAR(100),
-    maternal_last_name VARCHAR(100),
-    email VARCHAR(255),
-    phone VARCHAR(20),
-    date_of_birth DATE,
-    gender VARCHAR(10),
-    address TEXT,
-    emergency_contact_name VARCHAR(200),
-    emergency_contact_phone VARCHAR(20),
-    notes TEXT,
-    is_active BOOLEAN DEFAULT TRUE,
-    created_at TIMESTAMPTZ DEFAULT NOW(),
-    updated_at TIMESTAMPTZ DEFAULT NOW(),
-    -- 🎯 DUAL SYSTEM: Exactly one must be set
-    clinic_id UUID,                              -- For clinic-based system
-    workspace_id UUID                            -- For workspace-based system
-);
+id: uuid (PK)
+name: text
+description: text
+price: numeric
+currency: text
+category: text
+is_active: boolean
+clinic_id: uuid
+workspace_id: uuid
+created_at: timestamp
+updated_at: timestamp
 ```
 
-### `consultations`
+### `finance_income`
+**Registro de ingresos**
+
 ```sql
--- Medical consultation records
-CREATE TABLE consultations (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    patient_id UUID NOT NULL,                   -- Direct UUID to patients table
-    professional_id UUID NOT NULL,              -- Direct UUID to profiles table
-    consultation_date DATE NOT NULL,
-    consultation_time TIME NOT NULL,
-    chief_complaint TEXT,
-    history_present_illness TEXT,
-    physical_examination TEXT,
-    assessment_plan TEXT,
-    notes TEXT,
-    status VARCHAR(20) DEFAULT 'scheduled',
-    created_at TIMESTAMPTZ DEFAULT NOW(),
-    updated_at TIMESTAMPTZ DEFAULT NOW(),
-    -- 🎯 DUAL SYSTEM: Exactly one must be set
-    clinic_id UUID,                              -- For clinic-based system
-    workspace_id UUID                            -- For workspace-based system
-);
+id: uuid (PK)
+service_id: uuid (FK to finance_services)
+patient_id: uuid (FK to patients)
+amount: numeric
+currency: text
+payment_method: text
+status: text
+transaction_date: timestamp
+notes: text
+clinic_id: uuid
+workspace_id: uuid
+created_at: timestamp
+updated_at: timestamp
 ```
 
----
+### `finance_cash_register_cuts`
+**Cortes de caja**
 
-## 📅 Agenda Tables
-
-### `appointments`
 ```sql
--- Appointment scheduling
-CREATE TABLE appointments (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    patient_id UUID NOT NULL,                   -- Direct UUID to patients table
-    professional_id UUID NOT NULL,              -- Direct UUID to profiles (NOT provider_id!)
-    appointment_date DATE NOT NULL,              -- DATE field (NOT DATETIME!)
-    start_time TIME NOT NULL,                    -- Separate TIME field
-    end_time TIME NOT NULL,                      -- Separate TIME field
-    appointment_type VARCHAR(50),
-    status VARCHAR(20) DEFAULT 'scheduled',
-    notes TEXT,
-    created_at TIMESTAMPTZ DEFAULT NOW(),
-    updated_at TIMESTAMPTZ DEFAULT NOW(),
-    -- 🎯 DUAL SYSTEM: Exactly one must be set
-    clinic_id UUID,                              -- For clinic-based system
-    workspace_id UUID                            -- For workspace-based system
-);
+id: uuid (PK)
+cut_date: date
+opening_balance: numeric
+closing_balance: numeric
+total_income: numeric
+total_expenses: numeric
+notes: text
+performed_by: uuid (FK)
+clinic_id: uuid
+workspace_id: uuid
+created_at: timestamp
 ```
 
 ---
 
-## 🔐 Core Auth Tables
+## 🏗️ SYSTEM TABLES
 
-### `profiles`
+### `consultation_templates`
+**Plantillas de consulta médica**
+
 ```sql
--- User profile information (extends Supabase auth.users)
-CREATE TABLE profiles (
-    id UUID PRIMARY KEY REFERENCES auth.users(id),
-    email VARCHAR(255),
-    first_name VARCHAR(100),
-    last_name VARCHAR(100),
-    role VARCHAR(50),                            -- "professional" | "admin" | "patient"
-    specialization VARCHAR(100),
-    license_number VARCHAR(50),
-    is_active BOOLEAN DEFAULT TRUE,
-    created_at TIMESTAMPTZ DEFAULT NOW(),
-    updated_at TIMESTAMPTZ DEFAULT NOW()
-);
+id: uuid (PK)
+name: text
+description: text
+template_type: text
+fields_config: jsonb
+is_default: boolean
+is_active: boolean
+clinic_id: uuid
+workspace_id: uuid
+created_by: uuid (FK)
+created_at: timestamp
+updated_at: timestamp
+```
+
+### `practice_locations`
+**Ubicaciones de práctica médica**
+
+```sql
+id: uuid (PK)
+name: text
+address: text
+city: text
+state: text
+postal_code: text
+phone: text
+clinic_id: uuid
+workspace_id: uuid
+is_active: boolean
+created_at: timestamp
+updated_at: timestamp
+```
+
+### `schedule_config`
+**Configuración de horarios**
+
+```sql
+id: uuid (PK)
+professional_id: uuid (FK)
+weekday: integer (0-6)
+start_time: time
+end_time: time
+break_start: time
+break_end: time
+location_id: uuid (FK to practice_locations)
+is_active: boolean
+clinic_id: uuid
+workspace_id: uuid
+created_at: timestamp
+updated_at: timestamp
 ```
 
 ---
 
-## ⚡ Usage Guidelines
+## 🚨 REGLAS CRÍTICAS PARA DESARROLLO
 
-### Django Model Requirements
-
-1. **Use `managed = False`** for all Supabase tables:
-```python
-class Meta:
-    db_table = 'table_name'
-    managed = False  # Don't let Django manage the table
+### 1. **DUAL SYSTEM PATTERN**
+Todas las tablas principales siguen el patrón:
+```sql
+clinic_id: uuid (Para clínicas)
+workspace_id: uuid (Para individuales)
+-- XOR constraint: NUNCA ambos al mismo tiempo
 ```
 
-2. **Use direct UUID fields instead of ForeignKeys**:
-```python
-# ✅ CORRECT
-patient_id = models.UUIDField()
+### 2. **FOREIGN KEYS REALES**
+- ✅ `patient_id` → `patients.id`
+- ✅ `professional_id` → `profiles.id` (NO provider_id!)
+- ✅ `clinic_id` → `clinics.id`
+- ✅ `workspace_id` → `individual_workspaces.id`
+- ✅ `consultation_id` → `consultations.id`
 
-# ❌ WRONG (doesn't work with managed=False)
-patient = models.ForeignKey(Patient, on_delete=models.CASCADE)
-```
+### 3. **CAMPOS QUE NO EXISTEN - NO INVENTAR**
+- ❌ `provider_id` (es `professional_id`)
+- ❌ `appointment_time` (está en `start_time`/`end_time`)
+- ❌ `duration` (se calcula)
+- ❌ Muchos campos "custom" que no están en DB real
 
-3. **Use exact field names from Supabase**:
-```python
-# ✅ CORRECT
-scale_name = models.CharField(max_length=255)        # Real field name
-abbreviation = models.CharField(max_length=255)      # Real field name
+### 4. **ARRAY FIELDS**
+Usar `text[]` para:
+- `allergies`
+- `chronic_conditions` 
+- `current_medications`
+- `tags`
+- `diagnosis_codes`
 
-# ❌ WRONG
-name = models.CharField(max_length=255)              # Doesn't exist
-scale_code = models.CharField(max_length=255)        # Doesn't exist
-```
-
-### API Development Rules
-
-1. **Always validate UUIDs before database operations**
-2. **Use direct UUID lookups instead of joins**
-3. **Respect the dual system (clinic_id vs workspace_id)**
-4. **Handle authentication at the Django middleware level**
-
-### Frontend Integration
-
-1. **Use the corrected field names in API responses**
-2. **Pass real patient IDs from the patients table**
-3. **Handle authentication tokens properly**
+### 5. **JSONB FIELDS**
+Usar `jsonb` para:
+- `settings`
+- `responses`
+- `scores` 
+- `interpretations`
+- `recurring_pattern`
+- `medications`
+- `vital_signs`
 
 ---
 
-## 🚨 Critical Notes
+## 💡 NOTAS DE DESARROLLO
 
-- **NEVER assume field names** - always reference this document
-- **NEVER use Django ForeignKeys** with managed=False tables
-- **ALWAYS use exact UUID field names** as documented here
-- **ALWAYS validate the dual system** (clinic_id/workspace_id)
-- **This document is the SINGLE SOURCE OF TRUTH** for database structure
+1. **SIEMPRE verificar este documento antes de crear modelos Django**
+2. **NUNCA asumir que existe un campo - consultar aquí primero**
+3. **Usar `managed = False` en modelos Django para tablas existentes**
+4. **Respetar el sistema dual clinic_id/workspace_id**
+5. **Usar UUIDs directos en lugar de ForeignKeys cuando sea necesario**
 
 ---
 
-*Last Updated: August 25, 2025*
-*Based on: Production Supabase Database Structure*
+**📅 Última actualización**: 2025-08-25  
+**🔄 Próxima revisión**: Cuando se agreguen nuevas tablas a Supabase
