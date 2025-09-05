@@ -1,9 +1,11 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { Button } from '@/components/ui/Button';
+import { Card } from '@/components/ui/Card';
+import { FavoriteScalesManager } from '@/components/clinimetrix/FavoriteScalesManager';
 import { 
   CogIcon, 
   ArrowLeftIcon,
@@ -16,7 +18,9 @@ import {
   AcademicCapIcon,
   ClipboardDocumentCheckIcon,
   CalculatorIcon,
-  PrinterIcon
+  PrinterIcon,
+  StarIcon,
+  Bars3BottomLeftIcon
 } from '@heroicons/react/24/outline';
 import toast from 'react-hot-toast';
 
@@ -24,6 +28,8 @@ export default function ClinimetrixProSettingsPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [activeTab, setActiveTab] = useState<'general' | 'favorites' | 'advanced'>('general');
+  const [initialLoad, setInitialLoad] = useState(true);
 
   // Configuration states
   const [config, setConfig] = useState({
@@ -95,24 +101,73 @@ export default function ClinimetrixProSettingsPage() {
     printScaleInstructions: true,
     printScoreInterpretation: true,
     includeHeaderLogo: true,
-    includeProviderSignature: true
+    includeProviderSignature: true,
+    
+    // Favorite scales (will be loaded from API)
+    favoriteScales: [] as any[]
   });
+
+  // Load initial configuration from API
+  useEffect(() => {
+    const loadConfiguration = async () => {
+      if (!initialLoad) return;
+      
+      try {
+        setLoading(true);
+        const response = await fetch('/api/clinimetrix/settings');
+        
+        if (response.ok) {
+          const result = await response.json();
+          if (result.success && result.data) {
+            console.log('Loaded configuration:', result.data);
+            setConfig(prevConfig => ({
+              ...prevConfig,
+              ...result.data
+            }));
+          }
+        } else {
+          console.log('No existing configuration found, using defaults');
+        }
+      } catch (error) {
+        console.error('Error loading configuration:', error);
+        toast.error('Error al cargar la configuración');
+      } finally {
+        setLoading(false);
+        setInitialLoad(false);
+      }
+    };
+
+    loadConfiguration();
+  }, [initialLoad]);
 
   const handleSave = async () => {
     setLoading(true);
     try {
-      // TODO: Implement API call to save ClinimetrixPro configuration
       console.log('Saving ClinimetrixPro config:', config);
       
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // Call the API to save configuration
+      const response = await fetch('/api/clinimetrix/settings', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(config),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Error saving configuration');
+      }
+
+      const result = await response.json();
+      console.log('Configuration saved successfully:', result);
       
       setSaved(true);
       setTimeout(() => setSaved(false), 3000);
       toast.success('Configuración de ClinimetrixPro guardada exitosamente');
     } catch (error) {
       console.error('Error saving configuration:', error);
-      toast.error('Error al guardar la configuración');
+      toast.error(error instanceof Error ? error.message : 'Error al guardar la configuración');
     } finally {
       setLoading(false);
     }
@@ -120,6 +175,41 @@ export default function ClinimetrixProSettingsPage() {
 
   const handleBack = () => {
     router.push('/hubs/clinimetrix');
+  };
+
+  const handleFavoriteScalesSave = async (favoriteScales: any[]) => {
+    try {
+      console.log('Saving favorite scales:', favoriteScales);
+      
+      // Call the API to save favorite scales configuration
+      const response = await fetch('/api/clinimetrix/settings', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          ...config,
+          favoriteScales
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Error saving favorite scales');
+      }
+
+      const result = await response.json();
+      console.log('Favorite scales saved successfully:', result);
+      
+      // Update local config
+      setConfig(prev => ({ ...prev, favoriteScales }));
+      
+      toast.success('Escalas favoritas guardadas exitosamente');
+    } catch (error) {
+      console.error('Error saving favorite scales:', error);
+      toast.error(error instanceof Error ? error.message : 'Error al guardar escalas favoritas');
+      throw error;
+    }
   };
 
   const handleResetToDefaults = () => {
@@ -175,7 +265,8 @@ export default function ClinimetrixProSettingsPage() {
         printScaleInstructions: true,
         printScoreInterpretation: true,
         includeHeaderLogo: true,
-        includeProviderSignature: true
+        includeProviderSignature: true,
+        favoriteScales: []
       });
       toast.success('Configuración restaurada a valores por defecto');
     }
@@ -194,32 +285,103 @@ export default function ClinimetrixProSettingsPage() {
               <ArrowLeftIcon className="h-4 w-4 mr-2" />
               Volver
             </Button>
-            <Button 
-              onClick={handleResetToDefaults} 
-              variant="outline"
-              className="text-red-600 border-red-200 hover:bg-red-50"
-            >
-              Restaurar Defaults
-            </Button>
-            <Button 
-              onClick={handleSave} 
-              variant="primary" 
-              disabled={loading || saved}
-            >
-              {saved ? (
-                <>
-                  <CheckIcon className="h-4 w-4 mr-2" />
-                  Guardado
-                </>
-              ) : (
-                'Guardar Cambios'
-              )}
-            </Button>
+            {activeTab === 'general' && (
+              <>
+                <Button 
+                  onClick={handleResetToDefaults} 
+                  variant="outline"
+                  className="text-red-600 border-red-200 hover:bg-red-50"
+                >
+                  Restaurar Defaults
+                </Button>
+                <Button 
+                  onClick={handleSave} 
+                  variant="primary" 
+                  disabled={loading || saved}
+                >
+                  {saved ? (
+                    <>
+                      <CheckIcon className="h-4 w-4 mr-2" />
+                      Guardado
+                    </>
+                  ) : (
+                    'Guardar Cambios'
+                  )}
+                </Button>
+              </>
+            )}
           </div>
         }
       />
-      
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+      {/* Tab Navigation */}
+      <Card className="p-0">
+        <div className="border-b border-gray-200">
+          <nav className="-mb-px flex space-x-8 px-6" aria-label="Tabs">
+            <button
+              onClick={() => setActiveTab('general')}
+              className={`py-4 px-1 border-b-2 font-medium text-sm transition-colors ${
+                activeTab === 'general'
+                  ? 'border-blue-500 text-blue-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              }`}
+            >
+              <div className="flex items-center space-x-2">
+                <CogIcon className="h-4 w-4" />
+                <span>Configuración General</span>
+              </div>
+            </button>
+            
+            <button
+              onClick={() => setActiveTab('favorites')}
+              className={`py-4 px-1 border-b-2 font-medium text-sm transition-colors ${
+                activeTab === 'favorites'
+                  ? 'border-blue-500 text-blue-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              }`}
+            >
+              <div className="flex items-center space-x-2">
+                <StarIcon className="h-4 w-4" />
+                <span>Escalas Favoritas</span>
+              </div>
+            </button>
+            
+            <button
+              onClick={() => setActiveTab('advanced')}
+              className={`py-4 px-1 border-b-2 font-medium text-sm transition-colors ${
+                activeTab === 'advanced'
+                  ? 'border-blue-500 text-blue-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              }`}
+            >
+              <div className="flex items-center space-x-2">
+                <Bars3BottomLeftIcon className="h-4 w-4" />
+                <span>Avanzado</span>
+              </div>
+            </button>
+          </nav>
+        </div>
+      </Card>
+
+      {/* Tab Content */}
+      {activeTab === 'favorites' ? (
+        <FavoriteScalesManager 
+          onSave={handleFavoriteScalesSave} 
+          initialScales={config.favoriteScales || []}
+        />
+      ) : activeTab === 'advanced' ? (
+        <Card className="p-6">
+          <div className="text-center py-8 text-gray-500">
+            <DocumentTextIcon className="h-12 w-12 text-gray-300 mx-auto mb-4" />
+            <h3 className="text-lg font-medium text-gray-900 mb-2">Configuraciones Avanzadas</h3>
+            <p className="text-gray-600 mb-4">Métricas avanzadas, reportes personalizables y análisis temporal próximamente.</p>
+            <Button variant="outline" disabled>
+              Próximamente Disponible
+            </Button>
+          </div>
+        </Card>
+      ) : (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* General Settings */}
         <div className="bg-white rounded-lg shadow p-6">
           <div className="flex items-center space-x-2 mb-4">
@@ -591,7 +753,8 @@ export default function ClinimetrixProSettingsPage() {
             </div>
           </div>
         </div>
-      </div>
+        </div>
+      )}
 
       {/* Success Message */}
       {saved && (
