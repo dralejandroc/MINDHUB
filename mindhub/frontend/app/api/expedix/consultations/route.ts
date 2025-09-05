@@ -1,6 +1,7 @@
 // Expedix consultations API route - Django Backend with Supabase Fallback
 import { getAuthenticatedUser, createResponse, createErrorResponse, supabaseAdmin } from '@/lib/supabase/admin'
 import { API_CONFIG } from '@/lib/config/api-endpoints'
+import { resolveTenantContext, withTenantContext, addTenantContext } from '@/lib/tenant-resolver'
 
 export const dynamic = 'force-dynamic';
 
@@ -205,96 +206,23 @@ export async function POST(request: Request) {
     } catch (djangoError) {
       console.error('[CONSULTATIONS API] Django backend failed for POST, using Supabase fallback:', djangoError);
 
-      // FALLBACK: Direct Supabase creation
-      console.log('[CONSULTATIONS API] Using Supabase direct creation as fallback');
+      // FALLBACK: Direct Supabase creation with unified tenant resolver
+      console.log('[CONSULTATIONS API] Using Supabase direct creation with tenant resolver');
 
-      // Get user's workspace/clinic context for dual system
-      console.log('[CONSULTATIONS API] Getting user context for dual system...');
-      console.log('[CONSULTATIONS API] Tenant headers received:', { tenantId, tenantType });
-      
-      let clinic_id = null;
-      let workspace_id = null;
-      
-      // First try to use tenant context from headers
-      if (tenantType && tenantId) {
-        if (tenantType === 'clinic') {
-          clinic_id = tenantId;
-          console.log('[CONSULTATIONS API] Using clinic context from headers:', tenantId);
-        } else if (tenantType === 'workspace') {
-          workspace_id = tenantId;
-          console.log('[CONSULTATIONS API] Using workspace context from headers:', tenantId);
-        }
-      } else {
-        // Fallback: Check for individual workspace first
-        const { data: workspace, error: workspaceError } = await supabaseAdmin
-          .from('individual_workspaces')
-          .select('id')
-          .eq('owner_id', user.id)
-          .single();
-        
-        if (workspace && !workspaceError) {
-          workspace_id = workspace.id;
-          console.log('[CONSULTATIONS API] Using workspace context from DB:', workspace.id);
-        } else {
-          // Check for clinic membership
-          const { data: membership, error: membershipError } = await supabaseAdmin
-            .from('tenant_memberships')
-            .select('clinic_id')
-            .eq('user_id', user.id)
-            .limit(1)
-            .single();
-          
-          if (membership && !membershipError) {
-            clinic_id = membership.clinic_id;
-            console.log('[CONSULTATIONS API] Using clinic context from DB:', membership.clinic_id);
-          } else {
-            console.error('[CONSULTATIONS API] No workspace or clinic context found:', {
-              workspaceError,
-              membershipError,
-              userId: user.id,
-              tenantHeaders: { tenantId, tenantType }
-            });
-            
-            // Last resort: create individual workspace for this user
-            console.log('[CONSULTATIONS API] Creating individual workspace for user:', user.id);
-            
-            const { data: newWorkspace, error: createError } = await supabaseAdmin
-              .from('individual_workspaces')
-              .insert({
-                id: crypto.randomUUID(),
-                owner_id: user.id,
-                name: `Workspace - ${user.email || 'Usuario'}`,
-                created_at: new Date().toISOString(),
-                updated_at: new Date().toISOString()
-              })
-              .select('id')
-              .single();
-            
-            if (newWorkspace && !createError) {
-              workspace_id = newWorkspace.id;
-              console.log('[CONSULTATIONS API] Created new workspace:', newWorkspace.id);
-            } else {
-              console.error('[CONSULTATIONS API] Failed to create workspace:', createError);
-              return createErrorResponse(
-                'Context error',
-                'Unable to establish user workspace or clinic context',
-                500
-              );
-            }
-          }
-        }
-      }
+      // Use the unified tenant resolver - this NEVER fails
+      const tenantContext = await resolveTenantContext(user.id);
+      console.log('[CONSULTATIONS API] Resolved tenant context:', tenantContext);
 
-      // Prepare consultation data for Supabase - Use consultation_date as timestamp (not consultation_time)
+      // Prepare consultation data with unified tenant context
       const consultationDateTime = body.consultation_date 
         ? new Date(body.consultation_date).toISOString() 
         : new Date().toISOString();
 
-      const consultationData = {
+      const baseConsultationData = {
         id: crypto.randomUUID(),
         patient_id: body.patient_id,
         professional_id: user.id,
-        consultation_date: consultationDateTime, // This is timestamp with time zone in DB
+        consultation_date: consultationDateTime,
         consultation_type: body.consultation_type || 'general',
         chief_complaint: body.chief_complaint || body.subjective?.substring(0, 500) || '',
         history_present_illness: body.history_present_illness || body.subjective || body.currentCondition || '',
@@ -304,12 +232,12 @@ export async function POST(request: Request) {
         notes: body.notes || '',
         status: body.status || 'completed',
         duration_minutes: body.duration_minutes || 60,
-        // Dual system context
-        clinic_id,
-        workspace_id,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString()
       };
+
+      // Add tenant context using unified system
+      const consultationData = addTenantContext(baseConsultationData, tenantContext);
 
       // Insert consultation into Supabase
       const { data: consultation, error } = await supabaseAdmin
