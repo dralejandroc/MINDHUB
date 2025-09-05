@@ -41,7 +41,8 @@ export async function GET(
         ),
         profiles!professional_id(
           id, first_name, last_name, license_number, specialty,
-          phone, email
+          phone, email, professional_license_number, medical_specialization,
+          medical_school, professional_board, credentials_verified
         ),
         prescription_medications(
           id, medication_name, active_ingredient, concentration,
@@ -359,6 +360,26 @@ function generatePrescriptionHTML(prescription: any): string {
             margin: 20px auto 10px;
         }
         
+        .signature-section .university {
+            font-size: 10px;
+            color: #666;
+            margin-top: 5px;
+            font-style: italic;
+        }
+        
+        .signature-section .board {
+            font-size: 10px;
+            color: #666;
+            margin-top: 3px;
+        }
+        
+        .signature-section .verified {
+            font-size: 10px;
+            color: #16a34a;
+            font-weight: bold;
+            margin-top: 5px;
+        }
+        
         .legal-info {
             font-size: 10px;
             color: #666;
@@ -505,9 +526,13 @@ function generatePrescriptionHTML(prescription: any): string {
         <div class="footer">
             <div class="signature-section">
                 <div class="signature-line"></div>
-                <div><strong>${doctor.first_name} ${doctor.last_name}</strong></div>
-                <div>Médico Prescriptor</div>
-                ${doctor.license_number ? `<div>Ced. Prof: ${doctor.license_number}</div>` : ''}
+                <div><strong>Dr(a). ${doctor.first_name} ${doctor.last_name}</strong></div>
+                ${doctor.medical_specialization ? `<div>${doctor.medical_specialization}</div>` : '<div>Médico Prescriptor</div>'}
+                ${doctor.professional_license_number ? `<div>Cédula Profesional: ${doctor.professional_license_number}</div>` : 
+                  doctor.license_number ? `<div>Ced. Prof: ${doctor.license_number}</div>` : ''}
+                ${doctor.medical_school ? `<div class="university">${doctor.medical_school}</div>` : ''}
+                ${doctor.professional_board ? `<div class="board">${doctor.professional_board}</div>` : ''}
+                ${doctor.credentials_verified ? '<div class="verified">✅ Credenciales Verificadas</div>' : ''}
             </div>
             
             <div class="legal-info">
