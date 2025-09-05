@@ -8,6 +8,8 @@ import { handleSupabaseAuthError } from './cleanup'
 
 // Cookie error handler
 const handleCookieError = (error: any) => {
+  if (typeof window === 'undefined') return false; // Skip on server
+  
   if (error?.message?.includes('Unexpected token') || 
       error?.message?.includes('base64-eyJ') ||
       error?.message?.includes('not valid JSON')) {
@@ -34,6 +36,7 @@ if (!supabaseUrl || !supabaseAnonKey) {
 export const supabase = createBrowserClient(supabaseUrl, supabaseAnonKey, {
   cookies: {
     get: (name: string) => {
+      if (typeof window === 'undefined') return undefined; // Skip on server
       try {
         const cookieValue = document.cookie
           .split('; ')
@@ -59,6 +62,7 @@ export const supabase = createBrowserClient(supabaseUrl, supabaseAnonKey, {
       }
     },
     set: (name: string, value: string, options?: any) => {
+      if (typeof window === 'undefined') return; // Skip on server
       try {
         const optionsStr = options 
           ? Object.entries(options).map(([k, v]) => `${k}=${v}`).join('; ')
@@ -69,6 +73,7 @@ export const supabase = createBrowserClient(supabaseUrl, supabaseAnonKey, {
       }
     },
     remove: (name: string, options?: any) => {
+      if (typeof window === 'undefined') return; // Skip on server
       try {
         document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/`;
       } catch (error) {
@@ -78,22 +83,24 @@ export const supabase = createBrowserClient(supabaseUrl, supabaseAnonKey, {
   }
 })
 
-// Auto-refresh and handle session expiration
-supabase.auth.onAuthStateChange((event, session) => {
-  if (event === 'TOKEN_REFRESHED') {
-    console.log('🔄 JWT token refreshed successfully')
-  }
-  
-  if (event === 'SIGNED_OUT' || (event === 'TOKEN_REFRESHED' && !session)) {
-    console.log('🚪 User signed out or token expired')
-    // Clear any local storage or cached data if needed
-    localStorage.removeItem('mindhub-user-preferences')
-  }
-  
-  if (event === 'SIGNED_IN' && session) {
-    console.log('🔐 User signed in, token expires at:', new Date(session.expires_at! * 1000))
-  }
-})
+// Auto-refresh and handle session expiration - only run on client
+if (typeof window !== 'undefined') {
+  supabase.auth.onAuthStateChange((event, session) => {
+    if (event === 'TOKEN_REFRESHED') {
+      console.log('🔄 JWT token refreshed successfully')
+    }
+    
+    if (event === 'SIGNED_OUT' || (event === 'TOKEN_REFRESHED' && !session)) {
+      console.log('🚪 User signed out or token expired')
+      // Clear any local storage or cached data if needed
+      localStorage.removeItem('mindhub-user-preferences')
+    }
+    
+    if (event === 'SIGNED_IN' && session) {
+      console.log('🔐 User signed in, token expires at:', new Date(session.expires_at! * 1000))
+    }
+  })
+}
 
 // Export createClient function for compatibility
 export const createClient = () => supabase
@@ -144,17 +151,19 @@ export const getSession = async () => {
 }
 
 export const resetPassword = async (email: string) => {
+  const origin = typeof window !== 'undefined' ? window.location.origin : 'https://mindhub.cloud';
   const { error } = await supabase.auth.resetPasswordForEmail(email, {
-    redirectTo: `${window.location.origin}/auth/reset-password`,
+    redirectTo: `${origin}/auth/reset-password`,
   })
   return { error }
 }
 
 export const signInWithGoogle = async () => {
+  const origin = typeof window !== 'undefined' ? window.location.origin : 'https://mindhub.cloud';
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider: 'google',
     options: {
-      redirectTo: `${window.location.origin}/auth/callback`,
+      redirectTo: `${origin}/auth/callback`,
       queryParams: {
         access_type: 'offline',
         prompt: 'consent',
@@ -165,10 +174,11 @@ export const signInWithGoogle = async () => {
 }
 
 export const signUpWithGoogle = async () => {
+  const origin = typeof window !== 'undefined' ? window.location.origin : 'https://mindhub.cloud';
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider: 'google',
     options: {
-      redirectTo: `${window.location.origin}/auth/callback`,
+      redirectTo: `${origin}/auth/callback`,
       queryParams: {
         access_type: 'offline',
         prompt: 'consent',

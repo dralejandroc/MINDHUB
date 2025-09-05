@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { readdir, readFile } from 'fs/promises';
 import path from 'path';
 
+// Force dynamic rendering for this API route
+export const dynamic = 'force-dynamic';
+
 // API Route para servir los escritos psicoeducativos del backend Django
 export async function GET(request: NextRequest) {
   try {
