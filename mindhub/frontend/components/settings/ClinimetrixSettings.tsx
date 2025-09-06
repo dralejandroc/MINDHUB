@@ -36,7 +36,7 @@ export function ClinimetrixSettings() {
 
   const loadConfig = async () => {
     try {
-      const response = await fetch('/api/clinimetrix/django/api/settings/', {
+      const response = await fetch('/api/clinimetrix/django/settings/', {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -64,7 +64,7 @@ export function ClinimetrixSettings() {
 
   const saveConfig = async () => {
     try {
-      const response = await fetch('/api/clinimetrix/django/api/settings/', {
+      const response = await fetch('/api/clinimetrix/django/settings/', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

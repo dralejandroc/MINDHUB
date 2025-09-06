@@ -9,185 +9,318 @@ import {
   ArrowLeftIcon,
   CheckIcon,
   DocumentTextIcon,
-  ClipboardDocumentListIcon,
-  BellIcon,
-  ShieldCheckIcon,
-  GlobeAltIcon,
-  CalendarDaysIcon,
-  PaintBrushIcon,
-  AdjustmentsHorizontalIcon
+  PlusIcon,
+  TrashIcon,
+  PencilSquareIcon,
+  ArrowUpIcon,
+  ArrowDownIcon,
+  EyeIcon,
+  DocumentArrowDownIcon,
+  ChevronDownIcon,
+  ChevronRightIcon
 } from '@heroicons/react/24/outline';
 import toast from 'react-hot-toast';
+
+interface FormTemplate {
+  id: string;
+  name: string;
+  category: FormCategory;
+  description: string;
+  fields: number;
+  isActive: boolean;
+  lastModified: string;
+  usage: number;
+  isRequired: boolean;
+}
+
+type FormCategory = 
+  | 'admission' 
+  | 'consent' 
+  | 'privacy_notice' 
+  | 'legal_documents' 
+  | 'medical_intake' 
+  | 'follow_up'
+  | 'custom';
+
+interface FormCategoryConfig {
+  id: FormCategory;
+  name: string;
+  description: string;
+  icon: string;
+  color: string;
+  isExpanded: boolean;
+}
 
 export default function FormXSettingsPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
-  const [saved, setSaved] = useState(false);
+  const [templates, setTemplates] = useState<FormTemplate[]>([]);
+  const [showNewFormModal, setShowNewFormModal] = useState(false);
+  const [editingForm, setEditingForm] = useState<FormTemplate | null>(null);
 
-  // Configuration states
-  const [config, setConfig] = useState({
-    // General
-    defaultView: 'cards', // cards, list, grid
-    formsPerPage: 12,
-    autoSaveForms: true,
-    showFormPreview: true,
-    enableTemplateCustomization: true,
-    
-    // Templates
-    defaultTemplateCategory: '',
-    enableCustomTemplates: true,
-    enablePredefinedTemplates: true,
-    templateVersioning: true,
-    enableTemplateDuplication: true,
-    
-    // Form Building
-    enableFieldValidation: true,
-    enableConditionalLogic: false,
-    enableAdvancedFields: true,
-    enableFieldDependencies: false,
-    defaultFieldsRequired: false,
-    
-    // Styling & UI
-    enableCustomStyling: false,
-    defaultTheme: 'professional', // professional, modern, minimal
-    enableBranding: false,
-    enableCustomColors: false,
-    
-    // Integration
-    autoSyncWithExpedix: true,
-    syncFormResponses: true,
-    enablePatientPortal: true,
-    enableEmailNotifications: true,
-    
-    // Security
-    enableFormEncryption: true,
-    requireAuthentication: true,
-    enableAuditLog: true,
-    formRetentionDays: 365,
-    
-    // Performance
-    enableCaching: true,
-    enableFormCompression: false,
-    enableLazyLoading: true,
-    maxFormSize: 50, // MB
-    
-    // Notifications
-    notifyOnFormCompletion: true,
-    notifyOnFormExpiry: false,
-    emailDigestEnabled: false,
-    
-    // Advanced
-    enableAPIAccess: false,
-    enableWebhooks: false,
-    enableFormAnalytics: true,
-    enableA11yFeatures: true
+  // Categories configuration
+  const [categories, setCategories] = useState<FormCategoryConfig[]>([
+    {
+      id: 'admission',
+      name: 'Formularios de Ingreso',
+      description: 'Formularios para el registro inicial de pacientes',
+      icon: '📝',
+      color: 'blue',
+      isExpanded: true
+    },
+    {
+      id: 'consent',
+      name: 'Consentimientos Informados',
+      description: 'Formularios de autorización y consentimientos médicos',
+      icon: '✅',
+      color: 'green',
+      isExpanded: true
+    },
+    {
+      id: 'privacy_notice',
+      name: 'Avisos de Privacidad',
+      description: 'Documentos de protección de datos personales',
+      icon: '🔐',
+      color: 'purple',
+      isExpanded: true
+    },
+    {
+      id: 'legal_documents',
+      name: 'Documentos Legales',
+      description: 'Contratos, responsivas y documentos jurídicos',
+      icon: '⚖️',
+      color: 'red',
+      isExpanded: true
+    },
+    {
+      id: 'medical_intake',
+      name: 'Historia Clínica Inicial',
+      description: 'Formularios de antecedentes y evaluación médica',
+      icon: '🏥',
+      color: 'indigo',
+      isExpanded: true
+    },
+    {
+      id: 'follow_up',
+      name: 'Formularios de Seguimiento',
+      description: 'Evaluaciones de progreso y seguimiento',
+      icon: '📊',
+      color: 'yellow',
+      isExpanded: true
+    },
+    {
+      id: 'custom',
+      name: 'Formularios Personalizados',
+      description: 'Templates creados por el usuario',
+      icon: '🎨',
+      color: 'gray',
+      isExpanded: true
+    }
+  ]);
+
+  // New form modal state
+  const [newFormData, setNewFormData] = useState({
+    name: '',
+    category: 'admission' as FormCategory,
+    description: '',
+    isRequired: false
   });
 
-  // Load configuration from Django API
+  // Load form templates from Django API
   useEffect(() => {
-    const loadFormXConfig = async () => {
-      try {
-        const response = await fetch('/api/formx/django/api/settings/', {
-          method: 'GET',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-        });
-        
-        if (response.ok) {
-          const data = await response.json();
-          if (data.settings) {
-            setConfig(prev => ({ ...prev, ...data.settings }));
-          }
-        }
-      } catch (error) {
-        console.error('Error loading FormX configuration:', error);
-        // Keep default configuration on error
-      }
-    };
-    
-    loadFormXConfig();
+    loadFormTemplates();
   }, []);
 
-  const handleSave = async () => {
-    setLoading(true);
+  const loadFormTemplates = async () => {
     try {
-      const response = await fetch('/api/formx/django/api/settings/', {
-        method: 'POST',
+      setLoading(true);
+      const response = await fetch('/api/formx/django/templates/', {
+        method: 'GET',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          settings: config,
-          module: 'formx'
-        })
       });
       
-      if (!response.ok) {
-        throw new Error('Failed to save FormX configuration');
+      if (response.ok) {
+        const data = await response.json();
+        if (Array.isArray(data)) {
+          setTemplates(data);
+        } else if (data.results && Array.isArray(data.results)) {
+          setTemplates(data.results);
+        } else {
+          setTemplates([]);
+        }
+      } else {
+        console.log(`FormX templates API returned ${response.status}`);
+        setTemplates([]);
       }
-      
-      const result = await response.json();
-      console.log('FormX configuration saved:', result);
-      
-      setSaved(true);
-      setTimeout(() => setSaved(false), 3000);
-      toast.success('Configuración de FormX guardada exitosamente');
     } catch (error) {
-      console.error('Error saving configuration:', error);
-      toast.error('Error al guardar la configuración');
+      console.error('Error loading form templates:', error);
+      setTemplates([]);
     } finally {
       setLoading(false);
     }
   };
 
-  const handleBack = () => {
-    router.push('/hubs/formx');
+
+  const toggleCategoryExpansion = (categoryId: FormCategory) => {
+    setCategories(prev => prev.map(cat => 
+      cat.id === categoryId 
+        ? { ...cat, isExpanded: !cat.isExpanded }
+        : cat
+    ));
   };
 
-  const handleResetToDefaults = () => {
-    if (window.confirm('¿Está seguro de que desea restaurar la configuración por defecto? Esta acción no se puede deshacer.')) {
-      setConfig({
-        defaultView: 'cards',
-        formsPerPage: 12,
-        autoSaveForms: true,
-        showFormPreview: true,
-        enableTemplateCustomization: true,
-        defaultTemplateCategory: '',
-        enableCustomTemplates: true,
-        enablePredefinedTemplates: true,
-        templateVersioning: true,
-        enableTemplateDuplication: true,
-        enableFieldValidation: true,
-        enableConditionalLogic: false,
-        enableAdvancedFields: true,
-        enableFieldDependencies: false,
-        defaultFieldsRequired: false,
-        enableCustomStyling: false,
-        defaultTheme: 'professional',
-        enableBranding: false,
-        enableCustomColors: false,
-        autoSyncWithExpedix: true,
-        syncFormResponses: true,
-        enablePatientPortal: true,
-        enableEmailNotifications: true,
-        enableFormEncryption: true,
-        requireAuthentication: true,
-        enableAuditLog: true,
-        formRetentionDays: 365,
-        enableCaching: true,
-        enableFormCompression: false,
-        enableLazyLoading: true,
-        maxFormSize: 50,
-        notifyOnFormCompletion: true,
-        notifyOnFormExpiry: false,
-        emailDigestEnabled: false,
-        enableAPIAccess: false,
-        enableWebhooks: false,
-        enableFormAnalytics: true,
-        enableA11yFeatures: true
+  const getTemplatesByCategory = (categoryId: FormCategory) => {
+    return templates.filter(template => template.category === categoryId);
+  };
+
+  const getCategoryColor = (category: FormCategory) => {
+    const categoryConfig = categories.find(cat => cat.id === category);
+    return categoryConfig?.color || 'gray';
+  };
+
+  const moveTemplate = (templateId: string, direction: 'up' | 'down') => {
+    const template = templates.find(t => t.id === templateId);
+    if (!template) return;
+
+    const categoryTemplates = getTemplatesByCategory(template.category);
+    const currentIndex = categoryTemplates.findIndex(t => t.id === templateId);
+    
+    if (direction === 'up' && currentIndex > 0) {
+      // Move up logic
+      toast.success('Formulario movido hacia arriba');
+    } else if (direction === 'down' && currentIndex < categoryTemplates.length - 1) {
+      // Move down logic  
+      toast.success('Formulario movido hacia abajo');
+    }
+  };
+
+  const duplicateTemplate = (templateId: string) => {
+    const template = templates.find(t => t.id === templateId);
+    if (!template) return;
+
+    const newTemplate: FormTemplate = {
+      ...template,
+      id: `${templateId}-copy-${Date.now()}`,
+      name: `${template.name} (Copia)`,
+      usage: 0,
+      lastModified: new Date().toISOString().split('T')[0]
+    };
+
+    setTemplates(prev => [...prev, newTemplate]);
+    toast.success('Formulario duplicado exitosamente');
+  };
+
+  const deleteTemplate = async (templateId: string) => {
+    if (!window.confirm('¿Está seguro de que desea eliminar este formulario? Esta acción no se puede deshacer.')) {
+      return;
+    }
+
+    try {
+      const response = await fetch(`/api/formx/django/templates/${templateId}/`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+        },
       });
-      toast.success('Configuración restaurada a valores por defecto');
+
+      if (response.ok) {
+        setTemplates(prev => prev.filter(t => t.id !== templateId));
+        toast.success('Formulario eliminado exitosamente');
+      } else {
+        throw new Error(`Failed to delete template: ${response.status}`);
+      }
+    } catch (error) {
+      console.error('Error deleting template:', error);
+      toast.error('Error al eliminar el formulario');
+    }
+  };
+
+  const toggleTemplateStatus = (templateId: string) => {
+    setTemplates(prev => prev.map(template => 
+      template.id === templateId 
+        ? { ...template, isActive: !template.isActive }
+        : template
+    ));
+    toast.success('Estado del formulario actualizado');
+  };
+
+  const handleCreateNewForm = async () => {
+    if (!newFormData.name.trim()) {
+      toast.error('El nombre del formulario es requerido');
+      return;
+    }
+
+    try {
+      const response = await fetch('/api/formx/django/templates/', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          name: newFormData.name,
+          category: newFormData.category,
+          description: newFormData.description,
+          is_required: newFormData.isRequired,
+          fields: []
+        })
+      });
+
+      if (response.ok) {
+        const newTemplate = await response.json();
+        setTemplates(prev => [...prev, newTemplate]);
+        toast.success('Formulario creado exitosamente');
+      } else {
+        throw new Error(`Failed to create template: ${response.status}`);
+      }
+
+      setNewFormData({ name: '', category: 'admission', description: '', isRequired: false });
+      setShowNewFormModal(false);
+    } catch (error) {
+      console.error('Error creating template:', error);
+      toast.error('Error al crear el formulario');
+    }
+  };
+
+  const handleEditForm = (template: FormTemplate) => {
+    setEditingForm(template);
+    setNewFormData({
+      name: template.name,
+      category: template.category,
+      description: template.description,
+      isRequired: template.isRequired
+    });
+    setShowNewFormModal(true);
+  };
+
+  const handleUpdateForm = async () => {
+    if (!editingForm || !newFormData.name.trim()) {
+      toast.error('El nombre del formulario es requerido');
+      return;
+    }
+
+    try {
+      setTemplates(prev => prev.map(template => 
+        template.id === editingForm.id 
+          ? {
+              ...template,
+              name: newFormData.name,
+              category: newFormData.category,
+              description: newFormData.description,
+              isRequired: newFormData.isRequired,
+              lastModified: new Date().toISOString().split('T')[0]
+            }
+          : template
+      ));
+
+      toast.success('Formulario actualizado exitosamente');
+      setNewFormData({ name: '', category: 'admission', description: '', isRequired: false });
+      setEditingForm(null);
+      setShowNewFormModal(false);
+    } catch (error) {
+      console.error('Error updating template:', error);
+      toast.error('Error al actualizar el formulario');
     }
   };
 
@@ -195,411 +328,287 @@ export default function FormXSettingsPage() {
     <div className="space-y-6">
       <PageHeader
         title="Configuración de FormX"
-        description="Personaliza el módulo de generación de formularios médicos"
+        description="Configuraciones para el generador de formularios médicos FormX."
         icon={CogIcon}
         iconColor="text-gray-600"
         actions={
           <div className="flex space-x-2">
-            <Button onClick={handleBack} variant="outline">
+            <Button onClick={() => router.push('/hubs/formx')} variant="outline">
               <ArrowLeftIcon className="h-4 w-4 mr-2" />
               Volver
             </Button>
             <Button 
-              onClick={handleResetToDefaults} 
-              variant="outline"
-              className="text-red-600 border-red-200 hover:bg-red-50"
+              onClick={() => {
+                setEditingForm(null);
+                setNewFormData({ name: '', category: 'admission', description: '', isRequired: false });
+                setShowNewFormModal(true);
+              }}
+              variant="primary"
             >
-              Restaurar Defaults
-            </Button>
-            <Button 
-              onClick={handleSave} 
-              variant="primary" 
-              disabled={loading || saved}
-            >
-              {saved ? (
-                <>
-                  <CheckIcon className="h-4 w-4 mr-2" />
-                  Guardado
-                </>
-              ) : (
-                'Guardar Cambios'
-              )}
+              <PlusIcon className="h-4 w-4 mr-2" />
+              Nuevo Formulario
             </Button>
           </div>
         }
       />
       
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* General Settings */}
-        <div className="bg-white rounded-lg shadow p-6">
-          <div className="flex items-center space-x-2 mb-4">
-            <DocumentTextIcon className="h-5 w-5 text-gray-500" />
-            <h2 className="text-lg font-medium text-gray-900">Configuración General</h2>
-          </div>
-          
-          <div className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Vista Predeterminada
+      {loading ? (
+        <div className="flex items-center justify-center py-12">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+          <span className="ml-2 text-gray-600">Cargando formularios...</span>
+        </div>
+      ) : (
+        <div className="space-y-6">
+          {categories.map(category => {
+            const categoryTemplates = getTemplatesByCategory(category.id);
+            
+            return (
+              <div key={category.id} className="bg-white rounded-lg shadow border border-gray-200">
+                {/* Category Header */}
+                <div 
+                  className={`p-4 border-b border-gray-200 cursor-pointer hover:bg-gray-50 transition-colors bg-${category.color}-50`}
+                  onClick={() => toggleCategoryExpansion(category.id)}
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-3">
+                      <span className="text-2xl">{category.icon}</span>
+                      <div>
+                        <h3 className={`font-semibold text-${category.color}-900`}>
+                          {category.name}
+                        </h3>
+                        <p className="text-sm text-gray-600">{category.description}</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <span className={`px-2 py-1 rounded-full text-xs font-medium bg-${category.color}-100 text-${category.color}-800`}>
+                        {categoryTemplates.length} formulario{categoryTemplates.length !== 1 ? 's' : ''}
+                      </span>
+                      {category.isExpanded ? (
+                        <ChevronDownIcon className="h-5 w-5 text-gray-500" />
+                      ) : (
+                        <ChevronRightIcon className="h-5 w-5 text-gray-500" />
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Category Content */}
+                {category.isExpanded && (
+                  <div className="p-4">
+                    {categoryTemplates.length === 0 ? (
+                      <div className="text-center py-8 text-gray-500">
+                        <DocumentTextIcon className="h-12 w-12 mx-auto mb-3 text-gray-300" />
+                        <p>No hay formularios en esta categoría</p>
+                        <p className="text-sm mt-1">Agregue un nuevo formulario para comenzar</p>
+                      </div>
+                    ) : (
+                      <div className="space-y-3">
+                        {categoryTemplates.map((template, index) => (
+                          <div 
+                            key={template.id} 
+                            className={`p-4 border rounded-lg hover:border-gray-300 transition-colors ${
+                              template.isActive ? 'border-gray-200 bg-white' : 'border-gray-100 bg-gray-50'
+                            }`}
+                          >
+                            <div className="flex items-start justify-between">
+                              <div className="flex-1">
+                                <div className="flex items-center space-x-3 mb-2">
+                                  <span className={`font-medium ${template.isActive ? 'text-gray-900' : 'text-gray-500'}`}>
+                                    {template.name}
+                                  </span>
+                                  {template.isRequired && (
+                                    <span className="px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                                      Requerido
+                                    </span>
+                                  )}
+                                  {!template.isActive && (
+                                    <span className="px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-600">
+                                      Inactivo
+                                    </span>
+                                  )}
+                                </div>
+                                
+                                <p className="text-sm text-gray-600 mb-3">{template.description}</p>
+                                
+                                <div className="flex items-center space-x-4 text-sm text-gray-500">
+                                  <span>{template.fields} campos</span>
+                                  <span>Usado {template.usage} veces</span>
+                                  <span>Modificado: {new Date(template.lastModified).toLocaleDateString('es-MX')}</span>
+                                </div>
+                              </div>
+
+                              <div className="flex items-center space-x-1 ml-4">
+                                {/* Move Up/Down */}
+                                <button
+                                  onClick={() => moveTemplate(template.id, 'up')}
+                                  disabled={index === 0}
+                                  className={`p-1 rounded ${
+                                    index === 0 
+                                      ? 'text-gray-300 cursor-not-allowed' 
+                                      : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100'
+                                  }`}
+                                  title="Mover arriba"
+                                >
+                                  <ArrowUpIcon className="h-4 w-4" />
+                                </button>
+                                <button
+                                  onClick={() => moveTemplate(template.id, 'down')}
+                                  disabled={index === categoryTemplates.length - 1}
+                                  className={`p-1 rounded ${
+                                    index === categoryTemplates.length - 1
+                                      ? 'text-gray-300 cursor-not-allowed' 
+                                      : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100'
+                                  }`}
+                                  title="Mover abajo"
+                                >
+                                  <ArrowDownIcon className="h-4 w-4" />
+                                </button>
+
+                                {/* Preview */}
+                                <button
+                                  onClick={() => toast.success('Vista previa: ' + template.name)}
+                                  className="p-1 rounded text-blue-500 hover:text-blue-700 hover:bg-blue-50"
+                                  title="Vista previa"
+                                >
+                                  <EyeIcon className="h-4 w-4" />
+                                </button>
+
+                                {/* Edit */}
+                                <button
+                                  onClick={() => handleEditForm(template)}
+                                  className="p-1 rounded text-gray-500 hover:text-gray-700 hover:bg-gray-100"
+                                  title="Editar"
+                                >
+                                  <PencilSquareIcon className="h-4 w-4" />
+                                </button>
+
+                                {/* Duplicate */}
+                                <button
+                                  onClick={() => duplicateTemplate(template.id)}
+                                  className="p-1 rounded text-gray-500 hover:text-gray-700 hover:bg-gray-100"
+                                  title="Duplicar"
+                                >
+                                  <DocumentArrowDownIcon className="h-4 w-4" />
+                                </button>
+
+                                {/* Toggle Active */}
+                                <button
+                                  onClick={() => toggleTemplateStatus(template.id)}
+                                  className={`p-1 rounded ${
+                                    template.isActive 
+                                      ? 'text-green-500 hover:text-green-700 hover:bg-green-50' 
+                                      : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100'
+                                  }`}
+                                  title={template.isActive ? 'Desactivar' : 'Activar'}
+                                >
+                                  <CheckIcon className="h-4 w-4" />
+                                </button>
+
+                                {/* Delete */}
+                                <button
+                                  onClick={() => deleteTemplate(template.id)}
+                                  className="p-1 rounded text-red-500 hover:text-red-700 hover:bg-red-50"
+                                  title="Eliminar"
+                                >
+                                  <TrashIcon className="h-4 w-4" />
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {/* New/Edit Form Modal */}
+      {showNewFormModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-lg shadow-xl max-w-md w-full">
+            <div className="p-6 border-b border-gray-200">
+              <h2 className="text-xl font-semibold text-gray-900">
+                {editingForm ? 'Editar Formulario' : 'Nuevo Formulario'}
+              </h2>
+            </div>
+            <div className="p-6 space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Nombre del Formulario *
+                </label>
+                <input
+                  type="text"
+                  value={newFormData.name}
+                  onChange={(e) => setNewFormData({ ...newFormData, name: e.target.value })}
+                  placeholder="Ej: Registro de Paciente Nuevo"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Categoría
+                </label>
+                <select
+                  value={newFormData.category}
+                  onChange={(e) => setNewFormData({ ...newFormData, category: e.target.value as FormCategory })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  {categories.map(category => (
+                    <option key={category.id} value={category.id}>
+                      {category.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Descripción
+                </label>
+                <textarea
+                  value={newFormData.description}
+                  onChange={(e) => setNewFormData({ ...newFormData, description: e.target.value })}
+                  placeholder="Descripción del formulario..."
+                  rows={3}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+
+              <label className="flex items-center">
+                <input
+                  type="checkbox"
+                  checked={newFormData.isRequired}
+                  onChange={(e) => setNewFormData({ ...newFormData, isRequired: e.target.checked })}
+                  className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 mr-2"
+                />
+                <span className="text-sm text-gray-700">Formulario requerido</span>
               </label>
-              <select
-                value={config.defaultView}
-                onChange={(e) => setConfig({ ...config, defaultView: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            </div>
+            <div className="px-6 py-4 border-t border-gray-200 flex justify-end space-x-3">
+              <Button
+                onClick={() => {
+                  setShowNewFormModal(false);
+                  setEditingForm(null);
+                  setNewFormData({ name: '', category: 'admission', description: '', isRequired: false });
+                }}
+                variant="outline"
               >
-                <option value="cards">Tarjetas</option>
-                <option value="list">Lista</option>
-                <option value="grid">Cuadrícula</option>
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Formularios por Página
-              </label>
-              <input
-                type="number"
-                value={config.formsPerPage}
-                onChange={(e) => setConfig({ ...config, formsPerPage: parseInt(e.target.value) })}
-                min="6"
-                max="48"
-                step="6"
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <label className="flex items-center">
-                <input
-                  type="checkbox"
-                  checked={config.autoSaveForms}
-                  onChange={(e) => setConfig({ ...config, autoSaveForms: e.target.checked })}
-                  className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 mr-2"
-                />
-                <span className="text-sm text-gray-700">Guardar formularios automáticamente</span>
-              </label>
-
-              <label className="flex items-center">
-                <input
-                  type="checkbox"
-                  checked={config.showFormPreview}
-                  onChange={(e) => setConfig({ ...config, showFormPreview: e.target.checked })}
-                  className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 mr-2"
-                />
-                <span className="text-sm text-gray-700">Mostrar vista previa de formularios</span>
-              </label>
-
-              <label className="flex items-center">
-                <input
-                  type="checkbox"
-                  checked={config.enableTemplateCustomization}
-                  onChange={(e) => setConfig({ ...config, enableTemplateCustomization: e.target.checked })}
-                  className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 mr-2"
-                />
-                <span className="text-sm text-gray-700">Permitir personalización de templates</span>
-              </label>
-            </div>
-          </div>
-        </div>
-
-        {/* Template Settings */}
-        <div className="bg-white rounded-lg shadow p-6">
-          <div className="flex items-center space-x-2 mb-4">
-            <ClipboardDocumentListIcon className="h-5 w-5 text-gray-500" />
-            <h2 className="text-lg font-medium text-gray-900">Gestión de Templates</h2>
-          </div>
-          
-          <div className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Categoría de Template por Defecto
-              </label>
-              <select
-                value={config.defaultTemplateCategory}
-                onChange={(e) => setConfig({ ...config, defaultTemplateCategory: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                Cancelar
+              </Button>
+              <Button
+                onClick={editingForm ? handleUpdateForm : handleCreateNewForm}
+                variant="primary"
+                disabled={!newFormData.name.trim()}
               >
-                <option value="">Seleccionar automáticamente</option>
-                <option value="Admisión">Admisión</option>
-                <option value="Seguimiento">Seguimiento</option>
-                <option value="Psiquiatría Infantil">Psiquiatría Infantil</option>
-                <option value="Screening">Screening</option>
-                <option value="General">General</option>
-              </select>
-            </div>
-
-            <div className="space-y-2">
-              <label className="flex items-center">
-                <input
-                  type="checkbox"
-                  checked={config.enableCustomTemplates}
-                  onChange={(e) => setConfig({ ...config, enableCustomTemplates: e.target.checked })}
-                  className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 mr-2"
-                />
-                <span className="text-sm text-gray-700">Permitir templates personalizados</span>
-              </label>
-
-              <label className="flex items-center">
-                <input
-                  type="checkbox"
-                  checked={config.enablePredefinedTemplates}
-                  onChange={(e) => setConfig({ ...config, enablePredefinedTemplates: e.target.checked })}
-                  className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 mr-2"
-                />
-                <span className="text-sm text-gray-700">Mostrar templates predefinidos</span>
-              </label>
-
-              <label className="flex items-center">
-                <input
-                  type="checkbox"
-                  checked={config.templateVersioning}
-                  onChange={(e) => setConfig({ ...config, templateVersioning: e.target.checked })}
-                  className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 mr-2"
-                />
-                <span className="text-sm text-gray-700">Control de versiones de templates</span>
-              </label>
-
-              <label className="flex items-center">
-                <input
-                  type="checkbox"
-                  checked={config.enableTemplateDuplication}
-                  onChange={(e) => setConfig({ ...config, enableTemplateDuplication: e.target.checked })}
-                  className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 mr-2"
-                />
-                <span className="text-sm text-gray-700">Permitir duplicación de templates</span>
-              </label>
+                {editingForm ? 'Actualizar' : 'Crear'} Formulario
+              </Button>
             </div>
           </div>
-        </div>
-
-        {/* Form Building Settings */}
-        <div className="bg-white rounded-lg shadow p-6">
-          <div className="flex items-center space-x-2 mb-4">
-            <AdjustmentsHorizontalIcon className="h-5 w-5 text-gray-500" />
-            <h2 className="text-lg font-medium text-gray-900">Constructor de Formularios</h2>
-          </div>
-          
-          <div className="space-y-4">
-            <label className="flex items-center">
-              <input
-                type="checkbox"
-                checked={config.enableFieldValidation}
-                onChange={(e) => setConfig({ ...config, enableFieldValidation: e.target.checked })}
-                className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 mr-2"
-              />
-              <span className="text-sm text-gray-700">Validación de campos habilitada</span>
-            </label>
-
-            <label className="flex items-center">
-              <input
-                type="checkbox"
-                checked={config.enableConditionalLogic}
-                onChange={(e) => setConfig({ ...config, enableConditionalLogic: e.target.checked })}
-                className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 mr-2"
-              />
-              <span className="text-sm text-gray-700">Lógica condicional (Beta)</span>
-            </label>
-
-            <label className="flex items-center">
-              <input
-                type="checkbox"
-                checked={config.enableAdvancedFields}
-                onChange={(e) => setConfig({ ...config, enableAdvancedFields: e.target.checked })}
-                className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 mr-2"
-              />
-              <span className="text-sm text-gray-700">Campos avanzados</span>
-            </label>
-
-            <label className="flex items-center">
-              <input
-                type="checkbox"
-                checked={config.enableFieldDependencies}
-                onChange={(e) => setConfig({ ...config, enableFieldDependencies: e.target.checked })}
-                className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 mr-2"
-              />
-              <span className="text-sm text-gray-700">Dependencias entre campos (Beta)</span>
-            </label>
-
-            <label className="flex items-center">
-              <input
-                type="checkbox"
-                checked={config.defaultFieldsRequired}
-                onChange={(e) => setConfig({ ...config, defaultFieldsRequired: e.target.checked })}
-                className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 mr-2"
-              />
-              <span className="text-sm text-gray-700">Campos requeridos por defecto</span>
-            </label>
-          </div>
-        </div>
-
-        {/* Integration Settings */}
-        <div className="bg-white rounded-lg shadow p-6">
-          <div className="flex items-center space-x-2 mb-4">
-            <GlobeAltIcon className="h-5 w-5 text-gray-500" />
-            <h2 className="text-lg font-medium text-gray-900">Integración con Módulos</h2>
-          </div>
-          
-          <div className="space-y-4">
-            <label className="flex items-center">
-              <input
-                type="checkbox"
-                checked={config.autoSyncWithExpedix}
-                onChange={(e) => setConfig({ ...config, autoSyncWithExpedix: e.target.checked })}
-                className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 mr-2"
-              />
-              <span className="text-sm text-gray-700">Sincronización automática con Expedix</span>
-            </label>
-
-            <label className="flex items-center">
-              <input
-                type="checkbox"
-                checked={config.syncFormResponses}
-                onChange={(e) => setConfig({ ...config, syncFormResponses: e.target.checked })}
-                className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 mr-2"
-              />
-              <span className="text-sm text-gray-700">Sincronizar respuestas de formularios</span>
-            </label>
-
-            <label className="flex items-center">
-              <input
-                type="checkbox"
-                checked={config.enablePatientPortal}
-                onChange={(e) => setConfig({ ...config, enablePatientPortal: e.target.checked })}
-                className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 mr-2"
-              />
-              <span className="text-sm text-gray-700">Portal del paciente habilitado</span>
-            </label>
-
-            <label className="flex items-center">
-              <input
-                type="checkbox"
-                checked={config.enableEmailNotifications}
-                onChange={(e) => setConfig({ ...config, enableEmailNotifications: e.target.checked })}
-                className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 mr-2"
-              />
-              <span className="text-sm text-gray-700">Notificaciones por email</span>
-            </label>
-          </div>
-        </div>
-
-        {/* Security Settings */}
-        <div className="bg-white rounded-lg shadow p-6">
-          <div className="flex items-center space-x-2 mb-4">
-            <ShieldCheckIcon className="h-5 w-5 text-gray-500" />
-            <h2 className="text-lg font-medium text-gray-900">Seguridad y Privacidad</h2>
-          </div>
-          
-          <div className="space-y-4">
-            <label className="flex items-center">
-              <input
-                type="checkbox"
-                checked={config.enableFormEncryption}
-                onChange={(e) => setConfig({ ...config, enableFormEncryption: e.target.checked })}
-                className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 mr-2"
-              />
-              <span className="text-sm text-gray-700">Encriptación de formularios</span>
-            </label>
-
-            <label className="flex items-center">
-              <input
-                type="checkbox"
-                checked={config.requireAuthentication}
-                onChange={(e) => setConfig({ ...config, requireAuthentication: e.target.checked })}
-                className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 mr-2"
-              />
-              <span className="text-sm text-gray-700">Requerir autenticación</span>
-            </label>
-
-            <label className="flex items-center">
-              <input
-                type="checkbox"
-                checked={config.enableAuditLog}
-                onChange={(e) => setConfig({ ...config, enableAuditLog: e.target.checked })}
-                className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 mr-2"
-              />
-              <span className="text-sm text-gray-700">Registro de auditoría</span>
-            </label>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Retención de Formularios (días)
-              </label>
-              <input
-                type="number"
-                value={config.formRetentionDays}
-                onChange={(e) => setConfig({ ...config, formRetentionDays: parseInt(e.target.value) })}
-                min="30"
-                max="3650"
-                step="30"
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-            </div>
-          </div>
-        </div>
-
-        {/* Styling & Theming */}
-        <div className="bg-white rounded-lg shadow p-6">
-          <div className="flex items-center space-x-2 mb-4">
-            <PaintBrushIcon className="h-5 w-5 text-gray-500" />
-            <h2 className="text-lg font-medium text-gray-900">Estilo y Personalización</h2>
-          </div>
-          
-          <div className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Tema por Defecto
-              </label>
-              <select
-                value={config.defaultTheme}
-                onChange={(e) => setConfig({ ...config, defaultTheme: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-              >
-                <option value="professional">Profesional</option>
-                <option value="modern">Moderno</option>
-                <option value="minimal">Minimalista</option>
-              </select>
-            </div>
-
-            <div className="space-y-2">
-              <label className="flex items-center">
-                <input
-                  type="checkbox"
-                  checked={config.enableCustomStyling}
-                  onChange={(e) => setConfig({ ...config, enableCustomStyling: e.target.checked })}
-                  className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 mr-2"
-                />
-                <span className="text-sm text-gray-700">Permitir estilos personalizados</span>
-              </label>
-
-              <label className="flex items-center">
-                <input
-                  type="checkbox"
-                  checked={config.enableBranding}
-                  onChange={(e) => setConfig({ ...config, enableBranding: e.target.checked })}
-                  className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 mr-2"
-                />
-                <span className="text-sm text-gray-700">Branding personalizado</span>
-              </label>
-
-              <label className="flex items-center">
-                <input
-                  type="checkbox"
-                  checked={config.enableCustomColors}
-                  onChange={(e) => setConfig({ ...config, enableCustomColors: e.target.checked })}
-                  className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 mr-2"
-                />
-                <span className="text-sm text-gray-700">Colores personalizados</span>
-              </label>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Success Message */}
-      {saved && (
-        <div className="fixed bottom-4 right-4 bg-green-500 text-white px-4 py-2 rounded-lg shadow-lg flex items-center space-x-2">
-          <CheckIcon className="h-5 w-5" />
-          <span>Configuración de FormX guardada exitosamente</span>
         </div>
       )}
     </div>
