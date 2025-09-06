@@ -188,12 +188,21 @@ class ConsultationViewSet(viewsets.ViewSet):
             clinic_id = user_context.get('clinic_id') if license_type == 'clinic' else None
             workspace_id = user_context.get('workspace_id') if license_type == 'individual' else None
             
-            # Ensure we have either clinic_id or workspace_id
+            # Ensure we have either clinic_id or workspace_id but not both (constraint requirement)
             if not clinic_id and not workspace_id:
                 return Response({
                     'success': False,
                     'error': 'Database connection failed',
-                    'message': f'Supabase error: null value in column "clinic_id" or "workspace_id" violates not-null constraint',
+                    'message': f'Supabase error: must have either clinic_id or workspace_id but not both',
+                    'timestamp': timezone.now().isoformat()
+                }, status=500)
+            
+            # Additional check for constraint - ensure only one is set
+            if clinic_id and workspace_id:
+                return Response({
+                    'success': False,
+                    'error': 'Database connection failed', 
+                    'message': f'Supabase error: new row for relation "consultations" violates check constraint "check_consultations_dual_owner"',
                     'timestamp': timezone.now().isoformat()
                 }, status=500)
             

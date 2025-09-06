@@ -127,25 +127,28 @@ class SupabaseAuthMiddleware(MiddlewareMixin):
                     license_type, clinic_id, clinic_role, workspace_id = result
                     
                     if license_type == 'clinic' and clinic_id:
+                        # CRITICAL FIX: Ensure workspace_id is explicitly None for clinic license
+                        # This respects the check_consultations_dual_owner constraint
                         return {
                             'license_type': 'clinic',
                             'access_type': 'clinic',
                             'filter_field': 'clinic_id',
                             'filter_value': str(clinic_id),
                             'clinic_id': str(clinic_id),
-                            'workspace_id': None,
+                            'workspace_id': None,  # EXPLICIT None to satisfy constraint
                             'clinic_role': clinic_role,
                             'shared_access': True
                         }
-                    elif license_type == 'individual':
-                        # For individual licenses, filter by workspace_id (dual system)
+                    elif license_type == 'individual' and workspace_id:
+                        # CRITICAL FIX: Ensure clinic_id is explicitly None for individual license 
+                        # This respects the check_consultations_dual_owner constraint
                         return {
                             'license_type': 'individual',
                             'access_type': 'individual',
                             'filter_field': 'workspace_id', 
-                            'filter_value': str(workspace_id) if workspace_id else None,
-                            'clinic_id': None,
-                            'workspace_id': str(workspace_id) if workspace_id else None,
+                            'filter_value': str(workspace_id),
+                            'clinic_id': None,  # EXPLICIT None to satisfy constraint
+                            'workspace_id': str(workspace_id),
                             'clinic_role': 'owner',
                             'shared_access': False
                         }
