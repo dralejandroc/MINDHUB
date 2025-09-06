@@ -27,6 +27,9 @@ import AnalyticsSettings from '@/components/settings/AnalyticsSettings';
 import ConsultationTemplateManager from '@/components/expedix/ConsultationTemplateManager';
 import { ExpandableTabs } from '@/components/ui/ExpandableTabs';
 import { UserSecuritySettings } from '@/components/settings/UserSecuritySettings';
+import { ProfessionalCredentialsSettings } from '@/components/settings/ProfessionalCredentialsSettings';
+import { ExpedixSettings } from '@/components/settings/ExpedixSettings';
+import { ClinimetrixSettings } from '@/components/settings/ClinimetrixSettings';
 import type { ClinicConfiguration } from '@/lib/settings-graphql-service';
 
 export default function GeneralSettingsPage() {
@@ -149,11 +152,18 @@ export default function GeneralSettingsPage() {
       content: <AgendaConfigurationSettings />
     },
     {
+      id: 'professional',
+      label: 'Credenciales Profesionales',
+      icon: ShieldCheckIcon,
+      content: <ProfessionalCredentialsSettings />
+    },
+    {
       id: 'expedix',
       label: 'Expedix',
       icon: HeartIcon,
       content: (
         <div className="space-y-6">
+          <ExpedixSettings />
           <ConsultationTemplateManager />
         </div>
       )
@@ -235,24 +245,7 @@ export default function GeneralSettingsPage() {
       id: 'clinimetrix',
       label: 'Clinimetrix',
       icon: ChartBarIcon,
-      content: (
-        <div className="bg-white border border-gray-200 rounded-lg shadow-sm p-4 sm:p-6">
-          <div className="flex items-center gap-2 mb-4">
-            <ChartBarIcon className="h-5 w-5 flex-shrink-0" />
-            <h2 className="text-lg sm:text-xl font-semibold">Configuración de Clinimetrix</h2>
-          </div>
-          <div className="space-y-4">
-            <p className="text-sm sm:text-base text-gray-600">
-              Configuraciones específicas para el módulo de evaluaciones psicométricas Clinimetrix.
-            </p>
-            <div className="bg-blue-50 p-3 sm:p-4 rounded-lg">
-              <p className="text-sm sm:text-base text-blue-800">
-                <strong>Estado:</strong> Módulo activo con escalas psicométricas disponibles.
-              </p>
-            </div>
-          </div>
-        </div>
-      )
+      content: <ClinimetrixSettings />
     },
     {
       id: 'formx',
