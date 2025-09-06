@@ -17,7 +17,8 @@ import {
   ComputerDesktopIcon,
   CalendarIcon,
   ArrowUpTrayIcon,
-  ShieldCheckIcon
+  ShieldCheckIcon,
+  CurrencyDollarIcon
 } from '@heroicons/react/24/outline';
 import { DashboardSettings } from '@/components/settings/DashboardSettings';
 import { UserMetricsProvider } from '@/contexts/UserMetricsContext';
@@ -30,6 +31,7 @@ import { UserSecuritySettings } from '@/components/settings/UserSecuritySettings
 import { ProfessionalCredentialsSettings } from '@/components/settings/ProfessionalCredentialsSettings';
 import { ExpedixSettings } from '@/components/settings/ExpedixSettings';
 import { ClinimetrixSettings } from '@/components/settings/ClinimetrixSettings';
+import { FinanceSettings } from '@/components/settings/FinanceSettings';
 import type { ClinicConfiguration } from '@/lib/settings-graphql-service';
 
 export default function GeneralSettingsPage() {
@@ -246,6 +248,12 @@ export default function GeneralSettingsPage() {
       label: 'Clinimetrix',
       icon: ChartBarIcon,
       content: <ClinimetrixSettings />
+    },
+    {
+      id: 'finance',
+      label: 'Finance',
+      icon: CurrencyDollarIcon,
+      content: <FinanceSettings />
     },
     {
       id: 'formx',

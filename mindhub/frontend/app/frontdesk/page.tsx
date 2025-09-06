@@ -4,146 +4,200 @@ import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/lib/providers/AuthProvider';
 import { 
-  ClipboardDocumentListIcon,
+  UserIcon,
   CurrencyDollarIcon,
   CalendarDaysIcon,
   DocumentTextIcon,
   UsersIcon,
   ClockIcon,
   CheckCircleIcon,
-  ExclamationTriangleIcon
+  MagnifyingGlassIcon,
+  PlusIcon,
+  ClipboardDocumentListIcon,
+  PhoneIcon,
+  EnvelopeIcon,
+  TagIcon,
+  ViewColumnsIcon,
+  HomeIcon
 } from '@heroicons/react/24/outline';
+import { StarIcon } from '@heroicons/react/24/solid';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import Link from 'next/link';
-import QuickPayment from '@/components/frontdesk/QuickPayment';
-import QuickScheduling from '@/components/frontdesk/QuickScheduling';
-import ResourceSender from '@/components/frontdesk/ResourceSender';
-import DayOverview from '@/components/frontdesk/DayOverview';
-import { simpleApiClient } from '@/lib/api/simple-api-client';
+import toast from 'react-hot-toast';
+import { authGet, authPost } from '@/lib/api/auth-fetch';
+
+interface Patient {
+  id: string;
+  first_name: string;
+  paternal_last_name: string;
+  maternal_last_name: string;
+  cell_phone: string;
+  email: string;
+  integration_level: 'none' | 'basic' | 'complete';
+  created_at: string;
+}
+
+interface QuickStats {
+  todayAppointments: number;
+  todayPayments: number;
+  pendingPayments: number;
+  totalPatients: number;
+  newPatientsWeek: number;
+}
+
+interface PrescriptionFollowUp {
+  patientId: string;
+  patientName: string;
+  medication: string;
+  medicationType: 'grupo_ii' | 'grupo_iii';
+  lastDelivery: string;
+  notes?: string;
+}
 
 function FrontDeskContent() {
   const router = useRouter();
-  const searchParams = useSearchParams();
   const { user, session, loading: authLoading } = useAuth();
-  const [activeModule, setActiveModule] = useState('overview');
-  const [todaysStats, setTodaysStats] = useState({
-    appointments: 0,
-    payments: 0,
+  
+  const [patients, setPatients] = useState<Patient[]>([]);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [stats, setStats] = useState<QuickStats>({
+    todayAppointments: 0,
+    todayPayments: 0,
     pendingPayments: 0,
-    resourcesSent: 0,
-    patients: 0
+    totalPatients: 0,
+    newPatientsWeek: 0
   });
-  const [loading, setLoading] = useState(true);
 
-  // Handle URL parameters to restore FrontDesk module state
-  useEffect(() => {
-    const module = searchParams?.get('module');
-    
-    if (module && ['overview', 'payments', 'scheduling', 'resources'].includes(module)) {
-      setActiveModule(module);
-    }
-  }, [searchParams]);
+  // Modals
+  const [showNewPatientModal, setShowNewPatientModal] = useState(false);
+  const [showPrescriptionModal, setShowPrescriptionModal] = useState(false);
+  const [showQuickPayModal, setShowQuickPayModal] = useState(false);
+  const [showPatientSearchModal, setShowPatientSearchModal] = useState(false);
 
-  // Handle module change with URL navigation
-  const handleModuleChange = (newModule: string) => {
-    setActiveModule(newModule);
-    
-    // Update URL to reflect current module
-    if (newModule === 'overview') {
-      router.push('/frontdesk');
-    } else {
-      router.push(`/frontdesk?module=${newModule}`);
-    }
-  };
+  // Prescription follow-up data
+  const [selectedMedication, setSelectedMedication] = useState<'grupo_ii' | 'grupo_iii'>('grupo_ii');
+  const [prescriptionNotes, setPrescriptionNotes] = useState('');
 
   useEffect(() => {
-    // Only load stats if user is authenticated
     if (user && session && !authLoading) {
-      loadTodaysStats();
-    } else if (!authLoading && !user) {
-      // User is not authenticated, set loading to false
-      setLoading(false);
+      loadDashboardData();
     }
   }, [user, session, authLoading]);
 
-  const loadTodaysStats = async () => {
-    // Don't make API calls if user is not authenticated
-    if (!user || !session) {
-      console.warn('[FrontDesk] Cannot load stats: User not authenticated');
-      setLoading(false);
-      return;
-    }
-
+  const loadDashboardData = async () => {
     try {
       setLoading(true);
-      console.log('[FrontDesk] Loading stats for authenticated user:', user.id);
-      const response = await simpleApiClient.getFrontDeskTodayStats();
-      if (response.success) {
-        setTodaysStats(response.data);
-        console.log('[FrontDesk] Stats loaded successfully');
+      
+      // Load today's stats
+      const statsResponse = await authGet('/api/frontdesk/django/stats');
+      if (statsResponse.ok) {
+        const data = await statsResponse.json();
+        setStats(data.results || data.data || stats);
+      }
+
+      // Load recent patients for quick access
+      const patientsResponse = await authGet('/api/expedix/django/patients?limit=20');
+      if (patientsResponse.ok) {
+        const data = await patientsResponse.json();
+        setPatients(data.results || data.data || []);
       }
     } catch (error) {
-      console.error('[FrontDesk] Error loading today stats:', error);
-      // Set default values on error to prevent UI issues
-      setTodaysStats({
-        appointments: 0,
-        payments: 0,
-        pendingPayments: 0,
-        resourcesSent: 0,
-        patients: 0
-      });
+      console.error('Error loading dashboard data:', error);
     } finally {
       setLoading(false);
     }
   };
 
-  const modules = [
-    {
-      id: 'overview',
-      name: 'Vista General',
-      icon: ClipboardDocumentListIcon,
-      description: 'Resumen del día',
-      color: 'bg-blue-500'
-    },
-    {
-      id: 'payments',
-      name: 'Cobros',
-      icon: CurrencyDollarIcon,
-      description: 'Gestionar pagos y anticipos',
-      color: 'bg-green-500'
-    },
-    {
-      id: 'scheduling',
-      name: 'Agendar',
-      icon: CalendarDaysIcon,
-      description: 'Programar citas rápidamente',
-      color: 'bg-purple-500'
-    },
-    {
-      id: 'resources',
-      name: 'Recursos',
-      icon: DocumentTextIcon,
-      description: 'Enviar materiales a pacientes',
-      color: 'bg-orange-500'
+  const handlePatientSearch = async (searchTerm: string) => {
+    if (!searchTerm || searchTerm.length < 2) {
+      setPatients([]);
+      return;
     }
-  ];
 
-  const renderActiveModule = () => {
-    switch (activeModule) {
-      case 'overview':
-        return <DayOverview stats={todaysStats} onRefresh={loadTodaysStats} />;
-      case 'payments':
-        return <QuickPayment onPaymentComplete={loadTodaysStats} />;
-      case 'scheduling':
-        return <QuickScheduling onAppointmentScheduled={loadTodaysStats} />;
-      case 'resources':
-        return <ResourceSender />;
-      default:
-        return <DayOverview stats={todaysStats} onRefresh={loadTodaysStats} />;
+    try {
+      setLoading(true);
+      const response = await authGet(`/api/expedix/django/patients/search?q=${encodeURIComponent(searchTerm)}`);
+      if (response.ok) {
+        const data = await response.json();
+        setPatients(data.results || data.data || []);
+      }
+    } catch (error) {
+      console.error('Error searching patients:', error);
+      toast.error('Error al buscar pacientes');
+    } finally {
+      setLoading(false);
     }
   };
+
+  const handleQuickAppointment = (patient?: Patient) => {
+    if (patient) {
+      router.push(`/hubs/agenda?patient=${patient.id}&action=schedule`);
+    } else {
+      router.push('/hubs/agenda?action=new');
+    }
+  };
+
+  const handleQuickPayment = (patient?: Patient) => {
+    setSelectedPatient(patient || null);
+    setShowQuickPayModal(true);
+  };
+
+  const handlePrescriptionFollowUp = async () => {
+    if (!selectedPatient) return;
+
+    try {
+      const followUpData: PrescriptionFollowUp = {
+        patientId: selectedPatient.id,
+        patientName: `${selectedPatient.first_name} ${selectedPatient.paternal_last_name}`,
+        medication: selectedMedication === 'grupo_ii' ? 'Medicamento Grupo II' : 'Medicamento Grupo III',
+        medicationType: selectedMedication,
+        lastDelivery: new Date().toISOString(),
+        notes: prescriptionNotes
+      };
+
+      const response = await authPost('/api/expedix/django/prescription-followup', followUpData);
+      
+      if (response.ok) {
+        toast.success('Entrega de receta registrada exitosamente');
+        setShowPrescriptionModal(false);
+        setPrescriptionNotes('');
+        setSelectedPatient(null);
+      } else {
+        toast.error('Error al registrar la entrega de receta');
+      }
+    } catch (error) {
+      console.error('Error registering prescription follow-up:', error);
+      toast.error('Error al registrar la entrega');
+    }
+  };
+
+  const getPatientFullName = (patient: Patient) => {
+    return `${patient.first_name} ${patient.paternal_last_name} ${patient.maternal_last_name || ''}`.trim();
+  };
+
+  const getIntegrationLevelBadge = (level: string) => {
+    const badges = {
+      'none': { color: 'bg-red-100 text-red-800', text: 'Sin integrar' },
+      'basic': { color: 'bg-yellow-100 text-yellow-800', text: 'Básico' },
+      'complete': { color: 'bg-green-100 text-green-800', text: 'Completo' }
+    };
+    const badge = badges[level as keyof typeof badges] || badges.none;
+    return (
+      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${badge.color}`}>
+        {badge.text}
+      </span>
+    );
+  };
+
+  const filteredPatients = patients.filter(patient => 
+    getPatientFullName(patient).toLowerCase().includes(searchTerm.toLowerCase()) ||
+    patient.cell_phone.includes(searchTerm) ||
+    (patient.email && patient.email.toLowerCase().includes(searchTerm.toLowerCase()))
+  );
 
   // Show loading while auth is being determined
   if (authLoading) {
@@ -178,9 +232,9 @@ function FrontDeskContent() {
   return (
     <div className="min-h-screen w-full bg-gray-50">
       <PageHeader
-        title="FrontDesk"
-        description="Sistema de gestión para recepción y asistente"
-        icon={ClipboardDocumentListIcon}
+        title="FrontDesk - Dashboard Secretaria"
+        description="Gestión rápida de citas, cobros, pacientes y seguimientos"
+        icon={ViewColumnsIcon}
         iconColor="text-blue-600"
         actions={
           <div className="flex items-center space-x-4">
@@ -195,144 +249,321 @@ function FrontDeskContent() {
             </div>
             <Link href="/hubs">
               <Button variant="outline">
-                Volver al Dashboard
+                <HomeIcon className="h-4 w-4 mr-2" />
+                Dashboard Principal
               </Button>
             </Link>
           </div>
         }
       />
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
         {/* Quick Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-5 gap-6 mb-8">
-          <Card className="p-6">
+        <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-6">
+          <Card className="p-4">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-gray-600">Citas Hoy</p>
-                <p className="text-3xl font-bold text-blue-600">{todaysStats.appointments}</p>
+                <p className="text-2xl font-bold text-blue-600">{stats.todayAppointments}</p>
               </div>
-              <CalendarDaysIcon className="h-12 w-12 text-blue-500" />
+              <CalendarDaysIcon className="h-8 w-8 text-blue-500" />
             </div>
           </Card>
 
-          <Card className="p-6">
+          <Card className="p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-600">Cobros</p>
-                <p className="text-3xl font-bold text-green-600">{todaysStats.payments}</p>
+                <p className="text-sm font-medium text-gray-600">Cobros Hoy</p>
+                <p className="text-2xl font-bold text-green-600">{stats.todayPayments}</p>
               </div>
-              <CheckCircleIcon className="h-12 w-12 text-green-500" />
+              <CheckCircleIcon className="h-8 w-8 text-green-500" />
             </div>
           </Card>
 
-          <Card className="p-6">
+          <Card className="p-4">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-gray-600">Pendientes</p>
-                <p className="text-3xl font-bold text-orange-600">{todaysStats.pendingPayments}</p>
+                <p className="text-2xl font-bold text-orange-600">{stats.pendingPayments}</p>
               </div>
-              <ExclamationTriangleIcon className="h-12 w-12 text-orange-500" />
+              <CurrencyDollarIcon className="h-8 w-8 text-orange-500" />
             </div>
           </Card>
 
-          <Card className="p-6">
+          <Card className="p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-600">Recursos</p>
-                <p className="text-3xl font-bold text-purple-600">{todaysStats.resourcesSent}</p>
+                <p className="text-sm font-medium text-gray-600">Total Pacientes</p>
+                <p className="text-2xl font-bold text-purple-600">{stats.totalPatients}</p>
               </div>
-              <DocumentTextIcon className="h-12 w-12 text-purple-500" />
+              <UsersIcon className="h-8 w-8 text-purple-500" />
             </div>
           </Card>
 
-          <Card className="p-6">
+          <Card className="p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-600">Pacientes</p>
-                <p className="text-3xl font-bold text-indigo-600">{todaysStats.patients}</p>
+                <p className="text-sm font-medium text-gray-600">Nuevos (Semana)</p>
+                <p className="text-2xl font-bold text-indigo-600">{stats.newPatientsWeek}</p>
               </div>
-              <UsersIcon className="h-12 w-12 text-indigo-500" />
+              <PlusIcon className="h-8 w-8 text-indigo-500" />
             </div>
           </Card>
         </div>
 
-        <div className="flex flex-col lg:flex-row gap-8">
-          {/* Sidebar Navigation */}
-          <div className="lg:w-64 flex-shrink-0">
-            <Card className="p-4">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Módulos</h3>
-              <nav className="space-y-2">
-                {modules.map((module) => {
-                  const IconComponent = module.icon;
-                  return (
-                    <button
-                      key={module.id}
-                      onClick={() => handleModuleChange(module.id)}
-                      className={`w-full text-left p-4 rounded-lg transition-colors ${
-                        activeModule === module.id
-                          ? 'bg-blue-100 text-blue-700 border border-blue-200'
-                          : 'text-gray-700 hover:bg-gray-100'
-                      }`}
-                    >
-                      <div className="flex items-center">
-                        <div className={`p-2 rounded-lg mr-3 ${
-                          activeModule === module.id ? 'bg-blue-200' : 'bg-gray-200'
-                        }`}>
-                          <IconComponent className={`h-5 w-5 ${
-                            activeModule === module.id ? 'text-blue-600' : 'text-gray-600'
-                          }`} />
-                        </div>
-                        <div>
-                          <div className="font-medium">{module.name}</div>
-                          <div className="text-sm text-gray-500">{module.description}</div>
-                        </div>
-                      </div>
-                    </button>
-                  );
-                })}
-              </nav>
-            </Card>
+        {/* Quick Actions Row */}
+        <div className="grid grid-cols-2 md:grid-cols-6 gap-3 mb-6">
+          <Button 
+            onClick={() => handleQuickAppointment()}
+            className="bg-purple-600 hover:bg-purple-700 text-white p-4 flex flex-col items-center justify-center h-20"
+          >
+            <CalendarDaysIcon className="h-6 w-6 mb-1" />
+            <span className="text-sm">Nueva Cita</span>
+          </Button>
 
-            {/* Quick Actions */}
-            <Card className="p-4 mt-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Acciones Rápidas</h3>
-              <div className="space-y-3">
+          <Button 
+            onClick={() => setShowNewPatientModal(true)}
+            className="bg-blue-600 hover:bg-blue-700 text-white p-4 flex flex-col items-center justify-center h-20"
+          >
+            <UserIcon className="h-6 w-6 mb-1" />
+            <span className="text-sm">Nuevo Paciente</span>
+          </Button>
+
+          <Button 
+            onClick={() => handleQuickPayment()}
+            className="bg-green-600 hover:bg-green-700 text-white p-4 flex flex-col items-center justify-center h-20"
+          >
+            <CurrencyDollarIcon className="h-6 w-6 mb-1" />
+            <span className="text-sm">Cobro Rápido</span>
+          </Button>
+
+          <Button 
+            onClick={() => setShowPrescriptionModal(true)}
+            className="bg-orange-600 hover:bg-orange-700 text-white p-4 flex flex-col items-center justify-center h-20"
+          >
+            <DocumentTextIcon className="h-6 w-6 mb-1" />
+            <span className="text-sm">Entrega Receta</span>
+          </Button>
+
+          <Button 
+            onClick={() => setShowPatientSearchModal(true)}
+            className="bg-indigo-600 hover:bg-indigo-700 text-white p-4 flex flex-col items-center justify-center h-20"
+          >
+            <MagnifyingGlassIcon className="h-6 w-6 mb-1" />
+            <span className="text-sm">Buscar Paciente</span>
+          </Button>
+
+          <Link href="/hubs/resources">
+            <Button 
+              className="bg-pink-600 hover:bg-pink-700 text-white p-4 flex flex-col items-center justify-center h-20 w-full"
+            >
+              <DocumentTextIcon className="h-6 w-6 mb-1" />
+              <span className="text-sm">Recursos</span>
+            </Button>
+          </Link>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Patient Search & Quick Actions */}
+          <div className="lg:col-span-2">
+            <Card className="p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold text-gray-900">Búsqueda Rápida de Pacientes</h3>
                 <Button 
-                  onClick={() => handleModuleChange('payments')}
-                  className="w-full bg-green-600 hover:bg-green-700"
+                  onClick={() => setShowPatientSearchModal(true)}
+                  variant="outline" 
                   size="sm"
                 >
-                  <CurrencyDollarIcon className="h-4 w-4 mr-2" />
-                  Cobro Rápido
-                </Button>
-                <Button 
-                  onClick={() => handleModuleChange('scheduling')}
-                  className="w-full bg-purple-600 hover:bg-purple-700"
-                  size="sm"
-                >
-                  <CalendarDaysIcon className="h-4 w-4 mr-2" />
-                  Nueva Cita
-                </Button>
-                <Button 
-                  onClick={() => handleModuleChange('resources')}
-                  className="w-full bg-orange-600 hover:bg-orange-700"
-                  size="sm"
-                >
-                  <DocumentTextIcon className="h-4 w-4 mr-2" />
-                  Enviar Recurso
+                  <MagnifyingGlassIcon className="h-4 w-4 mr-1" />
+                  Búsqueda Avanzada
                 </Button>
               </div>
+
+              <div className="relative mb-4">
+                <MagnifyingGlassIcon className="h-5 w-5 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+                <input
+                  type="text"
+                  placeholder="Buscar por nombre, teléfono o email..."
+                  value={searchTerm}
+                  onChange={(e) => {
+                    setSearchTerm(e.target.value);
+                    handlePatientSearch(e.target.value);
+                  }}
+                  className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+
+              <div className="space-y-2 max-h-96 overflow-y-auto">
+                {filteredPatients.map((patient) => (
+                  <div key={patient.id} className="flex items-center justify-between p-3 border border-gray-200 rounded-lg hover:bg-gray-50">
+                    <div className="flex items-center space-x-3">
+                      <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
+                        <UserIcon className="h-5 w-5 text-blue-600" />
+                      </div>
+                      <div>
+                        <div className="font-medium text-gray-900">{getPatientFullName(patient)}</div>
+                        <div className="text-sm text-gray-600 flex items-center space-x-2">
+                          <PhoneIcon className="h-4 w-4" />
+                          <span>{patient.cell_phone}</span>
+                          {patient.email && (
+                            <>
+                              <EnvelopeIcon className="h-4 w-4" />
+                              <span>{patient.email}</span>
+                            </>
+                          )}
+                        </div>
+                        <div className="mt-1">
+                          {getIntegrationLevelBadge(patient.integration_level)}
+                        </div>
+                      </div>
+                    </div>
+                    <div className="flex space-x-2">
+                      <Button
+                        onClick={() => handleQuickAppointment(patient)}
+                        size="sm"
+                        variant="outline"
+                      >
+                        <CalendarDaysIcon className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        onClick={() => handleQuickPayment(patient)}
+                        size="sm"
+                        variant="outline"
+                      >
+                        <CurrencyDollarIcon className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        onClick={() => {
+                          setSelectedPatient(patient);
+                          setShowPrescriptionModal(true);
+                        }}
+                        size="sm"
+                        variant="outline"
+                      >
+                        <DocumentTextIcon className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {filteredPatients.length === 0 && searchTerm && (
+                <div className="text-center py-8">
+                  <UsersIcon className="h-12 w-12 mx-auto text-gray-300 mb-4" />
+                  <p className="text-gray-500">No se encontraron pacientes con "{searchTerm}"</p>
+                </div>
+              )}
             </Card>
           </div>
 
-          {/* Main Content */}
-          <div className="flex-1">
-            <Card className="p-6 min-h-[600px]">
-              {renderActiveModule()}
+          {/* Quick Links & Timeline */}
+          <div className="space-y-6">
+            <Card className="p-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">Accesos Directos</h3>
+              <div className="space-y-3">
+                <Link href="/hubs/expedix" className="block">
+                  <Button variant="outline" className="w-full justify-start">
+                    <ClipboardDocumentListIcon className="h-4 w-4 mr-2" />
+                    Gestión de Expedientes
+                  </Button>
+                </Link>
+                <Link href="/hubs/agenda" className="block">
+                  <Button variant="outline" className="w-full justify-start">
+                    <CalendarDaysIcon className="h-4 w-4 mr-2" />
+                    Agenda Completa
+                  </Button>
+                </Link>
+                <Link href="/hubs/finance" className="block">
+                  <Button variant="outline" className="w-full justify-start">
+                    <CurrencyDollarIcon className="h-4 w-4 mr-2" />
+                    Sistema de Cobros
+                  </Button>
+                </Link>
+                <Link href="/hubs/clinimetrix" className="block">
+                  <Button variant="outline" className="w-full justify-start">
+                    <StarIcon className="h-4 w-4 mr-2" />
+                    Evaluaciones Clínicas
+                  </Button>
+                </Link>
+              </div>
+            </Card>
+
+            <Card className="p-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">Notas Rápidas</h3>
+              <textarea
+                className="w-full h-32 p-3 border border-gray-300 rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-blue-500"
+                placeholder="Notas rápidas para el día..."
+              />
+              <Button size="sm" className="mt-2 w-full">Guardar Nota</Button>
             </Card>
           </div>
         </div>
       </div>
+
+      {/* Prescription Follow-up Modal */}
+      {showPrescriptionModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">Entrega de Receta de Seguimiento</h3>
+            
+            {selectedPatient && (
+              <div className="mb-4 p-3 bg-blue-50 rounded-lg">
+                <p className="font-medium text-blue-900">{getPatientFullName(selectedPatient)}</p>
+                <p className="text-sm text-blue-700">{selectedPatient.cell_phone}</p>
+              </div>
+            )}
+
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Tipo de Medicamento Controlado
+                </label>
+                <select
+                  value={selectedMedication}
+                  onChange={(e) => setSelectedMedication(e.target.value as 'grupo_ii' | 'grupo_iii')}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="grupo_ii">Grupo II - Controlados</option>
+                  <option value="grupo_iii">Grupo III - Psicotrópicos</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Notas Adicionales
+                </label>
+                <textarea
+                  value={prescriptionNotes}
+                  onChange={(e) => setPrescriptionNotes(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  rows={3}
+                  placeholder="Notas sobre la entrega de receta..."
+                />
+              </div>
+            </div>
+
+            <div className="flex space-x-3 mt-6">
+              <Button
+                onClick={() => {
+                  setShowPrescriptionModal(false);
+                  setSelectedPatient(null);
+                  setPrescriptionNotes('');
+                }}
+                variant="outline"
+                className="flex-1"
+              >
+                Cancelar
+              </Button>
+              <Button
+                onClick={handlePrescriptionFollowUp}
+                className="flex-1 bg-orange-600 hover:bg-orange-700"
+              >
+                Registrar Entrega
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -341,7 +572,7 @@ export default function FrontDeskPage() {
   return (
     <Suspense fallback={
       <div className="flex flex-col items-center justify-center py-16 space-y-4">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
         <div className="text-center">
           <p className="text-gray-900 font-medium">Cargando FrontDesk...</p>
         </div>

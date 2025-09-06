@@ -22,19 +22,14 @@ export const GET_MEDICAL_RESOURCES = gql`
           file_path
           file_type
           file_size
-          mime_type
           category
           tags
           is_public
-          library_type
-          owner_id
+          resource_type
+          created_by
           clinic_id
-          workspace_id
-          upload_by
-          view_count
           download_count
-          send_count
-          is_active
+          metadata
           created_at
           updated_at
         }
@@ -73,7 +68,6 @@ export const GET_PUBLIC_RESOURCES = gql`
           file_path
           file_type
           file_size
-          mime_type
           category
           tags
           view_count
@@ -91,8 +85,8 @@ export const GET_INDIVIDUAL_RESOURCES = gql`
     medical_resourcesCollection(
       filter: {
         and: [
-          { owner_id: { eq: $userId } }
-          { workspace_id: { is: "NOT_NULL" } }
+          { created_by: { eq: $userId } }
+          { clinic_id: { is: "NOT_NULL" } }
           { category: { eq: $category } }
           { is_active: { eq: true } }
         ]
@@ -107,7 +101,6 @@ export const GET_INDIVIDUAL_RESOURCES = gql`
           file_path
           file_type
           file_size
-          mime_type
           category
           tags
           library_type
@@ -143,7 +136,6 @@ export const GET_CLINIC_RESOURCES = gql`
           file_path
           file_type
           file_size
-          mime_type
           category
           tags
           library_type
@@ -176,7 +168,7 @@ export const SEARCH_RESOURCES = gql`
           {
             or: [
               { is_public: { eq: $includePublic } }
-              { owner_id: { eq: $userId } }
+              { created_by: { eq: $userId } }
               { clinic_id: { eq: $clinicId } }
             ]
           }
@@ -216,19 +208,14 @@ export const GET_RESOURCE_BY_ID = gql`
           file_path
           file_type
           file_size
-          mime_type
           category
           tags
           is_public
-          library_type
-          owner_id
+          resource_type
+          created_by
           clinic_id
-          workspace_id
-          upload_by
-          view_count
           download_count
-          send_count
-          is_active
+          metadata
           created_at
           updated_at
         }
@@ -243,7 +230,7 @@ export const GET_RESOURCES_STATS = gql`
     userResources: medical_resourcesCollection(
       filter: {
         and: [
-          { owner_id: { eq: $userId } }
+          { created_by: { eq: $userId } }
           { is_active: { eq: true } }
         ]
       }
@@ -294,7 +281,7 @@ export const GET_RESOURCES_BY_CATEGORY = gql`
           {
             or: [
               { is_public: { eq: $includePublic } }
-              { owner_id: { eq: $userId } }
+              { created_by: { eq: $userId } }
               { clinic_id: { eq: $clinicId } }
             ]
           }

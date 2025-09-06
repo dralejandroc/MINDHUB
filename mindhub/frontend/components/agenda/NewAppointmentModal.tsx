@@ -32,12 +32,13 @@ interface AppointmentData {
 interface NewAppointmentModalProps {
   selectedDate: Date;
   selectedTime?: string;
+  preselectedPatientId?: string;
   editingAppointment?: any;
   onClose: () => void;
   onSave: (appointment: AppointmentData) => void;
 }
 
-export default function NewAppointmentModal({ selectedDate, selectedTime, editingAppointment, onClose, onSave }: NewAppointmentModalProps) {
+export default function NewAppointmentModal({ selectedDate, selectedTime, preselectedPatientId, editingAppointment, onClose, onSave }: NewAppointmentModalProps) {
   // Safe date conversion
   const getDateString = (date: any): string => {
     if (!date) return new Date().toISOString().split('T')[0];
@@ -142,6 +143,16 @@ export default function NewAppointmentModal({ selectedDate, selectedTime, editin
               console.log('🔄 Loaded patient for editing:', patient);
             }
           }
+          
+          // If preselected patient ID is provided, auto-select it
+          if (preselectedPatientId && !editingAppointment) {
+            const preselectedPatient = patientsData.find((p: any) => p.id === preselectedPatientId);
+            if (preselectedPatient) {
+              setSelectedPatient(preselectedPatient);
+              setFormData(prev => ({ ...prev, patientId: preselectedPatient.id }));
+              console.log('🎯 Auto-selected preselected patient:', preselectedPatient);
+            }
+          }
         }
 
         // Load consultation types from schedule config
@@ -158,7 +169,7 @@ export default function NewAppointmentModal({ selectedDate, selectedTime, editin
       }
     };
     loadData();
-  }, [editingAppointment]);
+  }, [editingAppointment, preselectedPatientId]);
 
   // Optimized patient filtering with useMemo to prevent excessive re-renders
   const filteredPatientsOptimized = useMemo(() => {

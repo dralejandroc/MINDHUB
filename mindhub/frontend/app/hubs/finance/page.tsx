@@ -17,25 +17,34 @@ import {
   ClipboardDocumentListIcon
 } from '@heroicons/react/24/outline';
 import { Button } from '@/components/ui/Button';
+import NewIncomeModal from '@/components/finance/NewIncomeModal';
+import toast from 'react-hot-toast';
 
-type FinanceView = 'dashboard' | 'income' | 'reports' | 'cash-register' | 'config';
+type FinanceView = 'dashboard' | 'income' | 'reports' | 'cash-register';
 
 function FinanceContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [currentView, setCurrentView] = useState<FinanceView>('dashboard');
+  const [showNewIncomeModal, setShowNewIncomeModal] = useState(false);
 
   // Handle URL parameters to restore finance view state
   useEffect(() => {
     const view = searchParams?.get('view') as FinanceView;
     
-    if (view && ['dashboard', 'income', 'reports', 'cash-register', 'config'].includes(view)) {
+    if (view && ['dashboard', 'income', 'reports', 'cash-register'].includes(view)) {
       setCurrentView(view);
     }
   }, [searchParams]);
 
   const handleNewIncome = () => {
-    console.log('New income');
+    setShowNewIncomeModal(true);
+  };
+
+  const handleIncomeModalSave = (incomeData: any) => {
+    toast.success('Ingreso registrado exitosamente');
+    setShowNewIncomeModal(false);
+    // Aquí puedes actualizar la lista de transacciones o recargar datos
   };
 
   // Handle view change with URL navigation
@@ -119,24 +128,6 @@ function FinanceContent() {
     );
   }
 
-  if (currentView === 'config') {
-    return (
-      <div className="space-y-6">
-        <PageHeader
-          title="Finance - Configuración"
-          description="Configura servicios, precios y descuentos"
-          icon={Cog6ToothIcon}
-          iconColor="text-secondary-600"
-          actions={[
-            <Button key="back" onClick={handleBackToDashboard} variant="outline" size="sm">
-              Volver al Dashboard
-            </Button>
-          ]}
-        />
-        <FinanceConfiguration />
-      </div>
-    );
-  }
 
   // Dashboard view
   return (
@@ -166,7 +157,7 @@ function FinanceContent() {
       />
       
       {/* Quick Actions Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div 
           className="bg-white rounded-2xl shadow-lg border border-secondary-100 p-4 hover-lift transition-all duration-300 cursor-pointer relative before:absolute before:top-0 before:left-0 before:right-0 before:h-1 before:border-gradient-secondary"
           onClick={() => handleViewChange('income')}
@@ -215,21 +206,6 @@ function FinanceContent() {
           </Button>
         </div>
 
-        <div 
-          className="bg-white rounded-2xl shadow-lg border border-secondary-100 p-4 hover-lift transition-all duration-300 cursor-pointer relative before:absolute before:top-0 before:left-0 before:right-0 before:h-1 before:border-gradient-secondary"
-          onClick={() => handleViewChange('config')}
-        >
-          <div className="flex items-center justify-between mb-3">
-            <h3 className="text-sm font-semibold text-dark-green">Configuración</h3>
-            <Cog6ToothIcon className="h-5 w-5 text-secondary-600" />
-          </div>
-          <p className="text-gray-600 text-xs mb-3">
-            Configura servicios, precios, descuentos y métodos de pago
-          </p>
-          <Button variant="outline" size="sm" className="w-full border-purple-200 text-purple-600 hover:bg-purple-50">
-            Configurar
-          </Button>
-        </div>
       </div>
 
       {/* Recent Transactions Preview */}
@@ -247,12 +223,21 @@ function FinanceContent() {
             <CurrencyDollarIcon className="h-10 w-10 text-gray-300 mx-auto mb-3" />
             <p className="text-sm font-medium text-gray-700 mb-1">No hay transacciones recientes</p>
             <p className="text-xs text-gray-500 mb-3">Registra tu primer ingreso para comenzar</p>
-            <Button onClick={() => handleViewChange('income')} variant="secondary" size="sm" className="mt-2">
+            <Button onClick={handleNewIncome} variant="secondary" size="sm" className="mt-2">
               Registrar Primer Ingreso
             </Button>
           </div>
         </div>
       </div>
+
+      {/* New Income Modal */}
+      {showNewIncomeModal && (
+        <NewIncomeModal
+          selectedDate={new Date()}
+          onClose={() => setShowNewIncomeModal(false)}
+          onSave={handleIncomeModalSave}
+        />
+      )}
     </div>
   );
 }

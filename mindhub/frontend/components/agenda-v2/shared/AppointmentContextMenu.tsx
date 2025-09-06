@@ -115,9 +115,10 @@ export const AppointmentContextMenu: React.FC<AppointmentContextMenuProps> = ({
         id: 'start',
         label: 'Iniciar Consulta',
         icon: PlayIcon,
-        color: 'text-green-600 hover:bg-green-50',
+        color: 'text-white bg-green-600 hover:bg-green-700 font-semibold',
         description: 'Comenzar la consulta con el paciente',
-        disabled: !canStart
+        disabled: !canStart,
+        separator: true // Visual separator after this action
       },
       {
         id: 'confirm',

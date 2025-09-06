@@ -28,64 +28,90 @@ import {
 } from '@heroicons/react/24/outline';
 import { cn } from '@/lib/utils';
 
-const NAVIGATION_ITEMS = [
+// Grouped navigation structure for better UX
+const NAVIGATION_GROUPS = [
   {
-    id: 'dashboard',
-    name: 'Home',
-    href: '/app',
-    icon: HomeIcon,
-    status: 'active'
+    id: 'main',
+    name: 'Principal',
+    items: [
+      {
+        id: 'dashboard',
+        name: 'Dashboard',
+        href: '/app',
+        icon: HomeIcon,
+        status: 'active',
+        description: 'Vista general'
+      },
+      {
+        id: 'frontdesk',
+        name: 'Recepción',
+        href: '/frontdesk',
+        icon: ClipboardDocumentListIcon,
+        status: 'active',
+        description: 'Gestión de llegadas'
+      }
+    ]
   },
   {
-    id: 'agenda',
-    name: 'Agenda',
-    href: '/hubs/agenda',
-    icon: CalendarIcon,
-    status: 'active'
+    id: 'clinical',
+    name: 'Gestión Clínica',
+    items: [
+      {
+        id: 'agenda',
+        name: 'Agenda',
+        href: '/hubs/agenda',
+        icon: CalendarIcon,
+        status: 'active',
+        description: 'Citas y horarios'
+      },
+      {
+        id: 'expedix',
+        name: 'Expedientes',
+        href: '/hubs/expedix',
+        icon: UserGroupIcon,
+        status: 'active',
+        description: 'Pacientes y consultas'
+      },
+      {
+        id: 'clinimetrix',
+        name: 'Evaluaciones',
+        href: '/hubs/clinimetrix',
+        icon: DocumentChartBarIcon,
+        status: 'active',
+        description: 'Escalas psicométricas'
+      }
+    ]
   },
   {
-    id: 'expedix',
-    name: 'Expedix',
-    href: '/hubs/expedix',
-    icon: UserGroupIcon,
-    status: 'active'
-  },
-  {
-    id: 'clinimetrix',
-    name: 'ClinimetrixPro',
-    href: '/hubs/clinimetrix',
-    icon: DocumentChartBarIcon,
-    status: 'active'
-  },
-  {
-    id: 'resources',
-    name: 'Resources',
-    href: '/hubs/resources',
-    icon: BookOpenIcon,
-    status: 'active'
-  },
-  {
-    id: 'finance',
-    name: 'Finance',
-    href: '/hubs/finance',
-    icon: BanknotesIcon,
-    status: 'active'
-  },
-  {
-    id: 'frontdesk',
-    name: 'FrontDesk',
-    href: '/frontdesk',
-    icon: ClipboardDocumentListIcon,
-    status: 'active'
-  },
-  {
-    id: 'formx',
-    name: 'FormX',
-    href: '/hubs/formx',
-    icon: DocumentTextIcon,
-    status: 'active'
+    id: 'administration',
+    name: 'Administración',
+    items: [
+      {
+        id: 'finance',
+        name: 'Finanzas',
+        href: '/hubs/finance',
+        icon: BanknotesIcon,
+        status: 'active',
+        description: 'Facturación y pagos'
+      },
+      {
+        id: 'formx',
+        name: 'Formularios',
+        href: '/hubs/formx',
+        icon: DocumentTextIcon,
+        status: 'active',
+        description: 'Plantillas médicas'
+      },
+      {
+        id: 'resources',
+        name: 'Recursos',
+        href: '/hubs/resources',
+        icon: BookOpenIcon,
+        status: 'active',
+        description: 'Documentos y archivos'
+      }
+    ]
   }
-  // Reports integrated into other modules
 ];
 
 interface UnifiedSidebarProps {
@@ -157,7 +183,7 @@ export function UnifiedSidebar({ children }: UnifiedSidebarProps) {
   const sidebarWidth = isCollapsed ? 'w-12' : 'w-40'; // Collapsed: w-12, Expanded: w-40 (10% increase from w-36)
   const sidebarWidthLg = isCollapsed ? 'sm:w-12' : 'sm:w-40';
 
-  const renderNavigationItem = (item: typeof NAVIGATION_ITEMS[0]) => {
+  const renderNavigationItem = (item: typeof NAVIGATION_GROUPS[0]['items'][0]) => {
     const IconComponent = item.icon;
     const isCurrent = isCurrentPage(item.href);
     const isDisabled = item.status === 'coming-soon';
@@ -176,7 +202,9 @@ export function UnifiedSidebar({ children }: UnifiedSidebarProps) {
                 : 'text-theme-secondary hover:bg-theme-tertiary hover:text-primary',
             isCollapsed ? 'justify-center px-2 py-1.5' : 'justify-start px-3 py-1.5'
           )}
-          title={isCollapsed ? item.name : undefined}
+          title={isCollapsed ? `${item.name}: ${item.description}` : item.description}
+          aria-label={`${item.name}: ${item.description}`}
+          aria-current={isCurrent ? 'page' : undefined}
         >
           <IconComponent 
             className={cn(
@@ -184,6 +212,7 @@ export function UnifiedSidebar({ children }: UnifiedSidebarProps) {
               isCurrent ? 'text-theme-on-accent' : 'text-theme-tertiary group-hover:text-primary',
               isCollapsed ? 'mr-0' : 'mr-2'
             )}
+            aria-hidden="true"
           />
           {!isCollapsed && (
             <>
@@ -197,6 +226,24 @@ export function UnifiedSidebar({ children }: UnifiedSidebarProps) {
           )}
         </Link>
       </li>
+    );
+  };
+
+  const renderNavigationGroup = (group: typeof NAVIGATION_GROUPS[0]) => {
+    return (
+      <div key={group.id} className="mb-4">
+        {!isCollapsed && (
+          <h3 className="px-3 mb-2 text-xs font-semibold text-theme-tertiary uppercase tracking-wider">
+            {group.name}
+          </h3>
+        )}
+        {isCollapsed && (
+          <div className="mb-2 border-t border-theme-primary opacity-20" aria-hidden="true" />
+        )}
+        <ul className="space-y-1">
+          {group.items.map(renderNavigationItem)}
+        </ul>
+      </div>
     );
   };
 
@@ -277,14 +324,16 @@ export function UnifiedSidebar({ children }: UnifiedSidebarProps) {
         </button>
       </div>
 
-      {/* Navigation */}
-      <nav className={cn(
-        'flex-1 py-4 space-y-1 overflow-y-auto',
-        isCollapsed ? 'px-2' : 'px-3'
-      )}>
-        <ul className="space-y-1">
-          {NAVIGATION_ITEMS.map(renderNavigationItem)}
-        </ul>
+      {/* Navigation with Groups */}
+      <nav 
+        className={cn(
+          'flex-1 py-4 overflow-y-auto',
+          isCollapsed ? 'px-2' : 'px-0'
+        )}
+        role="navigation"
+        aria-label="Navegación principal"
+      >
+        {NAVIGATION_GROUPS.map(renderNavigationGroup)}
       </nav>
 
       {/* User section - only show when not collapsed */}

@@ -15,6 +15,9 @@ import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/Input';
+import { authGet } from '@/lib/api/auth-fetch';
+import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
+import toast from 'react-hot-toast';
 
 interface FormXResponsesManagerProps {
   onNavigate: (view: string, data?: any) => void;
@@ -46,29 +49,35 @@ export function FormXResponsesManager({ onNavigate }: FormXResponsesManagerProps
   const fetchResponses = async () => {
     try {
       setLoading(true);
-      const response = await fetch('/api/formx/django/submissions');
+      const response = await authGet('/api/formx/django/submissions/');
+      
       if (response.ok) {
         const data = await response.json();
         // Transform Django data to match current interface
-        const transformedResponses = data.map((submission: any) => ({
+        const transformedResponses = Array.isArray(data) ? data.map((submission: any) => ({
           id: submission.id,
-          formName: submission.template_name || 'Formulario Desconocido',
-          patientName: submission.patient_email?.split('@')[0] || 'Paciente',
-          submittedAt: new Date(submission.submitted_at).toLocaleString(),
-          completionTime: calculateCompletionTime(submission.submitted_at),
-          status: mapSubmissionStatus(submission.status),
-          responses: submission.form_data || {},
-          score: calculateScore(submission.form_data)
-        }));
+          formName: submission.template_name || 'Formulario',
+          patientName: submission.patient_name || submission.patient_email?.split('@')[0] || 'Anónimo',
+          submittedAt: new Date(submission.submitted_at || submission.created_at).toLocaleString('es-MX'),
+          completionTime: calculateCompletionTime(submission.created_at),
+          status: mapSubmissionStatus(submission.status || 'complete'),
+          responses: submission.form_data || submission.responses || {},
+          score: calculateScore(submission.form_data || submission.responses)
+        })) : [];
+        
         setResponses(transformedResponses);
+      } else if (response.status === 404) {
+        // No submissions found is not an error
+        setResponses([]);
       } else {
-        // Fallback to simulated data if API fails
-        setResponses(simulatedResponses);
+        console.error('Error loading submissions:', response.status);
+        toast.error('Error al cargar las respuestas');
+        setResponses([]);
       }
     } catch (error) {
       console.error('Error fetching responses:', error);
-      // Fallback to simulated data
-      setResponses(simulatedResponses);
+      toast.error('Error de conexión al cargar respuestas');
+      setResponses([]);
     } finally {
       setLoading(false);
     }
@@ -99,66 +108,6 @@ export function FormXResponsesManager({ onNavigate }: FormXResponsesManagerProps
     return Math.round((filledFields / totalFields) * 100);
   };
 
-  // Datos simulados de respuestas como fallback
-  const simulatedResponses: FormResponse[] = [
-    {
-      id: '1',
-      formName: 'Formulario Psiquiátrico Niño (5-11 años)',
-      patientName: 'Ana García',
-      submittedAt: '2024-01-22 10:30',
-      completionTime: '12 min',
-      status: 'complete',
-      responses: {
-        'nombre': 'Ana García',
-        'fecha_nacimiento': '2018-05-15',
-        'como_se_siente': 'Feliz',
-        'que_gusta_hacer': 'Me gusta jugar con mis amigos y dibujar'
-      },
-      score: 85
-    },
-    {
-      id: '2',
-      formName: 'Formulario de Admisión Adultos',
-      patientName: 'Carlos López',
-      submittedAt: '2024-01-22 14:15',
-      completionTime: '18 min',
-      status: 'complete',
-      responses: {
-        'nombre_completo': 'Carlos López Mendoza',
-        'email': 'carlos.lopez@email.com',
-        'motivo_consulta': 'Consulta por ansiedad y problemas de sueño recurrentes',
-        'estado_civil': 'Casado'
-      }
-    },
-    {
-      id: '3',
-      formName: 'Formulario de Seguimiento',
-      patientName: 'María Rodríguez',
-      submittedAt: '2024-01-22 16:45',
-      completionTime: '8 min',
-      status: 'partial',
-      responses: {
-        'escala_sentimiento': '7',
-        'sintomas': ['Dolor de cabeza'],
-        'comentarios': 'Me siento mejor que la semana pasada'
-      },
-      score: 70
-    },
-    {
-      id: '4',
-      formName: 'Screening de Salud Mental',
-      patientName: 'Pedro Martín',
-      submittedAt: '2024-01-21 11:20',
-      completionTime: '15 min',
-      status: 'pending_review',
-      responses: {
-        'ansiedad_nivel': '8',
-        'calidad_sueno': 'Mala',
-        'descripcion_semana': 'Ha sido una semana muy difícil, me he sentido constantemente preocupado y no he podido dormir bien.'
-      },
-      score: 45
-    }
-  ];
 
   const forms = Array.from(new Set(responses.map(r => r.formName)));
   const statuses = ['Todos', 'Completo', 'Parcial', 'Pendiente Revisión'];
@@ -199,9 +148,38 @@ export function FormXResponsesManager({ onNavigate }: FormXResponsesManagerProps
     return 'text-red-600';
   };
 
-  const exportResponses = () => {
-    // Simular exportación
-    alert('Exportando respuestas seleccionadas a Excel...');
+  const exportResponses = async () => {
+    try {
+      // Create CSV from current responses
+      const csvHeaders = ['ID', 'Formulario', 'Paciente', 'Fecha', 'Estado', 'Puntuación'];
+      const csvRows = filteredResponses.map(r => [
+        r.id,
+        r.formName,
+        r.patientName,
+        r.submittedAt,
+        getStatusLabel(r.status),
+        r.score || 'N/A'
+      ]);
+      
+      const csvContent = [
+        csvHeaders.join(','),
+        ...csvRows.map(row => row.join(','))
+      ].join('\n');
+      
+      // Download CSV file
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `respuestas_formx_${new Date().toISOString().split('T')[0]}.csv`;
+      link.click();
+      window.URL.revokeObjectURL(url);
+      
+      toast.success('Respuestas exportadas exitosamente');
+    } catch (error) {
+      console.error('Error exporting responses:', error);
+      toast.error('Error al exportar respuestas');
+    }
   };
 
   const ResponseDetailModal = ({ response, onClose }: { response: FormResponse, onClose: () => void }) => (
@@ -269,6 +247,14 @@ export function FormXResponsesManager({ onNavigate }: FormXResponsesManagerProps
     </div>
   );
 
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <LoadingSpinner size="lg" />
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -282,7 +268,11 @@ export function FormXResponsesManager({ onNavigate }: FormXResponsesManagerProps
             Visualiza y analiza las respuestas de los formularios completados por pacientes
           </p>
         </div>
-        <Button onClick={exportResponses} className="flex items-center gap-2">
+        <Button 
+          onClick={exportResponses} 
+          className="flex items-center gap-2"
+          disabled={responses.length === 0}
+        >
           <ArrowDownTrayIcon className="h-4 w-4" />
           Exportar Respuestas
         </Button>

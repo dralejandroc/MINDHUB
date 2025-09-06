@@ -11,6 +11,7 @@ import {
 } from '@heroicons/react/24/outline';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
+import { authGet } from '@/lib/api/auth-fetch';
 import toast from 'react-hot-toast';
 import { PSYCHIATRIC_TEMPLATES } from './templates';
 import { FormXTestModal } from './FormXTestModal';
@@ -34,16 +35,22 @@ export function FormXDashboard({ onNavigate }: FormXDashboardProps) {
 
   const fetchFormXStats = async () => {
     try {
-      const response = await fetch('/api/formx/django');
-      if (response.ok) {
-        const data = await response.json();
-        setStats({
-          totalForms: data.total_templates || 0,
-          activeForms: data.active_templates || 0,
-          responses: data.total_submissions || 0,
-          templates: data.total_templates || 0
-        });
-      }
+      // Fetch templates count
+      const templatesResponse = await authGet('/api/formx/django/templates/');
+      const templatesData = await templatesResponse.json().catch(() => []);
+      const templatesCount = Array.isArray(templatesData) ? templatesData.length : 0;
+      
+      // Fetch submissions count
+      const submissionsResponse = await authGet('/api/formx/django/submissions/');
+      const submissionsData = await submissionsResponse.json().catch(() => []);
+      const submissionsCount = Array.isArray(submissionsData) ? submissionsData.length : 0;
+      
+      setStats({
+        totalForms: templatesCount,
+        activeForms: templatesCount, // All templates are considered active for now
+        responses: submissionsCount,
+        templates: templatesCount
+      });
     } catch (error) {
       console.error('Error fetching FormX stats:', error);
       // Keep default values on error

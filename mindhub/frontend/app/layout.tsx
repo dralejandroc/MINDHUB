@@ -6,6 +6,8 @@ import { AuthProvider } from '@/lib/providers/AuthProvider';
 import { ThemeProvider } from '@/contexts/ThemeContext';
 import { GraphQLProvider } from '@/lib/apollo/provider';
 import StartupCleanup from '@/components/StartupCleanup';
+import { OnboardingProvider } from '@/components/onboarding/OnboardingProvider';
+import { KeyboardShortcutsProvider } from '@/components/ui/KeyboardShortcutsHelp';
 import './globals.css';
 import '@/styles/themes.css';
 
@@ -77,7 +79,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className="font-sans">
+    <html lang="es" className="font-sans">
         <head>
           {/* Security headers */}
           <meta httpEquiv="X-Content-Type-Options" content="nosniff" />
@@ -128,13 +130,30 @@ export default function RootLayout({
           }} />
         </head>
         <body className="bg-theme-primary text-theme-primary antialiased">
+          {/* Skip navigation for keyboard users */}
+          <a
+            href="#main-content"
+            className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 
+                       focus:z-50 focus:px-4 focus:py-2 focus:bg-primary-600 focus:text-white 
+                       focus:rounded-lg focus:shadow-lg focus:outline-none focus:ring-2 
+                       focus:ring-primary-500 focus:ring-offset-2"
+          >
+            Saltar al contenido principal
+          </a>
+          
           <StartupCleanup />
           <ThemeProvider>
             <AuthProvider>
               <GraphQLProvider>
-                <div id="root" className="min-h-screen bg-theme-primary text-theme-primary">
-                  {children}
-                </div>
+                <KeyboardShortcutsProvider>
+                  <OnboardingProvider>
+                    <div id="root" className="min-h-screen bg-theme-primary text-theme-primary">
+                      <main id="main-content" tabIndex={-1} className="focus:outline-none">
+                        {children}
+                      </main>
+                    </div>
+                  </OnboardingProvider>
+                </KeyboardShortcutsProvider>
               </GraphQLProvider>
             </AuthProvider>
           </ThemeProvider>

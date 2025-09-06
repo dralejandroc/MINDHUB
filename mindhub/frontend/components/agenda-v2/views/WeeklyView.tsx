@@ -308,11 +308,15 @@ export const WeeklyView: React.FC<WeeklyViewProps> = ({
                                     let holdTimer: NodeJS.Timeout;
                                     let isHolding = false;
                                     
-                                    // Start hold timer (1 second)
+                                    // Start hold timer (200ms - much faster)
                                     holdTimer = setTimeout(() => {
                                       isHolding = true;
                                       setHoldingAppointment(appointment.id);
-                                    }, 1000);
+                                      // Provide haptic feedback if available
+                                      if ('vibrate' in navigator) {
+                                        navigator.vibrate(50);
+                                      }
+                                    }, 200);
                                     
                                     const handleMouseUp = () => {
                                       clearTimeout(holdTimer);

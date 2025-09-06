@@ -2,7 +2,62 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Quick Win Improvements */
+@layer base {
+  /* Quick Win #1: Base font size to 16px for better readability */
+  html {
+    @apply text-base; /* 16px */
+    font-size: 16px;
+    scroll-behavior: smooth;
+  }
+  
+  body {
+    @apply antialiased;
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+  
+  /* Quick Win: Better focus indicators */
+  *:focus-visible {
+    @apply outline-none ring-2 ring-primary-500 ring-offset-2 rounded;
+  }
+  
+  /* Quick Win: Smooth transitions */
+  button, a, input, textarea, select {
+    @apply transition-all duration-200;
+  }
+}
+
 /* Variables del sistema de diseño MindHub */
+:root {
+  /* Light mode colors (default) */
+  --color-bg-primary: 255 255 255; /* white */
+  --color-bg-secondary: 249 250 251; /* gray-50 */
+  --color-bg-tertiary: 243 244 246; /* gray-100 */
+  
+  --color-text-primary: 17 24 39; /* gray-900 */
+  --color-text-secondary: 75 85 99; /* gray-600 */
+  --color-text-tertiary: 156 163 175; /* gray-400 */
+  
+  --color-border: 229 231 235; /* gray-200 */
+  --color-border-focus: 59 130 246; /* blue-500 */
+}
+
+/* Dark mode colors */
+.dark {
+  --color-bg-primary: 17 24 39; /* gray-900 */
+  --color-bg-secondary: 31 41 55; /* gray-800 */
+  --color-bg-tertiary: 55 65 81; /* gray-700 */
+  
+  --color-text-primary: 243 244 246; /* gray-100 */
+  --color-text-secondary: 209 213 219; /* gray-300 */
+  --color-text-tertiary: 156 163 175; /* gray-400 */
+  
+  --color-border: 75 85 99; /* gray-600 */
+  --color-border-focus: 96 165 250; /* blue-400 */
+}
+
 :root {
   /* Azul Teal Vibrante - Color principal */
   --primary-50: #f0fdfa;

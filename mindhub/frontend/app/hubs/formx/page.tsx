@@ -10,6 +10,7 @@ import { FormXTemplateManager } from '@/components/formx/FormXTemplateManager';
 import { FormXResponsesManager } from '@/components/formx/FormXResponsesManager';
 import { FormXFormViewer } from '@/components/formx/FormXFormViewer';
 import { TEMPLATE_MAP } from '@/components/formx/templates';
+import { authPost } from '@/lib/api/auth-fetch';
 import toast from 'react-hot-toast';
 
 type FormXView = 'dashboard' | 'templates' | 'builder' | 'responses' | 'form-viewer';
@@ -132,27 +133,24 @@ function FormXContent() {
 
   const handleFormSubmit = async (responses: { [key: string]: any }) => {
     try {
-      const response = await fetch('/api/formx/django/submissions', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          template_id: navigationData.templateId,
-          patient_id: navigationData.patientId,
-          responses: responses,
-          submitted_at: new Date().toISOString()
-        }),
+      const response = await authPost('/api/formx/django/submissions/', {
+        template_id: navigationData.templateId,
+        patient_id: navigationData.patientId,
+        responses: responses,
+        form_data: responses, // Also send as form_data for compatibility
+        submitted_at: new Date().toISOString()
       });
 
       if (!response.ok) {
-        throw new Error('Error enviando formulario');
+        const errorData = await response.json().catch(() => null);
+        throw new Error(errorData?.detail || 'Error enviando formulario');
       }
 
       toast.success('Formulario enviado exitosamente');
       handleBackToDashboard();
     } catch (error) {
       console.error('Error submitting form:', error);
+      toast.error(error instanceof Error ? error.message : 'Error al enviar formulario');
       throw error; // Re-throw para que FormXFormViewer lo maneje
     }
   };

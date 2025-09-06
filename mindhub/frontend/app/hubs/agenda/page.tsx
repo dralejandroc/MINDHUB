@@ -124,13 +124,11 @@ function AgendaContent() {
     }
     
     // Handle new appointment creation from URL
-    if (action === 'new') {
-      setSelectedSlot(
-        patient ? {
-          date: date ? new Date(date) : new Date(),
-          time: searchParams?.get('time') || '09:00'
-        } : null
-      );
+    if (action === 'new' || action === 'schedule') {
+      setSelectedSlot({
+        date: date ? new Date(date) : new Date(),
+        time: searchParams?.get('time') || '09:00'
+      });
       setShowNewAppointment(true);
     }
   }, [searchParams]);
@@ -835,6 +833,7 @@ function AgendaContent() {
           key={selectedSlot ? `slot-${selectedSlot.time}-${selectedSlot.date.getTime()}` : 'general'}
           selectedDate={selectedSlot?.date || currentDate || new Date()}
           selectedTime={selectedSlot?.time}
+          preselectedPatientId={searchParams?.get('patient') || undefined}
           editingAppointment={null}
           onClose={() => {
             setShowNewAppointment(false);

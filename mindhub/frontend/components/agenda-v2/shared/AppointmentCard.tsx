@@ -186,6 +186,15 @@ export const AppointmentCard: React.FC<AppointmentCardProps> = ({
         draggable={draggable}
         onDragStart={onDragStart}
         onDragEnd={onDragEnd}
+        role="button"
+        aria-label={`Cita con ${appointment.patientName} a las ${startTime}`}
+        tabIndex={0}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            onClick?.(e as any);
+          }
+        }}
       >
         <div className="text-xs font-semibold truncate">{appointment.patientName}</div>
         <div className="text-xs text-white/80 truncate">
@@ -196,6 +205,12 @@ export const AppointmentCard: React.FC<AppointmentCardProps> = ({
             <span className="text-white text-xs">$</span>
           </div>
         )}
+        {/* Quick action indicator on hover */}
+        <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none">
+          <div className="bg-black/20 rounded-md px-2 py-1 text-xs font-medium">
+            Click para opciones
+          </div>
+        </div>
       </div>
     );
   }

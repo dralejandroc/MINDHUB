@@ -1,16 +1,19 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { 
   XMarkIcon,
   BanknotesIcon,
   CreditCardIcon,
   CurrencyDollarIcon,
   UserIcon,
-  DocumentTextIcon
+  DocumentTextIcon,
+  MagnifyingGlassIcon
 } from '@heroicons/react/24/outline';
 import { Button } from '@/components/ui/Button';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
+import { authPost, authGet } from '@/lib/api/auth-fetch';
+import toast from 'react-hot-toast';
 
 interface NewIncomeModalProps {
   selectedDate: Date;
@@ -29,10 +32,26 @@ interface IncomeFormData {
   patientId?: string;
   appointmentId?: string;
   notes?: string;
+  requiresInvoice?: boolean;
+}
+
+interface Patient {
+  id: string;
+  first_name: string;
+  paternal_last_name: string;
+  maternal_last_name: string;
+  cell_phone: string;
+  email: string;
 }
 
 export default function NewIncomeModal({ selectedDate, onClose, onSave }: NewIncomeModalProps) {
   const [loading, setLoading] = useState(false);
+  const [searchLoading, setSearchLoading] = useState(false);
+  const [patients, setPatients] = useState<Patient[]>([]);
+  const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null);
+  const [patientSearch, setPatientSearch] = useState('');
+  const [showPatientSearch, setShowPatientSearch] = useState(false);
+
   const [formData, setFormData] = useState<IncomeFormData>({
     amount: '',
     source: 'consultation',
@@ -40,7 +59,7 @@ export default function NewIncomeModal({ selectedDate, onClose, onSave }: NewInc
     patientName: '',
     description: '',
     date: selectedDate.toISOString().split('T')[0],
-    professionalId: 'current-user' // En producción vendría del contexto de usuario
+    requiresInvoice: false
   });
 
   const sourceOptions = [
@@ -55,6 +74,55 @@ export default function NewIncomeModal({ selectedDate, onClose, onSave }: NewInc
     { value: 'transfer', label: 'Transferencia', icon: CurrencyDollarIcon },
     { value: 'check', label: 'Cheque', icon: DocumentTextIcon }
   ];
+
+  // Load patients for search
+  const handlePatientSearch = async (searchTerm: string) => {
+    if (!searchTerm || searchTerm.length < 2) {
+      setPatients([]);
+      return;
+    }
+
+    try {
+      setSearchLoading(true);
+      const response = await authGet(`/api/expedix/django/patients/search?q=${encodeURIComponent(searchTerm)}`);
+      if (response.ok) {
+        const data = await response.json();
+        setPatients(data.results || data.data || []);
+      }
+    } catch (error) {
+      console.error('Error searching patients:', error);
+    } finally {
+      setSearchLoading(false);
+    }
+  };
+
+  const selectPatient = (patient: Patient) => {
+    setSelectedPatient(patient);
+    setFormData(prev => ({
+      ...prev,
+      patientId: patient.id,
+      patientName: `${patient.first_name} ${patient.paternal_last_name} ${patient.maternal_last_name || ''}`.trim()
+    }));
+    setShowPatientSearch(false);
+    setPatientSearch('');
+  };
+
+  const clearPatient = () => {
+    setSelectedPatient(null);
+    setFormData(prev => ({
+      ...prev,
+      patientId: undefined,
+      patientName: ''
+    }));
+  };
+
+  useEffect(() => {
+    if (patientSearch.length >= 2) {
+      handlePatientSearch(patientSearch);
+    } else {
+      setPatients([]);
+    }
+  }, [patientSearch]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -75,34 +143,49 @@ export default function NewIncomeModal({ selectedDate, onClose, onSave }: NewInc
         patient_id: formData.patientId || null,
         appointment_id: formData.appointmentId || null,
         notes: formData.notes || '',
+        requires_invoice: formData.requiresInvoice || false,
+        patient_name: formData.patientName,
+        date: formData.date
       };
 
-      const response = await fetch('/api/finance/django/api/income/', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(payload)
-      });
+      const response = await authPost('/api/finance/django/income/', payload);
       
-      if (!response.ok) {
+      if (response.ok) {
+        const savedIncome = await response.json();
+        onSave(savedIncome);
+        toast.success('Ingreso registrado exitosamente');
+        
+        // Create patient payment log if patient is selected
+        if (selectedPatient) {
+          try {
+            await authPost('/api/expedix/django/patients/payment-log/', {
+              patient_id: selectedPatient.id,
+              amount: parseFloat(formData.amount),
+              payment_method: formData.paymentMethod,
+              description: formData.description,
+              requires_invoice: formData.requiresInvoice,
+              transaction_date: formData.date
+            });
+          } catch (logError) {
+            console.error('Error creating payment log:', logError);
+            // Don't fail the main operation if logging fails
+          }
+        }
+      } else {
         throw new Error('Failed to save income');
       }
-      
-      const savedIncome = await response.json();
-      onSave(savedIncome);
     } catch (error) {
       console.error('Error saving income:', error);
-      alert('Error al guardar el ingreso. Inténtalo de nuevo.');
+      toast.error('Error al guardar el ingreso. Inténtalo de nuevo.');
     } finally {
       setLoading(false);
     }
   };
 
-  const handleInputChange = (field: keyof IncomeFormData, value: string) => {
+  const handleInputChange = (field: keyof IncomeFormData, value: string | boolean) => {
     setFormData(prev => ({
       ...prev,
-      [field]: value
+      [field]: field === 'requiresInvoice' ? value : value
     }));
   };
 
@@ -220,20 +303,109 @@ export default function NewIncomeModal({ selectedDate, onClose, onSave }: NewInc
             </div>
           </div>
 
-          {/* Nombre del paciente */}
+          {/* Patient Selection */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Nombre del Paciente
+              Paciente
               {formData.source === 'consultation' && <span className="text-red-500 ml-1">*</span>}
             </label>
-            <input
-              type="text"
-              value={formData.patientName}
-              onChange={(e) => handleInputChange('patientName', e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
-              placeholder="Nombre completo del paciente"
-              required={formData.source === 'consultation'}
-            />
+
+            {selectedPatient ? (
+              <div className="p-3 bg-green-50 border border-green-200 rounded-md flex items-center justify-between">
+                <div>
+                  <p className="font-medium text-green-900">{`${selectedPatient.first_name} ${selectedPatient.paternal_last_name} ${selectedPatient.maternal_last_name || ''}`.trim()}</p>
+                  <p className="text-sm text-green-700">{selectedPatient.cell_phone} • {selectedPatient.email}</p>
+                </div>
+                <Button onClick={clearPatient} variant="outline" size="sm">
+                  Cambiar
+                </Button>
+              </div>
+            ) : (
+              <div className="relative">
+                <div className="relative">
+                  <MagnifyingGlassIcon className="h-5 w-5 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+                  <input
+                    type="text"
+                    placeholder="Buscar paciente por nombre, teléfono o email..."
+                    value={patientSearch}
+                    onChange={(e) => {
+                      setPatientSearch(e.target.value);
+                      setShowPatientSearch(true);
+                    }}
+                    onFocus={() => setShowPatientSearch(true)}
+                    className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+                  />
+                </div>
+
+                {showPatientSearch && (patientSearch || patients.length > 0) && (
+                  <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-300 rounded-md shadow-lg z-10 max-h-48 overflow-y-auto">
+                    {searchLoading ? (
+                      <div className="p-3 text-center">
+                        <LoadingSpinner size="sm" />
+                        <span className="ml-2 text-sm text-gray-600">Buscando...</span>
+                      </div>
+                    ) : (
+                      <>
+                        {patients.map((patient) => (
+                          <button
+                            key={patient.id}
+                            type="button"
+                            onClick={() => selectPatient(patient)}
+                            className="w-full p-3 text-left hover:bg-gray-50 border-b last:border-b-0"
+                          >
+                            <div className="font-medium text-gray-900">
+                              {`${patient.first_name} ${patient.paternal_last_name} ${patient.maternal_last_name || ''}`.trim()}
+                            </div>
+                            <div className="text-sm text-gray-600">
+                              {patient.cell_phone} • {patient.email}
+                            </div>
+                          </button>
+                        ))}
+                        {patients.length === 0 && patientSearch && (
+                          <div className="p-3 text-center text-gray-500">
+                            No se encontraron pacientes
+                          </div>
+                        )}
+                      </>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Manual patient name input (for non-registered patients) */}
+            <div className="mt-3">
+              <input
+                type="text"
+                placeholder="O ingresa un nombre manualmente"
+                value={formData.patientName}
+                onChange={(e) => handleInputChange('patientName', e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+              />
+            </div>
+          </div>
+
+          {/* Invoice Options */}
+          <div>
+            <label className="flex items-center cursor-pointer">
+              <input
+                type="checkbox"
+                checked={formData.requiresInvoice}
+                onChange={(e) => handleInputChange('requiresInvoice', e.target.checked)}
+                className="h-4 w-4 text-green-600 focus:ring-green-500 border-gray-300 rounded"
+              />
+              <span className="ml-2 text-sm text-gray-700">
+                El paciente solicita factura
+              </span>
+            </label>
+            {formData.requiresInvoice && (
+              <div className="mt-2 p-3 bg-blue-50 rounded-md">
+                <p className="text-xs text-blue-700">
+                  <strong>Nota:</strong> Se registrará que el paciente requiere factura. 
+                  La facturación se realizará por separado según los procesos internos.
+                </p>
+              </div>
+            )}
           </div>
 
           {/* Descripción */}
