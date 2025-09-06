@@ -45,7 +45,7 @@ export function ExpedixSettings() {
   const [showCustomFieldForm, setShowCustomFieldForm] = useState(false);
   const [newCustomField, setNewCustomField] = useState({
     name: '',
-    type: 'text' as const,
+    type: 'text' as 'text' | 'number' | 'date' | 'select',
     required: false,
     options: [] as string[]
   });
@@ -60,16 +60,49 @@ export function ExpedixSettings() {
     loadConfig();
   }, []);
 
-  const loadConfig = () => {
-    const saved = localStorage.getItem('expedix_config');
-    if (saved) {
-      setConfig(JSON.parse(saved));
+  const loadConfig = async () => {
+    try {
+      const response = await fetch('/api/expedix/django/configuration/', {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        if (data.settings) {
+          setConfig(prev => ({ ...prev, ...data.settings }));
+        }
+      }
+    } catch (error) {
+      console.error('Error loading Expedix configuration:', error);
+      // Keep default configuration on error
     }
   };
 
-  const saveConfig = () => {
-    localStorage.setItem('expedix_config', JSON.stringify(config));
-    toast.success('Configuración de Expedix guardada');
+  const saveConfig = async () => {
+    try {
+      const response = await fetch('/api/expedix/django/configuration/', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          settings: config,
+          module: 'expedix'
+        })
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to save Expedix configuration');
+      }
+      
+      toast.success('Configuración de Expedix guardada');
+    } catch (error) {
+      console.error('Error saving Expedix configuration:', error);
+      toast.error('Error al guardar la configuración');
+    }
   };
 
   const addCustomField = () => {

@@ -120,15 +120,28 @@ export function StartPageSettings() {
 
   const loadPreferences = async () => {
     try {
-      // Load from localStorage first (client-side preferences)
-      const saved = localStorage.getItem('startPagePreferences');
-      if (saved) {
-        const parsedPreferences = JSON.parse(saved);
-        setPreferences({ ...DEFAULT_PREFERENCES, ...parsedPreferences });
+      const response = await fetch('/api/accounts/django/start-page-preferences/', {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success && data.preferences) {
+          setPreferences({ ...DEFAULT_PREFERENCES, ...data.preferences });
+        } else {
+          setPreferences(DEFAULT_PREFERENCES);
+        }
+      } else {
+        console.log('No saved start page preferences found, using defaults');
+        setPreferences(DEFAULT_PREFERENCES);
       }
     } catch (error) {
       console.error('Error loading start page preferences:', error);
       toast.error('Error al cargar preferencias');
+      setPreferences(DEFAULT_PREFERENCES);
     } finally {
       setLoading(false);
     }
@@ -137,16 +150,20 @@ export function StartPageSettings() {
   const savePreferences = async (newPreferences: StartPagePreferences) => {
     setSaving(true);
     try {
-      // Save to localStorage
-      localStorage.setItem('startPagePreferences', JSON.stringify(newPreferences));
+      const response = await fetch('/api/accounts/django/start-page-preferences/', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          preferences: newPreferences,
+          config_type: 'start_page_preferences'
+        })
+      });
       
-      // In a real implementation, you might also save to a backend API
-      // const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
-      // await fetch(`${API_BASE_URL}/api/user/preferences/start-page`, {
-      //   method: 'POST',
-      //   headers: { 'Content-Type': 'application/json' },
-      //   body: JSON.stringify(newPreferences)
-      // });
+      if (!response.ok) {
+        throw new Error('Failed to save start page preferences');
+      }
 
       setPreferences(newPreferences);
       toast.success('Preferencias guardadas correctamente');

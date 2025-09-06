@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { Button } from '@/components/ui/Button';
@@ -83,14 +83,52 @@ export default function FormXSettingsPage() {
     enableA11yFeatures: true
   });
 
+  // Load configuration from Django API
+  useEffect(() => {
+    const loadFormXConfig = async () => {
+      try {
+        const response = await fetch('/api/formx/django/api/settings/', {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        });
+        
+        if (response.ok) {
+          const data = await response.json();
+          if (data.settings) {
+            setConfig(prev => ({ ...prev, ...data.settings }));
+          }
+        }
+      } catch (error) {
+        console.error('Error loading FormX configuration:', error);
+        // Keep default configuration on error
+      }
+    };
+    
+    loadFormXConfig();
+  }, []);
+
   const handleSave = async () => {
     setLoading(true);
     try {
-      // TODO: Save configuration to API
-      console.log('Saving FormX config:', config);
+      const response = await fetch('/api/formx/django/api/settings/', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          settings: config,
+          module: 'formx'
+        })
+      });
       
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      if (!response.ok) {
+        throw new Error('Failed to save FormX configuration');
+      }
+      
+      const result = await response.json();
+      console.log('FormX configuration saved:', result);
       
       setSaved(true);
       setTimeout(() => setSaved(false), 3000);

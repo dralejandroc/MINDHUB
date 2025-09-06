@@ -79,7 +79,6 @@ export default function AnalyticsSettings() {
       // Load indicator definitions
       const indicatorsResponse = await fetch('/api/analytics/django/indicator-definitions/', {
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('access_token')}`,
           'Content-Type': 'application/json',
         },
       });
@@ -91,29 +90,23 @@ export default function AnalyticsSettings() {
       const indicatorsData = await indicatorsResponse.json();
       setIndicators(indicatorsData.results || indicatorsData);
 
-      // Load user settings
-      const clinicId = localStorage.getItem('currentClinicId') || 
-                     sessionStorage.getItem('userWorkspaceId');
+      // Load user settings - let backend handle clinic/workspace context via JWT
+      const settingsResponse = await fetch('/api/analytics/django/settings/', {
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
 
-      if (clinicId) {
-        const settingsResponse = await fetch(`/api/analytics/django/settings/?clinic_id=${clinicId}`, {
-          headers: {
-            'Authorization': `Bearer ${localStorage.getItem('access_token')}`,
-            'Content-Type': 'application/json',
-          },
-        });
-
-        if (settingsResponse.ok) {
-          const settingsData = await settingsResponse.json();
-          if (settingsData.results && settingsData.results.length > 0) {
-            setSettings(settingsData.results[0]);
-          } else {
-            // Create default settings
-            setDefaultSettings(clinicId);
-          }
+      if (settingsResponse.ok) {
+        const settingsData = await settingsResponse.json();
+        if (settingsData.results && settingsData.results.length > 0) {
+          setSettings(settingsData.results[0]);
         } else {
-          setDefaultSettings(clinicId);
+          // Create default settings - backend will provide clinic/workspace context
+          setDefaultSettings('');
         }
+      } else {
+        setDefaultSettings('');
       }
 
     } catch (err) {
@@ -126,7 +119,7 @@ export default function AnalyticsSettings() {
 
   const setDefaultSettings = (clinicId: string) => {
     setSettings({
-      clinic_id: clinicId,
+      // Backend will provide clinic_id/workspace_id via JWT context
       enabled_indicators: [],
       custom_targets: {},
       notification_preferences: {
@@ -163,7 +156,6 @@ export default function AnalyticsSettings() {
       const response = await fetch(url, {
         method,
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('access_token')}`,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify(settings),

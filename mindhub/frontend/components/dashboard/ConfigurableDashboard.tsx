@@ -155,29 +155,65 @@ export function ConfigurableDashboard() {
     })
   );
 
-  // Load saved widget configuration
+  // Load saved widget configuration from Django API
   useEffect(() => {
-    const savedWidgets = localStorage.getItem('dashboardWidgets');
-    if (savedWidgets) {
+    const loadWidgetConfig = async () => {
       try {
-        const parsedWidgets = JSON.parse(savedWidgets);
-        // Merge with default widgets to ensure all widgets exist
-        const mergedWidgets = DEFAULT_WIDGETS.map(defaultWidget => {
-          const savedWidget = parsedWidgets.find((w: WidgetConfig) => w.id === defaultWidget.id);
-          return savedWidget ? { ...defaultWidget, ...savedWidget, component: defaultWidget.component } : defaultWidget;
+        const response = await fetch('/api/accounts/django/dashboard-config/', {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+          },
         });
-        setWidgets(mergedWidgets);
+        
+        if (response.ok) {
+          const data = await response.json();
+          if (data.success && data.widgets) {
+            // Merge with default widgets to ensure all widgets exist
+            const mergedWidgets = DEFAULT_WIDGETS.map(defaultWidget => {
+              const savedWidget = data.widgets.find((w: WidgetConfig) => w.id === defaultWidget.id);
+              return savedWidget ? { ...defaultWidget, ...savedWidget, component: defaultWidget.component } : defaultWidget;
+            });
+            setWidgets(mergedWidgets);
+          } else {
+            setWidgets(DEFAULT_WIDGETS);
+          }
+        } else {
+          console.log('No saved widget configuration found, using defaults');
+          setWidgets(DEFAULT_WIDGETS);
+        }
       } catch (error) {
-        console.error('Error loading saved widgets:', error);
+        console.error('Error loading widget configuration:', error);
         setWidgets(DEFAULT_WIDGETS);
       }
-    }
+    };
+    
+    loadWidgetConfig();
   }, []);
 
   // Save widget configuration whenever it changes
-  const saveWidgetConfig = (newWidgets: WidgetConfig[]) => {
+  const saveWidgetConfig = async (newWidgets: WidgetConfig[]) => {
     const configToSave = newWidgets.map(({ component, ...widget }) => widget);
-    localStorage.setItem('dashboardWidgets', JSON.stringify(configToSave));
+    
+    try {
+      const response = await fetch('/api/accounts/django/dashboard-config/', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          widgets: configToSave,
+          config_type: 'dashboard_widgets'
+        })
+      });
+      
+      if (!response.ok) {
+        console.error('Failed to save widget configuration');
+      }
+    } catch (error) {
+      console.error('Error saving widget configuration:', error);
+    }
+    
     setWidgets(newWidgets);
   };
 
@@ -213,8 +249,25 @@ export function ConfigurableDashboard() {
     saveWidgetConfig(newWidgets);
   };
 
-  const resetToDefaults = () => {
-    localStorage.removeItem('dashboardWidgets');
+  const resetToDefaults = async () => {
+    try {
+      const response = await fetch('/api/accounts/django/dashboard-config/', {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          config_type: 'dashboard_widgets'
+        })
+      });
+      
+      if (!response.ok) {
+        console.error('Failed to reset widget configuration');
+      }
+    } catch (error) {
+      console.error('Error resetting widget configuration:', error);
+    }
+    
     setWidgets(DEFAULT_WIDGETS);
   };
 

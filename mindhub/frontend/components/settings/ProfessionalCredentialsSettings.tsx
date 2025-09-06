@@ -42,19 +42,39 @@ export function ProfessionalCredentialsSettings() {
 
   const loadCredentials = async () => {
     try {
-      // Load from localStorage for now
-      const saved = localStorage.getItem('professional_credentials');
-      if (saved) {
-        setCredentials(JSON.parse(saved));
+      const response = await fetch('/api/accounts/django/professional-credentials/', {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        if (Array.isArray(data)) {
+          setCredentials(data);
+        } else if (data.results && Array.isArray(data.results)) {
+          setCredentials(data.results);
+        }
       }
     } catch (error) {
       console.error('Error loading credentials:', error);
+      // Keep empty array on error
+      setCredentials([]);
     }
   };
 
-  const saveCredentials = (updatedCredentials: ProfessionalCredential[]) => {
-    localStorage.setItem('professional_credentials', JSON.stringify(updatedCredentials));
-    setCredentials(updatedCredentials);
+  const saveCredentials = async (updatedCredentials: ProfessionalCredential[]) => {
+    try {
+      // For now, just update local state
+      // In production, this would sync with Django
+      setCredentials(updatedCredentials);
+      
+      // TODO: Implement individual credential sync with Django
+      // Each credential should be POST/PUT to /api/accounts/django/professional-credentials/
+    } catch (error) {
+      console.error('Error saving credentials:', error);
+    }
   };
 
   const addCredential = () => {

@@ -26,6 +26,9 @@ interface IncomeFormData {
   description: string;
   date: string;
   professionalId?: string;
+  patientId?: string;
+  appointmentId?: string;
+  notes?: string;
 }
 
 export default function NewIncomeModal({ selectedDate, onClose, onSave }: NewIncomeModalProps) {
@@ -64,17 +67,30 @@ export default function NewIncomeModal({ selectedDate, onClose, onSave }: NewInc
     setLoading(true);
 
     try {
-      const incomeData = {
-        ...formData,
+      const payload = {
         amount: parseFloat(formData.amount),
-        id: `income_${Date.now()}`,
-        createdAt: new Date().toISOString()
+        description: formData.description,
+        source: formData.source || 'other',
+        payment_method: formData.paymentMethod,
+        patient_id: formData.patientId || null,
+        appointment_id: formData.appointmentId || null,
+        notes: formData.notes || '',
       };
 
-      // Simular API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      const response = await fetch('/api/finance/django/api/income/', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload)
+      });
       
-      onSave(incomeData);
+      if (!response.ok) {
+        throw new Error('Failed to save income');
+      }
+      
+      const savedIncome = await response.json();
+      onSave(savedIncome);
     } catch (error) {
       console.error('Error saving income:', error);
       alert('Error al guardar el ingreso. Inténtalo de nuevo.');

@@ -34,23 +34,56 @@ export function ClinimetrixSettings() {
     loadConfig();
   }, []);
 
-  const loadConfig = () => {
-    const saved = localStorage.getItem('clinimetrix_config');
-    if (saved) {
-      const parsedConfig = JSON.parse(saved);
-      // Ensure all scales are in the order
-      const allScales = CLINIMETRIX_REGISTRY.map(s => s.id);
-      const missingScales = allScales.filter(s => !parsedConfig.scaleOrder?.includes(s));
-      setConfig({
-        ...parsedConfig,
-        scaleOrder: [...(parsedConfig.scaleOrder || []), ...missingScales]
+  const loadConfig = async () => {
+    try {
+      const response = await fetch('/api/clinimetrix/django/api/settings/', {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
       });
+      
+      if (response.ok) {
+        const data = await response.json();
+        if (data.settings) {
+          // Ensure all scales are in the order
+          const allScales = CLINIMETRIX_REGISTRY.map(s => s.id);
+          const missingScales = allScales.filter(s => !data.settings.scaleOrder?.includes(s));
+          setConfig({
+            ...config,
+            ...data.settings,
+            scaleOrder: [...(data.settings.scaleOrder || allScales), ...missingScales]
+          });
+        }
+      }
+    } catch (error) {
+      console.error('Error loading Clinimetrix configuration:', error);
+      // Keep default configuration on error
     }
   };
 
-  const saveConfig = () => {
-    localStorage.setItem('clinimetrix_config', JSON.stringify(config));
-    toast.success('Configuración de Clinimetrix guardada');
+  const saveConfig = async () => {
+    try {
+      const response = await fetch('/api/clinimetrix/django/api/settings/', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          settings: config,
+          module: 'clinimetrix'
+        })
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to save Clinimetrix configuration');
+      }
+      
+      toast.success('Configuración de Clinimetrix guardada');
+    } catch (error) {
+      console.error('Error saving Clinimetrix configuration:', error);
+      toast.error('Error al guardar la configuración');
+    }
   };
 
   const toggleFavorite = (scaleId: string) => {

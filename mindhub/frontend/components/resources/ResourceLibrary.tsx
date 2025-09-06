@@ -115,6 +115,8 @@ export const ResourceLibrary: React.FC<ResourceLibraryProps> = ({ onNewResource 
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [selectedType, setSelectedType] = useState<string>('all');
   const [sortBy, setSortBy] = useState<'recent' | 'popular' | 'name'>('recent');
+  const [previewResource, setPreviewResource] = useState<Resource | null>(null);
+  const [editResource, setEditResource] = useState<Resource | null>(null);
 
   const filteredResources = resources.filter(resource => {
     const matchesSearch = resource.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -168,6 +170,21 @@ export const ResourceLibrary: React.FC<ResourceLibraryProps> = ({ onNewResource 
     if (confirm('¿Estás seguro de que deseas eliminar este recurso?')) {
       setResources(prev => prev.filter(r => r.id !== resourceId));
     }
+  };
+
+  const handlePreview = (resource: Resource) => {
+    setPreviewResource(resource);
+  };
+
+  const handleEdit = (resource: Resource) => {
+    setEditResource(resource);
+  };
+
+  const handleSaveEdit = (updatedResource: Resource) => {
+    setResources(prev => prev.map(r => 
+      r.id === updatedResource.id ? updatedResource : r
+    ));
+    setEditResource(null);
   };
 
   return (
@@ -308,7 +325,7 @@ export const ResourceLibrary: React.FC<ResourceLibraryProps> = ({ onNewResource 
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => console.log('Preview:', resource.id)}
+                    onClick={() => handlePreview(resource)}
                   >
                     <EyeIcon className="w-4 h-4 mr-1" />
                     Vista
@@ -335,7 +352,7 @@ export const ResourceLibrary: React.FC<ResourceLibraryProps> = ({ onNewResource 
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => console.log('Edit:', resource.id)}
+                    onClick={() => handleEdit(resource)}
                     title="Editar"
                   >
                     <PencilSquareIcon className="w-4 h-4" />
@@ -374,6 +391,159 @@ export const ResourceLibrary: React.FC<ResourceLibraryProps> = ({ onNewResource 
           >
             Crear Primer Recurso
           </Button>
+        </div>
+      )}
+
+      {/* Preview Modal */}
+      {previewResource && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-lg shadow-lg max-w-4xl w-full max-h-[90vh] overflow-auto">
+            <div className="p-6 border-b border-gray-200">
+              <div className="flex items-start justify-between">
+                <div>
+                  <h2 className="text-xl font-semibold text-gray-900">
+                    {previewResource.title}
+                  </h2>
+                  <p className="text-sm text-gray-600 mt-1">
+                    {previewResource.description}
+                  </p>
+                </div>
+                <button
+                  onClick={() => setPreviewResource(null)}
+                  className="text-gray-400 hover:text-gray-600"
+                >
+                  <svg className="h-6 w-6" fill="none" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+            </div>
+            <div className="p-6">
+              <div className="flex items-center mb-4">
+                {getTypeIcon(previewResource.type)}
+                <div className="ml-3">
+                  <p className="text-sm text-gray-600">
+                    <span className="font-medium">Tamaño:</span> {previewResource.fileSize}
+                  </p>
+                  <p className="text-sm text-gray-600">
+                    <span className="font-medium">Autor:</span> {previewResource.author}
+                  </p>
+                </div>
+              </div>
+              <div className="bg-gray-100 rounded-lg p-6 text-center">
+                <DocumentTextIcon className="h-16 w-16 text-gray-400 mx-auto mb-4" />
+                <p className="text-gray-600 mb-4">
+                  Vista previa del documento: {previewResource.title}
+                </p>
+                <div className="flex justify-center gap-3">
+                  <Button
+                    onClick={() => handleDownload(previewResource)}
+                    className="bg-orange-600 hover:bg-orange-700 text-white"
+                  >
+                    <DocumentArrowDownIcon className="w-4 h-4 mr-2" />
+                    Descargar
+                  </Button>
+                  <Button
+                    onClick={() => handleShare(previewResource)}
+                    variant="outline"
+                  >
+                    <ShareIcon className="w-4 h-4 mr-2" />
+                    Compartir
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Modal */}
+      {editResource && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-lg shadow-lg max-w-2xl w-full max-h-[90vh] overflow-auto">
+            <div className="p-6 border-b border-gray-200">
+              <h2 className="text-xl font-semibold text-gray-900">
+                Editar Recurso
+              </h2>
+            </div>
+            <div className="p-6">
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Título
+                  </label>
+                  <input
+                    type="text"
+                    value={editResource.title}
+                    onChange={(e) => setEditResource({
+                      ...editResource,
+                      title: e.target.value
+                    })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Descripción
+                  </label>
+                  <textarea
+                    value={editResource.description}
+                    onChange={(e) => setEditResource({
+                      ...editResource,
+                      description: e.target.value
+                    })}
+                    rows={3}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Categoría
+                  </label>
+                  <select
+                    value={editResource.category}
+                    onChange={(e) => setEditResource({
+                      ...editResource,
+                      category: e.target.value as any
+                    })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
+                  >
+                    {Object.entries(CATEGORIES).map(([key, label]) => (
+                      <option key={key} value={key}>{label}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Tags (separados por coma)
+                  </label>
+                  <input
+                    type="text"
+                    value={editResource.tags.join(', ')}
+                    onChange={(e) => setEditResource({
+                      ...editResource,
+                      tags: e.target.value.split(',').map(tag => tag.trim())
+                    })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
+                  />
+                </div>
+              </div>
+            </div>
+            <div className="px-6 py-4 border-t border-gray-200 flex justify-end gap-3">
+              <Button
+                onClick={() => setEditResource(null)}
+                variant="outline"
+              >
+                Cancelar
+              </Button>
+              <Button
+                onClick={() => handleSaveEdit(editResource)}
+                className="bg-orange-600 hover:bg-orange-700 text-white"
+              >
+                Guardar Cambios
+              </Button>
+            </div>
+          </div>
         </div>
       )}
     </div>

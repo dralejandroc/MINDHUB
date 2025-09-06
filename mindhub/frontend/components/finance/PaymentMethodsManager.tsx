@@ -37,52 +37,39 @@ export default function PaymentMethodsManager() {
   const [showNewMethod, setShowNewMethod] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  // Mock data inicial
+  // Load payment methods from Django API
   useEffect(() => {
-    const mockMethods: PaymentMethod[] = [
-      {
-        id: '1',
-        name: 'Efectivo',
-        type: 'cash',
-        description: 'Pagos en efectivo directo',
-        isActive: true,
-        commission: 0,
-        fees: 0
-      },
-      {
-        id: '2',
-        name: 'Terminal Bancaria',
-        type: 'card',
-        description: 'Tarjetas de débito y crédito',
-        isActive: true,
-        commission: 3.5,
-        fees: 0
-      },
-      {
-        id: '3',
-        name: 'Transferencia BBVA',
-        type: 'transfer',
-        description: 'Transferencias bancarias electrónicas',
-        isActive: true,
-        commission: 0,
-        fees: 0,
-        bankInfo: {
-          bank: 'BBVA Bancomer',
-          account: '**** **** **** 1234',
-          clabe: '012180001234567890'
+    const loadPaymentMethods = async () => {
+      try {
+        const response = await fetch('/api/finance/django/api/payment-methods/', {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        });
+        
+        if (!response.ok) {
+          throw new Error('Failed to load payment methods');
         }
-      },
-      {
-        id: '4',
-        name: 'Cheques',
-        type: 'check',
-        description: 'Cheques personales y de empresa',
-        isActive: false,
-        commission: 0,
-        fees: 15
+        
+        const data = await response.json();
+        
+        if (Array.isArray(data)) {
+          setPaymentMethods(data);
+        } else if (data.results && Array.isArray(data.results)) {
+          setPaymentMethods(data.results);
+        } else {
+          // Fallback to empty array if no data
+          setPaymentMethods([]);
+        }
+      } catch (error) {
+        console.error('Error loading payment methods:', error);
+        // Fallback to empty array instead of mock data
+        setPaymentMethods([]);
       }
-    ];
-    setPaymentMethods(mockMethods);
+    };
+    
+    loadPaymentMethods();
   }, []);
 
   const getMethodIcon = (type: string) => {
@@ -127,12 +114,21 @@ export default function PaymentMethodsManager() {
     
     setLoading(true);
     try {
-      // Simular API call
-      await new Promise(resolve => setTimeout(resolve, 500));
+      const response = await fetch(`/api/finance/django/api/payment-methods/${methodId}/`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to delete payment method');
+      }
       
       setPaymentMethods(prev => prev.filter(method => method.id !== methodId));
     } catch (error) {
       console.error('Error deleting payment method:', error);
+      alert('Error al eliminar el método de pago');
     } finally {
       setLoading(false);
     }
@@ -155,19 +151,15 @@ export default function PaymentMethodsManager() {
       
       setLoading(true);
       try {
-        // Simular API call
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        
-        const newMethod: PaymentMethod = {
-          id: `method_${Date.now()}`,
+        const payload = {
           name: formData.name,
           type: formData.type,
           description: formData.description,
-          isActive: true,
+          is_active: true,
           commission: formData.commission,
           fees: formData.fees,
           ...(formData.type === 'transfer' && formData.bank && {
-            bankInfo: {
+            bank_info: {
               bank: formData.bank,
               account: formData.account,
               clabe: formData.clabe
@@ -175,10 +167,24 @@ export default function PaymentMethodsManager() {
           })
         };
         
+        const response = await fetch('/api/finance/django/api/payment-methods/', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(payload)
+        });
+        
+        if (!response.ok) {
+          throw new Error('Failed to create payment method');
+        }
+        
+        const newMethod = await response.json();
         setPaymentMethods(prev => [...prev, newMethod]);
         setShowNewMethod(false);
       } catch (error) {
         console.error('Error creating payment method:', error);
+        alert('Error al crear el método de pago');
       } finally {
         setLoading(false);
       }

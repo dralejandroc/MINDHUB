@@ -109,13 +109,10 @@ export default function NewAppointmentModal({ selectedDate, selectedTime, editin
   useEffect(() => {
     const loadData = async () => {
       try {
-        // Get current user to filter patients
-        const savedUser = localStorage.getItem('currentUser');
+        // Get current user from auth context instead of localStorage
         let userId = '';
-        if (savedUser) {
-          const user = JSON.parse(savedUser);
-          userId = user.id || '';
-        }
+        // TODO: Get userId from auth context or API
+        // For now, we'll let the backend handle user context via JWT
 
         // Load patients using correct API structure
         const patientsResponse = await authGet(createApiUrl('/expedix/patients'));
@@ -220,8 +217,8 @@ export default function NewAppointmentModal({ selectedDate, selectedTime, editin
 
     try {
       // Get current user for logging
-      const savedUser = localStorage.getItem('currentUser');
-      const currentUser = savedUser ? JSON.parse(savedUser) : null;
+      // Get current user from auth context instead of localStorage
+      // The backend will handle user context via JWT authentication
 
       // Find selected consultation type to get price for Finance integration
       const selectedConsultationType = consultationTypes.find(type => type.name === formData.type);
@@ -230,8 +227,7 @@ export default function NewAppointmentModal({ selectedDate, selectedTime, editin
       // Create appointment with Finance integration data
       const appointmentData = {
         ...formData,
-        createdBy: currentUser?.id || 'unknown',
-        createdByName: currentUser?.name || 'Usuario desconocido',
+        // Remove hardcoded user data - let backend handle via JWT
         // Finance integration fields
         price: appointmentPrice,
         serviceId: selectedConsultationType?.id || null,

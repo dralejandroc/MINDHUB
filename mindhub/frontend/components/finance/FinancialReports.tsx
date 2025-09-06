@@ -39,60 +39,41 @@ export default function FinancialReports({ selectedDate }: FinancialReportsProps
   const [loading, setLoading] = useState(false);
   const [exportingPDF, setExportingPDF] = useState(false);
 
-  // Mock data para reportes
+  // Load real financial data from Django API
   useEffect(() => {
-    const generateMockData = () => {
-      const periods = [];
-      const currentDate = new Date();
-      
-      for (let i = 5; i >= 0; i--) {
-        const date = new Date(currentDate);
-        let periodLabel = '';
+    const loadFinancialReports = async () => {
+      try {
+        setLoading(true);
         
-        switch (selectedPeriod) {
-          case 'week':
-            date.setDate(date.getDate() - (i * 7));
-            periodLabel = `Semana del ${date.toLocaleDateString('es-MX')}`;
-            break;
-          case 'month':
-            date.setMonth(date.getMonth() - i);
-            periodLabel = date.toLocaleDateString('es-MX', { month: 'long', year: 'numeric' });
-            break;
-          case 'quarter':
-            date.setMonth(date.getMonth() - (i * 3));
-            const quarter = Math.floor(date.getMonth() / 3) + 1;
-            periodLabel = `Q${quarter} ${date.getFullYear()}`;
-            break;
-          case 'year':
-            date.setFullYear(date.getFullYear() - i);
-            periodLabel = date.getFullYear().toString();
-            break;
+        const response = await fetch(`/api/finance/django/api/stats/?period=${selectedPeriod}`, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        });
+        
+        if (!response.ok) {
+          throw new Error('Failed to load financial reports');
         }
         
-        // Generar datos aleatorios pero consistentes
-        const baseAmount = 15000 + (i * 2000) + Math.random() * 5000;
-        const consultations = baseAmount * 0.7;
-        const advances = baseAmount * 0.2;
-        const other = baseAmount * 0.1;
+        const data = await response.json();
         
-        periods.push({
-          period: periodLabel,
-          totalIncome: baseAmount,
-          consultations,
-          advances,
-          other,
-          cash: baseAmount * 0.4,
-          card: baseAmount * 0.35,
-          transfer: baseAmount * 0.2,
-          check: baseAmount * 0.05,
-          transactions: Math.floor(15 + Math.random() * 20)
-        });
+        if (data.success && data.data) {
+          setReportData(data.data.periods || []);
+        } else {
+          // Fallback to basic structure if no data
+          setReportData([]);
+        }
+      } catch (error) {
+        console.error('Error loading financial reports:', error);
+        // Fallback to empty data instead of mock data
+        setReportData([]);
+      } finally {
+        setLoading(false);
       }
-      
-      return periods;
     };
     
-    setReportData(generateMockData());
+    loadFinancialReports();
   }, [selectedPeriod]);
 
   const formatCurrency = (amount: number) => {
@@ -109,11 +90,23 @@ export default function FinancialReports({ selectedDate }: FinancialReportsProps
   const handleExportPDF = async () => {
     setExportingPDF(true);
     try {
-      // Simular generación de PDF
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      const response = await fetch(`/api/finance/django/api/reports/pdf/`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          period: selectedPeriod,
+          reportType: 'financial',
+          data: reportData
+        })
+      });
       
-      // En producción, aquí se generaría y descargaría el PDF real
-      const blob = new Blob(['Mock PDF content'], { type: 'application/pdf' });
+      if (!response.ok) {
+        throw new Error('Failed to generate PDF report');
+      }
+      
+      const blob = await response.blob();
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
@@ -122,7 +115,9 @@ export default function FinancialReports({ selectedDate }: FinancialReportsProps
       URL.revokeObjectURL(url);
     } catch (error) {
       console.error('Error exporting PDF:', error);
-      alert('Error al exportar el reporte. Inténtalo de nuevo.');
+      alert('Error al exportar el reporte. Usando vista de impresión como alternativa.');
+      // Fallback to print view
+      window.print();
     } finally {
       setExportingPDF(false);
     }
