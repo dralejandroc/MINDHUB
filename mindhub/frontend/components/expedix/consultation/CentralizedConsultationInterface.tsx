@@ -15,7 +15,9 @@ import {
   EyeIcon,
   PencilIcon,
   PrinterIcon,
-  CogIcon
+  CogIcon,
+  TrashIcon,
+  PaintBrushIcon
 } from '@heroicons/react/24/outline';
 import { expedixApi, type Patient, type Prescription } from '@/lib/api/expedix-client';
 import { useAuthenticatedFetch } from '@/lib/api/supabase-auth';
@@ -26,6 +28,8 @@ import { MentalExamFormatter, type MentalExamData } from '@/lib/utils/mental-exa
 import { PrintConfigManager, type PrintConfig } from '@/lib/utils/print-config';
 import PrintConfigDialog from '../PrintConfigDialog';
 import { PrescriptionCreator } from '../../prescriptions/PrescriptionCreator';
+import { MedicationModal } from '../MedicationModal';
+import { PrescriptionDesigner } from '../PrescriptionDesigner';
 import DiagnosesSelector from './components/DiagnosesSelector';
 
 interface Diagnosis {
@@ -165,6 +169,8 @@ export default function CentralizedConsultationInterface({
   
   // Prescription modal state
   const [showPrescriptionModal, setShowPrescriptionModal] = useState(false);
+  const [showMedicationModal, setShowMedicationModal] = useState(false);
+  const [showPrescriptionDesigner, setShowPrescriptionDesigner] = useState(false);
   
   // Form states
   const [isAutoSaving, setIsAutoSaving] = useState(false);
@@ -577,6 +583,13 @@ export default function CentralizedConsultationInterface({
         // No cerrar automáticamente para que el usuario pueda revisar
       }, 500);
     };
+  };
+
+  const handleSaveMedications = (medications: any[]) => {
+    setConsultationData(prev => ({
+      ...prev,
+      medications: medications
+    }));
   };
 
   const generatePrintHTML = (printData: any): string => {
@@ -1317,6 +1330,134 @@ export default function CentralizedConsultationInterface({
               />
             </Card>
 
+            {/* Recetas / Medications Section - Styled like Eleonor */}
+            <Card className="p-6 border-l-4 border-teal-500">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-medium text-gray-900">
+                  <span className="text-teal-600">Receta 💊</span>
+                </h3>
+                <div className="flex space-x-2">
+                  <Button
+                    variant="primary"
+                    size="sm"
+                    onClick={() => setShowMedicationModal(true)}
+                    className="bg-teal-600 hover:bg-teal-700 text-white"
+                  >
+                    <PlusIcon className="h-4 w-4 mr-1" />
+                    Nueva receta
+                  </Button>
+                </div>
+              </div>
+
+              {/* Current Medications List - Eleonor Style */}
+              <div className="space-y-3">
+                {consultationData.medications && consultationData.medications.length > 0 ? (
+                  <div className="space-y-4">
+                    {consultationData.medications.map((medication: any, index: number) => (
+                      <div key={index} className="bg-white border border-gray-200 rounded-lg p-4">
+                        <div className="flex items-start justify-between">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2 mb-2">
+                              <span className="text-sm text-gray-600 font-medium">{index + 1}.</span>
+                              <div className="font-semibold text-gray-900">
+                                {medication.name || medication.medication_name}
+                              </div>
+                            </div>
+                            
+                            <div className="text-sm text-gray-700 mb-2">
+                              <strong>Prescripción:</strong> {medication.dosage || 'No especificada'}
+                            </div>
+                            
+                            {medication.special_instructions && (
+                              <div className="mt-3">
+                                <div className="text-sm font-medium text-gray-700 mb-1">
+                                  Indicaciones Adicionales de la Receta:
+                                </div>
+                                <div className="text-sm text-gray-600 bg-gray-50 p-2 rounded">
+                                  {medication.special_instructions}
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                          
+                          <div className="flex items-center gap-2 ml-4">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => {
+                                const updatedMedications = consultationData.medications.filter((_, i) => i !== index);
+                                setConsultationData(prev => ({ ...prev, medications: updatedMedications }));
+                              }}
+                              className="text-red-600 hover:text-red-800"
+                            >
+                              <TrashIcon className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                    
+                    {/* Indicaciones Adicionales */}
+                    <div className="mt-4">
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Indicaciones Adicionales de la Receta:
+                      </label>
+                      <textarea
+                        rows={3}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-teal-500 focus:border-teal-500"
+                        placeholder="Instrucciones generales para el paciente..."
+                      />
+                    </div>
+
+                    {/* Print Actions - Eleonor Style */}
+                    <div className="flex flex-wrap gap-2 pt-4 border-t">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={handlePrintPrescription}
+                        className="text-blue-600 border-blue-300 hover:bg-blue-50"
+                      >
+                        Imprimir Receta (Carta)
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={handlePrintPrescription}
+                        className="text-blue-600 border-blue-300 hover:bg-blue-50"
+                      >
+                        Imprimir Receta
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setShowPrescriptionDesigner(true)}
+                        className="text-teal-600 border-teal-300 hover:bg-teal-50"
+                      >
+                        <PaintBrushIcon className="h-3 w-3 mr-1" />
+                        Personalizar Diseño
+                      </Button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="text-center py-12 bg-gray-50 rounded-lg border-2 border-dashed border-gray-200">
+                    <DocumentTextIcon className="h-16 w-16 text-gray-400 mx-auto mb-4" />
+                    <p className="text-gray-600 mb-2 font-medium">No se han agregado medicamentos</p>
+                    <p className="text-sm text-gray-500 mb-4">
+                      Agrega medicamentos usando el botón "Nueva receta"
+                    </p>
+                    <Button
+                      variant="primary"
+                      onClick={() => setShowMedicationModal(true)}
+                      className="bg-teal-600 hover:bg-teal-700 text-white"
+                    >
+                      <PlusIcon className="h-4 w-4 mr-2" />
+                      Agregar primera receta
+                    </Button>
+                  </div>
+                )}
+              </div>
+            </Card>
+
             {/* Mental Exam - Modern Dropdown Interface */}
             <Card className="p-6">
               <h3 className="text-lg font-medium text-gray-900 mb-6 flex items-center">
@@ -1800,6 +1941,7 @@ export default function CentralizedConsultationInterface({
               </div>
             </Card>
 
+
             {/* Additional Instructions */}
             <Card className="p-6">
               <h3 className="text-lg font-medium text-gray-900 mb-4">Instrucciones Adicionales</h3>
@@ -1927,6 +2069,47 @@ export default function CentralizedConsultationInterface({
           }}
         />
       )}
+
+      {/* Medication Modal */}
+      <MedicationModal
+        isOpen={showMedicationModal}
+        onClose={() => setShowMedicationModal(false)}
+        onSave={handleSaveMedications}
+        currentMedications={consultationData.medications || []}
+      />
+
+      {/* Prescription Designer Modal */}
+      <PrescriptionDesigner
+        isOpen={showPrescriptionDesigner}
+        onClose={() => setShowPrescriptionDesigner(false)}
+        onSaveTemplate={(template) => {
+          // Guardar plantilla en localStorage o API
+          const existingTemplates = JSON.parse(localStorage.getItem('mindhub_prescription_templates') || '[]');
+          const updatedTemplates = [...existingTemplates, template];
+          localStorage.setItem('mindhub_prescription_templates', JSON.stringify(updatedTemplates));
+          setShowPrescriptionDesigner(false);
+        }}
+        sampleData={{
+          doctor: {
+            first_name: 'Dr. Alejandro',
+            last_name: 'Contreras',
+            specialty: 'Psiquiatría',
+            license: '12345678'
+          },
+          patient: patient || {
+            first_name: 'Paciente',
+            paternal_last_name: 'Ejemplo',
+            maternal_last_name: 'Demo',
+            age: 35
+          },
+          medications: consultationData.medications || [],
+          clinic: {
+            name: 'MindHub Clínica',
+            address: 'Av. Revolución 123, Col. Centro, CDMX',
+            phone: '+52 55 1234 5678'
+          }
+        }}
+      />
     </div>
   );
 }
