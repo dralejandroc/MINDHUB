@@ -174,7 +174,7 @@ export function PrescriptionDesigner({
   const updateTemplate = (section: keyof PrescriptionTemplate, updates: any) => {
     setTemplate(prev => ({
       ...prev,
-      [section]: { ...prev[section], ...updates }
+      [section]: { ...(prev[section] as any), ...updates }
     }));
   };
 

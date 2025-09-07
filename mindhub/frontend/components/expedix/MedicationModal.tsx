@@ -7,7 +7,7 @@ import {
   MagnifyingGlassIcon,
   PlusIcon,
   TrashIcon,
-  DatabaseIcon,
+  CircleStackIcon,
   DocumentArrowUpIcon
 } from '@heroicons/react/24/outline';
 import { MedicationDatabaseManager } from './MedicationDatabaseManager';
@@ -137,7 +137,7 @@ export function MedicationModal({ isOpen, onClose, onSave, currentMedications = 
               onClick={() => setShowDatabaseManager(true)}
               className="text-teal-600 border-teal-300 hover:bg-teal-50"
             >
-              <DatabaseIcon className="h-4 w-4 mr-1" />
+              <CircleStackIcon className="h-4 w-4 mr-1" />
               Base de Datos
             </Button>
             <Button
