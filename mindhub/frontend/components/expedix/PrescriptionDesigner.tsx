@@ -41,7 +41,8 @@ interface PrescriptionTemplate {
     includeEmail: boolean;
   };
   patient: {
-    includeAge: boolean;
+    includeBirthDate: boolean; // OBLIGATORIO siempre
+    includeAge: boolean; // OBLIGATORIO siempre
     includeWeight: boolean;
     includeAllergies: boolean;
     fontSize: number;
@@ -91,6 +92,11 @@ interface PrescriptionDesignerProps {
     medications: any[];
     clinic: any;
   };
+  prescriptionSettings?: {
+    prescriptionType: 'printed' | 'digital' | 'both';
+    includeFields: any;
+    digitalPrescriptionSettings?: any;
+  };
 }
 
 const DEFAULT_TEMPLATE: PrescriptionTemplate = {
@@ -119,7 +125,8 @@ const DEFAULT_TEMPLATE: PrescriptionTemplate = {
     includeEmail: false
   },
   patient: {
-    includeAge: true,
+    includeBirthDate: true, // OBLIGATORIO - siempre incluido
+    includeAge: true, // OBLIGATORIO - siempre incluido
     includeWeight: false,
     includeAllergies: true,
     fontSize: 12
@@ -163,12 +170,16 @@ export function PrescriptionDesigner({
   onClose, 
   onSaveTemplate, 
   currentTemplate,
-  sampleData 
+  sampleData,
+  prescriptionSettings 
 }: PrescriptionDesignerProps) {
   const [template, setTemplate] = useState<PrescriptionTemplate>(
     currentTemplate || { ...DEFAULT_TEMPLATE, id: Date.now().toString() }
   );
   const [activeTab, setActiveTab] = useState<'design' | 'preview' | 'layout'>('design');
+  const [selectedPrescriptionType, setSelectedPrescriptionType] = useState<'printed' | 'digital'>(
+    prescriptionSettings?.prescriptionType === 'both' ? 'printed' : (prescriptionSettings?.prescriptionType || 'printed')
+  );
   const previewRef = useRef<HTMLDivElement>(null);
 
   const updateTemplate = (section: keyof PrescriptionTemplate, updates: any) => {
@@ -266,7 +277,8 @@ export function PrescriptionDesigner({
           <p style="margin: 2px 0; font-size: ${template.patient.fontSize}px; font-weight: bold;">
             ${mockData.patient.first_name} ${mockData.patient.paternal_last_name} ${mockData.patient.maternal_last_name}
           </p>
-          ${template.patient.includeAge ? `<p style="margin: 2px 0; font-size: ${template.patient.fontSize}px;">Edad: ${mockData.patient.age} años (${new Date(Date.now() - mockData.patient.age * 365 * 24 * 60 * 60 * 1000).getFullYear()})</p>` : ''}
+          <p style="margin: 2px 0; font-size: ${template.patient.fontSize}px;">Fecha de nacimiento: ${new Date(Date.now() - mockData.patient.age * 365 * 24 * 60 * 60 * 1000).toLocaleDateString('es-MX')}</p>
+          <p style="margin: 2px 0; font-size: ${template.patient.fontSize}px;">Edad: ${mockData.patient.age} años</p>
           ${template.patient.includeWeight && mockData.patient.weight ? `<p style="margin: 2px 0; font-size: ${template.patient.fontSize}px;">Peso: ${mockData.patient.weight}</p>` : ''}
           ${template.patient.includeAllergies ? `<p style="margin: 2px 0; font-size: ${template.patient.fontSize}px;">Alergias: ${mockData.patient.allergies}</p>` : ''}
         </div>
@@ -504,6 +516,52 @@ export function PrescriptionDesigner({
             {/* Design Tab */}
             {activeTab === 'design' && (
               <div className="space-y-6">
+                {/* Prescription Type Selection */}
+                {prescriptionSettings?.prescriptionType === 'both' && (
+                  <Card className="p-4 border-blue-200 bg-blue-50">
+                    <h3 className="text-lg font-medium text-blue-900 mb-3">Tipo de Receta</h3>
+                    <div className="space-y-2">
+                      <label className="flex items-center gap-2">
+                        <input
+                          type="radio"
+                          name="prescriptionType"
+                          value="printed"
+                          checked={selectedPrescriptionType === 'printed'}
+                          onChange={(e) => setSelectedPrescriptionType(e.target.value as 'printed' | 'digital')}
+                          className="text-blue-600 focus:ring-blue-500"
+                        />
+                        <span className="text-sm text-blue-700">Receta Impresa (papel con membrete)</span>
+                      </label>
+                      <label className="flex items-center gap-2">
+                        <input
+                          type="radio"
+                          name="prescriptionType"
+                          value="digital"
+                          checked={selectedPrescriptionType === 'digital'}
+                          onChange={(e) => setSelectedPrescriptionType(e.target.value as 'printed' | 'digital')}
+                          className="text-blue-600 focus:ring-blue-500"
+                        />
+                        <span className="text-sm text-blue-700">Receta Digital (con código QR y cadena)</span>
+                      </label>
+                    </div>
+                    
+                    {selectedPrescriptionType === 'digital' && (
+                      <div className="mt-3 p-3 bg-yellow-100 border border-yellow-300 rounded">
+                        <div className="text-sm text-yellow-800">
+                          <strong>Campos obligatorios en receta digital:</strong>
+                          <ul className="list-disc ml-4 mt-1">
+                            <li>Nombre del prescriptor</li>
+                            <li>Cédula profesional</li>
+                            <li>Especialidad médica</li>
+                            <li>Sello digital</li>
+                            <li>Código QR con cadena de autenticidad</li>
+                          </ul>
+                        </div>
+                      </div>
+                    )}
+                  </Card>
+                )}
+                
                 {/* Header Settings */}
                 <Card className="p-4">
                   <h3 className="font-medium text-gray-900 mb-4">Encabezado</h3>
@@ -796,12 +854,24 @@ export function PrescriptionDesigner({
                       ))}
                     </div>
 
-                    <h4 className="text-sm font-medium text-gray-700 mt-4">Paciente</h4>
+                    <h4 className="text-sm font-medium text-gray-700 mt-4">Información del Paciente</h4>
+                    
+                    {/* Campos Obligatorios */}
+                    <div className="bg-green-50 border border-green-200 rounded p-3 mb-3">
+                      <h5 className="text-xs font-medium text-green-800 mb-2">✓ Campos Obligatorios (siempre incluidos)</h5>
+                      <div className="space-y-1 text-xs text-green-700">
+                        <div>• Nombre completo del paciente</div>
+                        <div>• Fecha de nacimiento</div>
+                        <div>• Edad calculada</div>
+                      </div>
+                    </div>
+                    
+                    {/* Campos Opcionales */}
+                    <h5 className="text-xs font-medium text-gray-600 mb-2">Campos Opcionales</h5>
                     <div className="space-y-2 pl-3">
                       {[
-                        { key: 'includeAge', label: 'Edad' },
-                        { key: 'includeWeight', label: 'Peso' },
-                        { key: 'includeAllergies', label: 'Alergias' }
+                        { key: 'includeWeight', label: 'Peso del paciente' },
+                        { key: 'includeAllergies', label: 'Alergias conocidas' }
                       ].map(option => (
                         <label key={option.key} className="flex items-center">
                           <input

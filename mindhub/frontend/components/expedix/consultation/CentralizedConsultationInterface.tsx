@@ -1330,7 +1330,7 @@ export default function CentralizedConsultationInterface({
               />
             </Card>
 
-            {/* Recetas / Medications Section - Styled like Eleonor */}
+            {/* Recetas / Medications Section - Optimized UI */}
             <Card className="p-6 border-l-4 border-teal-500">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-lg font-medium text-gray-900">
@@ -1340,11 +1340,33 @@ export default function CentralizedConsultationInterface({
                   <Button
                     variant="primary"
                     size="sm"
-                    onClick={() => setShowMedicationModal(true)}
+                    onClick={() => {
+                      // Agregar medicamento directamente sin modal adicional
+                      const newMedication = {
+                        id: Date.now().toString(),
+                        name: '',
+                        dosage: '',
+                        frequency: '',
+                        duration: '',
+                        special_instructions: ''
+                      };
+                      setConsultationData(prev => ({
+                        ...prev,
+                        medications: [...(prev.medications || []), newMedication]
+                      }));
+                    }}
                     className="bg-teal-600 hover:bg-teal-700 text-white"
                   >
                     <PlusIcon className="h-4 w-4 mr-1" />
-                    Nueva receta
+                    Agregar medicamento
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setShowMedicationModal(true)}
+                    className="text-teal-600 border-teal-300 hover:bg-teal-50"
+                  >
+                    Base de Datos
                   </Button>
                 </div>
               </div>

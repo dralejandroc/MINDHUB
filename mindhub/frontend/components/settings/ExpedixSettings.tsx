@@ -44,15 +44,37 @@ interface ExpedixConfig {
       right: number;
     };
     includeFields: {
-      patientInfo: boolean;
-      date: boolean;
-      doctorSignature: boolean;
-      doctorLicense: boolean;
-      clinicAddress: boolean;
-      medicationInstructions: boolean;
+      patientName: boolean; // OBLIGATORIO siempre
+      patientAge: boolean; // OBLIGATORIO siempre
+      patientBirthDate: boolean; // OBLIGATORIO siempre
+      medications: boolean; // OBLIGATORIO siempre
+      medicationInstructions: boolean; // OBLIGATORIO siempre
+      date: boolean; // Opcional
+      expirationDate: boolean; // Opcional
+      diagnosis: boolean; // Opcional
+      doctorSignature: boolean; // Opcional para impresa, obligatorio digital
+      doctorLicense: boolean; // Opcional para impresa, obligatorio digital
+      doctorSpecialty: boolean; // Opcional para impresa, obligatorio digital
+      clinicAddress: boolean; // Opcional
+      digitalSeal: boolean; // Opcional para impresa, obligatorio digital
+      qrCode: boolean; // Solo digital
+      digitalChain: boolean; // Solo digital
+      prescriptionInstructions: boolean; // Opcional
     };
     paperSize: 'A4' | 'Letter' | 'Legal';
     orientation: 'portrait' | 'landscape';
+    prescriptionType: 'printed' | 'digital' | 'both';
+  };
+  digitalPrescriptionSettings: {
+    enabled: boolean;
+    requireDigitalSeal: boolean;
+    includeQRCode: boolean;
+    includeDigitalChain: boolean;
+    digitalChainData: {
+      rfc: string;
+      professionalId: string;
+      clinicId: string;
+    };
   };
   consentForms: boolean;
   digitalSignature: boolean;
@@ -81,15 +103,37 @@ export function ExpedixSettings() {
         right: 20
       },
       includeFields: {
-        patientInfo: true,
+        patientName: true, // OBLIGATORIO
+        patientAge: true, // OBLIGATORIO
+        patientBirthDate: true, // OBLIGATORIO
+        medications: true, // OBLIGATORIO
+        medicationInstructions: true, // OBLIGATORIO
         date: true,
-        doctorSignature: true,
-        doctorLicense: true,
-        clinicAddress: true,
-        medicationInstructions: true
+        expirationDate: false,
+        diagnosis: false,
+        doctorSignature: false,
+        doctorLicense: false,
+        doctorSpecialty: false,
+        clinicAddress: false,
+        digitalSeal: false,
+        qrCode: false,
+        digitalChain: false,
+        prescriptionInstructions: false
       },
       paperSize: 'A4',
-      orientation: 'portrait'
+      orientation: 'portrait',
+      prescriptionType: 'printed'
+    },
+    digitalPrescriptionSettings: {
+      enabled: false,
+      requireDigitalSeal: true,
+      includeQRCode: true,
+      includeDigitalChain: true,
+      digitalChainData: {
+        rfc: '',
+        professionalId: '',
+        clinicId: ''
+      }
     },
     consentForms: true,
     digitalSignature: false
@@ -734,29 +778,80 @@ export function ExpedixSettings() {
           </div>
         </div>
 
-        {/* Campos a Incluir */}
+        {/* Tipo de Prescripción */}
         <div className="mb-6">
-          <h4 className="text-md font-medium text-gray-900 mb-4">Campos a Incluir en la Impresión</h4>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <h4 className="text-md font-medium text-gray-900 mb-4">Tipo de Prescripción</h4>
+          <div className="space-y-2">
             <label className="flex items-center gap-2">
               <input
-                type="checkbox"
-                checked={config.prescriptionPrintSettings.includeFields.patientInfo}
+                type="radio"
+                name="prescriptionType"
+                value="printed"
+                checked={config.prescriptionPrintSettings.prescriptionType === 'printed'}
                 onChange={(e) => setConfig(prev => ({
                   ...prev,
                   prescriptionPrintSettings: {
                     ...prev.prescriptionPrintSettings,
-                    includeFields: {
-                      ...prev.prescriptionPrintSettings.includeFields,
-                      patientInfo: e.target.checked
-                    }
+                    prescriptionType: e.target.value as 'printed' | 'digital' | 'both'
                   }
                 }))}
-                className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                className="text-blue-600 focus:ring-blue-500"
               />
-              <span className="text-sm text-gray-700">Información del Paciente</span>
+              <span className="text-sm text-gray-700">Receta Impresa (papel con membrete)</span>
             </label>
+            <label className="flex items-center gap-2">
+              <input
+                type="radio"
+                name="prescriptionType"
+                value="digital"
+                checked={config.prescriptionPrintSettings.prescriptionType === 'digital'}
+                onChange={(e) => setConfig(prev => ({
+                  ...prev,
+                  prescriptionPrintSettings: {
+                    ...prev.prescriptionPrintSettings,
+                    prescriptionType: e.target.value as 'printed' | 'digital' | 'both'
+                  }
+                }))}
+                className="text-blue-600 focus:ring-blue-500"
+              />
+              <span className="text-sm text-gray-700">Receta Digital (con cadena y QR)</span>
+            </label>
+            <label className="flex items-center gap-2">
+              <input
+                type="radio"
+                name="prescriptionType"
+                value="both"
+                checked={config.prescriptionPrintSettings.prescriptionType === 'both'}
+                onChange={(e) => setConfig(prev => ({
+                  ...prev,
+                  prescriptionPrintSettings: {
+                    ...prev.prescriptionPrintSettings,
+                    prescriptionType: e.target.value as 'printed' | 'digital' | 'both'
+                  }
+                }))}
+                className="text-blue-600 focus:ring-blue-500"
+              />
+              <span className="text-sm text-gray-700">Ambas (usuario elige al imprimir)</span>
+            </label>
+          </div>
+        </div>
 
+        {/* Campos Obligatorios (siempre visibles) */}
+        <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg">
+          <h4 className="text-md font-medium text-green-800 mb-4">✓ Campos Obligatorios (siempre incluidos)</h4>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm text-green-700">
+            <span>• Nombre completo del paciente</span>
+            <span>• Edad del paciente</span>
+            <span>• Fecha de nacimiento</span>
+            <span>• Medicamentos prescritos</span>
+            <span>• Indicaciones de cada medicamento</span>
+          </div>
+        </div>
+
+        {/* Campos Opcionales */}
+        <div className="mb-6">
+          <h4 className="text-md font-medium text-gray-900 mb-4">Campos Opcionales para Impresión</h4>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <label className="flex items-center gap-2">
               <input
                 type="checkbox"
@@ -773,45 +868,64 @@ export function ExpedixSettings() {
                 }))}
                 className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
               />
-              <span className="text-sm text-gray-700">Fecha de Prescripción</span>
+              <span className="text-sm text-gray-700">Fecha de prescripción</span>
             </label>
 
             <label className="flex items-center gap-2">
               <input
                 type="checkbox"
-                checked={config.prescriptionPrintSettings.includeFields.doctorSignature}
+                checked={config.prescriptionPrintSettings.includeFields.expirationDate}
                 onChange={(e) => setConfig(prev => ({
                   ...prev,
                   prescriptionPrintSettings: {
                     ...prev.prescriptionPrintSettings,
                     includeFields: {
                       ...prev.prescriptionPrintSettings.includeFields,
-                      doctorSignature: e.target.checked
+                      expirationDate: e.target.checked
                     }
                   }
                 }))}
                 className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
               />
-              <span className="text-sm text-gray-700">Firma del Doctor</span>
+              <span className="text-sm text-gray-700">Fecha de caducidad</span>
             </label>
 
             <label className="flex items-center gap-2">
               <input
                 type="checkbox"
-                checked={config.prescriptionPrintSettings.includeFields.doctorLicense}
+                checked={config.prescriptionPrintSettings.includeFields.diagnosis}
                 onChange={(e) => setConfig(prev => ({
                   ...prev,
                   prescriptionPrintSettings: {
                     ...prev.prescriptionPrintSettings,
                     includeFields: {
                       ...prev.prescriptionPrintSettings.includeFields,
-                      doctorLicense: e.target.checked
+                      diagnosis: e.target.checked
                     }
                   }
                 }))}
                 className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
               />
-              <span className="text-sm text-gray-700">Cédula Profesional</span>
+              <span className="text-sm text-gray-700">Diagnóstico</span>
+            </label>
+
+            <label className="flex items-center gap-2">
+              <input
+                type="checkbox"
+                checked={config.prescriptionPrintSettings.includeFields.prescriptionInstructions}
+                onChange={(e) => setConfig(prev => ({
+                  ...prev,
+                  prescriptionPrintSettings: {
+                    ...prev.prescriptionPrintSettings,
+                    includeFields: {
+                      ...prev.prescriptionPrintSettings.includeFields,
+                      prescriptionInstructions: e.target.checked
+                    }
+                  }
+                }))}
+                className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+              />
+              <span className="text-sm text-gray-700">Indicaciones generales de la receta</span>
             </label>
 
             <label className="flex items-center gap-2">
@@ -830,29 +944,240 @@ export function ExpedixSettings() {
                 }))}
                 className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
               />
-              <span className="text-sm text-gray-700">Dirección de la Clínica</span>
+              <span className="text-sm text-gray-700">Dirección de la clínica</span>
             </label>
+          </div>
+        </div>
 
+        {/* Campos del Profesional (dependientes del tipo) */}
+        <div className="mb-6">
+          <h4 className="text-md font-medium text-gray-900 mb-4">Información del Prescriptor</h4>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <label className="flex items-center gap-2">
               <input
                 type="checkbox"
-                checked={config.prescriptionPrintSettings.includeFields.medicationInstructions}
+                checked={config.prescriptionPrintSettings.includeFields.doctorSignature}
                 onChange={(e) => setConfig(prev => ({
                   ...prev,
                   prescriptionPrintSettings: {
                     ...prev.prescriptionPrintSettings,
                     includeFields: {
                       ...prev.prescriptionPrintSettings.includeFields,
-                      medicationInstructions: e.target.checked
+                      doctorSignature: e.target.checked
                     }
                   }
                 }))}
-                className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                disabled={config.prescriptionPrintSettings.prescriptionType === 'digital'}
+                className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 disabled:opacity-50"
               />
-              <span className="text-sm text-gray-700">Instrucciones de Medicamentos</span>
+              <span className={`text-sm ${
+                config.prescriptionPrintSettings.prescriptionType === 'digital' 
+                  ? 'text-gray-400' 
+                  : 'text-gray-700'
+              }`}>
+                Firma del prescriptor
+                {config.prescriptionPrintSettings.prescriptionType === 'digital' && 
+                  <span className="text-green-600 font-medium"> (Obligatorio en digital)</span>
+                }
+              </span>
+            </label>
+
+            <label className="flex items-center gap-2">
+              <input
+                type="checkbox"
+                checked={config.prescriptionPrintSettings.includeFields.doctorLicense}
+                onChange={(e) => setConfig(prev => ({
+                  ...prev,
+                  prescriptionPrintSettings: {
+                    ...prev.prescriptionPrintSettings,
+                    includeFields: {
+                      ...prev.prescriptionPrintSettings.includeFields,
+                      doctorLicense: e.target.checked
+                    }
+                  }
+                }))}
+                disabled={config.prescriptionPrintSettings.prescriptionType === 'digital'}
+                className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 disabled:opacity-50"
+              />
+              <span className={`text-sm ${
+                config.prescriptionPrintSettings.prescriptionType === 'digital' 
+                  ? 'text-gray-400' 
+                  : 'text-gray-700'
+              }`}>
+                Cédula profesional
+                {config.prescriptionPrintSettings.prescriptionType === 'digital' && 
+                  <span className="text-green-600 font-medium"> (Obligatorio en digital)</span>
+                }
+              </span>
+            </label>
+
+            <label className="flex items-center gap-2">
+              <input
+                type="checkbox"
+                checked={config.prescriptionPrintSettings.includeFields.doctorSpecialty}
+                onChange={(e) => setConfig(prev => ({
+                  ...prev,
+                  prescriptionPrintSettings: {
+                    ...prev.prescriptionPrintSettings,
+                    includeFields: {
+                      ...prev.prescriptionPrintSettings.includeFields,
+                      doctorSpecialty: e.target.checked
+                    }
+                  }
+                }))}
+                disabled={config.prescriptionPrintSettings.prescriptionType === 'digital'}
+                className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 disabled:opacity-50"
+              />
+              <span className={`text-sm ${
+                config.prescriptionPrintSettings.prescriptionType === 'digital' 
+                  ? 'text-gray-400' 
+                  : 'text-gray-700'
+              }`}>
+                Especialidad médica
+                {config.prescriptionPrintSettings.prescriptionType === 'digital' && 
+                  <span className="text-green-600 font-medium"> (Obligatorio en digital)</span>
+                }
+              </span>
+            </label>
+
+            <label className="flex items-center gap-2">
+              <input
+                type="checkbox"
+                checked={config.prescriptionPrintSettings.includeFields.digitalSeal}
+                onChange={(e) => setConfig(prev => ({
+                  ...prev,
+                  prescriptionPrintSettings: {
+                    ...prev.prescriptionPrintSettings,
+                    includeFields: {
+                      ...prev.prescriptionPrintSettings.includeFields,
+                      digitalSeal: e.target.checked
+                    }
+                  }
+                }))}
+                disabled={config.prescriptionPrintSettings.prescriptionType === 'digital'}
+                className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 disabled:opacity-50"
+              />
+              <span className={`text-sm ${
+                config.prescriptionPrintSettings.prescriptionType === 'digital' 
+                  ? 'text-gray-400' 
+                  : 'text-gray-700'
+              }`}>
+                Sello digital
+                {config.prescriptionPrintSettings.prescriptionType === 'digital' && 
+                  <span className="text-green-600 font-medium"> (Obligatorio en digital)</span>
+                }
+              </span>
             </label>
           </div>
         </div>
+
+        {/* Campos Exclusivos de Digital */}
+        {(config.prescriptionPrintSettings.prescriptionType === 'digital' || 
+          config.prescriptionPrintSettings.prescriptionType === 'both') && (
+          <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+            <h4 className="text-md font-medium text-blue-800 mb-4">Configuración de Receta Digital</h4>
+            <div className="space-y-3">
+              <label className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  checked={config.digitalPrescriptionSettings.enabled}
+                  onChange={(e) => setConfig(prev => ({
+                    ...prev,
+                    digitalPrescriptionSettings: {
+                      ...prev.digitalPrescriptionSettings,
+                      enabled: e.target.checked
+                    }
+                  }))}
+                  className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                />
+                <span className="text-sm text-blue-700 font-medium">Habilitar prescripciones digitales</span>
+              </label>
+              
+              {config.digitalPrescriptionSettings.enabled && (
+                <div className="ml-6 space-y-2 text-sm text-blue-700">
+                  <div>• Código QR con cadena digital</div>
+                  <div>• Cadena de autenticidad incluida</div>
+                  <div>• Datos del prescriptor obligatorios</div>
+                  <div>• Sello digital requerido</div>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Configuración Digital - Solo si está habilitada */}
+        {config.digitalPrescriptionSettings.enabled && (
+          <div className="mb-6 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+            <h4 className="text-md font-medium text-yellow-800 mb-4">Datos para Cadena Digital</h4>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-yellow-700 mb-1">
+                  RFC del Prescriptor
+                </label>
+                <input
+                  type="text"
+                  value={config.digitalPrescriptionSettings.digitalChainData.rfc}
+                  onChange={(e) => setConfig(prev => ({
+                    ...prev,
+                    digitalPrescriptionSettings: {
+                      ...prev.digitalPrescriptionSettings,
+                      digitalChainData: {
+                        ...prev.digitalPrescriptionSettings.digitalChainData,
+                        rfc: e.target.value
+                      }
+                    }
+                  }))}
+                  placeholder="ABCD123456XXX"
+                  className="w-full px-3 py-2 border border-yellow-300 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-yellow-700 mb-1">
+                  ID Profesional
+                </label>
+                <input
+                  type="text"
+                  value={config.digitalPrescriptionSettings.digitalChainData.professionalId}
+                  onChange={(e) => setConfig(prev => ({
+                    ...prev,
+                    digitalPrescriptionSettings: {
+                      ...prev.digitalPrescriptionSettings,
+                      digitalChainData: {
+                        ...prev.digitalPrescriptionSettings.digitalChainData,
+                        professionalId: e.target.value
+                      }
+                    }
+                  }))}
+                  placeholder="12345678"
+                  className="w-full px-3 py-2 border border-yellow-300 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-yellow-700 mb-1">
+                  ID Clínica
+                </label>
+                <input
+                  type="text"
+                  value={config.digitalPrescriptionSettings.digitalChainData.clinicId}
+                  onChange={(e) => setConfig(prev => ({
+                    ...prev,
+                    digitalPrescriptionSettings: {
+                      ...prev.digitalPrescriptionSettings,
+                      digitalChainData: {
+                        ...prev.digitalPrescriptionSettings.digitalChainData,
+                        clinicId: e.target.value
+                      }
+                    }
+                  }))}
+                  placeholder="CLINIC001"
+                  className="w-full px-3 py-2 border border-yellow-300 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                />
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Configuración de Papel */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
