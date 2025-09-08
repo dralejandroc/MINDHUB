@@ -93,7 +93,7 @@ function FrontDeskContent() {
       setLoading(true);
       
       // Load today's stats
-      const statsResponse = await authGet('/api/frontdesk/django/stats');
+      const statsResponse = await authGet('/api/frontdesk/stats/today');
       if (statsResponse.ok) {
         const data = await statsResponse.json();
         setStats(data.results || data.data || stats);
