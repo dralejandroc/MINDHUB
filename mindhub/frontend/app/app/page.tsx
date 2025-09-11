@@ -14,17 +14,23 @@ export default function AppHome() {
   const router = useRouter();
 
   useEffect(() => {
-    console.log('📊 App page - Auth state:', { loading, user: !!user, userId: user?.id });
-    
-    // TEMPORARILY DISABLED - Allow access without auth for testing
-    console.log('🚫 [APP PAGE] TEMPORARILY DISABLED - Skipping user auth check');
+    console.log('📊 [APP PAGE] Auth state check:', { 
+      loading, 
+      hasUser: !!user, 
+      userId: user?.id,
+      email: user?.email 
+    });
     
     if (!loading && !user) {
-      // DISABLED: Redirect to sign-in if not authenticated with Supabase
-      console.log('🔓 [APP PAGE] No user found, but AUTH CHECK IS DISABLED - allowing access');
-      // router.replace('/auth/sign-in');
+      console.log('❌ [APP PAGE] No user found after loading complete, redirecting to sign-in');
+      router.replace('/auth/sign-in');
     } else if (!loading && user) {
-      console.log('✅ User authenticated, showing app dashboard');
+      console.log('✅ [APP PAGE] User authenticated successfully:', {
+        id: user.id,
+        email: user.email
+      });
+    } else if (loading) {
+      console.log('⏳ [APP PAGE] Still loading auth state...');
     }
   }, [loading, user, router]);
 
@@ -55,17 +61,27 @@ export default function AppHome() {
     );
   }
 
-  // TEMPORARILY DISABLED - Allow access without user for testing
-  console.log('🚫 [APP PAGE] Rendering dashboard regardless of user auth status');
-  
-  // DISABLED: If not signed in with Supabase, show loading
-  // if (!user) {
-  //   return (
-  //     <div className="min-h-screen flex items-center justify-center">
-  //       <LoadingSpinner size="lg" />
-  //     </div>
-  //   );
-  // }
+  // Show loading spinner while auth is being determined
+  if (loading) {
+    console.log('⏳ [APP PAGE] Rendering loading spinner while determining auth state');
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <LoadingSpinner size="lg" />
+      </div>
+    );
+  }
+
+  // Show loading if no user (will redirect via useEffect)
+  if (!user) {
+    console.log('🔒 [APP PAGE] No user, showing loading while redirect happens');
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <LoadingSpinner size="lg" />
+      </div>
+    );
+  }
+
+  console.log('✅ [APP PAGE] Rendering dashboard for authenticated user:', user.email);
 
   return (
     <UserMetricsProvider>

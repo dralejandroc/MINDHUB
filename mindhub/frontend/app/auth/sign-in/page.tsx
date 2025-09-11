@@ -55,10 +55,13 @@ export default function SignInPage() {
         const urlParams = new URLSearchParams(window.location.search)
         const redirectTo = urlParams.get('redirectTo') || '/app'
         
-        console.log('🚀 [LOGIN] Redirigiendo a:', redirectTo)
+        console.log('⏳ [LOGIN] Esperando 1 segundo para que la sesión se propague...')
         
-        // IMMEDIATE redirect
-        window.location.href = redirectTo
+        // Wait 1 second for session to propagate before redirect
+        setTimeout(() => {
+          console.log('🚀 [LOGIN] Redirigiendo a:', redirectTo)
+          window.location.href = redirectTo
+        }, 1000)
       }
     } catch (error) {
       console.log('💥 [LOGIN] Error inesperado:', error)

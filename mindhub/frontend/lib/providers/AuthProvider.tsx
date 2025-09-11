@@ -28,10 +28,27 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     // Get initial session
     const getInitialSession = async () => {
-      const { data: { session } } = await supabase.auth.getSession()
-      setSession(session)
-      setUser(session?.user ?? null)
-      setLoading(false)
+      try {
+        console.log('🔍 [AuthProvider] Getting initial session...')
+        const { data: { session }, error } = await supabase.auth.getSession()
+        
+        if (error) {
+          console.error('❌ [AuthProvider] Error getting session:', error)
+        }
+        
+        console.log('📊 [AuthProvider] Initial session result:', { 
+          hasSession: !!session, 
+          hasUser: !!session?.user,
+          userId: session?.user?.id 
+        })
+        
+        setSession(session)
+        setUser(session?.user ?? null)
+        setLoading(false)
+      } catch (error) {
+        console.error('💥 [AuthProvider] Error in getInitialSession:', error)
+        setLoading(false)
+      }
     }
 
     getInitialSession()
@@ -40,27 +57,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
         console.log(`🔔 [AuthProvider] Auth event: ${event}, has session: ${!!session}`)
+        
+        if (session?.user) {
+          console.log('👤 [AuthProvider] User details:', {
+            id: session.user.id,
+            email: session.user.email,
+            accessToken: !!session.access_token
+          })
+        }
+        
         setSession(session)
         setUser(session?.user ?? null)
         setLoading(false)
 
-        // Handle redirects on auth state change - TEMPORARILY DISABLED
-        // Let the sign-in page handle redirects directly to avoid conflicts
         if (event === 'SIGNED_IN' && session) {
-          console.log('🚀 [AuthProvider] User signed in - letting sign-in page handle redirect')
-          
-          // DISABLED: Don't interfere with sign-in page redirect
-          /*
-          const currentPath = window.location.pathname
-          if (currentPath.startsWith('/auth/')) {
-            console.log('🔄 [AuthProvider] On auth page, redirecting to /app')
-            // ... redirect code disabled
-          }
-          */
+          console.log('✅ [AuthProvider] User signed in successfully')
         }
         
         if (event === 'SIGNED_OUT') {
-          console.log('🚪 [AuthProvider] User signed out, redirecting to home')
+          console.log('🚪 [AuthProvider] User signed out, redirecting to sign-in')
           window.location.href = '/auth/sign-in'
         }
       }
