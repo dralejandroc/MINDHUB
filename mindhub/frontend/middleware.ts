@@ -114,10 +114,13 @@ export async function middleware(req: NextRequest) {
     }
     
     // If user is logged in and trying to access auth pages, redirect to app
+    // TEMPORARILY DISABLED - letting client-side handle redirect to avoid conflicts
+    /*
     if (session && req.nextUrl.pathname.startsWith('/auth/')) {
       console.log('🔄 [Middleware] Authenticated user accessing auth page, redirecting to /app')
       return NextResponse.redirect(new URL('/app', req.url))
     }
+    */
     
   } catch (error) {
     console.warn('[Middleware] Auth check failed:', error)
