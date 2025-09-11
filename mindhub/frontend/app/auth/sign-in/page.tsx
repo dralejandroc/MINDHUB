@@ -36,50 +36,50 @@ export default function SignInPage() {
   }, [])
 
   const handleSignIn = async (email: string, password: string) => {
-    console.log('🚨 [CRITICAL] handleSignIn called with:', { email, hasPassword: !!password })
+    // PERSISTENT LOGS que no se borren
+    const logMessage = `🚨 [CRITICAL] handleSignIn called with email: ${email}, hasPassword: ${!!password}`
+    console.log(logMessage)
+    alert(logMessage) // Para que no desaparezca
+    
     setLoading(true)
 
     try {
       console.log('🚨 [CRITICAL] Calling signIn function...')
       const { data, error } = await signIn(email, password)
-      console.log('🚨 [CRITICAL] signIn result:', { data: !!data, error: !!error, user: !!data?.user })
+      
+      const resultMessage = `🚨 [CRITICAL] signIn result - hasData: ${!!data}, hasError: ${!!error}, hasUser: ${!!data?.user}`
+      console.log(resultMessage)
+      alert(resultMessage) // Para que no desaparezca
       
       if (error) {
+        const errorMessage = `❌ [ERROR] ${error.message}`
+        console.log(errorMessage)
+        alert(errorMessage)
         toast.error(error.message)
         return
       }
 
       if (data.user) {
-        toast.success('¡Bienvenido a MindHub!')
-        console.log('✅ [SignIn] Login successful - user data:', data.user.id)
+        const successMessage = `✅ [SUCCESS] Login exitoso para usuario: ${data.user.id}`
+        console.log(successMessage)
+        alert(successMessage)
         
-        // SKIP ALL SESSION/COOKIE VERIFICATION - just redirect immediately
-        console.log('🚀 [SignIn] IMMEDIATE REDIRECT - skipping all verifications')
+        toast.success('¡Bienvenido a MindHub!')
         
         const urlParams = new URLSearchParams(window.location.search)
         const redirectTo = urlParams.get('redirectTo') || '/app'
         
-        console.log('🎯 [SignIn] FORCING IMMEDIATE NAVIGATION TO:', redirectTo)
+        const redirectMessage = `🎯 [REDIRECT] Redirigiendo a: ${redirectTo}`
+        console.log(redirectMessage)
+        alert(redirectMessage)
         
-        // IMMEDIATE redirect with multiple methods
+        // IMMEDIATE redirect
         window.location.href = redirectTo
-        
-        // Backup methods in case the first fails
-        setTimeout(() => {
-          if (window.location.pathname.startsWith('/auth/')) {
-            console.log('🔧 [SignIn] Backup redirect 1')
-            window.location.assign(redirectTo)
-          }
-        }, 100)
-        
-        setTimeout(() => {
-          if (window.location.pathname.startsWith('/auth/')) {
-            console.log('🔧 [SignIn] Backup redirect 2')
-            window.location.replace(redirectTo)
-          }
-        }, 500)
       }
     } catch (error) {
+      const catchError = `💥 [CATCH ERROR] ${error}`
+      console.log(catchError)
+      alert(catchError)
       toast.error('Error inesperado al iniciar sesión')
     } finally {
       setLoading(false)
