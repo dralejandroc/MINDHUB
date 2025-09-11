@@ -14,9 +14,13 @@ export default function AppHome() {
   const router = useRouter();
 
   useEffect(() => {
+    console.log('📊 App page - Auth state:', { loading, user: !!user, userId: user?.id });
     if (!loading && !user) {
       // Redirect to sign-in if not authenticated with Supabase
+      console.log('❌ No user found, redirecting to sign-in');
       router.push('/auth/sign-in');
+    } else if (!loading && user) {
+      console.log('✅ User authenticated, showing app dashboard');
     }
   }, [loading, user, router]);
 

@@ -96,6 +96,13 @@ export async function middleware(req: NextRequest) {
       // Continue without session if there's an error
     }
     
+    console.log(`📊 [Middleware] Session check for ${req.nextUrl.pathname}:`, {
+      hasSession: !!session,
+      userId: session?.user?.id,
+      isProtected: isProtectedRoute(req.nextUrl.pathname),
+      isAuth: req.nextUrl.pathname.startsWith('/auth/')
+    })
+    
     // Check if route requires authentication
     if (isProtectedRoute(req.nextUrl.pathname)) {
       if (!session) {
@@ -108,6 +115,7 @@ export async function middleware(req: NextRequest) {
     
     // If user is logged in and trying to access auth pages, redirect to app
     if (session && req.nextUrl.pathname.startsWith('/auth/')) {
+      console.log('🔄 [Middleware] Authenticated user accessing auth page, redirecting to /app')
       return NextResponse.redirect(new URL('/app', req.url))
     }
     
