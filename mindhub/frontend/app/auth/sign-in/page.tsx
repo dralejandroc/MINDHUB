@@ -35,7 +35,11 @@ export default function SignInPage() {
 
       if (data.user) {
         toast.success('¡Bienvenido a MindHub!')
-        router.push('/dashboard')
+        // Use replace to avoid adding login page to history
+        // Small delay to ensure auth state updates before redirect
+        setTimeout(() => {
+          router.replace('/app')
+        }, 250)
       }
     } catch (error) {
       toast.error('Error inesperado al iniciar sesión')
