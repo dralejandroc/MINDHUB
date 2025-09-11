@@ -103,14 +103,17 @@ export async function middleware(req: NextRequest) {
       isAuth: req.nextUrl.pathname.startsWith('/auth/')
     })
     
+    // TEMPORARILY DISABLED - Allow access to all routes for testing
+    console.log(`🚫 [Middleware] TEMPORARILY DISABLED - Allowing access to ${req.nextUrl.pathname} without auth check`)
+    
     // Check if route requires authentication
     if (isProtectedRoute(req.nextUrl.pathname)) {
       if (!session) {
-        // Redirect to sign-in if not authenticated
-        console.log(`🔒 [Middleware] Protected route ${req.nextUrl.pathname} requires auth, redirecting to sign-in`)
-        const redirectUrl = new URL('/auth/sign-in', req.url)
-        redirectUrl.searchParams.set('redirectTo', req.nextUrl.pathname)
-        return NextResponse.redirect(redirectUrl)
+        // DISABLED: Redirect to sign-in if not authenticated
+        console.log(`🔒 [Middleware] Protected route ${req.nextUrl.pathname} requires auth but MIDDLEWARE IS DISABLED`)
+        // const redirectUrl = new URL('/auth/sign-in', req.url)
+        // redirectUrl.searchParams.set('redirectTo', req.nextUrl.pathname)
+        // return NextResponse.redirect(redirectUrl)
       }
     }
     

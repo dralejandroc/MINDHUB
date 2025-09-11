@@ -36,50 +36,32 @@ export default function SignInPage() {
   }, [])
 
   const handleSignIn = async (email: string, password: string) => {
-    // PERSISTENT LOGS que no se borren
-    const logMessage = `🚨 [CRITICAL] handleSignIn called with email: ${email}, hasPassword: ${!!password}`
-    console.log(logMessage)
-    alert(logMessage) // Para que no desaparezca
-    
+    console.log('✅ [LOGIN] Iniciando login para:', email)
     setLoading(true)
 
     try {
-      console.log('🚨 [CRITICAL] Calling signIn function...')
       const { data, error } = await signIn(email, password)
       
-      const resultMessage = `🚨 [CRITICAL] signIn result - hasData: ${!!data}, hasError: ${!!error}, hasUser: ${!!data?.user}`
-      console.log(resultMessage)
-      alert(resultMessage) // Para que no desaparezca
-      
       if (error) {
-        const errorMessage = `❌ [ERROR] ${error.message}`
-        console.log(errorMessage)
-        alert(errorMessage)
+        console.log('❌ [LOGIN] Error:', error.message)
         toast.error(error.message)
         return
       }
 
       if (data.user) {
-        const successMessage = `✅ [SUCCESS] Login exitoso para usuario: ${data.user.id}`
-        console.log(successMessage)
-        alert(successMessage)
-        
+        console.log('🎉 [LOGIN] ¡Login exitoso!', data.user.id)
         toast.success('¡Bienvenido a MindHub!')
         
         const urlParams = new URLSearchParams(window.location.search)
         const redirectTo = urlParams.get('redirectTo') || '/app'
         
-        const redirectMessage = `🎯 [REDIRECT] Redirigiendo a: ${redirectTo}`
-        console.log(redirectMessage)
-        alert(redirectMessage)
+        console.log('🚀 [LOGIN] Redirigiendo a:', redirectTo)
         
         // IMMEDIATE redirect
         window.location.href = redirectTo
       }
     } catch (error) {
-      const catchError = `💥 [CATCH ERROR] ${error}`
-      console.log(catchError)
-      alert(catchError)
+      console.log('💥 [LOGIN] Error inesperado:', error)
       toast.error('Error inesperado al iniciar sesión')
     } finally {
       setLoading(false)
