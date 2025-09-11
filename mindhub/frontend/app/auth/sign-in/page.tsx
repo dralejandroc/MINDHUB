@@ -27,11 +27,13 @@ export default function SignInPage() {
   // Handle automatic redirect when user is already authenticated
   useEffect(() => {
     if (session && user && !loading) {
-      console.log('✅ [LOGIN] User already authenticated, middleware will handle redirect')
-      // Let middleware handle the redirect automatically
+      console.log('✅ [LOGIN] User already authenticated, forcing redirect with window.location')
       const urlParams = new URLSearchParams(window.location.search)
       const redirectTo = urlParams.get('redirectTo') || '/app'
-      router.push(redirectTo)
+      console.log('🚀 [LOGIN] FORCING REDIRECT TO:', redirectTo)
+      
+      // Use window.location.href which actually works unlike router.push
+      window.location.href = redirectTo
     }
   }, [session, user, loading, router])
 
@@ -52,8 +54,16 @@ export default function SignInPage() {
         console.log('🎉 [LOGIN] ¡Login exitoso!', data.user.id)
         toast.success('¡Bienvenido a MindHub!')
         
-        // AuthProvider will detect the auth state change and middleware will redirect
-        console.log('🚀 [LOGIN] Login successful, waiting for auth state change...')
+        // Direct redirect - don't wait for auth state changes
+        const urlParams = new URLSearchParams(window.location.search)
+        const redirectTo = urlParams.get('redirectTo') || '/app'
+        
+        console.log('🚀 [LOGIN] REDIRECTING IMMEDIATELY TO:', redirectTo)
+        
+        // Force redirect immediately 
+        setTimeout(() => {
+          window.location.href = redirectTo
+        }, 500) // Small delay for toast to show
       }
     } catch (error) {
       console.log('💥 [LOGIN] Error inesperado:', error)
