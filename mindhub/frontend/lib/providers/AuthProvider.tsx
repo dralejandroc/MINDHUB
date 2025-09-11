@@ -42,15 +42,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           userId: session?.user?.id 
         })
         
-        // If user is already logged in and on auth page, redirect to app
-        if (session?.user && typeof window !== 'undefined' && window.location.pathname.startsWith('/auth/')) {
-          console.log('🔄 [AuthProvider] Already logged in on auth page, redirecting to /app')
-          const urlParams = new URLSearchParams(window.location.search)
-          const redirectTo = urlParams.get('redirectTo') || '/app'
-          console.log('🎯 [AuthProvider] Initial session redirect to:', redirectTo)
-          window.location.href = redirectTo
-          return // Don't continue with normal state setting
-        }
+        // DISABLED: Causing infinite redirect loop
+        // if (session?.user && typeof window !== 'undefined' && window.location.pathname.startsWith('/auth/')) {
+        //   console.log('🔄 [AuthProvider] Already logged in on auth page, redirecting to /app')
+        //   const urlParams = new URLSearchParams(window.location.search)
+        //   const redirectTo = urlParams.get('redirectTo') || '/app'
+        //   console.log('🎯 [AuthProvider] Initial session redirect to:', redirectTo)
+        //   window.location.href = redirectTo
+        //   return // Don't continue with normal state setting
+        // }
         
         setSession(session)
         setUser(session?.user ?? null)
@@ -82,15 +82,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
         if (event === 'SIGNED_IN' && session) {
           console.log('✅ [AuthProvider] User signed in successfully')
-          
-          // Check if we're on auth page and redirect to app
-          if (typeof window !== 'undefined' && window.location.pathname.startsWith('/auth/')) {
-            console.log('🔄 [AuthProvider] User signed in on auth page, redirecting to /app')
-            const urlParams = new URLSearchParams(window.location.search)
-            const redirectTo = urlParams.get('redirectTo') || '/app'
-            console.log('🎯 [AuthProvider] Redirecting to:', redirectTo)
-            window.location.href = redirectTo
-          }
+          // DISABLED: Let login page handle redirect to avoid conflicts
         }
         
         if (event === 'SIGNED_OUT') {
