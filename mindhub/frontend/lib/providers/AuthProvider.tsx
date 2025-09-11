@@ -59,10 +59,37 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             
             console.log('🎯 [AuthProvider] Redirecting to:', redirectTo)
             
-            // Force navigation
-            setTimeout(() => {
-              window.location.href = redirectTo
-            }, 500)
+            // Wait longer for cookies to be set, then verify session before redirect
+            const attemptRedirect = async (attempt = 1, maxAttempts = 5) => {
+              console.log(`🔍 [AuthProvider] Redirect attempt ${attempt}/${maxAttempts}`)
+              
+              try {
+                // Verify session is actually saved
+                const { data: { session: currentSession } } = await supabase.auth.getSession()
+                
+                if (currentSession && currentSession.user) {
+                  console.log('✅ [AuthProvider] Session confirmed, redirecting')
+                  window.location.href = redirectTo
+                } else if (attempt < maxAttempts) {
+                  console.log('⏳ [AuthProvider] Session not ready, waiting...')
+                  setTimeout(() => attemptRedirect(attempt + 1, maxAttempts), 1000)
+                } else {
+                  console.error('❌ [AuthProvider] Session verification failed after all attempts')
+                  // Force redirect anyway as fallback
+                  window.location.href = redirectTo
+                }
+              } catch (error) {
+                console.error('❌ [AuthProvider] Error verifying session:', error)
+                if (attempt < maxAttempts) {
+                  setTimeout(() => attemptRedirect(attempt + 1, maxAttempts), 1000)
+                } else {
+                  window.location.href = redirectTo
+                }
+              }
+            }
+            
+            // Start redirect attempts after initial delay
+            setTimeout(() => attemptRedirect(), 1000)
           }
         }
         

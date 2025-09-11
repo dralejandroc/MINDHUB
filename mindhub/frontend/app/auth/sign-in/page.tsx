@@ -2,7 +2,7 @@
 
 import { useRouter } from 'next/navigation'
 import { useEffect } from 'react'
-import { signIn, signInWithGoogle } from '@/lib/supabase/client'
+import { signIn, signInWithGoogle, supabase } from '@/lib/supabase/client'
 import { toast } from 'react-hot-toast'
 import { MindHubSignInCard } from '@/components/auth/MindHubSignInCard'
 import { useState } from 'react'
@@ -40,16 +40,40 @@ export default function SignInPage() {
         // Let the AuthProvider handle the redirect via onAuthStateChange
         // This prevents conflicts between multiple redirect attempts
         
-        // Backup redirect in case AuthProvider doesn't trigger
-        setTimeout(() => {
+        // Backup redirect with session verification for new browsers
+        const backupRedirect = async (attempt = 1, maxAttempts = 10) => {
           const currentPath = window.location.pathname
-          if (currentPath.startsWith('/auth/')) {
-            console.log('🔧 [SignIn] Backup redirect triggered')
-            const urlParams = new URLSearchParams(window.location.search)
-            const redirectTo = urlParams.get('redirectTo') || '/app'
-            window.location.href = redirectTo
+          if (!currentPath.startsWith('/auth/')) {
+            console.log('✅ [SignIn] Already redirected, backup cancelled')
+            return
           }
-        }, 2000)
+          
+          console.log(`🔧 [SignIn] Backup redirect attempt ${attempt}/${maxAttempts}`)
+          
+          try {
+            const { data: { session } } = await supabase.auth.getSession()
+            
+            if (session && session.user) {
+              console.log('🚀 [SignIn] Backup redirect - session confirmed')
+              const urlParams = new URLSearchParams(window.location.search)
+              const redirectTo = urlParams.get('redirectTo') || '/app'
+              window.location.href = redirectTo
+            } else if (attempt < maxAttempts) {
+              console.log('⏳ [SignIn] Backup redirect - session not ready, waiting...')
+              setTimeout(() => backupRedirect(attempt + 1, maxAttempts), 500)
+            } else {
+              console.error('❌ [SignIn] Backup redirect failed - no session after all attempts')
+            }
+          } catch (error) {
+            console.error('❌ [SignIn] Backup redirect error:', error)
+            if (attempt < maxAttempts) {
+              setTimeout(() => backupRedirect(attempt + 1, maxAttempts), 500)
+            }
+          }
+        }
+        
+        // Start backup redirect after initial delay
+        setTimeout(() => backupRedirect(), 3000)
       }
     } catch (error) {
       toast.error('Error inesperado al iniciar sesión')
