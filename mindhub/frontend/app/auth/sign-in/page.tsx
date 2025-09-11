@@ -2,10 +2,11 @@
 
 import { useRouter } from 'next/navigation'
 import { useEffect } from 'react'
-import { signIn, signInWithGoogle, supabase } from '@/lib/supabase/client'
+import { signIn, signInWithGoogle } from '@/lib/supabase/client'
 import { toast } from 'react-hot-toast'
 import { MindHubSignInCard } from '@/components/auth/MindHubSignInCard'
 import { useState } from 'react'
+import { useAuth } from '@/lib/providers/AuthProvider'
 
 // Clean Architecture: Domain entities for authentication
 interface SignInData {
@@ -16,24 +17,23 @@ interface SignInData {
 export default function SignInPage() {
   const [loading, setLoading] = useState(false)
   const router = useRouter()
+  const { user, session } = useAuth()
 
   // Clean Architecture: Set document title (UI layer concern)
   useEffect(() => {
     document.title = 'Iniciar Sesión - MindHub'
-    
-    // EMERGENCY BYPASS: Redirect to /app after 30 seconds as final fallback
-    console.log('🆘 [EMERGENCY] Setting up emergency bypass redirect in 30 seconds')
-    
-    const emergencyTimer = setTimeout(() => {
-      console.log('🆘 [EMERGENCY] Emergency redirect triggered - bypassing login')
+  }, [])
+
+  // Handle automatic redirect when user is already authenticated
+  useEffect(() => {
+    if (session && user && !loading) {
+      console.log('✅ [LOGIN] User already authenticated, middleware will handle redirect')
+      // Let middleware handle the redirect automatically
       const urlParams = new URLSearchParams(window.location.search)
       const redirectTo = urlParams.get('redirectTo') || '/app'
-      console.log('🆘 [EMERGENCY] FORCING NAVIGATION TO:', redirectTo)
-      window.location.href = redirectTo
-    }, 30000) // 30 seconds
-    
-    return () => clearTimeout(emergencyTimer)
-  }, [])
+      router.push(redirectTo)
+    }
+  }, [session, user, loading, router])
 
   const handleSignIn = async (email: string, password: string) => {
     console.log('✅ [LOGIN] Iniciando login para:', email)
@@ -52,16 +52,8 @@ export default function SignInPage() {
         console.log('🎉 [LOGIN] ¡Login exitoso!', data.user.id)
         toast.success('¡Bienvenido a MindHub!')
         
-        const urlParams = new URLSearchParams(window.location.search)
-        const redirectTo = urlParams.get('redirectTo') || '/app'
-        
-        console.log('⏳ [LOGIN] Esperando 1 segundo para que la sesión se propague...')
-        
-        // Wait 1 second for session to propagate before redirect
-        setTimeout(() => {
-          console.log('🚀 [LOGIN] Redirigiendo a:', redirectTo)
-          window.location.href = redirectTo
-        }, 1000)
+        // AuthProvider will detect the auth state change and middleware will redirect
+        console.log('🚀 [LOGIN] Login successful, waiting for auth state change...')
       }
     } catch (error) {
       console.log('💥 [LOGIN] Error inesperado:', error)
@@ -94,31 +86,13 @@ export default function SignInPage() {
     router.push('/auth/forgot-password')
   }
 
-  // EMERGENCY BYPASS FUNCTION
-  const handleEmergencyBypass = () => {
-    console.log('🆘 [EMERGENCY] Manual bypass triggered')
-    const urlParams = new URLSearchParams(window.location.search)
-    const redirectTo = urlParams.get('redirectTo') || '/app'
-    console.log('🆘 [EMERGENCY] MANUAL REDIRECT TO:', redirectTo)
-    window.location.href = redirectTo
-  }
-
   return (
     <div className="min-h-screen w-full flex items-center justify-center bg-gradient-to-br from-teal-50 via-cyan-50 to-blue-50 p-4">
-      {/* EMERGENCY BYPASS BUTTON */}
-      <div className="absolute top-4 right-4 z-50">
-        <button
-          onClick={handleEmergencyBypass}
-          className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg text-sm font-medium shadow-lg"
-        >
-          🆘 EMERGENCY BYPASS
-        </button>
-      </div>
-      
       <MindHubSignInCard 
         onSignIn={handleSignIn}
         onGoogleSignIn={handleGoogleSignIn}
         onForgotPassword={handleForgotPassword}
+        loading={loading}
       />
     </div>
   )

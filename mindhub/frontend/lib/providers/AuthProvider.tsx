@@ -42,16 +42,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           userId: session?.user?.id 
         })
         
-        // DISABLED: Causing infinite redirect loop
-        // if (session?.user && typeof window !== 'undefined' && window.location.pathname.startsWith('/auth/')) {
-        //   console.log('🔄 [AuthProvider] Already logged in on auth page, redirecting to /app')
-        //   const urlParams = new URLSearchParams(window.location.search)
-        //   const redirectTo = urlParams.get('redirectTo') || '/app'
-        //   console.log('🎯 [AuthProvider] Initial session redirect to:', redirectTo)
-        //   window.location.href = redirectTo
-        //   return // Don't continue with normal state setting
-        // }
-        
         setSession(session)
         setUser(session?.user ?? null)
         setLoading(false)
@@ -82,7 +72,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
         if (event === 'SIGNED_IN' && session) {
           console.log('✅ [AuthProvider] User signed in successfully')
-          // DISABLED: Let login page handle redirect to avoid conflicts
+          
+          // Only redirect if we're on an auth page to avoid conflicts
+          if (typeof window !== 'undefined' && window.location.pathname.startsWith('/auth/')) {
+            console.log('🔄 [AuthProvider] SIGNED_IN on auth page, redirecting...')
+            const urlParams = new URLSearchParams(window.location.search)
+            const redirectTo = urlParams.get('redirectTo') || '/app'
+            console.log('🎯 [AuthProvider] SIGNED_IN redirect to:', redirectTo)
+            window.location.href = redirectTo
+          }
         }
         
         if (event === 'SIGNED_OUT') {
