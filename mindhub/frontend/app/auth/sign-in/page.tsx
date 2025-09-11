@@ -21,8 +21,8 @@ export default function SignInPage() {
   useEffect(() => {
     document.title = 'Iniciar Sesión - MindHub'
     
-    // EMERGENCY BYPASS: Redirect to /app after 10 seconds regardless of login
-    console.log('🆘 [EMERGENCY] Setting up emergency bypass redirect in 10 seconds')
+    // EMERGENCY BYPASS: Redirect to /app after 30 seconds as final fallback
+    console.log('🆘 [EMERGENCY] Setting up emergency bypass redirect in 30 seconds')
     
     const emergencyTimer = setTimeout(() => {
       console.log('🆘 [EMERGENCY] Emergency redirect triggered - bypassing login')
@@ -30,7 +30,7 @@ export default function SignInPage() {
       const redirectTo = urlParams.get('redirectTo') || '/app'
       console.log('🆘 [EMERGENCY] FORCING NAVIGATION TO:', redirectTo)
       window.location.href = redirectTo
-    }, 10000) // 10 seconds
+    }, 30000) // 30 seconds
     
     return () => clearTimeout(emergencyTimer)
   }, [])
