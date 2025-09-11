@@ -20,13 +20,29 @@ export default function SignInPage() {
   // Clean Architecture: Set document title (UI layer concern)
   useEffect(() => {
     document.title = 'Iniciar Sesión - MindHub'
+    
+    // EMERGENCY BYPASS: Redirect to /app after 10 seconds regardless of login
+    console.log('🆘 [EMERGENCY] Setting up emergency bypass redirect in 10 seconds')
+    
+    const emergencyTimer = setTimeout(() => {
+      console.log('🆘 [EMERGENCY] Emergency redirect triggered - bypassing login')
+      const urlParams = new URLSearchParams(window.location.search)
+      const redirectTo = urlParams.get('redirectTo') || '/app'
+      console.log('🆘 [EMERGENCY] FORCING NAVIGATION TO:', redirectTo)
+      window.location.href = redirectTo
+    }, 10000) // 10 seconds
+    
+    return () => clearTimeout(emergencyTimer)
   }, [])
 
   const handleSignIn = async (email: string, password: string) => {
+    console.log('🚨 [CRITICAL] handleSignIn called with:', { email, hasPassword: !!password })
     setLoading(true)
 
     try {
+      console.log('🚨 [CRITICAL] Calling signIn function...')
       const { data, error } = await signIn(email, password)
+      console.log('🚨 [CRITICAL] signIn result:', { data: !!data, error: !!error, user: !!data?.user })
       
       if (error) {
         toast.error(error.message)
@@ -115,8 +131,27 @@ export default function SignInPage() {
     router.push('/auth/forgot-password')
   }
 
+  // EMERGENCY BYPASS FUNCTION
+  const handleEmergencyBypass = () => {
+    console.log('🆘 [EMERGENCY] Manual bypass triggered')
+    const urlParams = new URLSearchParams(window.location.search)
+    const redirectTo = urlParams.get('redirectTo') || '/app'
+    console.log('🆘 [EMERGENCY] MANUAL REDIRECT TO:', redirectTo)
+    window.location.href = redirectTo
+  }
+
   return (
     <div className="min-h-screen w-full flex items-center justify-center bg-gradient-to-br from-teal-50 via-cyan-50 to-blue-50 p-4">
+      {/* EMERGENCY BYPASS BUTTON */}
+      <div className="absolute top-4 right-4 z-50">
+        <button
+          onClick={handleEmergencyBypass}
+          className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg text-sm font-medium shadow-lg"
+        >
+          🆘 EMERGENCY BYPASS
+        </button>
+      </div>
+      
       <MindHubSignInCard 
         onSignIn={handleSignIn}
         onGoogleSignIn={handleGoogleSignIn}
