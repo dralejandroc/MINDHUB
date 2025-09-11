@@ -35,17 +35,21 @@ export default function SignInPage() {
 
       if (data.user) {
         toast.success('¡Bienvenido a MindHub!')
-        console.log('🚀 Login successful, user authenticated')
+        console.log('✅ [SignIn] Login successful - AuthProvider will handle redirect')
         
-        // Check if there's a redirectTo parameter
-        const urlParams = new URLSearchParams(window.location.search)
-        const redirectTo = urlParams.get('redirectTo')
-        const targetPath = redirectTo ? redirectTo : '/app'
+        // Let the AuthProvider handle the redirect via onAuthStateChange
+        // This prevents conflicts between multiple redirect attempts
         
-        console.log('🔄 Redirecting to:', targetPath)
-        
-        // Simple, clean redirect - let the middleware handle auth state
-        window.location.href = targetPath
+        // Backup redirect in case AuthProvider doesn't trigger
+        setTimeout(() => {
+          const currentPath = window.location.pathname
+          if (currentPath.startsWith('/auth/')) {
+            console.log('🔧 [SignIn] Backup redirect triggered')
+            const urlParams = new URLSearchParams(window.location.search)
+            const redirectTo = urlParams.get('redirectTo') || '/app'
+            window.location.href = redirectTo
+          }
+        }, 2000)
       }
     } catch (error) {
       toast.error('Error inesperado al iniciar sesión')

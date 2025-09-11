@@ -39,21 +39,37 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
+        console.log(`🔔 [AuthProvider] Auth event: ${event}, has session: ${!!session}`)
         setSession(session)
         setUser(session?.user ?? null)
         setLoading(false)
 
-        // DISABLED: No automatic redirects to preserve user work
-        // Users should handle navigation manually
-        /*
-        if (event === 'SIGNED_IN') {
-          router.push('/app')
+        // Handle redirects on auth state change
+        if (event === 'SIGNED_IN' && session) {
+          console.log('🚀 [AuthProvider] User signed in, checking for redirect')
+          
+          // Check if we're on a login page and should redirect
+          const currentPath = window.location.pathname
+          if (currentPath.startsWith('/auth/')) {
+            console.log('🔄 [AuthProvider] On auth page, redirecting to /app')
+            
+            // Check for redirectTo parameter
+            const urlParams = new URLSearchParams(window.location.search)
+            const redirectTo = urlParams.get('redirectTo') || '/app'
+            
+            console.log('🎯 [AuthProvider] Redirecting to:', redirectTo)
+            
+            // Force navigation
+            setTimeout(() => {
+              window.location.href = redirectTo
+            }, 500)
+          }
         }
         
         if (event === 'SIGNED_OUT') {
-          router.push('/')
+          console.log('🚪 [AuthProvider] User signed out, redirecting to home')
+          window.location.href = '/auth/sign-in'
         }
-        */
       }
     )
 
