@@ -35,45 +35,75 @@ export default function SignInPage() {
 
       if (data.user) {
         toast.success('¡Bienvenido a MindHub!')
-        console.log('✅ [SignIn] Login successful - AuthProvider will handle redirect')
+        console.log('✅ [SignIn] Login successful - starting immediate redirect polling')
         
-        // Let the AuthProvider handle the redirect via onAuthStateChange
-        // This prevents conflicts between multiple redirect attempts
-        
-        // Backup redirect with session verification for new browsers
-        const backupRedirect = async (attempt = 1, maxAttempts = 10) => {
+        // AGGRESSIVE POLLING: Don't rely on AuthProvider events
+        const forceRedirect = async (attempt = 1, maxAttempts = 15) => {
           const currentPath = window.location.pathname
           if (!currentPath.startsWith('/auth/')) {
-            console.log('✅ [SignIn] Already redirected, backup cancelled')
+            console.log('✅ [SignIn] Already redirected, polling cancelled')
             return
           }
           
-          console.log(`🔧 [SignIn] Backup redirect attempt ${attempt}/${maxAttempts}`)
+          console.log(`🔄 [SignIn] Polling redirect attempt ${attempt}/${maxAttempts}`)
           
           try {
             const { data: { session } } = await supabase.auth.getSession()
             
             if (session && session.user) {
-              console.log('🚀 [SignIn] Backup redirect - session confirmed')
+              console.log('🎯 [SignIn] Session confirmed, forcing redirect NOW')
               const urlParams = new URLSearchParams(window.location.search)
               const redirectTo = urlParams.get('redirectTo') || '/app'
+              
+              // Use multiple redirect methods simultaneously
+              console.log('🚀 [SignIn] FORCING NAVIGATION TO:', redirectTo)
+              
+              // Method 1: window.location.href (primary)
               window.location.href = redirectTo
+              
+              // Method 2: window.location.assign (backup)
+              setTimeout(() => {
+                if (window.location.pathname.startsWith('/auth/')) {
+                  console.log('🔧 [SignIn] Using window.location.assign backup')
+                  window.location.assign(redirectTo)
+                }
+              }, 100)
+              
+              // Method 3: window.location.replace (last resort)
+              setTimeout(() => {
+                if (window.location.pathname.startsWith('/auth/')) {
+                  console.log('🆘 [SignIn] Using window.location.replace last resort')
+                  window.location.replace(redirectTo)
+                }
+              }, 500)
+              
+              return
             } else if (attempt < maxAttempts) {
-              console.log('⏳ [SignIn] Backup redirect - session not ready, waiting...')
-              setTimeout(() => backupRedirect(attempt + 1, maxAttempts), 500)
+              console.log('⏳ [SignIn] Session not ready, continuing polling...')
+              setTimeout(() => forceRedirect(attempt + 1, maxAttempts), 300)
             } else {
-              console.error('❌ [SignIn] Backup redirect failed - no session after all attempts')
+              console.error('❌ [SignIn] CRITICAL: No session after all attempts!')
+              // Force redirect anyway as absolute last resort
+              const urlParams = new URLSearchParams(window.location.search)
+              const redirectTo = urlParams.get('redirectTo') || '/app'
+              console.log('🆘 [SignIn] LAST RESORT REDIRECT TO:', redirectTo)
+              window.location.replace(redirectTo)
             }
           } catch (error) {
-            console.error('❌ [SignIn] Backup redirect error:', error)
+            console.error('❌ [SignIn] Polling error:', error)
             if (attempt < maxAttempts) {
-              setTimeout(() => backupRedirect(attempt + 1, maxAttempts), 500)
+              setTimeout(() => forceRedirect(attempt + 1, maxAttempts), 300)
+            } else {
+              // Emergency redirect
+              const urlParams = new URLSearchParams(window.location.search)
+              const redirectTo = urlParams.get('redirectTo') || '/app'
+              window.location.replace(redirectTo)
             }
           }
         }
         
-        // Start backup redirect after initial delay
-        setTimeout(() => backupRedirect(), 3000)
+        // Start immediate aggressive polling
+        setTimeout(() => forceRedirect(), 100)
       }
     } catch (error) {
       toast.error('Error inesperado al iniciar sesión')

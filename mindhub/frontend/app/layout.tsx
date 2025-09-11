@@ -202,10 +202,13 @@ export default function RootLayout({
         {/* Vercel Speed Insights */}
         <SpeedInsights />
         
-        {/* PWA Service Worker Registration */}
+        {/* PWA Service Worker Registration - TEMPORARILY DISABLED FOR TESTING */}
         <script
           dangerouslySetInnerHTML={{
             __html: `
+              // Service Worker temporarily disabled to test redirect issues
+              console.log('[PWA] Service Worker registration temporarily disabled for debugging');
+              /*
               if ('serviceWorker' in navigator && typeof window !== 'undefined') {
                 window.addEventListener('load', function() {
                   navigator.serviceWorker.register('/sw.js', { scope: '/' })
@@ -217,6 +220,7 @@ export default function RootLayout({
                     });
                 });
               }
+              */
             `,
           }}
         />
