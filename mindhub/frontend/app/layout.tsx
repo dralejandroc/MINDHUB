@@ -208,19 +208,95 @@ export default function RootLayout({
             __html: `
               // Service Worker temporarily disabled to test redirect issues
               console.log('[PWA] Service Worker registration temporarily disabled for debugging');
-              /*
-              if ('serviceWorker' in navigator && typeof window !== 'undefined') {
-                window.addEventListener('load', function() {
-                  navigator.serviceWorker.register('/sw.js', { scope: '/' })
-                    .then(function(registration) {
-                      console.log('[PWA] Service Worker registered successfully:', registration.scope);
-                    })
-                    .catch(function(error) {
-                      console.log('[PWA] Service Worker registration failed:', error);
-                    });
-                });
+              
+              // NUCLEAR OPTION: Global auth checker that runs independently
+              console.log('🚨 [NUCLEAR] Starting global auth checker');
+              
+              let authCheckInterval;
+              let authCheckAttempts = 0;
+              const maxAuthCheckAttempts = 60; // 1 minute of checking
+              
+              function startGlobalAuthCheck() {
+                if (authCheckInterval) {
+                  clearInterval(authCheckInterval);
+                }
+                
+                authCheckInterval = setInterval(async function() {
+                  authCheckAttempts++;
+                  
+                  // Only check if we're on auth pages
+                  if (!window.location.pathname.startsWith('/auth/')) {
+                    console.log('🚨 [NUCLEAR] Not on auth page, stopping checker');
+                    clearInterval(authCheckInterval);
+                    return;
+                  }
+                  
+                  if (authCheckAttempts > maxAuthCheckAttempts) {
+                    console.log('🚨 [NUCLEAR] Max attempts reached, stopping checker');
+                    clearInterval(authCheckInterval);
+                    return;
+                  }
+                  
+                  console.log(\`🚨 [NUCLEAR] Auth check attempt \${authCheckAttempts}/\${maxAuthCheckAttempts}\`);
+                  
+                  try {
+                    // Get all cookies and check for auth tokens
+                    const cookies = document.cookie;
+                    const hasAuthCookie = cookies.includes('sb-jvbcpldzoyicefdtnwkd-auth-token') || 
+                                        cookies.includes('supabase-auth-token') || 
+                                        cookies.includes('sb-access-token');
+                    
+                    if (hasAuthCookie) {
+                      console.log('🚨 [NUCLEAR] Auth cookie detected! FORCING REDIRECT NOW!');
+                      
+                      const urlParams = new URLSearchParams(window.location.search);
+                      const redirectTo = urlParams.get('redirectTo') || '/app';
+                      
+                      console.log('🚨 [NUCLEAR] REDIRECTING TO:', redirectTo);
+                      
+                      clearInterval(authCheckInterval);
+                      
+                      // FORCE REDIRECT WITH MULTIPLE METHODS
+                      window.location.href = redirectTo;
+                      
+                      setTimeout(() => {
+                        if (window.location.pathname.startsWith('/auth/')) {
+                          console.log('🚨 [NUCLEAR] First redirect failed, trying assign');
+                          window.location.assign(redirectTo);
+                        }
+                      }, 100);
+                      
+                      setTimeout(() => {
+                        if (window.location.pathname.startsWith('/auth/')) {
+                          console.log('🚨 [NUCLEAR] Second redirect failed, trying replace');
+                          window.location.replace(redirectTo);
+                        }
+                      }, 300);
+                      
+                      return;
+                    }
+                    
+                    console.log('🚨 [NUCLEAR] No auth cookie yet, continuing...');
+                    
+                  } catch (error) {
+                    console.error('🚨 [NUCLEAR] Error in auth check:', error);
+                  }
+                }, 500); // Check every 500ms
               }
-              */
+              
+              // Start the checker when page loads
+              if (typeof window !== 'undefined') {
+                window.addEventListener('load', function() {
+                  console.log('🚨 [NUCLEAR] Page loaded, starting auth checker');
+                  startGlobalAuthCheck();
+                });
+                
+                // Also start immediately if already loaded
+                if (document.readyState === 'complete') {
+                  console.log('🚨 [NUCLEAR] Page already loaded, starting auth checker immediately');
+                  startGlobalAuthCheck();
+                }
+              }
             `,
           }}
         />
