@@ -53,53 +53,31 @@ export default function SignInPage() {
         toast.success('¡Bienvenido a MindHub!')
         console.log('✅ [SignIn] Login successful - user data:', data.user.id)
         
-        // FORCE COOKIE CREATION - create auth cookies manually
-        try {
-          console.log('🍪 [SignIn] Creating auth cookies manually')
-          
-          // Get the session and create cookies manually
-          const { data: { session } } = await supabase.auth.getSession()
-          
-          if (session) {
-            console.log('🍪 [SignIn] Session found, creating cookies')
-            
-            // Create multiple cookie variations to ensure one works
-            const cookieOptions = '; path=/; domain=.mindhub.cloud; secure; samesite=lax'
-            const accessToken = session.access_token
-            const refreshToken = session.refresh_token
-            
-            // Set multiple cookie formats
-            document.cookie = `sb-jvbcpldzoyicefdtnwkd-auth-token=${accessToken}${cookieOptions}`
-            document.cookie = `supabase-auth-token=${accessToken}${cookieOptions}`
-            document.cookie = `auth-token=${accessToken}${cookieOptions}`
-            document.cookie = `access-token=${accessToken}${cookieOptions}`
-            document.cookie = `refresh-token=${refreshToken}${cookieOptions}`
-            
-            console.log('🍪 [SignIn] Cookies created, checking...')
-            console.log('🍪 [SignIn] All cookies now:', document.cookie)
-            
-            // Small delay then redirect
-            setTimeout(() => {
-              const urlParams = new URLSearchParams(window.location.search)
-              const redirectTo = urlParams.get('redirectTo') || '/app'
-              console.log('🚀 [SignIn] REDIRECTING TO:', redirectTo)
-              window.location.href = redirectTo
-            }, 1000)
-            
-          } else {
-            console.error('❌ [SignIn] No session found after login')
+        // SKIP ALL SESSION/COOKIE VERIFICATION - just redirect immediately
+        console.log('🚀 [SignIn] IMMEDIATE REDIRECT - skipping all verifications')
+        
+        const urlParams = new URLSearchParams(window.location.search)
+        const redirectTo = urlParams.get('redirectTo') || '/app'
+        
+        console.log('🎯 [SignIn] FORCING IMMEDIATE NAVIGATION TO:', redirectTo)
+        
+        // IMMEDIATE redirect with multiple methods
+        window.location.href = redirectTo
+        
+        // Backup methods in case the first fails
+        setTimeout(() => {
+          if (window.location.pathname.startsWith('/auth/')) {
+            console.log('🔧 [SignIn] Backup redirect 1')
+            window.location.assign(redirectTo)
           }
-        } catch (error) {
-          console.error('❌ [SignIn] Error creating cookies:', error)
-          
-          // Fallback redirect without cookies
-          setTimeout(() => {
-            const urlParams = new URLSearchParams(window.location.search)
-            const redirectTo = urlParams.get('redirectTo') || '/app'
-            console.log('🆘 [SignIn] FALLBACK REDIRECT TO:', redirectTo)
-            window.location.href = redirectTo
-          }, 2000)
-        }
+        }, 100)
+        
+        setTimeout(() => {
+          if (window.location.pathname.startsWith('/auth/')) {
+            console.log('🔧 [SignIn] Backup redirect 2')
+            window.location.replace(redirectTo)
+          }
+        }, 500)
       }
     } catch (error) {
       toast.error('Error inesperado al iniciar sesión')

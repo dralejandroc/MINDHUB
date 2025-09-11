@@ -44,53 +44,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setUser(session?.user ?? null)
         setLoading(false)
 
-        // Handle redirects on auth state change
+        // Handle redirects on auth state change - TEMPORARILY DISABLED
+        // Let the sign-in page handle redirects directly to avoid conflicts
         if (event === 'SIGNED_IN' && session) {
-          console.log('🚀 [AuthProvider] User signed in, checking for redirect')
+          console.log('🚀 [AuthProvider] User signed in - letting sign-in page handle redirect')
           
-          // Check if we're on a login page and should redirect
+          // DISABLED: Don't interfere with sign-in page redirect
+          /*
           const currentPath = window.location.pathname
           if (currentPath.startsWith('/auth/')) {
             console.log('🔄 [AuthProvider] On auth page, redirecting to /app')
-            
-            // Check for redirectTo parameter
-            const urlParams = new URLSearchParams(window.location.search)
-            const redirectTo = urlParams.get('redirectTo') || '/app'
-            
-            console.log('🎯 [AuthProvider] Redirecting to:', redirectTo)
-            
-            // Wait longer for cookies to be set, then verify session before redirect
-            const attemptRedirect = async (attempt = 1, maxAttempts = 5) => {
-              console.log(`🔍 [AuthProvider] Redirect attempt ${attempt}/${maxAttempts}`)
-              
-              try {
-                // Verify session is actually saved
-                const { data: { session: currentSession } } = await supabase.auth.getSession()
-                
-                if (currentSession && currentSession.user) {
-                  console.log('✅ [AuthProvider] Session confirmed, redirecting')
-                  window.location.href = redirectTo
-                } else if (attempt < maxAttempts) {
-                  console.log('⏳ [AuthProvider] Session not ready, waiting...')
-                  setTimeout(() => attemptRedirect(attempt + 1, maxAttempts), 1000)
-                } else {
-                  console.error('❌ [AuthProvider] Session verification failed after all attempts')
-                  // Force redirect anyway as fallback
-                  window.location.href = redirectTo
-                }
-              } catch (error) {
-                console.error('❌ [AuthProvider] Error verifying session:', error)
-                if (attempt < maxAttempts) {
-                  setTimeout(() => attemptRedirect(attempt + 1, maxAttempts), 1000)
-                } else {
-                  window.location.href = redirectTo
-                }
-              }
-            }
-            
-            // Start redirect attempts after initial delay
-            setTimeout(() => attemptRedirect(), 1000)
+            // ... redirect code disabled
           }
+          */
         }
         
         if (event === 'SIGNED_OUT') {
