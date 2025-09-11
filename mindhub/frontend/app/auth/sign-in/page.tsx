@@ -35,75 +35,55 @@ export default function SignInPage() {
 
       if (data.user) {
         toast.success('¡Bienvenido a MindHub!')
-        console.log('✅ [SignIn] Login successful - starting immediate redirect polling')
+        console.log('✅ [SignIn] Login successful - user data:', data.user.id)
         
-        // AGGRESSIVE POLLING: Don't rely on AuthProvider events
-        const forceRedirect = async (attempt = 1, maxAttempts = 15) => {
-          const currentPath = window.location.pathname
-          if (!currentPath.startsWith('/auth/')) {
-            console.log('✅ [SignIn] Already redirected, polling cancelled')
-            return
-          }
+        // FORCE COOKIE CREATION - create auth cookies manually
+        try {
+          console.log('🍪 [SignIn] Creating auth cookies manually')
           
-          console.log(`🔄 [SignIn] Polling redirect attempt ${attempt}/${maxAttempts}`)
+          // Get the session and create cookies manually
+          const { data: { session } } = await supabase.auth.getSession()
           
-          try {
-            const { data: { session } } = await supabase.auth.getSession()
+          if (session) {
+            console.log('🍪 [SignIn] Session found, creating cookies')
             
-            if (session && session.user) {
-              console.log('🎯 [SignIn] Session confirmed, forcing redirect NOW')
+            // Create multiple cookie variations to ensure one works
+            const cookieOptions = '; path=/; domain=.mindhub.cloud; secure; samesite=lax'
+            const accessToken = session.access_token
+            const refreshToken = session.refresh_token
+            
+            // Set multiple cookie formats
+            document.cookie = `sb-jvbcpldzoyicefdtnwkd-auth-token=${accessToken}${cookieOptions}`
+            document.cookie = `supabase-auth-token=${accessToken}${cookieOptions}`
+            document.cookie = `auth-token=${accessToken}${cookieOptions}`
+            document.cookie = `access-token=${accessToken}${cookieOptions}`
+            document.cookie = `refresh-token=${refreshToken}${cookieOptions}`
+            
+            console.log('🍪 [SignIn] Cookies created, checking...')
+            console.log('🍪 [SignIn] All cookies now:', document.cookie)
+            
+            // Small delay then redirect
+            setTimeout(() => {
               const urlParams = new URLSearchParams(window.location.search)
               const redirectTo = urlParams.get('redirectTo') || '/app'
-              
-              // Use multiple redirect methods simultaneously
-              console.log('🚀 [SignIn] FORCING NAVIGATION TO:', redirectTo)
-              
-              // Method 1: window.location.href (primary)
+              console.log('🚀 [SignIn] REDIRECTING TO:', redirectTo)
               window.location.href = redirectTo
-              
-              // Method 2: window.location.assign (backup)
-              setTimeout(() => {
-                if (window.location.pathname.startsWith('/auth/')) {
-                  console.log('🔧 [SignIn] Using window.location.assign backup')
-                  window.location.assign(redirectTo)
-                }
-              }, 100)
-              
-              // Method 3: window.location.replace (last resort)
-              setTimeout(() => {
-                if (window.location.pathname.startsWith('/auth/')) {
-                  console.log('🆘 [SignIn] Using window.location.replace last resort')
-                  window.location.replace(redirectTo)
-                }
-              }, 500)
-              
-              return
-            } else if (attempt < maxAttempts) {
-              console.log('⏳ [SignIn] Session not ready, continuing polling...')
-              setTimeout(() => forceRedirect(attempt + 1, maxAttempts), 300)
-            } else {
-              console.error('❌ [SignIn] CRITICAL: No session after all attempts!')
-              // Force redirect anyway as absolute last resort
-              const urlParams = new URLSearchParams(window.location.search)
-              const redirectTo = urlParams.get('redirectTo') || '/app'
-              console.log('🆘 [SignIn] LAST RESORT REDIRECT TO:', redirectTo)
-              window.location.replace(redirectTo)
-            }
-          } catch (error) {
-            console.error('❌ [SignIn] Polling error:', error)
-            if (attempt < maxAttempts) {
-              setTimeout(() => forceRedirect(attempt + 1, maxAttempts), 300)
-            } else {
-              // Emergency redirect
-              const urlParams = new URLSearchParams(window.location.search)
-              const redirectTo = urlParams.get('redirectTo') || '/app'
-              window.location.replace(redirectTo)
-            }
+            }, 1000)
+            
+          } else {
+            console.error('❌ [SignIn] No session found after login')
           }
+        } catch (error) {
+          console.error('❌ [SignIn] Error creating cookies:', error)
+          
+          // Fallback redirect without cookies
+          setTimeout(() => {
+            const urlParams = new URLSearchParams(window.location.search)
+            const redirectTo = urlParams.get('redirectTo') || '/app'
+            console.log('🆘 [SignIn] FALLBACK REDIRECT TO:', redirectTo)
+            window.location.href = redirectTo
+          }, 2000)
         }
-        
-        // Start immediate aggressive polling
-        setTimeout(() => forceRedirect(), 100)
       }
     } catch (error) {
       toast.error('Error inesperado al iniciar sesión')

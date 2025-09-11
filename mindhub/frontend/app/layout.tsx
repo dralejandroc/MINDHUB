@@ -240,11 +240,17 @@ export default function RootLayout({
                   console.log(\`🚨 [NUCLEAR] Auth check attempt \${authCheckAttempts}/\${maxAuthCheckAttempts}\`);
                   
                   try {
-                    // Get all cookies and check for auth tokens
+                    // Get all cookies and LOG THEM to see what's actually there
                     const cookies = document.cookie;
+                    console.log('🚨 [NUCLEAR] All cookies:', cookies);
+                    
+                    // Check for various possible auth cookie names
                     const hasAuthCookie = cookies.includes('sb-jvbcpldzoyicefdtnwkd-auth-token') || 
                                         cookies.includes('supabase-auth-token') || 
-                                        cookies.includes('sb-access-token');
+                                        cookies.includes('sb-access-token') ||
+                                        cookies.includes('access-token') ||
+                                        cookies.includes('refresh-token') ||
+                                        cookies.includes('auth-token');
                     
                     if (hasAuthCookie) {
                       console.log('🚨 [NUCLEAR] Auth cookie detected! FORCING REDIRECT NOW!');
@@ -273,6 +279,13 @@ export default function RootLayout({
                         }
                       }, 300);
                       
+                      return;
+                    }
+                    
+                    // Stop after 10 attempts to avoid infinite loop while we debug
+                    if (authCheckAttempts >= 10) {
+                      console.log('🚨 [NUCLEAR] Stopping after 10 attempts for debugging');
+                      clearInterval(authCheckInterval);
                       return;
                     }
                     
