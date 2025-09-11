@@ -107,6 +107,7 @@ export async function middleware(req: NextRequest) {
     if (isProtectedRoute(req.nextUrl.pathname)) {
       if (!session) {
         // Redirect to sign-in if not authenticated
+        console.log(`🔒 [Middleware] Protected route ${req.nextUrl.pathname} requires auth, redirecting to sign-in`)
         const redirectUrl = new URL('/auth/sign-in', req.url)
         redirectUrl.searchParams.set('redirectTo', req.nextUrl.pathname)
         return NextResponse.redirect(redirectUrl)
@@ -114,13 +115,10 @@ export async function middleware(req: NextRequest) {
     }
     
     // If user is logged in and trying to access auth pages, redirect to app
-    // TEMPORARILY DISABLED - letting client-side handle redirect to avoid conflicts
-    /*
     if (session && req.nextUrl.pathname.startsWith('/auth/')) {
       console.log('🔄 [Middleware] Authenticated user accessing auth page, redirecting to /app')
       return NextResponse.redirect(new URL('/app', req.url))
     }
-    */
     
   } catch (error) {
     console.warn('[Middleware] Auth check failed:', error)
