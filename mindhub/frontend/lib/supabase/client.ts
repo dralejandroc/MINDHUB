@@ -33,53 +33,14 @@ if (!supabaseUrl || !supabaseAnonKey) {
 }
 
 // Create a single supabase client for interacting with your database
+// SIMPLIFIED: Use default localStorage instead of custom cookie handling
 export const supabase = createBrowserClient(supabaseUrl, supabaseAnonKey, {
-  cookies: {
-    get: (name: string) => {
-      if (typeof window === 'undefined') return undefined; // Skip on server
-      try {
-        const cookieValue = document.cookie
-          .split('; ')
-          .find(row => row.startsWith(`${name}=`))
-          ?.split('=')[1];
-        
-        if (cookieValue && cookieValue.startsWith('base64-')) {
-          // Handle problematic base64 cookies
-          try {
-            return atob(cookieValue.substring(7)); // Remove 'base64-' prefix
-          } catch {
-            console.warn(`🍪 Invalid base64 cookie detected: ${name}, clearing it`);
-            document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/`;
-            return undefined;
-          }
-        }
-        return cookieValue;
-      } catch (error) {
-        if (handleCookieError(error)) {
-          return undefined;
-        }
-        throw error;
-      }
-    },
-    set: (name: string, value: string, options?: any) => {
-      if (typeof window === 'undefined') return; // Skip on server
-      try {
-        const optionsStr = options 
-          ? Object.entries(options).map(([k, v]) => `${k}=${v}`).join('; ')
-          : '';
-        document.cookie = `${name}=${value}; path=/; ${optionsStr}`;
-      } catch (error) {
-        handleCookieError(error);
-      }
-    },
-    remove: (name: string, options?: any) => {
-      if (typeof window === 'undefined') return; // Skip on server
-      try {
-        document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/`;
-      } catch (error) {
-        handleCookieError(error);
-      }
-    }
+  auth: {
+    persistSession: true,
+    storageKey: 'mindhub-auth',
+    storage: typeof window !== 'undefined' ? window.localStorage : undefined,
+    autoRefreshToken: true,
+    detectSessionInUrl: true
   }
 })
 
