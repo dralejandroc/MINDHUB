@@ -252,7 +252,7 @@ export async function POST(request: Request) {
       };
 
       // Add consultation-specific tenant context (ensures clinic_id is always present)
-      const consultationData = addConsultationTenantContext(baseConsultationData, tenantContext, userProfile || undefined);
+      const consultationData = addConsultationTenantContext(baseConsultationData, tenantContext);
 
       // Insert consultation into Supabase
       const { data: consultation, error } = await supabaseAdmin

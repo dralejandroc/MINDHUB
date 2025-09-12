@@ -81,7 +81,7 @@ class FinanceGraphQLService {
   /**
    * Get financial dashboard data
    */
-  async getFinanceStats(clinicId?: string, workspaceId?: string): Promise<FinanceStats> {
+  async getFinanceStats(isClinic?: boolean, userId?: string): Promise<FinanceStats> {
     const now = Date.now()
     if (this.cachedStats && (now - this.lastFetch) < this.cacheTimeout) {
       console.log('✅ [Finance GraphQL] Returning cached stats')
@@ -95,10 +95,10 @@ class FinanceGraphQLService {
       const oneWeekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
 
       const [servicesResult, incomeResult, todayIncomeResult, cashResult] = await Promise.all([
-        this.getServices(clinicId, workspaceId),
-        this.getIncomeByDateRange(oneWeekAgo, today, clinicId, workspaceId),
-        this.getTodayIncome(today, clinicId),
-        this.getLatestCashCut(clinicId, workspaceId)
+        this.getServices(userId || '', isClinic || false),
+        this.getIncomeByDateRange(oneWeekAgo, today, userId || '', isClinic || false),
+        this.getTodayIncome(today, isClinic || false, userId),
+        this.getLatestCashCut(isClinic || false, userId)
       ])
 
       // Calculate stats
@@ -109,7 +109,7 @@ class FinanceGraphQLService {
       const cashOnHand = cashResult?.closingAmount || 0
 
       // Calculate pending payments
-      const pendingPayments = await this.getPendingPaymentsTotal(clinicId)
+      const pendingPayments = await this.getPendingPaymentsTotal(isClinic, userId)
 
       const stats: FinanceStats = {
         totalRevenue: weeklyRevenue,
@@ -224,11 +224,11 @@ class FinanceGraphQLService {
   /**
    * Get today's income
    */
-  async getTodayIncome(date: string, clinicId?: string): Promise<IncomeSummary[]> {
+  async getTodayIncome(date: string, isClinic: boolean, userId?: string): Promise<IncomeSummary[]> {
     try {
       const result = await client.query({
         query: GET_TODAY_FINANCE_INCOME,
-        variables: { date, clinicId },
+        variables: { date, isClinic, userId },
         fetchPolicy: 'network-only'
       })
 
@@ -250,11 +250,11 @@ class FinanceGraphQLService {
   /**
    * Get latest cash register cut
    */
-  async getLatestCashCut(clinicId?: string, workspaceId?: string): Promise<CashRegisterSummary | null> {
+  async getLatestCashCut(isClinic: boolean, userId?: string): Promise<CashRegisterSummary | null> {
     try {
       const result = await client.query({
         query: GET_LATEST_CASH_REGISTER_CUT,
-        variables: { clinicId, workspaceId },
+        variables: { isClinic, userId },
         fetchPolicy: 'network-only'
       })
 
@@ -282,11 +282,11 @@ class FinanceGraphQLService {
   /**
    * Get total pending payments
    */
-  private async getPendingPaymentsTotal(clinicId?: string): Promise<number> {
+  private async getPendingPaymentsTotal(isClinic?: boolean, userId?: string): Promise<number> {
     try {
       const result = await client.query({
         query: GET_PENDING_FINANCE_INCOME,
-        variables: { clinicId },
+        variables: { isClinic, userId },
         fetchPolicy: 'network-only'
       })
 
@@ -350,9 +350,9 @@ class FinanceGraphQLService {
   /**
    * Force refresh data
    */
-  async forceRefresh(clinicId?: string, workspaceId?: string): Promise<FinanceStats> {
+  async forceRefresh(isClinic?: boolean, userId?: string): Promise<FinanceStats> {
     this.invalidateCache()
-    return this.getFinanceStats(clinicId, workspaceId)
+    return this.getFinanceStats(isClinic, userId)
   }
 }
 

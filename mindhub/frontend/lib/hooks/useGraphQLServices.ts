@@ -67,7 +67,7 @@ export function useDashboardData(autoRefresh = true, refreshInterval = 5 * 60 * 
 }
 
 // Finance Hook
-export function useFinanceStats(clinicId?: string, workspaceId?: string) {
+export function useFinanceStats(isClinic?: boolean, userId?: string) {
   const [stats, setStats] = useState<FinanceStats | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -76,7 +76,7 @@ export function useFinanceStats(clinicId?: string, workspaceId?: string) {
     try {
       setLoading(true)
       setError(null)
-      const financeStats = await financeGraphQLService.getFinanceStats(clinicId, workspaceId)
+      const financeStats = await financeGraphQLService.getFinanceStats(isClinic, userId)
       setStats(financeStats)
     } catch (err) {
       console.error('❌ [Hook] Finance stats fetch error:', err)
@@ -84,11 +84,11 @@ export function useFinanceStats(clinicId?: string, workspaceId?: string) {
     } finally {
       setLoading(false)
     }
-  }, [clinicId, workspaceId])
+  }, [isClinic, userId])
 
   const forceRefresh = useCallback(async () => {
-    return await financeGraphQLService.forceRefresh(clinicId, workspaceId)
-  }, [clinicId, workspaceId])
+    return await financeGraphQLService.forceRefresh(isClinic, userId)
+  }, [isClinic, userId])
 
   useEffect(() => {
     fetchStats()
@@ -226,8 +226,9 @@ export function useEnhancedDashboard(
   workspaceId?: string,
   userType: UserType = 'individual'
 ) {
+  const isClinic = userType === 'clinic' || Boolean(clinicId)
   const dashboard = useDashboardData(true, 5 * 60 * 1000) // 5 minutes
-  const finance = useFinanceStats(clinicId, workspaceId)
+  const finance = useFinanceStats(isClinic, userId)
   const storage = useStorageUsage(userId || '', clinicId, userType)
 
   const isLoading = dashboard.loading || finance.loading || storage.loading
@@ -293,7 +294,7 @@ export function usePatients(searchText?: string, userId?: string, isClinic?: boo
     } finally {
       setLoading(false)
     }
-  }, [searchText, clinicId, workspaceId])
+  }, [searchText, userId, isClinic])
 
   useEffect(() => {
     fetchPatients()
@@ -629,10 +630,11 @@ export function useMindHubComplete(
   workspaceId?: string,
   userType: UserType = 'individual'
 ) {
+  const isClinic = userType === 'clinic' || Boolean(clinicId)
   const dashboard = useDashboardData(true, 5 * 60 * 1000)
-  const finance = useFinanceStats(clinicId, workspaceId)
+  const finance = useFinanceStats(isClinic, userId)
   const storage = useStorageUsage(userId || '', clinicId, userType)
-  const patients = usePatients(undefined, clinicId, workspaceId)
+  const patients = usePatients(undefined, userId, isClinic)
   const assessments = useAssessments(undefined, userId)
   const formSubmissions = useFormSubmissions()
   const scales = useScales()
