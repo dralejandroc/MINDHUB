@@ -27,13 +27,13 @@ export default function SignInPage() {
   // Handle automatic redirect when user is already authenticated
   useEffect(() => {
     if (session && user && !loading) {
-      console.log('✅ [LOGIN] User already authenticated, forcing redirect with window.location')
+      console.log('✅ [LOGIN] User already authenticated, redirecting with Next.js router')
       const urlParams = new URLSearchParams(window.location.search)
       const redirectTo = urlParams.get('redirectTo') || '/app'
-      console.log('🚀 [LOGIN] FORCING REDIRECT TO:', redirectTo)
+      console.log('🚀 [LOGIN] REDIRECTING TO:', redirectTo)
       
-      // Use window.location.href which actually works unlike router.push
-      window.location.href = redirectTo
+      // Use Next.js router for smooth client-side navigation
+      router.replace(redirectTo)
     }
   }, [session, user, loading, router])
 
@@ -54,15 +54,15 @@ export default function SignInPage() {
         console.log('🎉 [LOGIN] ¡Login exitoso!', data.user.id)
         toast.success('¡Bienvenido a MindHub!')
         
-        // Direct redirect - don't wait for auth state changes
+        // Use Next.js router for consistent navigation
         const urlParams = new URLSearchParams(window.location.search)
         const redirectTo = urlParams.get('redirectTo') || '/app'
         
-        console.log('🚀 [LOGIN] REDIRECTING IMMEDIATELY TO:', redirectTo)
+        console.log('🚀 [LOGIN] REDIRECTING TO:', redirectTo)
         
-        // Force redirect immediately 
+        // Use router.replace for smooth navigation
         setTimeout(() => {
-          window.location.href = redirectTo
+          router.replace(redirectTo)
         }, 500) // Small delay for toast to show
       }
     } catch (error) {

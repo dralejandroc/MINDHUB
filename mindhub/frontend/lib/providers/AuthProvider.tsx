@@ -72,15 +72,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
         if (event === 'SIGNED_IN' && session) {
           console.log('✅ [AuthProvider] User signed in successfully')
-          
-          // Only redirect if we're on an auth page to avoid conflicts
-          if (typeof window !== 'undefined' && window.location.pathname.startsWith('/auth/')) {
-            console.log('🔄 [AuthProvider] SIGNED_IN on auth page, redirecting...')
-            const urlParams = new URLSearchParams(window.location.search)
-            const redirectTo = urlParams.get('redirectTo') || '/app'
-            console.log('🎯 [AuthProvider] SIGNED_IN redirect to:', redirectTo)
-            window.location.href = redirectTo
-          }
+          // Let sign-in page handle redirects to avoid conflicts
         }
         
         if (event === 'SIGNED_OUT') {

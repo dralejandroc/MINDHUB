@@ -21,10 +21,9 @@ export default function AppHome() {
       email: user?.email 
     });
     
-    if (!loading && !user) {
-      console.log('❌ [APP PAGE] No user found after loading complete, redirecting to sign-in');
-      router.replace('/auth/sign-in');
-    } else if (!loading && user) {
+    // Let middleware handle authentication protection
+    // This page only needs to show auth state for debugging
+    if (!loading && user) {
       console.log('✅ [APP PAGE] User authenticated successfully:', {
         id: user.id,
         email: user.email
@@ -32,7 +31,7 @@ export default function AppHome() {
     } else if (loading) {
       console.log('⏳ [APP PAGE] Still loading auth state...');
     }
-  }, [loading, user, router]);
+  }, [loading, user]);
 
   // Reset dashboard config if it's broken
   useEffect(() => {
@@ -71,9 +70,9 @@ export default function AppHome() {
     );
   }
 
-  // Show loading if no user (will redirect via useEffect)
+  // Show loading if no user (middleware will handle redirect)
   if (!user) {
-    console.log('🔒 [APP PAGE] No user, showing loading while redirect happens');
+    console.log('🔒 [APP PAGE] No user, showing loading (middleware handles redirect)');
     return (
       <div className="min-h-screen flex items-center justify-center">
         <LoadingSpinner size="lg" />
