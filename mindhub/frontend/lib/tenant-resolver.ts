@@ -1,20 +1,18 @@
 /**
- * UNIFIED TENANT ARCHITECTURE RESOLVER
+ * SIMPLIFIED TENANT ARCHITECTURE RESOLVER
  * 
- * Resolves tenant context (clinic vs individual workspace) for all users
- * Fixes critical 500 errors from clinic_id null constraints
- * 
- * Priority Order:
- * 1. tenant_memberships (clinic associations)
- * 2. profiles.clinic_id (direct clinic)  
- * 3. individual_workspaces (auto-create if needed)
+ * New simplified architecture:
+ * - clinic_id: Boolean (true = clinic shared, false = individual user)
+ * - user_id: For record ownership
+ * - NO MORE workspace_id references
  */
 
 import { createClient } from '@/lib/supabase/client';
 
 export interface TenantContext {
-  type: 'clinic' | 'workspace';
-  id: string;
+  type: 'clinic' | 'individual';
+  clinic_id: boolean;
+  user_id: string;
   name: string;
   role: 'owner' | 'admin' | 'member';
   permissions?: Record<string, boolean>;
@@ -26,7 +24,6 @@ export interface UserProfile {
   first_name?: string;
   last_name?: string;
   clinic_id?: string;
-  individual_workspace_id?: string;
 }
 
 export interface TenantMembership {
@@ -43,11 +40,7 @@ export interface Clinic {
   is_active: boolean;
 }
 
-export interface IndividualWorkspace {
-  id: string;
-  workspace_name: string;
-  owner_id: string;
-}
+// IndividualWorkspace interface removed - no longer needed
 
 /**
  * Get user profile with clinic_id information
@@ -70,53 +63,20 @@ export async function getUserProfile(userId: string): Promise<UserProfile | null
 }
 
 /**
- * CRITICAL: Resolve tenant context for any user
- * This function MUST never fail - always returns valid context
+ * SIMPLIFIED: Resolve tenant context for any user
+ * Returns clinic_id boolean and user_id for record ownership
  */
 export async function resolveTenantContext(userId: string): Promise<TenantContext> {
   const supabase = createClient();
   
-  console.log(`🔍 [Tenant Resolver] Resolving context for user: ${userId}`);
+  console.log(`🔍 [Tenant Resolver] Resolving simplified context for user: ${userId}`);
   
   try {
-    // STEP 1: Check tenant_memberships (multi-professional clinics)
-    console.log('📋 [Tenant Resolver] Checking tenant memberships...');
-    
-    const { data: memberships, error: membershipError } = await supabase
-      .from('tenant_memberships')
-      .select(`
-        id, clinic_id, role, permissions, is_active,
-        clinics:clinic_id (id, name, is_active)
-      `)
-      .eq('user_id', userId)
-      .eq('is_active', true)
-      .order('created_at', { ascending: false });
-      
-    if (membershipError) {
-      console.error('❌ [Tenant Resolver] Membership query failed:', membershipError);
-    } else if (memberships && memberships.length > 0) {
-      const membership = memberships[0]; // Use most recent active membership
-      const clinic = (membership as any).clinics;
-      
-      if (clinic && clinic.is_active) {
-        console.log(`✅ [Tenant Resolver] Found active clinic membership: ${clinic.name}`);
-        return {
-          type: 'clinic',
-          id: membership.clinic_id,
-          name: clinic.name,
-          role: membership.role as 'owner' | 'admin' | 'member',
-          permissions: membership.permissions || {}
-        };
-      }
-    }
-    
-    // STEP 2: Check profiles.clinic_id (direct clinic association)  
-    console.log('👤 [Tenant Resolver] Checking profile clinic association...');
-    
+    // Check if user belongs to a clinic
     const { data: profile, error: profileError } = await supabase
       .from('profiles')
       .select(`
-        id, clinic_id,
+        id, clinic_id, first_name, last_name,
         clinics:clinic_id (id, name, is_active)
       `)
       .eq('id', userId)
@@ -124,70 +84,51 @@ export async function resolveTenantContext(userId: string): Promise<TenantContex
       
     if (profileError) {
       console.error('❌ [Tenant Resolver] Profile query failed:', profileError);
-    } else if (profile && profile.clinic_id) {
-      const clinic = (profile as any).clinics;
-      
-      if (clinic && clinic.is_active) {
-        console.log(`✅ [Tenant Resolver] Found profile clinic: ${clinic.name}`);
-        return {
-          type: 'clinic',
-          id: profile.clinic_id,
-          name: clinic.name,
-          role: 'member', // Default role for direct association
-          permissions: {}
-        };
-      }
     }
     
-    // STEP 3: Check/Create individual workspace (FALLBACK - NEVER FAILS)
-    console.log('🏠 [Tenant Resolver] Checking individual workspace...');
+    // Check for clinic membership
+    const { data: memberships } = await supabase
+      .from('tenant_memberships')
+      .select(`
+        id, clinic_id, role, permissions, is_active,
+        clinics:clinic_id (id, name, is_active)
+      `)
+      .eq('user_id', userId)
+      .eq('is_active', true)
+      .order('created_at', { ascending: false })
+      .limit(1);
     
-    let { data: workspace, error: workspaceError } = await supabase
-      .from('individual_workspaces')
-      .select('id, workspace_name, owner_id')
-      .eq('owner_id', userId)
-      .single();
+    const hasClinicMembership = memberships && memberships.length > 0;
+    const hasDirectClinicAccess = profile && profile.clinic_id;
+    
+    if (hasClinicMembership || hasDirectClinicAccess) {
+      const clinicData = hasClinicMembership 
+        ? (memberships[0] as any).clinics
+        : (profile as any).clinics;
       
-    // Create individual workspace if it doesn't exist
-    if (workspaceError || !workspace) {
-      console.log('🔧 [Tenant Resolver] Creating individual workspace...');
-      
-      // Get user email for workspace name
-      const { data: userData } = await supabase.auth.getUser();
-      const userEmail = userData.user?.email || 'user';
-      const workspaceName = `Workspace de ${userEmail.split('@')[0]}`;
-      
-      const { data: newWorkspace, error: createError } = await supabase
-        .from('individual_workspaces')
-        .insert({
-          owner_id: userId,
-          workspace_name: workspaceName,
-          business_name: workspaceName,
-          settings: {}
-        })
-        .select()
-        .single();
+      const role = hasClinicMembership 
+        ? memberships[0].role 
+        : 'member';
         
-      if (createError) {
-        console.error('❌ [Tenant Resolver] Failed to create workspace:', createError);
-        // EMERGENCY FALLBACK: Return minimal context
-        return {
-          type: 'workspace',
-          id: userId, // Use user ID as emergency workspace ID
-          name: 'Workspace Personal',
-          role: 'owner',
-          permissions: {}
-        };
-      }
-      
-      workspace = newWorkspace;
+      console.log(`✅ [Tenant Resolver] User belongs to clinic: ${clinicData?.name}`);
+      return {
+        type: 'clinic',
+        clinic_id: true,
+        user_id: userId,
+        name: clinicData?.name || 'Clinic',
+        role: role as 'owner' | 'admin' | 'member',
+        permissions: hasClinicMembership ? memberships[0].permissions : {}
+      };
     }
     
-    console.log(`✅ [Tenant Resolver] Using individual workspace: ${workspace?.workspace_name}`);
+    // Individual user
+    const userName = profile?.first_name ? `${profile.first_name}${profile.last_name ? ' ' + profile.last_name : ''}` : 'Usuario';
+    console.log(`✅ [Tenant Resolver] Individual user: ${userName}`);
     return {
-      type: 'workspace',
-      id: workspace?.id || '',
-      name: workspace?.workspace_name || '',
+      type: 'individual',
+      clinic_id: false,
+      user_id: userId,
+      name: `Workspace de ${userName}`,
       role: 'owner',
       permissions: {}
     };
@@ -195,11 +136,12 @@ export async function resolveTenantContext(userId: string): Promise<TenantContex
   } catch (error) {
     console.error('💥 [Tenant Resolver] CRITICAL ERROR:', error);
     
-    // ABSOLUTE EMERGENCY FALLBACK
+    // EMERGENCY FALLBACK
     return {
-      type: 'workspace',
-      id: userId,
-      name: 'Emergency Workspace',
+      type: 'individual',
+      clinic_id: false,
+      user_id: userId,
+      name: 'Workspace Personal',
       role: 'owner',
       permissions: {}
     };
@@ -221,74 +163,59 @@ export async function withTenantContext<T>(
 
 /**
  * Get tenant filter for database queries
- * Returns the appropriate WHERE clause for tenant isolation
+ * Returns the appropriate WHERE clause for simplified architecture
  */
-export function getTenantFilter(context: TenantContext): { clinic_id?: string; workspace_id?: string } {
-  if (context.type === 'clinic') {
-    return { clinic_id: context.id };
+export function getTenantFilter(context: TenantContext): { clinic_id?: boolean; user_id?: string } {
+  if (context.clinic_id) {
+    return { clinic_id: true };
   } else {
-    return { workspace_id: context.id };
+    return { user_id: context.user_id };
   }
 }
 
 /**
  * Add tenant context to insert data
- * Ensures all new records have proper tenant association
+ * Uses simplified architecture with clinic_id boolean and user_id
  */
 export function addTenantContext<T extends Record<string, any>>(
   data: T, 
   context: TenantContext
-): T & { clinic_id?: string; workspace_id?: string } {
-  if (context.type === 'clinic') {
-    return { ...data, clinic_id: context.id, workspace_id: undefined };
-  } else {
-    return { ...data, workspace_id: context.id, clinic_id: undefined };
-  }
+): T & { clinic_id: boolean; user_id: string } {
+  return {
+    ...data,
+    clinic_id: context.clinic_id,
+    user_id: context.user_id
+  };
 }
 
 /**
  * Add tenant context specifically for consultations table
- * Consultations REQUIRE clinic_id (NOT NULL constraint in database)
- * CRITICAL FIX: clinic_id cannot be NULL due to database constraint
- * For individual practitioners, we use workspace_id AS clinic_id to satisfy the constraint
+ * Uses simplified architecture with clinic_id boolean and user_id
  */
 export function addConsultationTenantContext<T extends Record<string, any>>(
   data: T,
-  context: TenantContext,
-  userProfile?: { clinic_id?: string }
-): T & { clinic_id: string; workspace_id?: string | null } {
-  if (context.type === 'clinic') {
-    // Clinic context: use clinic_id, workspace_id can be null
-    console.log('🏥 [Tenant Resolver] Using clinic ownership for consultation');
-    return { ...data, clinic_id: context.id, workspace_id: null } as T & { clinic_id: string; workspace_id?: string | null };
-  } else if (userProfile?.clinic_id) {
-    // User has direct clinic association: use that clinic_id
-    console.log('👤 [Tenant Resolver] Using user profile clinic for consultation');
-    return { ...data, clinic_id: userProfile.clinic_id, workspace_id: null } as T & { clinic_id: string; workspace_id?: string | null };
-  } else {
-    // Individual workspace: USE WORKSPACE_ID AS CLINIC_ID to satisfy NOT NULL constraint
-    // This is a workaround for the database constraint while maintaining logical separation
-    console.log('🏠 [Tenant Resolver] Using workspace_id as clinic_id for individual practitioner (constraint workaround)');
-    return { 
-      ...data, 
-      clinic_id: context.id, // Use workspace ID as clinic ID to satisfy constraint
-      workspace_id: context.id // Also set workspace_id for logical consistency
-    } as T & { clinic_id: string; workspace_id?: string | null };
-  }
+  context: TenantContext
+): T & { clinic_id: boolean; user_id: string } {
+  console.log(`📝 [Tenant Resolver] Adding consultation context: clinic_id=${context.clinic_id}, user_id=${context.user_id}`);
+  return {
+    ...data,
+    clinic_id: context.clinic_id,
+    user_id: context.user_id
+  };
 }
 
 /**
  * Validate tenant access for operations
- * Prevents cross-tenant data access
+ * Uses simplified architecture
  */
 export function validateTenantAccess(
-  recordTenant: { clinic_id?: string; workspace_id?: string },
+  recordTenant: { clinic_id?: boolean; user_id?: string },
   userContext: TenantContext
 ): boolean {
-  if (userContext.type === 'clinic') {
-    return recordTenant.clinic_id === userContext.id;
+  if (userContext.clinic_id) {
+    return recordTenant.clinic_id === true;
   } else {
-    return recordTenant.workspace_id === userContext.id;
+    return recordTenant.user_id === userContext.user_id;
   }
 }
 
@@ -296,7 +223,7 @@ export function validateTenantAccess(
  * Get user's tenant type for UI differentiation
  */
 export function getUserType(context: TenantContext): 'clinic_owner' | 'clinic_member' | 'individual' {
-  if (context.type === 'clinic') {
+  if (context.clinic_id) {
     return context.role === 'owner' ? 'clinic_owner' : 'clinic_member';
   } else {
     return 'individual';

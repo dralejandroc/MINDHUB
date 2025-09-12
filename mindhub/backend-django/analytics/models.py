@@ -74,9 +74,9 @@ class IndicatorValue(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     indicator = models.ForeignKey(IndicatorDefinition, on_delete=models.CASCADE, related_name='values')
     
-    # Dual system: Either clinic_id OR workspace_id, never both
-    clinic_id = models.UUIDField(null=True, blank=True, verbose_name="ID Clínica")
-    workspace_id = models.UUIDField(null=True, blank=True, verbose_name="ID Workspace Individual")
+    # Simplified system: clinic_id (Boolean) and user_id (UUID)
+    clinic_id = models.BooleanField(default=False, verbose_name="Compartido en Clínica")
+    user_id = models.UUIDField(null=True, blank=True, verbose_name="ID Usuario")
     
     # Time period
     period_start = models.DateField(verbose_name="Inicio del Período")
@@ -96,7 +96,7 @@ class IndicatorValue(models.Model):
         verbose_name = "Valor de Indicador"
         verbose_name_plural = "Valores de Indicadores"
         ordering = ['-period_start', 'indicator__name']
-        unique_together = ['indicator', 'clinic_id', 'workspace_id', 'period_start', 'period_end']
+        unique_together = ['indicator', 'clinic_id', 'user_id', 'period_start', 'period_end']
     
     def __str__(self):
         return f"{self.indicator.name}: {self.calculated_value} ({self.period_start})"
@@ -253,9 +253,9 @@ class IndicatorSettings(models.Model):
     """
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     
-    # Dual system: Either clinic_id OR workspace_id, never both
-    clinic_id = models.UUIDField(null=True, blank=True, verbose_name="ID Clínica")
-    workspace_id = models.UUIDField(null=True, blank=True, verbose_name="ID Workspace Individual")
+    # Simplified system: clinic_id (Boolean) and user_id (UUID)
+    clinic_id = models.BooleanField(default=False, verbose_name="Compartido en Clínica")
+    user_id = models.UUIDField(null=True, blank=True, verbose_name="ID Usuario")
     
     # Configuration
     enabled_indicators = models.JSONField(default=list, verbose_name="Indicadores Habilitados")
@@ -271,8 +271,8 @@ class IndicatorSettings(models.Model):
     class Meta:
         verbose_name = "Configuración de Indicadores"
         verbose_name_plural = "Configuraciones de Indicadores"
-        unique_together = [['clinic_id'], ['workspace_id']]  # One config per entity
+        unique_together = [['clinic_id', 'user_id']]  # One config per entity
     
     def __str__(self):
-        entity = f"Clínica {self.clinic_id}" if self.clinic_id else f"Workspace {self.workspace_id}"
+        entity = "Clínica" if self.clinic_id else f"Usuario {self.user_id}"
         return f"Config {entity}"

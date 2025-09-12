@@ -62,7 +62,7 @@ class AssessmentSerializer(serializers.ModelSerializer):
             'started_at', 'completed_at', 'assessment_date',
             'percentile', 'completion_percentage', 'time_taken_minutes',
             'progress_percentage', 'scoring_result',
-            'clinic_id', 'workspace_id', 'created_at', 'updated_at'
+            'clinic_id', 'user_id', 'created_at', 'updated_at'
         ]
         read_only_fields = [
             'id', 'started_at', 'completed_at', 'scoring_result', 
@@ -86,14 +86,14 @@ class AssessmentSerializer(serializers.ModelSerializer):
         return None
     
     def validate(self, data):
-        """Validate dual system constraints"""
+        """Validate simplified system constraints"""
         clinic_id = data.get('clinic_id')
-        workspace_id = data.get('workspace_id')
+        user_id = data.get('user_id')
         
-        # Ensure only one of clinic_id or workspace_id is set
-        if clinic_id and workspace_id:
+        # Ensure user_id is provided for individual records
+        if not clinic_id and not user_id:
             raise serializers.ValidationError(
-                "Only one of clinic_id or workspace_id can be set, not both."
+                "user_id must be provided for individual assessments."
             )
         
         return data
@@ -114,7 +114,7 @@ class AssessmentListSerializer(serializers.ModelSerializer):
             'id', 'patient_id', 'patient_name', 'template_id', 'scale_name', 'scale_abbreviation',
             'status', 'progress_percentage', 'score', 'interpretation',
             'created_at', 'completed_at', 'current_step', 'completion_percentage',
-            'total_score', 'severity_level', 'clinic_id', 'workspace_id'
+            'total_score', 'severity_level', 'clinic_id', 'user_id'
         ]
     
     def get_patient_name(self, obj):

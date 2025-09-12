@@ -35,7 +35,7 @@ class BaseService(ABC):
     
     @property
     def context(self) -> Dict[str, Any]:
-        """Get service context (clinic_id, workspace_id, etc.)"""
+        """Get service context (clinic_id, user_id, etc.)"""
         return self._context
     
     def set_context(self, **context):
@@ -302,11 +302,11 @@ class BaseService(ABC):
         Apply security filters based on user context and permissions
         This should be overridden by services that need specific security filtering
         """
-        # Add dual system filtering if context is available
+        # Add simplified system filtering if context is available
         if hasattr(self.user, 'clinic_id') and self.user.clinic_id:
             filters['clinic_id'] = self.user.clinic_id
-        elif hasattr(self.user, 'workspace_id') and self.user.workspace_id:
-            filters['workspace_id'] = self.user.workspace_id
+        elif hasattr(self.user, 'id'):
+            filters['user_id'] = self.user.id
         
         return filters
     
@@ -338,5 +338,5 @@ class BaseService(ABC):
             'resource_type': self.__class__.__name__.replace('Service', '').lower(),
             'resource_id': getattr(entity, 'id', None),
             'clinic_id': self.context.get('clinic_id'),
-            'workspace_id': self.context.get('workspace_id'),
+            'user_id': self.context.get('user_id'),
         }

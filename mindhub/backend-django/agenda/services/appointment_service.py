@@ -513,11 +513,12 @@ class AppointmentService(BaseService):
     # Hook overrides for appointment-specific processing
     def pre_create(self, data: Dict[str, Any]) -> Dict[str, Any]:
         """Pre-create processing for appointments"""
-        # Set clinic_id or workspace_id from context
-        if self.context.get('clinic_id'):
-            data['clinic_id'] = self.context['clinic_id']
-        elif self.context.get('workspace_id'):
-            data['workspace_id'] = self.context['workspace_id']
+        # Set clinic_id and user_id from context
+        clinic_shared = self.context.get('license_type') == 'clinic'
+        data['clinic_id'] = clinic_shared
+        
+        if hasattr(self.user, 'id') and self.user.id:
+            data['user_id'] = self.user.id
         
         return data
     

@@ -17,7 +17,7 @@ export const CREATE_CASH_REGISTER_CUT = gql`
         status
         performed_by
         clinic_id
-        workspace_id
+        user_id
         created_at
         updated_at
       }
@@ -52,8 +52,8 @@ export const UPDATE_CASH_REGISTER_CUT = gql`
 // Mutation para cerrar corte de caja automáticamente
 export const PROCESS_AUTOMATIC_CASH_CUT = gql`
   mutation ProcessAutomaticCashCut(
-    $clinicId: UUID!
-    $workspaceId: UUID
+    $userId: UUID!
+    $isClinic: Boolean!
     $performedBy: UUID!
     $openingAmount: BigFloat!
     $closingAmount: BigFloat!
@@ -61,8 +61,8 @@ export const PROCESS_AUTOMATIC_CASH_CUT = gql`
     $endDate: DateTime!
   ) {
     insertIntofinance_cash_register_cutsCollection(objects: [{
-      clinic_id: $clinicId
-      workspace_id: $workspaceId
+      clinic_id: $isClinic
+      user_id: $userId
       performed_by: $performedBy
       cut_date: $endDate
       opening_amount: $openingAmount

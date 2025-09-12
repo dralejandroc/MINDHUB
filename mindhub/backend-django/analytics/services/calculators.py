@@ -26,17 +26,15 @@ class IndicatorCalculator:
     Base class for all indicator calculators
     """
     
-    def __init__(self, clinic_id: str = None, workspace_id: str = None):
-        self.clinic_id = clinic_id
-        self.workspace_id = workspace_id
+    def __init__(self, clinic_shared: bool = False, user_id: str = None):
+        self.clinic_shared = clinic_shared
+        self.user_id = user_id
         self.now = timezone.now()
     
-    def get_dual_system_filter(self):
-        """Returns Q filter for dual system (clinic or workspace)"""
-        if self.clinic_id:
-            return Q(clinic_id=self.clinic_id)
-        elif self.workspace_id:
-            return Q(workspace_id=self.workspace_id) | Q(created_by=self.workspace_id)
+    def get_simplified_system_filter(self):
+        """Returns Q filter for simplified system (clinic_id=true OR user_id=auth.uid())"""
+        if self.user_id:
+            return Q(clinic_id=True) | Q(user_id=self.user_id)
         return Q()
 
 

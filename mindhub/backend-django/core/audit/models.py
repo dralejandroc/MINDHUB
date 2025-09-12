@@ -94,9 +94,9 @@ class MedicalAuditLog(models.Model):
     # Timestamp
     timestamp = models.DateTimeField(default=timezone.now, db_index=True)
     
-    # Dual system support
-    clinic_id = models.UUIDField(null=True, blank=True)
-    workspace_id = models.UUIDField(null=True, blank=True)
+    # Simplified system support
+    clinic_id = models.BooleanField(default=False)
+    user_id = models.UUIDField(null=True, blank=True)
     
     class Meta:
         db_table = 'medical_audit_log'
@@ -106,17 +106,16 @@ class MedicalAuditLog(models.Model):
             models.Index(fields=['action', 'timestamp']),
             models.Index(fields=['resource_type', 'resource_id']),
             models.Index(fields=['clinic_id', 'timestamp']),
-            models.Index(fields=['workspace_id', 'timestamp']),
+            models.Index(fields=['user_id', 'timestamp']),
         ]
         constraints = [
-            # Dual system constraint
+            # Simplified system constraint
             models.CheckConstraint(
                 check=(
-                    models.Q(clinic_id__isnull=False, workspace_id__isnull=True) |
-                    models.Q(clinic_id__isnull=True, workspace_id__isnull=False) |
-                    models.Q(clinic_id__isnull=True, workspace_id__isnull=True)
+                    models.Q(clinic_id=True) |
+                    models.Q(clinic_id=False, user_id__isnull=False)
                 ),
-                name='audit_dual_system_constraint'
+                name='audit_simplified_system_constraint'
             )
         ]
     
@@ -193,9 +192,9 @@ class MedicalComplianceReport(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     completed_at = models.DateTimeField(null=True, blank=True)
     
-    # Dual system support
-    clinic_id = models.UUIDField(null=True, blank=True)
-    workspace_id = models.UUIDField(null=True, blank=True)
+    # Simplified system support
+    clinic_id = models.BooleanField(default=False)
+    user_id = models.UUIDField(null=True, blank=True)
     
     class Meta:
         db_table = 'medical_compliance_reports'
@@ -253,9 +252,9 @@ class MedicalAccessLog(models.Model):
     # Timestamp
     accessed_at = models.DateTimeField(default=timezone.now, db_index=True)
     
-    # Dual system support
-    clinic_id = models.UUIDField(null=True, blank=True)
-    workspace_id = models.UUIDField(null=True, blank=True)
+    # Simplified system support
+    clinic_id = models.BooleanField(default=False)
+    user_id = models.UUIDField(null=True, blank=True)
     
     class Meta:
         db_table = 'medical_access_log'

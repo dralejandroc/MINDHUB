@@ -17,7 +17,7 @@ export const CREATE_FINANCE_INCOME = gql`
         invoice_number
         notes
         clinic_id
-        workspace_id
+        user_id
         recorded_by
         created_at
         updated_at

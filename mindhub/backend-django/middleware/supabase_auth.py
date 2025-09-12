@@ -82,19 +82,19 @@ class SupabaseAuthMiddleware(MiddlewareMixin):
             request.supabase_user_id = auth_result['supabase_data'].get('id')
             request.authenticated_user_email = auth_result['supabase_data'].get('email')
             
-            # 🎯 DUAL SYSTEM: Automatic license type detection
+            # 🎯 SIMPLIFIED SYSTEM: Automatic license type detection
             request.user_context = self.get_user_access_context(request.supabase_user_id)
             
             # Set legacy attributes for backward compatibility
             request.user_clinic_id = request.user_context.get('clinic_id')
-            request.individual_workspace_id = request.user_context.get('workspace_id')
+            request.user_id = request.supabase_user_id
             request.is_clinic_user = (request.user_context.get('license_type') == 'clinic')
             request.user_clinic_role = request.user_context.get('clinic_role', 'professional')
             
-            logger.info(f'DUAL SYSTEM auth context: email={request.authenticated_user_email}, '
+            logger.info(f'SIMPLIFIED SYSTEM auth context: email={request.authenticated_user_email}, '
                        f'license_type={request.user_context.get("license_type")}, '
-                       f'clinic_id={request.user_context.get("clinic_id")}, '
-                       f'workspace_id={request.user_context.get("workspace_id")}, '
+                       f'clinic_shared={request.user_context.get("clinic_shared")}, '
+                       f'user_id={request.user_context.get("user_id")}, '
                        f'role={request.user_context.get("clinic_role", "owner")}')
         
         response = self.get_response(request)
@@ -102,7 +102,7 @@ class SupabaseAuthMiddleware(MiddlewareMixin):
     
     def get_user_access_context(self, user_id):
         """
-        🎯 DUAL SYSTEM: Automatic license type detection
+        🎯 SIMPLIFIED SYSTEM: Automatic license type detection
         Returns user access context for filtering queries
         """
         try:
@@ -115,8 +115,7 @@ class SupabaseAuthMiddleware(MiddlewareMixin):
                     SELECT 
                         license_type, 
                         clinic_id, 
-                        clinic_role,
-                        individual_workspace_id
+                        clinic_role
                     FROM profiles 
                     WHERE id = %s
                 """, [user_id])
@@ -124,31 +123,31 @@ class SupabaseAuthMiddleware(MiddlewareMixin):
                 result = cursor.fetchone()
                 
                 if result:
-                    license_type, clinic_id, clinic_role, workspace_id = result
+                    license_type, clinic_id, clinic_role = result
                     
                     if license_type == 'clinic' and clinic_id:
-                        # CRITICAL FIX: Ensure workspace_id is explicitly None for clinic license
-                        # This respects the check_consultations_dual_owner constraint
+                        # Clinic license: access shared clinic data
                         return {
                             'license_type': 'clinic',
                             'access_type': 'clinic',
                             'filter_field': 'clinic_id',
-                            'filter_value': str(clinic_id),
+                            'filter_value': True,
                             'clinic_id': str(clinic_id),
-                            'workspace_id': None,  # EXPLICIT None to satisfy constraint
+                            'clinic_shared': True,
+                            'user_id': str(user_id),
                             'clinic_role': clinic_role,
                             'shared_access': True
                         }
-                    elif license_type == 'individual' and workspace_id:
-                        # CRITICAL FIX: Ensure clinic_id is explicitly None for individual license 
-                        # This respects the check_consultations_dual_owner constraint
+                    elif license_type == 'individual':
+                        # Individual license: access user-owned data
                         return {
                             'license_type': 'individual',
                             'access_type': 'individual',
-                            'filter_field': 'workspace_id', 
-                            'filter_value': str(workspace_id),
-                            'clinic_id': None,  # EXPLICIT None to satisfy constraint
-                            'workspace_id': str(workspace_id),
+                            'filter_field': 'user_id', 
+                            'filter_value': str(user_id),
+                            'clinic_id': None,
+                            'clinic_shared': False,
+                            'user_id': str(user_id),
                             'clinic_role': 'owner',
                             'shared_access': False
                         }

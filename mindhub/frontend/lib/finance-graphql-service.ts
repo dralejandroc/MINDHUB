@@ -146,15 +146,17 @@ class FinanceGraphQLService {
   /**
    * Get all services for clinic/workspace
    */
-  async getServices(clinicId?: string, workspaceId?: string): Promise<ServiceSummary[]> {
+  async getServices(userId: string, isClinic: boolean): Promise<ServiceSummary[]> {
     try {
       const result = await client.query({
         query: GET_FINANCE_SERVICES,
         variables: {
+          userId,
+          isClinic,
           filter: {
-            and: [
-              clinicId ? { clinic_id: { eq: clinicId } } : {},
-              workspaceId ? { workspace_id: { eq: workspaceId } } : {}
+            or: [
+              isClinic ? { clinic_id: { eq: true } } : {},
+              { user_id: { eq: userId } }
             ]
           },
           orderBy: [{ name: 'AscNullsFirst' }]
@@ -181,7 +183,7 @@ class FinanceGraphQLService {
   /**
    * Get income records by date range
    */
-  async getIncomeByDateRange(startDate: string, endDate: string, clinicId?: string, workspaceId?: string): Promise<IncomeSummary[]> {
+  async getIncomeByDateRange(startDate: string, endDate: string, userId: string, isClinic: boolean): Promise<IncomeSummary[]> {
     try {
       const result = await client.query({
         query: GET_FINANCE_INCOME,
@@ -190,8 +192,12 @@ class FinanceGraphQLService {
             and: [
               { payment_date: { gte: startDate } },
               { payment_date: { lte: endDate } },
-              clinicId ? { clinic_id: { eq: clinicId } } : {},
-              workspaceId ? { workspace_id: { eq: workspaceId } } : {}
+              {
+                or: [
+                  isClinic ? { clinic_id: { eq: true } } : {},
+                  { user_id: { eq: userId } }
+                ]
+              }
             ]
           },
           orderBy: [{ payment_date: 'DescNullsLast' }]

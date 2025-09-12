@@ -145,7 +145,7 @@ class ExpedixApiClient {
             if (userMetrics) {
               try {
                 const metrics = JSON.parse(userMetrics);
-                workspaceId = metrics.workspaceContext?.workspace_id;
+                // No longer needed with simplified architecture
               } catch (e) {
                 console.warn('[ExpedixAPI] Could not parse user metrics for workspace context');
               }

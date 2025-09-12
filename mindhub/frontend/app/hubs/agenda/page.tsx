@@ -407,13 +407,14 @@ function AgendaContent() {
           notes: appointment.notes || ''
         };
         
-        // Add tenant context if available
+        // Add simplified tenant context
         const tenantType = getCurrentTenantType();
-        const tenantId = getCurrentTenantId();
-        if (tenantType === 'clinic' && tenantId) {
-          consultationData.clinic_id = tenantId;
-        } else if (tenantType === 'workspace' && tenantId) {
-          consultationData.workspace_id = tenantId;
+        const userId = user?.id;
+        const isClinic = tenantType === 'clinic';
+        
+        consultationData.clinic_id = isClinic;
+        if (userId) {
+          consultationData.user_id = userId;
         }
 
         const response = await authFetch('/api/expedix/consultations', {
@@ -879,13 +880,14 @@ function AgendaContent() {
                     notes: ''
                   };
                   
-                  // Add tenant context if available
+                  // Add simplified tenant context
                   const tenantType = getCurrentTenantType();
-                  const tenantId = getCurrentTenantId();
-                  if (tenantType === 'clinic' && tenantId) {
-                    consultationData.clinic_id = tenantId;
-                  } else if (tenantType === 'workspace' && tenantId) {
-                    consultationData.workspace_id = tenantId;
+                  const userId = user?.id;
+                  const isClinic = tenantType === 'clinic';
+                  
+                  consultationData.clinic_id = isClinic;
+                  if (userId) {
+                    consultationData.user_id = userId;
                   }
                   
                   console.log('[Agenda] Creating pending consultation for appointment:', consultationData);

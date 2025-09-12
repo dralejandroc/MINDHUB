@@ -139,17 +139,16 @@ class Assessment(models.Model):
         help_text='Related consultation if applicable'
     )
     
-    # 🎯 DUAL SYSTEM: Multi-tenant fields for clinic and individual workspaces
-    clinic_id = models.UUIDField(
-        null=True,
-        blank=True,
-        help_text='Clinic UUID from Supabase for clinic license users'
+    # 🎯 SIMPLIFIED SYSTEM: Updated architecture
+    clinic_id = models.BooleanField(
+        default=False,
+        help_text='true = clinic assessment, false = individual assessment'
     )
     
-    workspace_id = models.UUIDField(
+    user_id = models.UUIDField(
         null=True,
         blank=True,
-        help_text='Individual workspace UUID for individual license users'
+        help_text='Owner UUID of the assessment'
     )
     
     # Assessment data
@@ -208,9 +207,9 @@ class Assessment(models.Model):
             models.Index(fields=['template_id']),
             models.Index(fields=['status']),
             models.Index(fields=['administrator_id']),
-            # 🎯 DUAL SYSTEM: Indexes for multi-tenant filtering
+            # 🎯 SIMPLIFIED SYSTEM: Indexes for simplified architecture
             models.Index(fields=['clinic_id']),
-            models.Index(fields=['workspace_id']),
+            models.Index(fields=['user_id']),
         ]
     
     def __str__(self):

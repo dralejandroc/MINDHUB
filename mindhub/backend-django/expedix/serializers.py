@@ -43,7 +43,7 @@ class PatientSerializer(serializers.ModelSerializer):
             # Emergency contact
             'emergency_contact_name', 'emergency_contact_phone', 'emergency_contact_relationship',
             # Critical association fields
-            'created_by', 'clinic_id', 'assigned_professional_id', 'workspace_id',
+            'created_by', 'clinic_id', 'assigned_professional_id', 'user_id',
             # Status and metadata
             'patient_category', 'is_active', 'created_at', 'updated_at'
         ]
@@ -75,7 +75,7 @@ class PatientCreateSerializer(serializers.ModelSerializer):
             # Emergency contact
             'emergency_contact_name', 'emergency_contact_phone', 'emergency_contact_relationship',
             # Professional assignment (optional)
-            'assigned_professional_id', 'workspace_id',
+            'assigned_professional_id', 'user_id',
             # Category
             'patient_category'
             # Note: created_by and clinic_id are set automatically in views
@@ -339,7 +339,7 @@ class ExpedixConfigurationSerializer(serializers.ModelSerializer):
     class Meta:
         model = ExpedixConfiguration
         fields = [
-            'id', 'configuration_type', 'clinic_id', 'workspace_id',
+            'id', 'configuration_type', 'clinic_id', 'user_id',
             'required_patient_fields', 'optional_patient_fields', 'custom_patient_fields',
             'consultation_templates_enabled', 'default_consultation_template',
             'settings', 'is_active', 'created_at', 'updated_at',
@@ -412,7 +412,7 @@ class ConsultationTemplateSerializer(serializers.ModelSerializer):
     class Meta:
         model = ConsultationTemplate
         fields = [
-            'id', 'name', 'description', 'template_type', 'clinic_id', 'workspace_id',
+            'id', 'name', 'description', 'template_type', 'clinic_id', 'user_id',
             'formx_template_id', 'fields_config', 'is_default', 'is_active',
             'created_at', 'updated_at',
             # Computed fields
@@ -468,7 +468,7 @@ class PrescriptionSerializer(serializers.ModelSerializer):
     class Meta:
         model = Prescription
         fields = [
-            'id', 'clinic_id', 'workspace_id', 'patient_id', 'consultation_id',
+            'id', 'clinic_id', 'user_id', 'patient_id', 'consultation_id',
             'created_by', 'prescription_number', 'date_prescribed', 'valid_until',
             'status', 'prescription_type', 'diagnosis', 'clinical_notes',
             'medications', 'general_instructions', 'follow_up_date', 'follow_up_notes',
@@ -511,18 +511,14 @@ class PrescriptionSerializer(serializers.ModelSerializer):
 
     def validate(self, data):
         """Cross-field validation"""
-        # Validate dual system constraint
+        # Validate simplified system constraint
         clinic_id = data.get('clinic_id')
-        workspace_id = data.get('workspace_id')
+        user_id = data.get('user_id')
         
-        if not clinic_id and not workspace_id:
+        # For individual records, user_id is required
+        if not clinic_id and not user_id:
             raise serializers.ValidationError(
-                "Either clinic_id or workspace_id must be provided"
-            )
-        
-        if clinic_id and workspace_id:
-            raise serializers.ValidationError(
-                "Only one of clinic_id or workspace_id should be provided"
+                "user_id must be provided for individual medical histories"
             )
         
         # Validate valid_until date
@@ -542,7 +538,7 @@ class PrescriptionCreateSerializer(serializers.ModelSerializer):
     class Meta:
         model = Prescription
         fields = [
-            'clinic_id', 'workspace_id', 'patient_id', 'consultation_id',
+            'clinic_id', 'user_id', 'patient_id', 'consultation_id',
             'created_by', 'date_prescribed', 'valid_until', 'status',
             'prescription_type', 'diagnosis', 'clinical_notes', 'medications',
             'general_instructions', 'follow_up_date', 'follow_up_notes',
@@ -551,18 +547,14 @@ class PrescriptionCreateSerializer(serializers.ModelSerializer):
 
     def validate(self, data):
         """Validation for prescription creation"""
-        # Dual system validation
+        # Simplified system validation
         clinic_id = data.get('clinic_id')
-        workspace_id = data.get('workspace_id')
+        user_id = data.get('user_id')
         
-        if not clinic_id and not workspace_id:
+        # For individual records, user_id is required
+        if not clinic_id and not user_id:
             raise serializers.ValidationError(
-                "Either clinic_id or workspace_id must be provided"
-            )
-        
-        if clinic_id and workspace_id:
-            raise serializers.ValidationError(
-                "Only one of clinic_id or workspace_id should be provided"
+                "user_id must be provided for individual prescriptions"
             )
         
         # Validate medications

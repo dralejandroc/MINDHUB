@@ -256,7 +256,7 @@ export function useEnhancedDashboard(
 }
 
 // EXPEDIX MODULE HOOKS
-export function usePatients(searchText?: string, clinicId?: string, workspaceId?: string) {
+export function usePatients(searchText?: string, userId?: string, isClinic?: boolean) {
   const [patients, setPatients] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -271,9 +271,9 @@ export function usePatients(searchText?: string, clinicId?: string, workspaceId?
         ? { searchText: `%${searchText}%`, first: 50 }
         : { 
             filter: {
-              and: [
-                clinicId ? { clinic_id: { eq: clinicId } } : {},
-                workspaceId ? { workspace_id: { eq: workspaceId } } : {}
+              or: [
+                isClinic ? { clinic_id: { eq: true } } : {},
+                userId ? { user_id: { eq: userId } } : {}
               ]
             },
             first: 100

@@ -1,5 +1,7 @@
 # MindHub GraphQL + Django Hybrid Architecture
 
+> **⚠️ DEPRECATED DOCUMENTATION**: This document contains old workspace_id references. As of 2025-01-11, the architecture uses simplified clinic_id (boolean) + user_id pattern. Queries have been updated accordingly.
+
 ## 📋 Implementación Completada - Documento de Memoria Base
 
 ### 🎯 **ARQUITECTURA HÍBRIDA IMPLEMENTADA**

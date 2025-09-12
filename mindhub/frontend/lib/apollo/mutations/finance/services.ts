@@ -15,7 +15,7 @@ export const CREATE_FINANCE_SERVICE = gql`
         is_active
         requires_appointment
         clinic_id
-        workspace_id
+        user_id
         created_at
         updated_at
       }

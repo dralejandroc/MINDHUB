@@ -122,11 +122,11 @@ class Patient(models.Model):
     # Classification
     patient_category = models.TextField(blank=True, null=True)
     
-    # Critical association fields - EXACTLY as in Supabase
+    # Critical association fields - SIMPLIFIED ARCHITECTURE
     created_by = models.UUIDField(blank=True, null=True)  # Supabase user ID del creador
-    clinic_id = models.UUIDField(blank=True, null=True)  # Can be NULL in real table
+    clinic_id = models.BooleanField(default=False)  # true = clinic shared, false = individual user
     assigned_professional_id = models.UUIDField(blank=True, null=True)  # Profesional asignado
-    workspace_id = models.UUIDField(blank=True, null=True)  # For dual system
+    user_id = models.UUIDField(blank=True, null=True)  # Owner of the record
     
     # Additional notes
     notes = models.TextField(blank=True, null=True)
@@ -244,9 +244,8 @@ class ExpedixConfiguration(models.Model):
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     
-    # Dual system support
-    clinic_id = models.UUIDField(blank=True, null=True)  # For clinic licenses
-    workspace_id = models.UUIDField(blank=True, null=True)  # For individual licenses
+    # Simplified system support
+    clinic_id = models.BooleanField(default=False)  # true = clinic config, false = individual config
     user_id = models.UUIDField()  # Creator/owner
     
     configuration_type = models.CharField(max_length=20, choices=CONFIGURATION_TYPE_CHOICES, default='clinic')
@@ -271,37 +270,22 @@ class ExpedixConfiguration(models.Model):
     class Meta:
         db_table = 'expedix_configurations'
         constraints = [
-            # Ensure either clinic_id or workspace_id is set, but not both
-            models.CheckConstraint(
-                check=(
-                    (models.Q(clinic_id__isnull=False) & models.Q(workspace_id__isnull=True)) |
-                    (models.Q(clinic_id__isnull=True) & models.Q(workspace_id__isnull=False))
-                ),
-                name='expedix_config_dual_system_constraint'
-            ),
-            # Unique configuration per clinic/workspace
+            # Unique configuration per user
             models.UniqueConstraint(
-                fields=['clinic_id'],
-                condition=models.Q(clinic_id__isnull=False),
-                name='unique_clinic_config'
-            ),
-            models.UniqueConstraint(
-                fields=['workspace_id'],
-                condition=models.Q(workspace_id__isnull=False),
-                name='unique_workspace_config'
+                fields=['user_id'],
+                name='unique_user_config'
             ),
         ]
         indexes = [
             models.Index(fields=['clinic_id']),
-            models.Index(fields=['workspace_id']),
             models.Index(fields=['user_id']),
             models.Index(fields=['configuration_type']),
         ]
 
     def __str__(self):
         if self.clinic_id:
-            return f"Configuración Clínica {self.clinic_id}"
-        return f"Configuración Individual {self.workspace_id}"
+            return f"Configuración Clínica - Usuario {self.user_id}"
+        return f"Configuración Individual - Usuario {self.user_id}"
 
     @classmethod
     def get_default_patient_fields(cls):
@@ -369,10 +353,10 @@ class ConsultationTemplate(models.Model):
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     
-    # Dual system support
-    clinic_id = models.UUIDField(blank=True, null=True)
-    workspace_id = models.UUIDField(blank=True, null=True)
+    # Simplified system support
+    clinic_id = models.BooleanField(default=False)  # true = clinic template, false = individual template
     created_by = models.UUIDField()
+    user_id = models.UUIDField(blank=True, null=True)  # Owner of the template
     
     # Template basic info
     name = models.CharField(max_length=200)
@@ -395,20 +379,11 @@ class ConsultationTemplate(models.Model):
 
     class Meta:
         db_table = 'consultation_templates'
-        constraints = [
-            # Dual system constraint
-            models.CheckConstraint(
-                check=(
-                    (models.Q(clinic_id__isnull=False) & models.Q(workspace_id__isnull=True)) |
-                    (models.Q(clinic_id__isnull=True) & models.Q(workspace_id__isnull=False))
-                ),
-                name='consultation_template_dual_system_constraint'
-            ),
-        ]
+        constraints = []
         indexes = [
             models.Index(fields=['clinic_id']),
-            models.Index(fields=['workspace_id']),
             models.Index(fields=['created_by']),
+            models.Index(fields=['user_id']),
             models.Index(fields=['template_type']),
             models.Index(fields=['is_active']),
         ]
@@ -561,9 +536,9 @@ class Prescription(models.Model):
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     
-    # Dual system support
-    clinic_id = models.UUIDField(blank=True, null=True)
-    workspace_id = models.UUIDField(blank=True, null=True)
+    # Simplified system support
+    clinic_id = models.BooleanField(default=False)  # true = clinic prescription, false = individual prescription
+    user_id = models.UUIDField(blank=True, null=True)  # Owner of the prescription
     
     # Relationships
     patient_id = models.UUIDField()  # References patient in Supabase
@@ -619,19 +594,10 @@ class Prescription(models.Model):
     
     class Meta:
         db_table = 'prescriptions'
-        constraints = [
-            # Dual system constraint
-            models.CheckConstraint(
-                check=(
-                    (models.Q(clinic_id__isnull=False) & models.Q(workspace_id__isnull=True)) |
-                    (models.Q(clinic_id__isnull=True) & models.Q(workspace_id__isnull=False))
-                ),
-                name='prescription_dual_system_constraint'
-            ),
-        ]
+        constraints = []
         indexes = [
             models.Index(fields=['clinic_id']),
-            models.Index(fields=['workspace_id']),
+            models.Index(fields=['user_id']),
             models.Index(fields=['patient_id']),
             models.Index(fields=['created_by']),
             models.Index(fields=['prescription_number']),
@@ -739,30 +705,30 @@ class Prescription(models.Model):
         }
 
     @classmethod
-    def get_active_by_patient(cls, patient_id, clinic_id=None, workspace_id=None):
+    def get_active_by_patient(cls, patient_id, user_id=None, clinic_shared=None):
         """Get active prescriptions for a patient"""
         queryset = cls.objects.filter(
             patient_id=patient_id,
             status='active'
         ).order_by('-date_prescribed')
         
-        if clinic_id:
-            queryset = queryset.filter(clinic_id=clinic_id)
-        elif workspace_id:
-            queryset = queryset.filter(workspace_id=workspace_id)
+        if clinic_shared is not None:
+            queryset = queryset.filter(clinic_id=clinic_shared)
+        elif user_id:
+            queryset = queryset.filter(user_id=user_id)
             
         return queryset
 
     @classmethod
-    def get_by_professional(cls, professional_id, clinic_id=None, workspace_id=None):
+    def get_by_professional(cls, professional_id, user_id=None, clinic_shared=None):
         """Get prescriptions created by a professional"""
         queryset = cls.objects.filter(
             created_by=professional_id
         ).order_by('-date_prescribed')
         
-        if clinic_id:
-            queryset = queryset.filter(clinic_id=clinic_id)
-        elif workspace_id:
-            queryset = queryset.filter(workspace_id=workspace_id)
+        if clinic_shared is not None:
+            queryset = queryset.filter(clinic_id=clinic_shared)
+        elif user_id:
+            queryset = queryset.filter(user_id=user_id)
             
         return queryset

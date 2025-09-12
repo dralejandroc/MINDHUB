@@ -98,14 +98,17 @@ class PatientService(BaseService):
     
     def _apply_security_filters(self, queryset):
         """Apply security filters based on user context"""
-        # Apply dual system filtering
-        if self.context.get('clinic_id'):
-            queryset = queryset.filter(clinic_id=self.context['clinic_id'])
-        elif self.context.get('workspace_id'):
-            queryset = queryset.filter(workspace_id=self.context['workspace_id'])
-        elif hasattr(self.user, 'id') and self.user.id:
-            # If no context, filter by created_by for individual users
-            queryset = queryset.filter(created_by=self.user.id)
+        # Apply simplified system filtering: clinic_id=true OR user_id=auth.uid()
+        user_id = getattr(self.user, 'id', None)
+        
+        if user_id:
+            from django.db.models import Q
+            queryset = queryset.filter(
+                Q(clinic_id=True) | Q(user_id=user_id)
+            )
+        else:
+            # No user context, return empty queryset for security
+            queryset = queryset.none()
         
         return queryset
     
@@ -320,13 +323,13 @@ class PatientService(BaseService):
     
     def _can_access_patient(self, patient: Patient) -> bool:
         """Check if current user can access this patient"""
-        # Dual system access control
-        if self.context.get('clinic_id'):
-            return patient.clinic_id == self.context['clinic_id']
-        elif self.context.get('workspace_id'):
-            return patient.workspace_id == self.context['workspace_id']
-        elif hasattr(self.user, 'id') and self.user.id:
-            return patient.created_by == self.user.id
+        # Simplified system access control
+        user_id = getattr(self.user, 'id', None)
+        
+        if user_id:
+            # User can access clinic-shared patients OR their own patients
+            return patient.clinic_id or patient.user_id == user_id
+        
         
         return False
     
@@ -421,11 +424,12 @@ class PatientService(BaseService):
         if hasattr(self.user, 'id') and self.user.id:
             data['created_by'] = self.user.id
         
-        # Set clinic_id or workspace_id from context
-        if self.context.get('clinic_id'):
-            data['clinic_id'] = self.context['clinic_id']
-        elif self.context.get('workspace_id'):
-            data['workspace_id'] = self.context['workspace_id']
+        # Set clinic_id and user_id from context
+        clinic_shared = self.context.get('license_type') == 'clinic'
+        data['clinic_id'] = clinic_shared
+        
+        if hasattr(self.user, 'id') and self.user.id:
+            data['user_id'] = self.user.id
         
         return data
     

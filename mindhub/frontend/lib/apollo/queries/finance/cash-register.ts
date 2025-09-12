@@ -28,7 +28,7 @@ export const GET_CASH_REGISTER_CUTS = gql`
           status
           performed_by
           clinic_id
-          workspace_id
+          user_id
           created_at
           updated_at
         }
@@ -46,12 +46,12 @@ export const GET_CASH_REGISTER_CUTS = gql`
 
 // Query para obtener el último corte de caja
 export const GET_LATEST_CASH_REGISTER_CUT = gql`
-  query GetLatestCashRegisterCut($clinicId: UUID, $workspaceId: UUID) {
+  query GetLatestCashRegisterCut($userId: UUID!, $isClinic: Boolean!) {
     finance_cash_register_cutsCollection(
       filter: {
-        and: [
-          { clinic_id: { eq: $clinicId } }
-          { workspace_id: { eq: $workspaceId } }
+        or: [
+          { and: [{ clinic_id: { eq: $isClinic } }, { clinic_id: { eq: true } }] }
+          { user_id: { eq: $userId } }
         ]
       }
       orderBy: [{ cut_date: DescNullsLast }]
@@ -81,14 +81,20 @@ export const GET_CASH_REGISTER_CUTS_BY_DATE_RANGE = gql`
   query GetCashRegisterCutsByDateRange(
     $startDate: Date!
     $endDate: Date!
-    $clinicId: UUID
+    $userId: UUID!
+    $isClinic: Boolean!
   ) {
     finance_cash_register_cutsCollection(
       filter: {
         and: [
           { cut_date: { gte: $startDate } }
           { cut_date: { lte: $endDate } }
-          { clinic_id: { eq: $clinicId } }
+          { 
+            or: [
+              { and: [{ clinic_id: { eq: $isClinic } }, { clinic_id: { eq: true } }] }
+              { user_id: { eq: $userId } }
+            ]
+          }
         ]
       }
       orderBy: [{ cut_date: DescNullsLast }]
@@ -112,13 +118,18 @@ export const GET_CASH_REGISTER_CUTS_BY_DATE_RANGE = gql`
 
 // Query para estadísticas de caja del día actual
 export const GET_TODAY_CASH_STATS = gql`
-  query GetTodayCashStats($date: Date!, $clinicId: UUID) {
+  query GetTodayCashStats($date: Date!, $userId: UUID!, $isClinic: Boolean!) {
     # Ingresos del día
     todayIncome: finance_incomeCollection(
       filter: {
         and: [
           { payment_date: { eq: $date } }
-          { clinic_id: { eq: $clinicId } }
+          { 
+            or: [
+              { and: [{ clinic_id: { eq: $isClinic } }, { clinic_id: { eq: true } }] }
+              { user_id: { eq: $userId } }
+            ]
+          }
           { status: { neq: "cancelled" } }
         ]
       }
@@ -134,7 +145,12 @@ export const GET_TODAY_CASH_STATS = gql`
     
     # Último corte de caja
     latestCut: finance_cash_register_cutsCollection(
-      filter: { clinic_id: { eq: $clinicId } }
+      filter: { 
+        or: [
+          { and: [{ clinic_id: { eq: $isClinic } }, { clinic_id: { eq: true } }] }
+          { user_id: { eq: $userId } }
+        ]
+      }
       orderBy: [{ cut_date: DescNullsLast }]
       first: 1
     ) {
@@ -152,11 +168,16 @@ export const GET_TODAY_CASH_STATS = gql`
 
 // Query para resumen de caja pendiente
 export const GET_PENDING_CASH_SUMMARY = gql`
-  query GetPendingCashSummary($clinicId: UUID, $lastCutDate: DateTime) {
+  query GetPendingCashSummary($userId: UUID!, $isClinic: Boolean!, $lastCutDate: DateTime) {
     finance_incomeCollection(
       filter: {
         and: [
-          { clinic_id: { eq: $clinicId } }
+          { 
+            or: [
+              { and: [{ clinic_id: { eq: $isClinic } }, { clinic_id: { eq: true } }] }
+              { user_id: { eq: $userId } }
+            ]
+          }
           { created_at: { gte: $lastCutDate } }
           { status: { neq: "cancelled" } }
         ]
