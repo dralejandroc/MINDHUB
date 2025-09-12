@@ -30,6 +30,10 @@ function isPublicRoute(pathname: string): boolean {
 }
 
 export async function middleware(req: NextRequest) {
+  // TEMPORARILY DISABLED COMPLETELY - FOR DEBUGGING
+  console.log(`🚫 [Middleware] COMPLETELY DISABLED - Allowing all access to ${req.nextUrl.pathname}`)
+  return NextResponse.next()
+  
   // CRITICAL: Skip ALL API routes - they handle their own auth
   if (req.nextUrl.pathname.startsWith('/api/')) {
     return NextResponse.next()
