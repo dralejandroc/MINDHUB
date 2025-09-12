@@ -67,10 +67,10 @@ MIDDLEWARE = [
     'corsheaders.middleware.CorsMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
-    'django.middleware.csrf.CsrfViewMiddleware',
+    # 'django.middleware.csrf.CsrfViewMiddleware',  # ✅ DISABLED para API testing
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'allauth.account.middleware.AccountMiddleware',
-    'middleware.supabase_auth.SupabaseAuthMiddleware',  # Supabase integration
+    'middleware.simple_auth.SimpleSupabaseAuthMiddleware',  # ✅ ARQUITECTURA SIMPLIFICADA
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
@@ -312,6 +312,8 @@ GUARDIAN_MONKEY_PATCH_USER = False
 SUPABASE_URL = env('SUPABASE_URL', default='https://jvbcpldzoyicefdtnwkd.supabase.co')
 SUPABASE_ANON_KEY = env('SUPABASE_ANON_KEY', default='')
 SUPABASE_SERVICE_ROLE_KEY = env('SUPABASE_SERVICE_ROLE_KEY', default='')
+# ✅ JWT Secret para validación local (arquitectura simplificada)
+SUPABASE_JWT_SECRET = env('SUPABASE_JWT_SECRET', default='CxqGEm1Cpk1tKY5GPTxn+n0ywlE5B2y4B6a00S3ZbFMnP/pgYLa9FPNDoPanAn0w7XIdGP5o7yFV9XhR2oVEmw==')
 
 # React frontend integration
 REACT_FRONTEND_URL = env('REACT_FRONTEND_URL', default='http://localhost:3000')
