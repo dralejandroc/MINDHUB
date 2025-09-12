@@ -24,18 +24,19 @@ export default function SignInPage() {
     document.title = 'Iniciar Sesión - MindHub'
   }, [])
 
+  // TEMPORARILY DISABLED: Auto-redirect causing infinite loop
   // Handle automatic redirect when user is already authenticated
-  useEffect(() => {
-    if (session && user && !loading) {
-      console.log('✅ [LOGIN] User already authenticated, redirecting with window.location')
-      const urlParams = new URLSearchParams(window.location.search)
-      const redirectTo = urlParams.get('redirectTo') || '/dashboard'
-      console.log('🚀 [LOGIN] REDIRECTING TO:', redirectTo)
-      
-      // Use window.location.href for reliable navigation after auth
-      window.location.href = redirectTo
-    }
-  }, [session, user, loading])
+  // useEffect(() => {
+  //   if (session && user && !loading) {
+  //     console.log('✅ [LOGIN] User already authenticated, redirecting with window.location')
+  //     const urlParams = new URLSearchParams(window.location.search)
+  //     const redirectTo = urlParams.get('redirectTo') || '/dashboard'
+  //     console.log('🚀 [LOGIN] REDIRECTING TO:', redirectTo)
+  //     
+  //     // Use window.location.href for reliable navigation after auth
+  //     window.location.href = redirectTo
+  //   }
+  // }, [session, user, loading])
 
   const handleSignIn = async (email: string, password: string) => {
     console.log('✅ [LOGIN] Iniciando login para:', email)
@@ -54,9 +55,16 @@ export default function SignInPage() {
         console.log('🎉 [LOGIN] ¡Login exitoso!', data.user.id)
         toast.success('¡Bienvenido a MindHub!')
         
-        // Let the AuthProvider useEffect handle the redirect
-        // No need to manually redirect here
-        console.log('✅ [LOGIN] Letting AuthProvider handle redirect')
+        // Redirect after successful login
+        const urlParams = new URLSearchParams(window.location.search)
+        const redirectTo = urlParams.get('redirectTo') || '/dashboard'
+        
+        console.log('🚀 [LOGIN] REDIRECTING TO:', redirectTo)
+        
+        // Use window.location.href for reliable navigation
+        setTimeout(() => {
+          window.location.href = redirectTo
+        }, 1000) // Wait for toast
       }
     } catch (error) {
       console.log('💥 [LOGIN] Error inesperado:', error)
