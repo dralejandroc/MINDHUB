@@ -116,7 +116,7 @@ export async function middleware(req: NextRequest) {
         redirectUrl.searchParams.set('redirectTo', req.nextUrl.pathname)
         return NextResponse.redirect(redirectUrl)
       } else {
-        console.log(`✅ [Middleware] Protected route ${req.nextUrl.pathname} - user authorized:`, session.user.id)
+        console.log(`✅ [Middleware] Protected route ${req.nextUrl.pathname} - user authorized:`, session?.user?.id)
       }
     }
     
