@@ -32,7 +32,12 @@ class PatientService(BaseService):
         """Create patient in database"""
         # Generate medical record number if not provided
         if not data.get('medical_record_number'):
-            data['medical_record_number'] = self.generate_medical_record_number()
+            data['medical_record_number'] = self.generate_medical_record_number(
+                first_name=data.get('first_name'),
+                paternal_last_name=data.get('paternal_last_name'),
+                maternal_last_name=data.get('maternal_last_name'),
+                date_of_birth=data.get('date_of_birth')
+            )
         
         # Set default values for compliance
         if 'is_active' not in data:
@@ -333,21 +338,66 @@ class PatientService(BaseService):
         
         return False
     
-    def generate_medical_record_number(self) -> str:
-        """Generate a unique medical record number"""
-        import random
-        from datetime import datetime
+    def generate_medical_record_number(self, first_name: str = None, paternal_last_name: str = None, 
+                                      maternal_last_name: str = None, date_of_birth = None) -> str:
+        """
+        Generate a unique medical record number based on patient identity
+        Format: MRN-YYYYMMDD-HASH6
+        This prevents duplicates by using patient's actual identity data
+        """
+        import hashlib
+        from datetime import datetime, date
         
-        # Format: YYYY-XXXXXX (year + 6 random digits)
-        year = datetime.now().year
-        random_part = random.randint(100000, 999999)
-        
-        candidate = f"{year}-{random_part}"
-        
-        # Ensure uniqueness
-        while Patient.objects.filter(medical_record_number=candidate).exists():
+        # If no patient data provided, generate a fallback unique number
+        if not (first_name and date_of_birth):
+            import random
+            year = datetime.now().year
             random_part = random.randint(100000, 999999)
-            candidate = f"{year}-{random_part}"
+            candidate = f"MRN-{year}-{random_part}"
+            
+            # Ensure uniqueness for fallback
+            while Patient.objects.filter(medical_record_number=candidate).exists():
+                random_part = random.randint(100000, 999999)
+                candidate = f"MRN-{year}-{random_part}"
+            
+            return candidate
+        
+        # Convert date to string format
+        if isinstance(date_of_birth, str):
+            # Parse string date
+            try:
+                if 'T' in date_of_birth:
+                    date_obj = datetime.fromisoformat(date_of_birth.replace('Z', '+00:00')).date()
+                else:
+                    date_obj = datetime.strptime(date_of_birth, '%Y-%m-%d').date()
+            except:
+                date_obj = date.today()
+        elif isinstance(date_of_birth, datetime):
+            date_obj = date_of_birth.date()
+        elif isinstance(date_of_birth, date):
+            date_obj = date_of_birth
+        else:
+            date_obj = date.today()
+        
+        # Create unique hash from patient identity
+        identity_string = (
+            (first_name or '').upper().strip() + 
+            (paternal_last_name or '').upper().strip() + 
+            (maternal_last_name or '').upper().strip()
+        ).replace(' ', '')
+        
+        identity_hash = hashlib.md5(identity_string.encode()).hexdigest()[:6].upper()
+        
+        # Format: MRN-YYYYMMDD-HASH6
+        date_part = date_obj.strftime('%Y%m%d')
+        candidate = f"MRN-{date_part}-{identity_hash}"
+        
+        # Ensure uniqueness (should be unique by design, but safety check)
+        counter = 1
+        original_candidate = candidate
+        while Patient.objects.filter(medical_record_number=candidate).exists():
+            candidate = f"{original_candidate}-{counter}"
+            counter += 1
         
         return candidate
     

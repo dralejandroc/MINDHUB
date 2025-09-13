@@ -4,15 +4,16 @@ Replaces Node.js API responses with Django serializers
 """
 
 from rest_framework import serializers
-from .models import User, Patient, MedicalHistory, Consultation, Prescription, ExpedixConfiguration, ConsultationTemplate
+from .models import Profile, Patient, MedicalHistory, Consultation, Prescription, ExpedixConfiguration, ConsultationTemplate, MedicationDatabase, PrescriptionMedication
+from .services.patient_service import PatientService
 # from agenda.models import Appointment  # REMOVED for Vercel deployment
 
 
-class UserSerializer(serializers.ModelSerializer):
+class ProfileSerializer(serializers.ModelSerializer):
     """User serializer for API responses"""
     
     class Meta:
-        model = User
+        model = Profile
         fields = [
             'id', 'supabase_user_id', 'email', 'first_name', 'last_name',
             'role', 'organization', 'license_number', 'specialization',
@@ -141,6 +142,68 @@ class PatientCreateSerializer(serializers.ModelSerializer):
             if Patient.objects.filter(email=value).exclude(pk=self.instance.pk).exists():
                 raise serializers.ValidationError("Ya existe un paciente con este email.")
         return value
+    
+    def validate(self, attrs):
+        """
+        Validate that patient identity is unique (names + date of birth)
+        This prevents creation of duplicate patients
+        """
+        first_name = attrs.get('first_name')
+        paternal_last_name = attrs.get('paternal_last_name')
+        maternal_last_name = attrs.get('maternal_last_name')
+        date_of_birth = attrs.get('date_of_birth')
+        
+        # Check if patient with same identity already exists
+        if first_name and date_of_birth:
+            query_filters = {
+                'first_name': first_name,
+                'paternal_last_name': paternal_last_name,
+                'maternal_last_name': maternal_last_name,
+                'date_of_birth': date_of_birth,
+                'is_active': True
+            }
+            
+            existing_query = Patient.objects.filter(**query_filters)
+            
+            # For updates, exclude current instance
+            if self.instance is not None:
+                existing_query = existing_query.exclude(pk=self.instance.pk)
+                
+            if existing_query.exists():
+                existing_patient = existing_query.first()
+                raise serializers.ValidationError({
+                    'non_field_errors': [
+                        f'Ya existe un paciente con este nombre completo y fecha de nacimiento. '
+                        f'Expediente existente: {existing_patient.medical_record_number}'
+                    ]
+                })
+        
+        return attrs
+    
+    def create(self, validated_data):
+        """
+        Create patient with auto-generated medical record number using PatientService
+        Implements the unique MRN system based on names + birth date as requested
+        """
+        # Initialize PatientService
+        patient_service = PatientService()
+        
+        # Generate medical record number using PatientService
+        # This uses the hash-based system: MRN-YYYYMMDD-HASH6
+        medical_record_number = patient_service.generate_medical_record_number(
+            first_name=validated_data.get('first_name'),
+            paternal_last_name=validated_data.get('paternal_last_name'),
+            maternal_last_name=validated_data.get('maternal_last_name'),
+            date_of_birth=validated_data.get('date_of_birth')
+        )
+        
+        # Set the generated MRN in validated_data
+        validated_data['medical_record_number'] = medical_record_number
+        
+        # Create the patient instance
+        patient = super().create(validated_data)
+        
+        return patient
 
 
 class MedicalHistorySerializer(serializers.ModelSerializer):
@@ -603,3 +666,70 @@ class ConsultationTemplateCreateSerializer(serializers.ModelSerializer):
                     if key not in field_config:
                         raise serializers.ValidationError(f"Field config missing required key: {key}")
         return value
+
+
+class MedicationDatabaseSerializer(serializers.ModelSerializer):
+    """Serializer for medication database catalog"""
+    display_name = serializers.ReadOnlyField()
+    concentration_display = serializers.ReadOnlyField()
+    control_group_display = serializers.SerializerMethodField()
+    
+    class Meta:
+        model = MedicationDatabase
+        fields = [
+            'id', 'commercial_name', 'generic_name', 'active_ingredients',
+            'concentration', 'pharmaceutical_form', 'laboratory', 
+            'control_group', 'therapeutic_indications', 'contraindications',
+            'side_effects', 'dosage_recommendations', 'storage_conditions',
+            'is_active', 'created_at', 'updated_at',
+            'display_name', 'concentration_display', 'control_group_display'
+        ]
+
+    def get_control_group_display(self, obj):
+        return obj.get_control_group_display()
+
+
+class PrescriptionMedicationSerializer(serializers.ModelSerializer):
+    """Serializer for individual prescription medications"""
+    full_prescription_text = serializers.ReadOnlyField()
+    medication_from_database = serializers.SerializerMethodField()
+    
+    class Meta:
+        model = PrescriptionMedication
+        fields = [
+            'id', 'prescription_id', 'patient_id', 'consultation_id', 
+            'professional_id', 'medication_database_id', 'medication_name',
+            'generic_name', 'concentration', 'pharmaceutical_form',
+            'dosage', 'frequency', 'duration', 'special_instructions',
+            'medical_indication', 'clinic_id', 'user_id', 
+            'created_at', 'updated_at', 'full_prescription_text',
+            'medication_from_database'
+        ]
+
+    def get_medication_from_database(self, obj):
+        """Include medication database info if available"""
+        med_db = obj.get_medication_from_database()
+        if med_db:
+            return {
+                'commercial_name': med_db.commercial_name,
+                'generic_name': med_db.generic_name,
+                'control_group': med_db.control_group,
+                'therapeutic_indications': med_db.therapeutic_indications,
+                'contraindications': med_db.contraindications
+            }
+        return None
+
+
+class MedicationSearchSerializer(serializers.Serializer):
+    """Serializer for medication search results with compatibility for existing frontend"""
+    id = serializers.IntegerField()
+    name = serializers.CharField()
+    generic_name = serializers.CharField()
+    presentations = serializers.ListField()
+    category = serializers.CharField()
+    common_prescriptions = serializers.ListField()
+    
+    # Additional fields from real database
+    control_group = serializers.CharField(allow_null=True)
+    therapeutic_indications = serializers.CharField(allow_null=True)
+    laboratory = serializers.CharField(allow_null=True)

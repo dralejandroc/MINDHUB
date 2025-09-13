@@ -96,7 +96,7 @@ class Resource(models.Model):
     # Organization
     category = models.ForeignKey(ResourceCategory, on_delete=models.SET_NULL, null=True, blank=True, related_name='resources')
     library_type = models.CharField(max_length=20, choices=LIBRARY_TYPE_CHOICES, default='private')
-    owner = models.ForeignKey('expedix.User', on_delete=models.CASCADE, null=True, blank=True, related_name='owned_resources')
+    owner = models.ForeignKey('expedix.Profile', on_delete=models.CASCADE, null=True, blank=True, related_name='owned_resources')
     
     # Metadata
     tags = models.JSONField(default=list, blank=True)
@@ -107,7 +107,7 @@ class Resource(models.Model):
     
     # Status and tracking
     is_active = models.BooleanField(default=True)
-    upload_by = models.ForeignKey('expedix.User', on_delete=models.PROTECT, related_name='uploaded_resources')
+    upload_by = models.ForeignKey('expedix.Profile', on_delete=models.PROTECT, related_name='uploaded_resources')
     send_count = models.IntegerField(default=0)
     view_count = models.IntegerField(default=0)
     download_count = models.IntegerField(default=0)
@@ -163,7 +163,7 @@ class WatermarkTemplate(models.Model):
     ]
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    user = models.ForeignKey('expedix.User', on_delete=models.CASCADE, related_name='watermark_templates')
+    user = models.ForeignKey('expedix.Profile', on_delete=models.CASCADE, related_name='watermark_templates')
     name = models.CharField(max_length=255)
     type = models.CharField(max_length=20, choices=TYPE_CHOICES)
     
@@ -199,7 +199,7 @@ class WatermarkTemplate(models.Model):
 class ResourceEmailTemplate(models.Model):
     """Email templates for sending resources"""
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    user = models.ForeignKey('expedix.User', on_delete=models.CASCADE, related_name='email_templates')
+    user = models.ForeignKey('expedix.Profile', on_delete=models.CASCADE, related_name='email_templates')
     name = models.CharField(max_length=255)
     subject = models.CharField(max_length=500)
     body_html = models.TextField()
@@ -236,7 +236,7 @@ class ResourceSend(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     resource = models.ForeignKey(Resource, on_delete=models.CASCADE, related_name='sends')
     patient = models.ForeignKey('expedix.Patient', on_delete=models.CASCADE, related_name='resource_sends')
-    sent_by = models.ForeignKey('expedix.User', on_delete=models.PROTECT)
+    sent_by = models.ForeignKey('expedix.Profile', on_delete=models.PROTECT)
     
     # Send details
     sent_at = models.DateTimeField(auto_now_add=True)
@@ -299,7 +299,7 @@ class ResourceAccessLog(models.Model):
 class ResourceCollection(models.Model):
     """Collections for grouping resources"""
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    user = models.ForeignKey('expedix.User', on_delete=models.CASCADE, related_name='resource_collections')
+    user = models.ForeignKey('expedix.Profile', on_delete=models.CASCADE, related_name='resource_collections')
     name = models.CharField(max_length=255)
     description = models.TextField(blank=True, null=True)
     is_public = models.BooleanField(default=False)

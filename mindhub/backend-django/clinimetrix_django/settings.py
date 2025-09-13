@@ -41,7 +41,7 @@ THIRD_PARTY_APPS = [
     'allauth',
     'allauth.account',
     'allauth.socialaccount',
-    'guardian',
+    # 'guardian',  # Temporarily disabled for migration
     'django_filters',
     'drf_spectacular',
 ]
@@ -49,7 +49,7 @@ THIRD_PARTY_APPS = [
 LOCAL_APPS = [
     'psychometric_scales',
     'assessments',
-    'accounts',
+    # 'accounts',  # Temporarily disabled for simplified architecture
     'formx',  # FormX - Dynamic Form Builder & Document Management
     'expedix',  # Expedix - Patient Management System
     'agenda',  # Agenda - Appointment Scheduling System
@@ -101,7 +101,8 @@ DATABASES = {
 }
 
 # Authentication
-AUTH_USER_MODEL = 'accounts.User'
+# AUTH_USER_MODEL = 'accounts.User'  # Temporarily disabled for simplified architecture
+# Using Django's default User model for simplified authentication
 
 # Authentication backends
 AUTHENTICATION_BACKENDS = [
