@@ -34,7 +34,7 @@ export default function LandingPage() {
         <PlansSection onBetaClick={() => setShowBetaModal(true)} />
         <EarlyAccessExplanationSection onEarlyAccessClick={() => setShowBetaModal(true)} />
       </main>
-
+      
       <MindHubFooter variant="full" />
 
       {showBetaModal && (

@@ -17,6 +17,8 @@ import {
 } from '@heroicons/react/24/outline';
 import { RefreshCw } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import axiosClient from '@/lib/axiosClient';
+import axios from 'axios';
 
 interface PatientClassification {
   id: string;
@@ -67,25 +69,29 @@ export default function PatientClassificationManager({ className }: PatientClass
 
   useEffect(() => {
     loadClassifications();
+    console.log('USEEFFECT');
+    
   }, []);
 
   const loadClassifications = async () => {
     try {
       setLoading(true);
+      console.log('LLEGO AQUI 1');
       
-      const response = await fetch('/api/analytics/django/patient-classifications/', {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('access_token')}`,
-          'Content-Type': 'application/json',
-        },
-      });
+      
+      // const response = await fetch('/api/analytics/django/patient-classifications/', {
+      //   headers: {
+      //     'Authorization': `Bearer ${localStorage.getItem('access_token')}`,
+      //     'Content-Type': 'application/json',
+      //   },
+      // });
+      const response = await axiosClient.get('/api/analytics/patient-classifications/');
 
-      if (!response.ok) {
+      if (response.status !== 200) {
         throw new Error('Error al cargar clasificaciones');
       }
 
-      const data = await response.json();
-      const classificationsData = data.results || data;
+      const classificationsData = response.data.results || response.data;
       setClassifications(classificationsData);
 
       // Load patient info for all classifications
@@ -132,25 +138,34 @@ export default function PatientClassificationManager({ className }: PatientClass
 
   const updateClassifications = async (patientIds?: string[]) => {
     try {
+      console.log('LLEGO AQUIIIII');
+      
       setUpdating('bulk');
       
       const requestBody = patientIds ? { patient_ids: patientIds } : { force_recalculate: true };
+      console.log('resquestBody:', requestBody);
       
-      const response = await fetch('/api/analytics/django/patient-classifications/update_classifications/', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('access_token')}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(requestBody),
-      });
+      const response = await axiosClient.post('/api/analytics/patient-classifications/update_classifications/', requestBody);
+      console.log('response', response);
+      
+      if (response.status !== 200) {
+        throw new Error('Error al actualizar clasificaciones');
+      }
+      // const response = await fetch('/api/analytics/django/patient-classifications/update_classifications/', {
+      //   method: 'POST',
+      //   headers: {
+      //     'Authorization': `Bearer ${localStorage.getItem('access_token')}`,
+      //     'Content-Type': 'application/json',
+      //   },
+      //   body: JSON.stringify(requestBody),
+      // });
 
-      if (!response.ok) {
+      if (response.status !== 200) {
         throw new Error('Error al actualizar clasificaciones');
       }
 
-      const result = await response.json();
-      
+      const result = await response.data;
+
       if (result.results) {
         const successCount = result.results.filter((r: any) => r.status === 'success').length;
         const errorCount = result.results.filter((r: any) => r.status === 'error').length;

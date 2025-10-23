@@ -62,6 +62,7 @@ export async function middleware(req: NextRequest) {
 
   // Only handle auth for page routes, not API routes
   try {
+    
     const supabase = createServerClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -97,14 +98,14 @@ export async function middleware(req: NextRequest) {
     }
     
     // Check if route requires authentication
-    if (isProtectedRoute(req.nextUrl.pathname)) {
-      if (!session) {
-        // Redirect to sign-in if not authenticated
-        const redirectUrl = new URL('/auth/sign-in', req.url)
-        redirectUrl.searchParams.set('redirectTo', req.nextUrl.pathname)
-        return NextResponse.redirect(redirectUrl)
-      }
-    }
+    // if (isProtectedRoute(req.nextUrl.pathname)) {
+    //   if (!session) {
+    //     // Redirect to sign-in if not authenticated
+    //     const redirectUrl = new URL('/auth/sign-in', req.url)
+    //     redirectUrl.searchParams.set('redirectTo', req.nextUrl.pathname)
+    //     return NextResponse.redirect(redirectUrl)
+    //   }
+    // }
     
     // If user is logged in and trying to access auth pages, redirect to app
     if (session && req.nextUrl.pathname.startsWith('/auth/')) {

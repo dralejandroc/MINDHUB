@@ -6,6 +6,7 @@ import { signIn, signInWithGoogle } from '@/lib/supabase/client'
 import { toast } from 'react-hot-toast'
 import { MindHubSignInCard } from '@/components/auth/MindHubSignInCard'
 import { useState } from 'react'
+import { test } from '@playwright/test';
 
 // Clean Architecture: Domain entities for authentication
 interface SignInData {
@@ -20,7 +21,23 @@ export default function SignInPage() {
   // Clean Architecture: Set document title (UI layer concern)
   useEffect(() => {
     document.title = 'Iniciar Sesión - MindHub'
+
+    // test();
   }, [])
+
+  // const test = () => {
+  //   const url = 'https://jvbcpldzoyicefdtnwkd.supabase.co/auth/v1/token?grant_type=password'
+  //   const key = 'yJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp2YmNwbGR6b3lpY2VmZHRud2tkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTU0MDE0NzAsImV4cCI6MjA3MDk3NzQ3MH0.st42ODkomKcaTcT88Xqc3LT_Zo9oVWhkCVwCP07n4NY'
+  //   fetch(url, {
+  //     method: 'POST',
+  //     headers: {
+  //       'content-type': 'application/json',
+  //       apikey: key,
+  //       authorization: `Bearer ${key}`,
+  //     },
+  //     body: JSON.stringify({ email: 'dr_aleks_c@hotmail.com', password: '53AlfaCoca.' }),
+  //   }).then(r => r.status).then(console.log)
+  // };
 
   const handleSignIn = async (email: string, password: string) => {
     setLoading(true)
@@ -35,7 +52,8 @@ export default function SignInPage() {
 
       if (data.user) {
         toast.success('¡Bienvenido a MindHub!')
-        router.push('/dashboard')
+        
+        router.replace('/dashboard')
       }
     } catch (error) {
       toast.error('Error inesperado al iniciar sesión')

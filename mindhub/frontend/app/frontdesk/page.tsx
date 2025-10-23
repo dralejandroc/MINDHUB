@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, Suspense } from 'react';
+import { useState, useEffect, Suspense, use } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/lib/providers/AuthProvider';
 import { 
@@ -27,6 +27,9 @@ import { Button } from '@/components/ui/Button';
 import Link from 'next/link';
 import toast from 'react-hot-toast';
 import { authGet, authPost } from '@/lib/api/auth-fetch';
+import axiosClient from '@/lib/axiosClient';
+
+const DJANGO_API_BASE = process.env.NEXT_PUBLIC_DJANGO_API_URL || 'https://mindhub-django-backend.vercel.app';
 
 interface Patient {
   id: string;
@@ -84,9 +87,32 @@ function FrontDeskContent() {
 
   useEffect(() => {
     if (user && session && !authLoading) {
-      loadDashboardData();
+      // loadDashboardData();
+
+      // getPatients();
     }
   }, [user, session, authLoading]);
+
+  useEffect(() => {
+    getPatients();
+  }, []);
+
+  const getPatients = async () => {
+    try {
+      setLoading(true);
+      
+
+      const response = await axiosClient.get('/api/expedix/patients?limit=20');
+      console.log('response from axios:', response);
+      
+      if (response.status === 200) {
+        setPatients(response.data.results || response.data.data || []);
+      }
+    } catch (error) {
+      setLoading(false);
+      console.error('Error during getPatients call:', error);
+    }
+  };
 
   const loadDashboardData = async () => {
     try {
@@ -94,6 +120,8 @@ function FrontDeskContent() {
       
       // Load today's stats
       const statsResponse = await authGet('/api/frontdesk/stats/today');
+      // console.log('statsResponse:', statsResponse);
+      
       if (statsResponse.ok) {
         const data = await statsResponse.json();
         setStats(data.results || data.data || stats);
@@ -101,9 +129,14 @@ function FrontDeskContent() {
 
       // Load recent patients for quick access
       const patientsResponse = await authGet('/api/expedix/django/patients?limit=20');
+      console.log('patientsResponse:', patientsResponse);
+      
       if (patientsResponse.ok) {
         const data = await patientsResponse.json();
-        setPatients(data.results || data.data || []);
+        console.log('Recent patients data:', data);
+        if (data.results && data.results.length > 0) {
+          setPatients(data.results);
+        }
       }
     } catch (error) {
       console.error('Error loading dashboard data:', error);
@@ -120,10 +153,15 @@ function FrontDeskContent() {
 
     try {
       setLoading(true);
-      const response = await authGet(`/api/expedix/django/patients/search?q=${encodeURIComponent(searchTerm)}`);
-      if (response.ok) {
-        const data = await response.json();
-        setPatients(data.results || data.data || []);
+      // const response = await authGet(`/api/expedix/django/patients/search?q=${encodeURIComponent(searchTerm)}`);
+      const response = await axiosClient.get(`/api/expedix/patients?q=${encodeURIComponent(searchTerm)}`);
+
+      // if (response.ok) {
+      //   const data = await response.json();
+      //   setPatients(data.results || data.data || []);
+      // }
+      if (response.status === 200) {
+        setPatients(response.data.results || response.data.data || []);
       }
     } catch (error) {
       console.error('Error searching patients:', error);
