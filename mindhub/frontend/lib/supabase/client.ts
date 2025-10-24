@@ -84,27 +84,19 @@ if (!supabaseUrl || !supabaseAnonKey) {
 //   }
 // })
 
-//export const supabase = createBrowserClient(
-  //process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  //process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-  //{
-   // auth: {
-      //persistSession: true,
-      //autoRefreshToken: true,
-      //flowType: 'pkce',
-      // // Fuerza localStorage explícitamente
-      //storage: typeof window !== 'undefined' ? window.localStorage : undefined,
-      //storageKey: `sb-${process.env.NEXT_PUBLIC_SUPABASE_URL!.split('//')[1].split('.')[0]}-auth-token`,
-      //detectSessionInUrl: true,
-    //},
-// SIMPLIFIED: Use default localStorage instead of custom cookie handling
-export const supabase = createBrowserClient(supabaseUrl, supabaseAnonKey, {
-  auth: {
-    persistSession: true,
-    storageKey: 'mindhub-auth',
-    storage: typeof window !== 'undefined' ? window.localStorage : undefined,
-    autoRefreshToken: true,
-    detectSessionInUrl: true
+export const supabase = createBrowserClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+  {
+    auth: {
+      persistSession: true,
+      autoRefreshToken: true,
+      flowType: 'pkce',
+      // Fuerza localStorage explícitamente
+      storage: typeof window !== 'undefined' ? window.localStorage : undefined,
+      storageKey: `sb-${process.env.NEXT_PUBLIC_SUPABASE_URL!.split('//')[1].split('.')[0]}-auth-token`,
+      detectSessionInUrl: true,
+    },
   }
 )
 
