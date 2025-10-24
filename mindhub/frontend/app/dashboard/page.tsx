@@ -1,12 +1,12 @@
 'use client';
 
-import { useAuth } from '@/lib/providers/AuthProvider';
+import { useAuth } from '@/hooks/useAuth';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { useRouter } from 'next/navigation';
 import { useEffect, useRef } from 'react';
 
 export default function DashboardPage() {
-  const { user, loading } = useAuth();
+  const { isLoaded, isSignedIn } = useAuth();
   const router = useRouter();
   const hasRedirected = useRef(false);
 
@@ -14,16 +14,15 @@ export default function DashboardPage() {
     console.log(isLoaded, isSignedIn);
     
     if (isLoaded && !hasRedirected.current) {
-    if (!loading && !hasRedirected.current) {
       hasRedirected.current = true;
       
-      if (!user) {
+      if (!isSignedIn) {
         router.replace('/auth/sign-in');
       } else {
         router.replace('/app');
       }
     }
-  }, [loading, user, router]);
+  }, [isLoaded, isSignedIn, router]);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-teal-50 flex items-center justify-center">
