@@ -41,7 +41,7 @@ THIRD_PARTY_APPS = [
     'allauth',
     'allauth.account',
     'allauth.socialaccount',
-    # 'guardian',  # Temporarily disabled for migration
+    'guardian',
     'django_filters',
     'drf_spectacular',
 ]
@@ -49,7 +49,7 @@ THIRD_PARTY_APPS = [
 LOCAL_APPS = [
     'psychometric_scales',
     'assessments',
-    # 'accounts',  # Temporarily disabled for simplified architecture
+    'accounts',
     'formx',  # FormX - Dynamic Form Builder & Document Management
     'expedix',  # Expedix - Patient Management System
     'agenda',  # Agenda - Appointment Scheduling System
@@ -67,10 +67,10 @@ MIDDLEWARE = [
     'corsheaders.middleware.CorsMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
-    # 'django.middleware.csrf.CsrfViewMiddleware',  # ✅ DISABLED para API testing
+    'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'allauth.account.middleware.AccountMiddleware',
-    'middleware.simple_auth.SimpleSupabaseAuthMiddleware',  # ✅ ARQUITECTURA SIMPLIFICADA
+    'middleware.supabase_auth.SupabaseAuthMiddleware',  # Supabase integration
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
@@ -101,8 +101,7 @@ DATABASES = {
 }
 
 # Authentication
-# AUTH_USER_MODEL = 'accounts.User'  # Temporarily disabled for simplified architecture
-# Using Django's default User model for simplified authentication
+AUTH_USER_MODEL = 'accounts.User'
 
 # Authentication backends
 AUTHENTICATION_BACKENDS = [
@@ -163,6 +162,7 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 # Django REST Framework
 REST_FRAMEWORK = {
+    
     'DEFAULT_AUTHENTICATION_CLASSES': [
         'rest_framework.authentication.SessionAuthentication',
         'rest_framework.authentication.TokenAuthentication',
@@ -202,6 +202,17 @@ CORS_ALLOWED_ORIGINS = [
     "https://mindhub.vercel.app", # ✅ Vercel preview URLs
     "http://localhost:8000",      # ✅ Django self-requests
     "http://127.0.0.1:8000",      # ✅ Django self-requests
+]
+
+# --- CORS / CSRF en PROD ---
+CSRF_TRUSTED_ORIGINS = [
+    "https://mindhub.cloud",
+    "https://www.mindhub.cloud",
+]
+
+# Permitir previews de Vercel (*.vercel.app) para el FRONTEND
+CORS_ALLOWED_ORIGIN_REGEXES = [
+    r"^https:\/\/.*\.vercel\.app$",
 ]
 
 # Additional CORS settings for API integration
@@ -313,8 +324,6 @@ GUARDIAN_MONKEY_PATCH_USER = False
 SUPABASE_URL = env('SUPABASE_URL', default='https://jvbcpldzoyicefdtnwkd.supabase.co')
 SUPABASE_ANON_KEY = env('SUPABASE_ANON_KEY', default='')
 SUPABASE_SERVICE_ROLE_KEY = env('SUPABASE_SERVICE_ROLE_KEY', default='')
-# ✅ JWT Secret para validación local (arquitectura simplificada)
-SUPABASE_JWT_SECRET = env('SUPABASE_JWT_SECRET', default='CxqGEm1Cpk1tKY5GPTxn+n0ywlE5B2y4B6a00S3ZbFMnP/pgYLa9FPNDoPanAn0w7XIdGP5o7yFV9XhR2oVEmw==')
 
 # React frontend integration
 REACT_FRONTEND_URL = env('REACT_FRONTEND_URL', default='http://localhost:3000')
