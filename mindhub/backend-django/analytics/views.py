@@ -6,7 +6,7 @@ REST API ViewSets for KPI calculations and dashboard
 from rest_framework import viewsets, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import IsAuthenticated, AllowAny
 from django.utils import timezone
 from django.db.models import Q
 from datetime import datetime, timedelta
@@ -251,7 +251,12 @@ class PatientClassificationViewSet(viewsets.ModelViewSet):
     
     queryset = PatientClassification.objects.all()
     serializer_class = PatientClassificationSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [AllowAny]
+
+    def list(self, request, *args, **kwargs):
+        print(">>> ENTRO A list() de PatientClassificationViewSet")
+        return super().list(request, *args, **kwargs)
+
     
     @action(detail=False, methods=['post'])
     def update_classifications(self, request):
@@ -305,7 +310,7 @@ class SatisfactionSurveyViewSet(viewsets.ModelViewSet):
     def statistics(self, request):
         """Get satisfaction statistics"""
         from django.db.models import Avg, Count
-        
+        print('ENTRO A STATISTICS')
         stats = SatisfactionSurvey.objects.aggregate(
             average_score=Avg('score'),
             total_surveys=Count('id')
@@ -329,6 +334,8 @@ class PrescriptionRefillViewSet(viewsets.ModelViewSet):
     queryset = PrescriptionRefill.objects.all()
     serializer_class = PrescriptionRefillSerializer
     permission_classes = [IsAuthenticated]
+
+    
     
     def get_queryset(self):
         """Filter by date range if provided"""

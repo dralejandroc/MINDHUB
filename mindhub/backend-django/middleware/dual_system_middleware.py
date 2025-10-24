@@ -27,7 +27,7 @@ class DualSystemFilterMixin:
         if not hasattr(self.request, 'user_context'):
             # Simulate dr_aleks_c (individual license) if no test_mode param
             test_mode = self.request.query_params.get('test_mode', 'individual')
-            
+            print('TEST MODE:', test_mode)
             if test_mode == 'clinic':
                 # Simulate test@mindhub.com (clinic license)
                 self.request.user_context = {
@@ -52,7 +52,7 @@ class DualSystemFilterMixin:
         
         user_context = self.request.user_context
         license_type = user_context.get('license_type')
-        
+        print('USER CONTEXT EN GET QUERYSET', user_context)
         if license_type == 'clinic':
             clinic_id = user_context.get('clinic_id')
             if clinic_id:
@@ -91,7 +91,7 @@ class DualSystemFilterMixin:
         user_context = self.request.user_context
         license_type = user_context.get('license_type')
         user_id = getattr(self.request, 'supabase_user_id', None)
-        
+        print('USER CONTEXT EN PERFORM CREATE', user_context)
         if license_type == 'clinic':
             clinic_id = user_context.get('clinic_id')
             if clinic_id:
@@ -105,6 +105,7 @@ class DualSystemFilterMixin:
         elif license_type == 'individual':
             # For individual licenses, set workspace_id if available, otherwise use created_by only
             workspace_id = user_context.get('workspace_id')
+            print('workspace_id', workspace_id)
             if user_id:
                 save_data = {
                     'clinic_id': None,
@@ -131,7 +132,7 @@ class DualSystemQueryHelper:
         Apply dual system filtering to any queryset
         """
         license_type = user_context.get('license_type')
-        
+        # print('ACAAAAAA', user_context)
         if license_type == 'clinic':
             clinic_id = user_context.get('clinic_id')
             return queryset.filter(clinic_id=clinic_id) if clinic_id else queryset.none()
@@ -155,7 +156,7 @@ class DualSystemQueryHelper:
         Get clinic_id/created_by data for creating new objects
         """
         license_type = user_context.get('license_type')
-        
+        print('get_create_data', user_context)
         if license_type == 'clinic':
             clinic_id = user_context.get('clinic_id')
             return {
@@ -223,7 +224,7 @@ class DualSystemBusinessLogic:
         Check if user can access specific patient based on license type
         """
         license_type = user_context.get('license_type')
-        
+        print('can_access_patient', user_context, patient.clinic_id, patient.workspace_id, user_id)
         if license_type == 'clinic':
             # Clinic users can access all patients in their clinic
             return patient.clinic_id == user_context.get('clinic_id')
@@ -251,7 +252,7 @@ class DualSystemBusinessLogic:
         from django.db import connection
         
         license_type = user_context.get('license_type')
-        
+        print('get_accessible_locations', user_context)
         try:
             with connection.cursor() as cursor:
                 if license_type == 'clinic':
