@@ -163,6 +163,7 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 # Django REST Framework
 REST_FRAMEWORK = {
+    
     'DEFAULT_AUTHENTICATION_CLASSES': [
         'rest_framework.authentication.SessionAuthentication',
         'rest_framework.authentication.TokenAuthentication',
@@ -202,6 +203,17 @@ CORS_ALLOWED_ORIGINS = [
     "https://mindhub.vercel.app", # ✅ Vercel preview URLs
     "http://localhost:8000",      # ✅ Django self-requests
     "http://127.0.0.1:8000",      # ✅ Django self-requests
+]
+
+# --- CORS / CSRF en PROD ---
+CSRF_TRUSTED_ORIGINS = [
+    "https://mindhub.cloud",
+    "https://www.mindhub.cloud",
+]
+
+# Permitir previews de Vercel (*.vercel.app) para el FRONTEND
+CORS_ALLOWED_ORIGIN_REGEXES = [
+    r"^https:\/\/.*\.vercel\.app$",
 ]
 
 # Additional CORS settings for API integration

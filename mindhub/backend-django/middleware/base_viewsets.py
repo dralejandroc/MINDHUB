@@ -26,6 +26,9 @@ class DualSystemModelViewSet(DualSystemFilterMixin, viewsets.ModelViewSet):
     
     def list(self, request, *args, **kwargs):
         """Override list to add dual system context to response"""
+        logger.info("LLEGO AQUI user_context=%s", getattr(request, 'user_context', {}))
+        # o si insistes en print:
+        print("LLEGO AQUI", request.user_context, flush=True)
         # Ensure user_context exists before calling super().list()
         if not hasattr(request, 'user_context') or not request.user_context.get('license_type'):
             logger.error('No valid user_context found in list - authentication middleware failed')

@@ -67,6 +67,7 @@ class PatientViewSet(ExpedixDualViewSet):  # 🎯 RESTORED DUAL SYSTEM after fix
         
         # PERFORMANCE OPTIMIZATION: Prefetch related data for list views
         if self.action == 'list':
+            print('aqui')
             # Temporarily disable problematic prefetch until schema is fixed
             queryset = queryset.select_related().annotate(
                 consultations_count=models.Value(0, output_field=models.IntegerField()),  # Placeholder
