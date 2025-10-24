@@ -1,5 +1,6 @@
 // Expedix appointments API route - connects DIRECTLY to Supabase
 import { supabaseAdmin, getAuthenticatedUser, createResponse, createErrorResponse } from '@/lib/supabase/admin'
+import { start } from 'repl';
 
 export const dynamic = 'force-dynamic';
 
@@ -19,14 +20,16 @@ export async function GET(request: Request) {
     const url = new URL(request.url);
     const searchParams = url.searchParams;
     const search = searchParams.get('search');
-    const limit = parseInt(searchParams.get('limit') || '10');
+    const limit = parseInt(searchParams.get('limit') || '1000');
     const offset = parseInt(searchParams.get('offset') || '0');
     const status = searchParams.get('status') || 'active';
     const patientId = searchParams.get('patient_id');
     const date = searchParams.get('date');
+    const startDate = searchParams.get('start_date');
+    const endDate = searchParams.get('end_date');
     const appointmentStatus = searchParams.get('appointment_status');
 
-    console.log('[APPOINTMENTS API] Query params:', { search, limit, offset, status, patientId, date, appointmentStatus });
+    console.log('[APPOINTMENTS API] Query params:', { search, limit, offset, status, patientId, date, appointmentStatus, startDate, endDate });
 
     // Build Supabase query
     let query = supabaseAdmin
@@ -44,7 +47,7 @@ export async function GET(request: Request) {
         )
       `, { count: 'exact' })
       .order('appointment_date', { ascending: true })
-      .range(offset, offset + limit - 1);
+      // .range(offset, offset + limit - 1);
 
     // Apply filters (removed is_active check as column may not exist)
     // Status filtering can be added when schema is updated
@@ -67,6 +70,10 @@ export async function GET(request: Request) {
     // Apply search if provided
     if (search) {
       query = query.or(`notes.ilike.%${search}%,appointment_type.ilike.%${search}%,reason.ilike.%${search}%`);
+    }
+
+    if (startDate && endDate) {
+      query = query.gte('appointment_date', `${startDate}T00:00:00`).lte('appointment_date', `${endDate}T23:59:59`);
     }
 
     // Execute query

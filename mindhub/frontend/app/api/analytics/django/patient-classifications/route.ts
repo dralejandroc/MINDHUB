@@ -39,7 +39,7 @@ export async function GET(request: Request) {
     const djangoUrl = `${DJANGO_API_BASE}/api/analytics/patient-classifications/${queryParams ? '?' + queryParams : ''}`;
     console.log('[ANALYTICS PATIENT CLASSIFICATIONS] Forwarding to Django:', djangoUrl);
     
-    const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+    const serviceKey = process.env.NEXT_PUBLIC_SUPABASE_SERVICE_ROLE_KEY;
     console.log('[ANALYTICS PATIENT CLASSIFICATIONS] Service key configured:', !!serviceKey);
     
     const response = await fetch(djangoUrl, {

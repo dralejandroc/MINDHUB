@@ -27,6 +27,7 @@ import { authGet, authPost, authPut, authDelete, authFetch } from '@/lib/api/aut
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
 import { useTenantContext } from '@/hooks/useTenantContext';
+import { getVisibleRange, toYMD } from '@/lib/utils/date';
 
 type ViewType = 'week' | 'day' | 'month' | 'clinic-global' | 'reception';
 
@@ -154,94 +155,79 @@ function AgendaContent() {
   };
 
   const loadAppointments = async () => {
-    setLoading(true);
-    try {
-      const response = await authGet('/api/expedix/agenda/appointments');
-      if (response.ok) {
-        const data = await response.json();
-        // Transform API data to AppointmentData format with proper date/time handling
-        const transformedAppointments: AppointmentData[] = (data.data || []).map((apt: any) => {
-          console.log('[loadAppointments] Processing appointment:', apt);
-          
-          // Safely combine appointment_date with start_time/end_time
-          const appointmentDate = apt.appointment_date || apt.date;
-          const startTime = apt.start_time || '00:00';
-          const endTime = apt.end_time || '01:00';
-          
-          // Create proper datetime by combining date + time (TIMEZONE SAFE)
-          const createDateTime = (dateStr: string, timeStr: string): Date => {
-            try {
-              if (!dateStr || !timeStr) {
-                console.warn('[loadAppointments] Missing date/time:', { dateStr, timeStr });
-                return new Date();
-              }
-              
-              // Parse date components from string (YYYY-MM-DD)
-              const [year, month, day] = dateStr.split('-').map(Number);
-              const [hours, minutes] = timeStr.split(':').map(Number);
-              
-              // Validate date components
-              if (isNaN(year) || isNaN(month) || isNaN(day)) {
-                console.warn('[loadAppointments] Invalid date format:', dateStr);
-                return new Date();
-              }
-              
-              // Validate time components
-              if (isNaN(hours) || isNaN(minutes)) {
-                console.warn('[loadAppointments] Invalid time format:', timeStr);
-                return new Date();
-              }
-              
-              // Create date in LOCAL timezone (month is 0-based in JavaScript)
-              const date = new Date(year, month - 1, day, hours, minutes, 0, 0);
-              
-              // Log for debugging
-              console.log(`[createDateTime] Created: ${dateStr} ${timeStr} -> ${date.toLocaleDateString()} ${date.toLocaleTimeString()}`);
-              
-              return date;
-            } catch (error) {
-              console.error('[loadAppointments] Date creation error:', error, { dateStr, timeStr });
-              return new Date();
-            }
-          };
-          
-          const startDateTime = createDateTime(appointmentDate, startTime);
-          const endDateTime = createDateTime(appointmentDate, endTime);
-          
-          return {
-            id: apt.id,
-            patientId: apt.patient_id,
-            patientName: apt.patients?.first_name 
-              ? `${apt.patients.first_name} ${apt.patients.paternal_last_name || ''}`.trim()
-              : 'Paciente',
-            startTime: startDateTime,
-            endTime: endDateTime,
-            duration: Math.round((endDateTime.getTime() - startDateTime.getTime()) / 60000) || 60, // Calculate duration from times
-            type: apt.appointment_type || 'Consulta',
-            status: apt.status || 'scheduled',
-            hasDeposit: apt.has_deposit || false,
-            paymentStatus: apt.payment_status,
-            notes: apt.notes || apt.reason || '',
-            consultationType: apt.consultation_type || 'presencial',
-            location: apt.location,
-            patientInfo: {
-              phone: apt.patients?.phone || apt.patient_phone,
-              email: apt.patients?.email || apt.patient_email,
-              dateOfBirth: apt.patient_dob,
-              lastVisit: apt.last_visit ? new Date(apt.last_visit) : undefined
-            }
-          };
-        });
-        setAppointments(transformedAppointments);
-      }
-    } catch (error) {
-      console.error('Error loading appointments:', error);
-      toast.error('Error al cargar las citas');
-    } finally {
-      setLoading(false);
-      setLastRefresh(new Date());
+  if (!currentDate) return;
+
+  setLoading(true);
+  try {
+    const { start, end } = getVisibleRange(currentDate, currentView);
+    const params = new URLSearchParams({
+      start_date: toYMD(start), // o "start" según tu backend
+      end_date: toYMD(end),     // o "end"
+    });
+    console.log('PARAMS FECHAS', params.toString());
+    
+    const response = await authGet(`/api/expedix/agenda/appointments?${params.toString()}`);
+    console.log('RESPONSE AGENDA', response);
+
+    if (response.ok) {
+      const data = await response.json();
+      console.log('APPOINTMENTS DATA', data);
+
+      const transformedAppointments: AppointmentData[] = (data.data || []).map((apt: any) => {
+        const appointmentDate = apt.appointment_date || apt.date;
+        const startTime = apt.start_time || apt.appointment_time || '00:00';
+        const endTime = apt.end_time || '01:00';
+
+        const createDateTime = (dateStr: string, timeStr: string): Date => {
+          try {
+            const [year, month, day] = dateStr.split('-').map(Number);
+            const [hours, minutes] = timeStr.split(':').map(Number);
+            if ([year, month, day, hours, minutes].some(isNaN)) return new Date();
+            return new Date(year, month - 1, day, hours, minutes, 0, 0);
+          } catch {
+            return new Date();
+          }
+        };
+
+        const startDateTime = createDateTime(appointmentDate, startTime);
+        const endDateTime = createDateTime(appointmentDate, endTime);
+
+        return {
+          id: apt.id,
+          patientId: apt.patient_id,
+          patientName: apt.patients?.first_name
+            ? `${apt.patients.first_name} ${apt.patients.paternal_last_name || ''}`.trim()
+            : 'Paciente',
+          startTime: startDateTime,
+          endTime: endDateTime,
+          duration: Math.round((endDateTime.getTime() - startDateTime.getTime()) / 60000) || 60,
+          type: apt.appointment_type || 'Consulta',
+          status: apt.status || 'scheduled',
+          hasDeposit: apt.has_deposit || false,
+          paymentStatus: apt.payment_status,
+          notes: apt.notes || apt.reason || '',
+          consultationType: apt.consultation_type || 'presencial',
+          location: apt.location,
+          patientInfo: {
+            phone: apt.patients?.phone || apt.patient_phone,
+            email: apt.patients?.email || apt.patient_email,
+            dateOfBirth: apt.patient_dob,
+            lastVisit: apt.last_visit ? new Date(apt.last_visit) : undefined,
+          },
+        };
+      });
+
+      setAppointments(transformedAppointments);
     }
-  };
+  } catch (error) {
+    console.error('Error loading appointments:', error);
+    toast.error('Error al cargar las citas');
+  } finally {
+    setLoading(false);
+    setLastRefresh(new Date());
+  }
+};
+
 
   // Event handlers
   const handleAppointmentClick = (appointment: AppointmentData, event?: React.MouseEvent) => {

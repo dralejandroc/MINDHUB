@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/Button';
 import { Users, RefreshCw, Clock } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import axiosClient from '@/lib/axiosClient';
 
 interface PatientClassification {
   id: string;
@@ -50,20 +51,16 @@ export default function PatientClassificationWidget({
     try {
       setLoading(true);
       setError(null);
+      console.log('PatientClassificarionWidget');
       
-      const response = await fetch('/api/analytics/django/patient-classifications/', {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('access_token')}`,
-          'Content-Type': 'application/json',
-        },
-      });
+      const response = await axiosClient.get('/api/analytics/patient-classifications/');
 
-      if (!response.ok) {
+      if (response.status !== 200) {
         throw new Error('Error al cargar clasificaciones');
       }
 
-      const data = await response.json();
-      
+      const data = response.data;
+
       // Handle the structured response format from the API route
       const classificationsArray = data.classifications || data.results || data || [];
       setClassifications(classificationsArray);

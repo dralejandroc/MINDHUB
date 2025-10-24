@@ -2,6 +2,7 @@
  * Supabase Client Configuration
  * Single source of truth for Supabase connection
  */
+'use client'
 
 import { createBrowserClient } from '@supabase/ssr'
 import { handleSupabaseAuthError } from './cleanup'
@@ -33,6 +34,69 @@ if (!supabaseUrl || !supabaseAnonKey) {
 }
 
 // Create a single supabase client for interacting with your database
+// export const supabase = createBrowserClient(supabaseUrl, supabaseAnonKey, {
+//   cookies: {
+//     get: (name: string) => {
+//       if (typeof window === 'undefined') return undefined; // Skip on server
+//       try {
+//         const cookieValue = document.cookie
+//           .split('; ')
+//           .find(row => row.startsWith(`${name}=`))
+//           ?.split('=')[1];
+        
+//         if (cookieValue && cookieValue.startsWith('base64-')) {
+//           // Handle problematic base64 cookies
+//           try {
+//             return atob(cookieValue.substring(7)); // Remove 'base64-' prefix
+//           } catch {
+//             console.warn(`🍪 Invalid base64 cookie detected: ${name}, clearing it`);
+//             document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/`;
+//             return undefined;
+//           }
+//         }
+//         return cookieValue;
+//       } catch (error) {
+//         if (handleCookieError(error)) {
+//           return undefined;
+//         }
+//         throw error;
+//       }
+//     },
+//     set: (name: string, value: string, options?: any) => {
+//       if (typeof window === 'undefined') return; // Skip on server
+//       try {
+//         const optionsStr = options 
+//           ? Object.entries(options).map(([k, v]) => `${k}=${v}`).join('; ')
+//           : '';
+//         document.cookie = `${name}=${value}; path=/; ${optionsStr}`;
+//       } catch (error) {
+//         handleCookieError(error);
+//       }
+//     },
+//     remove: (name: string, options?: any) => {
+//       if (typeof window === 'undefined') return; // Skip on server
+//       try {
+//         document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/`;
+//       } catch (error) {
+//         handleCookieError(error);
+//       }
+//     }
+//   }
+// })
+
+export const supabase = createBrowserClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+  {
+    auth: {
+      persistSession: true,
+      autoRefreshToken: true,
+      flowType: 'pkce',
+      // Fuerza localStorage explícitamente
+      storage: typeof window !== 'undefined' ? window.localStorage : undefined,
+      storageKey: `sb-${process.env.NEXT_PUBLIC_SUPABASE_URL!.split('//')[1].split('.')[0]}-auth-token`,
+      detectSessionInUrl: true,
+    },
 // SIMPLIFIED: Use default localStorage instead of custom cookie handling
 export const supabase = createBrowserClient(supabaseUrl, supabaseAnonKey, {
   auth: {
@@ -42,7 +106,7 @@ export const supabase = createBrowserClient(supabaseUrl, supabaseAnonKey, {
     autoRefreshToken: true,
     detectSessionInUrl: true
   }
-})
+)
 
 // Auto-refresh and handle session expiration - only run on client
 if (typeof window !== 'undefined') {
@@ -68,11 +132,18 @@ export const createClient = () => supabase
 
 // Helper functions for auth
 export const signIn = async (email: string, password: string) => {
+  
   try {
     const { data, error } = await supabase.auth.signInWithPassword({
       email,
       password,
     })
+      const { session } = data || {};
+      if (session) {
+        console.log('User signed in, token expires at:', new Date(session.expires_at! * 1000));
+        localStorage.setItem('mindhub-token', session.access_token);
+        localStorage.setItem('mindhub-refresh-token', session.refresh_token);
+      }
     
     if (error) {
       handleSupabaseAuthError(error)
@@ -80,6 +151,8 @@ export const signIn = async (email: string, password: string) => {
     
     return { data, error }
   } catch (error) {
+    
+    
     handleSupabaseAuthError(error)
     throw error
   }
@@ -96,13 +169,69 @@ export const signUp = async (email: string, password: string, metadata?: any) =>
   return { data, error }
 }
 
-export const signOut = async () => {
-  const { error } = await supabase.auth.signOut()
+// Type for signOut options
+export interface SignOutOpts {
+  hard?: boolean;
+}
+
+export const signOut = async ({ hard = false }: SignOutOpts = {}) => {
+  const { error } = await supabase.auth.signOut({ scope: 'global' })
+
+  // 2) Avisar al servidor para que borre cookies HTTP-only (middleware verá que ya no hay sesión)
+  try {
+    await fetch('/api/auth/callback', {
+      method: 'POST',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ event: 'SIGNED_OUT', session: null }),
+    })
+  } catch {
+    /* no-op */
+  }
+
+  // 3) Limpiar almacenamiento del navegador
+  try {
+    if (typeof window !== 'undefined') {
+      // Remueve claves de Supabase/GoTrue y las tuyas si aplica
+      const purge = (storage: Storage) => {
+        const keys = Object.keys(storage)
+        keys.forEach(k => {
+          if (
+            k.startsWith('sb-') ||               // sb-<project-ref>-auth-token
+            k.startsWith('supabase.') ||         // por si el SDK usa prefijos internos
+            k.startsWith('gotrue.') ||           // PKCE / estados OAuth
+            k.startsWith('mindhub-')             // tus claves propias
+          ) {
+            storage.removeItem(k)
+          }
+        })
+      }
+      purge(localStorage)
+      purge(sessionStorage)
+    }
+  } catch {/* no-op */}
+
+  // 4) Opcional: limpieza “dura” de caches / SW (similar a Cmd+Shift+R)
+  if (typeof window !== 'undefined' && hard) {
+    try {
+      if ('caches' in window) {
+        const names = await caches.keys()
+        await Promise.all(names.map(n => caches.delete(n)))
+      }
+      if ('serviceWorker' in navigator) {
+        const regs = await navigator.serviceWorker.getRegistrations()
+        await Promise.all(regs.map(r => r.unregister()))
+      }
+    } catch {/* no-op */}
+  }
+
   return { error }
 }
 
 export const getCurrentUser = async () => {
   const { data: { user }, error } = await supabase.auth.getUser()
+  console.log('Current user:', user);
+  
   return { user, error }
 }
 

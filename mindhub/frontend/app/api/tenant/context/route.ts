@@ -35,7 +35,6 @@ export async function GET(request: Request) {
             id,
             name,
             business_name,
-            logo_url,
             is_active
           )
         `)

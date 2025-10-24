@@ -26,11 +26,36 @@ export const supabaseAdmin = createClient(supabaseUrl, serviceKey, {
   }
 })
 
+import { parse } from 'cookie';
+
 // Helper function to get authenticated user from request headers
 export async function getAuthenticatedUser(request: Request) {
-  const authHeader = request.headers.get('Authorization')
+  // Extract the Authorization token from cookie sb-jvbcpldzoyicefdtnwkd-auth-token
+  const cookieHeader = request.headers.get('cookie') || '';
+  const cookies = parse(cookieHeader);
+  const authToken = cookies['sb-jvbcpldzoyicefdtnwkd-auth-token'] || '';
+  console.log('[AUTH] Extracted auth token from cookies, length:', authToken.length);
+  // convert authHeader from base63 to jwt if it starts with 'base64-'
+  let tokenCookie = '';
+  if (authToken.startsWith('base64-')) {
+      const base64Token = authToken.substring(7); // Remove 'base64-' prefix
+      const decodedToken = atob(base64Token);
+      // console.log('[AUTH] Decoded base64 token, length:', decodedToken.length);
+      tokenCookie = decodedToken.length ? JSON.parse(decodedToken)?.access_token : '';
+  }
+
+  if (tokenCookie && tokenCookie.length > 0) {
+    console.log('[AUTH] Using decoded token from cookie');
+
+  }
   
+  request.headers.set('Authorization', `Bearer ${tokenCookie}`);
+
+  // const authHeader = request.headers.get('Authorization') || `Bearer ${tokenCookie}`;
+  const authHeader = `Bearer ${tokenCookie}`;
+   
   console.log('[AUTH] Checking authentication, authHeader present:', !!authHeader)
+  // console.log(authHeader);
   
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
     console.error('[AUTH] No valid authorization header found')

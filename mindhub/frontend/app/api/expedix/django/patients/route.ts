@@ -21,12 +21,14 @@ export async function GET(request: Request) {
     // Extract query parameters
     const url = new URL(request.url);
     const queryParams = url.searchParams.toString();
+    console.log('[EXPEDIX PATIENTS] Query parameters:', queryParams);
+    
     
     // Forward request to Django patients endpoint
     const djangoUrl = `${DJANGO_API_BASE}/api/expedix/patients${queryParams ? '?' + queryParams : ''}`;
     console.log('[EXPEDIX PATIENTS] Forwarding to Django:', djangoUrl);
-    
-    const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+    const serviceKey = process.env.NEXT_PUBLIC_SUPABASE_SERVICE_ROLE_KEY;
     console.log('[EXPEDIX PATIENTS] Service key configured:', !!serviceKey, 'length:', serviceKey?.length || 0);
     
     const response = await fetch(djangoUrl, {
@@ -40,6 +42,7 @@ export async function GET(request: Request) {
         'X-MindHub-Dual-System': 'enabled',
       },
     });
+    // console.log(response);
     
     console.log('[EXPEDIX PATIENTS] Django response status:', response.status, response.statusText);
 
@@ -54,6 +57,8 @@ export async function GET(request: Request) {
     }
 
     const data = await response.json();
+    // console.log(data);
+    
     console.log('[EXPEDIX PATIENTS] Successfully fetched patients:', data?.length || 0);
 
     return createResponse(data);
