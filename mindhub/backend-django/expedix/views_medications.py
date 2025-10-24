@@ -1,6 +1,7 @@
 """
 Medications API for Expedix
 Real medication database management for consultations
+CONECTADO A SUPABASE - medication_database (30 medicamentos reales)
 """
 
 from rest_framework import viewsets, status
@@ -8,9 +9,12 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from django.db import connection
+from django.db.models import Q
 import json
 
 from expedix.authentication import SupabaseProxyAuthentication
+from .models import MedicationDatabase, PrescriptionMedication
+from .serializers import MedicationDatabaseSerializer, PrescriptionMedicationSerializer, MedicationSearchSerializer
 
 
 class MedicationViewSet(viewsets.ViewSet):
@@ -22,7 +26,10 @@ class MedicationViewSet(viewsets.ViewSet):
     
     @action(detail=False, methods=['get'])
     def search(self, request):
-        """Search medications by name"""
+        """
+        Search medications by name - CONECTADO A SUPABASE
+        Consulta real a medication_database (30 medicamentos reales)
+        """
         query = request.query_params.get('q', '')
         
         if len(query) < 2:
@@ -31,133 +38,109 @@ class MedicationViewSet(viewsets.ViewSet):
                 'medications': []
             })
         
-        # Common psychiatric medications
-        medications_db = [
-            {
-                'id': 1,
-                'name': 'Sertralina',
-                'generic_name': 'Sertraline',
-                'presentations': [
-                    {'form': 'Tableta', 'concentration': '25mg', 'substance': 'Sertralina HCl'},
-                    {'form': 'Tableta', 'concentration': '50mg', 'substance': 'Sertralina HCl'},
-                    {'form': 'Tableta', 'concentration': '100mg', 'substance': 'Sertralina HCl'}
-                ],
-                'category': 'Antidepresivo ISRS',
-                'common_prescriptions': [
-                    'Tomar 1 tableta cada 24 horas en ayunas por la mañana',
-                    'Tomar 1/2 tableta cada 24 horas por 7 días, luego 1 tableta diaria',
-                    'Tomar 1 tableta cada 24 horas con alimentos'
-                ]
-            },
-            {
-                'id': 2,
-                'name': 'Fluoxetina',
-                'generic_name': 'Fluoxetine',
-                'presentations': [
-                    {'form': 'Cápsula', 'concentration': '10mg', 'substance': 'Fluoxetina HCl'},
-                    {'form': 'Cápsula', 'concentration': '20mg', 'substance': 'Fluoxetina HCl'},
-                    {'form': 'Cápsula', 'concentration': '40mg', 'substance': 'Fluoxetina HCl'}
-                ],
-                'category': 'Antidepresivo ISRS',
-                'common_prescriptions': [
-                    'Tomar 1 cápsula cada 24 horas en ayunas',
-                    'Tomar 1 cápsula cada 24 horas con el desayuno',
-                    'Tomar 1/2 cápsula cada 24 horas por una semana, luego aumentar'
-                ]
-            },
-            {
-                'id': 3,
-                'name': 'Lorazepam',
-                'generic_name': 'Lorazepam',
-                'presentations': [
-                    {'form': 'Tableta', 'concentration': '0.5mg', 'substance': 'Lorazepam'},
-                    {'form': 'Tableta', 'concentration': '1mg', 'substance': 'Lorazepam'},
-                    {'form': 'Tableta', 'concentration': '2mg', 'substance': 'Lorazepam'}
-                ],
-                'category': 'Benzodiacepina',
-                'common_prescriptions': [
-                    'Tomar 1 tableta cada 12 horas en caso de ansiedad',
-                    'Tomar 1/2 tableta antes de dormir',
-                    'Tomar 1 tableta cada 8 horas por máximo 15 días',
-                    'Tomar según necesidad para ansiedad, máximo 3 tabletas al día'
-                ]
-            },
-            {
-                'id': 4,
-                'name': 'Escitalopram',
-                'generic_name': 'Escitalopram',
-                'presentations': [
-                    {'form': 'Tableta', 'concentration': '10mg', 'substance': 'Escitalopram oxalato'},
-                    {'form': 'Tableta', 'concentration': '20mg', 'substance': 'Escitalopram oxalato'}
-                ],
-                'category': 'Antidepresivo ISRS',
-                'common_prescriptions': [
-                    'Tomar 1 tableta cada 24 horas en la mañana',
-                    'Tomar 1/2 tableta por una semana, luego 1 tableta diaria',
-                    'Tomar 1 tableta cada 24 horas preferentemente en ayunas'
-                ]
-            },
-            {
-                'id': 5,
-                'name': 'Clonazepam',
-                'generic_name': 'Clonazepam',
-                'presentations': [
-                    {'form': 'Tableta', 'concentration': '0.5mg', 'substance': 'Clonazepam'},
-                    {'form': 'Tableta', 'concentration': '2mg', 'substance': 'Clonazepam'}
-                ],
-                'category': 'Benzodiacepina',
-                'common_prescriptions': [
-                    'Tomar 1/2 tableta cada 12 horas',
-                    'Tomar 1 tableta antes de dormir',
-                    'Tomar 1/4 tableta cada 8 horas según necesidad'
-                ]
-            },
-            {
-                'id': 6,
-                'name': 'Aripiprazol',
-                'generic_name': 'Aripiprazole',
-                'presentations': [
-                    {'form': 'Tableta', 'concentration': '5mg', 'substance': 'Aripiprazol'},
-                    {'form': 'Tableta', 'concentration': '10mg', 'substance': 'Aripiprazol'},
-                    {'form': 'Tableta', 'concentration': '15mg', 'substance': 'Aripiprazol'}
-                ],
-                'category': 'Antipsicótico atípico',
-                'common_prescriptions': [
-                    'Tomar 1 tableta cada 24 horas preferentemente en la mañana',
-                    'Tomar 1/2 tableta cada 24 horas por una semana, luego ajustar',
-                    'Tomar 1 tableta cada 24 horas con alimentos'
-                ]
-            },
-            {
-                'id': 7,
-                'name': 'Quetiapina',
-                'generic_name': 'Quetiapine',
-                'presentations': [
-                    {'form': 'Tableta', 'concentration': '25mg', 'substance': 'Quetiapina fumarato'},
-                    {'form': 'Tableta', 'concentration': '100mg', 'substance': 'Quetiapina fumarato'},
-                    {'form': 'Tableta', 'concentration': '200mg', 'substance': 'Quetiapina fumarato'}
-                ],
-                'category': 'Antipsicótico atípico',
-                'common_prescriptions': [
-                    'Tomar 1 tableta antes de dormir',
-                    'Tomar 1/2 tableta cada 12 horas con alimentos',
-                    'Tomar según indicación médica, incrementar gradualmente'
-                ]
-            }
-        ]
+        try:
+            # 🎯 CONSULTA REAL A SUPABASE medication_database
+            medications = MedicationDatabase.objects.filter(
+                Q(commercial_name__icontains=query) |
+                Q(generic_name__icontains=query) |
+                Q(active_ingredients__icontains=query),
+                is_active=True
+            ).order_by('commercial_name')[:10]
+            
+            # Transform to frontend-compatible format
+            medications_list = []
+            for med in medications:
+                med_data = {
+                    'id': hash(str(med.id)) % 10000,  # Convert UUID to int for frontend compatibility
+                    'name': med.commercial_name or med.generic_name,
+                    'generic_name': med.generic_name or med.commercial_name,
+                    'presentations': [
+                        {
+                            'form': med.pharmaceutical_form or 'Tableta',
+                            'concentration': med.concentration or 'No especificada',
+                            'substance': med.active_ingredients or med.generic_name
+                        }
+                    ],
+                    'category': self._get_medication_category(med),
+                    'common_prescriptions': self._get_common_prescriptions(med),
+                    # Additional fields from real database
+                    'control_group': med.control_group,
+                    'therapeutic_indications': med.therapeutic_indications,
+                    'laboratory': med.laboratory,
+                    'contraindications': med.contraindications,
+                    'dosage_recommendations': med.dosage_recommendations,
+                    'uuid': str(med.id)  # Real UUID for backend operations
+                }
+                medications_list.append(med_data)
+            
+            return Response({
+                'success': True,
+                'medications': medications_list,
+                'total': len(medications_list),
+                'source': 'medication_database',  # Indicate real database source
+                'query': query
+            })
+            
+        except Exception as e:
+            # Fallback in case of database issues
+            return Response({
+                'success': False,
+                'error': f'Database error: {str(e)}',
+                'medications': [],
+                'total': 0
+            }, status=500)
+    
+    def _get_medication_category(self, medication):
+        """Determine medication category based on therapeutic indications"""
+        indications = (medication.therapeutic_indications or '').lower()
         
-        # Filter medications by query
-        filtered_medications = [
-            med for med in medications_db 
-            if query.lower() in med['name'].lower() or 
-               query.lower() in med['generic_name'].lower()
-        ]
+        if any(word in indications for word in ['depres', 'antidepres', 'estado de ánimo']):
+            return 'Antidepresivo'
+        elif any(word in indications for word in ['ansied', 'ansiolitico', 'benzodiac']):
+            return 'Ansiolítico'
+        elif any(word in indications for word in ['psicos', 'esquizofren', 'bipolar']):
+            return 'Antipsicótico'
+        elif any(word in indications for word in ['dolor', 'analges', 'antiinflam']):
+            return 'Analgésico'
+        elif any(word in indications for word in ['antibiot', 'infeccion']):
+            return 'Antibiótico'
+        else:
+            return medication.control_group or 'Medicamento'
+    
+    def _get_common_prescriptions(self, medication):
+        """Generate common prescriptions based on medication data"""
+        prescriptions = []
         
-        return Response({
-            'success': True,
-            'medications': filtered_medications[:10],  # Limit to 10 results
-            'total': len(filtered_medications)
-        })
+        # Use dosage recommendations if available
+        if medication.dosage_recommendations:
+            prescriptions.append(medication.dosage_recommendations)
+        
+        # Add generic prescriptions based on pharmaceutical form
+        form = (medication.pharmaceutical_form or 'tableta').lower()
+        
+        if 'tableta' in form:
+            prescriptions.extend([
+                'Tomar 1 tableta cada 24 horas con alimentos',
+                'Tomar 1 tableta cada 12 horas según indicación médica',
+                'Tomar 1/2 tableta cada 24 horas, aumentar gradualmente'
+            ])
+        elif 'capsula' in form:
+            prescriptions.extend([
+                'Tomar 1 cápsula cada 24 horas en ayunas',
+                'Tomar 1 cápsula cada 12 horas con alimentos'
+            ])
+        elif 'jarabe' in form:
+            prescriptions.extend([
+                'Tomar 5ml cada 8 horas con alimentos',
+                'Tomar según indicación médica'
+            ])
+        else:
+            prescriptions.extend([
+                'Usar según indicación médica',
+                'Seguir instrucciones del profesional de salud'
+            ])
+        
+        return prescriptions[:4]  # Limit to 4 common prescriptions
     
     @action(detail=False, methods=['get'])
     def prescriptions(self, request):
@@ -202,6 +185,110 @@ class MedicationViewSet(viewsets.ViewSet):
             'prescriptions': filtered_prescriptions[:10],
             'total': len(filtered_prescriptions)
         })
+
+    @action(detail=False, methods=['post'])
+    def save_prescription(self, request):
+        """
+        Save prescription medications to prescription_medications table
+        NUEVO: Guarda en base de datos real en lugar de solo retornar
+        """
+        try:
+            data = request.data
+            prescription_id = data.get('prescription_id')
+            patient_id = data.get('patient_id')
+            consultation_id = data.get('consultation_id')
+            medications = data.get('medications', [])
+            
+            if not patient_id or not medications:
+                return Response({
+                    'success': False,
+                    'error': 'patient_id and medications are required'
+                }, status=400)
+            
+            # Generate prescription_id if not provided
+            if not prescription_id:
+                import uuid
+                prescription_id = str(uuid.uuid4())
+            
+            # Save each medication
+            saved_medications = []
+            for med in medications:
+                prescription_med = PrescriptionMedication.objects.create(
+                    prescription_id=prescription_id,
+                    patient_id=patient_id,
+                    consultation_id=consultation_id,
+                    professional_id=request.user_id,  # From auth middleware
+                    medication_database_id=med.get('uuid'),  # Real UUID if from database
+                    medication_name=med.get('name'),
+                    generic_name=med.get('generic_name'),
+                    concentration=med.get('concentration'),
+                    pharmaceutical_form=med.get('form'),
+                    dosage=med.get('dosage'),
+                    frequency=med.get('frequency'),
+                    duration=med.get('duration'),
+                    special_instructions=med.get('instructions'),
+                    medical_indication=med.get('indication'),
+                    clinic_id=request.user_context.get('clinic_shared', False),
+                    user_id=request.user_id
+                )
+                saved_medications.append(prescription_med)
+            
+            # Serialize and return saved data
+            serializer = PrescriptionMedicationSerializer(saved_medications, many=True)
+            
+            return Response({
+                'success': True,
+                'prescription_id': prescription_id,
+                'medications': serializer.data,
+                'total_saved': len(saved_medications),
+                'message': f'Receta guardada exitosamente con {len(saved_medications)} medicamentos'
+            })
+            
+        except Exception as e:
+            return Response({
+                'success': False,
+                'error': f'Error saving prescription: {str(e)}',
+                'medications': []
+            }, status=500)
+
+    @action(detail=False, methods=['get'])
+    def get_prescription(self, request):
+        """
+        Get prescription medications by prescription_id or patient_id
+        """
+        prescription_id = request.query_params.get('prescription_id')
+        patient_id = request.query_params.get('patient_id')
+        
+        if not prescription_id and not patient_id:
+            return Response({
+                'success': False,
+                'error': 'prescription_id or patient_id required'
+            }, status=400)
+        
+        try:
+            if prescription_id:
+                medications = PrescriptionMedication.get_by_prescription(prescription_id)
+            else:
+                medications = PrescriptionMedication.get_by_patient(
+                    patient_id,
+                    user_id=request.user_id,
+                    clinic_shared=request.user_context.get('clinic_shared')
+                )
+            
+            serializer = PrescriptionMedicationSerializer(medications, many=True)
+            
+            return Response({
+                'success': True,
+                'medications': serializer.data,
+                'total': len(medications)
+            })
+            
+        except Exception as e:
+            return Response({
+                'success': False,
+                'error': f'Error retrieving prescription: {str(e)}',
+                'medications': []
+            }, status=500)
 
 
 class DiagnosisViewSet(viewsets.ViewSet):

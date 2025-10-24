@@ -1,6 +1,6 @@
 """
-🎯 DUAL SYSTEM VIEWSETS for Clinimetrix Assessments
-DRF ViewSets that automatically handle dual system filtering
+🎯 SIMPLIFIED SYSTEM VIEWSETS for Clinimetrix Assessments
+DRF ViewSets that handle simplified architecture filtering
 """
 from rest_framework import viewsets, status
 from rest_framework.response import Response
@@ -17,8 +17,8 @@ logger = logging.getLogger(__name__)
 
 class AssessmentViewSet(DualSystemModelViewSet):
     """
-    Assessment ViewSet with automatic dual system support
-    Filters assessments by clinic_id or workspace_id based on user license type
+    Assessment ViewSet with simplified architecture support
+    Filters assessments by clinic_id (Boolean) or user_id based on ownership
     """
     queryset = Assessment.objects.all()
     serializer_class = AssessmentSerializer
@@ -27,42 +27,34 @@ class AssessmentViewSet(DualSystemModelViewSet):
         """Override to apply dual system filtering"""
         queryset = super().get_queryset()
         
-        # Apply dual system filtering based on user context
+        # Apply simplified architecture filtering
         if hasattr(self.request, 'user_context'):
             user_context = self.request.user_context
-            filter_field = user_context.get('filter_field')
-            filter_value = user_context.get('filter_value')
+            user_id = getattr(self.request, 'supabase_user_id', None)
             
-            if filter_field == 'clinic_id' and filter_value:
-                # Clinic license: filter by clinic_id
-                queryset = queryset.filter(clinic_id=filter_value)
-            elif filter_field == 'workspace_id' and filter_value:
-                # Individual license: filter by workspace_id  
-                queryset = queryset.filter(workspace_id=filter_value)
+            # Filter by clinic_id=true OR user_id=auth.uid()
+            if user_id:
+                queryset = queryset.filter(
+                    Q(clinic_id=True) | Q(user_id=user_id)
+                )
             else:
-                # Fallback: filter by administrator_id
-                user_id = getattr(self.request, 'supabase_user_id', None)
-                if user_id:
-                    queryset = queryset.filter(administrator_id=user_id)
-                else:
-                    # No valid context, return empty queryset for security
-                    logger.warning('No valid user context for assessment filtering')
-                    queryset = queryset.none()
+                # No valid user, return empty queryset for security
+                logger.warning('No valid user context for assessment filtering')
+                queryset = queryset.none()
         
         return queryset.order_by('-created_at')
     
     def perform_create(self, serializer):
-        """Set dual system fields and administrator_id on create"""
+        """Set simplified architecture fields and administrator_id on create"""
         user_context = getattr(self.request, 'user_context', {})
-        clinic_id = user_context.get('clinic_id') if user_context.get('license_type') == 'clinic' else None
-        workspace_id = user_context.get('workspace_id') if user_context.get('license_type') == 'individual' else None
+        clinic_shared = user_context.get('license_type') == 'clinic'
         user_id = getattr(self.request, 'supabase_user_id', None)
         
-        # Save with dual system context
+        # Save with simplified context
         serializer.save(
             administrator_id=user_id,
-            clinic_id=clinic_id,
-            workspace_id=workspace_id
+            clinic_id=clinic_shared,
+            user_id=user_id
         )
     
     @action(detail=False, methods=['get'])
@@ -101,8 +93,8 @@ class AssessmentViewSet(DualSystemModelViewSet):
                     'total_items': assessment.total_items,
                     'patient_id': str(assessment.patient_id) if assessment.patient_id else None,
                     'patient_name': assessment.patient.get_full_name() if assessment.patient else None,
-                    'clinic_id': str(assessment.clinic_id) if assessment.clinic_id else None,
-                    'workspace_id': str(assessment.workspace_id) if assessment.workspace_id else None,
+                    'clinic_id': assessment.clinic_id,
+                    'user_id': str(assessment.user_id) if assessment.user_id else None,
                 })
             
             # Add license context to response

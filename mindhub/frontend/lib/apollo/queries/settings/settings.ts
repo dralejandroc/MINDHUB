@@ -9,9 +9,8 @@ export const GET_SETTINGS = gql`
           setting_type
           setting_key
           value
-          user_id
           clinic_id
-          workspace_id
+          user_id
           created_at
           updated_at
         }

@@ -133,38 +133,9 @@ class ExpedixApiClient {
           defaultHeaders['Authorization'] = `Bearer ${session.access_token}`;
           console.log('[ExpedixAPI] Using user session token for authentication');
           
-          // Add tenant context headers for workspace system
-          try {
-            const payload = JSON.parse(atob(session.access_token.split('.')[1]));
-            console.log('[ExpedixAPI] Token payload:', { sub: payload.sub, exp: payload.exp, role: payload.role });
-            
-            // Get user's workspace context from localStorage or derive from user ID
-            const userMetrics = localStorage.getItem('userMetrics');
-            let workspaceId = null;
-            
-            if (userMetrics) {
-              try {
-                const metrics = JSON.parse(userMetrics);
-                workspaceId = metrics.workspaceContext?.workspace_id;
-              } catch (e) {
-                console.warn('[ExpedixAPI] Could not parse user metrics for workspace context');
-              }
-            }
-            
-            // If we don't have workspace ID from metrics, we'll let the API derive it from user ID
-            // The API already has logic to lookup workspace by owner_id
-            if (workspaceId) {
-              defaultHeaders['X-Tenant-ID'] = workspaceId;
-              defaultHeaders['X-Tenant-Type'] = 'workspace';
-              console.log('[ExpedixAPI] Added workspace context:', workspaceId);
-            } else {
-              // Let API derive workspace from user ID
-              defaultHeaders['X-Tenant-Type'] = 'workspace';
-              console.log('[ExpedixAPI] Using user-derived workspace context');
-            }
-          } catch (e) {
-            console.warn('[ExpedixAPI] Could not parse token payload or add tenant context');
-          }
+          // ARQUITECTURA SIMPLIFICADA: Solo necesitamos el user ID del JWT
+          // El backend Django ya maneja todo con clinic_id boolean + user_id
+          console.log('[ExpedixAPI] ✅ Using simplified architecture - JWT + clinic_id');
         } else {
           console.error('[ExpedixAPI] No user session available - user not authenticated');
           throw new Error('User not authenticated - please log in');

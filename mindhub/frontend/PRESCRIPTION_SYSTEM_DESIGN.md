@@ -1,5 +1,7 @@
 # 💊 SISTEMA COMPLETO DE RECETAS DIGITALES - DISEÑO TÉCNICO
 
+> **⚠️ DEPRECATED DOCUMENTATION**: This document contains old workspace_id references. As of 2025-01-11, the architecture uses simplified clinic_id (boolean) + user_id pattern.
+
 **Fecha**: 2025-01-19  
 **Estado**: 🏗️ EN IMPLEMENTACIÓN COMPLETA  
 **Objetivo**: Sistema profesional de recetas médicas digitales integrado con MindHub

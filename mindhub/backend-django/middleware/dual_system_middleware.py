@@ -1,9 +1,9 @@
 """
-🎯 DUAL SYSTEM MIDDLEWARE - UNIVERSAL PATTERN
-Provides universal filtering for ViewSets based on license type
+🎯 SIMPLIFIED SYSTEM MIDDLEWARE - UNIVERSAL PATTERN
+Provides universal filtering for ViewSets based on simplified architecture
 Supports:
-- LICENCIA CLÍNICA: WHERE clinic_id = user.clinic_id  
-- LICENCIA INDIVIDUAL: WHERE workspace_id = user.individual_workspace_id
+- CLINIC SHARED: WHERE clinic_id = true  
+- INDIVIDUAL: WHERE user_id = auth.uid()
 """
 from django.utils.deprecation import MiddlewareMixin
 import logging
@@ -13,37 +13,38 @@ logger = logging.getLogger(__name__)
 
 class DualSystemFilterMixin:
     """
-    Mixin for ViewSets to automatically filter by license type
+    Mixin for ViewSets to automatically filter by simplified architecture
     Usage: class MyViewSet(DualSystemFilterMixin, viewsets.ModelViewSet)
     """
     
     def get_queryset(self):
         """
-        Universal dual system filtering pattern
+        Universal simplified system filtering pattern
         """
         queryset = super().get_queryset()
         
-        # 🧪 TEMPORARY: Inject test user context for dual system testing
+        # 🧪 TEMPORARY: Inject test user context for simplified system testing
         if not hasattr(self.request, 'user_context'):
-            # Simulate dr_aleks_c (individual license) if no test_mode param
+            # Simulate user context based on test_mode param
             test_mode = self.request.query_params.get('test_mode', 'individual')
+            user_id = getattr(self.request, 'supabase_user_id', None)
             
             if test_mode == 'clinic':
-                # Simulate test@mindhub.com (clinic license)
+                # Simulate clinic shared access
                 self.request.user_context = {
                     'license_type': 'clinic',
-                    'clinic_id': '38633a49-10e8-4138-b44b-7b7995d887e7',
-                    'workspace_id': None
+                    'clinic_shared': True,
+                    'user_id': user_id
                 }
-                logger.info('🧪 TESTING: Injected CLINIC license context')
+                logger.info('🧪 TESTING: Injected CLINIC shared context')
             else:
-                # Simulate dr_aleks_c (individual license)
+                # Simulate individual user access
                 self.request.user_context = {
-                    'license_type': 'individual', 
-                    'clinic_id': None,
-                    'workspace_id': '8a956bcb-abca-409e-8ae8-2604372084cf'
+                    'license_type': 'individual',
+                    'clinic_shared': False,
+                    'user_id': user_id or 'test-user-id'
                 }
-                logger.info('🧪 TESTING: Injected INDIVIDUAL license context')
+                logger.info('🧪 TESTING: Injected INDIVIDUAL user context')
         
         # Check if user context is available
         if not hasattr(self.request, 'user_context'):
@@ -51,33 +52,21 @@ class DualSystemFilterMixin:
             return queryset
         
         user_context = self.request.user_context
-        license_type = user_context.get('license_type')
+        user_id = getattr(self.request, 'supabase_user_id', None)
         
-        if license_type == 'clinic':
-            clinic_id = user_context.get('clinic_id')
-            if clinic_id:
-                return queryset.filter(clinic_id=clinic_id)
-            else:
-                logger.error(f'Clinic license but no clinic_id found for user')
-                return queryset.none()
-                
-        elif license_type == 'individual':
-            # For individual licenses, filter by workspace_id OR created_by if no workspace_id
-            workspace_id = user_context.get('workspace_id')
-            user_id = getattr(self.request, 'supabase_user_id', None)
-            
-            if workspace_id:
-                # Proper workspace filtering
-                return queryset.filter(workspace_id=workspace_id)
-            elif user_id:
-                # Fallback: filter by created_by for individual users without workspace_id
-                logger.info(f'Individual license: Filtering by created_by={user_id} (no workspace_id)')
-                return queryset.filter(created_by=user_id)
-            else:
-                logger.error(f'Individual license but no workspace_id or user_id found for filtering')
-                return queryset.none()
+        # Apply simplified architecture filtering: clinic_id=true OR user_id=auth.uid()
+        from django.db.models import Q
         
-        logger.warning(f'Unknown license type: {license_type} - returning empty queryset')
+        if user_id:
+            # Filter records that are either clinic-shared OR owned by the user
+            return queryset.filter(
+                Q(clinic_id=True) | Q(user_id=user_id)
+            )
+        else:
+            logger.error('No user_id found for filtering - returning empty queryset')
+            return queryset.none()
+        
+        logger.warning('No user context found - returning empty queryset')
         return queryset.none()
     
     def perform_create(self, serializer):

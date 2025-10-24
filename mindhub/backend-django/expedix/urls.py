@@ -8,10 +8,12 @@ from rest_framework.routers import DefaultRouter
 from . import views
 from .views_consultation import ConsultationViewSet, PrescriptionViewSet
 from .views_medications import MedicationViewSet, DiagnosisViewSet
+from .simple_views import SimplePatientViewSet, SimpleConsultationViewSet, SimplePrescriptionViewSet
 
 # Create DRF router
 router = DefaultRouter()
-router.register(r'patients', views.PatientViewSet)
+# ✅ ARQUITECTURA SIMPLIFICADA - usar views simples
+router.register(r'patients', SimplePatientViewSet, basename='patients')
 router.register(r'consultations', ConsultationViewSet, basename='consultations')  # Use the real consultation views
 router.register(r'medical-history', views.MedicalHistoryViewSet)
 router.register(r'prescriptions', PrescriptionViewSet, basename='prescriptions')  # Use the real prescription views

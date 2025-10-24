@@ -49,7 +49,7 @@ class IndicatorValueAdmin(admin.ModelAdmin):
     
     fieldsets = (
         ('Indicador', {
-            'fields': ('indicator', 'clinic_id', 'workspace_id')
+            'fields': ('indicator', 'clinic_id')
         }),
         ('Período', {
             'fields': ('period_start', 'period_end')
@@ -165,13 +165,13 @@ class ClinicalProtocolEvaluationAdmin(admin.ModelAdmin):
 
 @admin.register(IndicatorSettings)
 class IndicatorSettingsAdmin(admin.ModelAdmin):
-    list_display = ['clinic_id', 'workspace_id', 'created_at', 'updated_at']
+    list_display = ['clinic_id', 'created_at', 'updated_at']
     list_filter = ['created_at', 'updated_at']
     readonly_fields = ['id', 'created_at', 'updated_at']
     
     fieldsets = (
         ('Entidad', {
-            'fields': ('clinic_id', 'workspace_id')
+            'fields': ('clinic_id',)
         }),
         ('Configuración', {
             'fields': ('enabled_indicators', 'custom_targets', 'dashboard_layout')

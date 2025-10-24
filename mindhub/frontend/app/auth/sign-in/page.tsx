@@ -7,6 +7,7 @@ import { toast } from 'react-hot-toast'
 import { MindHubSignInCard } from '@/components/auth/MindHubSignInCard'
 import { useState } from 'react'
 import { test } from '@playwright/test';
+import { useAuth } from '@/lib/providers/AuthProvider'
 
 // Clean Architecture: Domain entities for authentication
 interface SignInData {
@@ -17,6 +18,7 @@ interface SignInData {
 export default function SignInPage() {
   const [loading, setLoading] = useState(false)
   const router = useRouter()
+  const { user, session } = useAuth()
 
   // Clean Architecture: Set document title (UI layer concern)
   useEffect(() => {
@@ -38,24 +40,51 @@ export default function SignInPage() {
   //     body: JSON.stringify({ email: 'dr_aleks_c@hotmail.com', password: '53AlfaCoca.' }),
   //   }).then(r => r.status).then(console.log)
   // };
+  // TEMPORARILY DISABLED: Auto-redirect causing infinite loop
+  // Handle automatic redirect when user is already authenticated
+  // useEffect(() => {
+  //   if (session && user && !loading) {
+  //     console.log('✅ [LOGIN] User already authenticated, redirecting with window.location')
+  //     const urlParams = new URLSearchParams(window.location.search)
+  //     const redirectTo = urlParams.get('redirectTo') || '/dashboard'
+  //     console.log('🚀 [LOGIN] REDIRECTING TO:', redirectTo)
+  //     
+  //     // Use window.location.href for reliable navigation after auth
+  //     window.location.href = redirectTo
+  //   }
+  // }, [session, user, loading])
 
   const handleSignIn = async (email: string, password: string) => {
+    console.log('✅ [LOGIN] Iniciando login para:', email)
     setLoading(true)
 
     try {
       const { data, error } = await signIn(email, password)
       
       if (error) {
+        console.log('❌ [LOGIN] Error:', error.message)
         toast.error(error.message)
         return
       }
 
       if (data.user) {
+        console.log('🎉 [LOGIN] ¡Login exitoso!', data.user.id)
         toast.success('¡Bienvenido a MindHub!')
         
         router.replace('/dashboard')
+        // Redirect after successful login
+        const urlParams = new URLSearchParams(window.location.search)
+        const redirectTo = urlParams.get('redirectTo') || '/dashboard'
+        
+        console.log('🚀 [LOGIN] REDIRECTING TO:', redirectTo)
+        
+        // Use window.location.href for reliable navigation
+        setTimeout(() => {
+          window.location.href = redirectTo
+        }, 1000) // Wait for toast
       }
     } catch (error) {
+      console.log('💥 [LOGIN] Error inesperado:', error)
       toast.error('Error inesperado al iniciar sesión')
     } finally {
       setLoading(false)
@@ -91,6 +120,7 @@ export default function SignInPage() {
         onSignIn={handleSignIn}
         onGoogleSignIn={handleGoogleSignIn}
         onForgotPassword={handleForgotPassword}
+        loading={loading}
       />
     </div>
   )

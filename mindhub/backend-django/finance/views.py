@@ -47,9 +47,9 @@ class IncomeViewSet(FinanceDualViewSet):
 
     def get_queryset(self):
         """
-        🎯 DUAL SYSTEM: Base filtering by license type + additional date filters
-        - LICENCIA CLÍNICA: WHERE clinic_id = user.clinic_id
-        - LICENCIA INDIVIDUAL: WHERE workspace_id = user.workspace_id
+        🎯 SIMPLIFIED SYSTEM: Base filtering by ownership + additional date filters
+        - CLINIC SHARED: WHERE clinic_id = true
+        - INDIVIDUAL: WHERE user_id = auth.uid()
         """
         queryset = super().get_queryset()  # Already filtered by dual system
         

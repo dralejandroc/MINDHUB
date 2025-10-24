@@ -26,7 +26,7 @@ export const GET_FINANCE_SERVICES = gql`
           is_active
           requires_appointment
           clinic_id
-          workspace_id
+          user_id
           created_at
           updated_at
         }
@@ -58,7 +58,7 @@ export const GET_FINANCE_SERVICE_BY_ID = gql`
           is_active
           requires_appointment
           clinic_id
-          workspace_id
+          user_id
           created_at
           updated_at
         }
@@ -69,13 +69,17 @@ export const GET_FINANCE_SERVICE_BY_ID = gql`
 
 // Query para obtener servicios activos (para selección rápida)
 export const GET_ACTIVE_FINANCE_SERVICES = gql`
-  query GetActiveFinanceServices($clinicId: UUID, $workspaceId: UUID) {
+  query GetActiveFinanceServices($userId: UUID!, $isClinic: Boolean!) {
     finance_servicesCollection(
       filter: {
         and: [
           { is_active: { eq: true } }
-          { clinic_id: { eq: $clinicId } }
-          { workspace_id: { eq: $workspaceId } }
+          { 
+            or: [
+              { and: [{ clinic_id: { eq: $isClinic } }, { clinic_id: { eq: true } }] }
+              { user_id: { eq: $userId } }
+            ]
+          }
         ]
       }
       orderBy: [{ name: AscNullsFirst }]
@@ -98,12 +102,17 @@ export const GET_ACTIVE_FINANCE_SERVICES = gql`
 
 // Query para obtener servicios por categoría
 export const GET_FINANCE_SERVICES_BY_CATEGORY = gql`
-  query GetFinanceServicesByCategory($category: String!, $clinicId: UUID) {
+  query GetFinanceServicesByCategory($category: String!, $userId: UUID!, $isClinic: Boolean!) {
     finance_servicesCollection(
       filter: {
         and: [
           { category: { eq: $category } }
-          { clinic_id: { eq: $clinicId } }
+          { 
+            or: [
+              { and: [{ clinic_id: { eq: $isClinic } }, { clinic_id: { eq: true } }] }
+              { user_id: { eq: $userId } }
+            ]
+          }
           { is_active: { eq: true } }
         ]
       }
@@ -126,9 +135,14 @@ export const GET_FINANCE_SERVICES_BY_CATEGORY = gql`
 
 // Query para estadísticas de servicios
 export const GET_FINANCE_SERVICES_STATS = gql`
-  query GetFinanceServicesStats($clinicId: UUID) {
+  query GetFinanceServicesStats($userId: UUID!, $isClinic: Boolean!) {
     finance_servicesCollection(
-      filter: { clinic_id: { eq: $clinicId } }
+      filter: { 
+        or: [
+          { and: [{ clinic_id: { eq: $isClinic } }, { clinic_id: { eq: true } }] }
+          { user_id: { eq: $userId } }
+        ]
+      }
     ) {
       edges {
         node {

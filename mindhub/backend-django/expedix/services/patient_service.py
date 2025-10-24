@@ -32,7 +32,12 @@ class PatientService(BaseService):
         """Create patient in database"""
         # Generate medical record number if not provided
         if not data.get('medical_record_number'):
-            data['medical_record_number'] = self.generate_medical_record_number()
+            data['medical_record_number'] = self.generate_medical_record_number(
+                first_name=data.get('first_name'),
+                paternal_last_name=data.get('paternal_last_name'),
+                maternal_last_name=data.get('maternal_last_name'),
+                date_of_birth=data.get('date_of_birth')
+            )
         
         # Set default values for compliance
         if 'is_active' not in data:
@@ -98,14 +103,17 @@ class PatientService(BaseService):
     
     def _apply_security_filters(self, queryset):
         """Apply security filters based on user context"""
-        # Apply dual system filtering
-        if self.context.get('clinic_id'):
-            queryset = queryset.filter(clinic_id=self.context['clinic_id'])
-        elif self.context.get('workspace_id'):
-            queryset = queryset.filter(workspace_id=self.context['workspace_id'])
-        elif hasattr(self.user, 'id') and self.user.id:
-            # If no context, filter by created_by for individual users
-            queryset = queryset.filter(created_by=self.user.id)
+        # Apply simplified system filtering: clinic_id=true OR user_id=auth.uid()
+        user_id = getattr(self.user, 'id', None)
+        
+        if user_id:
+            from django.db.models import Q
+            queryset = queryset.filter(
+                Q(clinic_id=True) | Q(user_id=user_id)
+            )
+        else:
+            # No user context, return empty queryset for security
+            queryset = queryset.none()
         
         return queryset
     
@@ -320,31 +328,76 @@ class PatientService(BaseService):
     
     def _can_access_patient(self, patient: Patient) -> bool:
         """Check if current user can access this patient"""
-        # Dual system access control
-        if self.context.get('clinic_id'):
-            return patient.clinic_id == self.context['clinic_id']
-        elif self.context.get('workspace_id'):
-            return patient.workspace_id == self.context['workspace_id']
-        elif hasattr(self.user, 'id') and self.user.id:
-            return patient.created_by == self.user.id
+        # Simplified system access control
+        user_id = getattr(self.user, 'id', None)
+        
+        if user_id:
+            # User can access clinic-shared patients OR their own patients
+            return patient.clinic_id or patient.user_id == user_id
+        
         
         return False
     
-    def generate_medical_record_number(self) -> str:
-        """Generate a unique medical record number"""
-        import random
-        from datetime import datetime
+    def generate_medical_record_number(self, first_name: str = None, paternal_last_name: str = None, 
+                                      maternal_last_name: str = None, date_of_birth = None) -> str:
+        """
+        Generate a unique medical record number based on patient identity
+        Format: MRN-YYYYMMDD-HASH6
+        This prevents duplicates by using patient's actual identity data
+        """
+        import hashlib
+        from datetime import datetime, date
         
-        # Format: YYYY-XXXXXX (year + 6 random digits)
-        year = datetime.now().year
-        random_part = random.randint(100000, 999999)
-        
-        candidate = f"{year}-{random_part}"
-        
-        # Ensure uniqueness
-        while Patient.objects.filter(medical_record_number=candidate).exists():
+        # If no patient data provided, generate a fallback unique number
+        if not (first_name and date_of_birth):
+            import random
+            year = datetime.now().year
             random_part = random.randint(100000, 999999)
-            candidate = f"{year}-{random_part}"
+            candidate = f"MRN-{year}-{random_part}"
+            
+            # Ensure uniqueness for fallback
+            while Patient.objects.filter(medical_record_number=candidate).exists():
+                random_part = random.randint(100000, 999999)
+                candidate = f"MRN-{year}-{random_part}"
+            
+            return candidate
+        
+        # Convert date to string format
+        if isinstance(date_of_birth, str):
+            # Parse string date
+            try:
+                if 'T' in date_of_birth:
+                    date_obj = datetime.fromisoformat(date_of_birth.replace('Z', '+00:00')).date()
+                else:
+                    date_obj = datetime.strptime(date_of_birth, '%Y-%m-%d').date()
+            except:
+                date_obj = date.today()
+        elif isinstance(date_of_birth, datetime):
+            date_obj = date_of_birth.date()
+        elif isinstance(date_of_birth, date):
+            date_obj = date_of_birth
+        else:
+            date_obj = date.today()
+        
+        # Create unique hash from patient identity
+        identity_string = (
+            (first_name or '').upper().strip() + 
+            (paternal_last_name or '').upper().strip() + 
+            (maternal_last_name or '').upper().strip()
+        ).replace(' ', '')
+        
+        identity_hash = hashlib.md5(identity_string.encode()).hexdigest()[:6].upper()
+        
+        # Format: MRN-YYYYMMDD-HASH6
+        date_part = date_obj.strftime('%Y%m%d')
+        candidate = f"MRN-{date_part}-{identity_hash}"
+        
+        # Ensure uniqueness (should be unique by design, but safety check)
+        counter = 1
+        original_candidate = candidate
+        while Patient.objects.filter(medical_record_number=candidate).exists():
+            candidate = f"{original_candidate}-{counter}"
+            counter += 1
         
         return candidate
     
@@ -421,11 +474,12 @@ class PatientService(BaseService):
         if hasattr(self.user, 'id') and self.user.id:
             data['created_by'] = self.user.id
         
-        # Set clinic_id or workspace_id from context
-        if self.context.get('clinic_id'):
-            data['clinic_id'] = self.context['clinic_id']
-        elif self.context.get('workspace_id'):
-            data['workspace_id'] = self.context['workspace_id']
+        # Set clinic_id and user_id from context
+        clinic_shared = self.context.get('license_type') == 'clinic'
+        data['clinic_id'] = clinic_shared
+        
+        if hasattr(self.user, 'id') and self.user.id:
+            data['user_id'] = self.user.id
         
         return data
     

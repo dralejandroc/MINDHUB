@@ -18,7 +18,7 @@ export const CREATE_MEDICAL_RESOURCE = gql`
         library_type
         owner_id
         clinic_id
-        workspace_id
+        user_id
         upload_by
         is_active
         created_at
@@ -165,7 +165,7 @@ export const MOVE_RESOURCE_TO_LIBRARY = gql`
         title
         library_type
         clinic_id
-        workspace_id
+        user_id
         updated_at
       }
     }
@@ -214,7 +214,7 @@ export const DUPLICATE_RESOURCE_TO_LIBRARY = gql`
         title
         library_type
         clinic_id
-        workspace_id
+        user_id
         created_at
       }
     }

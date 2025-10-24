@@ -202,21 +202,13 @@ export default function RootLayout({
         {/* Vercel Speed Insights */}
         <SpeedInsights />
         
-        {/* PWA Service Worker Registration */}
+        {/* PWA Service Worker Registration - TEMPORARILY DISABLED FOR TESTING */}
         <script
           dangerouslySetInnerHTML={{
             __html: `
-              if ('serviceWorker' in navigator && typeof window !== 'undefined') {
-                window.addEventListener('load', function() {
-                  navigator.serviceWorker.register('/sw.js', { scope: '/' })
-                    .then(function(registration) {
-                      console.log('[PWA] Service Worker registered successfully:', registration.scope);
-                    })
-                    .catch(function(error) {
-                      console.log('[PWA] Service Worker registration failed:', error);
-                    });
-                });
-              }
+              // Service Worker temporarily disabled to test redirect issues
+              console.log('[PWA] Service Worker registration temporarily disabled for debugging');
+              console.log('🔧 [SIMPLE] Nuclear auth checker removed - relying on login page redirect only');
             `,
           }}
         />
