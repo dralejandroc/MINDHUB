@@ -27,9 +27,13 @@ class SupabaseClient:
         Initialize Supabase client with settings
         """
         try:
+            #self._client = create_client(
+             #   settings.SUPABASE_URL,
+              #  settings.SUPABASE_SERVICE_ROLE_KEY  # Use service role for backend operations
+            #)
             self._client = create_client(
-                settings.SUPABASE_URL,
-                settings.SUPABASE_SERVICE_ROLE_KEY  # Use service role for backend operations
+                "https://jvbcpldzoyicefdtnwkd.supabase.co",
+                "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp2YmNwbGR6b3lpY2VmZHRud2tkIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1NTQwMTQ3MCwiZXhwIjoyMDcwOTc3NDcwfQ.-iooltGuYeGqXVh7pgRhH_Oo_R64VtHIssbE3u_y0WQ"  # Use service role for backend operations
             )
             logger.info("Supabase client initialized successfully")
         except Exception as e:
