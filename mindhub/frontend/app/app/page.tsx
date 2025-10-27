@@ -14,24 +14,12 @@ export default function AppHome() {
   const router = useRouter();
 
   useEffect(() => {
-    console.log('📊 [APP PAGE] Auth state check:', { 
-      loading, 
-      hasUser: !!user, 
-      userId: user?.id,
-      email: user?.email 
-    });
-    
-    // Let middleware handle authentication protection
-    // This page only needs to show auth state for debugging
-    if (!loading && user) {
-      console.log('✅ [APP PAGE] User authenticated successfully:', {
-        id: user.id,
-        email: user.email
-      });
-    } else if (loading) {
-      console.log('⏳ [APP PAGE] Still loading auth state...');
+    if (!loading && !user) {
+      // Redirect to sign-in if not authenticated with Supabase
+      //router.push('/auth/sign-in');
+      console.log('AQUI LO QUIZO LLEVAR');
     }
-  }, [loading, user]);
+  }, [loading, user, router]);
 
   // Reset dashboard config if it's broken
   useEffect(() => {
@@ -60,27 +48,14 @@ export default function AppHome() {
     );
   }
 
-  // Show loading spinner while auth is being determined
-  if (loading) {
-    console.log('⏳ [APP PAGE] Rendering loading spinner while determining auth state');
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <LoadingSpinner size="lg" />
-      </div>
-    );
-  }
-
-  // Show loading if no user (middleware will handle redirect)
+  // If not signed in with Supabase, show loading
   if (!user) {
-    console.log('🔒 [APP PAGE] No user, showing loading (middleware handles redirect)');
     return (
       <div className="min-h-screen flex items-center justify-center">
         <LoadingSpinner size="lg" />
       </div>
     );
   }
-
-  console.log('✅ [APP PAGE] Rendering dashboard for authenticated user:', user.email);
 
   return (
     <UserMetricsProvider>
