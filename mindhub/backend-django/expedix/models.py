@@ -130,6 +130,10 @@ class Patient(models.Model):
     
     # Additional notes
     notes = models.TextField(blank=True, null=True)
+
+    # NUEVO: dueño/supabase user id
+    user_id = models.UUIDField(null=True, blank=True, db_index=True, verbose_name="ID de Usuario (Supabase)")
+
     
     # Status
     is_active = models.BooleanField(blank=True, null=True)
@@ -568,7 +572,7 @@ class Prescription(models.Model):
     # Relationships
     patient_id = models.UUIDField()  # References patient in Supabase
     consultation_id = models.UUIDField(blank=True, null=True)  # Optional consultation reference
-    created_by = models.UUIDField()  # Professional who created the prescription
+    created_by = models.UUIDField(null=True, blank=True)  # Professional who created the prescription
     
     # Prescription basic info
     prescription_number = models.CharField(max_length=50, unique=True)

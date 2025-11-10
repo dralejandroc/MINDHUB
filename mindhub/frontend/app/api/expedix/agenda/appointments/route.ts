@@ -29,7 +29,10 @@ export async function GET(request: Request) {
     const endDate = searchParams.get('end_date');
     const appointmentStatus = searchParams.get('appointment_status');
 
-    console.log('[APPOINTMENTS API] Query params:', { search, limit, offset, status, patientId, date, appointmentStatus, startDate, endDate });
+    // NUEVO: parámetro 'patient' para filtrar por nombre/apellidos del paciente
+    const patient = (searchParams.get('patient') || '').trim();
+
+    console.log('[APPOINTMENTS API] Query params:', { search, limit, offset, status, patientId, date, appointmentStatus, startDate, endDate, patient });
 
     // Build Supabase query
     let query = supabaseAdmin
@@ -48,6 +51,7 @@ export async function GET(request: Request) {
       `, { count: 'exact' })
       .order('appointment_date', { ascending: true })
       // .range(offset, offset + limit - 1);
+      
 
     // Apply filters (removed is_active check as column may not exist)
     // Status filtering can be added when schema is updated
@@ -74,6 +78,30 @@ export async function GET(request: Request) {
 
     if (startDate && endDate) {
       query = query.gte('appointment_date', `${startDate}T00:00:00`).lte('appointment_date', `${endDate}T23:59:59`);
+    }
+
+    // === NUEVO: filtro por nombre/apellidos del paciente ===
+    if (patient) {
+      // Normaliza y divide por espacios para permitir múltiples términos
+      const tokens = patient
+        .toLowerCase()
+        .split(/\s+/)
+        .filter(Boolean);
+
+      // Requiere que TODOS los tokens aparezcan (AND entre tokens).
+      // Para cada token, permitimos coincidencia en cualquiera de los 4 campos (OR entre campos).
+      for (const tok of tokens) {
+        const pat = `%${tok}%`;
+        query = query.or(
+          [
+            `first_name.ilike.${pat}`,
+            `last_name.ilike.${pat}`,
+            `paternal_last_name.ilike.${pat}`,
+            `maternal_last_name.ilike.${pat}`,
+          ].join(','),
+          { foreignTable: 'patients' } // <- clave: filtra sobre la tabla relacionada
+        );
+      }
     }
 
     // Execute query
@@ -103,7 +131,8 @@ export async function GET(request: Request) {
       status,
       patient_id: patientId,
       date,
-      appointment_status: appointmentStatus
+      appointment_status: appointmentStatus,
+      // patient
     });
 
   } catch (error) {

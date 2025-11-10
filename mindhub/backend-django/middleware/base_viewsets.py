@@ -8,6 +8,8 @@ from rest_framework.response import Response
 from rest_framework.exceptions import ValidationError
 from django.db.models import Q
 import logging
+from django.utils import timezone
+import uuid
 
 from .dual_system_middleware import DualSystemFilterMixin, DualSystemQueryHelper, DualSystemBusinessLogic
 
@@ -67,6 +69,61 @@ class DualSystemModelViewSet(DualSystemFilterMixin, viewsets.ModelViewSet):
             raise PermissionDenied('Authentication required - no valid user context found')
         
         return super().create(request, *args, **kwargs)
+
+    def perform_create(self, serializer):
+        """
+        Inyecta automáticamente:
+        - user_id (dueño) desde el token (request.supabase_user_id)
+        - clinic_id / workspace_id según request.user_context (DUAL SYSTEM)
+        """
+        # Asegura contexto válido
+        user_ctx = getattr(self.request, 'user_context', None)
+        if not user_ctx or not user_ctx.get('license_type'):
+            from rest_framework.exceptions import PermissionDenied
+            raise PermissionDenied('Authentication required - no valid user context found')
+
+        # Owner desde el token verificado por tu SupabaseProxyAuthentication
+        raw_owner = getattr(self.request, 'supabase_user_id', None)
+        try:
+            owner = uuid.UUID(str(raw_owner)) if raw_owner else None
+        except (ValueError, TypeError):
+            owner = None
+
+        # Determina clinic/workspace según licencia
+        save_kwargs = {}
+        if user_ctx.get('license_type') == 'clinic':
+            clinic_id = user_ctx.get('clinic_id')
+            if not clinic_id:
+                raise ValidationError('Clinic license requires clinic_id')
+            save_kwargs['clinic_id'] = clinic_id
+            save_kwargs['workspace_id'] = None
+        elif user_ctx.get('license_type') == 'individual':
+            workspace_id = user_ctx.get('workspace_id')
+            if not workspace_id:
+                raise ValidationError('Individual license requires workspace_id')
+            save_kwargs['clinic_id'] = None
+            save_kwargs['workspace_id'] = workspace_id
+        else:
+            # Si prefieres, aquí podrías lanzar error en vez de fallback
+            save_kwargs['clinic_id'] = None
+            save_kwargs['workspace_id'] = None
+
+        # Inyecta owner y timestamps (si tus modelos los tienen)
+        save_kwargs['user_id'] = owner
+        save_kwargs['created_by'] = owner
+        save_kwargs['is_active'] = True
+        save_kwargs['created_at'] = timezone.now()
+        save_kwargs['updated_at'] = timezone.now()
+
+        serializer.save(**save_kwargs)
+
+    def perform_update(self, serializer):
+        """
+        Evita que el cliente cambie el owner; actualiza updated_at.
+        """
+        instance = serializer.instance
+        serializer.save(user_id=getattr(instance, 'user_id', None),
+                        updated_at=timezone.now())
 
 
 class DualSystemReadOnlyViewSet(DualSystemFilterMixin, viewsets.ReadOnlyModelViewSet):

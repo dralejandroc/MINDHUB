@@ -206,17 +206,21 @@ export default function RootLayout({
         <script
           dangerouslySetInnerHTML={{
             __html: `
-              if ('serviceWorker' in navigator && typeof window !== 'undefined') {
-                window.addEventListener('load', function() {
+              (function () {
+                if (!('serviceWorker' in navigator) || typeof window === 'undefined') return;
+                // Sólo registra si lo habilitas explícitamente o en producción
+                var enable = ${JSON.stringify(process.env.NEXT_PUBLIC_ENABLE_SW === '1')};
+                var isProd = ${JSON.stringify(process.env.NODE_ENV === 'production')};
+                if (!(enable || isProd)) {
+                  console.log('[PWA] SW disabled in this env');
+                  return;
+                }
+                window.addEventListener('load', function () {
                   navigator.serviceWorker.register('/sw.js', { scope: '/' })
-                    .then(function(registration) {
-                      console.log('[PWA] Service Worker registered successfully:', registration.scope);
-                    })
-                    .catch(function(error) {
-                      console.log('[PWA] Service Worker registration failed:', error);
-                    });
+                    .then(function (reg) { console.log('[PWA] SW registered:', reg.scope); })
+                    .catch(function (err) { console.log('[PWA] SW registration failed:', err); });
                 });
-              }
+              })();
             `,
           }}
         />

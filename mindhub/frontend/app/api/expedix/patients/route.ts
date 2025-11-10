@@ -1,6 +1,6 @@
 // Expedix patients API route - PROXY to Django Backend ONLY
 // Architecture: Frontend → Next.js API → Django → Supabase PostgreSQL
-import { getAuthenticatedUser, createResponse, createErrorResponse } from '@/lib/supabase/admin'
+import { getAuthenticatedUser, createResponse, createErrorResponse, supabaseAdmin } from '@/lib/supabase/admin'
 
 export const dynamic = 'force-dynamic';
 
@@ -154,51 +154,65 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   try {
-    console.log('[PATIENTS API] Processing POST request - Django Backend Proxy');
-    
-    // Verify authentication
+    console.log('[PATIENTS API] Processing POST request - Django Backend Proxy test');
+
+    // 1) Auth
     const { user, error: authError } = await getAuthenticatedUser(request);
     if (authError || !user) {
       return createErrorResponse('Unauthorized', `Auth failed: ${authError}`, 401);
     }
 
-    // Get request body
-    const body = await request.json();
+    // 2) Env checks (no hardcodear claves)
+    const djangoUrlBase = process.env.NEXT_PUBLIC_DJANGO_API_URL;
+    const serviceRoleKey = process.env.NEXT_PUBLIC_SUPABASE_SERVICE_ROLE_KEY;
+    console.log(djangoUrlBase);
     
-    // Forward to Django backend using service role key
-    const authHeader = request.headers.get('Authorization');
-    if (!authHeader) {
-      return createErrorResponse('Unauthorized', 'Missing authorization header', 401);
+
+    if (!djangoUrlBase) {
+      return createErrorResponse('Server misconfigured', 'DJANGO_BACKEND_URL is not set', 500);
+    }
+    if (!serviceRoleKey) {
+      return createErrorResponse('Server misconfigured', 'SUPABASE_SERVICE_ROLE_KEY is not set', 500);
     }
 
-    const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp2YmNwbGR6b3lpY2VmZHRud2tkIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1NTQwMTQ3MCwiZXhwIjoyMDcwOTc3NDcwfQ.-iooltGuYeGqXVh7pgRhH_Oo_R64VtHIssbE3u_y0WQ';
+    // 3) Body original y normalizado
+    const rawBody = await request.json();
+    const safeBody = normalizePatientPayload(rawBody);
 
-    // Get user's workspace_id for proper filtering
-    let workspaceId = null;
+    // Validación mínima antes de proxyear
+    // const phoneOk = typeof safeBody.phone === 'string' && safeBody.phone.trim().length > 0;
+    // if (!phoneOk) {
+    //   return createErrorResponse('Validation error', 'El campo "phone" es requerido y no puede estar en blanco.', 400);
+    // }
+    // if (!safeBody.date_of_birth) {
+    //   return createErrorResponse('Validation error', 'El campo "date_of_birth" es requerido (YYYY-MM-DD).', 400);
+    // }
+
+    // 4) Buscar workspace_id con el admin que ya tienes
+    let workspaceId: string | null = null;
     try {
-      const { createClient } = await import('@supabase/supabase-js');
-      const supabase = createClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.SUPABASE_SERVICE_ROLE_KEY!,
-        { auth: { autoRefreshToken: false, persistSession: false } }
-      );
-      
-      const { data: workspace } = await supabase
+      const { data: workspace, error: wsError } = await supabaseAdmin
         .from('individual_workspaces')
         .select('id')
         .eq('owner_id', user.id)
-        .single();
-      
-      workspaceId = workspace?.id;
-    } catch (wsError) {
-      console.warn('[PATIENTS API POST] Could not fetch workspace_id:', wsError);
+        .maybeSingle();
+
+      if (wsError) {
+        console.warn('[PATIENTS API POST] workspace lookup error:', wsError.message);
+      }
+      workspaceId = workspace?.id ?? null;
+    } catch (err) {
+      console.warn('[PATIENTS API POST] workspace lookup exception:', err);
     }
 
-    const djangoUrl = `${DJANGO_BACKEND_URL}/api/expedix/patients/`;
+    // 5) Proxy a Django
+    const djangoUrl = `${djangoUrlBase.replace(/\/+$/,'')}/api/expedix/patients/`;
+    console.log('[PATIENTS API] Proxying patient creation to Django at', djangoUrl);
     const djangoResponse = await fetch(djangoUrl, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
+        // Importante: server-to-server con service role
         'Authorization': `Bearer ${serviceRoleKey}`,
         'X-Proxy-Auth': 'verified',
         'X-User-ID': user.id,
@@ -206,19 +220,19 @@ export async function POST(request: Request) {
         'X-Workspace-ID': workspaceId || '',
         'X-MindHub-Context': 'expedix-patients',
       },
-      body: JSON.stringify(body),
+      body: JSON.stringify(safeBody),
     });
 
     const responseData = await djangoResponse.json();
-    
+
     if (djangoResponse.ok) {
       console.log('[PATIENTS API] Patient created successfully via Django');
       return createResponse(responseData, djangoResponse.status);
     } else {
       console.error('[PATIENTS API] Django creation failed:', responseData);
       return createErrorResponse(
-        'Failed to create patient', 
-        responseData.message || 'Django backend error',
+        'Failed to create patient',
+        responseData?.detail || responseData?.message || JSON.stringify(responseData),
         djangoResponse.status
       );
     }
@@ -231,6 +245,60 @@ export async function POST(request: Request) {
       500
     );
   }
+}
+
+/** Helpers */
+function normalizePatientPayload(b: any) {
+  return {
+    ...b,
+    // Asegura string no vacío
+    phone: (b?.phone ?? '').toString().trim(),
+    // Fecha en formato YYYY-MM-DD (no hora)
+    date_of_birth: toYYYYMMDD(b?.date_of_birth),
+
+    // Django espera listas, no strings
+    allergies: toArray(b?.allergies),
+    current_medications: toArray(b?.current_medications),
+
+    // Si envías emails/phones en arrays, aplica el mismo helper
+    // emails: toArray(b?.emails),
+
+    // Normaliza nombres si quieres (opcional)
+    first_name: normalizeName(b?.first_name),
+    paternal_last_name: normalizeName(b?.paternal_last_name),
+    maternal_last_name: normalizeName(b?.maternal_last_name),
+    last_name: normalizeName(b?.last_name),
+  };
+}
+
+function toYYYYMMDD(input: any): string | null {
+  if (!input) return null;
+  // Si ya viene "YYYY-MM-DD"
+  if (typeof input === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(input)) return input;
+  // Parse genérico
+  const d = new Date(input);
+  if (isNaN(d.getTime())) return null;
+  // Asegura zona neutra y solo fecha
+  const y = d.getUTCFullYear();
+  const m = (d.getUTCMonth() + 1).toString().padStart(2, '0');
+  const day = d.getUTCDate().toString().padStart(2, '0');
+  return `${y}-${m}-${day}`;
+}
+
+function toArray(v: any): string[] {
+  if (Array.isArray(v)) return v.map(s => String(s).trim()).filter(Boolean);
+  if (typeof v === 'string') {
+    // Permite "penicilina, polen" -> ["penicilina","polen"]
+    return v.split(',').map(s => s.trim()).filter(Boolean);
+  }
+  // Si viene null/undefined u otro tipo, regresa lista vacía
+  return [];
+}
+
+function normalizeName(s: any): string | undefined {
+  if (s == null) return undefined;
+  const str = String(s).trim();
+  return str.length ? str : undefined;
 }
 
 export async function PUT(request: Request) {

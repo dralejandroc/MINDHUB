@@ -28,6 +28,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
 import { useTenantContext } from '@/hooks/useTenantContext';
 import { getVisibleRange, toYMD } from '@/lib/utils/date';
+import { set } from 'date-fns';
 
 type ViewType = 'week' | 'day' | 'month' | 'clinic-global' | 'reception';
 
@@ -44,6 +45,9 @@ function AgendaContent() {
   const [showNewPatientModal, setShowNewPatientModal] = useState(false);
   const [licenseType, setLicenseType] = useState<'clinic' | 'individual'>('individual');
   const [lastRefresh, setLastRefresh] = useState<Date | undefined>(undefined);
+  const [refreshPatients, setRefreshPatients] = useState(false);
+  const [selectedPatientId, setSelectedPatientId] = useState<string | undefined>(searchParams?.get('patient') || undefined);
+  const [selectedPatient, setSelectedPatient] = useState<string>(selectedPatientId || '');
   
   // Selected slot state for pre-filling modal
   const [selectedSlot, setSelectedSlot] = useState<{
@@ -105,10 +109,17 @@ function AgendaContent() {
     setLastRefresh(new Date());
   }, []);
 
+  function parseLocalDate(yyyyMmDd: string) {
+    const [y, m, d] = yyyyMmDd.split('-').map(Number);
+    return new Date(y, m - 1, d); // medianoche LOCAL
+  }
+
   // Handle URL parameters to restore agenda state
   useEffect(() => {
     const view = searchParams?.get('view') as ViewType;
     const date = searchParams?.get('date');
+    console.log('dateSearchParams', date);
+    
     const action = searchParams?.get('action');
     const patient = searchParams?.get('patient');
     const patientName = searchParams?.get('patientName');
@@ -116,12 +127,19 @@ function AgendaContent() {
     if (view && ['week', 'day', 'month', 'clinic-global', 'reception'].includes(view)) {
       setCurrentView(view);
     }
+  
     
+    // if (date) {
+    //   const parsedDate = new Date(date);
+    //   console.log('parsedDate', parsedDate);
+      
+    //   if (!isNaN(parsedDate.getTime())) {
+    //     setCurrentDate(parsedDate);
+    //   }
+    // }
     if (date) {
-      const parsedDate = new Date(date);
-      if (!isNaN(parsedDate.getTime())) {
-        setCurrentDate(parsedDate);
-      }
+      const parsedDate = parseLocalDate(date);
+      setCurrentDate(parsedDate);
     }
     
     // Handle new appointment creation from URL
@@ -155,78 +173,78 @@ function AgendaContent() {
   };
 
   const loadAppointments = async () => {
-  if (!currentDate) return;
+    if (!currentDate) return;
 
-  setLoading(true);
-  try {
-    const { start, end } = getVisibleRange(currentDate, currentView);
-    const params = new URLSearchParams({
-      start_date: toYMD(start), // o "start" según tu backend
-      end_date: toYMD(end),     // o "end"
-    });
-    console.log('PARAMS FECHAS', params.toString());
-    
-    const response = await authGet(`/api/expedix/agenda/appointments?${params.toString()}`);
-    console.log('RESPONSE AGENDA', response);
-
-    if (response.ok) {
-      const data = await response.json();
-      console.log('APPOINTMENTS DATA', data);
-
-      const transformedAppointments: AppointmentData[] = (data.data || []).map((apt: any) => {
-        const appointmentDate = apt.appointment_date || apt.date;
-        const startTime = apt.start_time || apt.appointment_time || '00:00';
-        const endTime = apt.end_time || '01:00';
-
-        const createDateTime = (dateStr: string, timeStr: string): Date => {
-          try {
-            const [year, month, day] = dateStr.split('-').map(Number);
-            const [hours, minutes] = timeStr.split(':').map(Number);
-            if ([year, month, day, hours, minutes].some(isNaN)) return new Date();
-            return new Date(year, month - 1, day, hours, minutes, 0, 0);
-          } catch {
-            return new Date();
-          }
-        };
-
-        const startDateTime = createDateTime(appointmentDate, startTime);
-        const endDateTime = createDateTime(appointmentDate, endTime);
-
-        return {
-          id: apt.id,
-          patientId: apt.patient_id,
-          patientName: apt.patients?.first_name
-            ? `${apt.patients.first_name} ${apt.patients.paternal_last_name || ''}`.trim()
-            : 'Paciente',
-          startTime: startDateTime,
-          endTime: endDateTime,
-          duration: Math.round((endDateTime.getTime() - startDateTime.getTime()) / 60000) || 60,
-          type: apt.appointment_type || 'Consulta',
-          status: apt.status || 'scheduled',
-          hasDeposit: apt.has_deposit || false,
-          paymentStatus: apt.payment_status,
-          notes: apt.notes || apt.reason || '',
-          consultationType: apt.consultation_type || 'presencial',
-          location: apt.location,
-          patientInfo: {
-            phone: apt.patients?.phone || apt.patient_phone,
-            email: apt.patients?.email || apt.patient_email,
-            dateOfBirth: apt.patient_dob,
-            lastVisit: apt.last_visit ? new Date(apt.last_visit) : undefined,
-          },
-        };
+    setLoading(true);
+    try {
+      const { start, end } = getVisibleRange(currentDate, currentView);
+      const params = new URLSearchParams({
+        start_date: toYMD(start), // o "start" según tu backend
+        end_date: toYMD(end),     // o "end"
       });
+      console.log('PARAMS FECHAS', params.toString());
+      
+      const response = await authGet(`/api/expedix/agenda/appointments?${params.toString()}`);
+      console.log('RESPONSE AGENDA', response);
 
-      setAppointments(transformedAppointments);
+      if (response.ok) {
+        const data = await response.json();
+        console.log('APPOINTMENTS DATA', data);
+
+        const transformedAppointments: AppointmentData[] = (data.data || []).map((apt: any) => {
+          const appointmentDate = apt.appointment_date || apt.date;
+          const startTime = apt.start_time || apt.appointment_time || '00:00';
+          const endTime = apt.end_time || '01:00';
+
+          const createDateTime = (dateStr: string, timeStr: string): Date => {
+            try {
+              const [year, month, day] = dateStr.split('-').map(Number);
+              const [hours, minutes] = timeStr.split(':').map(Number);
+              if ([year, month, day, hours, minutes].some(isNaN)) return new Date();
+              return new Date(year, month - 1, day, hours, minutes, 0, 0);
+            } catch {
+              return new Date();
+            }
+          };
+
+          const startDateTime = createDateTime(appointmentDate, startTime);
+          const endDateTime = createDateTime(appointmentDate, endTime);
+
+          return {
+            id: apt.id,
+            patientId: apt.patient_id,
+            patientName: apt.patients?.first_name
+              ? `${apt.patients.first_name} ${apt.patients.paternal_last_name || ''}`.trim()
+              : 'Paciente',
+            startTime: startDateTime,
+            endTime: endDateTime,
+            duration: Math.round((endDateTime.getTime() - startDateTime.getTime()) / 60000) || 60,
+            type: apt.appointment_type || 'Consulta',
+            status: apt.status || 'scheduled',
+            hasDeposit: apt.has_deposit || false,
+            paymentStatus: apt.payment_status,
+            notes: apt.notes || apt.reason || '',
+            consultationType: apt.consultation_type || 'presencial',
+            location: apt.location,
+            patientInfo: {
+              phone: apt.patients?.phone || apt.patient_phone,
+              email: apt.patients?.email || apt.patient_email,
+              dateOfBirth: apt.patient_dob,
+              lastVisit: apt.last_visit ? new Date(apt.last_visit) : undefined,
+            },
+          };
+        });
+
+        setAppointments(transformedAppointments);
+      }
+    } catch (error) {
+      console.error('Error loading appointments:', error);
+      toast.error('Error al cargar las citas');
+    } finally {
+      setLoading(false);
+      setLastRefresh(new Date());
     }
-  } catch (error) {
-    console.error('Error loading appointments:', error);
-    toast.error('Error al cargar las citas');
-  } finally {
-    setLoading(false);
-    setLastRefresh(new Date());
-  }
-};
+  };
 
 
   // Event handlers
@@ -312,9 +330,78 @@ function AgendaContent() {
     };
   }, []);
 
-  const handleSearch = (query: string) => {
+  const handleSearch = async (text: string) => {
     // Implement search functionality
-    console.log('Search:', query);
+    if (!currentDate) return;
+    console.log('Search:', text);
+    const { start, end } = getVisibleRange(currentDate, currentView);
+      const params = new URLSearchParams({
+        start_date: toYMD(start), // o "start" según tu backend
+        end_date: toYMD(end),     // o "end"
+        patient: text
+      });
+      console.log('PARAMS FECHAS', params.toString());
+      
+      const response = await authGet(`/api/expedix/agenda/appointments?${params.toString()}`);
+      console.log('RESPONSE AGENDA', response);
+      if (response.ok) {
+        const resp = await response.json();
+        console.log('APPOINTMENTS DATA', resp);
+        const { data } = resp;
+
+        if (!data) {
+          console.warn('No appointment data found');
+          loadAppointments();
+          return;
+        }
+
+        const transformedAppointments: AppointmentData[] = (data || []).map((apt: any) => {
+          const appointmentDate = apt.appointment_date || apt.date;
+          const startTime = apt.start_time || apt.appointment_time || '00:00';
+          const endTime = apt.end_time || '01:00';
+
+          const createDateTime = (dateStr: string, timeStr: string): Date => {
+            try {
+              const [year, month, day] = dateStr.split('-').map(Number);
+              const [hours, minutes] = timeStr.split(':').map(Number);
+              if ([year, month, day, hours, minutes].some(isNaN)) return new Date();
+              return new Date(year, month - 1, day, hours, minutes, 0, 0);
+            } catch {
+              return new Date();
+            }
+          };
+
+          const startDateTime = createDateTime(appointmentDate, startTime);
+          const endDateTime = createDateTime(appointmentDate, endTime);
+
+          return {
+            id: apt.id,
+            patientId: apt.patient_id,
+            patientName: apt.patients?.first_name
+              ? `${apt.patients.first_name} ${apt.patients.paternal_last_name || ''}`.trim()
+              : 'Paciente',
+            startTime: startDateTime,
+            endTime: endDateTime,
+            duration: Math.round((endDateTime.getTime() - startDateTime.getTime()) / 60000) || 60,
+            type: apt.appointment_type || 'Consulta',
+            status: apt.status || 'scheduled',
+            hasDeposit: apt.has_deposit || false,
+            paymentStatus: apt.payment_status,
+            notes: apt.notes || apt.reason || '',
+            consultationType: apt.consultation_type || 'presencial',
+            location: apt.location,
+            patientInfo: {
+              phone: apt.patients?.phone || apt.patient_phone,
+              email: apt.patients?.email || apt.patient_email,
+              dateOfBirth: apt.patient_dob,
+              lastVisit: apt.last_visit ? new Date(apt.last_visit) : undefined,
+            },
+          };
+        });
+
+        setAppointments(transformedAppointments);
+      }
+    
   };
 
   // Context menu actions
@@ -637,7 +724,22 @@ function AgendaContent() {
     completed: 0
   };
 
+  const goTo = (view: ViewType, date?: Date) => {
+    const d = date ?? currentDate ?? new Date();
+    const params = new URLSearchParams(searchParams?.toString() || '');
+    params.set('view', view);
+    params.set('date', toYMD(d)); // evita UTC shift
+    setCurrentView(view);
+    setCurrentDate(d);
+    router.push(`/hubs/agenda?${params.toString()}`);
+  };
+
   const canSwitchToClinicViews = licenseType === 'clinic';
+
+  const handleCloseNewPatientModal = async () => {
+    setRefreshPatients(prev => !prev);
+    setShowNewPatientModal(false);
+  };
 
   // Prevent hydration issues by waiting for client initialization
   if (!currentDate) {
@@ -731,8 +833,8 @@ function AgendaContent() {
             isLoading={loading}
             lastRefresh={lastRefresh}
             onDayClick={(date) => {
-              setCurrentDate(date);
-              handleViewChange('day');
+              console.log('onDayClick:', date);
+              goTo('day', date);
             }}
             onAppointmentClick={handleAppointmentClick}
             onSettings={handleSettings}
@@ -819,8 +921,9 @@ function AgendaContent() {
           key={selectedSlot ? `slot-${selectedSlot.time}-${selectedSlot.date.getTime()}` : 'general'}
           selectedDate={selectedSlot?.date || currentDate || new Date()}
           selectedTime={selectedSlot?.time}
-          preselectedPatientId={searchParams?.get('patient') || undefined}
+          preselectedPatientId={selectedPatientId || selectedPatient || ''} 
           editingAppointment={null}
+          refreshPatients={refreshPatients}
           onClose={() => {
             setShowNewAppointment(false);
             setSelectedSlot(null); // Clear selected slot when closing
@@ -950,11 +1053,17 @@ function AgendaContent() {
       {/* New Patient Modal */}
       <NewPatientModal
         isOpen={showNewPatientModal}
-        onClose={() => setShowNewPatientModal(false)}
+        onClose={() => handleCloseNewPatientModal()}
+        setSelectedPatientId={setSelectedPatientId}
         onSuccess={(patient) => {
-          // Call the stored callback with the new patient data
+          console.log('onSuccess:', patient);
+          
+          const id = String(patient.id);             // 👈 fuerza string
+          setSelectedPatientId(id);
+          setSelectedPatient(id);
+          setRefreshPatients(prev => !prev);
           if ((window as any).newPatientCallback) {
-            (window as any).newPatientCallback(patient);
+            (window as any).newPatientCallback({ ...patient, id }); // 👈 id string
             (window as any).newPatientCallback = null;
           }
           setShowNewPatientModal(false);

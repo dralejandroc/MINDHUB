@@ -36,9 +36,14 @@ interface NewAppointmentModalProps {
   editingAppointment?: any;
   onClose: () => void;
   onSave: (appointment: AppointmentData) => void;
+  refreshPatients?: boolean;
 }
 
-export default function NewAppointmentModal({ selectedDate, selectedTime, preselectedPatientId, editingAppointment, onClose, onSave }: NewAppointmentModalProps) {
+// helper 
+const idsEq = (a: any, b: any) => String(a ?? '') === String(b ?? '');
+
+
+export default function NewAppointmentModal({ selectedDate, selectedTime, preselectedPatientId, editingAppointment, onClose, onSave, refreshPatients }: NewAppointmentModalProps) {
   // Safe date conversion
   const getDateString = (date: any): string => {
     if (!date) return new Date().toISOString().split('T')[0];
@@ -74,7 +79,7 @@ export default function NewAppointmentModal({ selectedDate, selectedTime, presel
           console.log('🎯 Callback received with new patient:', newPatient);
           // Transform new patient data to match expected format
           const patientForSelection = {
-            id: newPatient.id,
+            id: String(newPatient.id),
             name: `${newPatient.first_name || ''} ${newPatient.last_name || newPatient.paternal_last_name || ''}`.trim(),
             phone: newPatient.cell_phone || 'Sin teléfono',
             email: newPatient.email || 'Sin email'
@@ -83,8 +88,6 @@ export default function NewAppointmentModal({ selectedDate, selectedTime, presel
           // Add to patients list
           setPatients(prev => [patientForSelection, ...prev]);
           setFilteredPatients(prev => [patientForSelection, ...prev]);
-          
-          // Auto-select the new patient
           setSelectedPatient(patientForSelection);
           setFormData(prev => ({ ...prev, patientId: patientForSelection.id }));
           
@@ -105,6 +108,16 @@ export default function NewAppointmentModal({ selectedDate, selectedTime, presel
       }));
     }
   }, [selectedDate, selectedTime]);
+
+  useEffect(() => {
+    if (!preselectedPatientId || patients.length === 0) return;
+    const p = patients.find(pt => idsEq(pt.id, preselectedPatientId));
+    if (p) {
+      setSelectedPatient(p);
+      setFormData(prev => ({ ...prev, patientId: p.id }));
+    }
+  }, [preselectedPatientId, patients]);
+  
 
   // Cargar pacientes y configuración desde API
   useEffect(() => {
@@ -134,6 +147,23 @@ export default function NewAppointmentModal({ selectedDate, selectedTime, presel
           console.log('[NewAppointmentModal] Processed patients:', patientsData.length);
           setPatients(patientsData);
           setFilteredPatients(patientsData);
+
+          // Si ya había un seleccionado, re-mapéalo al nuevo objeto de la lista (para no perder name/phone actualizados)
+          setSelectedPatient(prevSel => {
+            if (!prevSel) return prevSel;
+            const updated: Patient | undefined = patientsData.find((p: Patient) => idsEq(p.id, prevSel.id));
+            return updated || prevSel; // conserva el previo si no vino en la primera página
+          });
+
+
+          if (preselectedPatientId && !editingAppointment) {
+            const preselectedPatient = patientsData.find((p: any) => idsEq(p.id, preselectedPatientId));
+            if (preselectedPatient) {
+              setSelectedPatient(preselectedPatient);
+              setFormData(prev => ({ ...prev, patientId: preselectedPatient.id }));
+              console.log('🎯 Auto-selected preselected patient:', preselectedPatient);
+            }
+          }
 
           // If editing, find and set the selected patient
           if (editingAppointment?.patientId) {
@@ -169,7 +199,7 @@ export default function NewAppointmentModal({ selectedDate, selectedTime, presel
       }
     };
     loadData();
-  }, [editingAppointment, preselectedPatientId]);
+  }, [editingAppointment, preselectedPatientId, refreshPatients]);
 
   // Optimized patient filtering with useMemo to prevent excessive re-renders
   const filteredPatientsOptimized = useMemo(() => {

@@ -207,11 +207,13 @@ export const MonthlyView: React.FC<MonthlyViewProps> = ({
 
   // Handle day click
   const handleDayClick = (day: Date) => {
+    console.log('day clicked', day);
     onDayClick?.(day);
   };
 
   // Simplified day cell content
   const getDayCellContent = (dayStats: DayStats) => {
+    
     const { date, totalAppointments, isWorkingDay } = dayStats;
     const isCurrentMonth = isSameMonth(date, currentDate);
     const isCurrentDay = isToday(date);

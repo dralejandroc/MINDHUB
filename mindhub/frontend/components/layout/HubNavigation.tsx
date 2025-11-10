@@ -77,21 +77,21 @@ const HUBS: Hub[] = [
       'Reportes Clínicos'
     ]
   },
-  {
-    id: 'formx',
-    name: 'FormX',
-    description: 'Constructor de Formularios',
-    icon: DocumentTextIcon,
-    href: '/hubs/formx',
-    status: 'active',
-    features: [
-      'Templates Médicos',
-      'Formularios Personalizados',
-      'Validación Automática',
-      'Integración con Consultas',
-      'Exportación de Datos'
-    ]
-  },
+  // {
+  //   id: 'formx',
+  //   name: 'FormX',
+  //   description: 'Constructor de Formularios',
+  //   icon: DocumentTextIcon,
+  //   href: '/hubs/formx',
+  //   status: 'active',
+  //   features: [
+  //     'Templates Médicos',
+  //     'Formularios Personalizados',
+  //     'Validación Automática',
+  //     'Integración con Consultas',
+  //     'Exportación de Datos'
+  //   ]
+  // },
   {
     id: 'finance',
     name: 'Finance',

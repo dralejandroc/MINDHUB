@@ -22,5 +22,10 @@
     "mindhub/frontend/app/**/*.js": {
       "runtime": "@vercel/node"
     }
+  },
+  "git": {
+    "deploymentEnabled": {
+      "main": true
+    }
   }
 }

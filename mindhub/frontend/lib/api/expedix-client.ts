@@ -109,6 +109,7 @@ class ExpedixApiClient {
   private async makeRequest<T>(route: string, options: RequestInit = {}): Promise<T> {
     // Usar createApiUrl para construir URL del cliente (proxy /api que maneja auth)
     const url = createApiUrl(route);
+    console.log('CREATEAPIURL', url);
     
     // Log de la llamada para debugging
     logApiCall(route, options.method || 'GET', 'client');
@@ -229,14 +230,25 @@ class ExpedixApiClient {
   }
 
   async createPatient(patientData: Partial<Patient>): Promise<{ data: Patient }> {
-    const response = await this.makeRequest<{ success: boolean; data: Patient }>(API_ROUTES.expedix.patients, {
+    const response = await this.makeRequest<any>(API_ROUTES.expedix.patients, {
       method: 'POST',
       body: JSON.stringify(patientData),
     });
-    
-    return {
-      data: response.data
+    console.log('RESPONSEEEEE', response);
+    type respType = {
+      success: boolean;
+      data: Patient;
     };
+    const respuesta: respType = response;
+    if (response?.length) {
+      respuesta.success = true;
+      respuesta.data = response;
+    }
+    else{
+      respuesta.success = false;
+      respuesta.data = {} as Patient;
+    }
+    return respuesta;
   }
 
   async updatePatient(id: string, patientData: Partial<Patient>): Promise<{ data: Patient }> {

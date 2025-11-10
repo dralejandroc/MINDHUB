@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { format, addWeeks, subWeeks, addMonths, subMonths, addDays, subDays, startOfWeek, endOfWeek, isToday } from 'date-fns';
-import { es } from 'date-fns/locale';
+import { es, vi } from 'date-fns/locale';
 import {
   ChevronLeftIcon,
   ChevronRightIcon,
@@ -184,7 +184,8 @@ export const CalendarHeader: React.FC<CalendarHeaderProps> = ({
     { key: 'today', label: 'Hoy', color: 'blue' },
     { key: 'urgent', label: 'Urgentes', color: 'red' }
   ];
-
+  
+  
   const handleSearch = (query: string) => {
     setSearchQuery(query);
     onSearch?.(query);
@@ -267,7 +268,7 @@ export const CalendarHeader: React.FC<CalendarHeaderProps> = ({
           {/* Right Section: Actions */}
           <div className="flex items-center space-x-2">
             {/* Search */}
-            <div className="hidden sm:block relative">
+            { (viewType === 'day' || viewType === 'week') && <div className="hidden sm:block relative">
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                 <MagnifyingGlassIcon className="h-4 w-4 text-gray-400" />
               </div>
@@ -278,7 +279,7 @@ export const CalendarHeader: React.FC<CalendarHeaderProps> = ({
                 onChange={(e) => handleSearch(e.target.value)}
                 className="block w-48 pl-10 pr-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500"
               />
-            </div>
+            </div>}
 
             {/* Refresh */}
             <button

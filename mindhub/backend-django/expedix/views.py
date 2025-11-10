@@ -118,7 +118,7 @@ class PatientViewSet(ExpedixDualViewSet):  # 🎯 RESTORED DUAL SYSTEM after fix
                         'paternal_last_name', 
                         'maternal_last_name',
                         'email',
-                        'phone',
+                        # 'phone',
                         'date_of_birth',
                         'gender'
                     ]

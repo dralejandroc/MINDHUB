@@ -122,7 +122,10 @@ export const DailyView: React.FC<DailyViewProps> = ({
   // Generate time slots for the day
   const timeSlots = useMemo(() => {
     const slots: TimeSlot[] = [];
+    console.log('currentDate', currentDate);
+    
     const dayStart = startOfDay(currentDate);
+    console.log('dayStart', dayStart);
     
     // Create time slots based on schedule config
     for (let hour = scheduleConfig.startHour; hour < scheduleConfig.endHour; hour++) {

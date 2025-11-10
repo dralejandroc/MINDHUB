@@ -94,14 +94,14 @@ const NAVIGATION_GROUPS = [
         status: 'active',
         description: 'Facturación y pagos'
       },
-      {
-        id: 'formx',
-        name: 'Formularios',
-        href: '/hubs/formx',
-        icon: DocumentTextIcon,
-        status: 'active',
-        description: 'Plantillas médicas'
-      },
+      // {
+      //   id: 'formx',
+      //   name: 'Formularios',
+      //   href: '/hubs/formx',
+      //   icon: DocumentTextIcon,
+      //   status: 'active',
+      //   description: 'Plantillas médicas'
+      // },
       {
         id: 'resources',
         name: 'Recursos',
