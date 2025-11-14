@@ -73,7 +73,11 @@ function ExpedixContent() {
   useEffect(() => {
     const patientId = searchParams?.get('patient');
     const action = searchParams?.get('action');
-    
+
+    if (action) {
+      setState(prev => ({...prev, showNewPatientModal: true }));
+    }
+
     if (patientId) {
       loadPatient(patientId, action);
     }

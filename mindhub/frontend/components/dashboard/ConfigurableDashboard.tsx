@@ -134,12 +134,12 @@ export function ConfigurableDashboard() {
       icon: ClipboardDocumentListIcon, 
       color: 'bg-purple-600 hover:bg-purple-700' 
     },
-    { 
-      name: 'Crear Formulario', 
-      path: '/hubs/formx?action=new-form', 
-      icon: DocumentTextIcon, 
-      color: 'bg-emerald-600 hover:bg-emerald-700' 
-    },
+    // { 
+    //   name: 'Crear Formulario', 
+    //   path: '/hubs/formx?action=new-form', 
+    //   icon: DocumentTextIcon, 
+    //   color: 'bg-emerald-600 hover:bg-emerald-700' 
+    // },
     { 
       name: 'Agenda', 
       path: '/hubs/agenda', 

@@ -59,7 +59,43 @@ LOCAL_APPS = [
     'analytics',  # Analytics - Healthcare Indicators & KPI System
 ]
 
-INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS
+# INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS
+
+INSTALLED_APPS = [
+    # --- TU USER MODEL PRIMERO
+    'accounts',
+
+    # Django core
+    'django.contrib.admin',
+    'django.contrib.auth',
+    'django.contrib.contenttypes',
+    'django.contrib.sessions',
+    'django.contrib.messages',
+    'django.contrib.staticfiles',
+    'django.contrib.sites',
+
+    # Terceros
+    'rest_framework',
+    'corsheaders',
+    'django_extensions',
+    'allauth',
+    'allauth.account',
+    'allauth.socialaccount',
+    'guardian',
+    'django_filters',
+    'drf_spectacular',
+
+    # Local (resto)
+    'psychometric_scales',
+    'assessments',
+    'formx',
+    'expedix',
+    'agenda',
+    'resources',
+    'clinics',
+    'finance',
+    'analytics',
+]
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',

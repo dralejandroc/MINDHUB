@@ -88,8 +88,8 @@ axiosClient.interceptors.response.use(
       msg.includes('no autenticado');
 
     if (looksUnauthorized) {
-      //clearAuth();
-      //redirectToLogin();
+      // clearAuth();
+      // redirectToLogin();
     }
 
     return Promise.reject(error);

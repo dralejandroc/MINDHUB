@@ -46,9 +46,9 @@ class PatientSerializer(serializers.ModelSerializer):
             # Critical association fields
             'created_by', 'clinic_id', 'assigned_professional_id', 'user_id',
             # Status and metadata
-            'patient_category', 'is_active', 'created_at', 'updated_at'
+            'patient_category', 'is_active', 'created_at', 'updated_at', 'user_id'
         ]
-        read_only_fields = ['id', 'created_at', 'updated_at', 'age']
+        read_only_fields = ['id', 'user_id', 'created_at', 'updated_at', 'age']
 
 
 class PatientCreateSerializer(serializers.ModelSerializer):
@@ -60,11 +60,13 @@ class PatientCreateSerializer(serializers.ModelSerializer):
     # Accept both formats for compatibility
     birth_date = serializers.DateField(source='date_of_birth', required=False)
     cell_phone = serializers.CharField(source='phone', required=False)
+    id = serializers.UUIDField(read_only=True)
     
     class Meta:
         model = Patient
         fields = [
             # Core fields (always available)
+            'id',
             'first_name', 'paternal_last_name', 'maternal_last_name', 'last_name',
             'email', 'phone', 'cell_phone', 'date_of_birth', 'birth_date', 'gender',
             # Location information - NOW OPTIONAL BY DEFAULT
@@ -78,7 +80,7 @@ class PatientCreateSerializer(serializers.ModelSerializer):
             # Professional assignment (optional)
             'assigned_professional_id', 'user_id',
             # Category
-            'patient_category'
+            'patient_category', 'user_id', 
             # Note: created_by and clinic_id are set automatically in views
         ]
     

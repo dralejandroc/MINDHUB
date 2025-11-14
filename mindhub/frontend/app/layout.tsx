@@ -206,9 +206,21 @@ export default function RootLayout({
         <script
           dangerouslySetInnerHTML={{
             __html: `
-              // Service Worker temporarily disabled to test redirect issues
-              console.log('[PWA] Service Worker registration temporarily disabled for debugging');
-              console.log('🔧 [SIMPLE] Nuclear auth checker removed - relying on login page redirect only');
+              (function () {
+                if (!('serviceWorker' in navigator) || typeof window === 'undefined') return;
+                // Sólo registra si lo habilitas explícitamente o en producción
+                var enable = ${JSON.stringify(process.env.NEXT_PUBLIC_ENABLE_SW === '1')};
+                var isProd = ${JSON.stringify(process.env.NODE_ENV === 'production')};
+                if (!(enable || isProd)) {
+                  console.log('[PWA] SW disabled in this env');
+                  return;
+                }
+                window.addEventListener('load', function () {
+                  navigator.serviceWorker.register('/sw.js', { scope: '/' })
+                    .then(function (reg) { console.log('[PWA] SW registered:', reg.scope); })
+                    .catch(function (err) { console.log('[PWA] SW registration failed:', err); });
+                });
+              })();
             `,
           }}
         />

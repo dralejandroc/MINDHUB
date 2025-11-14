@@ -97,6 +97,32 @@ class PatientGrowthCalculator(IndicatorCalculator):
             logger.error(f"Error calculating patient growth: {e}")
             return 0.0
 
+    def calculate(
+        self,
+        clinic_id: Optional[str],
+        workspace_id: Optional[str],
+        period_start,  # date
+        period_end     # date
+    ) -> Dict[str, Any]:
+        # Ajusta el contexto dual
+        self.clinic_id = clinic_id
+        self.workspace_id = workspace_id
+
+        # Usamos el primer día del periodo como "target_date" para tu cálculo mensual
+        target_date = period_start
+        value = self.calculate_monthly_growth(target_date=target_date)
+
+        return {
+            "value": value,
+            "raw_data": {
+                "period_start": period_start.isoformat(),
+                "period_end": period_end.isoformat(),
+                "clinic_id": clinic_id,
+                "workspace_id": workspace_id,
+                "metric": "monthly_patient_growth_percent"
+            }
+        }
+
 
 class ClinicalProtocolComplianceCalculator(IndicatorCalculator):
     """
@@ -271,6 +297,30 @@ class ClinicalProtocolComplianceCalculator(IndicatorCalculator):
             logger.error(f"Error evaluating consultation compliance: {e}")
             return None
 
+    def calculate(
+        self,
+        clinic_id: Optional[str],
+        workspace_id: Optional[str],
+        period_start,
+        period_end
+    ) -> Dict[str, Any]:
+        self.clinic_id = clinic_id
+        self.workspace_id = workspace_id
+
+        target_date = period_start
+        value = self.calculate_monthly_compliance(target_date=target_date)
+
+        return {
+            "value": value,
+            "raw_data": {
+                "period_start": period_start.isoformat(),
+                "period_end": period_end.isoformat(),
+                "clinic_id": clinic_id,
+                "workspace_id": workspace_id,
+                "metric": "monthly_protocol_compliance_percent"
+            }
+        }
+
 
 class AbandonmentRateCalculator(IndicatorCalculator):
     """
@@ -372,6 +422,31 @@ class AbandonmentRateCalculator(IndicatorCalculator):
             logger.error(f"Error checking patient abandonment: {e}")
             return False
 
+    def calculate(
+        self,
+        clinic_id: Optional[str],
+        workspace_id: Optional[str],
+        period_start,
+        period_end
+    ) -> Dict[str, Any]:
+        self.clinic_id = clinic_id
+        self.workspace_id = workspace_id
+
+        # Este usa una ventana de ~30 días hacia atrás desde target_date
+        target_date = period_start
+        value = self.calculate_monthly_abandonment(target_date=target_date)
+
+        return {
+            "value": value,
+            "raw_data": {
+                "period_start": period_start.isoformat(),
+                "period_end": period_end.isoformat(),
+                "clinic_id": clinic_id,
+                "workspace_id": workspace_id,
+                "metric": "monthly_abandonment_rate_percent"
+            }
+        }
+
 
 class ClinicalNotesComplianceCalculator(IndicatorCalculator):
     """
@@ -441,6 +516,30 @@ class ClinicalNotesComplianceCalculator(IndicatorCalculator):
         except Exception as e:
             logger.error(f"Error checking consultation compliance: {e}")
             return False
+
+    def calculate(
+        self,
+        clinic_id: Optional[str],
+        workspace_id: Optional[str],
+        period_start,
+        period_end
+    ) -> Dict[str, Any]:
+        self.clinic_id = clinic_id
+        self.workspace_id = workspace_id
+
+        target_date = period_start
+        value = self.calculate_monthly_notes_compliance(target_date=target_date)
+
+        return {
+            "value": value,
+            "raw_data": {
+                "period_start": period_start.isoformat(),
+                "period_end": period_end.isoformat(),
+                "clinic_id": clinic_id,
+                "workspace_id": workspace_id,
+                "metric": "monthly_notes_compliance_percent"
+            }
+        }
 
 
 class PatientClassificationService(IndicatorCalculator):
@@ -606,3 +705,29 @@ class SatisfactionCalculator(IndicatorCalculator):
         except Exception as e:
             logger.error(f"Error calculating satisfaction: {e}")
             return 0.0
+
+    def calculate(
+            self,
+            clinic_id: Optional[str],
+            workspace_id: Optional[str],
+            period_start,
+            period_end
+        ) -> Dict[str, Any]:
+        # (Este indicador no usa dual filter hoy, pero mantenemos la firma por consistencia)
+        self.clinic_id = clinic_id
+        self.workspace_id = workspace_id
+
+        target_date = period_start
+        value = self.calculate_monthly_satisfaction(survey_type='global', target_date=target_date)
+
+        return {
+            "value": value,
+            "raw_data": {
+                "period_start": period_start.isoformat(),
+                "period_end": period_end.isoformat(),
+                "clinic_id": clinic_id,
+                "workspace_id": workspace_id,
+                "metric": "monthly_satisfaction_percent",
+                "survey_type": "global"
+            }
+        }

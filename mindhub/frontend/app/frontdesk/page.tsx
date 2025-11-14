@@ -28,6 +28,7 @@ import Link from 'next/link';
 import toast from 'react-hot-toast';
 import { authGet, authPost } from '@/lib/api/auth-fetch';
 import axiosClient from '@/lib/axiosClient';
+import NewPatientModal from '@/components/expedix/NewPatientModal';
 
 const DJANGO_API_BASE = process.env.NEXT_PUBLIC_DJANGO_API_URL || 'https://mindhub-django-backend.vercel.app';
 
@@ -237,6 +238,10 @@ function FrontDeskContent() {
     (patient.email && patient.email.toLowerCase().includes(searchTerm.toLowerCase()))
   );
 
+  const handleSuccess = () => {
+    getPatients();
+  };
+
   // Show loading while auth is being determined
   if (authLoading) {
     return (
@@ -269,6 +274,15 @@ function FrontDeskContent() {
 
   return (
     <div className="min-h-screen w-full bg-gray-50">
+      <NewPatientModal
+        isOpen={showNewPatientModal}
+        onClose={() => setShowNewPatientModal(false)}
+        onSuccess={() => handleSuccess()}
+        setSelectedPatientId={(id: string | undefined) => {
+          // Optionally, you can handle the selected patient id here if needed
+          // For now, just a no-op to satisfy the required prop
+        }}
+      />
       <PageHeader
         title="FrontDesk - Dashboard Secretaria"
         description="Gestión rápida de citas, cobros, pacientes y seguimientos"

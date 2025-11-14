@@ -12,6 +12,7 @@ import {
 } from '@heroicons/react/24/outline';
 import { Button } from '@/components/ui/Button';
 import { expedixApi } from '@/lib/api/expedix-client';
+import { set } from 'date-fns';
 
 interface PatientFormData {
   first_name: string;
@@ -38,9 +39,10 @@ interface NewPatientModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSuccess: (patient: any) => void;
+  setSelectedPatientId: (id: string | undefined) => void;
 }
 
-export default function NewPatientModal({ isOpen, onClose, onSuccess }: NewPatientModalProps) {
+export default function NewPatientModal({ isOpen, onClose, onSuccess, setSelectedPatientId }: NewPatientModalProps) {
   const [formData, setFormData] = useState<PatientFormData>({
     first_name: '',
     paternal_last_name: '',
@@ -85,7 +87,8 @@ export default function NewPatientModal({ isOpen, onClose, onSuccess }: NewPatie
     e.preventDefault();
     setLoading(true);
     setError(null);
-
+    console.log('ENTRO ACAAAAA');
+    
     try {
       // Calculate age
       const age = calculateAge(formData.birth_date);
@@ -101,11 +104,12 @@ export default function NewPatientModal({ isOpen, onClose, onSuccess }: NewPatie
 
       // Call API to create patient
       const response = await expedixApi.createPatient(patientData);
+      console.log('RESPONSE', response);
       
       if ((response as any).success || response.data) {
-        onSuccess(response.data);
+        onSuccess(response);
         onClose();
-        
+        setSelectedPatientId(response.data.id);
         // Reset form
         setFormData({
           first_name: '',
