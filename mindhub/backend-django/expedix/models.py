@@ -515,21 +515,15 @@ class ConsultationTemplate(models.Model):
 class Prescription(models.Model):
     """
     Prescription Model matching actual Supabase schema
-    Single medication per row structure
+    Receta con información general y lista de medicamentos en JSON.
     """
-    id = models.UUIDField(primary_key=True, editable=False)
-    patient_id = models.UUIDField(blank=True, null=True)
-    consultation_id = models.UUIDField(blank=True, null=True)
-    professional_id = models.UUIDField(blank=True, null=True)
-    medication_name = models.TextField(blank=True, null=True)
-    dosage = models.TextField(blank=True, null=True)
-    frequency = models.TextField(blank=True, null=True)
-    duration = models.TextField(blank=True, null=True)
-    instructions = models.TextField(blank=True, null=True)
-    created_at = models.DateTimeField(blank=True, null=True)
-    updated_at = models.DateTimeField(blank=True, null=True)
-    clinic_id = models.BooleanField(blank=True, null=True)
-    user_id = models.UUIDField(blank=True, null=True)
+
+    PRESCRIPTION_STATUS_CHOICES = [
+        ('active', 'Activa'),
+        ('cancelled', 'Cancelada'),
+        ('expired', 'Expirada'),
+        ('draft', 'Borrador'),
+    ]
 
     PRESCRIPTION_TYPE_CHOICES = [
         ('acute', 'Aguda'),
@@ -539,70 +533,87 @@ class Prescription(models.Model):
         ('hospital', 'Hospitalaria'),
     ]
 
+    # Identificador principal
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    
-    # Dual system support
+
+    # Soporte dual sistema
     clinic_id = models.UUIDField(blank=True, null=True)
     workspace_id = models.UUIDField(blank=True, null=True)
-    
-    # Relationships
-    patient_id = models.UUIDField()  # References patient in Supabase
-    consultation_id = models.UUIDField(blank=True, null=True)  # Optional consultation reference
-    created_by = models.UUIDField(null=True, blank=True)  # Professional who created the prescription
-    
-    # Prescription basic info
+
+    # Relaciones (referencias a Supabase)
+    patient_id = models.UUIDField()  # Paciente en Supabase
+    consultation_id = models.UUIDField(blank=True, null=True)  # Consulta relacionada (opcional)
+    created_by = models.UUIDField(null=True, blank=True)  # Profesional que creó la receta
+
+    # Información básica de la receta
     prescription_number = models.CharField(max_length=50, unique=True)
     date_prescribed = models.DateTimeField(default=timezone.now)
     valid_until = models.DateField(blank=True, null=True)
-    
-    # Status and type
-    status = models.CharField(max_length=20, choices=PRESCRIPTION_STATUS_CHOICES, default='active')
-    prescription_type = models.CharField(max_length=20, choices=PRESCRIPTION_TYPE_CHOICES, default='acute')
-    
-    # Clinical information
-    diagnosis = models.TextField(help_text="Diagnóstico que justifica la prescripción")
-    clinical_notes = models.TextField(blank=True, null=True, help_text="Notas clínicas adicionales")
-    
-    # Medications (JSON field for flexibility)
+
+    # Estado y tipo
+    status = models.CharField(
+        max_length=20,
+        choices=PRESCRIPTION_STATUS_CHOICES,
+        default='active'
+    )
+    prescription_type = models.CharField(
+        max_length=20,
+        choices=PRESCRIPTION_TYPE_CHOICES,
+        default='acute'
+    )
+
+    # Información clínica
+    diagnosis = models.TextField(
+        help_text="Diagnóstico que justifica la prescripción"
+    )
+    clinical_notes = models.TextField(
+        blank=True,
+        null=True,
+        help_text="Notas clínicas adicionales"
+    )
+
+    # Medicamentos (lista flexible)
     medications = models.JSONField(
         default=list,
         help_text="Lista de medicamentos con dosis, frecuencia, duración"
     )
-    
-    # Instructions
+
+    # Instrucciones generales
     general_instructions = models.TextField(
-        blank=True, null=True,
+        blank=True,
+        null=True,
         help_text="Instrucciones generales para el paciente"
     )
-    
-    # Follow-up
+
+    # Seguimiento
     follow_up_date = models.DateField(blank=True, null=True)
     follow_up_notes = models.TextField(blank=True, null=True)
-    
-    # Digital signature and verification
+
+    # Firma digital y verificación
     digital_signature = models.TextField(blank=True, null=True)
     verification_code = models.CharField(max_length=20, blank=True, null=True)
-    
-    # PDF generation
+
+    # Generación de PDF
     pdf_generated = models.BooleanField(default=False)
     pdf_generated_at = models.DateTimeField(blank=True, null=True)
     pdf_url = models.URLField(blank=True, null=True)
-    
+
     # Metadata
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
-    
-    # Professional information (cached for PDF generation)
+
+    # Datos del profesional (cacheados para el PDF)
     professional_name = models.CharField(max_length=200, blank=True, null=True)
     professional_license = models.CharField(max_length=50, blank=True, null=True)
     professional_specialty = models.CharField(max_length=100, blank=True, null=True)
-    
+
     class Meta:
         db_table = 'prescriptions'
-        managed = False  # Use existing Supabase table
+        managed = False  # Usar tabla existente en Supabase
 
     def __str__(self):
-        return f"Prescription {self.medication_name} - Patient {self.patient_id}"
+        return f"Prescription {self.prescription_number} - Patient {self.patient_id}"
+
 
 
 class MedicationDatabase(models.Model):

@@ -27,12 +27,9 @@ class DualSystemFilterMixin:
         if not hasattr(self.request, 'user_context'):
             # Simulate user context based on test_mode param
             test_mode = self.request.query_params.get('test_mode', 'individual')
-<<<<<<< HEAD
             print('TEST MODE:', test_mode)
-=======
             user_id = getattr(self.request, 'supabase_user_id', None)
             
->>>>>>> origin/main
             if test_mode == 'clinic':
                 # Simulate clinic shared access
                 self.request.user_context = {
