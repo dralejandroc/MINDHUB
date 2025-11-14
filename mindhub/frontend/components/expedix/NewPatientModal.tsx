@@ -39,7 +39,7 @@ interface NewPatientModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSuccess: (patient: any) => void;
-  setSelectedPatientId: (id: string | undefined) => void;
+  setSelectedPatientId?: (id: string | undefined) => void;
 }
 
 export default function NewPatientModal({ isOpen, onClose, onSuccess, setSelectedPatientId }: NewPatientModalProps) {
@@ -109,7 +109,7 @@ export default function NewPatientModal({ isOpen, onClose, onSuccess, setSelecte
       if ((response as any).success || response.data) {
         onSuccess(response);
         onClose();
-        setSelectedPatientId(response.data.id);
+        setSelectedPatientId?.(response.data.id);
         // Reset form
         setFormData({
           first_name: '',
