@@ -1,4 +1,4 @@
-#!/Users/mariovaldez/repos/MINDHUB/MINDHUB/mindhub/backend-django/.venv/bin/python3
+#!/Users/mariovaldez/repos/MINDHUB/MINDHUB/mindhub/backend-django/.venv/bin/python
 import sys
 from qrcode.console_scripts import main
 if __name__ == '__main__':
