@@ -20,7 +20,7 @@ export const GET_APPOINTMENTS = gql`
           patient_id
           professional_id
           clinic_id
-          workspace_id
+          user_id
           appointment_date
           start_time
           end_time
@@ -60,7 +60,7 @@ export const GET_APPOINTMENT_BY_ID = gql`
           patient_id
           professional_id
           clinic_id
-          workspace_id
+          user_id
           appointment_date
           start_time
           end_time
@@ -132,7 +132,8 @@ export const GET_APPOINTMENTS_BY_DATE_RANGE = gql`
   query GetAppointmentsByDateRange(
     $startDate: Date!
     $endDate: Date!
-    $clinicId: UUID
+    $userId: UUID!
+    $isClinic: Boolean!
     $professionalId: UUID
   ) {
     appointmentsCollection(
@@ -140,7 +141,12 @@ export const GET_APPOINTMENTS_BY_DATE_RANGE = gql`
         and: [
           { appointment_date: { gte: $startDate } }
           { appointment_date: { lte: $endDate } }
-          { clinic_id: { eq: $clinicId } }
+          { 
+            or: [
+              { and: [{ clinic_id: { eq: $isClinic } }, { clinic_id: { eq: true } }] }
+              { user_id: { eq: $userId } }
+            ]
+          }
           { professional_id: { eq: $professionalId } }
         ]
       }
@@ -165,12 +171,17 @@ export const GET_APPOINTMENTS_BY_DATE_RANGE = gql`
 
 // Query para obtener citas del día actual
 export const GET_TODAY_APPOINTMENTS = gql`
-  query GetTodayAppointments($date: Date!, $clinicId: UUID) {
+  query GetTodayAppointments($date: Date!, $userId: UUID!, $isClinic: Boolean!) {
     appointmentsCollection(
       filter: {
         and: [
           { appointment_date: { eq: $date } }
-          { clinic_id: { eq: $clinicId } }
+          { 
+            or: [
+              { and: [{ clinic_id: { eq: $isClinic } }, { clinic_id: { eq: true } }] }
+              { user_id: { eq: $userId } }
+            ]
+          }
         ]
       }
       orderBy: [{ start_time: AscNullsFirst }]
@@ -232,12 +243,17 @@ export const GET_APPOINTMENTS_BY_PATIENT = gql`
 
 // Query para estadísticas diarias
 export const GET_DAILY_APPOINTMENT_STATS = gql`
-  query GetDailyAppointmentStats($date: Date!, $clinicId: UUID) {
+  query GetDailyAppointmentStats($date: Date!, $userId: UUID!, $isClinic: Boolean!) {
     appointmentsCollection(
       filter: {
         and: [
           { appointment_date: { eq: $date } }
-          { clinic_id: { eq: $clinicId } }
+          { 
+            or: [
+              { and: [{ clinic_id: { eq: $isClinic } }, { clinic_id: { eq: true } }] }
+              { user_id: { eq: $userId } }
+            ]
+          }
         ]
       }
     ) {

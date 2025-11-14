@@ -16,12 +16,14 @@ interface MindHubSignInCardProps {
   onSignIn?: (email: string, password: string) => void;
   onGoogleSignIn?: () => void;
   onForgotPassword?: () => void;
+  loading?: boolean;
 }
 
 export const MindHubSignInCard = ({ 
   onSignIn, 
   onGoogleSignIn, 
-  onForgotPassword 
+  onForgotPassword,
+  loading = false
 }: MindHubSignInCardProps) => {
   const [isPasswordVisible, setIsPasswordVisible] = useState(false);
   const [email, setEmail] = useState("");
@@ -132,6 +134,7 @@ export const MindHubSignInCard = ({
                 variant="outline"
                 className="w-full flex items-center justify-center gap-3 bg-gray-50 border border-gray-200 rounded-lg p-3 hover:bg-gray-100 hover:border-gray-300 transition-all duration-300 text-gray-700 shadow-sm h-12"
                 onClick={onGoogleSignIn}
+                disabled={loading}
               >
                 <svg className="h-5 w-5" viewBox="0 0 24 24">
                   <path
@@ -177,7 +180,8 @@ export const MindHubSignInCard = ({
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="tu@clinica.com"
                   required
-                  className="bg-gray-50 border-gray-200 placeholder:text-gray-400 text-gray-800 w-full focus:border-teal-500 focus:ring-teal-500 h-12 rounded-lg"
+                  disabled={loading}
+                  className="bg-gray-50 border-gray-200 placeholder:text-gray-400 text-gray-800 w-full focus:border-teal-500 focus:ring-teal-500 h-12 rounded-lg disabled:opacity-50"
                 />
               </div>
               
@@ -193,7 +197,8 @@ export const MindHubSignInCard = ({
                     onChange={(e) => setPassword(e.target.value)}
                     placeholder="Tu contraseña"
                     required
-                    className="bg-gray-50 border-gray-200 placeholder:text-gray-400 text-gray-800 w-full pr-12 focus:border-teal-500 focus:ring-teal-500 h-12 rounded-lg"
+                    disabled={loading}
+                    className="bg-gray-50 border-gray-200 placeholder:text-gray-400 text-gray-800 w-full pr-12 focus:border-teal-500 focus:ring-teal-500 h-12 rounded-lg disabled:opacity-50"
                   />
                   <button
                     type="button"
@@ -217,11 +222,23 @@ export const MindHubSignInCard = ({
                   className={cn(
                     "w-full relative overflow-hidden text-white py-3 h-12 rounded-lg transition-all duration-300 font-medium shadow-primary",
                     "bg-gradient-to-r from-teal-600 via-cyan-600 to-blue-600 hover:from-teal-700 hover:via-cyan-700 hover:to-blue-700",
-                    isHovered ? "shadow-primary-hover" : ""
+                    isHovered ? "shadow-primary-hover" : "",
+                    loading ? "opacity-70 cursor-not-allowed" : ""
                   )}
+                  disabled={loading}
                 >
                   <span className="flex items-center justify-center relative z-10">
-                    Iniciar Sesión
+                    {loading ? (
+                      <>
+                        <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        Iniciando sesión...
+                      </>
+                    ) : (
+                      'Iniciar Sesión'
+                    )}
                   </span>
                   {isHovered && (
                     <motion.span

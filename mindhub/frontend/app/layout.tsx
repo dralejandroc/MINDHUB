@@ -202,7 +202,7 @@ export default function RootLayout({
         {/* Vercel Speed Insights */}
         <SpeedInsights />
         
-        {/* PWA Service Worker Registration */}
+        {/* PWA Service Worker Registration - TEMPORARILY DISABLED FOR TESTING */}
         <script
           dangerouslySetInnerHTML={{
             __html: `

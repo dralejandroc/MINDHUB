@@ -1,5 +1,7 @@
 # 🎉 TENANT ARCHITECTURE IMPLEMENTATION COMPLETE
 
+> **⚠️ DEPRECATED DOCUMENTATION**: This document describes the old workspace_id architecture. As of 2025-01-11, the architecture has been simplified to use clinic_id (boolean) + user_id pattern. See current tenant-resolver.ts for updated implementation.
+
 **Status**: ✅ CRITICAL ISSUES RESOLVED  
 **Date**: 2025-01-19  
 **Priority**: P0 System-breaking issues → ✅ FIXED

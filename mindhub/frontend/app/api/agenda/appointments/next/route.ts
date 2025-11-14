@@ -39,12 +39,11 @@ export async function GET(request: Request) {
         .order('appointment_date', { ascending: true })
         .limit(1);
 
-      // Apply tenant filtering
-      if (tenantContext.type === 'clinic') {
-        query = query.eq('clinic_id', tenantContext.id);
+      // Apply tenant filtering with simplified architecture
+      if (tenantContext.clinic_id) {
+        query = query.eq('clinic_id', true);
       } else {
-        // For individual workspaces, filter by workspace_id OR where clinic_id equals workspace_id
-        query = query.or(`workspace_id.eq.${tenantContext.id},clinic_id.eq.${tenantContext.id}`);
+        query = query.eq('user_id', tenantContext.user_id);
       }
 
       const { data: appointments, error } = await query;

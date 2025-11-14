@@ -29,9 +29,9 @@ class OptimizedPatientPagination(PageNumberPagination):
     max_page_size = 100  # Prevent massive page sizes
 
 
-from .models import User, Patient, MedicalHistory, Consultation, Prescription, ExpedixConfiguration, ConsultationTemplate
+from .models import Profile, Patient, MedicalHistory, Consultation, Prescription, ExpedixConfiguration, ConsultationTemplate
 from .serializers import (
-    UserSerializer, PatientSerializer, PatientCreateSerializer,
+    ProfileSerializer, PatientSerializer, PatientCreateSerializer,
     PatientSummarySerializer, MedicalHistorySerializer, 
     ConsultationSerializer, ConsultationCreateSerializer,
     PrescriptionSerializer, PrescriptionCreateSerializer,
@@ -146,7 +146,8 @@ class PatientViewSet(ExpedixDualViewSet):  # 🎯 RESTORED DUAL SYSTEM after fix
         if not search_term:
             return Response({'results': [], 'count': 0})
             
-        patients = self.queryset.filter(
+        # ✅ FIX: Use get_queryset() to apply dual system filtering (clinic_id/user_id)
+        patients = self.get_queryset().filter(
             Q(first_name__icontains=search_term) |
             Q(paternal_last_name__icontains=search_term) |
             Q(maternal_last_name__icontains=search_term) |
@@ -418,8 +419,8 @@ class UserViewSet(DualSystemReadOnlyViewSet):
     🎯 DUAL SYSTEM User management ViewSet (read-only)
     Automatically filters by license type
     """
-    queryset = User.objects.filter(is_active=True)
-    serializer_class = UserSerializer
+    queryset = Profile.objects.filter(is_active=True)
+    serializer_class = ProfileSerializer
     authentication_classes = [SupabaseProxyAuthentication]
     permission_classes = [IsAuthenticated]
     filter_backends = [filters.SearchFilter, filters.OrderingFilter]
@@ -1279,15 +1280,15 @@ class PrescriptionViewSet(ExpedixDualViewSet):
     Prescription ViewSet - DUAL SYSTEM
     Manages medical prescriptions with PDF generation
     """
-    queryset = Prescription.objects.filter(status__in=['active', 'completed'])
+    queryset = Prescription.objects.all()
     serializer_class = PrescriptionSerializer
     authentication_classes = [SupabaseProxyAuthentication]
     permission_classes = [IsAuthenticated]
     filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
-    search_fields = ['prescription_number', 'diagnosis', 'medications']
-    filterset_fields = ['status', 'prescription_type', 'patient_id', 'created_by']
-    ordering_fields = ['date_prescribed', 'created_at', 'prescription_number']
-    ordering = ['-date_prescribed']
+    search_fields = ['medication_name', 'instructions', 'dosage']
+    filterset_fields = ['patient_id', 'consultation_id', 'professional_id']
+    ordering_fields = ['created_at', 'updated_at']
+    ordering = ['-created_at']
 
     def get_serializer_class(self):
         if self.action in ['create', 'update', 'partial_update']:

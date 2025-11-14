@@ -1,6 +1,7 @@
 // Expedix patients API route - PROXY to Django Backend ONLY
 // Architecture: Frontend → Next.js API → Django → Supabase PostgreSQL
 import { getAuthenticatedUser, createResponse, createErrorResponse, supabaseAdmin } from '@/lib/supabase/admin'
+import { resolveTenantContext, addTenantContext } from '@/lib/tenant-resolver'
 
 export const dynamic = 'force-dynamic';
 
@@ -41,27 +42,9 @@ export async function GET(request: Request) {
       // Use service role key for Django backend (Django expects service role key)
       const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp2YmNwbGR6b3lpY2VmZHRud2tkIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1NTQwMTQ3MCwiZXhwIjoyMDcwOTc3NDcwfQ.-iooltGuYeGqXVh7pgRhH_Oo_R64VtHIssbE3u_y0WQ';
 
-      // Get user's workspace_id for proper filtering
-      let workspaceId = null;
-      try {
-        const { createClient } = await import('@supabase/supabase-js');
-        const supabase = createClient(
-          process.env.NEXT_PUBLIC_SUPABASE_URL!,
-          process.env.SUPABASE_SERVICE_ROLE_KEY!,
-          { auth: { autoRefreshToken: false, persistSession: false } }
-        );
-        
-        const { data: workspace } = await supabase
-          .from('individual_workspaces')
-          .select('id')
-          .eq('owner_id', user.id)
-          .single();
-        
-        workspaceId = workspace?.id;
-        console.log('[PATIENTS API] Found workspace_id for user:', workspaceId);
-      } catch (wsError) {
-        console.warn('[PATIENTS API] Could not fetch workspace_id:', wsError);
-      }
+      // Get tenant context using unified resolver
+      const tenantContext = await resolveTenantContext(user.id);
+      console.log('[PATIENTS API GET] Tenant context:', tenantContext);
 
       // Forward request to Django backend with service role authentication
       const djangoResponse = await fetch(djangoUrl, {
@@ -69,11 +52,11 @@ export async function GET(request: Request) {
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${serviceRoleKey}`,
-          // Add proxy headers so Django knows the real user and workspace
+          // Add proxy headers so Django knows the real user and tenant context
           'X-Proxy-Auth': 'verified',
           'X-User-ID': user.id,
           'X-User-Email': user.email || '',
-          'X-Workspace-ID': workspaceId || '',
+          'X-Tenant-Context': JSON.stringify(tenantContext),
           'X-MindHub-Context': 'expedix-patients',
         },
       });
@@ -83,53 +66,7 @@ export async function GET(request: Request) {
         const patientCount = data?.results?.length || data?.data?.length || 0;
         console.log('[PATIENTS API] Django backend success, patients count:', patientCount);
         
-        // If Django returns no patients but we have a workspace_id, try direct Supabase fallback
-        if (patientCount === 0 && workspaceId) {
-          console.log('[PATIENTS API] Django returned 0 patients, trying Supabase fallback...');
-          try {
-            const { createClient } = await import('@supabase/supabase-js');
-            const supabase = createClient(
-              process.env.NEXT_PUBLIC_SUPABASE_URL!,
-              process.env.SUPABASE_SERVICE_ROLE_KEY!,
-              { auth: { autoRefreshToken: false, persistSession: false } }
-            );
-            
-            const { data: fallbackPatients, error } = await supabase
-              .from('patients')
-              .select('*')
-              .eq('workspace_id', workspaceId)
-              .order('created_at', { ascending: false });
-            
-            if (!error && fallbackPatients && fallbackPatients.length > 0) {
-              console.log('[PATIENTS API] Supabase fallback found', fallbackPatients.length, 'patients');
-              
-              // Format patients to match expected structure
-              const formattedPatients = fallbackPatients.map((p: any) => ({
-                id: p.id,
-                first_name: p.first_name,
-                last_name: p.last_name,
-                paternal_last_name: p.paternal_last_name,
-                maternal_last_name: p.maternal_last_name,
-                phone: p.phone,
-                cell_phone: p.cell_phone,
-                email: p.email,
-                date_of_birth: p.date_of_birth,
-                created_at: p.created_at,
-                updated_at: p.updated_at
-              }));
-              
-              return createResponse({
-                count: formattedPatients.length,
-                results: formattedPatients,
-                next: null,
-                previous: null,
-                source: 'supabase-fallback'
-              });
-            }
-          } catch (fallbackError) {
-            console.warn('[PATIENTS API] Supabase fallback failed:', fallbackError);
-          }
-        }
+        // Return Django response directly - no fallback needed with new architecture
         
         return createResponse(data);
       } else {
@@ -204,6 +141,9 @@ export async function POST(request: Request) {
     } catch (err) {
       console.warn('[PATIENTS API POST] workspace lookup exception:', err);
     }
+    // Get tenant context using unified resolver
+    const tenantContext = await resolveTenantContext(user.id);
+    console.log('[PATIENTS API POST] Tenant context:', tenantContext);
 
     // 5) Proxy a Django
     const djangoUrl = `${djangoUrlBase.replace(/\/+$/,'')}/api/expedix/patients/`;
@@ -217,7 +157,7 @@ export async function POST(request: Request) {
         'X-Proxy-Auth': 'verified',
         'X-User-ID': user.id,
         'X-User-Email': user.email || '',
-        'X-Workspace-ID': workspaceId || '',
+        'X-Tenant-Context': JSON.stringify(tenantContext),
         'X-MindHub-Context': 'expedix-patients',
       },
       body: JSON.stringify(safeBody),
@@ -325,26 +265,9 @@ export async function PUT(request: Request) {
 
     const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp2YmNwbGR6b3lpY2VmZHRud2tkIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1NTQwMTQ3MCwiZXhwIjoyMDcwOTc3NDcwfQ.-iooltGuYeGqXVh7pgRhH_Oo_R64VtHIssbE3u_y0WQ';
 
-    // Get user's workspace_id for proper filtering
-    let workspaceId = null;
-    try {
-      const { createClient } = await import('@supabase/supabase-js');
-      const supabase = createClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.SUPABASE_SERVICE_ROLE_KEY!,
-        { auth: { autoRefreshToken: false, persistSession: false } }
-      );
-      
-      const { data: workspace } = await supabase
-        .from('individual_workspaces')
-        .select('id')
-        .eq('owner_id', user.id)
-        .single();
-      
-      workspaceId = workspace?.id;
-    } catch (wsError) {
-      console.warn('[PATIENTS API PUT] Could not fetch workspace_id:', wsError);
-    }
+    // Get tenant context using unified resolver
+    const tenantContext = await resolveTenantContext(user.id);
+    console.log('[PATIENTS API PUT] Tenant context:', tenantContext);
 
     const djangoUrl = `${DJANGO_BACKEND_URL}/api/expedix/patients/${patientId}/`;
     const djangoResponse = await fetch(djangoUrl, {
@@ -355,7 +278,7 @@ export async function PUT(request: Request) {
         'X-Proxy-Auth': 'verified',
         'X-User-ID': user.id,
         'X-User-Email': user.email || '',
-        'X-Workspace-ID': workspaceId || '',
+        'X-Tenant-Context': JSON.stringify(tenantContext),
         'X-MindHub-Context': 'expedix-patients',
       },
       body: JSON.stringify(body),

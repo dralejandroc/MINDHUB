@@ -16,7 +16,8 @@ export default function AppHome() {
   useEffect(() => {
     if (!loading && !user) {
       // Redirect to sign-in if not authenticated with Supabase
-      router.push('/auth/sign-in');
+      //router.push('/auth/sign-in');
+      console.log('AQUI LO QUIZO LLEVAR');
     }
   }, [loading, user, router]);
 

@@ -38,30 +38,26 @@ class SafeJSONField(models.JSONField):
         return []
 
 
-class User(models.Model):
-    """User model migrated from Prisma schema"""
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    supabase_user_id = models.CharField(max_length=255, unique=True)
-    email = models.EmailField(unique=True, validators=[EmailValidator()])
-    first_name = models.CharField(max_length=100, blank=True, null=True)
-    last_name = models.CharField(max_length=100, blank=True, null=True)
-    role = models.CharField(max_length=50, default='professional')
-    organization = models.CharField(max_length=200, blank=True, null=True)
-    license_number = models.CharField(max_length=100, blank=True, null=True)
-    specialization = models.CharField(max_length=100, blank=True, null=True)
-    is_active = models.BooleanField(default=True)
-    email_verified = models.BooleanField(default=True)
-    last_login_at = models.DateTimeField(blank=True, null=True)
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
+class Profile(models.Model):
+    """Profile model matching actual Supabase profiles table"""
+    id = models.UUIDField(primary_key=True, editable=False)
+    email = models.TextField(blank=True, null=True)
+    first_name = models.TextField(blank=True, null=True)
+    last_name = models.TextField(blank=True, null=True)
+    license_type = models.TextField(blank=True, null=True)
+    clinic_id = models.UUIDField(blank=True, null=True)
+    clinic_role = models.TextField(blank=True, null=True)
+    professional_title = models.TextField(blank=True, null=True)
+    license_number = models.TextField(blank=True, null=True)
+    specialization = models.TextField(blank=True, null=True)
+    phone = models.TextField(blank=True, null=True)
+    is_active = models.BooleanField(blank=True, null=True)
+    created_at = models.DateTimeField(blank=True, null=True)
+    updated_at = models.DateTimeField(blank=True, null=True)
 
     class Meta:
-        db_table = 'users'
-        indexes = [
-            models.Index(fields=['supabase_user_id']),
-            models.Index(fields=['email']),
-            models.Index(fields=['is_active']),
-        ]
+        db_table = 'profiles'
+        managed = False  # Use existing Supabase table
 
     def __str__(self):
         return f"{self.first_name} {self.last_name} ({self.email})"
@@ -79,7 +75,6 @@ class Patient(models.Model):
     paternal_last_name = models.TextField(blank=True, null=True)  # Missing from old model
     maternal_last_name = models.TextField(blank=True, null=True)  # Missing from old model
     date_of_birth = models.DateField(blank=True, null=True)
-    age = models.IntegerField(blank=True, null=True)  # Calculated age field
     gender = models.TextField(blank=True, null=True)
     email = models.TextField(blank=True, null=True)
     phone = models.TextField(blank=True, null=True)
@@ -122,11 +117,11 @@ class Patient(models.Model):
     # Classification
     patient_category = models.TextField(blank=True, null=True)
     
-    # Critical association fields - EXACTLY as in Supabase
+    # Critical association fields - SIMPLIFIED ARCHITECTURE
     created_by = models.UUIDField(blank=True, null=True)  # Supabase user ID del creador
-    clinic_id = models.UUIDField(blank=True, null=True)  # Can be NULL in real table
+    clinic_id = models.BooleanField(default=False)  # true = clinic shared, false = individual user
     assigned_professional_id = models.UUIDField(blank=True, null=True)  # Profesional asignado
-    workspace_id = models.UUIDField(blank=True, null=True)  # For dual system
+    user_id = models.UUIDField(blank=True, null=True)  # Owner of the record
     
     # Additional notes
     notes = models.TextField(blank=True, null=True)
@@ -248,9 +243,8 @@ class ExpedixConfiguration(models.Model):
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     
-    # Dual system support
-    clinic_id = models.UUIDField(blank=True, null=True)  # For clinic licenses
-    workspace_id = models.UUIDField(blank=True, null=True)  # For individual licenses
+    # Simplified system support
+    clinic_id = models.BooleanField(default=False)  # true = clinic config, false = individual config
     user_id = models.UUIDField()  # Creator/owner
     
     configuration_type = models.CharField(max_length=20, choices=CONFIGURATION_TYPE_CHOICES, default='clinic')
@@ -275,37 +269,22 @@ class ExpedixConfiguration(models.Model):
     class Meta:
         db_table = 'expedix_configurations'
         constraints = [
-            # Ensure either clinic_id or workspace_id is set, but not both
-            models.CheckConstraint(
-                check=(
-                    (models.Q(clinic_id__isnull=False) & models.Q(workspace_id__isnull=True)) |
-                    (models.Q(clinic_id__isnull=True) & models.Q(workspace_id__isnull=False))
-                ),
-                name='expedix_config_dual_system_constraint'
-            ),
-            # Unique configuration per clinic/workspace
+            # Unique configuration per user
             models.UniqueConstraint(
-                fields=['clinic_id'],
-                condition=models.Q(clinic_id__isnull=False),
-                name='unique_clinic_config'
-            ),
-            models.UniqueConstraint(
-                fields=['workspace_id'],
-                condition=models.Q(workspace_id__isnull=False),
-                name='unique_workspace_config'
+                fields=['user_id'],
+                name='unique_user_config'
             ),
         ]
         indexes = [
             models.Index(fields=['clinic_id']),
-            models.Index(fields=['workspace_id']),
             models.Index(fields=['user_id']),
             models.Index(fields=['configuration_type']),
         ]
 
     def __str__(self):
         if self.clinic_id:
-            return f"Configuración Clínica {self.clinic_id}"
-        return f"Configuración Individual {self.workspace_id}"
+            return f"Configuración Clínica - Usuario {self.user_id}"
+        return f"Configuración Individual - Usuario {self.user_id}"
 
     @classmethod
     def get_default_patient_fields(cls):
@@ -373,10 +352,10 @@ class ConsultationTemplate(models.Model):
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     
-    # Dual system support
-    clinic_id = models.UUIDField(blank=True, null=True)
-    workspace_id = models.UUIDField(blank=True, null=True)
+    # Simplified system support
+    clinic_id = models.BooleanField(default=False)  # true = clinic template, false = individual template
     created_by = models.UUIDField()
+    user_id = models.UUIDField(blank=True, null=True)  # Owner of the template
     
     # Template basic info
     name = models.CharField(max_length=200)
@@ -399,20 +378,11 @@ class ConsultationTemplate(models.Model):
 
     class Meta:
         db_table = 'consultation_templates'
-        constraints = [
-            # Dual system constraint
-            models.CheckConstraint(
-                check=(
-                    (models.Q(clinic_id__isnull=False) & models.Q(workspace_id__isnull=True)) |
-                    (models.Q(clinic_id__isnull=True) & models.Q(workspace_id__isnull=False))
-                ),
-                name='consultation_template_dual_system_constraint'
-            ),
-        ]
+        constraints = []
         indexes = [
             models.Index(fields=['clinic_id']),
-            models.Index(fields=['workspace_id']),
             models.Index(fields=['created_by']),
+            models.Index(fields=['user_id']),
             models.Index(fields=['template_type']),
             models.Index(fields=['is_active']),
         ]
@@ -544,16 +514,22 @@ class ConsultationTemplate(models.Model):
 
 class Prescription(models.Model):
     """
-    Prescription Model - DUAL SYSTEM
-    Manages medical prescriptions with PDF generation
+    Prescription Model matching actual Supabase schema
+    Single medication per row structure
     """
-    PRESCRIPTION_STATUS_CHOICES = [
-        ('active', 'Activa'),
-        ('completed', 'Completada'),
-        ('cancelled', 'Cancelada'),
-        ('expired', 'Expirada'),
-        ('suspended', 'Suspendida'),
-    ]
+    id = models.UUIDField(primary_key=True, editable=False)
+    patient_id = models.UUIDField(blank=True, null=True)
+    consultation_id = models.UUIDField(blank=True, null=True)
+    professional_id = models.UUIDField(blank=True, null=True)
+    medication_name = models.TextField(blank=True, null=True)
+    dosage = models.TextField(blank=True, null=True)
+    frequency = models.TextField(blank=True, null=True)
+    duration = models.TextField(blank=True, null=True)
+    instructions = models.TextField(blank=True, null=True)
+    created_at = models.DateTimeField(blank=True, null=True)
+    updated_at = models.DateTimeField(blank=True, null=True)
+    clinic_id = models.BooleanField(blank=True, null=True)
+    user_id = models.UUIDField(blank=True, null=True)
 
     PRESCRIPTION_TYPE_CHOICES = [
         ('acute', 'Aguda'),
@@ -623,150 +599,147 @@ class Prescription(models.Model):
     
     class Meta:
         db_table = 'prescriptions'
-        constraints = [
-            # Dual system constraint
-            models.CheckConstraint(
-                check=(
-                    (models.Q(clinic_id__isnull=False) & models.Q(workspace_id__isnull=True)) |
-                    (models.Q(clinic_id__isnull=True) & models.Q(workspace_id__isnull=False))
-                ),
-                name='prescription_dual_system_constraint'
-            ),
-        ]
-        indexes = [
-            models.Index(fields=['clinic_id']),
-            models.Index(fields=['workspace_id']),
-            models.Index(fields=['patient_id']),
-            models.Index(fields=['created_by']),
-            models.Index(fields=['prescription_number']),
-            models.Index(fields=['status']),
-            models.Index(fields=['date_prescribed']),
-        ]
-        ordering = ['-date_prescribed']
+        managed = False  # Use existing Supabase table
 
     def __str__(self):
-        return f"Prescription {self.prescription_number} - Patient {self.patient_id}"
+        return f"Prescription {self.medication_name} - Patient {self.patient_id}"
 
-    def save(self, *args, **kwargs):
-        # Generate prescription number if not set
-        if not self.prescription_number:
-            self.prescription_number = self.generate_prescription_number()
-        
-        super().save(*args, **kwargs)
 
-    def generate_prescription_number(self):
-        """Generate unique prescription number"""
-        from datetime import datetime
-        today = datetime.now()
-        prefix = f"RX{today.year}{today.month:02d}"
-        
-        # Get last prescription number for today
-        last_prescription = Prescription.objects.filter(
-            prescription_number__startswith=prefix
-        ).order_by('-prescription_number').first()
-        
-        if last_prescription:
-            try:
-                last_number = int(last_prescription.prescription_number[-4:])
-                new_number = last_number + 1
-            except (ValueError, IndexError):
-                new_number = 1
-        else:
-            new_number = 1
-            
-        return f"{prefix}{new_number:04d}"
+class MedicationDatabase(models.Model):
+    """
+    Catálogo maestro de medicamentos - Base de datos farmacológica
+    Tabla real en Supabase con 30 medicamentos
+    """
+    id = models.UUIDField(primary_key=True, editable=False)
+    commercial_name = models.TextField(blank=True, null=True)
+    generic_name = models.TextField(blank=True, null=True)
+    active_ingredients = models.TextField(blank=True, null=True)
+    concentration = models.TextField(blank=True, null=True)
+    pharmaceutical_form = models.TextField(blank=True, null=True)
+    laboratory = models.TextField(blank=True, null=True)
+    control_group = models.TextField(blank=True, null=True)  # GII, GIII, GIV
+    therapeutic_indications = models.TextField(blank=True, null=True)
+    contraindications = models.TextField(blank=True, null=True)
+    side_effects = models.TextField(blank=True, null=True)
+    dosage_recommendations = models.TextField(blank=True, null=True)
+    storage_conditions = models.TextField(blank=True, null=True)
+    is_active = models.BooleanField(blank=True, null=True)
+    created_at = models.DateTimeField(blank=True, null=True)
+    updated_at = models.DateTimeField(blank=True, null=True)
 
-    def is_valid(self):
-        """Check if prescription is still valid"""
-        if self.status != 'active':
-            return False
-        if self.valid_until and self.valid_until < timezone.now().date():
-            return False
-        return True
+    class Meta:
+        db_table = 'medication_database'
+        managed = False  # Use existing Supabase table
 
-    def generate_verification_code(self):
-        """Generate verification code for prescription authenticity"""
-        import random
-        import string
-        
-        code = ''.join(random.choices(string.ascii_uppercase + string.digits, k=8))
-        self.verification_code = code
-        return code
+    def __str__(self):
+        return f"{self.commercial_name} ({self.generic_name})"
 
-    def get_medication_summary(self):
-        """Get formatted summary of medications"""
-        if not self.medications:
-            return "Sin medicamentos especificados"
-        
-        summary = []
-        for med in self.medications:
-            med_line = med.get('name', 'Medicamento')
-            if med.get('dosage'):
-                med_line += f" - {med['dosage']}"
-            if med.get('frequency'):
-                med_line += f" - {med['frequency']}"
-            if med.get('duration'):
-                med_line += f" por {med['duration']}"
-            summary.append(med_line)
-        
-        return "; ".join(summary)
+    @property
+    def display_name(self):
+        """Nombre para mostrar en UI"""
+        if self.commercial_name and self.generic_name:
+            return f"{self.commercial_name} ({self.generic_name})"
+        return self.commercial_name or self.generic_name or "Medicamento"
 
-    def generate_pdf(self):
-        """Generate PDF prescription"""
-        try:
-            from .services import PrescriptionPDFService
-            
-            pdf_service = PrescriptionPDFService()
-            pdf_data = pdf_service.generate_prescription_pdf(self)
-            
-            # Update prescription with PDF info
-            self.pdf_generated = True
-            self.pdf_generated_at = timezone.now()
-            self.pdf_url = pdf_data.get('pdf_url')
-            self.save(update_fields=['pdf_generated', 'pdf_generated_at', 'pdf_url'])
-            
-            return pdf_data
-            
-        except Exception as e:
-            print(f"Error generating PDF for prescription {self.id}: {e}")
-            return None
+    @property
+    def concentration_display(self):
+        """Concentración formateada para UI"""
+        return self.concentration or "Concentración no especificada"
 
-    def get_patient_info(self):
-        """Get patient information from Supabase (cached version)"""
-        # This would be implemented to fetch patient data from Supabase
-        # For now, return a placeholder
-        return {
-            'patient_id': str(self.patient_id),
-            'full_name': 'Patient Name',  # To be fetched from Supabase
-            'email': 'patient@email.com',
-            'phone': '000-000-0000'
+    def get_control_group_display(self):
+        """Mostrar grupo de control con descripción"""
+        control_groups = {
+            'GII': 'Grupo II - Sustancias con valor terapéutico',
+            'GIII': 'Grupo III - Sustancias con valor terapéutico bajo',
+            'GIV': 'Grupo IV - Sustancias con valor terapéutico mínimo'
         }
+        return control_groups.get(self.control_group, self.control_group or 'No clasificado')
+
+
+class PrescriptionMedication(models.Model):
+    """
+    Medicamentos específicos dentro de recetas
+    Tabla para recetas detalladas con múltiples medicamentos
+    """
+    id = models.UUIDField(primary_key=True, editable=False)
+    prescription_id = models.UUIDField(blank=True, null=True)  # Agrupa medicamentos por receta
+    patient_id = models.UUIDField(blank=True, null=True)
+    consultation_id = models.UUIDField(blank=True, null=True)
+    professional_id = models.UUIDField(blank=True, null=True)
+    
+    # Información del medicamento (puede ser de medication_database o manual)
+    medication_database_id = models.UUIDField(blank=True, null=True)  # FK a medication_database
+    medication_name = models.TextField(blank=True, null=True)  # Nombre comercial/genérico
+    generic_name = models.TextField(blank=True, null=True)
+    concentration = models.TextField(blank=True, null=True)
+    pharmaceutical_form = models.TextField(blank=True, null=True)
+    
+    # Prescripción específica
+    dosage = models.TextField(blank=True, null=True)  # "1 tableta"
+    frequency = models.TextField(blank=True, null=True)  # "cada 8 horas"
+    duration = models.TextField(blank=True, null=True)  # "por 7 días"
+    special_instructions = models.TextField(blank=True, null=True)  # "antes de comer"
+    
+    # Indicaciones médicas específicas
+    medical_indication = models.TextField(blank=True, null=True)  # Para qué se prescribe
+    
+    # Control y metadata
+    clinic_id = models.BooleanField(blank=True, null=True)
+    user_id = models.UUIDField(blank=True, null=True)
+    created_at = models.DateTimeField(blank=True, null=True)
+    updated_at = models.DateTimeField(blank=True, null=True)
+
+    class Meta:
+        db_table = 'prescription_medications'
+        managed = False  # Use existing Supabase table
+        indexes = [
+            models.Index(fields=['prescription_id']),
+            models.Index(fields=['patient_id']),
+            models.Index(fields=['consultation_id']),
+            models.Index(fields=['medication_database_id']),
+        ]
+
+    def __str__(self):
+        return f"{self.medication_name} - {self.dosage} {self.frequency}"
+
+    @property
+    def full_prescription_text(self):
+        """Texto completo de la prescripción para imprimir"""
+        parts = [self.medication_name]
+        if self.concentration:
+            parts.append(f"({self.concentration})")
+        if self.dosage:
+            parts.append(f"- {self.dosage}")
+        if self.frequency:
+            parts.append(f"{self.frequency}")
+        if self.duration:
+            parts.append(f"por {self.duration}")
+        if self.special_instructions:
+            parts.append(f"- {self.special_instructions}")
+        return " ".join(parts)
+
+    def get_medication_from_database(self):
+        """Obtiene información completa del medicamento del catálogo"""
+        if self.medication_database_id:
+            try:
+                return MedicationDatabase.objects.get(id=self.medication_database_id)
+            except MedicationDatabase.DoesNotExist:
+                return None
+        return None
 
     @classmethod
-    def get_active_by_patient(cls, patient_id, clinic_id=None, workspace_id=None):
-        """Get active prescriptions for a patient"""
-        queryset = cls.objects.filter(
-            patient_id=patient_id,
-            status='active'
-        ).order_by('-date_prescribed')
-        
-        if clinic_id:
-            queryset = queryset.filter(clinic_id=clinic_id)
-        elif workspace_id:
-            queryset = queryset.filter(workspace_id=workspace_id)
-            
-        return queryset
+    def get_by_prescription(cls, prescription_id):
+        """Obtiene todos los medicamentos de una receta"""
+        return cls.objects.filter(prescription_id=prescription_id).order_by('created_at')
 
     @classmethod
-    def get_by_professional(cls, professional_id, clinic_id=None, workspace_id=None):
-        """Get prescriptions created by a professional"""
-        queryset = cls.objects.filter(
-            created_by=professional_id
-        ).order_by('-date_prescribed')
+    def get_by_patient(cls, patient_id, user_id=None, clinic_shared=None):
+        """Obtiene medicamentos prescritos para un paciente"""
+        queryset = cls.objects.filter(patient_id=patient_id).order_by('-created_at')
         
-        if clinic_id:
-            queryset = queryset.filter(clinic_id=clinic_id)
-        elif workspace_id:
-            queryset = queryset.filter(workspace_id=workspace_id)
+        if clinic_shared is not None:
+            queryset = queryset.filter(clinic_id=clinic_shared)
+        elif user_id:
+            queryset = queryset.filter(user_id=user_id)
             
         return queryset

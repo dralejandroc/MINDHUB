@@ -36,8 +36,8 @@ interface IndicatorDefinition {
 
 interface IndicatorSettings {
   id?: string;
-  clinic_id?: string;
-  workspace_id?: string;
+  clinic_id?: boolean;
+  user_id?: string;
   enabled_indicators: string[];
   custom_targets: { [key: string]: number };
   notification_preferences: {

@@ -35,10 +35,10 @@ from .serializers import (
 
 class AppointmentViewSet(AgendaDualViewSet):
     """
-    🎯 DUAL SYSTEM Appointment management ViewSet
-    Automatically filters by license type:
-    - LICENCIA CLÍNICA: WHERE clinic_id = user.clinic_id (shared agenda)
-    - LICENCIA INDIVIDUAL: WHERE workspace_id = user.workspace_id (private agenda)
+    🎯 SIMPLIFIED SYSTEM Appointment management ViewSet
+    Automatically filters by ownership:
+    - CLINIC SHARED: WHERE clinic_id = true (shared agenda)
+    - INDIVIDUAL: WHERE user_id = auth.uid() (private agenda)
     """
     queryset = Appointment.objects.all()
     serializer_class = AppointmentSerializer

@@ -64,8 +64,8 @@ class PatientTransaction(models.Model):
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='completed')
     
     # User tracking
-    created_by = models.ForeignKey('expedix.User', on_delete=models.PROTECT, related_name='created_transactions')
-    processed_by = models.ForeignKey('expedix.User', on_delete=models.PROTECT, null=True, blank=True, related_name='processed_transactions')
+    created_by = models.ForeignKey('expedix.Profile', on_delete=models.PROTECT, related_name='created_transactions')
+    processed_by = models.ForeignKey('expedix.Profile', on_delete=models.PROTECT, null=True, blank=True, related_name='processed_transactions')
     
     # Timestamps
     transaction_date = models.DateTimeField()
@@ -214,7 +214,7 @@ class Invoice(models.Model):
     notes = models.TextField(blank=True, null=True)
     
     # User tracking
-    created_by = models.ForeignKey('expedix.User', on_delete=models.PROTECT, related_name='created_invoices')
+    created_by = models.ForeignKey('expedix.Profile', on_delete=models.PROTECT, related_name='created_invoices')
     
     # Timestamps
     created_at = models.DateTimeField(auto_now_add=True)

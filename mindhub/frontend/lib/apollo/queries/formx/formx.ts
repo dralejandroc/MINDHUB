@@ -13,7 +13,7 @@ export const GET_DYNAMIC_FORMS = gql`
           status
           created_by
           clinic_id
-          workspace_id
+          user_id
           created_at
           updated_at
           is_public

@@ -1,5 +1,7 @@
 # TENANT ARCHITECTURE AUDIT - CRITICAL ISSUES REPORT
 
+> **⚠️ DEPRECATED DOCUMENTATION**: This audit describes issues with the old workspace_id architecture. As of 2025-01-11, these issues have been resolved with the simplified clinic_id (boolean) + user_id pattern.
+
 **Date**: 2025-01-19
 **Status**: 🚨 CRITICAL - IMMEDIATE ACTION REQUIRED
 **Priority**: P0 - System-breaking issues

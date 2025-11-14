@@ -1,9 +1,9 @@
 """
-🎯 DUAL SYSTEM MIDDLEWARE - UNIVERSAL PATTERN
-Provides universal filtering for ViewSets based on license type
+🎯 SIMPLIFIED SYSTEM MIDDLEWARE - UNIVERSAL PATTERN
+Provides universal filtering for ViewSets based on simplified architecture
 Supports:
-- LICENCIA CLÍNICA: WHERE clinic_id = user.clinic_id  
-- LICENCIA INDIVIDUAL: WHERE workspace_id = user.individual_workspace_id
+- CLINIC SHARED: WHERE clinic_id = true  
+- INDIVIDUAL: WHERE user_id = auth.uid()
 """
 from django.utils.deprecation import MiddlewareMixin
 import logging
@@ -13,37 +13,42 @@ logger = logging.getLogger(__name__)
 
 class DualSystemFilterMixin:
     """
-    Mixin for ViewSets to automatically filter by license type
+    Mixin for ViewSets to automatically filter by simplified architecture
     Usage: class MyViewSet(DualSystemFilterMixin, viewsets.ModelViewSet)
     """
     
     def get_queryset(self):
         """
-        Universal dual system filtering pattern
+        Universal simplified system filtering pattern
         """
         queryset = super().get_queryset()
         
-        # 🧪 TEMPORARY: Inject test user context for dual system testing
+        # 🧪 TEMPORARY: Inject test user context for simplified system testing
         if not hasattr(self.request, 'user_context'):
-            # Simulate dr_aleks_c (individual license) if no test_mode param
+            # Simulate user context based on test_mode param
             test_mode = self.request.query_params.get('test_mode', 'individual')
+<<<<<<< HEAD
             print('TEST MODE:', test_mode)
+=======
+            user_id = getattr(self.request, 'supabase_user_id', None)
+            
+>>>>>>> origin/main
             if test_mode == 'clinic':
-                # Simulate test@mindhub.com (clinic license)
+                # Simulate clinic shared access
                 self.request.user_context = {
                     'license_type': 'clinic',
-                    'clinic_id': '38633a49-10e8-4138-b44b-7b7995d887e7',
-                    'workspace_id': None
+                    'clinic_shared': True,
+                    'user_id': user_id
                 }
-                logger.info('🧪 TESTING: Injected CLINIC license context')
+                logger.info('🧪 TESTING: Injected CLINIC shared context')
             else:
-                # Simulate dr_aleks_c (individual license)
+                # Simulate individual user access
                 self.request.user_context = {
-                    'license_type': 'individual', 
-                    'clinic_id': None,
-                    'workspace_id': '8a956bcb-abca-409e-8ae8-2604372084cf'
+                    'license_type': 'individual',
+                    'clinic_shared': False,
+                    'user_id': user_id or 'test-user-id'
                 }
-                logger.info('🧪 TESTING: Injected INDIVIDUAL license context')
+                logger.info('🧪 TESTING: Injected INDIVIDUAL user context')
         
         # Check if user context is available
         if not hasattr(self.request, 'user_context'):
@@ -76,8 +81,21 @@ class DualSystemFilterMixin:
             else:
                 logger.error(f'Individual license but no workspace_id or user_id found for filtering')
                 return queryset.none()
+        user_id = getattr(self.request, 'supabase_user_id', None)
         
-        logger.warning(f'Unknown license type: {license_type} - returning empty queryset')
+        # Apply simplified architecture filtering: clinic_id=true OR user_id=auth.uid()
+        from django.db.models import Q
+        
+        if user_id:
+            # Filter records that are either clinic-shared OR owned by the user
+            return queryset.filter(
+                Q(clinic_id=True) | Q(user_id=user_id)
+            )
+        else:
+            logger.error('No user_id found for filtering - returning empty queryset')
+            return queryset.none()
+        
+        logger.warning('No user context found - returning empty queryset')
         return queryset.none()
     
     def perform_create(self, serializer):

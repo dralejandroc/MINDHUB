@@ -92,11 +92,11 @@ export async function GET(request: Request) {
       .order('created_at', { ascending: false })
       .range(offset, offset + limit - 1);
 
-    // Aplicar filtros
-    if (tenantContext.type === 'clinic') {
-      query = query.eq('clinic_id', tenantContext.id);
+    // Aplicar filtros con nueva arquitectura simplificada
+    if (tenantContext.clinic_id) {
+      query = query.eq('clinic_id', true);
     } else {
-      query = query.eq('workspace_id', tenantContext.id);
+      query = query.eq('user_id', tenantContext.user_id);
     }
 
     if (patientId) {
@@ -128,7 +128,7 @@ export async function GET(request: Request) {
       limit,
       offset,
       filters: { patient_id: patientId, status },
-      tenant_context: tenantContext.type
+      tenant_context: tenantContext.clinic_id ? 'clinic' : 'individual'
     });
 
   } catch (error) {
@@ -174,7 +174,7 @@ export async function POST(request: Request) {
       .from('patients')
       .select('id, first_name, last_name')
       .eq('id', body.patient_id)
-      .eq(tenantContext.type === 'clinic' ? 'clinic_id' : 'workspace_id', tenantContext.id)
+      .eq(tenantContext.clinic_id ? 'clinic_id' : 'user_id', tenantContext.clinic_id ? true : tenantContext.user_id)
       .single();
 
     if (patientError || !patient) {

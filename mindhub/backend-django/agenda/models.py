@@ -65,9 +65,9 @@ class Appointment(models.Model):
     reminder_sent = models.BooleanField(blank=True, null=True)
     reminder_date = models.DateTimeField(blank=True, null=True)
     
-    # 🎯 DUAL SYSTEM: EXACT as Supabase
-    clinic_id = models.UUIDField(blank=True, null=True)
-    workspace_id = models.UUIDField(blank=True, null=True)
+    # 🎯 SIMPLIFIED SYSTEM: Updated architecture
+    clinic_id = models.BooleanField(default=False)  # true = clinic appointment, false = individual appointment
+    user_id = models.UUIDField(blank=True, null=True)  # Owner of the appointment
 
     class Meta:
         db_table = 'appointments'
@@ -78,7 +78,7 @@ class Appointment(models.Model):
             models.Index(fields=['appointment_date']),
             models.Index(fields=['status']),
             models.Index(fields=['clinic_id']),
-            models.Index(fields=['workspace_id']),
+            models.Index(fields=['user_id']),
         ]
 
     def __str__(self):
@@ -132,13 +132,13 @@ class AppointmentHistory(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     appointment = models.ForeignKey(Appointment, on_delete=models.CASCADE, related_name='history')
     
-    # 🎯 DUAL SYSTEM: Hereda el owner del appointment
-    clinic_id = models.UUIDField(blank=True, null=True, help_text="Inherited from appointment")
-    workspace_id = models.UUIDField(blank=True, null=True, help_text="Inherited from appointment")
+    # 🎯 SIMPLIFIED SYSTEM: Simplified architecture
+    clinic_id = models.BooleanField(default=False, help_text="true = clinic appointment, false = individual appointment")
+    user_id = models.UUIDField(blank=True, null=True, help_text="Owner of the appointment history")
     action = models.CharField(max_length=20, choices=ACTION_CHOICES)
     changes = models.JSONField(help_text="Details of changes made")
     reason = models.TextField(blank=True, null=True)
-    modified_by = models.ForeignKey('expedix.User', on_delete=models.PROTECT)
+    modified_by = models.ForeignKey('expedix.Profile', on_delete=models.PROTECT)
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -172,12 +172,12 @@ class AppointmentConfirmation(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     appointment = models.ForeignKey(Appointment, on_delete=models.CASCADE, related_name='confirmations')
     
-    # 🎯 DUAL SYSTEM: Hereda el owner del appointment
-    clinic_id = models.UUIDField(blank=True, null=True, help_text="Inherited from appointment")
-    workspace_id = models.UUIDField(blank=True, null=True, help_text="Inherited from appointment")
+    # 🎯 SIMPLIFIED SYSTEM: Simplified architecture
+    clinic_id = models.BooleanField(default=False, help_text="true = clinic confirmation, false = individual confirmation")
+    user_id = models.UUIDField(blank=True, null=True, help_text="Owner of the confirmation")
     confirmation_type = models.CharField(max_length=20, choices=CONFIRMATION_TYPE_CHOICES)
     confirmation_method = models.CharField(max_length=20, choices=CONFIRMATION_METHOD_CHOICES)
-    confirmed_by = models.ForeignKey('expedix.User', on_delete=models.PROTECT)
+    confirmed_by = models.ForeignKey('expedix.Profile', on_delete=models.PROTECT)
     notes = models.TextField(blank=True, null=True)
     confirmed_at = models.DateTimeField(auto_now_add=True)
 
@@ -206,11 +206,11 @@ class ProviderSchedule(models.Model):
     ]
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    provider = models.ForeignKey('expedix.User', on_delete=models.CASCADE, related_name='provider_schedules')
+    provider = models.ForeignKey('expedix.Profile', on_delete=models.CASCADE, related_name='provider_schedules')
     
-    # 🎯 DUAL SYSTEM: Schedule pertenece a clínica O workspace individual
-    clinic_id = models.UUIDField(blank=True, null=True, help_text="For clinic licenses")
-    workspace_id = models.UUIDField(blank=True, null=True, help_text="For individual licenses")
+    # 🎯 SIMPLIFIED SYSTEM: Simplified architecture
+    clinic_id = models.BooleanField(default=False, help_text="true = clinic schedule, false = individual schedule")
+    user_id = models.UUIDField(blank=True, null=True, help_text="Owner of the schedule")
     weekday = models.IntegerField(choices=WEEKDAY_CHOICES)
     start_time = models.TimeField()
     end_time = models.TimeField()
@@ -245,11 +245,11 @@ class ScheduleBlock(models.Model):
     ]
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    provider = models.ForeignKey('expedix.User', on_delete=models.CASCADE, related_name='schedule_blocks')
+    provider = models.ForeignKey('expedix.Profile', on_delete=models.CASCADE, related_name='schedule_blocks')
     
-    # 🎯 DUAL SYSTEM: Block pertenece a clínica O workspace individual
-    clinic_id = models.UUIDField(blank=True, null=True, help_text="For clinic licenses")
-    workspace_id = models.UUIDField(blank=True, null=True, help_text="For individual licenses")
+    # 🎯 SIMPLIFIED SYSTEM: Simplified architecture
+    clinic_id = models.BooleanField(default=False, help_text="true = clinic block, false = individual block")
+    user_id = models.UUIDField(blank=True, null=True, help_text="Owner of the schedule block")
     block_type = models.CharField(max_length=20, choices=BLOCK_TYPE_CHOICES)
     start_date = models.DateField()
     end_date = models.DateField()
@@ -292,11 +292,11 @@ class WaitingList(models.Model):
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     patient = models.ForeignKey('expedix.Patient', on_delete=models.CASCADE, related_name='waiting_list_entries')
-    provider = models.ForeignKey('expedix.User', on_delete=models.CASCADE, related_name='waiting_list')
+    provider = models.ForeignKey('expedix.Profile', on_delete=models.CASCADE, related_name='waiting_list')
     
-    # 🎯 DUAL SYSTEM: Waiting list pertenece a clínica O workspace individual
-    clinic_id = models.UUIDField(blank=True, null=True, help_text="For clinic licenses")
-    workspace_id = models.UUIDField(blank=True, null=True, help_text="For individual licenses")
+    # 🎯 SIMPLIFIED SYSTEM: Simplified architecture
+    clinic_id = models.BooleanField(default=False, help_text="true = clinic waiting list, false = individual waiting list")
+    user_id = models.UUIDField(blank=True, null=True, help_text="Owner of the waiting list entry")
     appointment_type = models.CharField(max_length=50, choices=Appointment.TYPE_CHOICES)
     preferred_date_start = models.DateField(blank=True, null=True)
     preferred_date_end = models.DateField(blank=True, null=True)
@@ -306,7 +306,7 @@ class WaitingList(models.Model):
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='waiting')
     reason = models.CharField(max_length=200)
     notes = models.TextField(blank=True, null=True)
-    added_by = models.ForeignKey('expedix.User', on_delete=models.PROTECT, related_name='waiting_list_entries_added')
+    added_by = models.ForeignKey('expedix.Profile', on_delete=models.PROTECT, related_name='waiting_list_entries_added')
     contacted_at = models.DateTimeField(blank=True, null=True)
     expires_at = models.DateTimeField(blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)

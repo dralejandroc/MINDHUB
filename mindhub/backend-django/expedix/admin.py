@@ -4,15 +4,15 @@ Provides admin interface for patient management
 """
 
 from django.contrib import admin
-from .models import User, Patient, MedicalHistory, Consultation
+from .models import Profile, Patient, MedicalHistory, Consultation
 
 
-@admin.register(User)
-class UserAdmin(admin.ModelAdmin):
-    list_display = ['email', 'first_name', 'last_name', 'role', 'organization', 'is_active', 'created_at']
-    list_filter = ['role', 'is_active', 'specialization', 'created_at']
-    search_fields = ['email', 'first_name', 'last_name', 'organization']
-    readonly_fields = ['id', 'supabase_user_id', 'created_at', 'updated_at']
+@admin.register(Profile)
+class ProfileAdmin(admin.ModelAdmin):
+    list_display = ['email', 'first_name', 'last_name', 'license_type', 'specialization', 'is_active', 'created_at']
+    list_filter = ['license_type', 'is_active', 'specialization', 'created_at']
+    search_fields = ['email', 'first_name', 'last_name', 'professional_title']
+    readonly_fields = ['id', 'created_at', 'updated_at']
     ordering = ['-created_at']
 
 

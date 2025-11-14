@@ -31,7 +31,7 @@ class AppointmentSerializer(serializers.ModelSerializer):
             'confirmation_sent', 'confirmation_date',
             'is_recurring', 'recurring_pattern',
             'reminder_sent', 'reminder_date',
-            'clinic_id', 'workspace_id',
+            'clinic_id', 'user_id',
             # Computed fields for frontend compatibility
             'patient_name', 'professional_name', 'duration_minutes',
             'is_upcoming', 'can_be_confirmed', 'can_be_cancelled'
@@ -80,7 +80,7 @@ class AppointmentCreateSerializer(serializers.ModelSerializer):
             'patient_id', 'professional_id', 'appointment_date', 
             'start_time', 'end_time', 'appointment_type', 
             'reason', 'notes', 'internal_notes',
-            'clinic_id', 'workspace_id'
+            'clinic_id', 'user_id'
         ]
 
     def validate_appointment_date(self, value):
