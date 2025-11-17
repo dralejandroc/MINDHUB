@@ -11,6 +11,8 @@ from django.db.models import Q
 from django.db import models
 import logging
 
+from .authentication import SupabaseProxyAuthentication
+
 from .models import Patient, Consultation, Prescription  
 from .serializers import PatientSerializer, PatientCreateSerializer, ConsultationSerializer, PrescriptionSerializer
 
@@ -25,6 +27,7 @@ class SimplePatientViewSet(viewsets.ModelViewSet):
     """
     serializer_class = PatientSerializer
     permission_classes = [IsAuthenticated]
+    authentication_classes = [SupabaseProxyAuthentication]  # 👈 IMPORTANTE
     
     def get_queryset(self):
         """Solo retorna pacientes del user autenticado"""
@@ -40,7 +43,7 @@ class SimplePatientViewSet(viewsets.ModelViewSet):
         serializer = PatientCreateSerializer(data=data)
         if serializer.is_valid():
             patient = serializer.save()
-            logger.info(f'✅ [SIMPLIFIED] Patient created: {patient.id} by {request.user_email}')
+            logger.info(f'✅ [SIMPLIFIED] Patient created: {patient.id} by {patient.email}')
             
             # Retornar con el serializer de lectura
             response_serializer = PatientSerializer(patient)
@@ -81,6 +84,7 @@ class SimpleConsultationViewSet(viewsets.ModelViewSet):
     """Consultas ultra-simplificadas"""
     serializer_class = ConsultationSerializer
     permission_classes = [IsAuthenticated]
+    authentication_classes = [SupabaseProxyAuthentication]  # 👈
     
     def get_queryset(self):
         """Solo consultas de pacientes del user"""
@@ -112,6 +116,7 @@ class SimplePrescriptionViewSet(viewsets.ModelViewSet):
     """Recetas ultra-simplificadas"""
     serializer_class = PrescriptionSerializer
     permission_classes = [IsAuthenticated]
+    authentication_classes = [SupabaseProxyAuthentication]  # 👈
     
     def get_queryset(self):
         """Solo recetas de pacientes del user"""

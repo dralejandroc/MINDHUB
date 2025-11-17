@@ -12,6 +12,7 @@ from django.contrib.postgres.fields import ArrayField
 from django.utils import timezone
 
 
+
 class SafeJSONField(models.JSONField):
     """
     Custom JSONField that handles corrupted JSON data gracefully
@@ -119,7 +120,7 @@ class Patient(models.Model):
     
     # Critical association fields - SIMPLIFIED ARCHITECTURE
     created_by = models.UUIDField(blank=True, null=True)  # Supabase user ID del creador
-    clinic_id = models.BooleanField(default=False)  # true = clinic shared, false = individual user
+    clinic_id = models.UUIDField(blank=True, null=True)  # true = clinic shared, false = individual user
     assigned_professional_id = models.UUIDField(blank=True, null=True)  # Profesional asignado
     user_id = models.UUIDField(blank=True, null=True)  # Owner of the record
     
@@ -754,3 +755,117 @@ class PrescriptionMedication(models.Model):
             queryset = queryset.filter(user_id=user_id)
             
         return queryset
+
+
+def default_working_days():
+    return [
+        "monday",
+        "tuesday",
+        "wednesday",
+        "thursday",
+        "friday",
+        "saturday",
+        "sunday",
+    ]
+
+
+def default_work_days():
+    return [
+        "monday",
+        "tuesday",
+        "wednesday",
+        "thursday",
+        "friday",
+        "saturday",
+    ]
+
+
+def default_working_hours():
+    return {
+        "start": "08:00",
+        "end": "20:00",
+    }
+
+
+def default_lunch_break():
+    return {
+        "enabled": True,
+        "start": "13:00",
+        "end": "15:00",
+    }
+
+
+def default_consultation_types():
+    return [
+        {
+            "id": "1",
+            "name": "Primera consulta",
+            "duration": 60,
+            "price": 850,
+            "color": "#8B5CF6",
+        },
+        {
+            "id": "2",
+            "name": "Consulta subsecuente",
+            "duration": 60,
+            "price": 750,
+            "color": "#10B981",
+        },
+        {
+            "id": "3",
+            "name": "Consulta breve",
+            "duration": 30,
+            "price": 500,
+            "color": "#F59E0B",
+        },
+        {
+            "id": "4",
+            "name": "Videoconsulta",
+            "duration": 45,
+            "price": 650,
+            "color": "#3B82F6",
+        },
+        {
+            "id": "5",
+            "name": "Consulta de urgencia",
+            "duration": 90,
+            "price": 1200,
+            "color": "#EF4444",
+        },
+    ]
+
+
+class ScheduleConfig(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+
+    # UUID del usuario (obtenido del token)
+    user_id = models.UUIDField()
+
+    # Lo dejamos opcional para poder usar None por ahora
+    clinic_id = models.UUIDField(null=True, blank=True)
+
+    workingDays = models.JSONField(default=default_working_days, blank=True)
+    workingHours = models.JSONField(default=default_working_hours, blank=True)
+    defaultAppointmentDuration = models.IntegerField(default=60)
+    bufferTime = models.IntegerField(default=15)
+    lunchBreak = models.JSONField(default=default_lunch_break, blank=True)
+    consultationTypes = models.JSONField(default=default_consultation_types, blank=True)
+
+    work_days = models.JSONField(default=default_work_days, blank=True)
+    start_time = models.CharField(max_length=5, default="08:00")
+    end_time = models.CharField(max_length=5, default="20:00")
+    appointment_duration = models.IntegerField(default=60)
+    break_time = models.IntegerField(default=15)
+    lunch_start = models.CharField(max_length=5, default="13:00")
+    lunch_end = models.CharField(max_length=5, default="14:00")
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        # ahora puede haber solo 1 config por user (clinic_id sin usar o siempre null)
+        unique_together = ("user_id", "clinic_id")
+
+    def __str__(self):
+        return f"ScheduleConfig(user={self.user_id}, clinic={self.clinic_id})"
+

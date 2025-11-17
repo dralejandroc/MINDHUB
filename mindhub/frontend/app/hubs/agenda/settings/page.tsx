@@ -20,6 +20,7 @@ import {
   PencilIcon
 } from '@heroicons/react/24/outline';
 import { Tooltip } from '@/components/ui/Tooltip';
+import axiosClient from '@/lib/axiosClient';
 
 interface ScheduleSettings {
   workingHours: {
@@ -129,12 +130,16 @@ export default function AgendaSettingsPage() {
     setIsSaving(true);
     try {
       console.log('💾 [Agenda Settings Page] Saving settings via Hybrid Service - Django ONLY');
+      console.log('SETTINGS:', settings);
       
-      const success = await agendaSettingsHybridService.saveScheduleSettings(settings);
+      // const success = await agendaSettingsHybridService.saveScheduleSettings(settings);
+      const success = await axiosClient.post('/api/expedix/schedule-config/', settings);
+      console.log('RESPONSE: ', success);
+      
       if (success) {
         console.log('✅ [Agenda Settings Page] Settings saved successfully via hybrid service');
         alert('Configuración guardada exitosamente');
-        router.push('/hubs/agenda');
+        // router.push('/hubs/agenda');
       } else {
         console.error('❌ [Agenda Settings Page] Save failed via hybrid service');
         alert('Error al guardar la configuración - Conexión híbrida fallida');

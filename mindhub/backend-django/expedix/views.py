@@ -18,6 +18,14 @@ from django.utils import timezone
 from django.db import models
 from datetime import datetime, timedelta
 import logging
+from uuid import UUID
+from .models import ScheduleConfig
+
+from rest_framework.views import APIView
+
+from django.utils.decorators import method_decorator
+from django.views.decorators.csrf import csrf_exempt
+from .serializers import (ScheduleConfigSerializer)
 
 logger = logging.getLogger(__name__)
 
@@ -42,7 +50,7 @@ from .serializers import (
 from .authentication import SupabaseProxyAuthentication
 from middleware.base_viewsets import ExpedixDualViewSet, DualSystemReadOnlyViewSet
 
-
+@method_decorator(csrf_exempt, name='dispatch')
 class PatientViewSet(ExpedixDualViewSet):  # 🎯 RESTORED DUAL SYSTEM after fixing JSONField
     """
     🎯 DUAL SYSTEM Patient management ViewSet
@@ -514,6 +522,78 @@ class ScheduleConfigViewSet(viewsets.ViewSet):
     def create(self, request):
         """POST /api/expedix/schedule-config/ (alias for PUT)"""
         return self.update(request)
+
+
+class ScheduleConfigView(APIView):
+    """
+    Config de agenda por usuario autenticado.
+
+    - GET  /api/expedix/schedule-config/
+    - PUT  /api/expedix/schedule-config/
+    - POST /api/expedix/schedule-config/  (alias de PUT)
+    """
+
+    authentication_classes = [SupabaseProxyAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def _get_user_id(self, request):
+        """
+        Ajusta esto según cómo deje el user tu SupabaseProxyAuthentication.
+        Ejemplos:
+        - Si request.user.id YA es el UUID de Supabase -> return request.user.id
+        - Si usas Profile y tiene supabase_user_id -> return request.user.supabase_user_id
+        """
+        return request.user.id  # AJUSTA AQUÍ si usas otro campo
+
+    def _get_or_create_config(self, user_id):
+        # clinic_id lo dejamos en None por ahora
+        obj, created = ScheduleConfig.objects.get_or_create(
+            user_id=user_id,
+            clinic_id=None,
+        )
+        if created:
+            logger.info(f"[ScheduleConfig] Creado config por defecto para user={user_id}")
+        return obj
+
+    def get(self, request, *args, **kwargs):
+        user_id = self._get_user_id(request)
+
+        config = self._get_or_create_config(user_id)
+        serializer = ScheduleConfigSerializer(config)
+
+        return Response(
+            {
+                "success": True,
+                "data": serializer.data,
+                "timestamp": timezone.now().isoformat(),
+            },
+            status=status.HTTP_200_OK,
+        )
+
+    def put(self, request, *args, **kwargs):
+        user_id = self._get_user_id(request)
+
+        config = self._get_or_create_config(user_id)
+
+        logger.info(f"[ScheduleConfig] Updating config for user={user_id}: {request.data}")
+
+        serializer = ScheduleConfigSerializer(config, data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+
+        return Response(
+            {
+                "success": True,
+                "message": "Schedule configuration updated successfully",
+                "data": serializer.data,
+                "timestamp": timezone.now().isoformat(),
+            },
+            status=status.HTTP_200_OK,
+        )
+
+    def post(self, request, *args, **kwargs):
+        # Alias de PUT
+        return self.put(request, *args, **kwargs)
 
 
 class DualSystemTestViewSet(viewsets.ViewSet):

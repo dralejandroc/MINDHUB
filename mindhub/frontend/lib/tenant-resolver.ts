@@ -1,13 +1,14 @@
 /**
  * SIMPLIFIED TENANT ARCHITECTURE RESOLVER
- * 
+ *
  * New simplified architecture:
  * - clinic_id: Boolean (true = clinic shared, false = individual user)
  * - user_id: For record ownership
  * - NO MORE workspace_id references
  */
 
-import { createClient } from '@/lib/supabase/client';
+// IMPORT PARA SERVER (NO CLIENT)
+import { createServerClient } from '@/lib/supabase/client-server';
 
 export interface TenantContext {
   type: 'clinic' | 'individual';
@@ -40,25 +41,23 @@ export interface Clinic {
   is_active: boolean;
 }
 
-// IndividualWorkspace interface removed - no longer needed
-
 /**
  * Get user profile with clinic_id information
  */
 export async function getUserProfile(userId: string): Promise<UserProfile | null> {
-  const supabase = createClient();
-  
+  const supabase = createServerClient();
+
   const { data: profile, error } = await supabase
     .from('profiles')
     .select('id, clinic_id, email, first_name, last_name')
     .eq('id', userId)
     .single();
-    
+
   if (error) {
     console.error('❌ [Tenant Resolver] Error fetching user profile:', error);
     return null;
   }
-  
+
   return profile as UserProfile;
 }
 
@@ -67,75 +66,81 @@ export async function getUserProfile(userId: string): Promise<UserProfile | null
  * Returns clinic_id boolean and user_id for record ownership
  */
 export async function resolveTenantContext(userId: string): Promise<TenantContext> {
-  const supabase = createClient();
-  
+  const supabase = createServerClient();
+
   console.log(`🔍 [Tenant Resolver] Resolving simplified context for user: ${userId}`);
-  
+
   try {
-    // Check if user belongs to a clinic
+    // Profile con relación a clinic
     const { data: profile, error: profileError } = await supabase
       .from('profiles')
-      .select(`
+      .select(
+        `
         id, clinic_id, first_name, last_name,
         clinics:clinic_id (id, name, is_active)
-      `)
+      `
+      )
       .eq('id', userId)
       .single();
-      
+
     if (profileError) {
       console.error('❌ [Tenant Resolver] Profile query failed:', profileError);
     }
-    
-    // Check for clinic membership
+
+    // Memberships activos
     const { data: memberships } = await supabase
       .from('tenant_memberships')
-      .select(`
+      .select(
+        `
         id, clinic_id, role, permissions, is_active,
         clinics:clinic_id (id, name, is_active)
-      `)
+      `
+      )
       .eq('user_id', userId)
       .eq('is_active', true)
       .order('created_at', { ascending: false })
       .limit(1);
-    
+
     const hasClinicMembership = memberships && memberships.length > 0;
-    const hasDirectClinicAccess = profile && profile.clinic_id;
-    
+    const hasDirectClinicAccess = profile && (profile as any).clinic_id;
+
     if (hasClinicMembership || hasDirectClinicAccess) {
-      const clinicData = hasClinicMembership 
-        ? (memberships[0] as any).clinics
+      const clinicData = hasClinicMembership
+        ? (memberships![0] as any).clinics
         : (profile as any).clinics;
-      
-      const role = hasClinicMembership 
-        ? memberships[0].role 
-        : 'member';
-        
+
+      const role = hasClinicMembership ? (memberships![0].role as 'owner' | 'admin' | 'member') : 'member';
+
       console.log(`✅ [Tenant Resolver] User belongs to clinic: ${clinicData?.name}`);
+
       return {
         type: 'clinic',
         clinic_id: true,
         user_id: userId,
         name: clinicData?.name || 'Clinic',
-        role: role as 'owner' | 'admin' | 'member',
-        permissions: hasClinicMembership ? memberships[0].permissions : {}
+        role,
+        permissions: hasClinicMembership ? memberships![0].permissions : {},
       };
     }
-    
+
     // Individual user
-    const userName = profile?.first_name ? `${profile.first_name}${profile.last_name ? ' ' + profile.last_name : ''}` : 'Usuario';
+    const userName = profile?.first_name
+      ? `${profile.first_name}${profile.last_name ? ' ' + profile.last_name : ''}`
+      : 'Usuario';
+
     console.log(`✅ [Tenant Resolver] Individual user: ${userName}`);
+
     return {
       type: 'individual',
       clinic_id: false,
       user_id: userId,
       name: `Workspace de ${userName}`,
       role: 'owner',
-      permissions: {}
+      permissions: {},
     };
-    
   } catch (error) {
     console.error('💥 [Tenant Resolver] CRITICAL ERROR:', error);
-    
+
     // EMERGENCY FALLBACK
     return {
       type: 'individual',
@@ -143,7 +148,7 @@ export async function resolveTenantContext(userId: string): Promise<TenantContex
       user_id: userId,
       name: 'Workspace Personal',
       role: 'owner',
-      permissions: {}
+      permissions: {},
     };
   }
 }
@@ -178,13 +183,13 @@ export function getTenantFilter(context: TenantContext): { clinic_id?: boolean; 
  * Uses simplified architecture with clinic_id boolean and user_id
  */
 export function addTenantContext<T extends Record<string, any>>(
-  data: T, 
+  data: T,
   context: TenantContext
 ): T & { clinic_id: boolean; user_id: string } {
   return {
     ...data,
     clinic_id: context.clinic_id,
-    user_id: context.user_id
+    user_id: context.user_id,
   };
 }
 
@@ -196,11 +201,13 @@ export function addConsultationTenantContext<T extends Record<string, any>>(
   data: T,
   context: TenantContext
 ): T & { clinic_id: boolean; user_id: string } {
-  console.log(`📝 [Tenant Resolver] Adding consultation context: clinic_id=${context.clinic_id}, user_id=${context.user_id}`);
+  console.log(
+    `📝 [Tenant Resolver] Adding consultation context: clinic_id=${context.clinic_id}, user_id=${context.user_id}`
+  );
   return {
     ...data,
     clinic_id: context.clinic_id,
-    user_id: context.user_id
+    user_id: context.user_id,
   };
 }
 
