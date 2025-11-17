@@ -4,7 +4,7 @@ Replaces Node.js API responses with Django serializers
 """
 
 from rest_framework import serializers
-from .models import Profile, Patient, MedicalHistory, Consultation, Prescription, ExpedixConfiguration, ConsultationTemplate, MedicationDatabase, PrescriptionMedication
+from .models import Profile, Patient, MedicalHistory, Consultation, Prescription, ExpedixConfiguration, ConsultationTemplate, MedicationDatabase, PrescriptionMedication, ScheduleConfig
 from .services.patient_service import PatientService
 # from agenda.models import Appointment  # REMOVED for Vercel deployment
 
@@ -53,23 +53,35 @@ class PatientSerializer(serializers.ModelSerializer):
 
 class PatientCreateSerializer(serializers.ModelSerializer):
     """
-    Patient creation serializer with FLEXIBLE validation
-    Uses configuration to determine required fields
-    Compatible with Supabase schema
+    Patient creation serializer con VALIDACIÓN FLEXIBLE
+    y `phone` realmente opcional.
     """
-    # Accept both formats for compatibility
-    birth_date = serializers.DateField(source='date_of_birth', required=False)
-    cell_phone = serializers.CharField(source='phone', required=False)
+    # Aceptar ambos formatos
+    birth_date = serializers.DateField(source='date_of_birth', required=False, allow_null=True)
+    
+    # OJO: ahora estos son OPCIONALES
+    phone = serializers.CharField(
+        required=False,
+        allow_blank=True,
+        allow_null=True,
+    )
+    cell_phone = serializers.CharField(   # alias de phone
+        source='phone',
+        required=False,
+        allow_blank=True,
+        allow_null=True,
+    )
+
     id = serializers.UUIDField(read_only=True)
     
     class Meta:
         model = Patient
         fields = [
-            # Core fields (always available)
+            # Core fields
             'id',
             'first_name', 'paternal_last_name', 'maternal_last_name', 'last_name',
             'email', 'phone', 'cell_phone', 'date_of_birth', 'birth_date', 'gender',
-            # Location information - NOW OPTIONAL BY DEFAULT
+            # Location
             'address', 'city', 'state', 'postal_code', 'country',
             # Mexican specific fields
             'curp', 'rfc', 'medical_record_number', 'blood_type',
@@ -80,8 +92,8 @@ class PatientCreateSerializer(serializers.ModelSerializer):
             # Professional assignment (optional)
             'assigned_professional_id', 'user_id',
             # Category
-            'patient_category', 'user_id', 
-            # Note: created_by and clinic_id are set automatically in views
+            'patient_category',
+            # Note: created_by y clinic_id los setea la view
         ]
     
     def __init__(self, *args, **kwargs):
@@ -95,19 +107,21 @@ class PatientCreateSerializer(serializers.ModelSerializer):
         if config:
             required_fields = config.get_required_fields()
             
-            # Set field requirements dynamically
             for field_name, field in self.fields.items():
-                # Map field names for compatibility
                 mapped_field_name = self._map_field_name(field_name)
-                
-                if mapped_field_name in required_fields:
+
+                # ⚠️ Si por alguna razón en config viene phone, lo puedes ignorar aquí:
+                if mapped_field_name in required_fields and mapped_field_name not in ['phone']:
                     field.required = True
-                    field.allow_blank = False
+                    # solo si el campo soporta allow_blank
+                    if hasattr(field, 'allow_blank'):
+                        field.allow_blank = False
                 else:
                     field.required = False
-                    field.allow_blank = True
+                    if hasattr(field, 'allow_blank'):
+                        field.allow_blank = True
         else:
-            # Fallback to default required fields if no config
+            # Fallback a defaults si no hay config
             self._set_default_requirements()
     
     def _map_field_name(self, field_name):
@@ -119,43 +133,42 @@ class PatientCreateSerializer(serializers.ModelSerializer):
         return mapping.get(field_name, field_name)
     
     def _set_default_requirements(self):
-        """Set default field requirements"""
-        # Default required fields as specified
+        """Set default field requirements (cuando NO hay config)"""
+        # 👉 Aquí QUITAMOS phone y cell_phone
         default_required = [
             'first_name', 'paternal_last_name', 'maternal_last_name',
-            'email', 'phone', 'cell_phone', 'date_of_birth', 'birth_date', 'gender'
+            'email', 'date_of_birth', 'birth_date', 'gender'
         ]
         
         for field_name, field in self.fields.items():
             if field_name in default_required:
                 field.required = True
-                field.allow_blank = False
+                if hasattr(field, 'allow_blank'):
+                    field.allow_blank = False
             else:
                 field.required = False
-                field.allow_blank = True
+                if hasattr(field, 'allow_blank'):
+                    field.allow_blank = True
 
     def validate_email(self, value):
-        # Only validate uniqueness for creation (when instance doesn't exist)
+        # Igual que tenías
         if self.instance is None:
-            if Patient.objects.filter(email=value).exists():
+            if value and Patient.objects.filter(email=value).exists():
                 raise serializers.ValidationError("Ya existe un paciente con este email.")
         else:
-            # For updates, exclude the current instance from the uniqueness check
-            if Patient.objects.filter(email=value).exclude(pk=self.instance.pk).exists():
+            if value and Patient.objects.filter(email=value).exclude(pk=self.instance.pk).exists():
                 raise serializers.ValidationError("Ya existe un paciente con este email.")
         return value
     
     def validate(self, attrs):
         """
-        Validate that patient identity is unique (names + date of birth)
-        This prevents creation of duplicate patients
+        Validar que identidad del paciente sea única (nombre + fecha de nacimiento)
         """
         first_name = attrs.get('first_name')
         paternal_last_name = attrs.get('paternal_last_name')
         maternal_last_name = attrs.get('maternal_last_name')
         date_of_birth = attrs.get('date_of_birth')
         
-        # Check if patient with same identity already exists
         if first_name and date_of_birth:
             query_filters = {
                 'first_name': first_name,
@@ -166,8 +179,6 @@ class PatientCreateSerializer(serializers.ModelSerializer):
             }
             
             existing_query = Patient.objects.filter(**query_filters)
-            
-            # For updates, exclude current instance
             if self.instance is not None:
                 existing_query = existing_query.exclude(pk=self.instance.pk)
                 
@@ -184,28 +195,24 @@ class PatientCreateSerializer(serializers.ModelSerializer):
     
     def create(self, validated_data):
         """
-        Create patient with auto-generated medical record number using PatientService
-        Implements the unique MRN system based on names + birth date as requested
+        Crear paciente con MRN auto-generado usando PatientService
         """
-        # Initialize PatientService
+        # Normalizar phone: '' → None
+        phone = validated_data.get('phone')
+        if phone in ['', None]:
+            validated_data['phone'] = None
+
         patient_service = PatientService()
-        
-        # Generate medical record number using PatientService
-        # This uses the hash-based system: MRN-YYYYMMDD-HASH6
         medical_record_number = patient_service.generate_medical_record_number(
             first_name=validated_data.get('first_name'),
             paternal_last_name=validated_data.get('paternal_last_name'),
             maternal_last_name=validated_data.get('maternal_last_name'),
             date_of_birth=validated_data.get('date_of_birth')
         )
-        
-        # Set the generated MRN in validated_data
         validated_data['medical_record_number'] = medical_record_number
         
-        # Create the patient instance
-        patient = super().create(validated_data)
-        
-        return patient
+        return super().create(validated_data)
+
 
 
 class MedicalHistorySerializer(serializers.ModelSerializer):
@@ -735,3 +742,34 @@ class MedicationSearchSerializer(serializers.Serializer):
     control_group = serializers.CharField(allow_null=True)
     therapeutic_indications = serializers.CharField(allow_null=True)
     laboratory = serializers.CharField(allow_null=True)
+
+class ScheduleConfigSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ScheduleConfig
+        fields = [
+            "id",
+            "user_id",
+            "clinic_id",
+            "workingDays",
+            "workingHours",
+            "defaultAppointmentDuration",
+            "bufferTime",
+            "lunchBreak",
+            "consultationTypes",
+            "work_days",
+            "start_time",
+            "end_time",
+            "appointment_duration",
+            "break_time",
+            "lunch_start",
+            "lunch_end",
+            "created_at",
+            "updated_at",
+        ]
+        read_only_fields = [
+            "id",
+            "user_id",
+            "clinic_id",
+            "created_at",
+            "updated_at",
+        ]

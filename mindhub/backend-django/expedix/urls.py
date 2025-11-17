@@ -9,6 +9,8 @@ from . import views
 from .views_consultation import ConsultationViewSet, PrescriptionViewSet
 from .views_medications import MedicationViewSet, DiagnosisViewSet
 from .simple_views import SimplePatientViewSet, SimpleConsultationViewSet, SimplePrescriptionViewSet
+from .views import ScheduleConfigView
+
 
 # Create DRF router
 router = DefaultRouter()
@@ -18,7 +20,7 @@ router.register(r'consultations', ConsultationViewSet, basename='consultations')
 router.register(r'medical-history', views.MedicalHistoryViewSet)
 router.register(r'prescriptions', PrescriptionViewSet, basename='prescriptions')  # Use the real prescription views
 router.register(r'users', views.UserViewSet)
-router.register(r'schedule-config', views.ScheduleConfigViewSet, basename='schedule-config')
+# router.register(r'schedule-config', views.ScheduleConfigViewSet, basename='schedule-config')
 router.register(r'debug-auth', views.DebugAuthViewSet, basename='debug-auth')
 router.register(r'dual-system-test', views.DualSystemTestViewSet, basename='dual-system-test')
 # Configuration endpoints
@@ -45,4 +47,5 @@ urlpatterns = [
     path('prescriptions/by-patient/', views.PrescriptionViewSet.as_view({'get': 'by_patient'}), name='prescriptions-by-patient'),
     path('prescriptions/by-professional/', views.PrescriptionViewSet.as_view({'get': 'by_professional'}), name='prescriptions-by-professional'),
     path('users/me/', views.UserViewSet.as_view({'get': 'me'}), name='user-profile'),
+    path("schedule-config/", ScheduleConfigView.as_view(), name="schedule-config"),
 ]
