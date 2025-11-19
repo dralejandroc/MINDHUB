@@ -60,7 +60,19 @@ export async function GET(request: Request) {
           'X-MindHub-Context': 'expedix-patients',
         },
       });
-
+      console.log('URL', djangoUrl);
+      
+      console.log('HEADERS:', {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${serviceRoleKey}`,
+          // Add proxy headers so Django knows the real user and tenant context
+          'X-Proxy-Auth': 'verified',
+          'X-User-ID': user.id,
+          'X-User-Email': user.email || '',
+          'X-Tenant-Context': JSON.stringify(tenantContext),
+          'X-MindHub-Context': 'expedix-patients',
+        });
+      
       if (djangoResponse.ok) {
         const data = await djangoResponse.json();
         const patientCount = data?.results?.length || data?.data?.length || 0;
