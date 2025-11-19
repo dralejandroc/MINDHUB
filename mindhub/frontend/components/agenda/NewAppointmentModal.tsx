@@ -12,6 +12,7 @@ import {
 } from '@heroicons/react/24/outline';
 import { createApiUrl } from '@/lib/api/api-url-builders';
 import { authGet } from '@/lib/api/auth-fetch';
+import axiosClient from '@/lib/axiosClient';
 
 interface Patient {
   id: string;
@@ -129,7 +130,14 @@ export default function NewAppointmentModal({ selectedDate, selectedTime, presel
         // For now, we'll let the backend handle user context via JWT
 
         // Load patients using correct API structure
-        const patientsResponse = await authGet(createApiUrl('/expedix/patients'));
+        // const patientsResponse = await authGet(createApiUrl('/expedix/patients'));
+        const patientResponse = await axiosClient.get('/api/expedix/patients');
+        console.log('AQUI CON AXIOS',patientResponse);
+        
+        const patientsResponse = {
+          ok: patientResponse.status === 200,
+          json: async () => patientResponse.data
+        };
         if (patientsResponse.ok) {
           const data = await patientsResponse.json();
           console.log('[NewAppointmentModal] API Response:', data);
