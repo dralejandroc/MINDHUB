@@ -15,6 +15,19 @@ SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-vercel-deployment-key
 # Override base settings for Vercel - TEMPORAL DEBUG para diagnóstico
 DEBUG = True
 
+# --- AWS / S3 SETTINGS ---
+
+AWS_ACCESS_KEY_ID = env('AWS_ACCESS_KEY_ID', default='')
+AWS_SECRET_ACCESS_KEY = env('AWS_SECRET_ACCESS_KEY', default='')
+AWS_STORAGE_BUCKET_NAME = env('AWS_STORAGE_BUCKET_NAME', default='')
+AWS_S3_REGION_NAME = env('AWS_S3_REGION_NAME', default='us-west-2')  # tu región por defecto
+
+# (Opcional) endpoint base para construir URLs públicas
+AWS_S3_CUSTOM_DOMAIN = env(
+    'AWS_S3_CUSTOM_DOMAIN',
+    default=f"{AWS_STORAGE_BUCKET_NAME}.s3.{AWS_S3_REGION_NAME}.amazonaws.com"
+)
+
 # Application definition - COMPLETE MINDHUB APPS FOR PRODUCTION
 INSTALLED_APPS = [
     'django.contrib.admin',
