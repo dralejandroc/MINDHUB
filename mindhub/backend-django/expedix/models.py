@@ -869,3 +869,32 @@ class ScheduleConfig(models.Model):
     def __str__(self):
         return f"ScheduleConfig(user={self.user_id}, clinic={self.clinic_id})"
 
+class UserDocument(models.Model):
+    """
+    Archivos subidos por usuario y almacenados en S3
+    """
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    owner = models.ForeignKey(
+        Profile,
+        on_delete=models.CASCADE,
+        related_name="documents"
+    )
+    
+    s3_key = models.CharField(max_length=512)
+    file_url = models.URLField(max_length=1024)
+    original_name = models.CharField(max_length=255)
+    size = models.BigIntegerField()
+    content_type = models.CharField(max_length=100, blank=True)
+    
+    # Guardamos tags como lista de strings en JSONField
+    tags = models.JSONField(default=list, blank=True)
+    
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = "expedix_user_documents"
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        return f"{self.original_name} ({self.owner_id})"
+

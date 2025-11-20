@@ -56,4 +56,6 @@ reportlab==4.0.4
 qrcode==7.4.2
 Pillow==10.2.0
 
+boto3>=1.35.0
+
 # Removed vercel dependency - not needed for deployment
