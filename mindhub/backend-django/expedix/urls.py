@@ -10,6 +10,7 @@ from .views_consultation import ConsultationViewSet, PrescriptionViewSet
 from .views_medications import MedicationViewSet, DiagnosisViewSet
 from .simple_views import SimplePatientViewSet, SimpleConsultationViewSet, SimplePrescriptionViewSet
 from .views import ScheduleConfigView
+from .views_documents import UserDocumentViewSet 
 
 
 # Create DRF router
@@ -31,6 +32,8 @@ router.register(r'medications', MedicationViewSet, basename='medications')
 router.register(r'diagnoses', DiagnosisViewSet, basename='diagnoses')
 # Centralized consultation management
 router.register(r'consultation-central', views.ConsultationCentralViewSet, basename='consultation-central')
+
+router.register(r'documents', UserDocumentViewSet, basename='documents')
 
 # URL patterns that match Node.js API routes
 urlpatterns = [
