@@ -33,3 +33,4 @@ MINDHUB_KEYS_SENSITIVE.md
 *KEYS_SENSITIVE*
 *.sensitive.*
 *_SENSITIVE.*
+mindhub/backend-django/import.env
