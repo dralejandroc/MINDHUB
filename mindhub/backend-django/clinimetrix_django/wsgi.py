@@ -25,21 +25,26 @@ try:
     app = application
 except Exception as e:
     print(f"WSGI Error: {e}")
-    # Create a simple fallback application
     from django.http import JsonResponse
-    
+
+    # 👇 capturamos el mensaje AQUÍ, mientras e aún existe
+    error_message = str(e)
+    vercel_env = os.environ.get('VERCEL_ENV')
+    django_settings = os.environ.get('DJANGO_SETTINGS_MODULE')
+
     def simple_app(environ, start_response):
         response = JsonResponse({
             'error': 'Django startup failed',
-            'message': str(e),
-            'vercel_env': os.environ.get('VERCEL_ENV'),
-            'django_settings': os.environ.get('DJANGO_SETTINGS_MODULE')
+            'message': error_message,      # 👈 YA NO USAMOS e
+            'vercel_env': vercel_env,
+            'django_settings': django_settings,
         })
-        
+
         status = '500 Internal Server Error'
         response_headers = [('Content-type', 'application/json')]
         start_response(status, response_headers)
-        
+
         return [response.content]
-    
+
     app = simple_app
+
