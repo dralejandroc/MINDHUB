@@ -2,7 +2,7 @@
   "version": 2,
   "builds": [
     {
-      "src": "mindhub/backend-django/clinimetrix_django/wsgi.py",
+      "src": "clinimetrix_django/wsgi.py",
       "use": "@vercel/python",
       "config": {
         "maxLambdaSize": "50mb",
