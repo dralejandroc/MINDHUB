@@ -28,7 +28,6 @@ AWS_S3_CUSTOM_DOMAIN = env(
     default=f"{AWS_STORAGE_BUCKET_NAME}.s3.{AWS_S3_REGION_NAME}.amazonaws.com"
 )
 
-
 # Application definition - COMPLETE MINDHUB APPS FOR PRODUCTION
 INSTALLED_APPS = [
     'django.contrib.admin',
