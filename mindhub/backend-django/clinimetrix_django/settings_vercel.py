@@ -9,6 +9,14 @@ from pathlib import Path
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
+# Environment variables
+env = environ.Env(
+    DEBUG=(bool, False)
+)
+
+# Read .env file
+environ.Env.read_env(BASE_DIR / '.env')
+
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-vercel-deployment-key-2025')
 
