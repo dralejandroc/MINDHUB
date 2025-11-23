@@ -45,17 +45,23 @@ export async function middleware(req: NextRequest) {
   const isAppDomain = host === 'glian.app' || host === 'www.glian.app'
 
   // 3) Reglas de enrutamiento por dominio
-  // 👉 En glian.io NO deberían estar las rutas protegidas; las mandamos a glian.app
+
+  // 👉 En glian.io NO deberían estar las rutas protegidas; mándalas a glian.app
   if (isLandingDomain && isProtectedRoute(pathname)) {
     const url = new URL(`https://glian.app${pathname}${search}`)
     return NextResponse.redirect(url)
   }
 
-  // 👉 En glian.app NO deberían estar las rutas de /auth; las mandamos a glian.io
-  if (isAppDomain && pathname.startsWith('/auth')) {
-    const url = new URL(`https://glian.io${pathname}${search}`)
+  // 👉 En glian.io tampoco queremos manejar auth, mandamos todo /auth a glian.app
+  if (isLandingDomain && pathname.startsWith('/auth')) {
+    const url = new URL(`https://glian.app${pathname}${search}`)
     return NextResponse.redirect(url)
   }
+
+  // ❌ IMPORTANTE: ya NO redirigimos /auth desde glian.app a glian.io
+  // Antes tenías algo así:
+  // if (isAppDomain && pathname.startsWith('/auth')) { ... glian.io ... }
+  // Eso es lo que te generaba el loop → elimínalo.
 
   // (Opcional) En glian.app, si alguien entra a "/", lo mandamos al dashboard
   if (isAppDomain && pathname === '/') {
@@ -63,8 +69,7 @@ export async function middleware(req: NextRequest) {
     return NextResponse.redirect(url)
   }
 
-  // 4) A partir de aquí, seguimos con tu lógica actual
-
+  // A partir de aquí sigue tu código actual...
   let res = NextResponse.next({
     request: {
       headers: req.headers,

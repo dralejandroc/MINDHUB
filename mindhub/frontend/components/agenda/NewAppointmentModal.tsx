@@ -315,7 +315,7 @@ export default function NewAppointmentModal({ selectedDate, selectedTime, presel
               fontFamily: 'var(--font-heading)'
             }}
           >
-{editingAppointment ? 'Editar Cita' : 'Nueva Cita'}
+          {editingAppointment ? 'Editar Cita' : 'Nueva Cita'}
           </h2>
           <button
             onClick={onClose}
@@ -382,27 +382,45 @@ export default function NewAppointmentModal({ selectedDate, selectedTime, presel
               </div>
             ) : (
               <div className="relative">
-                <div className="relative">
-                  <MagnifyingGlassIcon 
-                    className="h-4 w-4 absolute left-3 top-1/2 transform -translate-y-1/2"
-                    style={{ color: 'var(--neutral-400)' }}
+                {/* Ícono de búsqueda a la izquierda */}
+                <MagnifyingGlassIcon 
+                  className="h-4 w-4 absolute left-3 top-1/2 transform -translate-y-1/2"
+                  style={{ color: 'var(--neutral-400)' }}
+                />
+
+                {/* Input de búsqueda con más padding a la derecha para el ícono de nuevo paciente */}
+                <input
+                  type="text"
+                  placeholder="Buscar paciente por nombre, teléfono o email..."
+                  value={searchTerm}
+                  onChange={(e) => {
+                    setSearchTerm(e.target.value);
+                    setShowPatientSearch(true);
+                  }}
+                  onFocus={() => setShowPatientSearch(true)}
+                  className="w-full pl-9 pr-10 py-3 text-sm border rounded-lg focus:outline-none"
+                  style={{ 
+                    border: '2px solid var(--neutral-300)',
+                    fontFamily: 'var(--font-primary)'
+                  }}
+                />
+
+                {/* Ícono de nuevo paciente a la derecha */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowPatientSearch(false);
+                    handleNewPatientCreation();
+                  }}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 p-1 rounded-md transition-colors duration-200 hover:bg-neutral-100 focus:outline-none focus:ring-2 focus:ring-primary-500"
+                  style={{background: '#0991b2'}}
+                  aria-label="Agregar nuevo paciente"
+                >
+                  <PlusIcon 
+                    className="h-4 w-4"
+                    style={{ color: 'white' }}
                   />
-                  <input
-                    type="text"
-                    placeholder="Buscar paciente por nombre, teléfono o email..."
-                    value={searchTerm}
-                    onChange={(e) => {
-                      setSearchTerm(e.target.value);
-                      setShowPatientSearch(true);
-                    }}
-                    onFocus={() => setShowPatientSearch(true)}
-                    className="w-full pl-9 pr-4 py-3 text-sm border rounded-lg focus:outline-none"
-                    style={{ 
-                      border: '2px solid var(--neutral-300)',
-                      fontFamily: 'var(--font-primary)'
-                    }}
-                  />
-                </div>
+                </button>
 
                 {showPatientSearch && (searchTerm || filteredPatients.length > 0) && (
                   <div 
