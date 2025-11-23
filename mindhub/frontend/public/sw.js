@@ -287,7 +287,7 @@
    limpieza de caches antiguas; network-first para APIs críticas
    ============================================================================ */
 
-const CACHE_VERSION = 'v1.0.5';
+const CACHE_VERSION = 'v1.0.6';
 const STATIC_CACHE = `mindhub-static-${CACHE_VERSION}`;
 const DYNAMIC_CACHE = `mindhub-dynamic-${CACHE_VERSION}`;
 
