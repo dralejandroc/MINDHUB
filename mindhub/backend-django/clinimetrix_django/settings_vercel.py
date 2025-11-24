@@ -235,6 +235,14 @@ CORS_ALLOWED_ORIGINS = [
     "https://www.mindhub.cloud",
     "http://localhost:3000",  # For development
     "http://127.0.0.1:3000",
+    "https://glian.app",       # Glian app integration
+]
+
+# --- CORS / CSRF en PROD ---
+CSRF_TRUSTED_ORIGINS = [
+    "https://mindhub.cloud",
+    "https://www.mindhub.cloud",
+    "https://glian.app"
 ]
 
 CORS_ALLOW_CREDENTIALS = True
