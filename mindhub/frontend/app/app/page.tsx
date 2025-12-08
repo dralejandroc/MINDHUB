@@ -52,14 +52,6 @@ export default function AppHome() {
     }
   }, [user]);
 
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <LoadingSpinner size="lg" />
-      </div>
-    );
-  }
-
   // Show loading spinner while auth is being determined
   if (loading) {
     console.log('⏳ [APP PAGE] Rendering loading spinner while determining auth state');
@@ -70,8 +62,8 @@ export default function AppHome() {
     );
   }
 
-  // Show loading if no user (middleware will handle redirect)
-  if (!user) {
+  // 🔓 DESARROLLO: Bypass temporal - no redirect to login in development mode
+  if (!user && process.env.NODE_ENV !== 'development') {
     console.log('🔒 [APP PAGE] No user, showing loading (middleware handles redirect)');
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -80,7 +72,12 @@ export default function AppHome() {
     );
   }
 
-  console.log('✅ [APP PAGE] Rendering dashboard for authenticated user:', user.email);
+  // 🔓 DESARROLLO: Allow rendering even without user in development mode
+  if (!user && process.env.NODE_ENV === 'development') {
+    console.log('🔓 [DEV] No authenticated user but allowing dashboard render in development mode');
+  }
+
+  console.log('✅ [APP PAGE] Rendering dashboard for user:', user?.email || 'development-bypass');
 
   return (
     <UserMetricsProvider>

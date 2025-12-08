@@ -12,7 +12,7 @@ export function Footer() {
           squareSize={2}
           gridGap={10}
           flickerChance={0.15}
-          color="rgb(59, 130, 246)" // blue-500
+          color="rgb(59, 130, 246)" // primary-500
           maxOpacity={0.04}
           className="w-full h-full"
         />
@@ -23,12 +23,12 @@ export function Footer() {
           {/* Brand */}
           <div className="col-span-1 md:col-span-2">
             <div className="flex items-center space-x-2 mb-4">
-              <div className="w-8 h-8 bg-gradient-to-br from-teal-500 via-cyan-500 to-blue-500 rounded-lg flex items-center justify-center">
+              <div className="w-8 h-8 bg-gradient-to-br from-primary-500 via-secondary-500 to-primary-500 rounded-lg flex items-center justify-center">
                 <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
                 </svg>
               </div>
-              <span className="text-xl font-bold">MindHub</span>
+              <span className="text-xl font-bold">Glian</span>
             </div>
             <p className="text-gray-400 mb-6 max-w-md">
               Gestiona expedientes clínicos completos inteligentes, aplica escalas clinimétricas automáticas y 
@@ -107,7 +107,7 @@ export function Footer() {
         <div className="border-t border-gray-800 mt-8 pt-8 flex flex-col md:flex-row justify-between items-center">
           <div className="flex flex-col md:flex-row items-center space-y-2 md:space-y-0 md:space-x-6">
             <p className="text-gray-400">
-              © 2025 MindHub. Todos los derechos reservados.
+              © 2025 Glian. Todos los derechos reservados.
             </p>
             <div className="flex space-x-6">
               <Link href="/privacy" className="text-gray-400 hover:text-white transition-colors text-sm">

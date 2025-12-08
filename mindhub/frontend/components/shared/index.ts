@@ -1,4 +1,4 @@
-// Shared component library for MindHub
+// Shared component library for Glian
 // Optimized for tablet interfaces and touch interactions
 
 export { Button } from './Button';

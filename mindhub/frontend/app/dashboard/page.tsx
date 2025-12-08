@@ -11,12 +11,9 @@ export default function DashboardPage() {
   const hasRedirected = useRef(false);
 
   useEffect(() => {
-    console.log(isLoaded, isSignedIn);
-    
-    if (isLoaded && !hasRedirected.current) {
     if (!loading && !hasRedirected.current) {
       hasRedirected.current = true;
-      
+
       if (!user) {
         router.replace('/auth/sign-in');
       } else {

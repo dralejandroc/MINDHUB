@@ -1000,7 +1000,7 @@ export default function AgendaV2Page() {
   return (
     <Suspense fallback={
       <div className="flex flex-col items-center justify-center py-16 space-y-4">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
         <div className="text-center">
           <p className="text-gray-900 font-medium">Cargando Agenda...</p>
         </div>

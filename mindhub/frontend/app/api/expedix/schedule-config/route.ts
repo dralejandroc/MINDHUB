@@ -1,4 +1,4 @@
-// Schedule configuration API route - connects to MindHub backend
+// Schedule configuration API route - connects to Glian backend
 export const dynamic = 'force-dynamic';
 
 export async function GET(request: Request) {

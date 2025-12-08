@@ -220,7 +220,7 @@ export const ResourcePreview: React.FC<ResourcePreviewProps> = ({
           {resource.library_type === 'public' && (
             <div className="mt-4 p-3 bg-blue-50 rounded-lg">
               <p className="text-xs text-blue-700 text-center">
-                Hecho y distribuido por MindHub. Derechos reservados.
+                Hecho y distribuido por Glian. Derechos reservados.
               </p>
             </div>
           )}

@@ -22,7 +22,7 @@ export async function GET(request: Request) {
     const clinicConfig = {
       configuration: {
         clinicInfo: {
-          name: 'MindHub Clinic',
+          name: 'Glian Clinic',
           address: 'Av. Reforma 123, Col. Centro',
           city: 'Ciudad de México',
           state: 'CDMX',

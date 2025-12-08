@@ -322,7 +322,7 @@ export default function ClinimetrixProSettingsPage() {
               onClick={() => setActiveTab('general')}
               className={`py-4 px-1 border-b-2 font-medium text-sm transition-colors ${
                 activeTab === 'general'
-                  ? 'border-blue-500 text-blue-600'
+                  ? 'border-primary-500 text-primary-600'
                   : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
               }`}
             >
@@ -336,7 +336,7 @@ export default function ClinimetrixProSettingsPage() {
               onClick={() => setActiveTab('favorites')}
               className={`py-4 px-1 border-b-2 font-medium text-sm transition-colors ${
                 activeTab === 'favorites'
-                  ? 'border-blue-500 text-blue-600'
+                  ? 'border-primary-500 text-primary-600'
                   : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
               }`}
             >
@@ -350,7 +350,7 @@ export default function ClinimetrixProSettingsPage() {
               onClick={() => setActiveTab('advanced')}
               className={`py-4 px-1 border-b-2 font-medium text-sm transition-colors ${
                 activeTab === 'advanced'
-                  ? 'border-blue-500 text-blue-600'
+                  ? 'border-primary-500 text-primary-600'
                   : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
               }`}
             >
@@ -397,7 +397,7 @@ export default function ClinimetrixProSettingsPage() {
               <select
                 value={config.defaultView}
                 onChange={(e) => setConfig({ ...config, defaultView: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
               >
                 <option value="grid">Cuadrícula</option>
                 <option value="list">Lista</option>
@@ -416,7 +416,7 @@ export default function ClinimetrixProSettingsPage() {
                 min="6"
                 max="30"
                 step="3"
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
               />
             </div>
 
@@ -426,7 +426,7 @@ export default function ClinimetrixProSettingsPage() {
                   type="checkbox"
                   checked={config.autoSaveResults}
                   onChange={(e) => setConfig({ ...config, autoSaveResults: e.target.checked })}
-                  className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 mr-2"
+                  className="rounded border-gray-300 text-primary-600 focus:ring-primary-500 mr-2"
                 />
                 <span className="text-sm text-gray-700">Guardar resultados automáticamente</span>
               </label>
@@ -436,7 +436,7 @@ export default function ClinimetrixProSettingsPage() {
                   type="checkbox"
                   checked={config.showScalePreview}
                   onChange={(e) => setConfig({ ...config, showScalePreview: e.target.checked })}
-                  className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 mr-2"
+                  className="rounded border-gray-300 text-primary-600 focus:ring-primary-500 mr-2"
                 />
                 <span className="text-sm text-gray-700">Mostrar vista previa de escalas</span>
               </label>
@@ -446,7 +446,7 @@ export default function ClinimetrixProSettingsPage() {
                   type="checkbox"
                   checked={config.enableFavoriteScales}
                   onChange={(e) => setConfig({ ...config, enableFavoriteScales: e.target.checked })}
-                  className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 mr-2"
+                  className="rounded border-gray-300 text-primary-600 focus:ring-primary-500 mr-2"
                 />
                 <span className="text-sm text-gray-700">Permitir escalas favoritas</span>
               </label>
@@ -469,7 +469,7 @@ export default function ClinimetrixProSettingsPage() {
               <select
                 value={config.defaultScaleCategory}
                 onChange={(e) => setConfig({ ...config, defaultScaleCategory: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
               >
                 <option value="">Todas las categorías</option>
                 <option value="depression">Depresión</option>
@@ -487,7 +487,7 @@ export default function ClinimetrixProSettingsPage() {
                   type="checkbox"
                   checked={config.enableAllScales}
                   onChange={(e) => setConfig({ ...config, enableAllScales: e.target.checked })}
-                  className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 mr-2"
+                  className="rounded border-gray-300 text-primary-600 focus:ring-primary-500 mr-2"
                 />
                 <span className="text-sm text-gray-700">Habilitar todas las escalas (29 disponibles)</span>
               </label>
@@ -497,7 +497,7 @@ export default function ClinimetrixProSettingsPage() {
                   type="checkbox"
                   checked={config.showScaleDescription}
                   onChange={(e) => setConfig({ ...config, showScaleDescription: e.target.checked })}
-                  className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 mr-2"
+                  className="rounded border-gray-300 text-primary-600 focus:ring-primary-500 mr-2"
                 />
                 <span className="text-sm text-gray-700">Mostrar descripción de escalas</span>
               </label>
@@ -507,7 +507,7 @@ export default function ClinimetrixProSettingsPage() {
                   type="checkbox"
                   checked={config.enableScaleSearch}
                   onChange={(e) => setConfig({ ...config, enableScaleSearch: e.target.checked })}
-                  className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 mr-2"
+                  className="rounded border-gray-300 text-primary-600 focus:ring-primary-500 mr-2"
                 />
                 <span className="text-sm text-gray-700">Búsqueda de escalas habilitada</span>
               </label>
@@ -517,7 +517,7 @@ export default function ClinimetrixProSettingsPage() {
                   type="checkbox"
                   checked={config.showEstimatedTime}
                   onChange={(e) => setConfig({ ...config, showEstimatedTime: e.target.checked })}
-                  className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 mr-2"
+                  className="rounded border-gray-300 text-primary-600 focus:ring-primary-500 mr-2"
                 />
                 <span className="text-sm text-gray-700">Mostrar tiempo estimado</span>
               </label>
@@ -540,7 +540,7 @@ export default function ClinimetrixProSettingsPage() {
               <select
                 value={config.scoreDisplayFormat}
                 onChange={(e) => setConfig({ ...config, scoreDisplayFormat: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
               >
                 <option value="numerical">Solo Numérico</option>
                 <option value="categorical">Solo Categórico</option>
@@ -554,7 +554,7 @@ export default function ClinimetrixProSettingsPage() {
                   type="checkbox"
                   checked={config.autoCalculateScores}
                   onChange={(e) => setConfig({ ...config, autoCalculateScores: e.target.checked })}
-                  className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 mr-2"
+                  className="rounded border-gray-300 text-primary-600 focus:ring-primary-500 mr-2"
                 />
                 <span className="text-sm text-gray-700">Cálculo automático de puntuaciones</span>
               </label>
@@ -564,7 +564,7 @@ export default function ClinimetrixProSettingsPage() {
                   type="checkbox"
                   checked={config.showScoreInterpretation}
                   onChange={(e) => setConfig({ ...config, showScoreInterpretation: e.target.checked })}
-                  className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 mr-2"
+                  className="rounded border-gray-300 text-primary-600 focus:ring-primary-500 mr-2"
                 />
                 <span className="text-sm text-gray-700">Mostrar interpretación de puntuaciones</span>
               </label>
@@ -574,7 +574,7 @@ export default function ClinimetrixProSettingsPage() {
                   type="checkbox"
                   checked={config.enableScoreHistory}
                   onChange={(e) => setConfig({ ...config, enableScoreHistory: e.target.checked })}
-                  className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 mr-2"
+                  className="rounded border-gray-300 text-primary-600 focus:ring-primary-500 mr-2"
                 />
                 <span className="text-sm text-gray-700">Historial de puntuaciones</span>
               </label>
@@ -584,7 +584,7 @@ export default function ClinimetrixProSettingsPage() {
                   type="checkbox"
                   checked={config.enableTrendAnalysis}
                   onChange={(e) => setConfig({ ...config, enableTrendAnalysis: e.target.checked })}
-                  className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 mr-2"
+                  className="rounded border-gray-300 text-primary-600 focus:ring-primary-500 mr-2"
                 />
                 <span className="text-sm text-gray-700">Análisis de tendencias</span>
               </label>
@@ -607,7 +607,7 @@ export default function ClinimetrixProSettingsPage() {
               <select
                 value={config.defaultReportFormat}
                 onChange={(e) => setConfig({ ...config, defaultReportFormat: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
               >
                 <option value="pdf">PDF</option>
                 <option value="html">HTML</option>
@@ -621,7 +621,7 @@ export default function ClinimetrixProSettingsPage() {
                   type="checkbox"
                   checked={config.enableReportGeneration}
                   onChange={(e) => setConfig({ ...config, enableReportGeneration: e.target.checked })}
-                  className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 mr-2"
+                  className="rounded border-gray-300 text-primary-600 focus:ring-primary-500 mr-2"
                 />
                 <span className="text-sm text-gray-700">Generación de reportes habilitada</span>
               </label>
@@ -631,7 +631,7 @@ export default function ClinimetrixProSettingsPage() {
                   type="checkbox"
                   checked={config.includeScaleDescription}
                   onChange={(e) => setConfig({ ...config, includeScaleDescription: e.target.checked })}
-                  className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 mr-2"
+                  className="rounded border-gray-300 text-primary-600 focus:ring-primary-500 mr-2"
                 />
                 <span className="text-sm text-gray-700">Incluir descripción de escalas</span>
               </label>
@@ -641,7 +641,7 @@ export default function ClinimetrixProSettingsPage() {
                   type="checkbox"
                   checked={config.includeClinicalRecommendations}
                   onChange={(e) => setConfig({ ...config, includeClinicalRecommendations: e.target.checked })}
-                  className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 mr-2"
+                  className="rounded border-gray-300 text-primary-600 focus:ring-primary-500 mr-2"
                 />
                 <span className="text-sm text-gray-700">Incluir recomendaciones clínicas</span>
               </label>
@@ -662,7 +662,7 @@ export default function ClinimetrixProSettingsPage() {
                 type="checkbox"
                 checked={config.autoSyncWithExpedix}
                 onChange={(e) => setConfig({ ...config, autoSyncWithExpedix: e.target.checked })}
-                className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 mr-2"
+                className="rounded border-gray-300 text-primary-600 focus:ring-primary-500 mr-2"
               />
               <span className="text-sm text-gray-700">Sincronización automática con Expedix</span>
             </label>
@@ -672,7 +672,7 @@ export default function ClinimetrixProSettingsPage() {
                 type="checkbox"
                 checked={config.syncResultsToConsultation}
                 onChange={(e) => setConfig({ ...config, syncResultsToConsultation: e.target.checked })}
-                className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 mr-2"
+                className="rounded border-gray-300 text-primary-600 focus:ring-primary-500 mr-2"
               />
               <span className="text-sm text-gray-700">Sincronizar resultados a consulta</span>
             </label>
@@ -682,7 +682,7 @@ export default function ClinimetrixProSettingsPage() {
                 type="checkbox"
                 checked={config.linkToTreatmentPlan}
                 onChange={(e) => setConfig({ ...config, linkToTreatmentPlan: e.target.checked })}
-                className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 mr-2"
+                className="rounded border-gray-300 text-primary-600 focus:ring-primary-500 mr-2"
               />
               <span className="text-sm text-gray-700">Vincular a plan de tratamiento</span>
             </label>
@@ -692,7 +692,7 @@ export default function ClinimetrixProSettingsPage() {
                 type="checkbox"
                 checked={config.enablePatientPortalAccess}
                 onChange={(e) => setConfig({ ...config, enablePatientPortalAccess: e.target.checked })}
-                className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 mr-2"
+                className="rounded border-gray-300 text-primary-600 focus:ring-primary-500 mr-2"
               />
               <span className="text-sm text-gray-700">Portal del paciente (Beta)</span>
             </label>
@@ -712,7 +712,7 @@ export default function ClinimetrixProSettingsPage() {
                 type="checkbox"
                 checked={config.enableResultEncryption}
                 onChange={(e) => setConfig({ ...config, enableResultEncryption: e.target.checked })}
-                className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 mr-2"
+                className="rounded border-gray-300 text-primary-600 focus:ring-primary-500 mr-2"
               />
               <span className="text-sm text-gray-700">Encriptación de resultados</span>
             </label>
@@ -722,7 +722,7 @@ export default function ClinimetrixProSettingsPage() {
                 type="checkbox"
                 checked={config.requireAuthentication}
                 onChange={(e) => setConfig({ ...config, requireAuthentication: e.target.checked })}
-                className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 mr-2"
+                className="rounded border-gray-300 text-primary-600 focus:ring-primary-500 mr-2"
               />
               <span className="text-sm text-gray-700">Requerir autenticación</span>
             </label>
@@ -732,7 +732,7 @@ export default function ClinimetrixProSettingsPage() {
                 type="checkbox"
                 checked={config.enableAuditLog}
                 onChange={(e) => setConfig({ ...config, enableAuditLog: e.target.checked })}
-                className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 mr-2"
+                className="rounded border-gray-300 text-primary-600 focus:ring-primary-500 mr-2"
               />
               <span className="text-sm text-gray-700">Registro de auditoría</span>
             </label>
@@ -748,7 +748,7 @@ export default function ClinimetrixProSettingsPage() {
                 min="30"
                 max="3650"
                 step="30"
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
               />
             </div>
           </div>

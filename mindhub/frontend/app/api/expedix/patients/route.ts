@@ -57,7 +57,7 @@ export async function GET(request: Request) {
           'X-User-ID': user.id,
           'X-User-Email': user.email || '',
           'X-Tenant-Context': JSON.stringify(tenantContext),
-          'X-MindHub-Context': 'expedix-patients',
+          'X-Glian-Context': 'expedix-patients',
         },
       });
 
@@ -124,7 +124,7 @@ export async function POST(request: Request) {
         'X-User-ID': user.id,
         'X-User-Email': user.email || '',
         'X-Tenant-Context': JSON.stringify(tenantContext),
-        'X-MindHub-Context': 'expedix-patients',
+        'X-Glian-Context': 'expedix-patients',
       },
       body: JSON.stringify(body),
     });
@@ -191,7 +191,7 @@ export async function PUT(request: Request) {
         'X-User-ID': user.id,
         'X-User-Email': user.email || '',
         'X-Tenant-Context': JSON.stringify(tenantContext),
-        'X-MindHub-Context': 'expedix-patients',
+        'X-Glian-Context': 'expedix-patients',
       },
       body: JSON.stringify(body),
     });

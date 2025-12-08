@@ -52,7 +52,7 @@ export default async function AdminLayout({ children }: AdminLayoutProps) {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center py-4">
             <div className="flex items-center">
-              <h1 className="text-2xl font-bold">🔐 MindHub Admin</h1>
+              <h1 className="text-2xl font-bold">🔐 Glian Admin</h1>
               <span className="ml-4 px-3 py-1 bg-red-700 rounded text-sm">
                 RESTRICTED ACCESS
               </span>

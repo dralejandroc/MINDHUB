@@ -2,7 +2,6 @@
 
 import React from 'react';
 import { motion } from 'framer-motion';
-import { FlickeringGrid } from '@/components/ui/flickering-grid';
 import {
   Brain,
   Calendar,
@@ -17,13 +16,9 @@ import {
   Database,
   Zap
 } from 'lucide-react';
-import { 
-  BentoGrid, 
-  BentoCard, 
-  GridPattern, 
-  DotPattern, 
-  WavePattern, 
-  PulseCircle 
+import {
+  BentoGrid,
+  BentoCard
 } from '@/components/ui/bento-grid';
 
 const features = [
@@ -36,18 +31,7 @@ const features = [
     className: "lg:col-span-2",
     background: (
       <div className="absolute inset-0">
-        <GridPattern className="opacity-30" />
-        <motion.div
-          className="absolute inset-0 bg-gradient-to-br from-teal-500/20 via-transparent to-cyan-500/20"
-          animate={{
-            backgroundPosition: ["0% 0%", "100% 100%"],
-          }}
-          transition={{
-            duration: 20,
-            repeat: Infinity,
-            repeatType: "reverse",
-          }}
-        />
+        <div className="absolute inset-0 bg-gradient-to-br from-primary-500/20 via-transparent to-secondary-500/20" />
       </div>
     ),
   },
@@ -60,8 +44,7 @@ const features = [
     className: "lg:col-span-1",
     background: (
       <div className="absolute inset-0">
-        <PulseCircle className="opacity-20" />
-        <div className="absolute inset-0 bg-gradient-to-tr from-cyan-500/10 to-blue-500/10" />
+        <div className="absolute inset-0 bg-gradient-to-tr from-secondary-500/10 to-primary-500/10" />
       </div>
     ),
   },
@@ -74,22 +57,7 @@ const features = [
     className: "lg:col-span-1",
     background: (
       <div className="absolute inset-0">
-        <DotPattern className="opacity-30" />
-        <motion.div
-          className="absolute top-0 left-0 w-full h-full"
-          animate={{
-            background: [
-              "radial-gradient(circle at 20% 80%, rgba(20, 184, 166, 0.15) 0%, transparent 50%)",
-              "radial-gradient(circle at 80% 20%, rgba(20, 184, 166, 0.15) 0%, transparent 50%)",
-              "radial-gradient(circle at 20% 80%, rgba(20, 184, 166, 0.15) 0%, transparent 50%)",
-            ],
-          }}
-          transition={{
-            duration: 10,
-            repeat: Infinity,
-            ease: "easeInOut",
-          }}
-        />
+        <div className="absolute inset-0 bg-gradient-to-br from-primary-500/10 to-secondary-500/10" />
       </div>
     ),
   },
@@ -102,8 +70,7 @@ const features = [
     className: "lg:col-span-2",
     background: (
       <div className="absolute inset-0">
-        <WavePattern className="opacity-40" />
-        <div className="absolute inset-0 bg-gradient-to-b from-transparent to-teal-500/10" />
+        <div className="absolute inset-0 bg-gradient-to-b from-transparent to-primary-500/10" />
       </div>
     ),
   },
@@ -166,23 +133,7 @@ const features = [
     className: "lg:col-span-1",
     background: (
       <div className="absolute inset-0">
-        <motion.div
-          className="absolute inset-0"
-          animate={{
-            background: [
-              "linear-gradient(45deg, rgba(20, 184, 166, 0.05) 0%, transparent 100%)",
-              "linear-gradient(135deg, rgba(20, 184, 166, 0.05) 0%, transparent 100%)",
-              "linear-gradient(225deg, rgba(20, 184, 166, 0.05) 0%, transparent 100%)",
-              "linear-gradient(315deg, rgba(20, 184, 166, 0.05) 0%, transparent 100%)",
-            ],
-          }}
-          transition={{
-            duration: 8,
-            repeat: Infinity,
-            ease: "linear",
-          }}
-        />
-        <GridPattern className="opacity-10" />
+        <div className="absolute inset-0 bg-gradient-to-br from-primary-500/5 to-transparent" />
       </div>
     ),
   },
@@ -195,7 +146,7 @@ const features = [
     className: "lg:col-span-2",
     background: (
       <div className="absolute inset-0">
-        <div className="absolute inset-0 bg-gradient-to-br from-teal-500/10 via-transparent to-cyan-500/10" />
+        <div className="absolute inset-0 bg-gradient-to-br from-primary-500/10 via-transparent to-secondary-500/10" />
         <motion.div
           className="absolute top-1/2 left-1/2 w-32 h-32 -translate-x-1/2 -translate-y-1/2"
           animate={{
@@ -209,7 +160,7 @@ const features = [
             ease: "easeInOut",
           }}
         >
-          <div className="w-full h-full rounded-full bg-gradient-to-r from-teal-400 to-cyan-400" />
+          <div className="w-full h-full rounded-full bg-gradient-to-r from-primary-400 to-secondary-400" />
         </motion.div>
       </div>
     ),
@@ -220,45 +171,7 @@ export function BentoFeaturesSection() {
   return (
     <section className="relative py-20 px-4 sm:px-6 lg:px-8 overflow-hidden">
       {/* Background decoration */}
-      <div className="absolute inset-0 bg-gradient-to-br from-teal-50 via-white to-cyan-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900" />
-      
-      {/* FlickeringGrid Background */}
-      <div className="absolute inset-0 z-0">
-        <FlickeringGrid
-          squareSize={4}
-          gridGap={8}
-          flickerChance={0.4}
-          color="rgb(6, 182, 212)" // cyan-500
-          maxOpacity={0.15}
-          className="w-full h-full"
-        />
-      </div>
-      
-      {/* Animated background elements */}
-      <motion.div
-        className="absolute top-20 left-10 w-72 h-72 bg-gradient-to-r from-teal-400/30 to-cyan-400/30 rounded-full filter blur-3xl"
-        animate={{
-          x: [0, 100, 0],
-          y: [0, -100, 0],
-        }}
-        transition={{
-          duration: 20,
-          repeat: Infinity,
-          ease: "easeInOut",
-        }}
-      />
-      <motion.div
-        className="absolute bottom-20 right-10 w-96 h-96 bg-gradient-to-r from-cyan-400/20 to-blue-400/20 rounded-full filter blur-3xl"
-        animate={{
-          x: [0, -100, 0],
-          y: [0, 100, 0],
-        }}
-        transition={{
-          duration: 25,
-          repeat: Infinity,
-          ease: "easeInOut",
-        }}
-      />
+      <div className="absolute inset-0 bg-gradient-to-br from-primary-50 via-white to-secondary-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900" />
       
       <div className="relative max-w-7xl mx-auto">
         {/* Section header */}
@@ -274,14 +187,14 @@ export function BentoFeaturesSection() {
             whileInView={{ opacity: 1, scale: 1 }}
             transition={{ duration: 0.5 }}
             viewport={{ once: true }}
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-teal-100 to-cyan-100 dark:from-teal-900/30 dark:to-cyan-900/30 text-teal-700 dark:text-teal-300 text-sm font-medium mb-4"
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-primary-100 to-secondary-100 dark:from-primary-900/30 dark:to-cyan-900/30 text-primary-700 dark:text-primary-300 text-sm font-medium mb-4"
           >
             <Zap className="w-4 h-4" />
             Funcionalidades Premium
           </motion.span>
           
           <h2 className="text-4xl md:text-5xl font-bold mb-6">
-            <span className="bg-gradient-to-r from-teal-600 via-cyan-600 to-blue-600 bg-clip-text text-transparent">
+            <span className="bg-gradient-to-r from-primary-600 via-secondary-600 to-primary-600 bg-clip-text text-transparent">
               Todo lo que necesitas
             </span>
             <br />
@@ -291,7 +204,7 @@ export function BentoFeaturesSection() {
           </h2>
           
           <p className="text-lg text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">
-            Descubre cómo MindHub revoluciona la gestión sanitaria con herramientas 
+            Descubre cómo Glian revoluciona la gestión sanitaria con herramientas 
             inteligentes diseñadas para optimizar cada aspecto de tu práctica médica.
           </p>
         </motion.div>
@@ -321,7 +234,7 @@ export function BentoFeaturesSection() {
           <motion.button
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
-            className="inline-flex items-center gap-2 px-8 py-4 bg-gradient-to-r from-teal-600 to-cyan-600 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all"
+            className="inline-flex items-center gap-2 px-8 py-4 bg-gradient-to-r from-primary-600 to-secondary-600 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all"
           >
             <Activity className="w-5 h-5" />
             Solicitar Demo Personalizada

@@ -12,7 +12,7 @@ const cn = (...classes: string[]) => {
   return classes.filter(Boolean).join(" ");
 };
 
-interface MindHubSignUpCardProps {
+interface GlianSignUpCardProps {
   onSignUp?: (data: {
     firstName: string;
     lastName: string;
@@ -24,11 +24,11 @@ interface MindHubSignUpCardProps {
   onSignInRedirect?: () => void;
 }
 
-export const MindHubSignUpCard = ({ 
+export const GlianSignUpCard = ({ 
   onSignUp, 
   onGoogleSignUp, 
   onSignInRedirect 
-}: MindHubSignUpCardProps) => {
+}: GlianSignUpCardProps) => {
   const [isPasswordVisible, setIsPasswordVisible] = useState(false);
   const [isConfirmPasswordVisible, setIsConfirmPasswordVisible] = useState(false);
   const [formData, setFormData] = useState({
@@ -75,7 +75,7 @@ export const MindHubSignUpCard = ({
           <div className="absolute inset-0 bg-gradient-to-br from-teal-50 via-cyan-50 to-blue-50">
             <HealthcareNetworkMap />
             
-            {/* MindHub branding overlay */}
+            {/* Glian branding overlay */}
             <div className="absolute inset-0 flex flex-col items-center justify-center p-8 z-10">
               <motion.div 
                 initial={{ opacity: 0, y: -20 }}
@@ -97,7 +97,7 @@ export const MindHubSignUpCard = ({
                 className="text-4xl font-bold mb-4 text-center"
               >
                 <span className="text-transparent bg-clip-text bg-gradient-to-r from-teal-600 via-cyan-600 to-blue-600">
-                  MindHub
+                  Glian
                 </span>
               </motion.h2>
               
@@ -147,7 +147,7 @@ export const MindHubSignUpCard = ({
             className="max-w-lg mx-auto w-full"
           >
             <h1 className="text-3xl font-bold mb-2 text-gray-900">
-              Crear cuenta MindHub
+              Crear cuenta Glian
             </h1>
             <p className="text-gray-500 mb-8">
               Configura tu clínica en menos de 5 minutos
@@ -336,7 +336,7 @@ export const MindHubSignUpCard = ({
                   )}
                 >
                   <span className="flex items-center justify-center relative z-10">
-                    Crear mi cuenta MindHub
+                    Crear mi cuenta Glian
                   </span>
                   {isHovered && (
                     <motion.span

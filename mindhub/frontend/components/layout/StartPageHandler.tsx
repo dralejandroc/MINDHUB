@@ -90,7 +90,7 @@ export function StartPageHandler() {
         <div className="text-center space-y-4">
           {preferences.showWelcomeMessage && (
             <div className="text-gray-600 mb-4">
-              ¡Bienvenido a MindHub! 👋
+              ¡Bienvenido a Glian! 👋
             </div>
           )}
 

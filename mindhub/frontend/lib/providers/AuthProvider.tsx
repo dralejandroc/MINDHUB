@@ -30,18 +30,58 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const getInitialSession = async () => {
       try {
         console.log('🔍 [AuthProvider] Getting initial session...')
+
+        // 🔓 DESARROLLO LOCAL: Bypass temporal de autenticación
+        if (process.env.NODE_ENV === 'development') {
+          const devUser = localStorage.getItem('dev_bypass_user')
+          if (devUser === 'dr_aleks_c@hotmail.com') {
+            console.log('🔓 [DEV] Bypass de autenticación activado - mock user')
+            const mockUser = {
+              id: 'dev-user-id-12345',
+              email: 'dr_aleks_c@hotmail.com',
+              app_metadata: { provider: 'email' },
+              user_metadata: { name: 'Dr. Alejandro' },
+              aud: 'authenticated',
+              role: 'authenticated',
+              created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString(),
+              email_confirmed_at: new Date().toISOString(),
+              phone: '',
+              confirmed_at: new Date().toISOString(),
+              last_sign_in_at: new Date().toISOString(),
+              identities: [],
+              factors: []
+            } as User
+
+            const mockSession = {
+              user: mockUser,
+              access_token: 'dev-bypass-token-' + Date.now(),
+              refresh_token: 'dev-bypass-refresh-token',
+              expires_in: 3600,
+              expires_at: Math.floor(Date.now() / 1000) + 3600,
+              token_type: 'bearer'
+            } as Session
+
+            setUser(mockUser)
+            setSession(mockSession)
+            setLoading(false)
+            console.log('✅ [DEV] Mock user and session created successfully')
+            return
+          }
+        }
+
         const { data: { session }, error } = await supabase.auth.getSession()
-        
+
         if (error) {
           console.error('❌ [AuthProvider] Error getting session:', error)
         }
-        
-        console.log('📊 [AuthProvider] Initial session result:', { 
-          hasSession: !!session, 
+
+        console.log('📊 [AuthProvider] Initial session result:', {
+          hasSession: !!session,
           hasUser: !!session?.user,
-          userId: session?.user?.id 
+          userId: session?.user?.id
         })
-        
+
         setSession(session)
         setUser(session?.user ?? null)
         setLoading(false)

@@ -16,7 +16,7 @@ export default function OfflinePage() {
             You're Currently Offline
           </h2>
           <p className="mt-2 text-sm text-gray-600">
-            MindHub requires an internet connection for healthcare data security and real-time synchronization.
+            Glian requires an internet connection for healthcare data security and real-time synchronization.
           </p>
         </div>
 

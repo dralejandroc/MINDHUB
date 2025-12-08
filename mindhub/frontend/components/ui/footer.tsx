@@ -1,6 +1,7 @@
 "use client"
 
 import * as React from "react"
+import Image from "next/image"
 import { Button } from "@/components/ui/Button"
 import { Input } from "@/components/ui/Input"
 import {
@@ -9,11 +10,11 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/radix-tooltip"
-import { 
-  Facebook, 
-  Instagram, 
-  Linkedin, 
-  Send, 
+import {
+  Facebook,
+  Instagram,
+  Linkedin,
+  Send,
   Twitter,
   Heart,
   Shield,
@@ -23,12 +24,12 @@ import {
 import Link from "next/link"
 import { cn } from "@/lib/utils"
 
-interface MindHubFooterProps {
+interface GlianFooterProps {
   variant?: "full" | "minimal" | "hidden"
   className?: string
 }
 
-export function MindHubFooter({ variant = "full", className }: MindHubFooterProps) {
+export function GlianFooter({ variant = "full", className }: GlianFooterProps) {
 
   if (variant === "hidden") {
     return null
@@ -43,8 +44,14 @@ export function MindHubFooter({ variant = "full", className }: MindHubFooterProp
         <div className="container mx-auto px-4 py-4">
           <div className="flex flex-col sm:flex-row items-center justify-between gap-4 text-sm">
             <div className="flex items-center gap-2">
-              <Stethoscope className="h-4 w-4 text-primary" />
-              <span className="font-semibold">MindHub</span>
+              <Image
+                src="/logos/glian-isotipo.png"
+                alt="Glian"
+                width={16}
+                height={16}
+                className="h-4 w-4"
+              />
+              <span className="font-semibold">Glian</span>
               <span className="text-muted-foreground">© 2024</span>
             </div>
             <div className="flex items-center gap-4">
@@ -70,12 +77,17 @@ export function MindHubFooter({ variant = "full", className }: MindHubFooterProp
         <div className="grid gap-12 md:grid-cols-2 lg:grid-cols-4">
           {/* Newsletter & Branding */}
           <div className="relative">
-            <div className="flex items-center gap-2 mb-4">
-              <Stethoscope className="h-8 w-8 text-primary" />
-              <h2 className="text-3xl font-bold tracking-tight">MindHub</h2>
+            <div className="mb-4">
+              <Image
+                src="/logos/glian-logo-primary.png"
+                alt="Glian"
+                width={150}
+                height={40}
+                className="h-10 w-auto"
+              />
             </div>
             <p className="mb-6 text-muted-foreground">
-              Plataforma integral de gestión sanitaria para profesionales de la salud.
+              Plataforma integral de gestión clínica para profesionales de salud mental.
               Únete a nuestro newsletter para recibir actualizaciones.
             </p>
             <form className="relative">
@@ -208,8 +220,14 @@ export function MindHubFooter({ variant = "full", className }: MindHubFooterProp
         {/* Bottom section */}
         <div className="mt-12 flex flex-col items-center justify-between gap-4 border-t pt-8 text-center md:flex-row">
           <p className="text-sm text-muted-foreground flex items-center gap-2">
-            <Stethoscope className="h-4 w-4" />
-            © 2024 MindHub. Plataforma de Gestión Sanitaria. Todos los derechos reservados.
+            <Image
+              src="/logos/glian-isotipo.png"
+              alt="Glian"
+              width={16}
+              height={16}
+              className="h-4 w-4"
+            />
+            © 2024 Glian. Plataforma de Gestión Clínica. Todos los derechos reservados.
           </p>
           <nav className="flex gap-4 text-sm">
             <Link href="/privacy" className="transition-colors hover:text-primary">
@@ -231,4 +249,6 @@ export function MindHubFooter({ variant = "full", className }: MindHubFooterProp
   )
 }
 
-export { MindHubFooter as Footer }
+// Export aliases for compatibility
+export { GlianFooter as Footer }
+export { GlianFooter as MindHubFooter } // Temporary compatibility alias

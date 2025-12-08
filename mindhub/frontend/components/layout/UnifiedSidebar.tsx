@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { usePathname } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
 import { MindHubFooter } from '@/components/ui/footer';
@@ -281,17 +282,26 @@ export function UnifiedSidebar({ children }: UnifiedSidebarProps) {
       )}>
         {!isCollapsed && (
           <div className="flex items-center">
-            <div className="w-7 h-7 gradient-primary rounded-lg flex items-center justify-center">
-              <HeartIcon className="h-4 w-4 text-white" />
-            </div>
-            <span className="ml-2 text-lg font-bold text-theme-primary font-heading">✨ MindHub</span>
+            <Image
+              src="/logos/glian-logo-primary.png"
+              alt="Glian"
+              width={120}
+              height={32}
+              className="h-8 w-auto"
+              priority
+            />
           </div>
         )}
         {isCollapsed && (
           <div className="flex justify-center w-full">
-            <div className="w-7 h-7 gradient-primary rounded-lg flex items-center justify-center">
-              <HeartIcon className="h-4 w-4 text-white" />
-            </div>
+            <Image
+              src="/logos/glian-isotipo.png"
+              alt="Glian"
+              width={32}
+              height={32}
+              className="h-8 w-8"
+              priority
+            />
           </div>
         )}
         

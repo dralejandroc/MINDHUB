@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { usePathname } from 'next/navigation';
 import {
   UserGroupIcon,
@@ -179,14 +180,15 @@ export default function HubNavigation({ currentUser, onLogout }: HubNavigationPr
         <div className="flex justify-between items-center h-16">
           {/* Logo and Brand */}
           <div className="flex items-center">
-            <Link href="/" className="flex items-center space-x-3">
-              <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
-                <span className="text-white font-bold text-sm">MH</span>
-              </div>
-              <div>
-                <h1 className="text-xl font-bold text-gray-900">MindHub</h1>
-                <p className="text-xs text-gray-500">Sistema Médico Integral</p>
-              </div>
+            <Link href="/" className="flex items-center">
+              <Image
+                src="/logos/glian-logo-primary.png"
+                alt="Glian - Plataforma de Gestión Clínica"
+                width={120}
+                height={32}
+                className="h-10 w-auto"
+                priority
+              />
             </Link>
           </div>
 

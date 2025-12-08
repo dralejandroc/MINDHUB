@@ -100,7 +100,7 @@ export function FeaturesSection() {
         {/* Bottom CTA */}
         <div className="text-center mt-16">
           <p className="text-lg text-gray-600 mb-6">
-            ¿Necesitas algo específico? Estamos construyendo MindHub con tu feedback
+            ¿Necesitas algo específico? Estamos construyendo Glian con tu feedback
           </p>
           <a 
             href="mailto:feedback@mindhub.cloud"

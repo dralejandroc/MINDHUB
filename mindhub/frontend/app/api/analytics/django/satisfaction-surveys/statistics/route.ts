@@ -46,7 +46,7 @@ export async function GET(request: Request) {
         'X-Proxy-Auth': 'verified',
         'X-User-ID': user.id,
         'X-User-Email': user.email || '',
-        'X-MindHub-Analytics': 'satisfaction-surveys-statistics',
+        'X-Glian-Analytics': 'satisfaction-surveys-statistics',
       },
     });
     

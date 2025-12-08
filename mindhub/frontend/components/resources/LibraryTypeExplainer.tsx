@@ -23,7 +23,7 @@ export const LibraryTypeExplainer: React.FC<LibraryTypeExplainerProps> = ({
         <div className="flex items-start space-x-2">
           <InformationCircleIcon className="h-5 w-5 text-blue-600 mt-0.5 flex-shrink-0" />
           <div className="text-sm text-blue-800">
-            <p><strong>Biblioteca Pública:</strong> Recursos compartidos por MindHub y otros profesionales.</p>
+            <p><strong>Biblioteca Pública:</strong> Recursos compartidos por Glian y otros profesionales.</p>
             <p><strong>Mi Biblioteca:</strong> Tus recursos personales, solo visibles para ti.</p>
           </div>
         </div>
@@ -51,7 +51,7 @@ export const LibraryTypeExplainer: React.FC<LibraryTypeExplainerProps> = ({
           </div>
           
           <p className="text-gray-700 text-sm mb-3">
-            Recursos compartidos y curados por MindHub y la comunidad de profesionales de la salud.
+            Recursos compartidos y curados por Glian y la comunidad de profesionales de la salud.
           </p>
           
           <div className="space-y-2">
@@ -65,7 +65,7 @@ export const LibraryTypeExplainer: React.FC<LibraryTypeExplainerProps> = ({
             </div>
             <div className="flex items-center text-sm text-gray-600">
               <CheckCircleIcon className="h-4 w-4 text-green-500 mr-2" />
-              <span>Incluye marca de agua MindHub</span>
+              <span>Incluye marca de agua Glian</span>
             </div>
             <div className="flex items-center text-sm text-gray-600">
               <CheckCircleIcon className="h-4 w-4 text-green-500 mr-2" />
@@ -74,7 +74,7 @@ export const LibraryTypeExplainer: React.FC<LibraryTypeExplainerProps> = ({
           </div>
           
           <div className="mt-3 p-2 bg-green-50 rounded text-xs text-green-700 text-center">
-            <em>"Hecho y distribuido por MindHub. Derechos reservados."</em>
+            <em>"Hecho y distribuido por Glian. Derechos reservados."</em>
           </div>
         </div>
 

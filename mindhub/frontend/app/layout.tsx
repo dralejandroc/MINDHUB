@@ -1,5 +1,5 @@
 import type { Metadata } from 'next';
-// import { Inter } from 'next/font/google'; // Temporalmente deshabilitado para evitar problemas de conectividad
+import localFont from 'next/font/local';
 import { Toaster } from 'react-hot-toast';
 import { SpeedInsights } from '@vercel/speed-insights/next';
 import { AuthProvider } from '@/lib/providers/AuthProvider';
@@ -11,25 +11,46 @@ import { KeyboardShortcutsProvider } from '@/components/ui/KeyboardShortcutsHelp
 import './globals.css';
 import '@/styles/themes.css';
 
-// const inter = Inter({ subsets: ['latin'], variable: '--font-inter' }); // Temporalmente deshabilitado
+// Glian Brand Font - Hanken Grotesk
+const hankenGrotesk = localFont({
+  src: [
+    {
+      path: '../public/fonts/HankenGrotesk-Regular.ttf',
+      weight: '400',
+      style: 'normal',
+    },
+    {
+      path: '../public/fonts/HankenGrotesk-SemiBold.ttf',
+      weight: '600',
+      style: 'normal',
+    },
+    {
+      path: '../public/fonts/HankenGrotesk-Bold.ttf',
+      weight: '700',
+      style: 'normal',
+    },
+  ],
+  variable: '--font-hanken-grotesk',
+  display: 'swap',
+});
 
 export const metadata: Metadata = {
-  title: 'MindHub - Healthcare Platform for Mental Health Professionals',
-  description: 'Comprehensive SaaS platform for psychiatrists and psychologists with clinical assessment tools, patient management, form builder, and resource library.',
+  title: 'Glian - Plataforma de Gestión Clínica para Profesionales de Salud Mental',
+  description: 'Suite completa para profesionales de salud mental con herramientas de evaluación clínica, gestión de pacientes, formularios personalizados y biblioteca de recursos.',
   keywords: [
-    'healthcare',
-    'mental health',
-    'psychiatry',
-    'psychology',
-    'clinical assessment',
-    'patient management',
-    'medical records',
-    'clinical forms',
-    'psychoeducational resources'
+    'salud mental',
+    'psiquiatría',
+    'psicología',
+    'evaluación clínica',
+    'gestión de pacientes',
+    'expedientes médicos',
+    'formularios clínicos',
+    'recursos psicoeducativos',
+    'glian'
   ],
-  authors: [{ name: 'MindHub Team' }],
-  creator: 'MindHub',
-  publisher: 'MindHub',
+  authors: [{ name: 'Glian Team' }],
+  creator: 'Glian',
+  publisher: 'Glian',
   robots: {
     index: false, // Healthcare platform should not be indexed
     follow: false,
@@ -40,24 +61,24 @@ export const metadata: Metadata = {
   },
   openGraph: {
     type: 'website',
-    locale: 'en_US',
-    url: process.env.NEXT_PUBLIC_APP_URL || 'https://mindhub.com',
-    siteName: 'MindHub',
-    title: 'MindHub - Healthcare Platform for Mental Health Professionals',
-    description: 'Comprehensive SaaS platform for psychiatrists and psychologists',
+    locale: 'es_MX',
+    url: process.env.NEXT_PUBLIC_APP_URL || 'https://glian.app',
+    siteName: 'Glian',
+    title: 'Glian - Plataforma de Gestión Clínica',
+    description: 'Suite completa para profesionales de salud mental',
     images: [
       {
         url: '/og-image.png',
         width: 1200,
         height: 630,
-        alt: 'MindHub Healthcare Platform',
+        alt: 'Glian Healthcare Platform',
       },
     ],
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'MindHub - Healthcare Platform',
-    description: 'Comprehensive SaaS platform for mental health professionals',
+    title: 'Glian - Plataforma de Gestión Clínica',
+    description: 'Suite completa para profesionales de salud mental',
     images: ['/twitter-image.png'],
   },
   icons: {
@@ -79,24 +100,24 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="es" className="font-sans">
+    <html lang="es" className={`${hankenGrotesk.variable} font-sans`}>
         <head>
           {/* Security headers */}
           <meta httpEquiv="X-Content-Type-Options" content="nosniff" />
           {/* X-Frame-Options should be set via HTTP header, not meta tag */}
           {/* XSS Protection should be set via HTTP header */}
           <meta name="referrer" content="strict-origin-when-cross-origin" />
-          
+
           {/* Healthcare compliance */}
           <meta name="robots" content="noindex, nofollow" />
           <meta name="googlebot" content="noindex, nofollow" />
-          
-          {/* PWA support */}
-          <meta name="theme-color" content="#0ea5e9" />
+
+          {/* PWA support - Glian Brand Colors */}
+          <meta name="theme-color" content="#0991b2" />
           <meta name="mobile-web-app-capable" content="yes" />
           <meta name="apple-mobile-web-app-capable" content="yes" />
           <meta name="apple-mobile-web-app-status-bar-style" content="default" />
-          <meta name="apple-mobile-web-app-title" content="MindHub" />
+          <meta name="apple-mobile-web-app-title" content="Glian" />
           
           {/* Explicit manifest link to prevent www domain issues */}
           <link rel="manifest" href="/manifest.json" />

@@ -6,7 +6,7 @@ export default function DocumentationPage() {
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="bg-white shadow rounded-lg p-8">
           <h1 className="text-3xl font-bold text-gray-900 mb-8">
-            Documentación de MindHub
+            Documentación de Glian
           </h1>
           
           <div className="grid md:grid-cols-3 gap-8">
@@ -15,7 +15,7 @@ export default function DocumentationPage() {
                 Guía de Inicio Rápido
               </h3>
               <p className="text-blue-600 mb-4">
-                Aprende a configurar y usar MindHub en pocos minutos.
+                Aprende a configurar y usar Glian en pocos minutos.
               </p>
               <ul className="text-sm text-blue-500 space-y-2">
                 <li>• Configuración inicial</li>
@@ -85,7 +85,7 @@ export default function DocumentationPage() {
                 API y Integraciones
               </h3>
               <p className="text-indigo-600 mb-4">
-                Conecta MindHub con tus sistemas existentes.
+                Conecta Glian con tus sistemas existentes.
               </p>
               <ul className="text-sm text-indigo-500 space-y-2">
                 <li>• API RESTful</li>
@@ -103,7 +103,7 @@ export default function DocumentationPage() {
               <div>
                 <h4 className="font-medium text-gray-800 mb-2">Tutoriales en Video</h4>
                 <p className="text-gray-600 text-sm">
-                  Serie completa de tutoriales paso a paso para dominar cada módulo de MindHub.
+                  Serie completa de tutoriales paso a paso para dominar cada módulo de Glian.
                 </p>
               </div>
               <div>

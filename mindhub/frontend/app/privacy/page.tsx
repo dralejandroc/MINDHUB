@@ -13,7 +13,7 @@ export default function PrivacyPage() {
             Política de Privacidad
           </h1>
           <p className="text-gray-600">
-            MindHub - Protección de Datos y Privacidad
+            Glian - Protección de Datos y Privacidad
           </p>
         </div>
 
@@ -26,7 +26,7 @@ export default function PrivacyPage() {
               <span className="ml-3">Última actualización: Enero 2025</span>
             </div>
             <h2 className="text-2xl font-heading font-bold text-dark-green mb-6">
-              Política de Privacidad de MindHub
+              Política de Privacidad de Glian
             </h2>
           </div>
           
@@ -66,7 +66,7 @@ export default function PrivacyPage() {
                 3. Protección de Datos de Pacientes
               </h2>
               <p className="text-gray-700 mb-4">
-                Los datos de pacientes ingresados en MindHub son propiedad exclusiva del 
+                Los datos de pacientes ingresados en Glian son propiedad exclusiva del 
                 profesional de salud. Implementamos medidas de seguridad técnicas y 
                 organizacionales para proteger estos datos, incluyendo:
               </p>

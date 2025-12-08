@@ -24,7 +24,7 @@ export async function POST(request: NextRequest) {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'User-Agent': 'MindHub-Migration/1.0',
+        'User-Agent': 'Glian-Migration/1.0',
       },
       body: JSON.stringify({ secret }),
     });

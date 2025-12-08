@@ -76,7 +76,7 @@ export function DashboardSwitcher() {
                 🎉 ¡Felicidades! Has desbloqueado el Dashboard Avanzado
               </h3>
               <p className="text-gray-700 mb-4">
-                Has demostrado experiencia con MindHub. El dashboard avanzado te ofrece:
+                Has demostrado experiencia con Glian. El dashboard avanzado te ofrece:
               </p>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-6">
                 <div className="flex items-center space-x-2">
