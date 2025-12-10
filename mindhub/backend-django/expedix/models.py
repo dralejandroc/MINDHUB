@@ -898,3 +898,35 @@ class UserDocument(models.Model):
     def __str__(self):
         return f"{self.original_name} ({self.owner_id})"
 
+class PatientDocument(models.Model):
+    """
+    Documentos asociados a un paciente específico.
+    Se almacena solo la referencia (URL / key) del archivo en S3.
+    """
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    patient = models.ForeignKey(
+        'Patient',
+        related_name='documents',
+        on_delete=models.CASCADE
+    )
+    file_name = models.CharField(max_length=255)
+    file_type = models.CharField(max_length=100, blank=True)
+    file_size = models.BigIntegerField(default=0)
+    file_url = models.URLField()
+    s3_key = models.CharField(max_length=512, blank=True)  # para poder borrarlo en S3 si quieres
+    uploaded_at = models.DateTimeField(default=timezone.now)
+    uploaded_by = models.ForeignKey(
+        'Profile',
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name='uploaded_patient_documents'
+    )
+
+    class Meta:
+        db_table = 'patient_documents'
+        ordering = ['-uploaded_at']
+
+    def __str__(self):
+        return f'{self.file_name} ({self.patient_id})'
+

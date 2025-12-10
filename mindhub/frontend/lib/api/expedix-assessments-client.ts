@@ -80,7 +80,7 @@ export async function saveAssessmentToPatient(
  */
 export async function getPatientAssessments(patientId: string): Promise<{
   success: boolean;
-  data?: PatientAssessment[];
+  data?: any;
   error?: string;
 }> {
   try {

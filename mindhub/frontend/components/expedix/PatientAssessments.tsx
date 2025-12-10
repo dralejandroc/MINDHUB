@@ -107,10 +107,12 @@ export default function PatientAssessments({
       
       if (response.success && response.data) {
         // Transform the data to match our component's expectations
-        const assessments = response.data;
+        
+        const assessments = response.data?.assessments;
+        console.log('response.data',assessments);
         
         // Group assessments by templateId (ClinimetrixPro uses templateId)
-        const scaleGroups = assessments.reduce((groups: any, assessment: any) => {
+        const scaleGroups = assessments?.reduce((groups: any, assessment: any) => {
           const scaleId = assessment.templateId;
           if (!groups[scaleId]) {
             groups[scaleId] = {

@@ -258,7 +258,9 @@ CORS_ALLOWED_ORIGINS = [
 CSRF_TRUSTED_ORIGINS = [
     "https://mindhub.cloud",
     "https://www.mindhub.cloud",
-    "https://glian.app"
+    "https://glian.app",
+    "http://localhost:3000",
+    "http://127.0.0.1:3000"
 ]
 
 # Permitir previews de Vercel (*.vercel.app) para el FRONTEND

@@ -23,7 +23,7 @@ export async function GET(request: Request) {
     // Forward request to Django
     const djangoUrl = `${DJANGO_API_BASE}/api/expedix/appointments${queryParams ? '?' + queryParams : ''}`;
     console.log('[EXPEDIX APPOINTMENTS PROXY] Forwarding to:', djangoUrl);
-    
+    // console.log('TEST APPOINTMENT AUTH:', request.headers.get('Authorization'));
     const response = await fetch(djangoUrl, {
       method: 'GET',
       headers: {

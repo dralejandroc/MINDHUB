@@ -27,6 +27,8 @@ import PatientTimeline from './PatientTimeline';
 import PatientDocuments from './PatientDocuments';
 import PatientAssessments from './PatientAssessments';
 import { Button } from '@/components/ui/Button';
+import Swal from 'sweetalert2';
+import axiosClient from '@/lib/axiosClient';
 
 interface PatientDashboardProps {
   patient: Patient;
@@ -136,6 +138,37 @@ export default function PatientDashboard({
       setTabLoading(false);
       return;
     }
+
+    if (tabId === 'consultations') {
+      const result = await axiosClient.get(`/api/expedix/consultations/?patient_id=${patient.id}`);
+      const { data } = result;
+      console.log('consultations', data);
+      console.log(data && data.results.length > 0);
+      
+      if (data && data.results.length > 0) {
+        setDashboardData(prev => ({
+          ...prev,
+          consultations: data.results
+        }));
+        console.log('Loaded consultations:', dashboardData);
+        
+      }
+      
+    }
+
+    if (tabId === 'prescriptions') {
+      const result = await axiosClient.get(`/api/expedix/prescriptions/?patient_id=${patient.id}`);
+      const { data } = result;
+      console.log('prescriptions', data);
+      console.log(data && data.results.length > 0);
+      if (data && data.results.length > 0) {
+        setDashboardData(prev => ({
+          ...prev,
+          prescriptions: data.results
+        }));
+        console.log('Loaded prescriptions:', dashboardData);
+      }
+    }
     
     // For other tabs, only fetch if not already loaded
     if (dashboardData.consultations.length === 0 && 
@@ -143,15 +176,16 @@ export default function PatientDashboard({
       setTabLoading(true);
       try {
         const patientResponse = await expedixApi.getPatient(patient.id);
+        console.log('RESPONSE PATIENT for tab data', patientResponse);
         if (patientResponse?.data) {
           const patientData = patientResponse.data;
-          setDashboardData({
-            consultations: patientData.consultations || [],
-            prescriptions: patientData.prescriptions || [],
+          setDashboardData(prev => ({
+            // consultations: patientData.consultations || [],
+            ...prev,
             appointments: patientData.appointments || [],
             documents: patientData.documents || [],
             assessments: patientData.assessments || []
-          });
+          }));
         }
       } catch (error) {
         console.error('Error fetching tab data:', error);
@@ -167,18 +201,18 @@ export default function PatientDashboard({
       
       // Only fetch basic patient data initially (performance optimization)
       const patientResponse = await expedixApi.getPatient(patient.id);
-      
+      console.log('RESPONSE PATIENT', patientResponse);
       if (patientResponse?.data) {
         const patientData = patientResponse.data;
-        
+        // console.log('[PatientDashboard] Fetched patient data:', patientData);
         // Initialize with empty arrays for lazy loading
-        setDashboardData({
-          consultations: [],
-          prescriptions: [],
+        setDashboardData(prev => ({
+          // consultations: [],
+          ...prev,
           appointments: [],
           documents: [],
           assessments: []
-        });
+        }));
         
         // Update local patient data with fresh data
         setPatientData(patientData);
@@ -216,11 +250,11 @@ export default function PatientDashboard({
         setEditingPatient(false);
         // Refresh dashboard data
         fetchDashboardData();
-        alert('Información del paciente actualizada correctamente');
+        Swal.fire('Éxito', 'Información del paciente actualizada correctamente', 'success');
       }
     } catch (error) {
       console.error('Error updating patient:', error);
-      alert('Error al actualizar la información del paciente');
+      Swal.fire('Error', 'Error al actualizar la información del paciente', 'error');
     } finally {
       setLoading(false);
     }
