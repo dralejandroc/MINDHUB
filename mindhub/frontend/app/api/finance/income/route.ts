@@ -1,15 +1,25 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { getAuthenticatedUser, createResponse, createErrorResponse } from '@/lib/supabase/admin'
 
 // Prevent static generation for this API route
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
-const BACKEND_URL = process.env.BACKEND_URL || 'https://mindhub-django-backend.vercel.app';
+const BACKEND_URL = process.env.NEXT_PUBLIC_DJANGO_API_URL || 'https://mindhub-django-backend.vercel.app';
 
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     
+    
+
+    // Verify authentication
+    const { user, error: authError } = await getAuthenticatedUser(request);
+    if (authError || !user) {
+      console.error('[EXPEDIX APPOINTMENTS PROXY] Auth error:', authError);
+      return createErrorResponse('Unauthorized', 'Valid authentication required', 401);
+    }
+    console.log('TEST INCOME AUTH:', request.headers.get('Authorization'));
     // Forward all query parameters
     const params = new URLSearchParams();
     searchParams.forEach((value, key) => {
@@ -28,16 +38,19 @@ export async function GET(request: NextRequest) {
 
     // Forward Authorization header (Auth token)
     const authHeader = request.headers.get('Authorization');
+    console.log('AUTHHEADER:', authHeader);
+  
+    
     if (authHeader) {
       headers['Authorization'] = authHeader;
     }
 
     // Forward user context
-    const userContextHeader = request.headers.get('X-User-Context');
-    if (userContextHeader) {
-      headers['X-User-Context'] = userContextHeader;
-    }
-
+    // const userContextHeader = request.headers.get('X-User-Context');
+    // if (userContextHeader) {
+    //   headers['X-User-Context'] = userContextHeader;
+    // }
+    console.log('FINAL URL:', url);
     const response = await fetch(url, {
       method: 'GET',
       headers,

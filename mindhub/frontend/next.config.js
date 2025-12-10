@@ -13,6 +13,17 @@ const nextConfig = {
     BACKEND_URL: process.env.BACKEND_URL || process.env.NEXT_PUBLIC_DJANGO_API_URL || 'https://mindhub-django-backend.vercel.app',
     NEXT_PUBLIC_DJANGO_API_URL: process.env.NEXT_PUBLIC_DJANGO_API_URL || 'https://mindhub-django-backend.vercel.app',
   },
+  images: {
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: 'glian-app-documents.s3.us-west-2.amazonaws.com',
+        pathname: '/**',
+      },
+    ],
+    //o, si ya usas "domains", podrías hacerlo así:
+    domains: ['glian-app-documents.s3.us-west-2.amazonaws.com'],
+  },
   // Force webpack to resolve @ paths correctly
   webpack: (config, { buildId, dev, isServer, defaultLoaders, webpack }) => {
     config.resolve.alias = {

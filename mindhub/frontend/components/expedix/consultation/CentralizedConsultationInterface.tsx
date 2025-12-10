@@ -248,6 +248,8 @@ export default function CentralizedConsultationInterface({
       
       // Load patient consultations
       const consultationsResponse = await expedixApi.getPatientConsultations(patient.id);
+      console.log('consultationsResponse', consultationsResponse);
+      
       const patientConsultations = consultationsResponse?.data || [];
       setConsultations(patientConsultations);
       

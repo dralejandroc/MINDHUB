@@ -69,7 +69,9 @@ export async function GET(request: Request, { params }: { params: { id: string }
       try {
         const { createClient } = await import('@supabase/supabase-js');
         const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-        const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
+        const supabaseServiceKey = process.env.NEXT_PUBLIC_SUPABASE_SERVICE_ROLE_KEY!;
+        console.log('supabase key',supabaseServiceKey);
+        
         
         const supabase = createClient(supabaseUrl, supabaseServiceKey);
         
@@ -81,15 +83,13 @@ export async function GET(request: Request, { params }: { params: { id: string }
             patient_id,
             template_id,
             status,
-            score,
+            scores,
             created_at,
             completed_at,
-            scale_name,
-            scale_abbreviation,
             interpretation
           `)
           .eq('patient_id', patientId)
-          .eq('created_by', user.id)
+          // .eq('created_by', user.id)
           .order('created_at', { ascending: false });
         
         if (supabaseError) {

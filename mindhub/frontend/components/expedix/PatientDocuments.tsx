@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import {
   DocumentArrowDownIcon,
   DocumentTextIcon,
@@ -11,6 +11,9 @@ import {
   ArrowDownTrayIcon
 } from '@heroicons/react/24/outline';
 import { Button } from '@/components/ui/Button';
+import axiosClient from '@/lib/axiosClient';
+import Image from 'next/image';
+import Swal from 'sweetalert2';
 
 interface PatientDocument {
   id: string;
@@ -27,25 +30,34 @@ interface PatientDocumentsProps {
 }
 
 export default function PatientDocuments({ patientId, patientName }: PatientDocumentsProps) {
-  const [documents, setDocuments] = useState<PatientDocument[]>([
-    // Mock data - replace with real API calls
-    {
-      id: '1',
-      name: 'Resultados_de_laboratorio.pdf',
-      type: 'application/pdf',
-      size: 1024 * 256, // 256KB
-      uploadedAt: '2024-01-15T10:30:00Z'
-    },
-    {
-      id: '2',
-      name: 'Radiografia_torax.jpg',
-      type: 'image/jpeg',
-      size: 1024 * 512, // 512KB
-      uploadedAt: '2024-01-10T14:20:00Z'
-    }
-  ]);
+  const [documents, setDocuments] = useState<PatientDocument[]>([]);
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [previewDoc, setPreviewDoc] = useState<PatientDocument | null>(null);
+
+
+  useEffect(() => {
+    const fetchDocuments = async () => {
+      const res = await axiosClient.get(`/api/expedix/patient-documents`, {
+        params: { patient_id: patientId },
+      });
+      console.log('RES',res);
+      
+      const docs: PatientDocument[] = res.data?.results?.map((d: any) => ({
+        id: d.id,
+        name: d.file_name,
+        type: d.file_type,
+        size: d.file_size,
+        uploadedAt: d.uploaded_at,
+        url: d.file_url,
+      }));
+
+      setDocuments(docs);
+    };
+
+    fetchDocuments();
+  }, [patientId]);
+
 
   const formatFileSize = (bytes: number): string => {
     if (bytes === 0) return '0 Bytes';
@@ -82,64 +94,111 @@ export default function PatientDocuments({ patientId, patientName }: PatientDocu
     return DocumentTextIcon;
   };
 
+  const isImage = (doc: PatientDocument) =>
+  doc.type?.startsWith('image/') ||
+  /\.(png|jpe?g|gif|webp)$/i.test(doc.name);
+
+  const isPdf = (doc: PatientDocument) =>
+    doc.type === 'application/pdf' || /\.pdf$/i.test(doc.name);
+
+  const getPdfSrc = (url: string) =>
+  `/api/pdf-proxy?url=${encodeURIComponent(url)}`;
+
+
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files;
     if (!files || files.length === 0) return;
 
     setUploading(true);
     
-    try {
-      // Simulate file upload - replace with real API call
-      for (const file of Array.from(files)) {
-        const newDocument: PatientDocument = {
-          id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
-          name: file.name,
-          type: file.type,
-          size: file.size,
-          uploadedAt: new Date().toISOString()
-        };
-        
-        // Add to documents list
-        setDocuments(prev => [newDocument, ...prev]);
-      }
-      
-      // Reset file input
-      if (fileInputRef.current) {
-        fileInputRef.current.value = '';
-      }
-      
-    } catch (error) {
-      console.error('Error uploading file:', error);
-      alert('Error al subir el archivo. Inténtalo de nuevo.');
-    } finally {
-      setUploading(false);
-    }
+    const formData = new FormData();
+    formData.append('file', files[0]);
+    formData.append('patient_id', patientId);
+
+    const res = await axiosClient.post('/api/expedix/patient-documents/', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+
+    const d = res.data;
+    const newDocument: PatientDocument = {
+      id: d.id,
+      name: d.file_name,
+      type: d.file_type,
+      size: d.file_size,
+      uploadedAt: d.uploaded_at,
+      url: d.file_url,
+    };
+    setDocuments(prev => [newDocument, ...prev]);
+
+    setUploading(false);
+
   };
 
   const handleDeleteDocument = async (documentId: string) => {
-    if (!confirm('¿Estás seguro de que quieres eliminar este documento?')) {
-      return;
-    }
-
-    try {
-      // Simulate deletion - replace with real API call
-      setDocuments(prev => prev.filter(doc => doc.id !== documentId));
-    } catch (error) {
-      console.error('Error deleting document:', error);
-      alert('Error al eliminar el documento. Inténtalo de nuevo.');
-    }
+    const swalWithBootstrapButtons = Swal.mixin({
+      customClass: {
+        confirmButton: "btn btn-success",
+        cancelButton: "btn btn-danger"
+      },
+      buttonsStyling: false
+    });
+    swalWithBootstrapButtons.fire({
+      title: "¿Estás seguro?",
+      text: "¡No podrás revertir esto!",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonText: "Sí, bórralo",
+      cancelButtonText: "No, cancelar",
+      reverseButtons: true
+    }).then(async (result) => {
+      if (result.isConfirmed) {
+        try {
+          await axiosClient.delete(`/api/expedix/patient-documents/${documentId}/`);
+          setDocuments(prev => prev.filter(d => d.id !== documentId));
+        } catch (error) {
+          console.error('Error deleting document:', error);
+        }
+        swalWithBootstrapButtons.fire({
+          title: "¡Borrado!",
+          text: "Tu archivo ha sido borrado.",
+          icon: "success"
+        });
+      } else if (
+        /* Read more about handling dismissals below */
+        result.dismiss === Swal.DismissReason.cancel
+      ) {
+        swalWithBootstrapButtons.fire({
+          title: "Cancelado",
+          text: "Tu archivo imaginario está seguro :)",
+          icon: "error"
+        });
+      }
+    });
   };
 
   const handleViewDocument = (document: PatientDocument) => {
-    // In a real implementation, this would open the document
-    console.log('Viewing document:', document.name);
-    alert(`Función de visualización en desarrollo para: ${document.name}`);
+    if (!document.url) {
+      alert('Este documento aún no tiene una URL disponible.');
+      return;
+    }
+    setPreviewDoc(document);
   };
 
-  const handleDownloadDocument = (document: PatientDocument) => {
-    // In a real implementation, this would trigger download
-    console.log('Downloading document:', document.name);
-    alert(`Función de descarga en desarrollo para: ${document.name}`);
+  const handleDownloadDocument = (doc: PatientDocument) => {
+    // // In a real implementation, this would trigger download
+    // console.log('Downloading document:', document.name);
+    // alert(`Función de descarga en desarrollo para: ${document.name}`);
+    if (doc.url) {
+      // download the document no open in new tab
+      const link = document.createElement('a');
+      link.href = doc.url;
+      link.download = doc.name;
+      link.target = '_blank';
+      link.rel = 'noopener noreferrer';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    } 
   };
 
   return (
@@ -288,6 +347,94 @@ export default function PatientDocuments({ patientId, patientName }: PatientDocu
           />
         </div>
       </div>
+      {/* Modal de visualización de documento */}
+      {previewDoc && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
+          <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] flex flex-col">
+            {/* Header */}
+            <div className="flex items-center justify-between px-4 py-3 border-b">
+              <div className="flex flex-col">
+                <span className="text-sm text-gray-500">
+                  Documento de: {patientName}
+                </span>
+                <h3 className="text-base font-semibold text-gray-900 truncate">
+                  {previewDoc.name}
+                </h3>
+              </div>
+              <div className="flex items-center space-x-2">
+                <Button
+                  variant="outline"
+                  className="text-sm"
+                  onClick={() => {
+                    if (previewDoc.url) {
+                      window.open(previewDoc.url, '_blank', 'noopener,noreferrer');
+                    }
+                  }}
+                >
+                  <ArrowDownTrayIcon className="h-4 w-4 mr-1" />
+                  Abrir en pestaña
+                </Button>
+                <Button
+                  variant="ghost"
+                  className="text-gray-500 hover:text-gray-900"
+                  onClick={() => setPreviewDoc(null)}
+                >
+                  Cerrar ✕
+                </Button>
+              </div>
+            </div>
+
+            {/* Contenido */}
+            <div className="flex-1 overflow-hidden bg-gray-100">
+              {isImage(previewDoc) && previewDoc.url && (
+                <div className="w-full h-full flex items-center justify-center p-4">
+                  {/* Imagen escalada manteniendo proporción */}
+                  <Image
+                    src={previewDoc.url}
+                    alt={previewDoc.name}
+                    className="max-h-[80vh] max-w-full object-contain rounded"
+                    width={800}
+                    height={800}
+                  />
+                </div>
+              )}
+
+              {isPdf(previewDoc) && previewDoc.url && (
+                <div className="flex-1">
+                  <iframe
+                    src={getPdfSrc(previewDoc.url)}
+                    className="w-full h-[80vh]"
+                    style={{ border: 'none' }}
+                  />
+                </div>
+              )}
+
+              {!isImage(previewDoc) && !isPdf(previewDoc) && (
+                <div className="p-6 flex flex-col items-center justify-center text-center space-y-3 h-full">
+                  <DocumentTextIcon className="h-12 w-12 text-gray-400" />
+                  <p className="text-gray-700 text-sm">
+                    Este tipo de archivo no se puede previsualizar aquí.
+                  </p>
+                  {previewDoc.url && (
+                    <Button
+                      onClick={() =>
+                        window.open(previewDoc.url!, '_blank', 'noopener,noreferrer')
+                      }
+                      className="bg-blue-600 hover:bg-blue-700 text-white"
+                    >
+                      <ArrowDownTrayIcon className="h-4 w-4 mr-2" />
+                      Abrir / Descargar
+                    </Button>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
+
+    
   );
+  
 }

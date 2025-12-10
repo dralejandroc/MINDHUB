@@ -17,6 +17,7 @@ import {
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
+import axiosClient from '@/lib/axiosClient';
 
 interface IncomeData {
   id: string;
@@ -60,9 +61,9 @@ interface FinancialStats {
     };
   };
   breakdown: {
-    bySource: Array<{ source: string; _sum: { amount: number }; _count: number }>;
-    byPaymentMethod: Array<{ paymentMethod: string; _sum: { amount: number }; _count: number }>;
-    byProfessional: Array<{ professionalId: string; _sum: { amount: number }; _count: number }>;
+    bySource: Array<{ source: string; _sum: { amunt: number }; _count: number, total: number }>;
+    byPaymentMethod: Array<{ paymentMethod: string; _sum: { total: number }; _count: number, total: number }>;
+    byProfessional: Array<{ professionalId: string; _sum: { total: number }; _count: number, total: number }>;
   };
   trends: {
     daily: Array<{ date: string; total: number; transactions: number }>;
@@ -102,19 +103,24 @@ export default function FinanceDashboard({ selectedDate, onNewIncome }: FinanceD
       setLoading(true);
       
       // Load recent income records
-      const incomeResponse = await fetch('/api/finance/income?limit=50&status=confirmed');
-      const incomeData = await incomeResponse.json();
+      // const incomeResponse = await fetch('/api/finance/income?limit=50&status=confirmed');
+      const incomeResponse = await axiosClient.get('/api/finance/api/income?limit=50&status=confirmed');
+      console.log('INCOME RESP:', incomeResponse);
       
-      if (incomeData.success) {
-        setIncomes(incomeData.data || []);
+      const incomeData = incomeResponse;
+      
+      if (incomeData.status === 200) {
+        setIncomes(incomeData?.data?.results || []);
       }
       
       // Load financial statistics
-      const statsResponse = await fetch(`/api/finance/stats?period=${selectedPeriod}`);
-      const statsData = await statsResponse.json();
+      const statsResponse = await axiosClient.get(`/api/finance/api/stats?period=${selectedPeriod}`);
+      console.log('STATS RESPONSE:', statsResponse);
       
-      if (statsData.success) {
-        setStats(statsData.data);
+      if (statsResponse.status === 200) {
+        console.log('DATA STATS:', statsResponse.data.data);
+        
+        setStats(statsResponse.data.data);
       }
     } catch (error) {
       console.error('Error loading financial data:', error);
@@ -173,20 +179,22 @@ export default function FinanceDashboard({ selectedDate, onNewIncome }: FinanceD
   const getTodayIncome = () => {
     const today = new Date().toISOString().split('T')[0];
     return incomes
-      .filter(income => income.receivedDate.startsWith(today))
+      .filter(income => income.receivedDate?.startsWith(today))
       .reduce((sum, income) => sum + income.amount, 0);
   };
 
   const getIncomeBySource = () => {
     return stats.breakdown.bySource.reduce((acc, item) => {
-      acc[item.source] = item._sum.amount || 0;
+      console.log('ITEM:', item);
+      
+      acc[item.source] = acc[item.source] + (item.total || 0);
       return acc;
     }, {} as Record<string, number>);
   };
 
   const getIncomeByPaymentMethod = () => {
     return stats.breakdown.byPaymentMethod.reduce((acc, item) => {
-      acc[item.paymentMethod] = item._sum.amount || 0;
+      acc[item.paymentMethod] = acc[item.paymentMethod] + (item.total || 0);
       return acc;
     }, {} as Record<string, number>);
   };
@@ -271,7 +279,7 @@ export default function FinanceDashboard({ selectedDate, onNewIncome }: FinanceD
                     {formatCurrency(getTodayIncome())}
                   </p>
                   <p className="text-xs text-gray-500">
-                    {incomes.filter(i => i.receivedDate.startsWith(new Date().toISOString().split('T')[0])).length} ingresos
+                    {incomes.filter(i => i.receivedDate?.startsWith(new Date().toISOString().split('T')[0])).length} ingresos
                   </p>
                 </div>
                 <CalendarIcon className="h-8 w-8 text-blue-500" />

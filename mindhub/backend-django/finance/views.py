@@ -15,6 +15,8 @@ from django.utils import timezone
 from datetime import datetime, timedelta
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.filters import SearchFilter, OrderingFilter
+from django.utils.decorators import method_decorator
+from django.views.decorators.csrf import csrf_exempt
 
 from .models import Income, CashRegisterCut, FinancialService, PaymentMethodConfiguration
 from .serializers import (
@@ -24,8 +26,14 @@ from .serializers import (
     IncomeListQuerySerializer, DashboardStatsSerializer
 )
 from middleware.base_viewsets import FinanceDualViewSet, DualSystemModelViewSet
+from rest_framework.authentication import SessionAuthentication
 
+class CsrfExemptSessionAuthentication(SessionAuthentication):
+    def enforce_csrf(self, request):
+        # Sobrescribimos esto para que NO haga el chequeo CSRF
+        return
 
+@method_decorator(csrf_exempt, name='dispatch')
 class IncomeViewSet(FinanceDualViewSet):
     """
     🎯 DUAL SYSTEM Income ViewSet with business logic differentiation
@@ -33,12 +41,19 @@ class IncomeViewSet(FinanceDualViewSet):
     - LICENCIA INDIVIDUAL: 100% income for professional, no sharing
     """
     queryset = Income.objects.all()
-    permission_classes = [IsAuthenticated]
+    authentication_classes = [CsrfExemptSessionAuthentication] 
     filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]
     filterset_fields = ['status', 'source', 'payment_method', 'professional_id']  # Removed clinic_id (handled by dual system)
     search_fields = ['description', 'patient_name', 'professional_name', 'reference']
     ordering_fields = ['received_date', 'amount', 'created_at']
     ordering = ['-received_date', '-created_at']
+
+    def perform_create(self, serializer):
+        """
+        Override para evitar que el DualSystem le meta workspace_id, user_id, etc.
+        Aquí solo guardamos con los campos que realmente existen en Income.
+        """
+        serializer.save()
 
     def get_serializer_class(self):
         if self.action == 'create':
@@ -135,10 +150,14 @@ class IncomeViewSet(FinanceDualViewSet):
 
         # Calculate summary statistics
         summary_stats = queryset.aggregate(
-            total_amount=Sum('amount') or 0,
+            total_amount=Sum('amount'),
             total_transactions=Count('id'),
-            average_amount=Avg('amount') or 0
+            average_amount=Avg('amount')
         )
+
+        total_amount = summary_stats['total_amount'] or 0
+        average_amount = summary_stats['average_amount'] or 0
+        total_transactions = summary_stats['total_transactions'] or 0
 
         # Breakdown by source
         source_breakdown = list(
@@ -186,9 +205,9 @@ class IncomeViewSet(FinanceDualViewSet):
 
         stats_data = {
             'summary': {
-                'totalAmount': float(summary_stats['total_amount']),
-                'totalTransactions': summary_stats['total_transactions'],
-                'averageAmount': float(summary_stats['average_amount']),
+                'totalAmount': float(total_amount),
+                'totalTransactions': total_transactions,
+                'averageAmount': float(average_amount),
                 'period': {
                     'from': start_date.isoformat(),
                     'to': end_date.isoformat()

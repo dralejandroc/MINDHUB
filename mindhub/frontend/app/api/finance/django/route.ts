@@ -59,24 +59,20 @@ export async function POST(request: Request) {
   try {
     console.log('[FINANCE DJANGO PROXY] Processing POST request');
     
-    // Verify authentication
     const { user, error: authError } = await getAuthenticatedUser(request);
     if (authError || !user) {
       return createErrorResponse('Unauthorized', 'Valid authentication required', 401);
     }
 
-    // Get request body
     const body = await request.json();
-    
-    // Forward request to Django with dual system headers
-    const djangoUrl = `${DJANGO_API_BASE}/api/finance/`;
-    
+
+    const djangoUrl = `${DJANGO_API_BASE}/api/finance/api/income/`;
+
     const response = await fetch(djangoUrl, {
       method: 'POST',
       headers: {
         'Authorization': request.headers.get('Authorization') || '',
         'Content-Type': 'application/json',
-        // 🎯 DUAL SYSTEM: Headers for automatic license type detection
         'X-Proxy-Auth': 'verified',
         'X-User-Id': user.id,
         'X-User-Email': user.email || '',
@@ -86,7 +82,9 @@ export async function POST(request: Request) {
     });
 
     if (!response.ok) {
-      throw new Error(`Django API error: ${response.status} ${response.statusText}`);
+      const errorText = await response.text();
+      console.error('[FINANCE DJANGO PROXY] Django error body:', errorText);
+      throw new Error(`Django API error: ${response.status} ${response.statusText} - ${errorText}`);
     }
 
     const data = await response.json();
@@ -103,6 +101,7 @@ export async function POST(request: Request) {
     );
   }
 }
+
 
 export async function PUT(request: Request) {
   try {

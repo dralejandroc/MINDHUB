@@ -71,7 +71,7 @@ class ConsultationViewSet(viewsets.ViewSet):
                     c.history_present_illness,
                     c.present_illness,
                     c.physical_examination,
-                    c.physical_exam,
+                    
                     c.assessment,
                     c.plan,
                     c.treatment_plan,
@@ -100,8 +100,8 @@ class ConsultationViewSet(viewsets.ViewSet):
                     c.edited_by,
                     c.finalized_at,
                     c.finalized_by,
-                    c.clinic_id,
-                    c.workspace_id
+                    c.clinic_id
+                
                 FROM consultations c
                 WHERE 1=1
             """

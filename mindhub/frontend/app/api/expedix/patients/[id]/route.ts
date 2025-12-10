@@ -27,7 +27,7 @@ export async function GET(request: Request, { params }: { params: { id: string }
       const djangoUrl = `${DJANGO_BACKEND_URL}/api/expedix/patients/${id}/`;
       console.log('[PATIENT BY ID] Trying Django:', djangoUrl);
 
-      const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
+      const serviceRoleKey = process.env.NEXT_PUBLIC_SUPABASE_SERVICE_ROLE_KEY!;
       
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 3000);
@@ -191,7 +191,7 @@ export async function PUT(request: Request, { params }: { params: { id: string }
     try {
       const { createClient } = await import('@supabase/supabase-js');
       const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-      const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
+      const supabaseServiceKey = process.env.NEXT_PUBLIC_SUPABASE_SERVICE_ROLE_KEY!;
       
       const supabase = createClient(supabaseUrl, supabaseServiceKey);
       
@@ -215,15 +215,15 @@ export async function PUT(request: Request, { params }: { params: { id: string }
           // Additional fields
           occupation: body.occupation,
           education_level: body.education_level,
-          workplace: body.workplace,
-          referring_physician: body.referring_physician,
-          known_allergies: body.known_allergies,
+          // workplace: body.workplace,
+          // referring_physician: body.referring_physician,
+          // known_allergies: body.known_allergies,
           blood_type: body.blood_type,
           emergency_contact_name: body.emergency_contact_name,
           emergency_contact_phone: body.emergency_contact_phone,
           emergency_contact_relationship: body.emergency_contact_relationship,
           marital_status: body.marital_status,
-          preferred_language: body.preferred_language,
+          // preferred_language: body.preferred_language,
           insurance_provider: body.insurance_provider,
           insurance_number: body.insurance_number,
           updated_at: new Date().toISOString()

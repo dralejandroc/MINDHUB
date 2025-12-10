@@ -4,7 +4,7 @@ Replaces Node.js API responses with Django serializers
 """
 
 from rest_framework import serializers
-from .models import Profile, Patient, MedicalHistory, Consultation, Prescription, ExpedixConfiguration, ConsultationTemplate, MedicationDatabase, PrescriptionMedication, ScheduleConfig, UserDocument
+from .models import Profile, Patient, MedicalHistory, Consultation, Prescription, ExpedixConfiguration, ConsultationTemplate, MedicationDatabase, PrescriptionMedication, ScheduleConfig, UserDocument, PatientDocument
 from .services.patient_service import PatientService
 # from agenda.models import Appointment  # REMOVED for Vercel deployment
 
@@ -801,3 +801,21 @@ class UserDocumentSerializer(serializers.ModelSerializer):
             "content_type",
             "created_at",
         ]
+
+class PatientDocumentSerializer(serializers.ModelSerializer):
+    patient_name = serializers.CharField(source='patient.name', read_only=True)
+
+    class Meta:
+        model = PatientDocument
+        fields = [
+            'id',
+            'patient',
+            'patient_name',
+            'file_name',
+            'file_type',
+            'file_size',
+            'file_url',
+            'uploaded_at',
+        ]
+        read_only_fields = ['id', 'file_url', 'uploaded_at', 'patient_name']
+
