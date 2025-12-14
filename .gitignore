@@ -38,3 +38,6 @@ mindhub/backend-django/import.env
 # Ignorar entornos virtuales
 .venv/
 **/.venv/
+
+__pycache__/
+*.pyc
