@@ -320,7 +320,7 @@ export default function PatientAssessments({
           </p>
           <Button
             onClick={onNewAssessment}
-            variant="purple"
+            variant="primary"
             className="inline-flex items-center"
           >
             <BeakerIcon className="h-4 w-4 mr-2" />
@@ -337,7 +337,7 @@ export default function PatientAssessments({
         <h3 className="text-lg font-bold text-gray-900">Evaluaciones Clínicas</h3>
         <Button
           onClick={onNewAssessment}
-          variant="purple"
+          variant="primary"
           size="sm"
           className="inline-flex items-center"
         >

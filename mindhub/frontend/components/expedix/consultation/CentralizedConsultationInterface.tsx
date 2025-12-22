@@ -59,6 +59,7 @@ interface ConsultationData {
   };
   physicalExamination: string;
   medications: any[];
+  indications: any[];
   additionalInstructions: string;
   nextAppointment: { date: string; time: string };
   mentalExam: {
@@ -192,6 +193,7 @@ export default function CentralizedConsultationInterface({
     },
     physicalExamination: '',
     medications: [],
+    indications: [],
     additionalInstructions: '',
     nextAppointment: { date: '', time: '' },
     mentalExam: {
@@ -331,6 +333,7 @@ export default function CentralizedConsultationInterface({
       },
       physicalExamination: '',
       medications: [],
+      indications: [],
       additionalInstructions: '',
       nextAppointment: consultation.nextAppointment || { date: '', time: '' },
       mentalExam: {
@@ -2099,7 +2102,7 @@ export default function CentralizedConsultationInterface({
         onClose={() => setShowMedicationModal(false)}
         onSave={handleSaveMedications}
         currentMedications={consultationData.medications || []}
-        currentIndications={consultationData.medicationIndications || []}
+        currentIndications={consultationData.indications || []}
       />
 
       {/* Prescription Designer Modal */}
