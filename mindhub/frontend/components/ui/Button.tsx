@@ -3,7 +3,7 @@ import { clsx } from 'clsx';
 
 export interface ButtonProps
   extends React.ButtonHTMLAttributes<HTMLButtonElement> {
-  variant?: 'primary' | 'secondary' | 'accent' | 'outline' | 'purple' | 'emerald' | 'orange' | 'ghost' | 'link';
+  variant?: 'primary' | 'secondary' | 'outline' | 'ghost' | 'link';
   size?: 'sm' | 'md' | 'lg';
   loading?: boolean;
 }
@@ -28,50 +28,18 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(
         hover:before:translate-x-[100%]
       `,
       secondary: `
-        gradient-secondary text-white shadow-secondary
-        hover:shadow-secondary-hover
+        bg-secondary-500 text-dark-500 shadow-secondary
+        hover:shadow-secondary-hover hover:bg-secondary-400
         before:absolute before:inset-0 before:bg-gradient-to-r
-        before:from-transparent before:via-white/20 before:to-transparent
-        before:translate-x-[-100%] before:transition-transform before:duration-500
-        hover:before:translate-x-[100%]
-      `,
-      accent: `
-        gradient-accent text-white shadow-accent
-        hover:shadow-accent-hover
-        before:absolute before:inset-0 before:bg-gradient-to-r
-        before:from-transparent before:via-white/20 before:to-transparent
+        before:from-transparent before:via-white/10 before:to-transparent
         before:translate-x-[-100%] before:transition-transform before:duration-500
         hover:before:translate-x-[100%]
       `,
       outline: `
-        bg-theme-card text-primary border-2 border-primary
-        hover:bg-theme-tertiary hover:shadow-theme-md
+        bg-transparent text-primary-600 border-2 border-primary-500
+        hover:bg-primary-50 hover:shadow-md
       `,
-      purple: `
-        gradient-purple text-white shadow-purple
-        hover:shadow-purple-hover
-        before:absolute before:inset-0 before:bg-gradient-to-r
-        before:from-transparent before:via-white/20 before:to-transparent
-        before:translate-x-[-100%] before:transition-transform before:duration-500
-        hover:before:translate-x-[100%]
-      `,
-      emerald: `
-        gradient-emerald text-white shadow-emerald
-        hover:shadow-emerald-hover
-        before:absolute before:inset-0 before:bg-gradient-to-r
-        before:from-transparent before:via-white/20 before:to-transparent
-        before:translate-x-[-100%] before:transition-transform before:duration-500
-        hover:before:translate-x-[100%]
-      `,
-      orange: `
-        gradient-orange text-white shadow-orange
-        hover:shadow-orange-hover
-        before:absolute before:inset-0 before:bg-gradient-to-r
-        before:from-transparent before:via-white/20 before:to-transparent
-        before:translate-x-[-100%] before:transition-transform before:duration-500
-        hover:before:translate-x-[100%]
-      `,
-      ghost: 'text-gray-700 hover:bg-gray-100 focus:ring-gray-500',
+      ghost: 'text-dark-500 hover:bg-light-300 focus:ring-primary-500',
       link: 'text-primary-600 hover:text-primary-700 underline-offset-4 hover:underline'
     };
 

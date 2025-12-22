@@ -80,7 +80,7 @@ export async function GET(request: Request) {
             'X-User-Email': user.email || '',
             'X-Tenant-ID': tenantId || '',
             'X-Tenant-Type': tenantType || '',
-            'X-MindHub-Dual-System': 'enabled',
+            'X-Glian-Dual-System': 'enabled',
           },
         });
 
@@ -178,7 +178,7 @@ export async function POST(request: Request) {
             'X-User-Email': user.email || '',
             'X-Tenant-ID': tenantId || '',
             'X-Tenant-Type': tenantType || '',
-            'X-MindHub-Dual-System': 'enabled',
+            'X-Glian-Dual-System': 'enabled',
           },
           body: JSON.stringify(body),
         });

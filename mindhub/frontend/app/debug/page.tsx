@@ -67,7 +67,7 @@ export default function DebugPage() {
   return (
     <div className="min-h-screen bg-gray-50 py-8 px-4">
       <div className="max-w-4xl mx-auto">
-        <h1 className="text-3xl font-bold text-gray-900 mb-8">MindHub Debug Dashboard</h1>
+        <h1 className="text-3xl font-bold text-gray-900 mb-8">Glian Debug Dashboard</h1>
         
         {/* Environment Info */}
         <div className="bg-white rounded-lg shadow-sm border p-6 mb-6">

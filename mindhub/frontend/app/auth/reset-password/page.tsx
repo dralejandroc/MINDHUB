@@ -78,7 +78,7 @@ function ResetPasswordForm() {
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-900 via-blue-700 to-teal-600 py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-md w-full">
         <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold text-white mb-2">MindHub</h1>
+          <h1 className="text-4xl font-bold text-white mb-2">Glian</h1>
           <p className="text-blue-100">Plataforma de Gestión Sanitaria</p>
         </div>
         

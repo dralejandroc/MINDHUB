@@ -248,8 +248,6 @@ export default function CentralizedConsultationInterface({
       
       // Load patient consultations
       const consultationsResponse = await expedixApi.getPatientConsultations(patient.id);
-      console.log('consultationsResponse', consultationsResponse);
-      
       const patientConsultations = consultationsResponse?.data || [];
       setConsultations(patientConsultations);
       
@@ -587,10 +585,11 @@ export default function CentralizedConsultationInterface({
     };
   };
 
-  const handleSaveMedications = (medications: any[]) => {
+  const handleSaveMedications = (medications: any[], indications: any[]) => {
     setConsultationData(prev => ({
       ...prev,
-      medications: medications
+      medications: medications,
+      medicationIndications: indications
     }));
   };
 
@@ -2100,6 +2099,7 @@ export default function CentralizedConsultationInterface({
         onClose={() => setShowMedicationModal(false)}
         onSave={handleSaveMedications}
         currentMedications={consultationData.medications || []}
+        currentIndications={consultationData.medicationIndications || []}
       />
 
       {/* Prescription Designer Modal */}

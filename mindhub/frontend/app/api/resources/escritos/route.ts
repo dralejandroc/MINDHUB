@@ -66,7 +66,7 @@ export async function GET(request: NextRequest) {
             language: document.document?.language || 'es',
             tags: document.document?.tags || [],
             created_date: document.document?.creation_date || document.document?.created_date || new Date().toISOString().split('T')[0],
-            author: document.document?.author || { name: 'MindHub Resources', credentials: 'Equipo Clínico' },
+            author: document.document?.author || { name: 'Glian Resources', credentials: 'Equipo Clínico' },
             file_name: file
           };
           

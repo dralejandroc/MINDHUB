@@ -14,7 +14,7 @@ export default function SecurityPage() {
               Compromiso con la Seguridad
             </h2>
             <p className="text-gray-600 mb-6">
-              En MindHub, la seguridad de los datos de salud es nuestra máxima prioridad. 
+              En Glian, la seguridad de los datos de salud es nuestra máxima prioridad. 
               Implementamos las mejores prácticas de seguridad para proteger la información médica sensible.
             </p>
 

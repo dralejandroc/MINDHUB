@@ -354,7 +354,7 @@ export default function FormXSettingsPage() {
       
       {loading ? (
         <div className="flex items-center justify-center py-12">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
           <span className="ml-2 text-gray-600">Cargando formularios...</span>
         </div>
       ) : (
@@ -467,7 +467,7 @@ export default function FormXSettingsPage() {
                                 {/* Preview */}
                                 <button
                                   onClick={() => toast.success('Vista previa: ' + template.name)}
-                                  className="p-1 rounded text-blue-500 hover:text-blue-700 hover:bg-blue-50"
+                                  className="p-1 rounded text-primary-500 hover:text-primary-700 hover:bg-primary-50"
                                   title="Vista previa"
                                 >
                                   <EyeIcon className="h-4 w-4" />
@@ -545,7 +545,7 @@ export default function FormXSettingsPage() {
                   value={newFormData.name}
                   onChange={(e) => setNewFormData({ ...newFormData, name: e.target.value })}
                   placeholder="Ej: Registro de Paciente Nuevo"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
                 />
               </div>
 
@@ -556,7 +556,7 @@ export default function FormXSettingsPage() {
                 <select
                   value={newFormData.category}
                   onChange={(e) => setNewFormData({ ...newFormData, category: e.target.value as FormCategory })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
                 >
                   {categories.map(category => (
                     <option key={category.id} value={category.id}>
@@ -575,7 +575,7 @@ export default function FormXSettingsPage() {
                   onChange={(e) => setNewFormData({ ...newFormData, description: e.target.value })}
                   placeholder="Descripción del formulario..."
                   rows={3}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
                 />
               </div>
 
@@ -584,7 +584,7 @@ export default function FormXSettingsPage() {
                   type="checkbox"
                   checked={newFormData.isRequired}
                   onChange={(e) => setNewFormData({ ...newFormData, isRequired: e.target.checked })}
-                  className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 mr-2"
+                  className="rounded border-gray-300 text-primary-600 focus:ring-primary-500 mr-2"
                 />
                 <span className="text-sm text-gray-700">Formulario requerido</span>
               </label>

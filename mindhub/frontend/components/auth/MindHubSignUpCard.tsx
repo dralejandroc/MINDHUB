@@ -12,7 +12,7 @@ const cn = (...classes: string[]) => {
   return classes.filter(Boolean).join(" ");
 };
 
-interface MindHubSignUpCardProps {
+interface GlianSignUpCardProps {
   onSignUp?: (data: {
     firstName: string;
     lastName: string;
@@ -24,11 +24,11 @@ interface MindHubSignUpCardProps {
   onSignInRedirect?: () => void;
 }
 
-export const MindHubSignUpCard = ({ 
+export const GlianSignUpCard = ({ 
   onSignUp, 
   onGoogleSignUp, 
   onSignInRedirect 
-}: MindHubSignUpCardProps) => {
+}: GlianSignUpCardProps) => {
   const [isPasswordVisible, setIsPasswordVisible] = useState(false);
   const [isConfirmPasswordVisible, setIsConfirmPasswordVisible] = useState(false);
   const [formData, setFormData] = useState({

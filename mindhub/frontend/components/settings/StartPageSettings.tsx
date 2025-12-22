@@ -222,7 +222,7 @@ export function StartPageSettings() {
 
         <div className="mb-6">
           <p className="text-gray-600 mb-4">
-            Elige qué página ver al iniciar sesión en MindHub. Esta configuración se aplicará cada vez que entres a la plataforma.
+            Elige qué página ver al iniciar sesión en Glian. Esta configuración se aplicará cada vez que entres a la plataforma.
           </p>
           
           {selectedOption && (

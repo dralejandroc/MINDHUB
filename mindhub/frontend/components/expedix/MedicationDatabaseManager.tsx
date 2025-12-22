@@ -12,21 +12,25 @@ import {
   MagnifyingGlassIcon,
   ExclamationTriangleIcon,
   CheckCircleIcon,
-  XMarkIcon
+  XMarkIcon,
+  InformationCircleIcon
 } from '@heroicons/react/24/outline';
 import { toast } from 'react-hot-toast';
 
+// ✅ MEDICAMENTO - Base de datos corregida con campos específicos
 interface MedicationRecord {
   id: string;
-  name: string;
-  description: string;
-  category: string;
-  dosage_forms: string;
-  concentration: string;
-  laboratory: string;
-  active_principle: string;
-  contraindications?: string;
-  side_effects?: string;
+  // Campos principales según especificación
+  molecula_sustancia_activa: string;       // ej: "Paracetamol"
+  nombres_comerciales: string[];           // ej: ["Tempra", "Tylenol", "Panadol"]  
+  presentacion: string;                    // ej: "tabletas", "solución oral", "cápsulas"
+  dosificacion: string;                    // ej: "500 mg"
+  grupo_control: 'GII' | 'GIII' | 'GIV';  // Control regulatorio
+  empaque?: string;                        // ej: "Caja con 20 tabletas" (opcional)
+  
+  // Campos adicionales del sistema actual (mantener compatibilidad)
+  laboratorio?: string;
+  categoria?: string;
   created_at?: string;
   updated_at?: string;
 }
@@ -36,51 +40,69 @@ interface MedicationDatabaseManagerProps {
   isSelectionMode?: boolean;
 }
 
+// Grupos de control según normativa
+const CONTROL_GROUPS = [
+  { value: 'GII', label: 'GII - Controlado', color: 'red' },
+  { value: 'GIII', label: 'GIII - Semicontrolado', color: 'yellow' },
+  { value: 'GIV', label: 'GIV - No controlado', color: 'green' }
+];
+
+const PRESENTACIONES = [
+  'tabletas', 'cápsulas', 'grageas', 'solución oral', 'suspensión oral',
+  'jarabe', 'gotas orales', 'liberación prolongada', 'comprimidos',
+  'sobres', 'ampolletas', 'viales'
+];
+
 export function MedicationDatabaseManager({ onMedicationSelect, isSelectionMode = false }: MedicationDatabaseManagerProps) {
   const [medications, setMedications] = useState<MedicationRecord[]>([]);
   const [filteredMedications, setFilteredMedications] = useState<MedicationRecord[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [showAddForm, setShowAddForm] = useState(false);
-  const [showImportModal, setShowImportModal] = useState(false);
   const [editingMedication, setEditingMedication] = useState<MedicationRecord | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [newMedication, setNewMedication] = useState<Partial<MedicationRecord>>({
-    name: '',
-    description: '',
-    category: '',
-    dosage_forms: '',
-    concentration: '',
-    laboratory: '',
-    active_principle: '',
-    contraindications: '',
-    side_effects: ''
+    molecula_sustancia_activa: '',
+    nombres_comerciales: [''],
+    presentacion: '',
+    dosificacion: '',
+    grupo_control: 'GIV',
+    empaque: '',
+    laboratorio: '',
+    categoria: ''
   });
 
-  // Plantilla para importación
+  // Plantilla de ejemplo con estructura correcta
   const MEDICATION_TEMPLATE = [
     {
-      nombre: 'PARACETAMOL',
-      descripcion: 'gotas orales en solución 100 mg/ml',
-      categoria: 'ANALGÉSICOS',
-      formas_dosificacion: 'Gotas orales',
-      concentracion: '100 mg/ml',
-      laboratorio: 'PRODUCTOS MAVER, S.A. DE C.V.',
-      principio_activo: 'Paracetamol',
-      contraindicaciones: 'Hipersensibilidad al paracetamol',
-      efectos_secundarios: 'Raramente: erupciones cutáneas, náuseas'
+      molecula_sustancia_activa: 'Paracetamol',
+      nombres_comerciales: ['Tempra', 'Tylenol', 'Panadol'],
+      presentacion: 'tabletas',
+      dosificacion: '500 mg',
+      grupo_control: 'GIV',
+      empaque: 'Caja con 20 tabletas',
+      laboratorio: 'Laboratorios Liomont',
+      categoria: 'Analgésicos'
     },
     {
-      nombre: 'AVELOX',
-      descripcion: 'Comprimidos recubiertos 400 mg',
-      categoria: 'ANTIBIÓTICOS',
-      formas_dosificacion: 'Comprimidos',
-      concentracion: '400 mg',
-      laboratorio: 'BAYER HEALTHCARE',
-      principio_activo: 'Moxifloxacino',
-      contraindicaciones: 'Embarazo, lactancia, menores de 18 años',
-      efectos_secundarios: 'Náuseas, diarrea, mareos, dolor de cabeza'
+      molecula_sustancia_activa: 'Moxifloxacino', 
+      nombres_comerciales: ['Avelox'],
+      presentacion: 'comprimidos',
+      dosificacion: '400 mg',
+      grupo_control: 'GIII',
+      empaque: 'Caja con 5 comprimidos',
+      laboratorio: 'Bayer Healthcare',
+      categoria: 'Antibióticos'
+    },
+    {
+      molecula_sustancia_activa: 'Clonazepam',
+      nombres_comerciales: ['Rivotril', 'Klonopin'],
+      presentacion: 'tabletas',
+      dosificacion: '2 mg',
+      grupo_control: 'GII',
+      empaque: 'Caja con 30 tabletas',
+      laboratorio: 'Roche',
+      categoria: 'Psicotrópicos'
     }
   ];
 
@@ -91,10 +113,12 @@ export function MedicationDatabaseManager({ onMedicationSelect, isSelectionMode 
   React.useEffect(() => {
     if (searchTerm) {
       const filtered = medications.filter(med =>
-        med.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        med.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        med.laboratory.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        med.active_principle.toLowerCase().includes(searchTerm.toLowerCase())
+        med.molecula_sustancia_activa.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        med.nombres_comerciales.some(nombre => 
+          nombre.toLowerCase().includes(searchTerm.toLowerCase())
+        ) ||
+        (med.laboratorio && med.laboratorio.toLowerCase().includes(searchTerm.toLowerCase())) ||
+        med.presentacion.toLowerCase().includes(searchTerm.toLowerCase())
       );
       setFilteredMedications(filtered);
     } else {
@@ -102,530 +126,494 @@ export function MedicationDatabaseManager({ onMedicationSelect, isSelectionMode 
     }
   }, [searchTerm, medications]);
 
-  const loadMedications = async () => {
+  const loadMedications = () => {
     try {
-      setIsLoading(true);
-      // Simulamos carga desde localStorage o API
-      const storedMedications = localStorage.getItem('mindhub_medications');
-      if (storedMedications) {
-        const parsed = JSON.parse(storedMedications);
+      const savedMedications = localStorage.getItem('mindhub_medications_database');
+      if (savedMedications) {
+        const parsed = JSON.parse(savedMedications);
         setMedications(parsed);
         setFilteredMedications(parsed);
       } else {
-        // Cargar medicamentos por defecto
-        const defaultMedications = [
-          {
-            id: '1',
-            name: 'PARACETAMOL',
-            description: 'gotas orales en solución 100 mg/ml',
-            category: 'ANALGÉSICOS',
-            dosage_forms: 'Gotas orales',
-            concentration: '100 mg/ml',
-            laboratory: 'PRODUCTOS MAVER, S.A. DE C.V.',
-            active_principle: 'Paracetamol'
-          },
-          {
-            id: '2',
-            name: 'AVELOX',
-            description: 'Comprimidos recubiertos 400 mg',
-            category: 'ANTIBIÓTICOS',
-            dosage_forms: 'Comprimidos',
-            concentration: '400 mg',
-            laboratory: 'BAYER HEALTHCARE',
-            active_principle: 'Moxifloxacino'
-          }
-        ];
-        setMedications(defaultMedications);
-        setFilteredMedications(defaultMedications);
-        localStorage.setItem('mindhub_medications', JSON.stringify(defaultMedications));
+        // Cargar datos de ejemplo si no hay datos guardados
+        const exampleData = MEDICATION_TEMPLATE.map((med, index) => ({
+          ...med,
+          grupo_control: med.grupo_control as 'GII' | 'GIII' | 'GIV',
+          id: `example_${index}`,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        }));
+        setMedications(exampleData);
+        setFilteredMedications(exampleData);
+        localStorage.setItem('mindhub_medications_database', JSON.stringify(exampleData));
       }
     } catch (error) {
       console.error('Error loading medications:', error);
-      toast.error('Error al cargar medicamentos');
-    } finally {
-      setIsLoading(false);
+      toast.error('Error al cargar la base de datos');
     }
   };
 
-  const saveMedication = async () => {
-    if (!newMedication.name || !newMedication.laboratory) {
-      toast.error('Nombre y laboratorio son requeridos');
+  const saveMedications = (updatedMedications: MedicationRecord[]) => {
+    try {
+      localStorage.setItem('mindhub_medications_database', JSON.stringify(updatedMedications));
+      setMedications(updatedMedications);
+      setFilteredMedications(updatedMedications);
+      toast.success('Base de datos actualizada');
+    } catch (error) {
+      console.error('Error saving medications:', error);
+      toast.error('Error al guardar la base de datos');
+    }
+  };
+
+  const addMedication = () => {
+    if (!newMedication.molecula_sustancia_activa || 
+        !newMedication.nombres_comerciales?.some(nombre => nombre.trim())) {
+      toast.error('Molécula y al menos un nombre comercial son obligatorios');
       return;
     }
 
-    try {
-      const medicationToSave: MedicationRecord = {
-        id: editingMedication?.id || Date.now().toString(),
-        name: newMedication.name || '',
-        description: newMedication.description || '',
-        category: newMedication.category || '',
-        dosage_forms: newMedication.dosage_forms || '',
-        concentration: newMedication.concentration || '',
-        laboratory: newMedication.laboratory || '',
-        active_principle: newMedication.active_principle || '',
-        contraindications: newMedication.contraindications,
-        side_effects: newMedication.side_effects,
-        created_at: editingMedication?.created_at || new Date().toISOString(),
-        updated_at: new Date().toISOString()
-      };
+    const medication: MedicationRecord = {
+      ...newMedication as MedicationRecord,
+      id: Date.now().toString(),
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    };
 
-      let updatedMedications;
-      if (editingMedication) {
-        updatedMedications = medications.map(med => 
-          med.id === editingMedication.id ? medicationToSave : med
-        );
-      } else {
-        updatedMedications = [...medications, medicationToSave];
-      }
-
-      setMedications(updatedMedications);
-      localStorage.setItem('mindhub_medications', JSON.stringify(updatedMedications));
-      
-      resetForm();
-      toast.success(editingMedication ? 'Medicamento actualizado' : 'Medicamento agregado');
-    } catch (error) {
-      console.error('Error saving medication:', error);
-      toast.error('Error al guardar medicamento');
-    }
-  };
-
-  const deleteMedication = (id: string) => {
-    if (window.confirm('¿Está seguro de eliminar este medicamento?')) {
-      const updatedMedications = medications.filter(med => med.id !== id);
-      setMedications(updatedMedications);
-      localStorage.setItem('mindhub_medications', JSON.stringify(updatedMedications));
-      toast.success('Medicamento eliminado');
-    }
-  };
-
-  const editMedication = (medication: MedicationRecord) => {
-    setNewMedication(medication);
-    setEditingMedication(medication);
-    setShowAddForm(true);
-  };
-
-  const resetForm = () => {
+    const updatedMedications = [...medications, medication];
+    saveMedications(updatedMedications);
+    
+    // Reset form
     setNewMedication({
-      name: '',
-      description: '',
-      category: '',
-      dosage_forms: '',
-      concentration: '',
-      laboratory: '',
-      active_principle: '',
-      contraindications: '',
-      side_effects: ''
+      molecula_sustancia_activa: '',
+      nombres_comerciales: [''],
+      presentacion: '',
+      dosificacion: '',
+      grupo_control: 'GIV',
+      empaque: '',
+      laboratorio: '',
+      categoria: ''
     });
-    setEditingMedication(null);
     setShowAddForm(false);
   };
 
-  const downloadTemplate = () => {
-    const csvContent = [
-      'nombre,descripcion,categoria,formas_dosificacion,concentracion,laboratorio,principio_activo,contraindicaciones,efectos_secundarios',
-      ...MEDICATION_TEMPLATE.map(med => 
-        `"${med.nombre}","${med.descripcion}","${med.categoria}","${med.formas_dosificacion}","${med.concentracion}","${med.laboratorio}","${med.principio_activo}","${med.contraindicaciones}","${med.efectos_secundarios}"`
-      )
-    ].join('\n');
-
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const link = document.createElement('a');
-    const url = URL.createObjectURL(blob);
-    link.setAttribute('href', url);
-    link.setAttribute('download', 'plantilla_medicamentos_mindhub.csv');
-    link.style.visibility = 'hidden';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    
-    toast.success('Plantilla descargada');
+  const updateMedication = (updatedMed: MedicationRecord) => {
+    const updatedMedications = medications.map(med => 
+      med.id === updatedMed.id 
+        ? { ...updatedMed, updated_at: new Date().toISOString() }
+        : med
+    );
+    saveMedications(updatedMedications);
+    setEditingMedication(null);
   };
 
-  const handleFileImport = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
-
-    if (!file.name.endsWith('.csv')) {
-      toast.error('Por favor seleccione un archivo CSV');
-      return;
+  const deleteMedication = (id: string) => {
+    if (window.confirm('¿Confirmar eliminación del medicamento?')) {
+      const updatedMedications = medications.filter(med => med.id !== id);
+      saveMedications(updatedMedications);
     }
+  };
 
-    try {
-      setIsLoading(true);
-      const text = await file.text();
-      const lines = text.split('\n');
-      const headers = lines[0].split(',').map(h => h.replace(/"/g, '').trim());
-      
-      if (!headers.includes('nombre') || !headers.includes('laboratorio')) {
-        toast.error('El archivo debe contener al menos las columnas "nombre" y "laboratorio"');
-        return;
-      }
+  const exportData = () => {
+    const dataStr = JSON.stringify(medications, null, 2);
+    const dataBlob = new Blob([dataStr], { type: 'application/json' });
+    const url = URL.createObjectURL(dataBlob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `medicamentos_${new Date().toISOString().split('T')[0]}.json`;
+    link.click();
+    URL.revokeObjectURL(url);
+  };
 
-      const importedMedications: MedicationRecord[] = [];
-      
-      for (let i = 1; i < lines.length; i++) {
-        const line = lines[i];
-        if (!line.trim()) continue;
+  const getControlGroupBadge = (grupo: string) => {
+    const groupInfo = CONTROL_GROUPS.find(g => g.value === grupo);
+    if (!groupInfo) return null;
+    
+    const colorClasses = {
+      red: 'bg-red-100 text-red-800 border-red-200',
+      yellow: 'bg-yellow-100 text-yellow-800 border-yellow-200',
+      green: 'bg-green-100 text-green-800 border-green-200'
+    };
+    
+    return (
+      <span className={`px-2 py-1 text-xs font-medium border rounded ${colorClasses[groupInfo.color as keyof typeof colorClasses]}`}>
+        {groupInfo.label}
+      </span>
+    );
+  };
 
-        const values = line.split(',').map(v => v.replace(/"/g, '').trim());
-        const medication: MedicationRecord = {
-          id: Date.now().toString() + i,
-          name: values[headers.indexOf('nombre')] || '',
-          description: values[headers.indexOf('descripcion')] || '',
-          category: values[headers.indexOf('categoria')] || '',
-          dosage_forms: values[headers.indexOf('formas_dosificacion')] || '',
-          concentration: values[headers.indexOf('concentracion')] || '',
-          laboratory: values[headers.indexOf('laboratorio')] || '',
-          active_principle: values[headers.indexOf('principio_activo')] || '',
-          contraindications: values[headers.indexOf('contraindicaciones')],
-          side_effects: values[headers.indexOf('efectos_secundarios')],
-          created_at: new Date().toISOString()
-        };
+  const addNombreComercial = () => {
+    setNewMedication(prev => ({
+      ...prev,
+      nombres_comerciales: [...(prev.nombres_comerciales || []), '']
+    }));
+  };
 
-        if (medication.name && medication.laboratory) {
-          importedMedications.push(medication);
-        }
-      }
+  const updateNombreComercial = (index: number, value: string) => {
+    setNewMedication(prev => ({
+      ...prev,
+      nombres_comerciales: prev.nombres_comerciales?.map((nombre, i) => 
+        i === index ? value : nombre
+      ) || []
+    }));
+  };
 
-      if (importedMedications.length > 0) {
-        const updatedMedications = [...medications, ...importedMedications];
-        setMedications(updatedMedications);
-        localStorage.setItem('mindhub_medications', JSON.stringify(updatedMedications));
-        toast.success(`${importedMedications.length} medicamentos importados exitosamente`);
-        setShowImportModal(false);
-      } else {
-        toast.error('No se encontraron medicamentos válidos en el archivo');
-      }
-    } catch (error) {
-      console.error('Error importing medications:', error);
-      toast.error('Error al importar medicamentos');
-    } finally {
-      setIsLoading(false);
-      if (fileInputRef.current) {
-        fileInputRef.current.value = '';
-      }
-    }
+  const removeNombreComercial = (index: number) => {
+    setNewMedication(prev => ({
+      ...prev,
+      nombres_comerciales: prev.nombres_comerciales?.filter((_, i) => i !== index) || []
+    }));
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 p-6">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+      <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-xl font-semibold text-gray-900">💊 Base de Datos de Medicamentos</h2>
-          <p className="text-sm text-gray-600">Gestiona tu catálogo de medicamentos para prescripciones</p>
+          <h1 className="text-2xl font-bold text-gray-900">🏥 Base de Datos de Medicamentos</h1>
+          <p className="text-gray-600 mt-1">Información farmacológica técnica únicamente</p>
         </div>
-        <div className="flex gap-2">
+        
+        <div className="flex gap-3">
           <Button
             variant="outline"
-            size="sm"
-            onClick={() => setShowImportModal(true)}
+            onClick={exportData}
+            disabled={medications.length === 0}
           >
-            <DocumentArrowUpIcon className="h-4 w-4 mr-1" />
-            Importar
+            <DocumentArrowDownIcon className="h-4 w-4 mr-2" />
+            Exportar
           </Button>
           <Button
             variant="primary"
-            size="sm"
             onClick={() => setShowAddForm(true)}
-            className="bg-teal-600 hover:bg-teal-700"
+            className="bg-blue-600 hover:bg-blue-700"
           >
-            <PlusIcon className="h-4 w-4 mr-1" />
+            <PlusIcon className="h-4 w-4 mr-2" />
             Nuevo Medicamento
           </Button>
         </div>
       </div>
 
+      {/* Important Info */}
+      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+        <div className="flex items-start gap-3">
+          <InformationCircleIcon className="h-5 w-5 text-blue-600 mt-0.5 flex-shrink-0" />
+          <div className="text-sm text-blue-800">
+            <p className="font-medium mb-1">📋 Base de Datos de MEDICAMENTOS (Información Farmacológica)</p>
+            <p>Esta base contiene únicamente datos técnicos del medicamento. Las <strong>indicaciones de uso</strong> (dosis, frecuencia, duración) se manejan por separado.</p>
+          </div>
+        </div>
+      </div>
+
       {/* Search */}
       <div className="relative">
-        <MagnifyingGlassIcon className="absolute left-3 top-2.5 h-4 w-4 text-gray-400" />
+        <MagnifyingGlassIcon className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
         <input
           type="text"
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
-          placeholder="Buscar por nombre, descripción, laboratorio o principio activo..."
-          className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:ring-teal-500 focus:border-teal-500"
+          placeholder="Buscar por molécula, nombre comercial, laboratorio..."
+          className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
         />
       </div>
 
-      {/* Add/Edit Form */}
-      {showAddForm && (
-        <Card className="p-6 bg-blue-50 border-blue-200">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-medium">
-              {editingMedication ? 'Editar Medicamento' : 'Nuevo Medicamento'}
-            </h3>
-            <Button variant="outline" size="sm" onClick={resetForm}>
-              <XMarkIcon className="h-4 w-4" />
-            </Button>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Nombre del Medicamento *
-              </label>
-              <input
-                type="text"
-                value={newMedication.name || ''}
-                onChange={(e) => setNewMedication(prev => ({ ...prev, name: e.target.value }))}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-teal-500 focus:border-teal-500"
-                placeholder="PARACETAMOL"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Laboratorio *
-              </label>
-              <input
-                type="text"
-                value={newMedication.laboratory || ''}
-                onChange={(e) => setNewMedication(prev => ({ ...prev, laboratory: e.target.value }))}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-teal-500 focus:border-teal-500"
-                placeholder="PRODUCTOS MAVER, S.A. DE C.V."
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Categoría
-              </label>
-              <input
-                type="text"
-                value={newMedication.category || ''}
-                onChange={(e) => setNewMedication(prev => ({ ...prev, category: e.target.value }))}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-teal-500 focus:border-teal-500"
-                placeholder="ANALGÉSICOS"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Principio Activo
-              </label>
-              <input
-                type="text"
-                value={newMedication.active_principle || ''}
-                onChange={(e) => setNewMedication(prev => ({ ...prev, active_principle: e.target.value }))}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-teal-500 focus:border-teal-500"
-                placeholder="Paracetamol"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Concentración
-              </label>
-              <input
-                type="text"
-                value={newMedication.concentration || ''}
-                onChange={(e) => setNewMedication(prev => ({ ...prev, concentration: e.target.value }))}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-teal-500 focus:border-teal-500"
-                placeholder="100 mg/ml"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Formas de Dosificación
-              </label>
-              <input
-                type="text"
-                value={newMedication.dosage_forms || ''}
-                onChange={(e) => setNewMedication(prev => ({ ...prev, dosage_forms: e.target.value }))}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-teal-500 focus:border-teal-500"
-                placeholder="Gotas orales, Comprimidos"
-              />
-            </div>
-
-            <div className="md:col-span-2 lg:col-span-3">
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Descripción
-              </label>
-              <input
-                type="text"
-                value={newMedication.description || ''}
-                onChange={(e) => setNewMedication(prev => ({ ...prev, description: e.target.value }))}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-teal-500 focus:border-teal-500"
-                placeholder="gotas orales en solución 100 mg/ml"
-              />
-            </div>
-
-            <div className="md:col-span-2 lg:col-span-3">
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Contraindicaciones
-              </label>
-              <textarea
-                value={newMedication.contraindications || ''}
-                onChange={(e) => setNewMedication(prev => ({ ...prev, contraindications: e.target.value }))}
-                rows={2}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-teal-500 focus:border-teal-500"
-                placeholder="Hipersensibilidad al principio activo..."
-              />
-            </div>
-
-            <div className="md:col-span-2 lg:col-span-3">
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Efectos Secundarios
-              </label>
-              <textarea
-                value={newMedication.side_effects || ''}
-                onChange={(e) => setNewMedication(prev => ({ ...prev, side_effects: e.target.value }))}
-                rows={2}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-teal-500 focus:border-teal-500"
-                placeholder="Náuseas, mareos, erupciones cutáneas..."
-              />
-            </div>
-          </div>
-
-          <div className="flex justify-end gap-2 mt-4">
-            <Button variant="outline" onClick={resetForm}>
-              Cancelar
-            </Button>
-            <Button
-              variant="primary"
-              onClick={saveMedication}
-              className="bg-teal-600 hover:bg-teal-700"
-            >
-              <CheckCircleIcon className="h-4 w-4 mr-1" />
-              {editingMedication ? 'Actualizar' : 'Guardar'} Medicamento
-            </Button>
-          </div>
+      {/* Stats */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <Card className="p-4">
+          <div className="text-2xl font-bold text-blue-600">{medications.length}</div>
+          <div className="text-sm text-gray-600">Total Medicamentos</div>
         </Card>
-      )}
+        <Card className="p-4">
+          <div className="text-2xl font-bold text-red-600">
+            {medications.filter(m => m.grupo_control === 'GII').length}
+          </div>
+          <div className="text-sm text-gray-600">Controlados (GII)</div>
+        </Card>
+        <Card className="p-4">
+          <div className="text-2xl font-bold text-yellow-600">
+            {medications.filter(m => m.grupo_control === 'GIII').length}
+          </div>
+          <div className="text-sm text-gray-600">Semicontrolados (GIII)</div>
+        </Card>
+        <Card className="p-4">
+          <div className="text-2xl font-bold text-green-600">
+            {medications.filter(m => m.grupo_control === 'GIV').length}
+          </div>
+          <div className="text-sm text-gray-600">No controlados (GIV)</div>
+        </Card>
+      </div>
 
-      {/* Import Modal */}
-      {showImportModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <Card className="max-w-2xl w-full m-4">
-            <div className="p-6">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-medium">Importar Medicamentos</h3>
-                <Button variant="outline" size="sm" onClick={() => setShowImportModal(false)}>
-                  <XMarkIcon className="h-4 w-4" />
-                </Button>
-              </div>
-
-              <div className="space-y-4">
-                <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-                  <div className="flex">
-                    <ExclamationTriangleIcon className="h-5 w-5 text-yellow-600 mr-2 mt-0.5" />
-                    <div className="text-sm text-yellow-800">
-                      <p className="font-medium">Importante:</p>
-                      <p>Descarga la plantilla CSV y complétala con tus medicamentos antes de importar.</p>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="flex justify-center">
-                  <Button
-                    variant="outline"
-                    onClick={downloadTemplate}
-                    className="flex items-center"
-                  >
-                    <DocumentArrowDownIcon className="h-4 w-4 mr-2" />
-                    Descargar Plantilla CSV
-                  </Button>
-                </div>
-
-                <div className="border-t pt-4">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Seleccionar archivo CSV
-                  </label>
-                  <input
-                    ref={fileInputRef}
-                    type="file"
-                    accept=".csv"
-                    onChange={handleFileImport}
-                    className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-teal-50 file:text-teal-700 hover:file:bg-teal-100"
-                  />
-                </div>
-
-                <div className="text-xs text-gray-500">
-                  <p><strong>Formato requerido:</strong> CSV con las columnas:</p>
-                  <p>nombre, descripcion, categoria, formas_dosificacion, concentracion, laboratorio, principio_activo, contraindicaciones, efectos_secundarios</p>
-                </div>
-              </div>
-            </div>
-          </Card>
-        </div>
-      )}
-
-      {/* Medications List */}
-      <Card className="p-6">
-        <div className="space-y-4">
-          {isLoading ? (
-            <div className="text-center py-8">
-              <div className="animate-pulse text-gray-500">Cargando medicamentos...</div>
-            </div>
-          ) : filteredMedications.length === 0 ? (
-            <div className="text-center py-8">
-              <p className="text-gray-500">No se encontraron medicamentos</p>
-              {searchTerm && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setSearchTerm('')}
-                  className="mt-2"
-                >
-                  Limpiar búsqueda
-                </Button>
-              )}
-            </div>
-          ) : (
-            <div className="grid gap-4">
+      {/* Medications Table */}
+      <Card>
+        <div className="overflow-x-auto">
+          <table className="w-full">
+            <thead className="bg-gray-50">
+              <tr>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Molécula/Sustancia
+                </th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Nombres Comerciales
+                </th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Presentación
+                </th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Dosificación
+                </th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Control
+                </th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Empaque
+                </th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Acciones
+                </th>
+              </tr>
+            </thead>
+            <tbody className="bg-white divide-y divide-gray-200">
               {filteredMedications.map((medication) => (
-                <div key={medication.id} className="border border-gray-200 rounded-lg p-4 hover:bg-gray-50">
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-2">
-                        <h4 className="font-semibold text-gray-900">{medication.name}</h4>
-                        <span className="text-xs text-blue-600 bg-blue-100 px-2 py-1 rounded">
-                          {medication.category}
-                        </span>
-                      </div>
-                      <p className="text-sm text-gray-700 mb-1">{medication.description}</p>
-                      <p className="text-xs text-gray-600">
-                        <strong>Lab:</strong> {medication.laboratory} | 
-                        <strong> Principio:</strong> {medication.active_principle} | 
-                        <strong> Concentración:</strong> {medication.concentration}
-                      </p>
+                <tr key={medication.id} className="hover:bg-gray-50">
+                  <td className="px-4 py-4">
+                    <div className="font-medium text-gray-900">
+                      {medication.molecula_sustancia_activa}
                     </div>
-                    <div className="flex gap-1 ml-4">
-                      {isSelectionMode && (
+                    {medication.laboratorio && (
+                      <div className="text-sm text-gray-500">{medication.laboratorio}</div>
+                    )}
+                  </td>
+                  <td className="px-4 py-4">
+                    <div className="space-y-1">
+                      {medication.nombres_comerciales.map((nombre, index) => (
+                        <div key={index} className="text-sm font-medium text-blue-600">
+                          {nombre}
+                        </div>
+                      ))}
+                    </div>
+                  </td>
+                  <td className="px-4 py-4 text-sm text-gray-900">
+                    {medication.presentacion}
+                  </td>
+                  <td className="px-4 py-4 text-sm font-medium text-gray-900">
+                    {medication.dosificacion}
+                  </td>
+                  <td className="px-4 py-4">
+                    {getControlGroupBadge(medication.grupo_control)}
+                  </td>
+                  <td className="px-4 py-4 text-sm text-gray-600">
+                    {medication.empaque || '-'}
+                  </td>
+                  <td className="px-4 py-4">
+                    <div className="flex gap-2">
+                      {isSelectionMode ? (
                         <Button
-                          variant="primary"
                           size="sm"
                           onClick={() => onMedicationSelect?.(medication)}
-                          className="bg-teal-600 hover:bg-teal-700"
+                          className="bg-green-600 hover:bg-green-700 text-white"
                         >
-                          Seleccionar
+                          <CheckCircleIcon className="h-4 w-4" />
                         </Button>
+                      ) : (
+                        <>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setEditingMedication(medication)}
+                          >
+                            <PencilIcon className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => deleteMedication(medication.id)}
+                            className="text-red-600 hover:text-red-800"
+                          >
+                            <TrashIcon className="h-4 w-4" />
+                          </Button>
+                        </>
                       )}
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => editMedication(medication)}
-                      >
-                        <PencilIcon className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => deleteMedication(medication.id)}
-                        className="text-red-600 hover:text-red-800"
-                      >
-                        <TrashIcon className="h-4 w-4" />
-                      </Button>
                     </div>
-                  </div>
-                </div>
+                  </td>
+                </tr>
               ))}
+            </tbody>
+          </table>
+          
+          {filteredMedications.length === 0 && (
+            <div className="text-center py-12">
+              <ExclamationTriangleIcon className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+              <p className="text-gray-500">No se encontraron medicamentos</p>
             </div>
           )}
         </div>
       </Card>
+
+      {/* Add Form Modal */}
+      {showAddForm && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg shadow-lg max-w-3xl w-full max-h-[90vh] overflow-y-auto m-4">
+            <div className="flex items-center justify-between p-6 border-b">
+              <h2 className="text-xl font-semibold">Agregar Nuevo Medicamento</h2>
+              <Button variant="outline" size="sm" onClick={() => setShowAddForm(false)}>
+                <XMarkIcon className="h-4 w-4" />
+              </Button>
+            </div>
+
+            <div className="p-6 space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* Molécula/Sustancia Activa */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    🧪 Molécula/Sustancia Activa *
+                  </label>
+                  <input
+                    type="text"
+                    value={newMedication.molecula_sustancia_activa || ''}
+                    onChange={(e) => setNewMedication(prev => ({ ...prev, molecula_sustancia_activa: e.target.value }))}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                    placeholder="ej: Paracetamol"
+                    required
+                  />
+                </div>
+
+                {/* Presentación */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    💊 Presentación *
+                  </label>
+                  <select
+                    value={newMedication.presentacion || ''}
+                    onChange={(e) => setNewMedication(prev => ({ ...prev, presentacion: e.target.value }))}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                    required
+                  >
+                    <option value="">Seleccionar presentación</option>
+                    {PRESENTACIONES.map((pres, index) => (
+                      <option key={index} value={pres}>{pres}</option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Dosificación */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    ⚖️ Dosificación *
+                  </label>
+                  <input
+                    type="text"
+                    value={newMedication.dosificacion || ''}
+                    onChange={(e) => setNewMedication(prev => ({ ...prev, dosificacion: e.target.value }))}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                    placeholder="ej: 500 mg"
+                    required
+                  />
+                </div>
+
+                {/* Grupo de Control */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    🔒 Grupo de Control *
+                  </label>
+                  <select
+                    value={newMedication.grupo_control || 'GIV'}
+                    onChange={(e) => setNewMedication(prev => ({ ...prev, grupo_control: e.target.value as any }))}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                    required
+                  >
+                    {CONTROL_GROUPS.map((grupo, index) => (
+                      <option key={index} value={grupo.value}>
+                        {grupo.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Empaque */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    📦 Empaque (Opcional)
+                  </label>
+                  <input
+                    type="text"
+                    value={newMedication.empaque || ''}
+                    onChange={(e) => setNewMedication(prev => ({ ...prev, empaque: e.target.value }))}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                    placeholder="ej: Caja con 20 tabletas"
+                  />
+                </div>
+
+                {/* Laboratorio */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    🏭 Laboratorio (Opcional)
+                  </label>
+                  <input
+                    type="text"
+                    value={newMedication.laboratorio || ''}
+                    onChange={(e) => setNewMedication(prev => ({ ...prev, laboratorio: e.target.value }))}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                    placeholder="ej: Bayer Healthcare"
+                  />
+                </div>
+              </div>
+
+              {/* Nombres Comerciales */}
+              <div>
+                <div className="flex items-center justify-between mb-3">
+                  <label className="block text-sm font-medium text-gray-700">
+                    🏷️ Nombre(s) Comercial(es) *
+                  </label>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={addNombreComercial}
+                    className="text-xs"
+                  >
+                    <PlusIcon className="h-3 w-3 mr-1" />
+                    Agregar
+                  </Button>
+                </div>
+                <div className="space-y-2">
+                  {(newMedication.nombres_comerciales || ['']).map((nombre, index) => (
+                    <div key={index} className="flex gap-2">
+                      <input
+                        type="text"
+                        value={nombre}
+                        onChange={(e) => updateNombreComercial(index, e.target.value)}
+                        className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                        placeholder={`Nombre comercial ${index + 1}`}
+                        required={index === 0}
+                      />
+                      {(newMedication.nombres_comerciales?.length || 0) > 1 && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => removeNombreComercial(index)}
+                          className="text-red-600"
+                        >
+                          <TrashIcon className="h-4 w-4" />
+                        </Button>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-3 p-6 bg-gray-50 border-t">
+              <Button variant="outline" onClick={() => setShowAddForm(false)}>
+                Cancelar
+              </Button>
+              <Button 
+                variant="primary" 
+                onClick={addMedication}
+                className="bg-blue-600 hover:bg-blue-700"
+              >
+                Agregar Medicamento
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

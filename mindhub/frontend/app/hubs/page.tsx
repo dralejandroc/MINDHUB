@@ -23,7 +23,7 @@ export default function HubsHomePage() {
   }, [isLoaded, isSignedIn, router]);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-teal-50 flex items-center justify-center">
+     <div className="min-h-screen bg-gradient-to-br from-primary-50 via-white to-secondary-100 flex items-center justify-center">
       <LoadingSpinner size="lg" />
     </div>
   );

@@ -35,12 +35,12 @@ export const HealthcareNetworkMap = () => {
     {
       start: { x: 150, y: 200, delay: 1.5 },
       end: { x: 250, y: 170, delay: 3.5 },
-      color: "rgba(168, 85, 247, 0.8)", // purple-500 (clinimetrix)
+      color: "rgba(9, 145, 178, 0.8)", // primary-500 (Glian)
     },
     {
       start: { x: 80, y: 120, delay: 2.5 },
       end: { x: 220, y: 150, delay: 4.5 },
-      color: "rgba(16, 185, 129, 0.8)", // emerald-500 (resources)
+      color: "rgba(160, 216, 199, 0.8)", // secondary-500 (Glian)
     },
   ];
 

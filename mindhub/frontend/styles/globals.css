@@ -59,88 +59,87 @@
 }
 
 :root {
-  /* Azul Teal Vibrante - Color principal */
-  --primary-50: #f0fdfa;
-  --primary-100: #ccfbf1;
-  --primary-200: #99f6e4;
-  --primary-300: #5eead4;
-  --primary-400: #2dd4bf;
-  --primary-500: #0891b2;
-  --primary-600: #0e7490;
-  --primary-700: #155e75;
-  --primary-800: #164e63;
-  --primary-900: #134e4a;
+  /* Glian Brand Colors - Turquesa/Teal Primary */
+  --primary-50: #e6f7fb;
+  --primary-100: #cceff7;
+  --primary-200: #99dfef;
+  --primary-300: #66cfe7;
+  --primary-400: #33bfdf;
+  --primary-500: #0991b2;      /* Primary Glian */
+  --primary-600: #07748e;
+  --primary-700: #05576a;
+  --primary-800: #043a47;
+  --primary-900: #021d23;
 
-  /* Verde Turquesa - Color secundario */
-  --secondary-50: #f0fdfa;
-  --secondary-100: #ccfbf1;
-  --secondary-200: #99f6e4;
-  --secondary-300: #5eead4;
-  --secondary-400: #2dd4bf;
-  --secondary-500: #29a98c;
-  --secondary-600: #0d9488;
-  --secondary-700: #0f766e;
-  --secondary-800: #115e59;
-  --secondary-900: #134e4a;
+  /* Glian Brand Colors - Verde Agua Secondary */
+  --secondary-50: #f2faf8;
+  --secondary-100: #e5f5f1;
+  --secondary-200: #cbebe3;
+  --secondary-300: #b1e1d5;
+  --secondary-400: #97d7c7;
+  --secondary-500: #a0d8c7;     /* Secondary Glian */
+  --secondary-600: #80ada0;
+  --secondary-700: #608278;
+  --secondary-800: #405650;
+  --secondary-900: #202b28;
 
-  /* Coral Vibrante - Color de acento */
-  --accent-50: #fef2f2;
-  --accent-100: #fee2e2;
-  --accent-200: #fecaca;
-  --accent-300: #fca5a5;
-  --accent-400: #f87171;
-  --accent-500: #ec7367;
-  --accent-600: #dc2626;
-  --accent-700: #b91c1c;
-  --accent-800: #991b1b;
-  --accent-900: #7f1d1d;
+  /* Glian Brand Colors - Azul Petróleo Oscuro */
+  --dark-50: #e8ebec;
+  --dark-100: #d1d7d9;
+  --dark-200: #a3afb3;
+  --dark-300: #75878d;
+  --dark-400: #475f67;
+  --dark-500: #133b44;         /* Secondary 2 Glian */
+  --dark-600: #0f2f36;
+  --dark-700: #0b2329;
+  --dark-800: #08181b;
+  --dark-900: #040c0e;
 
-  /* Verde Oscuro para contraste */
-  --dark-green: #112f33;
-  --dark-green-light: #1a4a50;
+  /* Glian Brand Colors - Gris Claro/Off-white */
+  --light-50: #ffffff;
+  --light-100: #fafafa;
+  --light-200: #f5f5f5;
+  --light-300: #f0f0f0;
+  --light-400: #efefec;        /* Secondary 3 Glian */
+  --light-500: #e5e5e5;
+  --light-600: #d0d0d0;
+  --light-700: #b0b0b0;
+  --light-800: #909090;
+  --light-900: #707070;
 
-  /* Beige Cálido */
-  --warm-50: #fff8ee;
-  --warm-100: #fef7ee;
-  --warm-200: #fed7aa;
-  --warm-300: #fdba74;
+  /* Colores de Estado del Sistema */
+  --success-50: #f0fdf4;
+  --success-100: #dcfce7;
+  --success-200: #bbf7d0;
+  --success-300: #86efac;
+  --success-400: #4ade80;
+  --success-500: #10b981;
+  --success-600: #059669;
+  --success-700: #047857;
+  --success-800: #065f46;
+  --success-900: #064e3b;
 
-  /* Colores de Hub - Elementos complementarios */
-  /* Morado Vibrante - Para Hub Clinimetrix */
-  --purple-50: #faf5ff;
-  --purple-100: #f3e8ff;
-  --purple-200: #e9d5ff;
-  --purple-300: #d8b4fe;
-  --purple-400: #c084fc;
-  --purple-500: #a855f7;
-  --purple-600: #9333ea;
-  --purple-700: #7c3aed;
-  --purple-800: #6b21a8;
-  --purple-900: #581c87;
+  --warning-50: #fffbeb;
+  --warning-100: #fef3c7;
+  --warning-200: #fde68a;
+  --warning-300: #fcd34d;
+  --warning-400: #fbbf24;
+  --warning-500: #f59e0b;
+  --warning-600: #d97706;
+  --warning-700: #b45309;
+  --warning-800: #92400e;
+  --warning-900: #78350f;
 
-  /* Verde Esmeralda - Para Hub Resources */
-  --emerald-50: #ecfdf5;
-  --emerald-100: #d1fae5;
-  --emerald-200: #a7f3d0;
-  --emerald-300: #6ee7b7;
-  --emerald-400: #34d399;
-  --emerald-500: #10b981;
-  --emerald-600: #059669;
-  --emerald-700: #047857;
-  --emerald-800: #065f46;
-  --emerald-900: #064e3b;
-
-  /* Naranja Vibrante - Para Hub Agenda */
-  --orange-50: #fff7ed;
-  --orange-100: #ffedd5;
-  --orange-200: #fed7aa;
-  --orange-300: #fdba74;
-  --orange-400: #fb923c;
-  --orange-500: #f97316;
-  --orange-600: #ea580c;
-  --orange-700: #c2410c;
-  --orange-800: #9a3412;
-  --orange-900: #7c2d12;
+  --error-50: #fef2f2;
+  --error-100: #fee2e2;
+  --error-200: #fecaca;
+  --error-300: #fca5a5;
+  --error-400: #f87171;
+  --error-500: #ef4444;
+  --error-600: #dc2626;
+  --error-700: #b91c1c;
+  --error-800: #991b1b;
+  --error-900: #7f1d1d;
 
   /* Colores neutrales */
   --neutral-50: #fafafa;
@@ -154,21 +153,16 @@
   --neutral-800: #262626;
   --neutral-900: #171717;
 
-  /* Sombras coloridas */
-  --shadow-primary: 0 10px 25px -5px rgba(8, 145, 178, 0.2);
-  --shadow-secondary: 0 10px 25px -5px rgba(41, 169, 140, 0.2);
-  --shadow-accent: 0 10px 25px -5px rgba(236, 115, 103, 0.2);
-  --shadow-primary-hover: 0 15px 30px -5px rgba(8, 145, 178, 0.3);
-  --shadow-secondary-hover: 0 15px 30px -5px rgba(41, 169, 140, 0.3);
-  --shadow-accent-hover: 0 15px 30px -5px rgba(236, 115, 103, 0.3);
+  /* Sombras Glian - Sistema unificado */
+  --shadow-sm: 0 1px 2px rgba(19, 59, 68, 0.05);
+  --shadow-md: 0 4px 6px rgba(19, 59, 68, 0.1);
+  --shadow-lg: 0 10px 15px rgba(19, 59, 68, 0.1);
+  --shadow-xl: 0 20px 25px rgba(19, 59, 68, 0.15);
 
-  /* Sombras coloridas para Hubs */
-  --shadow-purple: 0 10px 25px -5px rgba(168, 85, 247, 0.2);
-  --shadow-emerald: 0 10px 25px -5px rgba(16, 185, 129, 0.2);
-  --shadow-orange: 0 10px 25px -5px rgba(249, 115, 22, 0.2);
-  --shadow-purple-hover: 0 15px 30px -5px rgba(168, 85, 247, 0.3);
-  --shadow-emerald-hover: 0 15px 30px -5px rgba(16, 185, 129, 0.3);
-  --shadow-orange-hover: 0 15px 30px -5px rgba(249, 115, 22, 0.3);
+  --shadow-primary: 0 10px 25px -5px rgba(9, 145, 178, 0.2);
+  --shadow-secondary: 0 10px 25px -5px rgba(160, 216, 199, 0.2);
+  --shadow-primary-hover: 0 15px 30px -5px rgba(9, 145, 178, 0.3);
+  --shadow-secondary-hover: 0 15px 30px -5px rgba(160, 216, 199, 0.3);
 
   /* Espaciado compacto por defecto */
   --space-1: 0.25rem;
@@ -184,24 +178,25 @@
   --space-10: 2.5rem;
   --space-12: 3rem;
 
-  /* Bordes */
-  --radius: 0.5rem;
-  --radius-lg: 1rem;
-  --radius-xl: 1.5rem;
+  /* Bordes - Sistema Glian */
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
   --radius-full: 9999px;
 
-  /* Tipografía */
-  --font-heading: 'Poppins', 'Inter', sans-serif;
-  --font-primary: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  /* Tipografía Glian */
+  --font-heading: 'Hanken Grotesk', sans-serif;
+  --font-primary: 'Hanken Grotesk', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   
-  /* Compatibilidad con sistema anterior */
+  /* Compatibilidad con sistema anterior - Glian */
   --color-primary: var(--primary-500);
   --color-primary-dark: var(--primary-700);
   --color-secondary: var(--secondary-500);
-  --color-success: var(--secondary-600);
-  --color-warning: #f59e0b;
-  --color-error: var(--accent-600);
-  --color-clinical: var(--dark-green);
+  --color-success: var(--success-500);
+  --color-warning: var(--warning-500);
+  --color-error: var(--error-500);
+  --color-clinical: var(--dark-500);
   
   /* Espaciado para interfaces clínicas */
   --spacing-clinical: var(--space-6);
@@ -230,12 +225,14 @@
 /* Base styles for better healthcare UX */
 @layer base {
   html {
-    font-family: 'Inter', system-ui, sans-serif;
+    font-family: 'Hanken Grotesk', system-ui, sans-serif;
     scroll-behavior: smooth;
   }
-  
+
   body {
-    @apply bg-gray-50 text-gray-900 antialiased;
+    @apply antialiased;
+    background-color: var(--light-400); /* #efefec - Secondary 3 Glian */
+    color: var(--dark-500); /* #133b44 - Secondary 2 Glian */
     font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
     line-height: var(--line-height-clinical);
   }
@@ -325,65 +322,48 @@
   }
 }
 
-/* Clases de utilidad personalizadas */
+/* Clases de utilidad personalizadas - Glian */
 @layer utilities {
+  /* Gradientes Glian Unificados */
   .gradient-primary {
-    background: linear-gradient(135deg, var(--primary-600), var(--primary-700));
+    background: linear-gradient(135deg, var(--primary-500), var(--primary-700));
   }
 
   .gradient-secondary {
-    background: linear-gradient(
-      135deg,
-      var(--secondary-500),
-      var(--secondary-600)
-    );
+    background: linear-gradient(135deg, var(--secondary-400), var(--secondary-600));
   }
 
-  .gradient-accent {
-    background: linear-gradient(135deg, var(--accent-500), var(--accent-600));
+  .gradient-hero {
+    background: linear-gradient(135deg, #0991b2 0%, #a0d8c7 100%);
   }
 
-  .gradient-background {
-    background: linear-gradient(135deg, var(--warm-50), var(--primary-50));
+  .gradient-dark {
+    background: linear-gradient(135deg, #133b44 0%, #0991b2 100%);
+  }
+
+  .gradient-subtle {
+    background: linear-gradient(180deg, #efefec 0%, #a0d8c7 100%);
   }
 
   .border-gradient {
-    background: linear-gradient(
-      90deg,
-      var(--primary-500),
-      var(--secondary-500),
-      var(--accent-500)
-    );
+    background: linear-gradient(90deg, var(--primary-500), var(--secondary-500));
   }
 
-  /* Gradientes para Hubs */
-  .gradient-purple {
-    background: linear-gradient(135deg, var(--purple-500), var(--purple-600));
+  /* Sombras Glian */
+  .shadow-sm {
+    box-shadow: var(--shadow-sm);
   }
 
-  .gradient-emerald {
-    background: linear-gradient(135deg, var(--emerald-500), var(--emerald-600));
+  .shadow-md {
+    box-shadow: var(--shadow-md);
   }
 
-  .gradient-orange {
-    background: linear-gradient(135deg, var(--orange-500), var(--orange-600));
+  .shadow-lg {
+    box-shadow: var(--shadow-lg);
   }
 
-  /* Border gradients para Hubs */
-  .border-gradient-purple {
-    background: linear-gradient(90deg, var(--purple-500), var(--primary-500));
-  }
-
-  .border-gradient-emerald {
-    background: linear-gradient(
-      90deg,
-      var(--emerald-500),
-      var(--secondary-500)
-    );
-  }
-
-  .border-gradient-orange {
-    background: linear-gradient(90deg, var(--orange-500), var(--accent-500));
+  .shadow-xl {
+    box-shadow: var(--shadow-xl);
   }
 
   .shadow-primary {
@@ -394,31 +374,13 @@
     box-shadow: var(--shadow-secondary);
   }
 
-  .shadow-accent {
-    box-shadow: var(--shadow-accent);
-  }
-
-  /* Sombras para Hubs */
-  .shadow-purple {
-    box-shadow: var(--shadow-purple);
-  }
-
-  .shadow-emerald {
-    box-shadow: var(--shadow-emerald);
-  }
-
-  .shadow-orange {
-    box-shadow: var(--shadow-orange);
-  }
-
   .hover-lift {
-    transition:
-      transform 0.3s ease,
-      box-shadow 0.3s ease;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
   }
 
   .hover-lift:hover {
     transform: translateY(-2px);
+    box-shadow: var(--shadow-xl);
   }
 }
 

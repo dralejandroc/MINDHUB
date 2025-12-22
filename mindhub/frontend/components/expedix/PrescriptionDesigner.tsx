@@ -221,7 +221,7 @@ export function PrescriptionDesigner({
         }
       ],
       clinic: {
-        name: 'MindHub Clínica',
+        name: 'Glian Clínica',
         address: 'Av. Revolución 123, Col. Centro, CDMX',
         phone: '+52 55 1234 5678',
         email: 'contacto@mindhub.cloud'
@@ -405,7 +405,7 @@ export function PrescriptionDesigner({
       <!DOCTYPE html>
       <html>
         <head>
-          <title>Vista Previa - Receta MindHub</title>
+          <title>Vista Previa - Receta Glian</title>
           <style>
             @page { margin: 0; }
             body { margin: 0; padding: 20px; }

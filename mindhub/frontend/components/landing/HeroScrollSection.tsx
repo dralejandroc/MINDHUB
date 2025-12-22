@@ -17,7 +17,7 @@ export function HeroScrollSection({ onBetaClick }: HeroScrollSectionProps) {
           squareSize={4}
           gridGap={6}
           flickerChance={0.6}
-          color="rgb(20, 184, 166)" // teal-500
+          color="rgb(9, 145, 178)" // primary-500
           maxOpacity={0.2}
           className="w-full h-full"
         />
@@ -28,15 +28,15 @@ export function HeroScrollSection({ onBetaClick }: HeroScrollSectionProps) {
           titleComponent={
           <>
             {/* Beta Badge */}
-            <div className="inline-flex items-center px-4 py-2 rounded-full bg-gradient-to-r from-teal-100 to-cyan-100 text-teal-700 text-sm font-medium mb-8 border border-teal-200">
-              <span className="w-2 h-2 bg-teal-500 rounded-full mr-2 animate-pulse"></span>
+            <div className="inline-flex items-center px-4 py-2 rounded-full bg-gradient-to-r from-primary-100 to-secondary-100 text-primary-700 text-sm font-medium mb-8 border border-primary-200">
+              <span className="w-2 h-2 bg-primary-500 rounded-full mr-2 animate-pulse"></span>
               Beta Abierto - Registro Gratuito
             </div>
 
             {/* Main Heading */}
             <h1 className="text-4xl md:text-6xl font-bold text-gray-900 mb-6">
               La plataforma integral para
-              <span className="block text-transparent bg-clip-text bg-gradient-to-r from-teal-600 via-cyan-600 to-blue-600">
+              <span className="block text-transparent bg-clip-text bg-gradient-to-r from-primary-600 via-secondary-600 to-primary-600">
                 profesionales de salud mental
               </span>
             </h1>
@@ -52,13 +52,13 @@ export function HeroScrollSection({ onBetaClick }: HeroScrollSectionProps) {
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-8">
               <button
                 onClick={onBetaClick}
-                className="w-full sm:w-auto bg-gradient-to-r from-teal-500 via-cyan-500 to-blue-500 text-white px-8 py-4 rounded-xl hover:shadow-2xl hover:scale-105 transition-all duration-300 font-semibold text-lg shadow-lg hover:from-teal-600 hover:via-cyan-600 hover:to-blue-600"
+                className="w-full sm:w-auto bg-gradient-to-r from-primary-500 via-secondary-500 to-primary-500 text-white px-8 py-4 rounded-xl hover:shadow-2xl hover:scale-105 transition-all duration-300 font-semibold text-lg shadow-lg hover:from-primary-600 hover:via-secondary-600 hover:to-primary-600"
               >
                 🚀 Únete al Beta Gratuito
               </button>
               <button
                 onClick={onBetaClick}
-                className="w-full sm:w-auto bg-white border-2 border-teal-300 text-teal-700 px-8 py-4 rounded-xl hover:bg-teal-50 hover:border-teal-400 hover:shadow-lg transition-all duration-300 font-semibold text-lg"
+                className="w-full sm:w-auto bg-white border-2 border-primary-300 text-primary-700 px-8 py-4 rounded-xl hover:bg-primary-50 hover:border-primary-400 hover:shadow-lg transition-all duration-300 font-semibold text-lg"
               >
                 Más Información
               </button>
@@ -66,20 +66,20 @@ export function HeroScrollSection({ onBetaClick }: HeroScrollSectionProps) {
           </>
         }
       >
-        {/* MindHub Platform Preview */}
+        {/* Glian Platform Preview */}
         <div className="mx-auto rounded-2xl object-cover h-full w-full">
           <div className="bg-white/80 backdrop-blur-sm h-full w-full rounded-2xl border border-gray-100 shadow-2xl p-4">
-            {/* Simulated MindHub Interface */}
+            {/* Simulated Glian Interface */}
             <div className="bg-white rounded-xl h-full w-full shadow-inner border border-gray-100 overflow-hidden">
               
               {/* Header Bar */}
-              <div className="bg-gradient-to-r from-teal-500 via-cyan-500 to-blue-500 p-4 text-white">
+              <div className="bg-gradient-to-r from-primary-500 via-secondary-500 to-primary-500 p-4 text-white">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-3">
                     <div className="w-8 h-8 bg-white/20 rounded-lg flex items-center justify-center">
                       <span className="font-bold">M</span>
                     </div>
-                    <span className="font-semibold text-lg">MindHub Pro</span>
+                    <span className="font-semibold text-lg">Glian Pro</span>
                   </div>
                   <div className="flex items-center space-x-2">
                     <div className="w-2 h-2 bg-green-400 rounded-full"></div>
@@ -108,8 +108,8 @@ export function HeroScrollSection({ onBetaClick }: HeroScrollSectionProps) {
                     <div className="text-2xl font-bold text-green-600">127</div>
                     <div className="text-sm text-gray-600">Pacientes</div>
                   </div>
-                  <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
-                    <div className="text-2xl font-bold text-blue-600">34</div>
+                  <div className="bg-primary-50 p-4 rounded-lg border border-primary-200">
+                    <div className="text-2xl font-bold text-primary-600">34</div>
                     <div className="text-sm text-gray-600">Citas Hoy</div>
                   </div>
                   <div className="bg-purple-50 p-4 rounded-lg border border-purple-200">
@@ -123,8 +123,8 @@ export function HeroScrollSection({ onBetaClick }: HeroScrollSectionProps) {
                   <h3 className="font-semibold text-gray-900 mb-3">Actividad Reciente</h3>
                   
                   <div className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg">
-                    <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
-                      <span className="text-blue-600 text-sm font-medium">MP</span>
+                    <div className="w-10 h-10 bg-primary-100 rounded-full flex items-center justify-center">
+                      <span className="text-primary-600 text-sm font-medium">MP</span>
                     </div>
                     <div className="flex-1">
                       <div className="text-sm font-medium text-gray-900">María Pérez</div>

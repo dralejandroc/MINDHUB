@@ -13,7 +13,7 @@ export default function TermsPage() {
             Términos de Servicio
           </h1>
           <p className="text-gray-600">
-            MindHub - Plataforma de Gestión Sanitaria
+            Glian - Plataforma de Gestión Sanitaria
           </p>
         </div>
 
@@ -26,7 +26,7 @@ export default function TermsPage() {
               <span className="ml-3">Última actualización: Enero 2025</span>
             </div>
             <h2 className="text-2xl font-heading font-bold text-dark-green mb-6">
-              Términos de Servicio de MindHub
+              Términos de Servicio de Glian
             </h2>
           </div>
           
@@ -37,7 +37,7 @@ export default function TermsPage() {
                 1. Aceptación de los Términos
               </h2>
               <p className="text-gray-700 mb-4">
-                Al acceder y utilizar MindHub, usted acepta estar sujeto a estos Términos de Servicio 
+                Al acceder y utilizar Glian, usted acepta estar sujeto a estos Términos de Servicio 
                 y todas las leyes y regulaciones aplicables. Si no está de acuerdo con alguno de estos 
                 términos, se le prohíbe usar o acceder a este sitio.
               </p>
@@ -48,7 +48,7 @@ export default function TermsPage() {
                 2. Descripción del Servicio
               </h2>
               <p className="text-gray-700 mb-4">
-                MindHub es una plataforma de gestión sanitaria diseñada específicamente para 
+                Glian es una plataforma de gestión sanitaria diseñada específicamente para 
                 profesionales de la salud mental. Proporcionamos herramientas para la gestión 
                 de pacientes, evaluaciones clínicas, y administración de consultorios.
               </p>
@@ -59,7 +59,7 @@ export default function TermsPage() {
                 3. Beta - Acceso Gratuito
               </h2>
               <p className="text-gray-700 mb-4">
-                Durante el período beta, MindHub se proporciona de forma gratuita. Nos reservamos 
+                Durante el período beta, Glian se proporciona de forma gratuita. Nos reservamos 
                 el derecho de cambiar esta política al finalizar el período beta, con previo aviso 
                 a los usuarios registrados.
               </p>
@@ -70,7 +70,7 @@ export default function TermsPage() {
                 4. Uso Aceptable
               </h2>
               <p className="text-gray-700 mb-4">
-                Usted se compromete a utilizar MindHub únicamente para fines profesionales legítimos 
+                Usted se compromete a utilizar Glian únicamente para fines profesionales legítimos 
                 en el área de la salud mental. Está prohibido usar la plataforma para actividades 
                 ilegales o no autorizadas.
               </p>

@@ -343,11 +343,11 @@ export const ResourceGallery: React.FC<ResourceGalleryProps> = ({
                 )}
               </div>
 
-              {/* MindHub Attribution for Public Resources */}
+              {/* Glian Attribution for Public Resources */}
               {resource.library_type === 'public' && (
                 <div className="mt-3 pt-2 border-t border-gray-100">
                   <p className="text-xs text-gray-400 text-center">
-                    Hecho y distribuido por MindHub
+                    Hecho y distribuido por Glian
                   </p>
                 </div>
               )}

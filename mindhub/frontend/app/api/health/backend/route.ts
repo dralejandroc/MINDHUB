@@ -14,7 +14,7 @@ export async function GET() {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
-        'User-Agent': 'MindHub-Frontend-HealthCheck/1.0',
+        'User-Agent': 'Glian-Frontend-HealthCheck/1.0',
       },
     });
 

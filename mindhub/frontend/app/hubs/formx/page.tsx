@@ -101,7 +101,7 @@ function FormXContent() {
                 onClick={path.onClick}
                 className={`${
                   path.onClick 
-                    ? 'text-blue-600 hover:text-blue-800 font-medium' 
+                    ? 'text-primary-600 hover:text-primary-800 font-medium' 
                     : 'text-gray-900 font-semibold'
                 }`}
               >
@@ -211,7 +211,7 @@ export default function FormXPage() {
   return (
     <Suspense fallback={
       <div className="flex flex-col items-center justify-center py-16 space-y-4">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
         <div className="text-center">
           <p className="text-gray-900 font-medium">Cargando FormX...</p>
         </div>

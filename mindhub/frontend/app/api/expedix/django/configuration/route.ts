@@ -28,7 +28,7 @@ export async function GET(request: Request) {
         'X-Proxy-Auth': 'verified',
         'X-User-Id': user.id,
         'X-User-Email': user.email || '',
-        'X-MindHub-Dual-System': 'enabled',
+        'X-Glian-Dual-System': 'enabled',
       },
     });
 
@@ -76,7 +76,7 @@ export async function POST(request: Request) {
         'X-Proxy-Auth': 'verified',
         'X-User-Id': user.id,
         'X-User-Email': user.email || '',
-        'X-MindHub-Dual-System': 'enabled',
+        'X-Glian-Dual-System': 'enabled',
       },
       body: JSON.stringify(body),
     });
@@ -124,7 +124,7 @@ export async function PUT(request: Request) {
         'X-Proxy-Auth': 'verified',
         'X-User-Id': user.id,
         'X-User-Email': user.email || '',
-        'X-MindHub-Dual-System': 'enabled',
+        'X-Glian-Dual-System': 'enabled',
       },
       body: JSON.stringify(body),
     });

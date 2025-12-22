@@ -59,7 +59,7 @@ export default function ForgotPasswordPage() {
                   <HeartIcon className="w-7 h-7 text-white" />
                 </div>
                 <div>
-                  <h1 className="text-3xl font-heading font-bold">MindHub</h1>
+                  <h1 className="text-3xl font-heading font-bold">Glian</h1>
                   <p className="text-primary-100 text-sm">Healthcare Management Platform</p>
                 </div>
               </div>
@@ -113,7 +113,7 @@ export default function ForgotPasswordPage() {
               <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl gradient-primary shadow-primary mb-4">
                 <HeartIcon className="w-8 h-8 text-white" />
               </div>
-              <h1 className="text-2xl font-heading font-bold text-dark-green mb-2">MindHub</h1>
+              <h1 className="text-2xl font-heading font-bold text-dark-green mb-2">Glian</h1>
               <p className="text-gray-600">Plataforma de Gestión Sanitaria</p>
             </div>
 
@@ -244,7 +244,7 @@ export default function ForgotPasswordPage() {
                 <HeartIcon className="w-7 h-7 text-white" />
               </div>
               <div>
-                <h1 className="text-3xl font-heading font-bold">MindHub</h1>
+                <h1 className="text-3xl font-heading font-bold">Glian</h1>
                 <p className="text-primary-100 text-sm">Healthcare Management Platform</p>
               </div>
             </div>
@@ -295,7 +295,7 @@ export default function ForgotPasswordPage() {
             <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl gradient-primary shadow-primary mb-4">
               <HeartIcon className="w-8 h-8 text-white" />
             </div>
-            <h1 className="text-2xl font-heading font-bold text-dark-green mb-2">MindHub</h1>
+            <h1 className="text-2xl font-heading font-bold text-dark-green mb-2">Glian</h1>
             <p className="text-gray-600">Plataforma de Gestión Sanitaria</p>
           </div>
 
