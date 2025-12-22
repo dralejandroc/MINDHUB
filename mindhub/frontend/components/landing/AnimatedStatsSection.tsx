@@ -3,11 +3,10 @@
 import React, { useEffect, useState } from 'react';
 import { motion, useInView } from 'framer-motion';
 import { useRef } from 'react';
-import { FlickeringGrid } from '@/components/ui/flickering-grid';
-import { 
-  Users, 
-  Activity, 
-  TrendingUp, 
+import {
+  Users,
+  Activity,
+  TrendingUp,
   Award,
   Sparkles
 } from 'lucide-react';
@@ -28,32 +27,32 @@ const stats: Stat[] = [
     value: 2847,
     suffix: '+',
     icon: Users,
-    color: 'text-teal-600',
-    bgColor: 'bg-gradient-to-br from-teal-50 to-cyan-50',
+    color: 'text-primary-600',
+    bgColor: 'bg-gradient-to-br from-primary-50 to-secondary-50',
   },
   {
     label: 'Evaluaciones Realizadas',
     value: 45000,
     suffix: '+',
     icon: Activity,
-    color: 'text-cyan-600',
-    bgColor: 'bg-gradient-to-br from-cyan-50 to-blue-50',
+    color: 'text-secondary-600',
+    bgColor: 'bg-gradient-to-br from-secondary-50 to-primary-50',
   },
   {
     label: 'Satisfacción',
     value: 98,
     suffix: '%',
     icon: Award,
-    color: 'text-blue-600',
-    bgColor: 'bg-gradient-to-br from-blue-50 to-teal-50',
+    color: 'text-primary-600',
+    bgColor: 'bg-gradient-to-br from-primary-50 to-primary-50',
   },
   {
     label: 'Tiempo Ahorrado',
     value: 40,
     suffix: '%',
     icon: TrendingUp,
-    color: 'text-teal-600',
-    bgColor: 'bg-gradient-to-br from-teal-50 to-cyan-50',
+    color: 'text-primary-600',
+    bgColor: 'bg-gradient-to-br from-primary-50 to-secondary-50',
   },
 ];
 
@@ -109,43 +108,7 @@ export function AnimatedStatsSection() {
   return (
     <section className="relative py-20 px-4 sm:px-6 lg:px-8 overflow-hidden">
       {/* Background with gradient */}
-      <div className="absolute inset-0 bg-gradient-to-b from-white via-teal-50/30 to-white dark:from-gray-900 dark:via-teal-950/20 dark:to-gray-900" />
-      
-      {/* FlickeringGrid Background */}
-      <div className="absolute inset-0 z-0">
-        <FlickeringGrid
-          squareSize={3}
-          gridGap={5}
-          flickerChance={0.5}
-          color="rgb(37, 99, 235)" // blue-600
-          maxOpacity={0.1}
-          className="w-full h-full"
-        />
-      </div>
-      
-      {/* Animated particles */}
-      <div className="absolute inset-0">
-        {[...Array(20)].map((_, i) => (
-          <motion.div
-            key={i}
-            className="absolute w-1 h-1 bg-teal-500 rounded-full"
-            style={{
-              left: `${Math.random() * 100}%`,
-              top: `${Math.random() * 100}%`,
-            }}
-            animate={{
-              y: [0, -30, 0],
-              opacity: [0, 1, 0],
-            }}
-            transition={{
-              duration: 3 + Math.random() * 2,
-              repeat: Infinity,
-              delay: Math.random() * 5,
-              ease: "easeInOut",
-            }}
-          />
-        ))}
-      </div>
+      <div className="absolute inset-0 bg-gradient-to-b from-white via-primary-50/30 to-white dark:from-gray-900 dark:via-teal-950/20 dark:to-gray-900" />
       
       <div className="relative max-w-7xl mx-auto">
         {/* Section header */}
@@ -166,7 +129,7 @@ export function AnimatedStatsSection() {
               delay: 0.1 
             }}
             viewport={{ once: true }}
-            className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gradient-to-r from-teal-500 to-cyan-500 text-white mb-6 mx-auto"
+            className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gradient-to-r from-primary-500 to-secondary-500 text-white mb-6 mx-auto"
           >
             <Sparkles className="w-8 h-8" />
           </motion.div>
@@ -176,7 +139,7 @@ export function AnimatedStatsSection() {
               Números que
             </span>
             <br />
-            <span className="bg-gradient-to-r from-teal-600 via-cyan-600 to-blue-600 bg-clip-text text-transparent">
+            <span className="bg-gradient-to-r from-primary-600 via-secondary-600 to-primary-600 bg-clip-text text-transparent">
               hablan por sí solos
             </span>
           </h2>
@@ -266,7 +229,7 @@ export function AnimatedStatsSection() {
           whileInView={{ scaleX: 1 }}
           transition={{ duration: 1, delay: 0.5 }}
           viewport={{ once: true }}
-          className="mt-16 h-1 bg-gradient-to-r from-transparent via-teal-500 to-transparent mx-auto max-w-md"
+          className="mt-16 h-1 bg-gradient-to-r from-transparent via-primary-500 to-transparent mx-auto max-w-md"
         />
       </div>
     </section>

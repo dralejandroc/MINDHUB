@@ -70,8 +70,8 @@ export function AgendaConfigurationSettings() {
     consultationTypes: [
       { id: '1', name: 'Consulta inicial', duration: 90, price: 1500, color: 'bg-blue-500' },
       { id: '2', name: 'Seguimiento', duration: 60, price: 1200, color: 'bg-green-500' },
-      { id: '3', name: 'Evaluación psicológica', duration: 120, price: 2000, color: 'bg-purple-500' },
-      { id: '4', name: 'Terapia individual', duration: 60, price: 1000, color: 'bg-orange-500' },
+      { id: '3', name: 'Evaluación psicológica', duration: 120, price: 2000, color: 'bg-primary-500' },
+      { id: '4', name: 'Terapia individual', duration: 60, price: 1000, color: 'bg-primary-500' },
       { id: '5', name: 'Control de medicación', duration: 30, price: 800, color: 'bg-red-500' }
     ],
     blockedDates: [],
@@ -116,8 +116,8 @@ export function AgendaConfigurationSettings() {
   const colorOptions = [
     'bg-blue-500',
     'bg-green-500',
-    'bg-purple-500',
-    'bg-orange-500',
+    'bg-primary-500',
+    'bg-primary-500',
     'bg-red-500',
     'bg-yellow-500',
     'bg-pink-500',
@@ -261,7 +261,7 @@ export function AgendaConfigurationSettings() {
         <Button
           onClick={handleSaveSettings}
           disabled={isSaving}
-          className="bg-orange-600 hover:bg-orange-700"
+          className="bg-primary-600 hover:bg-primary-700"
         >
           {isSaving ? 'Guardando...' : 'Guardar Configuración'}
         </Button>
@@ -271,7 +271,7 @@ export function AgendaConfigurationSettings() {
         {/* Horario de Trabajo */}
         <Card className="p-6 hover-lift">
           <div className="flex items-center mb-4">
-            <ClockIcon className="h-5 w-5 text-orange-600 mr-2" />
+            <ClockIcon className="h-5 w-5 text-primary-600 mr-2" />
             <h3 className="text-lg font-semibold text-dark-green">Horario de Trabajo</h3>
             <Tooltip 
               content="Define las horas en que estarás disponible para consultas. Las citas solo se podrán agendar dentro de este horario."
@@ -292,7 +292,7 @@ export function AgendaConfigurationSettings() {
                     ...prev,
                     workingHours: { ...prev.workingHours, start: e.target.value }
                   }))}
-                  className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500"
+                  className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
                 />
               </div>
               <div>
@@ -306,7 +306,7 @@ export function AgendaConfigurationSettings() {
                     ...prev,
                     workingHours: { ...prev.workingHours, end: e.target.value }
                   }))}
-                  className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500"
+                  className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
                 />
               </div>
             </div>
@@ -330,7 +330,7 @@ export function AgendaConfigurationSettings() {
                     ...prev,
                     lunchBreak: { ...prev.lunchBreak, enabled: e.target.checked }
                   }))}
-                  className="h-4 w-4 text-orange-600 rounded"
+                  className="h-4 w-4 text-primary-600 rounded"
                 />
               </div>
               
@@ -347,7 +347,7 @@ export function AgendaConfigurationSettings() {
                         ...prev,
                         lunchBreak: { ...prev.lunchBreak, start: e.target.value }
                       }))}
-                      className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500"
+                      className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
                     />
                   </div>
                   <div>
@@ -361,7 +361,7 @@ export function AgendaConfigurationSettings() {
                         ...prev,
                         lunchBreak: { ...prev.lunchBreak, end: e.target.value }
                       }))}
-                      className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500"
+                      className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
                     />
                   </div>
                 </div>
@@ -373,7 +373,7 @@ export function AgendaConfigurationSettings() {
         {/* Días Laborables */}
         <Card className="p-6 hover-lift">
           <div className="flex items-center mb-4">
-            <CalendarDaysIcon className="h-5 w-5 text-orange-600 mr-2" />
+            <CalendarDaysIcon className="h-5 w-5 text-primary-600 mr-2" />
             <h3 className="text-lg font-semibold text-dark-green">Días Laborables</h3>
             <Tooltip 
               content="Selecciona los días de la semana en que trabajas. Los días seleccionados aparecen con fondo naranja y checkmark."
@@ -388,7 +388,7 @@ export function AgendaConfigurationSettings() {
                 onClick={() => toggleWorkingDay(day.id)}
                 className={`p-3 rounded-lg text-center transition-all duration-200 relative ${
                   settings.workingDays.includes(day.id)
-                    ? 'bg-orange-500 text-white border-2 border-orange-600 shadow-md transform scale-105'
+                    ? 'bg-primary-500 text-white border-2 border-primary-600 shadow-md transform scale-105'
                     : 'bg-gray-100 text-gray-500 border-2 border-gray-200 hover:bg-gray-200'
                 }`}
                 title={`${day.label} - ${settings.workingDays.includes(day.id) ? 'ACTIVO' : 'Inactivo'}`}
@@ -421,7 +421,7 @@ export function AgendaConfigurationSettings() {
                   ...prev,
                   defaultAppointmentDuration: parseInt(e.target.value) || 60
                 }))}
-                className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500"
+                className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
                 min="15"
                 max="240"
                 step="15"
@@ -444,7 +444,7 @@ export function AgendaConfigurationSettings() {
                   ...prev,
                   bufferTime: parseInt(e.target.value) || 0
                 }))}
-                className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500"
+                className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
                 min="0"
                 max="60"
                 step="5"
@@ -457,7 +457,7 @@ export function AgendaConfigurationSettings() {
         <Card className="p-6 hover-lift lg:col-span-2">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center">
-              <UserGroupIcon className="h-5 w-5 text-orange-600 mr-2" />
+              <UserGroupIcon className="h-5 w-5 text-primary-600 mr-2" />
               <h3 className="text-lg font-semibold text-dark-green">Tipos de Consulta</h3>
               <Tooltip 
                 content="Define los diferentes tipos de consulta con sus duraciones, precios y colores. Haz clic en cualquier tipo para editarlo."
@@ -475,7 +475,7 @@ export function AgendaConfigurationSettings() {
           </div>
 
           {showNewTypeForm && (
-            <div className="mb-4 p-4 bg-orange-50 rounded-lg border border-orange-200">
+            <div className="mb-4 p-4 bg-primary-50 rounded-lg border border-primary-200">
               <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
                 <div>
                   <label className="block text-xs font-medium text-gray-700 mb-1">
@@ -558,7 +558,7 @@ export function AgendaConfigurationSettings() {
               <div key={type.id}>
                 {editingType === type.id ? (
                   // Edit form for existing type
-                  <div className="p-4 bg-orange-50 rounded-lg border border-orange-200">
+                  <div className="p-4 bg-primary-50 rounded-lg border border-primary-200">
                     <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
                       <div>
                         <label className="block text-xs font-medium text-gray-700 mb-1">
@@ -671,7 +671,7 @@ export function AgendaConfigurationSettings() {
         {/* Límites y Restricciones */}
         <Card className="p-6 hover-lift">
           <div className="flex items-center mb-4">
-            <ExclamationTriangleIcon className="h-5 w-5 text-orange-600 mr-2" />
+            <ExclamationTriangleIcon className="h-5 w-5 text-primary-600 mr-2" />
             <h3 className="text-lg font-semibold text-dark-green">Límites y Restricciones</h3>
             <Tooltip 
               content="Establece límites diarios para evitar sobrecarga de trabajo y mantener calidad en la atención."
@@ -697,7 +697,7 @@ export function AgendaConfigurationSettings() {
                   ...prev,
                   maxDailyAppointments: parseInt(e.target.value) || 20
                 }))}
-                className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500"
+                className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
                 min="1"
                 max="100"
               />
@@ -708,7 +708,7 @@ export function AgendaConfigurationSettings() {
         {/* Configuración de Recordatorios */}
         <Card className="p-6 hover-lift">
           <div className="flex items-center mb-4">
-            <CalendarIcon className="h-5 w-5 text-orange-600 mr-2" />
+            <CalendarIcon className="h-5 w-5 text-primary-600 mr-2" />
             <h3 className="text-lg font-semibold text-dark-green">Recordatorios de Citas</h3>
             <Tooltip 
               content="Configura mensajes automáticos de recordatorio que se enviarán a los pacientes antes de sus citas."
@@ -738,7 +738,7 @@ export function AgendaConfigurationSettings() {
                       whatsapp: { ...prev.reminders.whatsapp, enabled: e.target.checked }
                     }
                   }))}
-                  className="h-4 w-4 text-orange-600 rounded"
+                  className="h-4 w-4 text-primary-600 rounded"
                 />
               </div>
               
@@ -757,7 +757,7 @@ export function AgendaConfigurationSettings() {
                           whatsapp: { ...prev.reminders.whatsapp, hoursBeforeAppointment: parseInt(e.target.value) }
                         }
                       }))}
-                      className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500"
+                      className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
                     >
                       <option value={1}>1 hora antes</option>
                       <option value={2}>2 horas antes</option>
@@ -781,7 +781,7 @@ export function AgendaConfigurationSettings() {
                         }
                       }))}
                       rows={3}
-                      className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500"
+                      className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
                       placeholder="Escribe el mensaje que se enviará..."
                     />
                     <div className="text-xs text-gray-500 mt-1">
@@ -813,7 +813,7 @@ export function AgendaConfigurationSettings() {
                       email: { ...prev.reminders.email, enabled: e.target.checked }
                     }
                   }))}
-                  className="h-4 w-4 text-orange-600 rounded"
+                  className="h-4 w-4 text-primary-600 rounded"
                 />
               </div>
               
@@ -832,7 +832,7 @@ export function AgendaConfigurationSettings() {
                           email: { ...prev.reminders.email, hoursBeforeAppointment: parseInt(e.target.value) }
                         }
                       }))}
-                      className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500"
+                      className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
                     >
                       <option value={1}>1 hora antes</option>
                       <option value={2}>2 horas antes</option>
@@ -856,7 +856,7 @@ export function AgendaConfigurationSettings() {
                         }
                       }))}
                       rows={8}
-                      className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500"
+                      className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
                       placeholder="Escribe el email que se enviará..."
                     />
                     <div className="text-xs text-gray-500 mt-1">

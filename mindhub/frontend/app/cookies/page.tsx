@@ -11,7 +11,7 @@ export default function CookiesPage() {
           
           <div className="prose max-w-none">
             <p className="text-gray-600 mb-6">
-              Esta política explica cómo MindHub utiliza cookies y tecnologías similares 
+              Esta política explica cómo Glian utiliza cookies y tecnologías similares 
               para proporcionar, mejorar y proteger nuestros servicios.
             </p>
 

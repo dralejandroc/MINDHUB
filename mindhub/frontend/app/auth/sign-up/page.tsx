@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { signUp, signUpWithGoogle, signOut, getCurrentUser } from '@/lib/supabase/client'
 import { toast } from 'react-hot-toast'
-import { MindHubSignUpCard } from '@/components/auth/MindHubSignUpCard'
+import { GlianSignUpCard } from '@/components/auth/MindHubSignUpCard'
 
 // Clean Architecture: Domain entities for registration
 interface SignUpData {
@@ -22,7 +22,7 @@ export default function SignUpPage() {
 
   // Clean Architecture: Set document title (UI layer concern)
   useEffect(() => {
-    document.title = 'Crear Cuenta - MindHub'
+    document.title = 'Crear Cuenta - Glian'
   }, [])
 
   // Check if user is already logged in and handle accordingly
@@ -126,7 +126,7 @@ export default function SignUpPage() {
 
   return (
     <div className="min-h-screen w-full flex items-center justify-center bg-gradient-to-br from-teal-50 via-cyan-50 to-blue-50 p-4">
-      <MindHubSignUpCard 
+      <GlianSignUpCard 
         onSignUp={handleSignUp}
         onGoogleSignUp={handleGoogleSignUp}
         onSignInRedirect={handleSignInRedirect}

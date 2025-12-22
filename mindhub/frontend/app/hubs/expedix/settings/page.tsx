@@ -172,7 +172,7 @@ export default function ExpedixSettingsPage() {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto"></div>
           <p className="text-gray-500 mt-4">Cargando configuración de Expedix...</p>
         </div>
       </div>
@@ -226,7 +226,7 @@ export default function ExpedixSettingsPage() {
               <select
                 value={config.defaultView}
                 onChange={(e) => setConfig({ ...config, defaultView: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
               >
                 <option value="cards">Tarjetas</option>
                 <option value="list">Lista</option>
@@ -245,7 +245,7 @@ export default function ExpedixSettingsPage() {
                 min="10"
                 max="100"
                 step="10"
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
               />
             </div>
 
@@ -255,7 +255,7 @@ export default function ExpedixSettingsPage() {
                   type="checkbox"
                   checked={config.autoSaveConsultations}
                   onChange={(e) => setConfig({ ...config, autoSaveConsultations: e.target.checked })}
-                  className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 mr-2"
+                  className="rounded border-gray-300 text-primary-600 focus:ring-primary-500 mr-2"
                 />
                 <span className="text-sm text-gray-700">Guardar consultas automáticamente</span>
               </label>
@@ -265,7 +265,7 @@ export default function ExpedixSettingsPage() {
                   type="checkbox"
                   checked={config.requireConsultationReason}
                   onChange={(e) => setConfig({ ...config, requireConsultationReason: e.target.checked })}
-                  className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 mr-2"
+                  className="rounded border-gray-300 text-primary-600 focus:ring-primary-500 mr-2"
                 />
                 <span className="text-sm text-gray-700">Requerir motivo de consulta</span>
               </label>
@@ -286,7 +286,7 @@ export default function ExpedixSettingsPage() {
                 type="checkbox"
                 checked={config.useConsultationTemplates}
                 onChange={(e) => setConfig({ ...config, useConsultationTemplates: e.target.checked })}
-                className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 mr-2"
+                className="rounded border-gray-300 text-primary-600 focus:ring-primary-500 mr-2"
               />
               <span className="text-sm text-gray-700">Usar plantillas de consulta</span>
             </label>
@@ -296,7 +296,7 @@ export default function ExpedixSettingsPage() {
                 type="checkbox"
                 checked={config.showVitalSigns}
                 onChange={(e) => setConfig({ ...config, showVitalSigns: e.target.checked })}
-                className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 mr-2"
+                className="rounded border-gray-300 text-primary-600 focus:ring-primary-500 mr-2"
               />
               <span className="text-sm text-gray-700">Mostrar signos vitales</span>
             </label>
@@ -306,7 +306,7 @@ export default function ExpedixSettingsPage() {
                 type="checkbox"
                 checked={config.showMentalExam}
                 onChange={(e) => setConfig({ ...config, showMentalExam: e.target.checked })}
-                className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 mr-2"
+                className="rounded border-gray-300 text-primary-600 focus:ring-primary-500 mr-2"
               />
               <span className="text-sm text-gray-700">Incluir examen mental</span>
             </label>
@@ -337,7 +337,7 @@ export default function ExpedixSettingsPage() {
                 type="checkbox"
                 checked={config.notifyOnNewPatient}
                 onChange={(e) => setConfig({ ...config, notifyOnNewPatient: e.target.checked })}
-                className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 mr-2"
+                className="rounded border-gray-300 text-primary-600 focus:ring-primary-500 mr-2"
               />
               <span className="text-sm text-gray-700">Notificar nuevo paciente</span>
             </label>
@@ -347,7 +347,7 @@ export default function ExpedixSettingsPage() {
                 type="checkbox"
                 checked={config.notifyOnConsultation}
                 onChange={(e) => setConfig({ ...config, notifyOnConsultation: e.target.checked })}
-                className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 mr-2"
+                className="rounded border-gray-300 text-primary-600 focus:ring-primary-500 mr-2"
               />
               <span className="text-sm text-gray-700">Notificar nueva consulta</span>
             </label>
@@ -357,7 +357,7 @@ export default function ExpedixSettingsPage() {
                 type="checkbox"
                 checked={config.emailNotifications}
                 onChange={(e) => setConfig({ ...config, emailNotifications: e.target.checked })}
-                className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 mr-2"
+                className="rounded border-gray-300 text-primary-600 focus:ring-primary-500 mr-2"
               />
               <span className="text-sm text-gray-700">Enviar notificaciones por email</span>
             </label>
@@ -377,7 +377,7 @@ export default function ExpedixSettingsPage() {
                 type="checkbox"
                 checked={config.requirePasswordForDelete}
                 onChange={(e) => setConfig({ ...config, requirePasswordForDelete: e.target.checked })}
-                className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 mr-2"
+                className="rounded border-gray-300 text-primary-600 focus:ring-primary-500 mr-2"
               />
               <span className="text-sm text-gray-700">Requerir contraseña para eliminar</span>
             </label>
@@ -387,7 +387,7 @@ export default function ExpedixSettingsPage() {
                 type="checkbox"
                 checked={config.auditLogEnabled}
                 onChange={(e) => setConfig({ ...config, auditLogEnabled: e.target.checked })}
-                className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 mr-2"
+                className="rounded border-gray-300 text-primary-600 focus:ring-primary-500 mr-2"
               />
               <span className="text-sm text-gray-700">Registro de auditoría</span>
             </label>
@@ -403,7 +403,7 @@ export default function ExpedixSettingsPage() {
                 min="30"
                 max="3650"
                 step="30"
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
               />
             </div>
           </div>
@@ -422,7 +422,7 @@ export default function ExpedixSettingsPage() {
                 type="checkbox"
                 checked={config.syncWithAgenda}
                 onChange={(e) => setConfig({ ...config, syncWithAgenda: e.target.checked })}
-                className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 mr-2"
+                className="rounded border-gray-300 text-primary-600 focus:ring-primary-500 mr-2"
               />
               <span className="text-sm text-gray-700">Sincronizar con Agenda</span>
             </label>
@@ -432,7 +432,7 @@ export default function ExpedixSettingsPage() {
                 type="checkbox"
                 checked={config.syncWithClinimetrix}
                 onChange={(e) => setConfig({ ...config, syncWithClinimetrix: e.target.checked })}
-                className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 mr-2"
+                className="rounded border-gray-300 text-primary-600 focus:ring-primary-500 mr-2"
               />
               <span className="text-sm text-gray-700">Integrar con ClinimetrixPro</span>
             </label>
@@ -442,7 +442,7 @@ export default function ExpedixSettingsPage() {
                 type="checkbox"
                 checked={config.syncWithResources}
                 onChange={(e) => setConfig({ ...config, syncWithResources: e.target.checked })}
-                className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 mr-2"
+                className="rounded border-gray-300 text-primary-600 focus:ring-primary-500 mr-2"
               />
               <span className="text-sm text-gray-700">Conectar con Resources</span>
             </label>
@@ -463,7 +463,7 @@ export default function ExpedixSettingsPage() {
                   type="checkbox"
                   checked={config.showAge}
                   onChange={(e) => setConfig({ ...config, showAge: e.target.checked })}
-                  className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 mr-2"
+                  className="rounded border-gray-300 text-primary-600 focus:ring-primary-500 mr-2"
                 />
                 <span className="text-sm text-gray-700">Mostrar edad</span>
               </label>
@@ -473,7 +473,7 @@ export default function ExpedixSettingsPage() {
                   type="checkbox"
                   checked={config.showLastVisit}
                   onChange={(e) => setConfig({ ...config, showLastVisit: e.target.checked })}
-                  className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 mr-2"
+                  className="rounded border-gray-300 text-primary-600 focus:ring-primary-500 mr-2"
                 />
                 <span className="text-sm text-gray-700">Última visita</span>
               </label>
@@ -483,7 +483,7 @@ export default function ExpedixSettingsPage() {
                   type="checkbox"
                   checked={config.showPhone}
                   onChange={(e) => setConfig({ ...config, showPhone: e.target.checked })}
-                  className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 mr-2"
+                  className="rounded border-gray-300 text-primary-600 focus:ring-primary-500 mr-2"
                 />
                 <span className="text-sm text-gray-700">Teléfono</span>
               </label>
@@ -493,7 +493,7 @@ export default function ExpedixSettingsPage() {
                   type="checkbox"
                   checked={config.showEmail}
                   onChange={(e) => setConfig({ ...config, showEmail: e.target.checked })}
-                  className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 mr-2"
+                  className="rounded border-gray-300 text-primary-600 focus:ring-primary-500 mr-2"
                 />
                 <span className="text-sm text-gray-700">Email</span>
               </label>
@@ -506,7 +506,7 @@ export default function ExpedixSettingsPage() {
               <select
                 value={config.dateFormat}
                 onChange={(e) => setConfig({ ...config, dateFormat: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
               >
                 <option value="DD/MM/YYYY">DD/MM/YYYY</option>
                 <option value="MM/DD/YYYY">MM/DD/YYYY</option>

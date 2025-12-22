@@ -281,8 +281,8 @@ function ClinimetrixContent() {
   const getCategoryColor = (category: string) => {
     const colors: { [key: string]: string } = {
       'Ansiedad': 'text-yellow-700 bg-yellow-50 border-yellow-200',
-      'Depresión': 'text-blue-700 bg-blue-50 border-blue-200',
-      'Esquizofrenia y Trastornos Psicóticos': 'text-purple-700 bg-purple-50 border-purple-200',
+      'Depresión': 'text-primary-700 bg-primary-50 border-primary-200',
+      'Esquizofrenia y Trastornos Psicóticos': 'text-primary-700 bg-primary-50 border-primary-200',
       'Trastornos del Sueño': 'text-green-700 bg-green-50 border-green-200',
       'general': 'text-gray-700 bg-gray-50 border-gray-200'
     };
@@ -323,7 +323,7 @@ function ClinimetrixContent() {
   if (!isMounted) {
     return (
       <div className="flex flex-col items-center justify-center py-16 space-y-4">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-teal-500"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
         <div className="text-center">
           <p className="text-gray-900 font-medium">Iniciando catálogo...</p>
         </div>
@@ -334,7 +334,7 @@ function ClinimetrixContent() {
   if (loading) {
     return (
       <div className="flex flex-col items-center justify-center py-16 space-y-4">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-teal-500"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
         <div className="text-center">
           <p className="text-gray-900 font-medium">Cargando escalas clínicas...</p>
           <p className="text-gray-500 text-sm">Preparando el catálogo de evaluaciones</p>
@@ -395,7 +395,7 @@ function ClinimetrixContent() {
               <Cog6ToothIcon className="h-4 w-4 mr-1" />
               Configuración
             </Button>
-            <Button variant="primary" size="sm" className="bg-purple-600 hover:bg-purple-700">
+            <Button variant="primary" size="sm" className="bg-primary-600 hover:bg-primary-700">
               <BeakerIcon className="h-4 w-4 mr-1" />
               Nueva Evaluación
             </Button>
@@ -404,7 +404,7 @@ function ClinimetrixContent() {
       />
 
       {/* Search Bar - Compact */}
-      <div className="bg-white p-3 rounded-xl shadow-lg border border-purple-100">
+      <div className="bg-white p-3 rounded-xl shadow-lg border border-primary-100">
         <div className="relative">
           <MagnifyingGlassIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
           <input
@@ -412,7 +412,7 @@ function ClinimetrixContent() {
             placeholder="Buscar escalas por nombre, abreviación o categoría..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-9 pr-4 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+            className="w-full pl-9 pr-4 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
           />
           {searchTerm && (
             <button
@@ -426,16 +426,16 @@ function ClinimetrixContent() {
       </div>
 
 
-      {/* Controls - MindHub Style */}
+      {/* Controls - Glian Style */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
         {/* View Mode Buttons */}
-        <div className="flex items-center space-x-0.5 bg-purple-50 p-0.5 rounded-lg border border-purple-200">
+        <div className="flex items-center space-x-0.5 bg-primary-50 p-0.5 rounded-lg border border-primary-200">
           <button
             onClick={() => setViewMode('cards')}
             className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all duration-200 ${
               viewMode === 'cards' 
-                ? 'bg-purple-600 text-white shadow-lg' 
-                : 'text-purple-600 hover:bg-purple-100'
+                ? 'bg-primary-600 text-white shadow-lg'
+                : 'text-primary-600 hover:bg-primary-100'
             }`}
           >
             <Squares2X2Icon className="h-3 w-3 inline mr-1" />
@@ -445,8 +445,8 @@ function ClinimetrixContent() {
             onClick={() => setViewMode('list')}
             className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all duration-200 ${
               viewMode === 'list' 
-                ? 'bg-purple-600 text-white shadow-lg' 
-                : 'text-purple-600 hover:bg-purple-100'
+                ? 'bg-primary-600 text-white shadow-lg'
+                : 'text-primary-600 hover:bg-primary-100'
             }`}
           >
             <ListBulletIcon className="h-3 w-3 inline mr-1" />
@@ -463,7 +463,7 @@ function ClinimetrixContent() {
               onClick={() => setSelectedCategory(selectedCategory === category ? 'all' : category)}
               className={`px-2 py-1 rounded-md text-xs font-medium transition-colors ${
                 selectedCategory === category
-                  ? 'bg-purple-100 text-purple-700 border border-purple-300'
+                  ? 'bg-primary-100 text-primary-700 border border-primary-300'
                   : 'bg-white text-gray-600 border border-gray-300 hover:bg-gray-50'
               }`}
             >
@@ -479,7 +479,7 @@ function ClinimetrixContent() {
           <div className="flex flex-wrap items-center justify-between gap-4 text-sm text-gray-600">
             <div className="flex items-center gap-6">
               <div className="flex items-center gap-2">
-                <div className="w-2 h-2 bg-teal-500 rounded-full"></div>
+                <div className="w-2 h-2 bg-primary-500 rounded-full"></div>
                 <span>{filteredScales.length} escalas {searchTerm ? 'encontradas' : 'mostradas'}</span>
               </div>
               {favoriteScales.length > 0 && (
@@ -497,7 +497,7 @@ function ClinimetrixContent() {
             {(searchTerm || selectedCategory !== 'all' || showFavoritesOnly) && (
               <button
                 onClick={clearFilters}
-                className="text-teal-600 hover:text-teal-700 text-sm font-medium"
+                className="text-primary-600 hover:text-primary-700 text-sm font-medium"
               >
                 Limpiar filtros
               </button>
@@ -579,10 +579,10 @@ function ScaleCard({ scale, onToggleFavorite, onSelect }: {
 
   return (
     <div 
-      className="bg-white rounded-lg border shadow-sm hover:shadow-lg transition-all duration-300 hover:border-purple-400 group hover:shadow-purple flex flex-col h-full"
+      className="bg-white rounded-lg border shadow-sm hover:shadow-lg transition-all duration-300 hover:border-primary-400 group hover:shadow-primary flex flex-col h-full"
     >
       {/* Header with gradient background */}
-      <div className="bg-gradient-to-r from-purple-50 to-purple-100 p-2.5 border-b border-gray-100">
+      <div className="bg-gradient-to-r from-primary-50 to-primary-100 p-2.5 border-b border-gray-100">
         <div className="flex items-start justify-between">
           <div className="flex-1">
             <div className="flex items-center gap-2">
@@ -594,11 +594,11 @@ function ScaleCard({ scale, onToggleFavorite, onSelect }: {
                 }}
               />
               <div className="min-w-0 flex-1">
-                <h3 className="font-bold text-gray-900 group-hover:text-purple-700 transition-colors text-xs line-clamp-2 leading-tight">
+                <h3 className="font-bold text-gray-900 group-hover:text-primary-700 transition-colors text-xs line-clamp-2 leading-tight">
                   {scale?.name || 'Escala sin nombre'}
                 </h3>
                 {scale?.abbreviation && (
-                  <p className="text-[10px] text-purple-600 font-mono font-semibold mt-0.5">
+                  <p className="text-[10px] text-primary-600 font-mono font-semibold mt-0.5">
                     {scale.abbreviation}
                   </p>
                 )}
@@ -633,7 +633,7 @@ function ScaleCard({ scale, onToggleFavorite, onSelect }: {
               e.stopPropagation();
               router.push(`/hubs/clinimetrix-pro/catalog/${scale?.templateId}`);
             }}
-            className="text-gray-400 hover:text-purple-600 transition-colors p-1 hover:bg-purple-50 rounded"
+            className="text-gray-400 hover:text-primary-600 transition-colors p-1 hover:bg-primary-50 rounded"
             title="Ver información científica y bibliografía"
           >
             <InformationCircleIcon className="h-3 w-3" />
@@ -647,13 +647,13 @@ function ScaleCard({ scale, onToggleFavorite, onSelect }: {
 
         {/* Stats grid - más visual */}
         <div className="grid grid-cols-3 gap-1.5">
-          <div className="text-center p-1 bg-purple-50 rounded">
-            <DocumentTextIcon className="h-2.5 w-2.5 text-purple-600 mx-auto mb-0.5" />
+          <div className="text-center p-1 bg-primary-50 rounded">
+            <DocumentTextIcon className="h-2.5 w-2.5 text-primary-600 mx-auto mb-0.5" />
             <div className="text-[9px] font-semibold text-gray-900">{scale.totalItems || 'N/A'}</div>
             <div className="text-[8px] text-gray-600">ítems</div>
           </div>
-          <div className="text-center p-1 bg-blue-50 rounded">
-            <ClockIcon className="h-2.5 w-2.5 text-blue-600 mx-auto mb-0.5" />
+          <div className="text-center p-1 bg-primary-50 rounded">
+            <ClockIcon className="h-2.5 w-2.5 text-primary-600 mx-auto mb-0.5" />
             <div className="text-[9px] font-semibold text-gray-900">{scale.administrationTime || 'N/A'}</div>
             <div className="text-[8px] text-gray-600">min</div>
           </div>
@@ -718,7 +718,7 @@ function ScaleCard({ scale, onToggleFavorite, onSelect }: {
           }}
           variant="outline"
           size="sm"
-          className="w-full font-semibold shadow-sm hover:shadow-md transition-all text-[10px] py-1.5 border-purple-300 text-purple-700 hover:bg-purple-50"
+          className="w-full font-semibold shadow-sm hover:shadow-md transition-all text-[10px] py-1.5 border-primary-300 text-primary-700 hover:bg-primary-50"
         >
           <InformationCircleIcon className="h-3 w-3 mr-1" />
           Ver Documentación
@@ -730,7 +730,7 @@ function ScaleCard({ scale, onToggleFavorite, onSelect }: {
           }}
           variant="secondary"
           size="sm"
-          className="w-full font-semibold shadow-sm hover:shadow-md transition-all text-[10px] py-1.5 bg-purple-600 text-white hover:bg-purple-700"
+          className="w-full font-semibold shadow-sm hover:shadow-md transition-all text-[10px] py-1.5 bg-primary-600 text-white hover:bg-primary-700"
         >
           <BeakerIcon className="h-3 w-3 mr-1" />
           Aplicar Escala
@@ -750,7 +750,7 @@ function ScaleListItem({ scale, onToggleFavorite, onSelect }: {
   
   return (
     <div 
-      className="bg-white rounded-xl border border-gray-200 p-4 hover:shadow-lg hover:shadow-secondary transition-all hover:border-teal-400"
+      className="bg-white rounded-xl border border-gray-200 p-4 hover:shadow-lg hover:shadow-secondary transition-all hover:border-primary-400"
     >
       <div className="flex items-center justify-between">
         <div className="flex-1 min-w-0">
@@ -794,7 +794,7 @@ function ScaleListItem({ scale, onToggleFavorite, onSelect }: {
               {getApplicationTypeLabel(scale.applicationType || 'Profesional')}
             </span>
             {scale.targetPopulation && (
-              <span className="text-blue-600 font-medium">
+              <span className="text-primary-600 font-medium">
                 {(() => {
                   if (typeof scale.targetPopulation === 'string') {
                     return scale.targetPopulation;
@@ -817,7 +817,7 @@ function ScaleListItem({ scale, onToggleFavorite, onSelect }: {
               {scale.keywords.slice(0, 5).map((keyword, index) => (
                 <span 
                   key={index}
-                  className="text-[10px] bg-purple-100 text-purple-700 px-2 py-1 rounded-full font-medium"
+                  className="text-[10px] bg-primary-100 text-primary-700 px-2 py-1 rounded-full font-medium"
                 >
                   {keyword}
                 </span>
@@ -880,7 +880,7 @@ export default function ClinimetrixPage() {
   return (
     <Suspense fallback={
       <div className="flex flex-col items-center justify-center py-16 space-y-4">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-teal-500"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
         <div className="text-center">
           <p className="text-gray-900 font-medium">Cargando Clinimetrix...</p>
         </div>
@@ -894,8 +894,8 @@ export default function ClinimetrixPage() {
 function getCategoryColor(category: string) {
   const colors: { [key: string]: string } = {
     'Ansiedad': 'text-yellow-700 bg-yellow-50 border-yellow-200',
-    'Depresión': 'text-blue-700 bg-blue-50 border-blue-200',
-    'Esquizofrenia y Trastornos Psicóticos': 'text-purple-700 bg-purple-50 border-purple-200',
+    'Depresión': 'text-primary-700 bg-primary-50 border-primary-200',
+    'Esquizofrenia y Trastornos Psicóticos': 'text-primary-700 bg-primary-50 border-primary-200',
     'Trastornos del Sueño': 'text-green-700 bg-green-50 border-green-200',
     'general': 'text-gray-700 bg-gray-50 border-gray-200'
   };

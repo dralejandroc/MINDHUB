@@ -39,7 +39,7 @@ export async function GET(request: Request) {
         'X-Proxy-Auth': 'verified',
         'X-User-ID': user.id,
         'X-User-Email': user.email || '',
-        'X-MindHub-Dual-System': 'enabled',
+        'X-Glian-Dual-System': 'enabled',
       },
     });
     // console.log(response);

@@ -57,7 +57,7 @@ export async function GET(request: Request) {
           'X-User-ID': user.id,
           'X-User-Email': user.email || '',
           'X-Tenant-Context': JSON.stringify(tenantContext),
-          'X-MindHub-Context': 'expedix-patients',
+          'X-Glian-Context': 'expedix-patients',
         },
       });
       console.log('URL', djangoUrl);
@@ -70,7 +70,7 @@ export async function GET(request: Request) {
           'X-User-ID': user.id,
           'X-User-Email': user.email || '',
           'X-Tenant-Context': JSON.stringify(tenantContext),
-          'X-MindHub-Context': 'expedix-patients',
+          'X-Glian-Context': 'expedix-patients',
         });
       
       if (djangoResponse.ok) {
@@ -170,7 +170,7 @@ export async function POST(request: Request) {
         'X-User-ID': user.id,
         'X-User-Email': user.email || '',
         'X-Tenant-Context': JSON.stringify(tenantContext),
-        'X-MindHub-Context': 'expedix-patients',
+        'X-Glian-Context': 'expedix-patients',
       },
       body: JSON.stringify(safeBody),
     });
@@ -291,7 +291,7 @@ export async function PUT(request: Request) {
         'X-User-ID': user.id,
         'X-User-Email': user.email || '',
         'X-Tenant-Context': JSON.stringify(tenantContext),
-        'X-MindHub-Context': 'expedix-patients',
+        'X-Glian-Context': 'expedix-patients',
       },
       body: JSON.stringify(body),
     });

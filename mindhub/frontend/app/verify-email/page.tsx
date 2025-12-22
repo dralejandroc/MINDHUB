@@ -59,7 +59,7 @@ function VerifyEmailContent() {
           </p>
           <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-6">
             <p className="text-green-800 text-sm">
-              Tu cuenta está ahora activa. Puedes iniciar sesión para comenzar a explorar MindHub.
+              Tu cuenta está ahora activa. Puedes iniciar sesión para comenzar a explorar Glian.
             </p>
           </div>
           <Link
@@ -108,7 +108,7 @@ function VerifyEmailContent() {
       <div className="bg-white rounded-2xl shadow-xl p-8 max-w-md w-full">
         <div className="text-center mb-6">
           <h1 className="text-3xl font-bold bg-gradient-to-r from-primary-teal to-primary-blue bg-clip-text text-transparent">
-            MindHub
+            Glian
           </h1>
           <p className="text-gray-600">Verificación de email</p>
         </div>

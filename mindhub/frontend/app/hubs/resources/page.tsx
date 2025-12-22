@@ -221,7 +221,7 @@ function ResourcesContent() {
           title="Resources - Subir Archivo"
           description="Sube nuevos documentos a tu biblioteca de recursos"
           icon={CloudArrowUpIcon}
-          iconColor="text-blue-600"
+          iconColor="text-primary-600"
           actions={[
             <Button
               key="back"
@@ -256,7 +256,7 @@ function ResourcesContent() {
           title="Resources - Editor de Marcas de Agua"
           description="Configura plantillas de marca de agua para tus documentos"
           icon={AdjustmentsHorizontalIcon}
-          iconColor="text-purple-600"
+          iconColor="text-primary-600"
           actions={[
             <Button
               key="back"
@@ -288,7 +288,7 @@ function ResourcesContent() {
           title="Resources - Documentos Psicoeducativos"
           description="Biblioteca de documentos educativos basados en evidencia"
           icon={BookOpenIcon}
-          iconColor="text-blue-600"
+          iconColor="text-primary-600"
           actions={[
             <Button
               key="back"
@@ -311,7 +311,7 @@ function ResourcesContent() {
         title="Resources"
         description="Gestiona, organiza y envía tus recursos médicos y educativos"
         icon={DocumentTextIcon}
-        iconColor="text-blue-600"
+        iconColor="text-primary-600"
         actions={[
           <Button
             key="upload"
@@ -388,21 +388,21 @@ function ResourcesContent() {
 
         {/* Stats */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <div className="text-center p-3 bg-blue-50 rounded-lg">
-            <div className="text-2xl font-bold text-blue-600">{stats.totalResources}</div>
-            <div className="text-sm text-blue-800">Total Recursos</div>
+          <div className="text-center p-3 bg-primary-50 rounded-lg">
+            <div className="text-2xl font-bold text-primary-600">{stats.totalResources}</div>
+            <div className="text-sm text-primary-800">Total Recursos</div>
           </div>
           <div className="text-center p-3 bg-green-50 rounded-lg">
             <div className="text-2xl font-bold text-green-600">{stats.publicResources}</div>
             <div className="text-sm text-green-800">Biblioteca Pública</div>
           </div>
-          <div className="text-center p-3 bg-purple-50 rounded-lg">
-            <div className="text-2xl font-bold text-purple-600">{stats.privateResources}</div>
-            <div className="text-sm text-purple-800">Mi Biblioteca</div>
+          <div className="text-center p-3 bg-primary-50 rounded-lg">
+            <div className="text-2xl font-bold text-primary-600">{stats.privateResources}</div>
+            <div className="text-sm text-primary-800">Mi Biblioteca</div>
           </div>
-          <div className="text-center p-3 bg-orange-50 rounded-lg">
-            <div className="text-2xl font-bold text-orange-600">{stats.totalSize}</div>
-            <div className="text-sm text-orange-800">MB Total</div>
+          <div className="text-center p-3 bg-secondary-100 rounded-lg">
+            <div className="text-2xl font-bold text-primary-600">{stats.totalSize}</div>
+            <div className="text-sm text-primary-800">MB Total</div>
           </div>
         </div>
       </div>
@@ -468,7 +468,7 @@ export default function ResourcesPage() {
   return (
     <Suspense fallback={
       <div className="flex flex-col items-center justify-center py-16 space-y-4">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-500"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
         <div className="text-center">
           <p className="text-gray-900 font-medium">Cargando Resources...</p>
         </div>

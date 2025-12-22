@@ -10,23 +10,23 @@ interface AlertProps {
 export function Alert({ variant, className = '', children }: AlertProps) {
   const variants = {
     error: {
-      containerClass: 'bg-red-50 border border-red-200 text-red-700',
-      iconClass: 'text-red-400',
+      containerClass: 'bg-error-50 border border-error-200 text-error-700',
+      iconClass: 'text-error-400',
       Icon: ExclamationTriangleIcon
     },
     success: {
-      containerClass: 'bg-green-50 border border-green-200 text-green-700',
-      iconClass: 'text-green-400',
+      containerClass: 'bg-success-50 border border-success-200 text-success-700',
+      iconClass: 'text-success-400',
       Icon: CheckCircleIcon
     },
     info: {
-      containerClass: 'bg-blue-50 border border-blue-200 text-blue-700',
-      iconClass: 'text-blue-400',
+      containerClass: 'bg-primary-50 border border-primary-200 text-primary-700',
+      iconClass: 'text-primary-400',
       Icon: InformationCircleIcon
     },
     warning: {
-      containerClass: 'bg-yellow-50 border border-yellow-200 text-yellow-700',
-      iconClass: 'text-yellow-400',
+      containerClass: 'bg-warning-50 border border-warning-200 text-warning-700',
+      iconClass: 'text-warning-400',
       Icon: ExclamationTriangleIcon
     }
   };

@@ -536,7 +536,7 @@ function generatePrescriptionHTML(prescription: any): string {
             </div>
             
             <div class="legal-info">
-                <strong>Sistema MindHub - Receta Digital</strong><br>
+                <strong>Sistema Glian - Receta Digital</strong><br>
                 Código de verificación: ${prescription.verification_code}<br>
                 Generada: ${new Date().toLocaleDateString('es-MX')} ${new Date().toLocaleTimeString('es-MX')}<br>
                 <strong>🔒 Documento con validación digital</strong>

@@ -106,7 +106,7 @@ export default function ScaleDetailPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-teal-50 via-white to-cyan-50 p-8">
+      <div className="min-h-screen bg-gradient-to-br from-primary-50 via-white to-secondary-100 p-8">
         <div className="max-w-7xl mx-auto">
           <div className="animate-pulse">
             <div className="h-8 bg-gray-200 rounded w-1/3 mb-4"></div>
@@ -120,7 +120,7 @@ export default function ScaleDetailPage() {
 
   if (error || !scaleData) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-teal-50 via-white to-cyan-50 p-8">
+      <div className="min-h-screen bg-gradient-to-br from-primary-50 via-white to-secondary-100 p-8">
         <div className="max-w-7xl mx-auto">
           <div className="bg-red-50 border border-red-200 rounded-lg p-6">
             <p className="text-red-600">{error || 'No se encontró la escala'}</p>
@@ -142,20 +142,20 @@ export default function ScaleDetailPage() {
   const reliability = psychometric.reliability || {};
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-teal-50 via-white to-cyan-50">
+    <div className="min-h-screen bg-gradient-to-br from-primary-50 via-white to-secondary-100">
       {/* Header */}
-      <div className="bg-white shadow-lg border-b border-teal-100">
+      <div className="bg-white shadow-lg border-b border-primary-100">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
               <button
                 onClick={() => router.push('/hubs/clinimetrix')}
-                className="p-2 hover:bg-teal-50 rounded-lg transition-colors"
+                className="p-2 hover:bg-primary-50 rounded-lg transition-colors"
               >
-                <ArrowLeftIcon className="h-6 w-6 text-teal-600" />
+                <ArrowLeftIcon className="h-6 w-6 text-primary-600" />
               </button>
               <div>
-                <h1 className="text-3xl font-bold bg-gradient-to-r from-teal-600 to-cyan-600 bg-clip-text text-transparent">
+                <h1 className="text-3xl font-bold bg-gradient-to-r from-primary-600 to-primary-700 bg-clip-text text-transparent">
                   {metadata.abbreviation}
                 </h1>
                 <p className="text-gray-600 mt-1">{metadata.name}</p>
@@ -163,7 +163,7 @@ export default function ScaleDetailPage() {
             </div>
             <button
               onClick={handleApplyScale}
-              className="px-6 py-3 bg-gradient-to-r from-teal-500 to-cyan-500 text-white font-semibold rounded-lg shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-200"
+              className="px-6 py-3 bg-gradient-to-r from-primary-500 to-primary-600 text-white font-semibold rounded-lg shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-200"
             >
               Aplicar Escala
             </button>
@@ -179,9 +179,9 @@ export default function ScaleDetailPage() {
           <div className="lg:col-span-2 space-y-8">
             
             {/* Purpose & Clinical Utility */}
-            <div className="bg-white rounded-xl shadow-lg p-6 border border-teal-100">
+            <div className="bg-white rounded-xl shadow-lg p-6 border border-primary-100">
               <div className="flex items-center mb-4">
-                <DocumentTextIcon className="h-6 w-6 text-teal-600 mr-2" />
+                <DocumentTextIcon className="h-6 w-6 text-primary-600 mr-2" />
                 <h2 className="text-xl font-bold text-gray-800">Propósito y Utilidad Clínica</h2>
               </div>
               
@@ -208,9 +208,9 @@ export default function ScaleDetailPage() {
             </div>
 
             {/* Psychometric Properties */}
-            <div className="bg-white rounded-xl shadow-lg p-6 border border-cyan-100">
+            <div className="bg-white rounded-xl shadow-lg p-6 border border-primary-100">
               <div className="flex items-center mb-4">
-                <ChartBarIcon className="h-6 w-6 text-cyan-600 mr-2" />
+                <ChartBarIcon className="h-6 w-6 text-primary-600 mr-2" />
                 <h2 className="text-xl font-bold text-gray-800">Propiedades Psicométricas</h2>
               </div>
               
@@ -268,28 +268,28 @@ export default function ScaleDetailPage() {
               
               {/* Reliability */}
               {(reliability.cronbachAlpha || reliability.testRetest || reliability.interRater) && (
-                <div className="mb-6 p-4 bg-teal-50 rounded-lg">
+                <div className="mb-6 p-4 bg-primary-50 rounded-lg">
                   <h3 className="font-semibold text-gray-700 mb-3">Confiabilidad</h3>
                   
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     {reliability.cronbachAlpha && (
-                      <div className="bg-white p-3 rounded-lg border border-teal-200">
+                      <div className="bg-white p-3 rounded-lg border border-primary-200">
                         <p className="text-sm text-gray-600 mb-1">Alpha de Cronbach</p>
-                        <p className="text-lg font-bold text-teal-600">{reliability.cronbachAlpha}</p>
+                        <p className="text-lg font-bold text-primary-600">{reliability.cronbachAlpha}</p>
                       </div>
                     )}
                     
                     {reliability.testRetest && (
-                      <div className="bg-white p-3 rounded-lg border border-teal-200">
+                      <div className="bg-white p-3 rounded-lg border border-primary-200">
                         <p className="text-sm text-gray-600 mb-1">Test-Retest</p>
-                        <p className="text-lg font-bold text-teal-600">{reliability.testRetest}</p>
+                        <p className="text-lg font-bold text-primary-600">{reliability.testRetest}</p>
                       </div>
                     )}
                     
                     {reliability.interRater && (
-                      <div className="bg-white p-3 rounded-lg border border-teal-200">
+                      <div className="bg-white p-3 rounded-lg border border-primary-200">
                         <p className="text-sm text-gray-600 mb-1">Inter-evaluador</p>
-                        <p className="text-lg font-bold text-teal-600">{reliability.interRater}</p>
+                        <p className="text-lg font-bold text-primary-600">{reliability.interRater}</p>
                       </div>
                     )}
                   </div>
@@ -298,7 +298,7 @@ export default function ScaleDetailPage() {
               
               {/* Validity */}
               {psychometric.validity && (
-                <div className="mb-6 p-4 bg-cyan-50 rounded-lg">
+                <div className="mb-6 p-4 bg-primary-50 rounded-lg">
                   <h3 className="font-semibold text-gray-700 mb-3">Validez</h3>
                   <div className="text-gray-700">
                     {typeof psychometric.validity === 'object' ? (
@@ -324,25 +324,25 @@ export default function ScaleDetailPage() {
                         {psychometric.validity.sensitivity && (
                           <div className="bg-white p-3 rounded-lg">
                             <p className="font-medium text-gray-800 mb-1">Sensibilidad</p>
-                            <p className="text-lg font-bold text-cyan-600">{psychometric.validity.sensitivity}</p>
+                            <p className="text-lg font-bold text-primary-600">{psychometric.validity.sensitivity}</p>
                           </div>
                         )}
                         {psychometric.validity.specificity && (
                           <div className="bg-white p-3 rounded-lg">
                             <p className="font-medium text-gray-800 mb-1">Especificidad</p>
-                            <p className="text-lg font-bold text-cyan-600">{psychometric.validity.specificity}</p>
+                            <p className="text-lg font-bold text-primary-600">{psychometric.validity.specificity}</p>
                           </div>
                         )}
                         {psychometric.validity.positivePredicativeValue && (
                           <div className="bg-white p-3 rounded-lg">
                             <p className="font-medium text-gray-800 mb-1">Valor Predictivo Positivo</p>
-                            <p className="text-lg font-bold text-cyan-600">{psychometric.validity.positivePredicativeValue}</p>
+                            <p className="text-lg font-bold text-primary-600">{psychometric.validity.positivePredicativeValue}</p>
                           </div>
                         )}
                         {psychometric.validity.negativePredicativeValue && (
                           <div className="bg-white p-3 rounded-lg">
                             <p className="font-medium text-gray-800 mb-1">Valor Predictivo Negativo</p>
-                            <p className="text-lg font-bold text-cyan-600">{psychometric.validity.negativePredicativeValue}</p>
+                            <p className="text-lg font-bold text-primary-600">{psychometric.validity.negativePredicativeValue}</p>
                           </div>
                         )}
                       </div>
@@ -355,28 +355,28 @@ export default function ScaleDetailPage() {
               
               {/* Diagnostic Properties */}
               {(psychometric.sensitivity || psychometric.specificity || psychometric.positivePredicativeValue) && (
-                <div className="p-4 bg-purple-50 rounded-lg">
+                <div className="p-4 bg-secondary-100 rounded-lg">
                   <h3 className="font-semibold text-gray-700 mb-3">Propiedades Diagnósticas</h3>
                   
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     {psychometric.sensitivity && (
-                      <div className="bg-white p-3 rounded-lg border border-purple-200">
+                      <div className="bg-white p-3 rounded-lg border border-secondary-200">
                         <p className="text-sm text-gray-600 mb-1">Sensibilidad</p>
-                        <p className="text-lg font-bold text-purple-600">{psychometric.sensitivity}</p>
+                        <p className="text-lg font-bold text-secondary-700">{psychometric.sensitivity}</p>
                       </div>
                     )}
                     
                     {psychometric.specificity && (
-                      <div className="bg-white p-3 rounded-lg border border-purple-200">
+                      <div className="bg-white p-3 rounded-lg border border-secondary-200">
                         <p className="text-sm text-gray-600 mb-1">Especificidad</p>
-                        <p className="text-lg font-bold text-purple-600">{psychometric.specificity}</p>
+                        <p className="text-lg font-bold text-secondary-700">{psychometric.specificity}</p>
                       </div>
                     )}
                     
                     {psychometric.positivePredicativeValue && (
-                      <div className="bg-white p-3 rounded-lg border border-purple-200">
+                      <div className="bg-white p-3 rounded-lg border border-secondary-200">
                         <p className="text-sm text-gray-600 mb-1">Valor Predictivo Positivo</p>
-                        <p className="text-lg font-bold text-purple-600">{psychometric.positivePredicativeValue}</p>
+                        <p className="text-lg font-bold text-secondary-700">{psychometric.positivePredicativeValue}</p>
                       </div>
                     )}
                   </div>
@@ -427,7 +427,7 @@ export default function ScaleDetailPage() {
                 <div className="pt-4 border-t border-gray-200">
                   <button
                     onClick={handleApplyScale}
-                    className="w-full px-4 py-3 bg-gradient-to-r from-teal-500 to-cyan-500 text-white font-semibold rounded-lg shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-200 flex items-center justify-center"
+                    className="w-full px-4 py-3 bg-gradient-to-r from-primary-500 to-primary-600 text-white font-semibold rounded-lg shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-200 flex items-center justify-center"
                   >
                     <ClipboardDocumentCheckIcon className="h-5 w-5 mr-2" />
                     Aplicar Escala

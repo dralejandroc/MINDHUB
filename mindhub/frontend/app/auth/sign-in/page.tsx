@@ -4,7 +4,7 @@ import { useRouter } from 'next/navigation'
 import { useEffect } from 'react'
 import { signIn, signInWithGoogle } from '@/lib/supabase/client'
 import { toast } from 'react-hot-toast'
-import { MindHubSignInCard } from '@/components/auth/MindHubSignInCard'
+import { GlianSignInCard } from '@/components/auth/MindHubSignInCard'
 import { useState } from 'react'
 import { test } from '@playwright/test';
 import { useAuth } from '@/lib/providers/AuthProvider'
@@ -22,7 +22,7 @@ export default function SignInPage() {
 
   // Clean Architecture: Set document title (UI layer concern)
   useEffect(() => {
-    document.title = 'Iniciar Sesión - MindHub'
+    document.title = 'Iniciar Sesión - Glian'
 
     // test();
   }, [])
@@ -69,7 +69,7 @@ export default function SignInPage() {
 
       if (data.user) {
         console.log('🎉 [LOGIN] ¡Login exitoso!', data.user.id)
-        toast.success('¡Bienvenido a MindHub!')
+        toast.success('¡Bienvenido a Glian!')
         
         router.replace('/dashboard')
         // Redirect after successful login
@@ -115,8 +115,8 @@ export default function SignInPage() {
   }
 
   return (
-    <div className="min-h-screen w-full flex items-center justify-center bg-gradient-to-br from-teal-50 via-cyan-50 to-blue-50 p-4">
-      <MindHubSignInCard 
+    <div className="min-h-screen w-full flex items-center justify-center bg-gradient-to-br from-primary-50 via-secondary-50 to-primary-100 p-4">
+      <GlianSignInCard 
         onSignIn={handleSignIn}
         onGoogleSignIn={handleGoogleSignIn}
         onForgotPassword={handleForgotPassword}

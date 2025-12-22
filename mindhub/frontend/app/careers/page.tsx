@@ -11,7 +11,7 @@ export default function CareersPage() {
           
           <div className="mb-8">
             <p className="text-lg text-gray-600">
-              En MindHub estamos buscando profesionales apasionados por revolucionar 
+              En Glian estamos buscando profesionales apasionados por revolucionar 
               la atención sanitaria a través de la tecnología.
             </p>
           </div>

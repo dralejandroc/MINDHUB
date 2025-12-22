@@ -66,7 +66,7 @@ function ExpedixContent() {
 
   // Clean Architecture: Set document title (UI layer concern)
   useEffect(() => {
-    document.title = 'Gestión de Pacientes - Expedix - MindHub';
+    document.title = 'Gestión de Pacientes - Expedix - Glian';
   }, []);
 
   // Load patient from URL parameters
@@ -323,7 +323,7 @@ function ExpedixContent() {
           <div className="text-center">
             <button
               onClick={() => setState(prev => ({ ...prev, viewMode: 'list' }))}
-              className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors"
+              className="bg-primary-600 hover:bg-primary-700 text-white px-4 py-2 rounded-lg transition-colors"
             >
               Ver Lista de Pacientes
             </button>

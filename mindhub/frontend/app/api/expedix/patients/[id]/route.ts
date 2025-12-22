@@ -40,7 +40,7 @@ export async function GET(request: Request, { params }: { params: { id: string }
           'X-User-ID': user.id,
           'X-User-Email': user.email || '',
           'X-Proxy-Auth': 'verified',
-          'X-MindHub-Dual-System': 'enabled',
+          'X-Glian-Dual-System': 'enabled',
         },
         signal: controller.signal
       });

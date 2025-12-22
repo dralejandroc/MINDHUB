@@ -6,7 +6,7 @@ test.describe('Landing Page UX Tests', () => {
   });
 
   test('should load landing page without errors', async ({ page }) => {
-    await expect(page).toHaveTitle(/MindHub/);
+    await expect(page).toHaveTitle(/Glian/);
     
     // Check for console errors
     const logs: string[] = [];

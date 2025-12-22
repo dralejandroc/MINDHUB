@@ -290,7 +290,7 @@ export default function GeneralSettingsPage() {
           </div>
           <div className="space-y-4">
             <p className="text-sm sm:text-base text-gray-600">
-              Gestión de recursos, documentos y archivos del sistema MindHub.
+              Gestión de recursos, documentos y archivos del sistema Glian.
             </p>
             <div className="space-y-3">
               <div className="bg-green-50 p-3 sm:p-4 rounded-lg">

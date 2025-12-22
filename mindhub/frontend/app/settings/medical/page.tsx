@@ -9,7 +9,7 @@ import { Metadata } from 'next';
 import { MedicalCredentialsForm } from '@/components/medical/MedicalCredentialsForm';
 
 export const metadata: Metadata = {
-  title: 'Configuración Médica | MindHub',
+  title: 'Configuración Médica | Glian',
   description: 'Configure sus credenciales médicas y datos profesionales'
 };
 

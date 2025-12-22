@@ -201,7 +201,7 @@ function FinanceContent() {
           <p className="text-gray-600 text-xs mb-3">
             Realiza cortes diarios y arqueos de caja para control financiero
           </p>
-          <Button variant="outline" size="sm" className="w-full border-orange-200 text-orange-600 hover:bg-orange-50">
+          <Button variant="outline" size="sm" className="w-full">
             Gestionar Cortes
           </Button>
         </div>

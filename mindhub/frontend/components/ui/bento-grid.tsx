@@ -54,7 +54,7 @@ const BentoCard = ({
     key={name}
     className={cn(
       "group relative flex flex-col justify-between overflow-hidden rounded-2xl",
-      // Light styles with MindHub colors
+      // Light styles with Glian colors
       "bg-white [box-shadow:0_0_0_1px_rgba(8,145,178,0.1),0_2px_4px_rgba(8,145,178,0.05),0_12px_24px_rgba(8,145,178,0.05)]",
       // Hover effects
       "hover:[box-shadow:0_0_0_2px_rgba(8,145,178,0.2),0_8px_16px_rgba(8,145,178,0.1),0_20px_32px_rgba(8,145,178,0.1)]",
@@ -195,7 +195,7 @@ export const PulseCircle = ({ className }: { className?: string }) => (
       }}
     />
     <motion.div
-      className="absolute h-24 w-24 rounded-full bg-gradient-to-r from-purple-400 to-pink-400"
+      className="absolute h-24 w-24 rounded-full bg-gradient-to-r from-primary-400 to-secondary-400"
       animate={{
         scale: [1, 1.3, 1],
         opacity: [0.2, 0.05, 0.2],

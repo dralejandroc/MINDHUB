@@ -139,7 +139,7 @@ export default function InvitationPage() {
             Únete a la Organización
           </h2>
           <p className="text-gray-600 mt-2">
-            Has sido invitado a formar parte de una organización en MindHub.
+            Has sido invitado a formar parte de una organización en Glian.
             Completa tu registro para comenzar.
           </p>
         </div>

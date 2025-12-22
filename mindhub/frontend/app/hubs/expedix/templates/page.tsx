@@ -77,7 +77,7 @@ export default function ConsultationTemplatesPage() {
                       <label className="block text-sm font-medium mb-2">
                         Primera Consulta
                       </label>
-                      <select className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500">
+                      <select className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-primary-500">
                         <option value="">Seleccionar plantilla...</option>
                         {/* Templates will be populated dynamically */}
                       </select>
@@ -87,7 +87,7 @@ export default function ConsultationTemplatesPage() {
                       <label className="block text-sm font-medium mb-2">
                         Consulta de Seguimiento
                       </label>
-                      <select className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500">
+                      <select className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-primary-500">
                         <option value="">Seleccionar plantilla...</option>
                         {/* Templates will be populated dynamically */}
                       </select>

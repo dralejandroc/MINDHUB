@@ -441,21 +441,30 @@ export default function AgendaCalendar({ selectedDate, onDateSelect, onNewAppoin
         ) : (
           <>
             {/* Vista semanal con horarios */}
-            <div className="grid grid-cols-7 gap-0.5 text-xs">
-              {/* Header con horas */}
-              <div className="p-1"></div>
+            <div className="grid gap-0.5 text-xs" style={{ gridTemplateColumns: `80px repeat(${(days || []).length}, 1fr)` }}>
+              {/* Header: Columna de horas + Días de la semana */}
+              <div className="p-2 text-center font-bold border-b sticky top-0 z-10" style={{
+                borderColor: 'var(--neutral-300)',
+                color: 'var(--neutral-700)',
+                backgroundColor: 'var(--primary-50)'
+              }}>
+                Hora
+              </div>
               {(days || []).map((day, index) => (
-                <div 
+                <div
                   key={index}
-                  className="p-1 text-center border-b"
-                  style={{ borderColor: 'var(--neutral-200)' }}
+                  className="p-2 text-center border-b sticky top-0 z-10"
+                  style={{
+                    borderColor: 'var(--neutral-300)',
+                    backgroundColor: 'var(--primary-50)'
+                  }}
                 >
-                  <div className="text-xs font-medium" style={{ color: 'var(--neutral-600)' }}>
+                  <div className="text-xs font-semibold mb-1" style={{ color: 'var(--neutral-700)' }}>
                     {day.toLocaleDateString('es-ES', { weekday: 'short' })}
                   </div>
-                  <div 
+                  <div
                     className={`text-lg font-bold ${isToday(day) ? 'text-white' : ''}`}
-                    style={{ 
+                    style={{
                       color: isToday(day) ? 'white' : 'var(--dark-green)',
                       backgroundColor: isToday(day) ? 'var(--secondary-500)' : 'transparent',
                       borderRadius: isToday(day) ? '50%' : '0',

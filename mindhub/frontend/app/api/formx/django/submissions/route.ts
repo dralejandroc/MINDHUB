@@ -36,7 +36,7 @@ export async function GET(request: Request) {
         'X-Proxy-Auth': 'verified',
         'X-User-ID': user.id,
         'X-User-Email': user.email || '',
-        'X-MindHub-FormX': 'enabled',
+        'X-Glian-FormX': 'enabled',
       },
     });
     
@@ -96,7 +96,7 @@ export async function POST(request: Request) {
         'X-Proxy-Auth': 'verified',
         'X-User-ID': user.id,
         'X-User-Email': user.email || '',
-        'X-MindHub-FormX': 'enabled',
+        'X-Glian-FormX': 'enabled',
       },
       body: JSON.stringify(body),
     });

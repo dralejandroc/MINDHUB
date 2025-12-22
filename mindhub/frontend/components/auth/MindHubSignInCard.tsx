@@ -1,9 +1,9 @@
 'use client';
 
 import React, { useState } from "react";
-import { Eye, EyeOff, Heart, Brain } from "lucide-react";
-import { motion, AnimatePresence } from "framer-motion";
-import { HealthcareNetworkMap } from "@/components/ui/healthcare-network-map";
+import { Eye, EyeOff } from "lucide-react";
+import { motion } from "framer-motion";
+import Image from "next/image";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 
@@ -12,19 +12,19 @@ const cn = (...classes: string[]) => {
   return classes.filter(Boolean).join(" ");
 };
 
-interface MindHubSignInCardProps {
+interface GlianSignInCardProps {
   onSignIn?: (email: string, password: string) => void;
   onGoogleSignIn?: () => void;
   onForgotPassword?: () => void;
   loading?: boolean;
 }
 
-export const MindHubSignInCard = ({ 
-  onSignIn, 
-  onGoogleSignIn, 
+export const GlianSignInCard = ({
+  onSignIn,
+  onGoogleSignIn,
   onForgotPassword,
   loading = false
-}: MindHubSignInCardProps) => {
+}: GlianSignInCardProps) => {
   const [isPasswordVisible, setIsPasswordVisible] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -45,68 +45,54 @@ export const MindHubSignInCard = ({
         transition={{ duration: 0.5 }}
         className="w-full max-w-5xl overflow-hidden rounded-2xl flex bg-white shadow-2xl border border-gray-100"
       >
-        {/* Left side - Healthcare Network Visualization */}
+        {/* Left side - Glian Branding */}
         <div className="hidden md:block w-1/2 h-[650px] relative overflow-hidden border-r border-gray-100">
-          <div className="absolute inset-0 bg-gradient-to-br from-teal-50 via-cyan-50 to-blue-50">
-            <HealthcareNetworkMap />
-            
-            {/* MindHub branding overlay */}
-            <div className="absolute inset-0 flex flex-col items-center justify-center p-8 z-10">
-              <motion.div 
-                initial={{ opacity: 0, y: -20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.6, duration: 0.5 }}
-                className="mb-8"
+          <div className="absolute inset-0 bg-gradient-to-br from-[#e0f5f8] via-[#b8e6dd] to-[#0991b2]">
+            {/* Glian branding centered */}
+            <div className="absolute inset-0 flex flex-col items-center justify-center p-8">
+              <motion.div
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ delay: 0.3, duration: 0.6 }}
+                className="mb-6"
               >
-                <div className="h-16 w-16 rounded-full bg-gradient-to-br from-teal-500 via-cyan-600 to-blue-600 flex items-center justify-center shadow-lg shadow-teal-200 relative">
-                  <div className="absolute inset-0 rounded-full bg-gradient-to-br from-teal-400 to-blue-500 opacity-20 animate-pulse"></div>
-                  <Heart className="text-white h-8 w-8 z-10" />
-                  <Brain className="text-white h-6 w-6 absolute top-2 right-2 z-10" />
-                </div>
+                <Image
+                  src="/logos/glian-logo-white.png"
+                  alt="Glian"
+                  width={280}
+                  height={100}
+                  className="w-auto h-24"
+                  priority
+                />
               </motion.div>
-              
-              <motion.h2 
-                initial={{ opacity: 0, y: -20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.7, duration: 0.5 }}
-                className="text-4xl font-bold mb-4 text-center"
-              >
-                <span className="text-transparent bg-clip-text bg-gradient-to-r from-teal-600 via-cyan-600 to-blue-600">
-                  MindHub
-                </span>
-              </motion.h2>
-              
-              <motion.p 
-                initial={{ opacity: 0, y: -20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.8, duration: 0.5 }}
-                className="text-sm text-center text-gray-600 max-w-xs leading-relaxed"
-              >
-                Plataforma integral de gestión sanitaria que conecta profesionales, 
-                pacientes y datos clínicos en un ecosistema healthcare innovador
-              </motion.p>
-              
-              <motion.div 
+
+              <motion.p
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 1, duration: 0.5 }}
-                className="mt-8 flex items-center space-x-4 text-xs text-gray-500"
+                transition={{ delay: 0.6, duration: 0.5 }}
+                className="text-center text-white max-w-sm leading-relaxed px-4"
               >
-                <div className="flex items-center space-x-1">
-                  <div className="w-2 h-2 rounded-full bg-teal-500"></div>
-                  <span>Expedix</span>
+                Plataforma integral de gestión sanitaria que conecta profesionales,
+                pacientes y datos clínicos en un ecosistema healthcare innovador.
+              </motion.p>
+
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.9, duration: 0.5 }}
+                className="mt-12 grid grid-cols-2 gap-4 text-white/90 text-sm"
+              >
+                <div className="bg-white/10 backdrop-blur-sm px-4 py-3 rounded-xl border border-white/20">
+                  <span className="font-semibold">Clinimetrix</span>
                 </div>
-                <div className="flex items-center space-x-1">
-                  <div className="w-2 h-2 rounded-full bg-purple-500"></div>
-                  <span>Clinimetrix</span>
+                <div className="bg-white/10 backdrop-blur-sm px-4 py-3 rounded-xl border border-white/20">
+                  <span className="font-semibold">Expedix</span>
                 </div>
-                <div className="flex items-center space-x-1">
-                  <div className="w-2 h-2 rounded-full bg-orange-500"></div>
-                  <span>Agenda</span>
+                <div className="bg-white/10 backdrop-blur-sm px-4 py-3 rounded-xl border border-white/20">
+                  <span className="font-semibold">Resources</span>
                 </div>
-                <div className="flex items-center space-x-1">
-                  <div className="w-2 h-2 rounded-full bg-emerald-500"></div>
-                  <span>Resources</span>
+                <div className="bg-white/10 backdrop-blur-sm px-4 py-3 rounded-xl border border-white/20">
+                  <span className="font-semibold">Agenda</span>
                 </div>
               </motion.div>
             </div>
@@ -125,7 +111,7 @@ export const MindHubSignInCard = ({
               Bienvenido de vuelta
             </h1>
             <p className="text-gray-500 mb-8">
-              Inicia sesión en tu cuenta MindHub
+              Inicia sesión en tu cuenta Glian
             </p>
             
             {/* Google Sign In Button */}
@@ -268,3 +254,6 @@ export const MindHubSignInCard = ({
     </div>
   );
 };
+
+// Export compatibility alias
+export { GlianSignInCard as MindHubSignInCard };
