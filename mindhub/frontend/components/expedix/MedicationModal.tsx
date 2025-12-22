@@ -466,14 +466,14 @@ export function MedicationModal({
                 onMedicationSelect={(selectedMedication) => {
                   const newMedication: Medication = {
                     id: Date.now().toString(),
-                    molecula_sustancia_activa: selectedMedication.active_principle || '',
-                    nombres_comerciales: [selectedMedication.name],
-                    presentacion: selectedMedication.dosage_forms || '',
-                    dosificacion: selectedMedication.concentration || '',
+                    molecula_sustancia_activa: selectedMedication.molecula_sustancia_activa || '',
+                    nombres_comerciales: selectedMedication.nombres_comerciales,
+                    presentacion: selectedMedication.presentacion || '',
+                    dosificacion: selectedMedication.dosificacion || '',
                     grupo_control: 'GIV', // Default
                     empaque: '',
-                    laboratorio: selectedMedication.laboratory || '',
-                    categoria: selectedMedication.category || ''
+                    laboratorio: selectedMedication.laboratorio || '',
+                    categoria: selectedMedication.categoria || ''
                   };
                   
                   setMedications(prev => [...prev, newMedication]);
