@@ -795,7 +795,7 @@ export default function AgendaSettingsPage() {
         </Button>
         <Button
           onClick={handleSaveSettings}
-          variant="orange"
+          variant="primary"
           disabled={isSaving}
         >
           {isSaving ? (
