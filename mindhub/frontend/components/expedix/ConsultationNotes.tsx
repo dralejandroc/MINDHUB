@@ -2673,7 +2673,7 @@ export default function ConsultationNotes({ patient, onSaveConsultation, onCance
               type="button"
               onClick={() => setShowQuickAssessment(true)}
               className="bg-purple-600 hover:bg-purple-700 text-white"
-              variant="purple"
+              variant="primary"
             >
               🧪 Evaluación Rápida
             </Button>
