@@ -427,14 +427,14 @@ export default function DiagnosesSelector({
       )}
 
       {/* Lista de diagnósticos seleccionados */}
-      {selectedDiagnoses.length > 0 && (
+      {selectedDiagnoses?.length > 0 && (
         <div className="space-y-3">
           <h4 className="font-medium text-gray-900">
             Diagnósticos Seleccionados ({selectedDiagnoses.length})
           </h4>
           
           <div className="space-y-3">
-            {selectedDiagnoses.map((diagnosis, index) => (
+            {selectedDiagnoses?.map((diagnosis, index) => (
               <div
                 key={diagnosis.id}
                 className={`p-4 border rounded-lg ${

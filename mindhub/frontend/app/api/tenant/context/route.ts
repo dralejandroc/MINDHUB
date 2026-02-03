@@ -34,7 +34,7 @@ export async function GET(request: Request) {
           clinics (
             id,
             name,
-            business_name,
+            legal_name,
             is_active
           )
         `)
@@ -84,7 +84,7 @@ export async function GET(request: Request) {
           clinics: (memberships || []).map((m: any) => ({
             id: m.clinics.id,
             name: m.clinics.name,
-            business_name: m.clinics.business_name,
+            legal_name: m.clinics.legal_name,
             logo_url: m.clinics.logo_url,
             type: 'clinic',
             membership: {

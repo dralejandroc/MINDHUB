@@ -12,6 +12,7 @@ from .simple_views import SimplePatientViewSet, SimpleConsultationViewSet, Simpl
 from .views import ScheduleConfigView
 from .views_documents import UserDocumentViewSet 
 from .views_patient_documents import PatientDocumentViewSet
+from .views_appointments import AppointmentViewSet
 
 
 # Create DRF router
@@ -36,6 +37,8 @@ router.register(r'consultation-central', views.ConsultationCentralViewSet, basen
 
 router.register(r'documents', UserDocumentViewSet, basename='documents')
 router.register(r'patient-documents', PatientDocumentViewSet, basename='patient-documents')
+router.register(r'appointments', AppointmentViewSet, basename='appointments')
+
 
 # URL patterns that match Node.js API routes
 urlpatterns = [
@@ -49,6 +52,7 @@ urlpatterns = [
     path('consultations/upcoming/', views.ConsultationViewSet.as_view({'get': 'upcoming'}), name='consultations-upcoming'),
     path('consultations/by-patient/', views.ConsultationViewSet.as_view({'get': 'by_patient'}), name='consultations-by-patient'),
     path('medical-history/by-patient/', views.MedicalHistoryViewSet.as_view({'get': 'by_patient'}), name='medical-history-by-patient'),
+    # path('prescriptions/<uuid:pk>', views.PrescriptionViewSet.as_view({'get': 'by_patient'}), name='prescriptions-by-patient'),
     path('prescriptions/by-patient/', views.PrescriptionViewSet.as_view({'get': 'by_patient'}), name='prescriptions-by-patient'),
     path('prescriptions/by-professional/', views.PrescriptionViewSet.as_view({'get': 'by_professional'}), name='prescriptions-by-professional'),
     path('users/me/', views.UserViewSet.as_view({'get': 'me'}), name='user-profile'),

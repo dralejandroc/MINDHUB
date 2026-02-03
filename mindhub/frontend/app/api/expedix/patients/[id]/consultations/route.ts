@@ -34,8 +34,9 @@ export async function GET(request: Request, { params }: RouteParams) {
     const limit = searchParams.get('limit') || '10';
     const offset = searchParams.get('offset') || '0';
     const status = searchParams.get('status') || 'active';
+    const consultationId = searchParams.get('consultation_id');
 
-    console.log('[PATIENT CONSULTATIONS API] Query params:', { search, limit, offset, status });
+    console.log('[PATIENT CONSULTATIONS API] Query params:', { search, limit, offset, status, consultationId });
 
     try {
       // TRY Django backend first
@@ -44,15 +45,16 @@ export async function GET(request: Request, { params }: RouteParams) {
       if (limit) queryParams.append('limit', limit);
       if (offset) queryParams.append('offset', offset);
       if (status) queryParams.append('status', status);
+      if (consultationId) queryParams.append('consultation_id', consultationId);
       queryParams.append('patient_id', params.id);
 
-      const backendUrl = `${API_CONFIG.BACKEND_URL}/api/expedix/consultations/?${queryParams.toString()}`;
+      const backendUrl = `${API_CONFIG.BACKEND_URL}/api/expedix/consultations?${queryParams.toString()}`;
       console.log('[PATIENT CONSULTATIONS API] Trying Django backend:', backendUrl);
 
       const backendResponse = await fetch(backendUrl, {
         method: 'GET',
         headers: {
-          'Authorization': `Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY}`,
+          'Authorization': `Bearer ${process.env.NEXT_PUBLIC_SUPABASE_SERVICE_ROLE_KEY}`,
           'X-Proxy-Auth': 'verified',
           'X-User-ID': user.id,
           'X-User-Email': user.email || '',

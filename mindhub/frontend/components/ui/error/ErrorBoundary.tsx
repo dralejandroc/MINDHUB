@@ -37,6 +37,9 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
 
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
     console.error('ErrorBoundary caught an error:', error, errorInfo);
+    console.error(error);
+    console.log('componentStack:', errorInfo.componentStack);
+    console.log('error.stack:', (error as any).stack); // <-- esto suele traer el archivo/linea real
     
     this.setState({
       error,

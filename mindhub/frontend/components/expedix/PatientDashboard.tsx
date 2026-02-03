@@ -118,9 +118,11 @@ export default function PatientDashboard({
 
   const fetchAdministrativeData = async () => {
     try {
-      const response = await fetch(`/api/expedix/patients/${patient.id}/administrative`);
-      if (response.ok) {
-        const data = await response.json();
+      const response = await axiosClient.get(`/api/expedix/patients/${patient.id}/administrative`);
+      // const response = await fetch(`/api/expedix/patients/${patient.id}/administrative`);
+      // if (response.ok) {
+      if (response.status === 200) {
+        const data = response.data;
         if (data.success && data.data) {
           setAdministrativeData(data.data);
         }
@@ -142,15 +144,13 @@ export default function PatientDashboard({
     if (tabId === 'consultations') {
       const result = await axiosClient.get(`/api/expedix/consultations/?patient_id=${patient.id}`);
       const { data } = result;
-      console.log('consultations', data);
-      console.log(data && data.results.length > 0);
       
       if (data && data.results.length > 0) {
         setDashboardData(prev => ({
           ...prev,
           consultations: data.results
         }));
-        console.log('Loaded consultations:', dashboardData);
+        // console.log('Loaded consultations:', dashboardData);
         
       }
       
@@ -201,7 +201,7 @@ export default function PatientDashboard({
       
       // Only fetch basic patient data initially (performance optimization)
       const patientResponse = await expedixApi.getPatient(patient.id);
-      console.log('RESPONSE PATIENT', patientResponse);
+      // console.log('RESPONSE PATIENT', patientResponse);
       if (patientResponse?.data) {
         const patientData = patientResponse.data;
         // console.log('[PatientDashboard] Fetched patient data:', patientData);

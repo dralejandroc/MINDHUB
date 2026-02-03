@@ -47,7 +47,7 @@ export async function GET(request: Request) {
       const backendResponse = await fetch(backendUrl, {
         method: 'GET',
         headers: {
-          'Authorization': `Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY}`,
+          'Authorization': `Bearer ${process.env.NEXT_PUBLIC_SUPABASE_SERVICE_ROLE_KEY}`,
           'X-Proxy-Auth': 'verified',
           'X-User-ID': user.id,
           'X-User-Email': user.email || '',
@@ -57,9 +57,10 @@ export async function GET(request: Request) {
         },
         cache: 'no-store'
       });
-
+      
       if (backendResponse.ok) {
         const backendData = await backendResponse.json();
+        console.log('RESPONSE', backendData);
         console.log('[CONSULTATIONS API] Successfully fetched from Django backend:', backendData.count || backendData.length, 'consultations');
 
         return createResponse({
@@ -188,7 +189,7 @@ export async function POST(request: Request) {
       const backendResponse = await fetch(`${API_CONFIG.BACKEND_URL}/api/expedix/consultations/`, {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY}`,
+          'Authorization': `Bearer ${process.env.NEXT_PUBLIC_SUPABASE_SERVICE_ROLE_KEY}`,
           'X-Proxy-Auth': 'verified',
           'X-User-ID': user.id,
           'X-User-Email': user.email || '',
@@ -315,7 +316,7 @@ export async function PUT(request: Request) {
     const tenantType = request.headers.get('X-Tenant-Type');
 
     const url = new URL(request.url);
-    const consultationId = url.searchParams.get('id');
+    const consultationId = url.searchParams.get('consultation_id');
     
     if (!consultationId) {
       return createErrorResponse('Validation error', 'Consultation ID is required', 400);
@@ -329,7 +330,7 @@ export async function PUT(request: Request) {
       const backendResponse = await fetch(`${API_CONFIG.BACKEND_URL}/api/expedix/consultations/${consultationId}/`, {
         method: 'PUT',
         headers: {
-          'Authorization': `Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY}`,
+          'Authorization': `Bearer ${process.env.NEXT_PUBLIC_SUPABASE_SERVICE_ROLE_KEY}`,
           'X-Proxy-Auth': 'verified',
           'X-User-ID': user.id,
           'X-User-Email': user.email || '',
@@ -406,6 +407,96 @@ export async function PUT(request: Request) {
     console.error('[CONSULTATIONS API] Error updating consultation:', error);
     return createErrorResponse(
       'Failed to update consultation',
+      error instanceof Error ? error.message : 'Unknown error',
+      500
+    );
+  }
+}
+
+export async function DELETE(request: Request) {
+  try {
+    console.log('[CONSULTATIONS API] Processing DELETE request - Django Backend with Supabase Fallback');
+    
+    // Verify authentication
+    const { user, error: authError } = await getAuthenticatedUser(request);
+    if (authError || !user) {
+      return createErrorResponse('Unauthorized', 'Valid authentication required', 401);
+    }
+
+    // Get tenant context from headers
+    const tenantId = request.headers.get('X-Tenant-ID');
+    const tenantType = request.headers.get('X-Tenant-Type');
+
+    const url = new URL(request.url);
+    const consultationId = url.searchParams.get('consultation_id');
+    
+    if (!consultationId) {
+      return createErrorResponse('Validation error', 'Consultation ID is required', 400);
+    }
+
+    console.log('[CONSULTATIONS API] Deleting consultation:', consultationId, 'with tenant context:', { tenantId, tenantType });
+
+    try {
+      // TRY Django backend first
+      const backendResponse = await fetch(`${API_CONFIG.BACKEND_URL}/api/expedix/consultations/${consultationId}/`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${process.env.NEXT_PUBLIC_SUPABASE_SERVICE_ROLE_KEY}`,
+          'X-Proxy-Auth': 'verified',
+          'X-User-ID': user.id,
+          'X-User-Email': user.email || '',
+          'X-Tenant-ID': tenantId || '',
+          'X-Tenant-Type': tenantType || '',
+          'Content-Type': 'application/json'
+        },
+        cache: 'no-store'
+      });
+
+      if (backendResponse.ok) {
+        console.log('[CONSULTATIONS API] Successfully deleted consultation in Django backend:', consultationId);
+
+        return createResponse({
+          success: true,
+          message: 'Consultation deleted successfully',
+          source: 'django_backend'
+        });
+      } else {
+        console.warn('[CONSULTATIONS API] Django backend unavailable for DELETE, falling back to Supabase');
+        throw new Error(`Django backend error: ${backendResponse.status}`);
+      }
+    } catch (djangoError) {
+      console.error('[CONSULTATIONS API] Django backend failed for DELETE, using Supabase fallback:', djangoError);
+
+      // FALLBACK: Direct Supabase deletion
+      console.log('[CONSULTATIONS API] Using Supabase direct deletion as fallback');
+
+      const { error } = await supabaseAdmin
+        .from('consultations')
+        .delete()
+        .eq('id', consultationId);
+
+      if (error) {
+        console.error('[CONSULTATIONS API] Supabase fallback delete error:', error);
+        return createErrorResponse(
+          'Database connection failed',
+          `Supabase error: ${error.message}`,
+          500
+        );
+      }
+
+      console.log('[CONSULTATIONS API] Successfully deleted consultation via Supabase fallback:', consultationId);
+
+      return createResponse({
+        success: true,
+        message: 'Consultation deleted successfully (fallback)',
+        source: 'supabase_fallback'
+      });
+    }
+
+  } catch (error) {
+    console.error('[CONSULTATIONS API] Error deleting consultation:', error);
+    return createErrorResponse(
+      'Failed to delete consultation',
       error instanceof Error ? error.message : 'Unknown error',
       500
     );

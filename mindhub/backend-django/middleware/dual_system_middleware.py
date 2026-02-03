@@ -16,83 +16,39 @@ class DualSystemFilterMixin:
     Mixin for ViewSets to automatically filter by simplified architecture
     Usage: class MyViewSet(DualSystemFilterMixin, viewsets.ModelViewSet)
     """
-    
+    # defaults (para los modelos “nuevos” que sí tienen UUIDs)
+    dual_clinic_field = "clinic_id"
+    dual_workspace_field = "workspace_id"
+    dual_owner_field = "created_by"   # o user_id según tu DB
     def get_queryset(self):
-        """
-        Universal simplified system filtering pattern
-        """
         queryset = super().get_queryset()
-        
-        # 🧪 TEMPORARY: Inject test user context for simplified system testing
-        if not hasattr(self.request, 'user_context'):
-            # Simulate user context based on test_mode param
-            test_mode = self.request.query_params.get('test_mode', 'individual')
-            print('TEST MODE:', test_mode)
-            user_id = getattr(self.request, 'supabase_user_id', None)
-            
-            if test_mode == 'clinic':
-                # Simulate clinic shared access
-                self.request.user_context = {
-                    'license_type': 'clinic',
-                    'clinic_shared': True,
-                    'user_id': user_id
-                }
-                logger.info('🧪 TESTING: Injected CLINIC shared context')
-            else:
-                # Simulate individual user access
-                self.request.user_context = {
-                    'license_type': 'individual',
-                    'clinic_shared': False,
-                    'user_id': user_id or 'test-user-id'
-                }
-                logger.info('🧪 TESTING: Injected INDIVIDUAL user context')
-        
-        # Check if user context is available
+
         if not hasattr(self.request, 'user_context'):
             logger.warning('No user_context found in request - using unfiltered queryset')
             return queryset
-        
-        user_context = self.request.user_context
-        license_type = user_context.get('license_type')
-        print('USER CONTEXT EN GET QUERYSET', user_context)
-        if license_type == 'clinic':
-            clinic_id = user_context.get('clinic_id')
-            if clinic_id:
-                return queryset.filter(clinic_id=clinic_id)
-            else:
-                logger.error(f'Clinic license but no clinic_id found for user')
+
+        ctx = self.request.user_context or {}
+        license_type = ctx.get("license_type")
+
+        if license_type == "clinic":
+            clinic_id = ctx.get("clinic_id")
+            if not clinic_id:
                 return queryset.none()
-                
-        elif license_type == 'individual':
-            # For individual licenses, filter by workspace_id OR created_by if no workspace_id
-            workspace_id = user_context.get('workspace_id')
-            user_id = getattr(self.request, 'supabase_user_id', None)
-            
+            # 🔥 aquí usamos el campo configurable
+            return queryset.filter(**{self.dual_clinic_field: clinic_id})
+
+        if license_type == "individual":
+            workspace_id = ctx.get("workspace_id")
+            user_id = getattr(self.request, "supabase_user_id", None)
+
             if workspace_id:
-                # Proper workspace filtering
-                return queryset.filter(workspace_id=workspace_id)
-            elif user_id:
-                # Fallback: filter by created_by for individual users without workspace_id
-                logger.info(f'Individual license: Filtering by created_by={user_id} (no workspace_id)')
-                return queryset.filter(created_by=user_id)
-            else:
-                logger.error(f'Individual license but no workspace_id or user_id found for filtering')
-                return queryset.none()
-        user_id = getattr(self.request, 'supabase_user_id', None)
-        
-        # Apply simplified architecture filtering: clinic_id=true OR user_id=auth.uid()
-        from django.db.models import Q
-        
-        if user_id:
-            # Filter records that are either clinic-shared OR owned by the user
-            return queryset.filter(
-                Q(clinic_id=True) | Q(user_id=user_id)
-            )
-        else:
-            logger.error('No user_id found for filtering - returning empty queryset')
+                return queryset.filter(**{self.dual_workspace_field: workspace_id})
+
+            if user_id:
+                return queryset.filter(**{self.dual_owner_field: user_id})
+
             return queryset.none()
-        
-        logger.warning('No user context found - returning empty queryset')
+
         return queryset.none()
     
     def perform_create(self, serializer):

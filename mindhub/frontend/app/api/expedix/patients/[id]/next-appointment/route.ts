@@ -32,7 +32,7 @@ export async function GET(request: Request, { params }: Context) {
       const backendResponse = await fetch(backendUrl, {
         method: 'GET',
         headers: {
-          'Authorization': `Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY}`,
+          'Authorization': `Bearer ${process.env.NEXT_PUBLIC_SUPABASE_SERVICE_ROLE_KEY}`,
           'X-Proxy-Auth': 'verified',
           'X-User-ID': user.id,
           'X-User-Email': user.email || '',

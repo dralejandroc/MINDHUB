@@ -21,7 +21,7 @@ interface MedicationSearchResult {
   therapeutic_group?: string;
   is_controlled: boolean;
   controlled_substance_category?: string;
-  average_price?: number;
+  unit_price?: number;
   availability_status: string;
   plm_id?: string;
   registry_number?: string;
@@ -66,9 +66,8 @@ export async function GET(request: Request) {
         id, commercial_name, generic_name, active_ingredients,
         concentration, pharmaceutical_form, presentation,
         laboratory, therapeutic_group, is_controlled,
-        controlled_substance_category, average_price,
-        availability_status, plm_id, registry_number,
-        indications, contraindications, side_effects
+        controlled_substance_category, unit_price,
+        availability_status
       `)
       .or(`commercial_name.ilike.%${query}%,generic_name.ilike.%${query}%,active_ingredients.cs.{${query}}`)
       .order('commercial_name')
@@ -228,9 +227,8 @@ export async function POST(request: Request) {
         id, commercial_name, generic_name, active_ingredients,
         concentration, pharmaceutical_form, presentation,
         laboratory, therapeutic_group, is_controlled,
-        controlled_substance_category, average_price,
-        availability_status, plm_id, registry_number,
-        indications, contraindications, side_effects
+        controlled_substance_category, unit_price,
+        availability_status
       `)
       .in('availability_status', ['available', 'limited'])
       .limit(limit);
@@ -254,7 +252,7 @@ export async function POST(request: Request) {
     }
 
     if (max_price) {
-      searchQuery = searchQuery.lte('average_price', max_price);
+      searchQuery = searchQuery.lte('unit_price', max_price);
     }
 
     if (laboratory) {

@@ -23,7 +23,7 @@ export async function GET(request: Request) {
     const response = await fetch(djangoUrl, {
       method: 'GET',
       headers: {
-        'Authorization': `Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY}`,
+        'Authorization': `Bearer ${process.env.NEXT_PUBLIC_SUPABASE_SERVICE_ROLE_KEY}`,
         'Content-Type': 'application/json',
         'X-Proxy-Auth': 'verified',
         'X-User-Id': user.id,
@@ -71,7 +71,7 @@ export async function POST(request: Request) {
     const response = await fetch(djangoUrl, {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY}`,
+        'Authorization': `Bearer ${process.env.NEXT_PUBLIC_SUPABASE_SERVICE_ROLE_KEY}`,
         'Content-Type': 'application/json',
         'X-Proxy-Auth': 'verified',
         'X-User-Id': user.id,
@@ -103,23 +103,33 @@ export async function POST(request: Request) {
 export async function PUT(request: Request) {
   try {
     console.log('[EXPEDIX CONFIG PROXY] Processing PUT request for configuration');
-    
-    // Verify authentication
+
     const { user, error: authError } = await getAuthenticatedUser(request);
     if (authError || !user) {
       return createErrorResponse('Unauthorized', 'Valid authentication required', 401);
     }
 
-    // Get request body
+    // ✅ tomar id desde query ?id=...
+    const { searchParams } = new URL(request.url);
+    const id = searchParams.get('id');
+
+    if (!id) {
+      return createErrorResponse(
+        'Missing id',
+        'You must send ?id=<configuration_id> in the query string',
+        400
+      );
+    }
+
     const body = await request.json();
-    
-    // Forward request to Django
-    const djangoUrl = `${DJANGO_API_BASE}/api/expedix/configuration/`;
-    
+
+    // ✅ reenviar a Django con /<id>/
+    const djangoUrl = `${DJANGO_API_BASE}/api/expedix/configuration/${id}/`;
+
     const response = await fetch(djangoUrl, {
       method: 'PUT',
       headers: {
-        'Authorization': `Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY}`,
+        'Authorization': `Bearer ${process.env.NEXT_PUBLIC_SUPABASE_SERVICE_ROLE_KEY}`,
         'Content-Type': 'application/json',
         'X-Proxy-Auth': 'verified',
         'X-User-Id': user.id,
@@ -130,7 +140,8 @@ export async function PUT(request: Request) {
     });
 
     if (!response.ok) {
-      throw new Error(`Django API error: ${response.status} ${response.statusText}`);
+      const text = await response.text().catch(() => '');
+      throw new Error(`Django API error: ${response.status} ${response.statusText} ${text}`);
     }
 
     const data = await response.json();

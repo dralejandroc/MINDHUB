@@ -76,6 +76,7 @@ class DualSystemModelViewSet(DualSystemFilterMixin, viewsets.ModelViewSet):
         - user_id (dueño) desde el token (request.supabase_user_id)
         - clinic_id / workspace_id según request.user_context (DUAL SYSTEM)
         """
+        # print("AQUI ENTRA")
         # Asegura contexto válido
         user_ctx = getattr(self.request, 'user_context', None)
         if not user_ctx or not user_ctx.get('license_type'):

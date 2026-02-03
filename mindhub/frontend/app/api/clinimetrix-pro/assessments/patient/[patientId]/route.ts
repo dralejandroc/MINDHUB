@@ -10,21 +10,21 @@ export async function GET(
 ) {
   try {
     const { patientId } = params;
-    console.log('[CLINIMETRIX PATIENT ASSESSMENTS API] Processing GET request - Django Backend with Supabase Fallback for patient:', patientId);
+    // console.log('[CLINIMETRIX PATIENT ASSESSMENTS API] Processing GET request - Django Backend with Supabase Fallback for patient:', patientId);
     
-    // Verify authentication
-    const { user, error: authError } = await getAuthenticatedUser(request);
-    if (authError || !user) {
-      return createErrorResponse('Unauthorized', 'Valid authentication required', 401);
-    }
+    // // Verify authentication
+    // const { user, error: authError } = await getAuthenticatedUser(request);
+    // if (authError || !user) {
+    //   return createErrorResponse('Unauthorized', 'Valid authentication required', 401);
+    // }
 
-    // Get tenant context from headers
-    const tenantId = request.headers.get('X-Tenant-ID');
-    const tenantType = request.headers.get('X-Tenant-Type');
+    // // Get tenant context from headers
+    // const tenantId = request.headers.get('X-Tenant-ID');
+    // const tenantType = request.headers.get('X-Tenant-Type');
 
-    console.log('[CLINIMETRIX PATIENT ASSESSMENTS API] Authenticated user:', user.id, 'with tenant context:', { tenantId, tenantType });
+    // console.log('[CLINIMETRIX PATIENT ASSESSMENTS API] Authenticated user:', user.id, 'with tenant context:', { tenantId, tenantType });
 
-    // Extract query parameters
+    // // Extract query parameters
     const url = new URL(request.url);
     const searchParams = url.searchParams;
     const limit = searchParams.get('limit') || '10';
@@ -32,58 +32,58 @@ export async function GET(
     const status = searchParams.get('status');
     const templateId = searchParams.get('template_id');
 
-    console.log('[CLINIMETRIX PATIENT ASSESSMENTS API] Query params:', { limit, offset, status, templateId });
+    // console.log('[CLINIMETRIX PATIENT ASSESSMENTS API] Query params:', { limit, offset, status, templateId });
 
-    try {
-      // TRY Django backend first
-      const queryParams = new URLSearchParams();
-      queryParams.append('patient_id', patientId);
-      if (limit) queryParams.append('limit', limit);
-      if (offset) queryParams.append('offset', offset);
-      if (status) queryParams.append('status', status);
-      if (templateId) queryParams.append('template_id', templateId);
+    // try {
+    //   // TRY Django backend first
+    //   const queryParams = new URLSearchParams();
+    //   queryParams.append('patient_id', patientId);
+    //   if (limit) queryParams.append('limit', limit);
+    //   if (offset) queryParams.append('offset', offset);
+    //   if (status) queryParams.append('status', status);
+    //   if (templateId) queryParams.append('template_id', templateId);
 
-      const backendUrl = `${API_CONFIG.BACKEND_URL}/api/clinimetrix/assessments/?${queryParams.toString()}`;
-      console.log('[CLINIMETRIX PATIENT ASSESSMENTS API] Trying Django backend:', backendUrl);
+    //   const backendUrl = `${API_CONFIG.BACKEND_URL}/api/clinimetrix/assessments/?${queryParams.toString()}`;
+    //   console.log('[CLINIMETRIX PATIENT ASSESSMENTS API] Trying Django backend:', backendUrl);
 
-      const backendResponse = await fetch(backendUrl, {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY}`,
-          'X-Proxy-Auth': 'verified',
-          'X-User-ID': user.id,
-          'X-User-Email': user.email || '',
-          'X-Tenant-ID': tenantId || '',
-          'X-Tenant-Type': tenantType || '',
-          'Content-Type': 'application/json'
-        },
-        cache: 'no-store'
-      });
+    //   const backendResponse = await fetch(backendUrl, {
+    //     method: 'GET',
+    //     headers: {
+    //       'Authorization': `Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY}`,
+    //       'X-Proxy-Auth': 'verified',
+    //       'X-User-ID': user.id,
+    //       'X-User-Email': user.email || '',
+    //       'X-Tenant-ID': tenantId || '',
+    //       'X-Tenant-Type': tenantType || '',
+    //       'Content-Type': 'application/json'
+    //     },
+    //     cache: 'no-store'
+    //   });
 
-      if (backendResponse.ok) {
-        const backendData = await backendResponse.json();
-        console.log('[CLINIMETRIX PATIENT ASSESSMENTS API] Successfully fetched from Django backend:', backendData.count || backendData.length, 'assessments');
+    //   if (backendResponse.ok) {
+    //     const backendData = await backendResponse.json();
+    //     console.log('[CLINIMETRIX PATIENT ASSESSMENTS API] Successfully fetched from Django backend:', backendData.count || backendData.length, 'assessments');
 
-        return createResponse({
-          success: true,
-          data: backendData.results || backendData.data || backendData,
-          total: backendData.count || backendData.total || (backendData.results?.length || 0),
-          limit: parseInt(limit),
-          offset: parseInt(offset),
-          status,
-          template_id: templateId,
-          patient_id: patientId,
-          source: 'django_backend'
-        });
-      } else {
-        console.warn('[CLINIMETRIX PATIENT ASSESSMENTS API] Django backend unavailable, falling back to Supabase');
-        throw new Error(`Django backend error: ${backendResponse.status}`);
-      }
-    } catch (djangoError) {
-      console.error('[CLINIMETRIX PATIENT ASSESSMENTS API] Django backend failed, using Supabase fallback:', djangoError);
+    //     return createResponse({
+    //       success: true,
+    //       data: backendData.results || backendData.data || backendData,
+    //       total: backendData.count || backendData.total || (backendData.results?.length || 0),
+    //       limit: parseInt(limit),
+    //       offset: parseInt(offset),
+    //       status,
+    //       template_id: templateId,
+    //       patient_id: patientId,
+    //       source: 'django_backend'
+    //     });
+    //   } else {
+    //     console.warn('[CLINIMETRIX PATIENT ASSESSMENTS API] Django backend unavailable, falling back to Supabase');
+    //     throw new Error(`Django backend error: ${backendResponse.status}`);
+    //   }
+    // } catch (djangoError) {
+      // console.error('[CLINIMETRIX PATIENT ASSESSMENTS API] Django backend failed, using Supabase fallback:', djangoError);
 
       // FALLBACK: Direct Supabase connection
-      console.log('[CLINIMETRIX PATIENT ASSESSMENTS API] Using Supabase direct connection as fallback');
+      // console.log('[CLINIMETRIX PATIENT ASSESSMENTS API] Using Supabase direct connection as fallback');
       
       // Build Supabase query for patient assessments
       let query = supabaseAdmin
@@ -143,8 +143,8 @@ export async function GET(
         patient_id: patientId,
         source: 'supabase_fallback'
       });
-    }
-
+    // }
+  
   } catch (error) {
     console.error('[CLINIMETRIX PATIENT ASSESSMENTS API] Error:', error);
     return createErrorResponse(

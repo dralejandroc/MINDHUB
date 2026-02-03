@@ -30,6 +30,8 @@ AWS_SECRET_ACCESS_KEY = env('AWS_SECRET_ACCESS_KEY', default='')
 AWS_STORAGE_BUCKET_NAME = env('AWS_STORAGE_BUCKET_NAME', default='')
 AWS_S3_REGION_NAME = env('AWS_S3_REGION_NAME', default='us-west-2')  # tu región por defecto
 
+SUPABASE_JWT_SECRET = os.environ.get('SUPABASE_JWT_SECRET', 'CxqGEm1Cpk1tKY5GPTxn+n0ywlE5B2y4B6a00S3ZbFMnP/pgYLa9FPNDoPanAn0w7XIdGP5o7yFV9XhR2oVEmw==')
+
 # (Opcional) endpoint base para construir URLs públicas
 AWS_S3_CUSTOM_DOMAIN = env(
     'AWS_S3_CUSTOM_DOMAIN',
@@ -373,10 +375,10 @@ CLINIMETRIX_SETTINGS = {
 # Guardian settings
 GUARDIAN_MONKEY_PATCH_USER = False
 
-# Supabase integration settings
-SUPABASE_URL = env('SUPABASE_URL', default='https://jvbcpldzoyicefdtnwkd.supabase.co')
-SUPABASE_ANON_KEY = env('SUPABASE_ANON_KEY', default='')
-SUPABASE_SERVICE_ROLE_KEY = env('SUPABASE_SERVICE_ROLE_KEY', default='')
+# Supabase integration for production - CORREGIDO con keys válidos y nueva JWT secret
+SUPABASE_URL = os.environ.get('SUPABASE_URL', 'https://jvbcpldzoyicefdtnwkd.supabase.co')
+SUPABASE_ANON_KEY = os.environ.get('SUPABASE_ANON_KEY', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp2YmNwbGR6b3lpY2VmZHRud2tkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTU0MDE0NzAsImV4cCI6MjA3MDk3NzQ3MH0.st42ODkomKcaTcT88Xqc3LT_Zo9oVWhkCVwCP07n4NY')
+SUPABASE_SERVICE_ROLE_KEY = os.environ.get('SUPABASE_SERVICE_ROLE_KEY', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp2YmNwbGR6b3lpY2VmZHRud2tkIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1NTQwMTQ3MCwiZXhwIjoyMDcwOTc3NDcwfQ.-iooltGuYeGqXVh7pgRhH_Oo_R64VtHIssbE3u_y0WQ')
 
 # React frontend integration
 REACT_FRONTEND_URL = env('REACT_FRONTEND_URL', default='http://localhost:3000')

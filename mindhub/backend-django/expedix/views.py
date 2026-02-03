@@ -20,6 +20,9 @@ from datetime import datetime, timedelta
 import logging
 from uuid import UUID
 from .models import ScheduleConfig
+from rest_framework import serializers
+from rest_framework.exceptions import ValidationError
+from django.utils.text import slugify
 
 from rest_framework.views import APIView
 
@@ -188,6 +191,7 @@ class PatientViewSet(ExpedixDualViewSet):  # 🎯 RESTORED DUAL SYSTEM after fix
     @action(detail=True, methods=['get'], url_path='next-appointment')
     def next_appointment(self, request, pk=None):
         """Get patient's next upcoming appointment"""
+        print('next appointment called')
         try:
             from django.db import connection
             with connection.cursor() as cursor:
@@ -953,10 +957,6 @@ class DebugAuthViewSet(viewsets.ViewSet):
 
 
 class ExpedixConfigurationViewSet(ExpedixDualViewSet):
-    """
-    Expedix Configuration ViewSet - DUAL SYSTEM
-    Manages flexible field configurations per clinic/workspace
-    """
     queryset = ExpedixConfiguration.objects.filter(is_active=True)
     serializer_class = ExpedixConfigurationSerializer
     authentication_classes = [SupabaseProxyAuthentication]
@@ -968,72 +968,119 @@ class ExpedixConfigurationViewSet(ExpedixDualViewSet):
         return ExpedixConfigurationSerializer
 
     def get_queryset(self):
-        """Filter configurations by clinic/workspace based on user context"""
         queryset = super().get_queryset()
-        
-        # Get user context from middleware
-        user_context = getattr(self.request, 'user_context', {})
-        
+        user_context = getattr(self.request, 'user_context', {}) or {}
+
         if user_context.get('license_type') == 'clinic':
             clinic_id = user_context.get('clinic_id')
             if clinic_id:
-                return queryset.filter(clinic_id=clinic_id)
+                return queryset.filter(clinic_id=clinic_id, configuration_type='clinic')
         else:
             workspace_id = user_context.get('workspace_id')
             if workspace_id:
-                return queryset.filter(workspace_id=workspace_id)
-        
-        return queryset.none()  # No access if no context
+                return queryset.filter(workspace_id=workspace_id, configuration_type='individual')
+
+        return queryset.none()
+
+    # ✅ AQUÍ ESTÁ “EL POST” EN TU CASO: DRF llama create() y este perform_create se ejecuta.
+    def perform_create(self, serializer):
+        user_context = getattr(self.request, 'user_context', {}) or {}
+
+        user_id = getattr(self.request, 'supabase_user_id', None) or self.request.META.get('HTTP_X_USER_ID')
+        if not user_id:
+            raise ValueError("Missing user id")
+
+        base_kwargs = {
+            'user_id': user_id,        # 🔥 obligatorio (BD)
+            'created_by': user_id,     # opcional pero recomendado
+            'is_active': True,
+        }
+
+        if user_context.get('license_type') == 'clinic':
+            clinic_id = user_context.get('clinic_id')
+            serializer.save(
+                **base_kwargs,
+                configuration_type='clinic',
+                is_clinic_config=True,
+                clinic_id=clinic_id,
+                workspace_id=None
+            )
+        else:
+            workspace_id = user_context.get('workspace_id')
+            serializer.save(
+                **base_kwargs,
+                configuration_type='individual',
+                is_clinic_config=False,
+                workspace_id=workspace_id,
+                clinic_id=None
+            )
+
+    def perform_update(self, serializer):
+        user_context = getattr(self.request, 'user_context', {}) or {}
+
+        user_id = getattr(self.request, 'supabase_user_id', None) or self.request.META.get('HTTP_X_USER_ID')
+        if not user_id:
+            raise ValueError("Missing user id (supabase_user_id / X-User-Id)")
+
+        base_kwargs = {
+            'user_id': user_id,
+            'created_by': user_id,
+        }
+
+        if user_context.get('license_type') == 'clinic':
+            clinic_id = user_context.get('clinic_id')
+            serializer.save(**base_kwargs, configuration_type='clinic', clinic_id=clinic_id, workspace_id=None)
+        else:
+            workspace_id = user_context.get('workspace_id')
+            serializer.save(**base_kwargs, configuration_type='individual', workspace_id=workspace_id, clinic_id=None)
+
+
+
 
     @action(detail=False, methods=['get'])
     def current(self, request):
-        """Get current configuration for authenticated user"""
-        try:
-            # Get or create configuration
-            user_context = getattr(request, 'user_context', {})
-            
-            if user_context.get('license_type') == 'clinic':
-                clinic_id = user_context.get('clinic_id')
-                if clinic_id:
-                    config, created = ExpedixConfiguration.objects.get_or_create(
-                        clinic_id=clinic_id,
-                        defaults={
-                            'user_id': getattr(request, 'supabase_user_id', 'unknown'),
-                            'configuration_type': 'clinic',
-                            'required_patient_fields': [],
-                            'consultation_templates_enabled': True,
-                        }
-                    )
-                else:
-                    return Response({'error': 'No clinic context found'}, status=400)
-            else:
-                workspace_id = user_context.get('workspace_id')
-                if workspace_id:
-                    config, created = ExpedixConfiguration.objects.get_or_create(
-                        workspace_id=workspace_id,
-                        defaults={
-                            'user_id': getattr(request, 'supabase_user_id', 'unknown'),
-                            'configuration_type': 'individual',
-                            'required_patient_fields': [],
-                            'consultation_templates_enabled': True,
-                        }
-                    )
-                else:
-                    return Response({'error': 'No workspace context found'}, status=400)
+        user_context = getattr(request, 'user_context', {}) or {}
+        created_by = getattr(request, 'supabase_user_id', None) or request.META.get('HTTP_X_USER_ID')
 
-            serializer = ExpedixConfigurationSerializer(config)
-            return Response({
-                'success': True,
-                'data': serializer.data,
-                'created': created
-            })
+        if user_context.get('license_type') == 'clinic':
+            clinic_id = user_context.get('clinic_id')
+            if not clinic_id:
+                return Response({'error': 'No clinic context found'}, status=400)
 
-        except Exception as e:
-            logger.error(f"Error getting current configuration: {e}")
-            return Response({
-                'success': False,
-                'error': str(e)
-            }, status=500)
+            config, created = ExpedixConfiguration.objects.get_or_create(
+                clinic_id=clinic_id,
+                configuration_type='clinic',
+                defaults={
+                    'created_by': created_by,
+                    'required_patient_fields': [],
+                    'optional_patient_fields': [],
+                    'custom_patient_fields': [],
+                    'consultation_templates_enabled': True,
+                    'settings': {},
+                    'is_active': True,
+                }
+            )
+        else:
+            workspace_id = user_context.get('workspace_id')
+            if not workspace_id:
+                return Response({'error': 'No workspace context found'}, status=400)
+
+            config, created = ExpedixConfiguration.objects.get_or_create(
+                workspace_id=workspace_id,
+                configuration_type='individual',
+                defaults={
+                    'created_by': created_by,
+                    'required_patient_fields': [],
+                    'optional_patient_fields': [],
+                    'custom_patient_fields': [],
+                    'consultation_templates_enabled': True,
+                    'settings': {},
+                    'is_active': True,
+                }
+            )
+
+        serializer = ExpedixConfigurationSerializer(config)
+        return Response({'success': True, 'data': serializer.data, 'created': created})
 
     @action(detail=False, methods=['get'])
     def available_fields(self, request):
@@ -1072,22 +1119,63 @@ class ConsultationTemplateViewSet(ExpedixDualViewSet):
         return ConsultationTemplateSerializer
 
     def get_queryset(self):
-        """Filter templates by clinic/workspace based on user context"""
-        queryset = super().get_queryset()
-        
-        # Get user context from middleware
-        user_context = getattr(self.request, 'user_context', {})
-        
-        if user_context.get('license_type') == 'clinic':
-            clinic_id = user_context.get('clinic_id')
-            if clinic_id:
-                return queryset.filter(clinic_id=clinic_id)
+        return ConsultationTemplate.objects.all()
+
+    def list(self, request, *args, **kwargs):
+        # print("ENTRANDO A LIST DE CONSULTATION TEMPLATES")
+        user_id = request.META.get('HTTP_X_USER_ID') 
+
+        # print("USER ID:", user_id)
+        qs = self.get_queryset()
+        # print("DEBUG templates count:", qs.count())
+
+        # first = qs.first()
+        if user_id:
+            qs = qs.filter(created_by=user_id)
         else:
-            workspace_id = user_context.get('workspace_id')
-            if workspace_id:
-                return queryset.filter(workspace_id=workspace_id)
-        
-        return queryset.none()  # No access if no context
+            # Seguridad: si no hay user_id, no regreses nada
+            qs = qs.none()
+
+        serializer = self.get_serializer(qs, many=True)
+
+        return Response({
+            "success": True,
+            "data": serializer.data,
+            "count": qs.count(),
+        })
+
+    def perform_create(self, serializer):
+        SINGLE_TYPES = {'general','initial','followup','emergency','specialized'}
+        user_id = (
+            getattr(self.request, 'supabase_user_id', None)
+            or self.request.META.get('HTTP_X_USER_ID')
+        )
+        if not user_id:
+            raise serializers.ValidationError({"created_by": ["Missing X-User-ID"]})
+
+        template_type = serializer.validated_data.get('template_type')
+        name = (serializer.validated_data.get('name') or '').strip()
+
+        identifier = (serializer.validated_data.get('identifier') or '').strip()
+        if not identifier:
+            identifier = slugify(name).replace('-', '_')
+
+        # ✅ scope por usuario (o por clinic/workspace si quieres)
+        qs = ConsultationTemplate.objects.filter(created_by=user_id, is_active=True)
+
+        if template_type in SINGLE_TYPES:
+            if qs.filter(template_type=template_type).exists():
+                raise serializers.ValidationError({
+                    "template_type": [f"Ya existe una plantilla '{template_type}'. Solo se permite una."]
+                })
+
+        if template_type == 'custom':
+            if qs.filter(template_type='custom', identifier__iexact=identifier).exists():
+                raise serializers.ValidationError({
+                    "identifier": [f"Ya existe una plantilla custom con identifier '{identifier}'."]
+                })
+
+        serializer.save(created_by=user_id, identifier=identifier)
 
     @action(detail=False, methods=['get'])
     def default_templates(self, request):

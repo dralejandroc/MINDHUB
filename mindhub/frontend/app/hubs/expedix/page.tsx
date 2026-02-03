@@ -350,7 +350,7 @@ function ExpedixContent() {
               onClose={handleBackToPatientDashboard}
               onSave={(data) => {
                 console.log('Consulta guardada:', data);
-                handleBackToPatientDashboard();
+                // handleBackToPatientDashboard();
               }}
             />
           )}

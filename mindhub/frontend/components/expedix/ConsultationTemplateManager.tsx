@@ -6,6 +6,8 @@ import { Button } from '@/components/ui/Button';
 import { PlusIcon, PencilIcon, TrashIcon } from 'lucide-react';
 import { expedixApi } from '@/lib/api/expedix-client';
 import { supabase } from '@/lib/supabase/client';
+import Swal from 'sweetalert2';
+import toast from 'react-hot-toast';
 
 interface ConsultationTemplate {
   id: string;
@@ -119,7 +121,18 @@ export default function ConsultationTemplateManager({
           headers,
           body: JSON.stringify(formData)
         });
-        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        if (!response.ok){
+          //detener el flujo y mostrar error
+          
+          const data = await response.json();
+          const msg =
+            data.errors?.template_type?.[0] ||
+            data.errors?.identifier?.[0] ||
+            data.errors?.detail ||
+            'Error';
+          toast.error(msg);
+          throw new Error(`HTTP ${response.status}`);
+        };
       }
       
       await loadTemplates();
@@ -130,19 +143,44 @@ export default function ConsultationTemplateManager({
   };
 
   const handleDelete = async (templateId: string) => {
-    if (confirm('¿Estás seguro de que deseas eliminar esta plantilla?')) {
-      try {
-        const headers = await getAuthHeaders();
-        const response = await fetch(`/api/expedix/consultation-templates/?id=${templateId}`, {
-          method: 'DELETE',
-          headers
-        });
-        if (!response.ok) throw new Error(`HTTP ${response.status}`);
-        await loadTemplates();
-      } catch (error) {
-        console.error('Error deleting template:', error);
+
+    Swal.fire({
+      title: '¿Estás seguro?',
+      text: 'Esta acción eliminará la plantilla de consulta.',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#d33',
+      cancelButtonColor: '#3085d6',
+      confirmButtonText: 'Sí, eliminar',
+      cancelButtonText: 'Cancelar'
+    }).then(async (result) => {
+      if (result.isConfirmed) {
+        try {
+          const headers = await getAuthHeaders();
+          const response = await fetch(`/api/expedix/consultation-templates/?id=${templateId}`, {
+            method: 'DELETE',
+            headers
+          });
+          if (!response.ok) throw new Error(`HTTP ${response.status}`);
+          await loadTemplates();
+          // Swal.fire({
+          //   title: 'Eliminado',
+          //   text: 'La plantilla ha sido eliminada.',
+          //   icon: 'success',
+          //   timer: 2000
+          // });
+          toast.success('La plantilla ha sido eliminada.');
+        } catch (error) {
+          console.error('Error deleting template:', error);
+          // Swal.fire(
+          //   'Error',
+          //   'Hubo un problema al eliminar la plantilla.',
+          //   'error'
+          // );
+          toast.error('Hubo un problema al eliminar la plantilla.');
+        }
       }
-    }
+    });
   };
 
   const handleEdit = (template: ConsultationTemplate) => {

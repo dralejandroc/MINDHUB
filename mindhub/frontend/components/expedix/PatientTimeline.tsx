@@ -16,6 +16,8 @@ import {
   BeakerIcon,
   ChartBarIcon
 } from '@heroicons/react/24/outline';
+import axiosClient from '@/lib/axiosClient';
+import { get } from 'http';
 
 interface PatientTimelineProps {
   patientId: string;
@@ -47,6 +49,51 @@ export default function PatientTimeline({
     loadTimelineData();
   }, [patientId]);
 
+  const getConsultatiosAxios = async (patient: string) => {
+    try {
+      const result = await axiosClient.get(`/api/expedix/consultations?patient_id=${patient}`);
+      console.log('getConsultationsAxios:', result);
+      const { data } = result;
+      return data.results;
+    } catch (error) {
+      console.error('Error fetching consultations via axios:', error);
+      return [];
+    }
+  }
+
+  const getPrescriptionsAxios = async (patient: string) => {
+    try {
+      const result = await axiosClient.get(`/api/expedix/prescriptions?patient_id=${patient}`);
+      console.log('getPrescriptionsAxios:', result);
+      return result.data;
+    } catch (error) {
+      console.error('Error fetching prescriptions via axios:', error);
+      return { data: [] };
+    }
+  };
+
+  const getPatientsAssessmentsAxios = async (patient: string) => {
+    try {
+      const result = await axiosClient.get(`/api/assessments/patient/${patient}`);
+      console.log('getPatientsAssessmentsAxios:', result);
+      return result.data.results;
+    } catch (error) {
+      console.error('Error fetching patient assessments via axios:', error);
+      return [];
+    }
+  };
+
+  const getAppointmentsAxios = async (patient: string) => {
+    try {
+      const result = await axiosClient.get(`/api/expedix/appointments?patient_id=${patient}`);
+      console.log('getAppointmentsAxios:', result);
+      return result.data;
+    } catch (error) {
+      console.error('Error fetching appointments via axios:', error);
+      return { data: [] };
+    }
+  };
+
   const loadTimelineData = async () => {
     try {
       setLoading(true);
@@ -54,17 +101,22 @@ export default function PatientTimeline({
 
       // Load all patient data in parallel
       const [consultations, prescriptions, assessments, appointments] = await Promise.allSettled([
-        expedixApi.getConsultations(patientId), // Fix: Use getConsultations instead of getPatientConsultationForms
-        expedixApi.getPatientPrescriptions(patientId),
+        getConsultatiosAxios(patientId), // Fix: Use getConsultations instead of getPatientConsultationForms
+        // expedixApi.getPatientPrescriptions(patientId),
+        getPrescriptionsAxios(patientId),
         clinimetrixProClient.getPatientAssessments(patientId),
+        // getPatientsAssessmentsAxios(patientId),
         expedixApi.getAppointments(patientId)
+        // getAppointmentsAxios(patientId)
       ]);
-
+      console.log('consultations:', consultations);
+      
       const events: TimelineEntry[] = [];
 
       // Process consultations
-      if (consultations.status === 'fulfilled' && consultations.value?.data && Array.isArray(consultations.value.data)) {
-        consultations.value.data.forEach((consultation: any) => {
+      if (consultations.status === 'fulfilled' && consultations?.value && Array.isArray(consultations.value)) {
+        
+        consultations.value.forEach((consultation: any) => {
           events.push({
             id: `consultation-${consultation.id}`,
             title: 'Consulta Médica',
@@ -89,7 +141,7 @@ export default function PatientTimeline({
                   <div className="mt-2 grid grid-cols-3 gap-2 text-xs">
                     {consultation.vital_signs.blood_pressure && (
                       <div className="bg-white dark:bg-gray-800 rounded px-2 py-1">
-                        <span className="text-gray-500">TA:</span> {consultation.vital_signs.blood_pressure}
+                        <span className="text-gray-500">TA:</span> {consultation.vital_signs?.blood_pressure?.systolic}/{consultation.vital_signs?.blood_pressure?.diastolic} mmHg
                       </div>
                     )}
                     {consultation.vital_signs.heart_rate && (

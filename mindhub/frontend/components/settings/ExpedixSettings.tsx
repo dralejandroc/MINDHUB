@@ -138,6 +138,7 @@ export function ExpedixSettings() {
     consentForms: true,
     digitalSignature: false
   });
+  const [idExpedixConfig, setIdExpedixConfig] = useState<string | null>(null);
 
   const [showCustomFieldForm, setShowCustomFieldForm] = useState(false);
   const [newCustomField, setNewCustomField] = useState({
@@ -165,11 +166,12 @@ export function ExpedixSettings() {
           'Content-Type': 'application/json',
         },
       });
-      
       if (response.ok) {
         const data = await response.json();
-        if (data.settings) {
-          setConfig(prev => ({ ...prev, ...data.settings }));
+        if (data?.results.length > 0) {
+          // console.log('results expedix settings:', data.results[0]);
+          setIdExpedixConfig(data.results[0].id);
+          setConfig(prev => ({ ...prev, ...data.results[0].settings }));
         }
       }
     } catch (error) {
@@ -179,22 +181,48 @@ export function ExpedixSettings() {
   };
 
   const saveConfig = async () => {
+    // si existe idExpedixConfig, hacer PUT, si no POST
+    if (idExpedixConfig) {
+      return updateConfig();
+    } else {
+      return createConfig();
+    }
+  };
+  const updateConfig = async () => {
+    try {
+      const response = await fetch(`/api/expedix/django/configuration/?id=${idExpedixConfig}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ settings: config }),
+      });
+      if (!response.ok) {
+        throw new Error('Failed to update Expedix configuration');
+      }
+      console.log(response);
+      
+      toast.success('Configuración de Expedix actualizada');
+    } catch (error) {
+      console.error('Error updating Expedix configuration:', error);
+      toast.error('Error al actualizar la configuración');
+    }
+  };
+
+  const createConfig = async () => {
     try {
       const response = await fetch('/api/expedix/django/configuration/', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          settings: config,
-          module: 'expedix'
-        })
+        body: JSON.stringify({ settings: config }),
       });
-      
+
       if (!response.ok) {
         throw new Error('Failed to save Expedix configuration');
       }
-      
+
       toast.success('Configuración de Expedix guardada');
     } catch (error) {
       console.error('Error saving Expedix configuration:', error);
