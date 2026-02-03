@@ -14,40 +14,41 @@ import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { XMarkIcon, PrinterIcon } from '@heroicons/react/24/outline';
 import type { Patient } from '@/lib/api/expedix-client';
+import { ConsultationData } from 'types/expedix-models';
 
-interface ConsultationData {
-  consultation_type: string;
-  date: string;
-  currentCondition: string;
-  diagnosis: string;
-  vital_signs: {
-    height: string;
-    weight: string;
-    blood_pressure: { systolic: string; diastolic: string };
-    temperature: string;
-    heartRate: string;
-    respiratoryRate: string;
-    oxygenSaturation: string;
-  };
-  physicalExamination: string;
-  medications: any[];
-  additionalInstructions: string;
-  next_appointment: { date: string; time: string };
-  mental_exam: {
-    descripcionInspeccion: string;
-    apariencia: string;
-    actitud: string;
-    conciencia: string;
-    orientacion: string;
-    atencion: string;
-    lenguaje: string;
-    afecto: string;
-    sensopercepcion: string;
-    memoria: string;
-    pensamientoPrincipal: string;
-    pensamientoDetalles: string;
-  };
-}
+// interface ConsultationData {
+//   consultation_type: string;
+//   date: string;
+//   currentCondition: string;
+//   diagnosis: string;
+//   vital_signs: {
+//     height: string;
+//     weight: string;
+//     blood_pressure: { systolic: string; diastolic: string };
+//     temperature: string;
+//     heartRate: string;
+//     respiratoryRate: string;
+//     oxygenSaturation: string;
+//   };
+//   physicalExamination: string;
+//   medications: any[];
+//   additionalInstructions: string;
+//   next_appointment: { date: string; time: string };
+//   mental_exam: {
+//     descripcionInspeccion: string;
+//     apariencia: string;
+//     actitud: string;
+//     conciencia: string;
+//     orientacion: string;
+//     atencion: string;
+//     lenguaje: string;
+//     afecto: string;
+//     sensopercepcion: string;
+//     memoria: string;
+//     pensamientoPrincipal: string;
+//     pensamientoDetalles: string;
+//   };
+// }
 
 interface ConsultationPreviewDialogProps {
   isOpen: boolean;
@@ -123,7 +124,7 @@ export default function ConsultationPreviewDialog({
                   <span className="font-medium">Nombre:</span> {patient.first_name} {patient.paternal_last_name} {patient.maternal_last_name}
                 </div>
                 <div>
-                  <span className="font-medium">Fecha de consulta:</span> {formatDate(consultationData.date)}
+                  <span className="font-medium">Fecha de consulta:</span> {formatDate(consultationData.consultation_date)}
                 </div>
                 <div>
                   <span className="font-medium">Edad:</span> {patient.age} años
@@ -141,10 +142,10 @@ export default function ConsultationPreviewDialog({
             </Card>
 
             {/* Current Condition */}
-            {consultationData.currentCondition && (
+            {consultationData.current_condition && (
               <Card className="p-4">
                 <h3 className="text-lg font-semibold text-gray-800 mb-3">Padecimiento Actual</h3>
-                <p className="text-gray-700 whitespace-pre-wrap">{consultationData.currentCondition}</p>
+                <p className="text-gray-700 whitespace-pre-wrap">{consultationData.current_condition}</p>
               </Card>
             )}
 
@@ -186,10 +187,10 @@ export default function ConsultationPreviewDialog({
             </Card>
 
             {/* Physical Examination */}
-            {consultationData.physicalExamination && (
+            {consultationData.physical_examination && (
               <Card className="p-4">
                 <h3 className="text-lg font-semibold text-gray-800 mb-3">Exploración Física</h3>
-                <p className="text-gray-700 whitespace-pre-wrap">{consultationData.physicalExamination}</p>
+                <p className="text-gray-700 whitespace-pre-wrap">{consultationData.physical_examination}</p>
               </Card>
             )}
 
@@ -271,11 +272,11 @@ export default function ConsultationPreviewDialog({
             )}
 
             {/* Medications */}
-            {consultationData.medications && consultationData.medications.length > 0 && (
+            {consultationData.prescriptions && consultationData.prescriptions.length > 0 && (
               <Card className="p-4">
                 <h3 className="text-lg font-semibold text-gray-800 mb-3">Medicamentos Recetados</h3>
                 <div className="space-y-2">
-                  {consultationData.medications.map((medication: any, index: number) => (
+                  {consultationData.prescriptions.map((medication: any, index: number) => (
                     <div key={index} className="border-l-4 border-blue-500 pl-3">
                       <p className="font-medium">{medication.name}</p>
                       <p className="text-sm text-gray-600">
@@ -291,10 +292,10 @@ export default function ConsultationPreviewDialog({
             )}
 
             {/* Additional Instructions */}
-            {consultationData.additionalInstructions && (
+            {consultationData.additional_instructions && (
               <Card className="p-4">
                 <h3 className="text-lg font-semibold text-gray-800 mb-3">Instrucciones Adicionales</h3>
-                <p className="text-gray-700 whitespace-pre-wrap">{consultationData.additionalInstructions}</p>
+                <p className="text-gray-700 whitespace-pre-wrap">{consultationData.additional_instructions}</p>
               </Card>
             )}
 
