@@ -76,6 +76,7 @@ export interface Consultation {
   id: string;
   date: string;
   consultation_type: string;
+  consultation_date: string;
   diagnosis: string;
   current_condition: string;
   next_appointment?: {
