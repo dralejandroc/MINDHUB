@@ -1840,12 +1840,12 @@ export default function ConsultationNotes({ patient, onSaveConsultation, onCance
                 <input
                   type="number"
                   placeholder="120"
-                  value={consultationData.vitalSigns.bloodPressure.systolic}
+                  value={consultationData.vitalSigns?.bloodPressure?.systolic}
                   onChange={(e) => setConsultationData(prev => ({
                     ...prev,
                     vitalSigns: { 
                       ...prev.vitalSigns, 
-                      bloodPressure: { ...prev.vitalSigns.bloodPressure, systolic: e.target.value }
+                      bloodPressure: { ...prev.vitalSigns?.bloodPressure, systolic: e.target.value }
                     }
                   }))}
                   className="w-full px-1 py-1 border border-gray-300 rounded text-xs focus:outline-none focus:ring-1 focus:ring-blue-500"
@@ -1854,12 +1854,12 @@ export default function ConsultationNotes({ patient, onSaveConsultation, onCance
                 <input
                   type="number"
                   placeholder="80"
-                  value={consultationData.vitalSigns.bloodPressure.diastolic}
+                  value={consultationData.vitalSigns?.bloodPressure?.diastolic}
                   onChange={(e) => setConsultationData(prev => ({
                     ...prev,
                     vitalSigns: { 
                       ...prev.vitalSigns, 
-                      bloodPressure: { ...prev.vitalSigns.bloodPressure, diastolic: e.target.value }
+                      bloodPressure: { ...prev.vitalSigns?.bloodPressure, diastolic: e.target.value }
                     }
                   }))}
                   className="w-full px-1 py-1 border border-gray-300 rounded text-xs focus:outline-none focus:ring-1 focus:ring-blue-500"

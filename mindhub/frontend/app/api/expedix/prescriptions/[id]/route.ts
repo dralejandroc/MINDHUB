@@ -20,18 +20,18 @@ export async function GET(
     }
     
     // Forward request to Django
-    const djangoUrl = `${DJANGO_API_BASE}/api/expedix/prescriptions/${params.id}`;
+    const djangoUrl = `${DJANGO_API_BASE}/api/expedix/prescriptions?patiend_id=${params.id}`;
     console.log('[EXPEDIX PRESCRIPTIONS ID PROXY] Forwarding to:', djangoUrl);
     
     const response = await fetch(djangoUrl, {
       method: 'GET',
       headers: {
-        'Authorization': `Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY}`,
+        'Authorization': request.headers.get('Authorization') || '',
         'Content-Type': 'application/json',
         'X-Proxy-Auth': 'verified',
         'X-User-Id': user.id,
         'X-User-Email': user.email || '',
-        'X-Glian-Dual-System': 'enabled',
+        // 'X-Glian-Dual-System': 'enabled',
       },
     });
 

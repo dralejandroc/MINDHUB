@@ -6,6 +6,7 @@ Migrated from Node.js Prisma to Django ORM
 import uuid
 import json
 from django.db import models
+from django.db.models import Q
 from django.contrib.auth.models import AbstractUser
 from django.core.validators import EmailValidator
 from django.contrib.postgres.fields import ArrayField
@@ -204,17 +205,80 @@ class Consultation(models.Model):
     ]
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    patient_id = models.UUIDField()  # Use direct UUID field to avoid FK errors
-    professional_id = models.UUIDField()  # Use direct UUID field to avoid FK errors
-    consultation_date = models.DateTimeField()
-    chief_complaint = models.TextField(blank=True, null=True)  # Match real table structure
-    consultation_notes = models.TextField(blank=True, null=True)
-    diagnosis = models.TextField(blank=True, null=True)
+    # UUIDs (nullable in DB según tu listado)
+    patient_id = models.UUIDField(blank=True, null=True)
+    professional_id = models.UUIDField(blank=True, null=True)
+    edited_by = models.UUIDField(blank=True, null=True)
+    finalized_by = models.UUIDField(blank=True, null=True)
+    linked_appointment_id = models.UUIDField(blank=True, null=True)
+    quality_reviewer_id = models.UUIDField(blank=True, null=True)
+    user_id = models.UUIDField(blank=True, null=True)
+
+    # Dates / timestamps
+    consultation_date = models.DateTimeField(blank=True, null=True)  # timestamptz
+    created_at = models.DateTimeField(blank=True, null=True)         # timestamptz
+    updated_at = models.DateTimeField(blank=True, null=True)         # timestamptz
+    finalized_at = models.DateTimeField(blank=True, null=True)       # timestamptz
+    quality_review_date = models.DateTimeField(blank=True, null=True) # timestamptz
+    follow_up_date = models.DateField(blank=True, null=True)         # date
+
+    # Text fields
+    consultation_type = models.TextField(blank=True, null=True)
+    chief_complaint = models.TextField(blank=True, null=True)
+    history_present_illness = models.TextField(blank=True, null=True)
+    present_illness = models.TextField(blank=True, null=True)
+    review_of_systems = models.TextField(blank=True, null=True)
+    physical_examination = models.TextField(blank=True, null=True)
+    assessment = models.TextField(blank=True, null=True)
+    plan = models.TextField(blank=True, null=True)
+    notes = models.TextField(blank=True, null=True)
     treatment_plan = models.TextField(blank=True, null=True)
-    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='scheduled')
+    clinical_notes = models.TextField(blank=True, null=True)
+    private_notes = models.TextField(blank=True, null=True)
+    follow_up_instructions = models.TextField(blank=True, null=True)
+    edit_reason = models.TextField(blank=True, null=True)
+    quality_notes = models.TextField(blank=True, null=True)
+
+    # Status (en tu DB es text)
+    status = models.TextField(blank=True, null=True)
+
+    # Numeric
     duration_minutes = models.IntegerField(blank=True, null=True)
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
+    revision_number = models.IntegerField(blank=True, null=True)
+
+    # Booleans
+    is_billable = models.BooleanField(blank=True, null=True)
+    is_draft = models.BooleanField(blank=True, null=True)
+    is_finalized = models.BooleanField(blank=True, null=True)
+    quality_reviewed = models.BooleanField(blank=True, null=True)
+
+    # ⚠️ En tu listado clinic_id aparece como boolean (raro), lo reflejo tal cual
+    clinic_id = models.BooleanField(blank=True, null=True)
+
+    # Arrays
+    diagnosis_codes = ArrayField(models.TextField(), blank=True, null=True)
+    
+    
+    diagnosis = models.TextField(blank=True, null=True)
+
+    # JSONB
+    
+    vital_signs = models.JSONField(blank=True, null=True)
+    mental_exam = models.JSONField(blank=True, null=True)
+    template_config = models.JSONField(blank=True, null=True)
+    form_customizations = models.JSONField(blank=True, null=True)
+    consultation_metadata = models.JSONField(blank=True, null=True)
+    sections_completed = models.JSONField(blank=True, null=True)
+    linked_assessments = models.JSONField(blank=True, null=True)
+    evaluations = models.JSONField(blank=True, null=True)
+    next_appointment = models.JSONField(blank=True, null=True)
+    prescriptions = models.JSONField(blank=True, null=True)
+
+    # Estos 3 existen en DB (y son los que te llegan como "[]")
+    additional_instructions = models.TextField(blank=True, null=True)
+    current_condition = models.TextField(blank=True, null=True)
+    diagnoses = models.JSONField(blank=True, null=True)   # jsonb
+    indications = models.JSONField(blank=True, null=True) # jsonb
 
     class Meta:
         db_table = 'consultations'
@@ -233,36 +297,36 @@ class Consultation(models.Model):
 
 
 class ExpedixConfiguration(models.Model):
-    """
-    Configuración flexible de Expedix por clínica/usuario
-    Permite definir campos obligatorios y configuraciones personalizadas
-    """
     CONFIGURATION_TYPE_CHOICES = [
         ('clinic', 'Configuración de Clínica'),
         ('individual', 'Configuración Individual'),
     ]
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    
-    # Simplified system support
-    clinic_id = models.BooleanField(default=False)  # true = clinic config, false = individual config
-    user_id = models.UUIDField()  # Creator/owner
-    
-    configuration_type = models.CharField(max_length=20, choices=CONFIGURATION_TYPE_CHOICES, default='clinic')
-    
-    # Patient form configuration
-    required_patient_fields = models.JSONField(default=list, help_text="Campos obligatorios para pacientes")
-    optional_patient_fields = models.JSONField(default=list, help_text="Campos opcionales disponibles")
-    custom_patient_fields = models.JSONField(default=list, help_text="Campos personalizados definidos por la clínica")
-    
-    # Consultation templates integration with FormX
+
+    # === columnas reales de la BD ===
+    is_clinic_config = models.BooleanField(default=False)
+
+    user_id = models.UUIDField(db_index=True)                 # NOT NULL
+    created_by = models.UUIDField(null=True, blank=True)      # nullable
+
+    clinic_id = models.UUIDField(null=True, blank=True, db_index=True)
+    workspace_id = models.UUIDField(null=True, blank=True, db_index=True)
+
+    configuration_type = models.CharField(
+        max_length=20,
+        choices=CONFIGURATION_TYPE_CHOICES
+    )
+
+    required_patient_fields = models.JSONField(default=list)
+    optional_patient_fields = models.JSONField(default=list)
+    custom_patient_fields = models.JSONField(default=list)
+
     consultation_templates_enabled = models.BooleanField(default=True)
-    default_consultation_template = models.UUIDField(blank=True, null=True)  # Reference to FormX template
-    
-    # Other settings
-    settings = models.JSONField(default=dict, help_text="Configuraciones adicionales")
-    
-    # Metadata
+    default_consultation_template = models.UUIDField(null=True, blank=True)
+
+    settings = models.JSONField(default=dict)
+
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -270,22 +334,21 @@ class ExpedixConfiguration(models.Model):
     class Meta:
         db_table = 'expedix_configurations'
         constraints = [
-            # Unique configuration per user
             models.UniqueConstraint(
-                fields=['user_id'],
-                name='unique_user_config'
+                fields=['clinic_id'],
+                condition=Q(configuration_type='clinic'),
+                name='unique_expedix_config_clinic'
             ),
-        ]
-        indexes = [
-            models.Index(fields=['clinic_id']),
-            models.Index(fields=['user_id']),
-            models.Index(fields=['configuration_type']),
+            models.UniqueConstraint(
+                fields=['workspace_id'],
+                condition=Q(configuration_type='individual'),
+                name='unique_expedix_config_workspace'
+            ),
         ]
 
     def __str__(self):
-        if self.clinic_id:
-            return f"Configuración Clínica - Usuario {self.user_id}"
-        return f"Configuración Individual - Usuario {self.user_id}"
+        scope = self.clinic_id if self.configuration_type == 'clinic' else self.workspace_id
+        return f"ExpedixConfiguration {self.configuration_type} {scope}"
 
     @classmethod
     def get_default_patient_fields(cls):
@@ -354,7 +417,8 @@ class ConsultationTemplate(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     
     # Simplified system support
-    clinic_id = models.BooleanField(default=False)  # true = clinic template, false = individual template
+    clinic_id = models.UUIDField(blank=True, null=True)  # true = clinic template, false = individual template
+    workspace_id = models.UUIDField(blank=True, null=True)
     created_by = models.UUIDField()
     user_id = models.UUIDField(blank=True, null=True)  # Owner of the template
     
@@ -372,6 +436,7 @@ class ConsultationTemplate(models.Model):
     # Usage settings
     is_default = models.BooleanField(default=False)
     is_active = models.BooleanField(default=True)
+    identifier = models.TextField(blank=True, null=True, help_text="Identificador único opcional")
     
     # Metadata
     created_at = models.DateTimeField(auto_now_add=True)

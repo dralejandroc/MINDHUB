@@ -434,42 +434,63 @@ class ExpedixConfigurationSerializer(serializers.ModelSerializer):
 
 
 class ExpedixConfigurationCreateSerializer(serializers.ModelSerializer):
-    """
-    Expedix Configuration Creation Serializer
-    """
     class Meta:
         model = ExpedixConfiguration
         fields = [
-            'configuration_type', 'required_patient_fields', 'optional_patient_fields',
-            'custom_patient_fields', 'consultation_templates_enabled',
-            'default_consultation_template', 'settings'
+            'id',
+            'created_by',
+            'configuration_type',
+            'clinic_id',
+            'workspace_id',
+
+            'settings',
+            'required_patient_fields',
+            'optional_patient_fields',
+            'custom_patient_fields',
+            'consultation_templates_enabled',
+            'default_consultation_template',
+
+            'is_active',
+            'created_at',
+            'updated_at',
         ]
-    
+        read_only_fields = [
+            'id',
+            'user_id',
+            'created_by',
+            'clinic_id',
+            'workspace_id',
+            'configuration_type',
+            'is_clinic_config',
+            'created_at',
+            'updated_at',
+            'is_active',
+        ]
+
     def validate_required_patient_fields(self, value):
-        """Validate that required fields are valid"""
         if value:
-            available_fields = ExpedixConfiguration.get_default_patient_fields() + ExpedixConfiguration.get_available_optional_fields()
-            invalid_fields = [field for field in value if field not in available_fields]
+            available_fields = (
+                ExpedixConfiguration.get_default_patient_fields()
+                + ExpedixConfiguration.get_available_optional_fields()
+            )
+            invalid_fields = [f for f in value if f not in available_fields]
             if invalid_fields:
                 raise serializers.ValidationError(f"Invalid fields: {invalid_fields}")
         return value
-    
+
     def validate_custom_patient_fields(self, value):
-        """Validate custom field definitions"""
         if value:
+            valid_types = ['text', 'number', 'date', 'select', 'textarea', 'checkbox', 'email', 'phone']
             for field_def in value:
                 if not isinstance(field_def, dict):
                     raise serializers.ValidationError("Custom fields must be objects")
-                
-                required_keys = ['field_name', 'field_type', 'label']
-                for key in required_keys:
+                for key in ['field_name', 'field_type', 'label']:
                     if key not in field_def:
                         raise serializers.ValidationError(f"Custom field missing required key: {key}")
-                        
-                # Validate field types
-                valid_types = ['text', 'number', 'date', 'select', 'textarea', 'checkbox', 'email', 'phone']
                 if field_def.get('field_type') not in valid_types:
-                    raise serializers.ValidationError(f"Invalid field type: {field_def.get('field_type')}. Must be one of: {valid_types}")
+                    raise serializers.ValidationError(
+                        f"Invalid field type: {field_def.get('field_type')}. Must be one of: {valid_types}"
+                    )
         return value
 
 
@@ -486,7 +507,7 @@ class ConsultationTemplateSerializer(serializers.ModelSerializer):
         fields = [
             'id', 'name', 'description', 'template_type', 'clinic_id', 'user_id',
             'formx_template_id', 'fields_config', 'is_default', 'is_active',
-            'created_at', 'updated_at',
+            'created_at', 'updated_at', 'identifier',
             # Computed fields
             'formx_template_name', 'fields_preview'
         ]
@@ -497,36 +518,65 @@ class ConsultationTemplateSerializer(serializers.ModelSerializer):
         formx_template = obj.get_formx_template()
         return formx_template.name if formx_template else None
     
+    fields_preview = serializers.SerializerMethodField()
+
     def get_fields_preview(self, obj):
-        """Get preview of template fields"""
-        if obj.has_formx_integration():
-            formx_template = obj.get_formx_template()
-            if formx_template:
-                try:
-                    fields = formx_template.fields.all().order_by('order')
-                    return [
-                        {
-                            'field_name': field.field_name,
-                            'label': field.label,
-                            'field_type': field.field_type,
-                            'required': field.required
-                        }
-                        for field in fields[:10]  # Limit preview to 10 fields
-                    ]
-                except:
-                    pass
+        raw = getattr(obj, "fields", None)  # <-- cambia "fields" si tu columna se llama distinto
+        if raw is None:
             return []
-        elif obj.fields_config:
-            return [
-                {
-                    'field_name': field.get('field_name', 'Unknown'),
-                    'label': field.get('label', field.get('field_name', 'Unknown')),
-                    'field_type': field.get('field_type', 'text'),
-                    'required': field.get('required', False)
-                }
-                for field in obj.fields_config[:10]  # Limit preview
-            ]
-        return []
+
+        # Si viene como string JSON, parsearlo
+        if isinstance(raw, str):
+            s = raw.strip()
+            if not s:
+                return []
+            # Intentar JSON
+            if (s.startswith("[") and s.endswith("]")) or (s.startswith("{") and s.endswith("}")):
+                try:
+                    raw = json.loads(s)
+                except Exception:
+                    # era string normal, no JSON válido
+                    raw = [s]
+            else:
+                raw = [s]
+
+        # Si viene como dict único, convertir a lista
+        if isinstance(raw, dict):
+            raw = [raw]
+
+        # Si no es lista, fallback seguro
+        if not isinstance(raw, list):
+            return []
+
+        preview = []
+        for item in raw[:6]:  # preview limitado
+            # Caso 1: dict
+            if isinstance(item, dict):
+                preview.append({
+                    "field_name": item.get("field_name") or item.get("name") or "Unknown",
+                    "label": item.get("label") or item.get("title") or item.get("field_name") or "Sin nombre",
+                    "type": item.get("type") or "custom",
+                })
+                continue
+
+            # Caso 2: string
+            if isinstance(item, str):
+                name = item.strip() or "Unknown"
+                preview.append({
+                    "field_name": name,
+                    "label": name.replace("_", " ").title(),
+                    "type": "built_in",
+                })
+                continue
+
+            # Caso 3: cualquier otra cosa
+            preview.append({
+                "field_name": "Unknown",
+                "label": "Unknown",
+                "type": "custom",
+            })
+
+        return preview
 
 
 class PrescriptionSerializer(serializers.ModelSerializer):
@@ -653,28 +703,40 @@ class ConsultationTemplateCreateSerializer(serializers.ModelSerializer):
     """
     Consultation Template Creation Serializer
     """
+
     class Meta:
         model = ConsultationTemplate
         fields = [
             'name', 'description', 'template_type', 'formx_template_id',
-            'fields_config', 'is_default', 'is_active'
+            'fields_config', 'is_default', 'is_active', 'identifier'
         ]
-    
+
     def validate_fields_config(self, value):
-        """Validate fields configuration"""
-        if value and not isinstance(value, list):
+        """
+        fields_config debe ser list[str] (keys de secciones/campos)
+        Ej: ["vitalSigns","currentCondition","diagnosis","medications"]
+        """
+        if value is None:
+            return []
+
+        if not isinstance(value, list):
             raise serializers.ValidationError("Fields config must be a list")
-        
-        if value:
-            for field_config in value:
-                if not isinstance(field_config, dict):
-                    raise serializers.ValidationError("Each field config must be an object")
-                
-                required_keys = ['field_name', 'field_type', 'label']
-                for key in required_keys:
-                    if key not in field_config:
-                        raise serializers.ValidationError(f"Field config missing required key: {key}")
-        return value
+
+        for i, key in enumerate(value):
+            if not isinstance(key, str):
+                raise serializers.ValidationError(f"fields_config[{i}] must be a string")
+            if not key.strip():
+                raise serializers.ValidationError(f"fields_config[{i}] cannot be empty")
+
+        # opcional: quitar duplicados preservando orden
+        seen = set()
+        out = []
+        for k in value:
+            if k not in seen:
+                out.append(k)
+                seen.add(k)
+
+        return out
 
 
 class MedicationDatabaseSerializer(serializers.ModelSerializer):

@@ -15,6 +15,7 @@ import {
   UserGroupIcon,
   ChartBarIcon
 } from "@heroicons/react/24/outline";
+import moment from "moment";
 
 export interface TimelineEntry {
   id: string;
@@ -98,6 +99,8 @@ export const Timeline = ({
       const rect = ref.current.getBoundingClientRect();
       setHeight(rect.height);
     }
+    console.log('DATA:', data);
+    
   }, [ref]);
 
   const { scrollYProgress } = useScroll({
@@ -149,6 +152,7 @@ export const Timeline = ({
         {data.map((item, index) => {
           const Icon = item.icon || getIconForType(item.type);
           const gradientColor = item.color || getColorForType(item.type);
+          // console.log('item:', item);
           
           return (
             <div
@@ -166,10 +170,11 @@ export const Timeline = ({
                   </h3>
                   <p className="text-sm text-gray-500 dark:text-gray-400">
                     {formatDate(item.date)}
+                    {/* { item?.date ? moment(item.date).format('LLL') : 'Fecha no disponible' } */}
                   </p>
                   {item.metadata?.professional && (
                     <p className="text-xs text-gray-500 dark:text-gray-500 mt-1">
-                      Dr. {item.metadata.professional}
+                      {item.metadata.professional}
                     </p>
                   )}
                 </div>
@@ -186,7 +191,7 @@ export const Timeline = ({
                   </p>
                   {item.metadata?.professional && (
                     <p className="text-xs text-gray-500 dark:text-gray-500 mt-1">
-                      Dr. {item.metadata.professional}
+                      {item.metadata?.professional}
                     </p>
                   )}
                 </div>
@@ -203,6 +208,11 @@ export const Timeline = ({
                     </span>
                   )}
                   {item.content}
+                  {item.metadata?.professional && (
+                    <p className="text-xs text-gray-500 dark:text-gray-500 mt-1">
+                      Profesional: {item.metadata?.professional}
+                    </p>
+                  )}
                 </div>
               </div>
             </div>

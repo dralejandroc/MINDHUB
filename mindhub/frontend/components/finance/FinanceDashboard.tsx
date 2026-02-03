@@ -185,7 +185,7 @@ export default function FinanceDashboard({ selectedDate, onNewIncome }: FinanceD
 
   const getIncomeBySource = () => {
     return stats.breakdown.bySource.reduce((acc, item) => {
-      console.log('ITEM:', item);
+      // console.log('ITEM:', item);
       
       acc[item.source] = acc[item.source] + (item.total || 0);
       return acc;

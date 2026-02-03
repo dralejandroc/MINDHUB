@@ -438,23 +438,23 @@ export function validateVitalSigns(vitals: VitalSigns): {
   };
   
   // Validar presión arterial
-  if (vitals.bloodPressure.systolic && vitals.bloodPressure.diastolic) {
-    const systolic = parseInt(vitals.bloodPressure.systolic);
-    const diastolic = parseInt(vitals.bloodPressure.diastolic);
+  if (vitals?.bloodPressure?.systolic && vitals?.bloodPressure?.diastolic) {
+    const systolic = parseInt(vitals?.bloodPressure?.systolic);
+    const diastolic = parseInt(vitals?.bloodPressure?.diastolic);
     
-    if (systolic < VITAL_SIGNS_RANGES.bloodPressure.systolic.normal!.min || 
-        systolic > VITAL_SIGNS_RANGES.bloodPressure.systolic.normal!.max) {
-      results.warnings.push(`Presión sistólica ${systolic} fuera del rango normal (${VITAL_SIGNS_RANGES.bloodPressure.systolic.normal!.min}-${VITAL_SIGNS_RANGES.bloodPressure.systolic.normal!.max})`);
+    if (systolic < VITAL_SIGNS_RANGES.bloodPressure?.systolic.normal!.min || 
+        systolic > VITAL_SIGNS_RANGES.bloodPressure?.systolic.normal!.max) {
+      results.warnings.push(`Presión sistólica ${systolic} fuera del rango normal (${VITAL_SIGNS_RANGES.bloodPressure?.systolic.normal!.min}-${VITAL_SIGNS_RANGES.bloodPressure?.systolic.normal!.max})`);
     }
     
-    if (diastolic < VITAL_SIGNS_RANGES.bloodPressure.diastolic.normal!.min || 
-        diastolic > VITAL_SIGNS_RANGES.bloodPressure.diastolic.normal!.max) {
-      results.warnings.push(`Presión diastólica ${diastolic} fuera del rango normal (${VITAL_SIGNS_RANGES.bloodPressure.diastolic.normal!.min}-${VITAL_SIGNS_RANGES.bloodPressure.diastolic.normal!.max})`);
+    if (diastolic < VITAL_SIGNS_RANGES.bloodPressure?.diastolic.normal!.min || 
+        diastolic > VITAL_SIGNS_RANGES.bloodPressure?.diastolic.normal!.max) {
+      results.warnings.push(`Presión diastólica ${diastolic} fuera del rango normal (${VITAL_SIGNS_RANGES.bloodPressure?.diastolic.normal!.min}-${VITAL_SIGNS_RANGES.bloodPressure?.diastolic.normal!.max})`);
     }
   }
   
   // Validar temperatura
-  if (vitals.temperature) {
+  if (vitals?.temperature) {
     const temp = parseFloat(vitals.temperature);
     if (temp < VITAL_SIGNS_RANGES.temperature.normal!.min || 
         temp > VITAL_SIGNS_RANGES.temperature.normal!.max) {
@@ -463,7 +463,7 @@ export function validateVitalSigns(vitals: VitalSigns): {
   }
   
   // Validar frecuencia cardíaca
-  if (vitals.heartRate) {
+  if (vitals?.heartRate) {
     const hr = parseInt(vitals.heartRate);
     if (hr < VITAL_SIGNS_RANGES.heartRate.normal!.min || 
         hr > VITAL_SIGNS_RANGES.heartRate.normal!.max) {

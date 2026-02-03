@@ -90,6 +90,7 @@ export function useTenantContext(): TenantContextData {
       if (result.success && result.data) {
         setCurrentContext(result.data.current_context);
         setAvailableContexts(result.data.available_contexts);
+        console.log('RESULT TENANT:', result.data);
         
         // Store in localStorage for persistence
         if (result.data.current_context) {
@@ -130,7 +131,8 @@ export function useTenantContext(): TenantContextData {
         const errorData = await response.json();
         throw new Error(errorData.message || 'Failed to switch context');
       }
-
+      const result = await response.json();
+      console.log('RESULT TENANTT:', result.data);
       // Update local context
       const newContext: TenantContext = {
         tenant_id: tenantId,

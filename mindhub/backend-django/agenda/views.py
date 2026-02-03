@@ -49,6 +49,8 @@ class AppointmentViewSet(AgendaDualViewSet):
     filterset_fields = ['status', 'appointment_type', 'patient_id', 'professional_id']
     ordering_fields = ['appointment_date', 'created_at']
     ordering = ['appointment_date']
+    dual_clinic_field = "clinic_shared"  # o "clinic_id" si ese es el boolean real
+
 
     def get_serializer_class(self):
         if self.action == 'create':
@@ -56,6 +58,19 @@ class AppointmentViewSet(AgendaDualViewSet):
         elif self.action == 'list':
             return AppointmentSummarySerializer
         return AppointmentSerializer
+
+    def get_queryset(self):
+        qs = Appointment.objects.all()   # <-- SIN select_related("patient")
+        ctx = getattr(self.request, "user_context", {}) or {}
+
+        if ctx.get("license_type") == "clinic":
+            return qs.filter(clinic_id=True)
+
+        user_id = getattr(self.request, "supabase_user_id", None)
+        if user_id:
+            return qs.filter(created_by=user_id)
+
+        return qs.none()
 
     def perform_create(self, serializer):
         # Save appointment - no scheduled_by field in real table

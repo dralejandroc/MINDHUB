@@ -160,7 +160,7 @@ export async function GET(request: Request) {
       const backendResponse = await fetch(`${API_CONFIG.BACKEND_URL}/api/expedix/consultation-templates/`, {
         method: 'GET',
         headers: {
-          'Authorization': `Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY}`,
+          'Authorization': `Bearer ${process.env.NEXT_PUBLIC_SUPABASE_SERVICE_ROLE_KEY}`,
           'X-Proxy-Auth': 'verified',
           'X-User-ID': user.id,
           'X-User-Email': user.email || '',
@@ -269,24 +269,29 @@ export async function POST(request: Request) {
     const tenantType = request.headers.get('X-Tenant-Type');
 
     const body = await request.json();
-    console.log('[CONSULTATION TEMPLATES API] Creating template with data:', Object.keys(body), 'with tenant context:', { tenantId, tenantType });
 
     // Validate required fields
     if (!body.name || !body.template_type) {
       return createErrorResponse('Validation error', 'name and template_type are required', 400);
     }
 
+    body.identifier = body.name.toLowerCase().replace(/\s+/g, '_');
+    body.created_by = user.id;
+
+    console.log('[CONSULTATION TEMPLATES API] Creating template with data:', body, 'with tenant context:', { tenantId, tenantType });
+
     try {
       // Try to create in Django backend first
       const backendResponse = await fetch(`${API_CONFIG.BACKEND_URL}/api/expedix/consultation-templates/`, {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY}`,
+          'Authorization': `Bearer ${process.env.NEXT_PUBLIC_SUPABASE_SERVICE_ROLE_KEY}`,
           'X-Proxy-Auth': 'verified',
           'X-User-ID': user.id,
           'X-User-Email': user.email || '',
           'X-Tenant-ID': tenantId || '',
           'X-Tenant-Type': tenantType || '',
+          'Accept': 'application/json',
           'Content-Type': 'application/json'
         },
         body: JSON.stringify(body),
@@ -303,62 +308,76 @@ export async function POST(request: Request) {
           message: 'Template created successfully'
         }, 201);
       } else {
-        const errorText = await backendResponse.text();
-        console.error('[CONSULTATION TEMPLATES API] Backend creation failed:', errorText);
-        throw new Error(`Backend error: ${backendResponse.status}`);
+         const contentType = backendResponse.headers.get('content-type') || '';
+        let payload: any = null;
+
+        if (contentType.includes('application/json')) {
+          payload = await backendResponse.json().catch(() => null);
+        } else {
+          const text = await backendResponse.text().catch(() => '');
+          payload = { detail: text || 'Backend error (non-json response)' };
+        }
+
+        console.error('[CONSULTATION TEMPLATES API] Backend creation failed:', backendResponse.status, payload);
+
+        return createResponse(
+          { success: false, errors: payload },
+          backendResponse.status
+        );
       }
     } catch (error) {
       console.error('[CONSULTATION TEMPLATES API] Backend creation error, falling back to Supabase:', error);
       
       // Django failed - use Supabase fallback
-      console.log('[CONSULTATION TEMPLATES API] Using Supabase fallback for template creation');
+      // console.log('[CONSULTATION TEMPLATES API] Using Supabase fallback for template creation');
       
-      try {
-        // Prepare template data for Supabase with tenant context
-        const templateData = {
-          id: crypto.randomUUID(),
-          name: body.name,
-          description: body.description || '',
-          template_type: body.template_type,
-          fields_config: body.fields_config || [],
-          is_default: body.is_default || false,
-          is_active: body.is_active !== false, // Default to true
-          created_by: user.id,
-          // Apply tenant context using dual-system pattern
-          clinic_id: tenantType === 'clinic' ? tenantId : null,
-          workspace_id: tenantType === 'workspace' ? (tenantId || user.id) : (tenantType !== 'clinic' ? user.id : null),
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
-        };
+      // try {
+      //   // Prepare template data for Supabase with tenant context
+      //   const templateData = {
+      //     id: crypto.randomUUID(),
+      //     name: body.name,
+      //     description: body.description || '',
+      //     template_type: body.template_type,
+      //     fields_config: body.fields_config || [],
+      //     is_default: body.is_default || false,
+      //     is_active: body.is_active !== false, // Default to true
+      //     created_by: user.id,
+      //     identifier: body.name.toLowerCase().replace(/\s+/g, '_'),
+      //     // Apply tenant context using dual-system pattern
+      //     clinic_id: tenantType === 'clinic' ? tenantId : null,
+      //     workspace_id: tenantType === 'workspace' ? (tenantId || user.id) : (tenantType !== 'clinic' ? user.id : null),
+      //     created_at: new Date().toISOString(),
+      //     updated_at: new Date().toISOString()
+      //   };
 
-        // Insert template into Supabase
-        const { data: template, error: insertError } = await supabaseAdmin
-          .from('consultation_templates')
-          .insert(templateData)
-          .select()
-          .single();
+      //   // Insert template into Supabase
+      //   const { data: template, error: insertError } = await supabaseAdmin
+      //     .from('consultation_templates')
+      //     .insert(templateData)
+      //     .select()
+      //     .single();
 
-        if (insertError) {
-          console.error('[CONSULTATION TEMPLATES API] Supabase insert error:', insertError);
-          throw new Error(`Failed to create template in database: ${insertError.message}`);
-        }
+      //   if (insertError) {
+      //     console.error('[CONSULTATION TEMPLATES API] Supabase insert error:', insertError);
+      //     throw new Error(`Failed to create template in database: ${insertError.message}`);
+      //   }
 
-        console.log('[CONSULTATION TEMPLATES API] Supabase fallback success - template created:', template.id);
-        return createResponse({
-          success: true,
-          data: template,
-          message: 'Template created successfully',
-          source: 'supabase_fallback'
-        }, 201);
+      //   console.log('[CONSULTATION TEMPLATES API] Supabase fallback success - template created:', template.id);
+      //   return createResponse({
+      //     success: true,
+      //     data: template,
+      //     message: 'Template created successfully',
+      //     source: 'supabase_fallback'
+      //   }, 201);
 
-      } catch (supabaseError) {
-        console.error('[CONSULTATION TEMPLATES API] Supabase fallback completely failed:', supabaseError);
-        return createErrorResponse(
-          'Failed to create template',
-          `Could not create template in any database: ${supabaseError instanceof Error ? supabaseError.message : 'Unknown error'}`,
-          500
-        );
-      }
+      // } catch (supabaseError) {
+      //   console.error('[CONSULTATION TEMPLATES API] Supabase fallback completely failed:', supabaseError);
+      //   return createErrorResponse(
+      //     'Failed to create template',
+      //     `Could not create template in any database: ${supabaseError instanceof Error ? supabaseError.message : 'Unknown error'}`,
+      //     500
+      //   );
+      // }
     }
 
   } catch (error) {
@@ -393,6 +412,8 @@ export async function PUT(request: Request) {
     }
 
     const body = await request.json();
+    console.log('body PUT:', body);
+    
     console.log('[CONSULTATION TEMPLATES API] Updating template:', templateId, 'with tenant context:', { tenantId, tenantType });
 
     try {
@@ -400,7 +421,7 @@ export async function PUT(request: Request) {
       const backendResponse = await fetch(`${API_CONFIG.BACKEND_URL}/api/expedix/consultation-templates/${templateId}/`, {
         method: 'PUT',
         headers: {
-          'Authorization': `Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY}`,
+          'Authorization': `Bearer ${process.env.NEXT_PUBLIC_SUPABASE_SERVICE_ROLE_KEY}`,
           'X-Proxy-Auth': 'verified',
           'X-User-ID': user.id,
           'X-User-Email': user.email || '',
@@ -473,7 +494,7 @@ export async function DELETE(request: Request) {
       const backendResponse = await fetch(`${API_CONFIG.BACKEND_URL}/api/expedix/consultation-templates/${templateId}/`, {
         method: 'DELETE',
         headers: {
-          'Authorization': `Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY}`,
+          'Authorization': `Bearer ${process.env.NEXT_PUBLIC_SUPABASE_SERVICE_ROLE_KEY}`,
           'X-Proxy-Auth': 'verified',
           'X-User-ID': user.id,
           'X-User-Email': user.email || '',

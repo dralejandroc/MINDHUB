@@ -11,12 +11,21 @@ from django.utils import timezone
 from django.db import transaction
 import json
 from datetime import datetime, timedelta
+from rest_framework.authentication import SessionAuthentication
 
 from expedix.authentication import SupabaseProxyAuthentication
 from django.db import connection
 import logging
 
 logger = logging.getLogger(__name__)
+
+class CsrfExemptSessionAuthentication(SessionAuthentication):
+    """
+    SessionAuthentication sin verificación CSRF.
+    Útil para APIs que no usan cookies (como Postman / front con JWT).
+    """
+    def enforce_csrf(self, request):
+        return  # simplemente no hace nada => no lanza CSRF error
 
 
 # Simplified consultation and prescription views using direct SQL queries
@@ -27,8 +36,10 @@ class ConsultationViewSet(viewsets.ViewSet):
     """
     Consultation management with direct Supabase queries (no ORM models)
     """
-    authentication_classes = [SupabaseProxyAuthentication]
     permission_classes = [IsAuthenticated]
+
+    # 👇 Usamos nuestra SessionAuthentication sin CSRF
+    authentication_classes = [CsrfExemptSessionAuthentication]
     
     def get_user_info(self, request):
         """Extract user information from request"""
@@ -58,104 +69,102 @@ class ConsultationViewSet(viewsets.ViewSet):
     
     def list(self, request):
         """List consultations with filtering using direct SQL - COMPLETE FIELDS"""
+        import json
+        from django.db import connection
+        from rest_framework.response import Response
+
+        def coerce_json(value, default):
+            """
+            Convierte strings tipo '[]' / '{}' a list/dict reales.
+            Si ya viene como list/dict, lo deja igual.
+            Si viene None o inválido, regresa default.
+            """
+            if value is None:
+                return default
+
+            if isinstance(value, (dict, list)):
+                return value
+
+            if isinstance(value, str):
+                v = value.strip()
+                if v == "":
+                    return default
+                try:
+                    return json.loads(v)
+                except Exception:
+                    return default
+
+            return default
+
         try:
-            # Build SQL query with ALL available fields including mental exam
             sql = """
                 SELECT 
-                    c.id,
-                    c.patient_id,
-                    c.professional_id,
-                    c.consultation_date,
-                    c.consultation_type,
-                    c.chief_complaint,
-                    c.history_present_illness,
-                    c.present_illness,
-                    c.physical_examination,
-                    
-                    c.assessment,
-                    c.plan,
-                    c.treatment_plan,
-                    c.diagnosis,
-                    c.diagnosis_codes,
-                    c.status,
-                    c.notes,
-                    c.clinical_notes,
-                    c.private_notes,
-                    c.mental_exam,
-                    c.vital_signs,
-                    c.prescriptions,
-                    c.follow_up_date,
-                    c.follow_up_instructions,
-                    c.duration_minutes,
-                    c.is_draft,
-                    c.is_finalized,
-                    c.template_config,
-                    c.form_customizations,
-                    c.consultation_metadata,
-                    c.sections_completed,
-                    c.linked_assessments,
-                    c.linked_appointment_id,
-                    c.created_at,
-                    c.updated_at,
-                    c.edited_by,
-                    c.finalized_at,
-                    c.finalized_by,
-                    c.clinic_id
-                
-                FROM consultations c
+                    c.*,
+                    p.full_name AS professional_name
+                FROM public.consultations c
+                LEFT JOIN public.profiles p ON c.professional_id = p.id
                 WHERE 1=1
             """
-            
+
             params = []
-            
-            # Filter by patient if provided
-            patient_id = request.query_params.get('patient_id')
+
+            patient_id = request.query_params.get("patient_id")
             if patient_id:
-                sql += " AND c.patient_id = %s"
+                sql += " AND c.patient_id = %s::uuid"
                 params.append(patient_id)
-            
-            # Filter by status
-            status_filter = request.query_params.get('status')
-            if status_filter:
-                sql += " AND c.status = %s"
-                params.append(status_filter)
-            
-            # Filter by date range
-            date_from = request.query_params.get('date_from')
+
+            consultation_id = request.query_params.get("consultation_id")
+            if consultation_id:
+                sql += " AND c.id = %s::uuid"
+                params.append(consultation_id)
+
+            date_from = request.query_params.get("date_from")
             if date_from:
                 sql += " AND c.consultation_date >= %s"
                 params.append(date_from)
-                
-            date_to = request.query_params.get('date_to')
+
+            date_to = request.query_params.get("date_to")
             if date_to:
                 sql += " AND c.consultation_date <= %s"
                 params.append(date_to)
-            
-            # Order by date
+
             sql += " ORDER BY c.consultation_date DESC LIMIT 100"
-            
-            # Execute query
+
             with connection.cursor() as cursor:
                 cursor.execute(sql, params)
                 columns = [col[0] for col in cursor.description]
+
                 results = []
                 for row in cursor.fetchall():
                     consultation_dict = dict(zip(columns, row))
+
+                    # ✅ Normaliza campos que deben ser arrays
+                    for f in ("diagnoses", "indications", "linked_assessments", "evaluations", "prescriptions"):
+                        consultation_dict[f] = coerce_json(consultation_dict.get(f), [])
+
+                    # ✅ Normaliza campos que deben ser objetos
+                    for f in (
+                        "mental_exam",
+                        "template_config",
+                        "form_customizations",
+                        "consultation_metadata",
+                        "sections_completed",
+                        "vital_signs",
+                        "next_appointment"
+                    ):
+                        consultation_dict[f] = coerce_json(consultation_dict.get(f), {})
+
                     results.append(consultation_dict)
-            
+
             return Response({
-                'success': True,
-                'results': results,
-                'count': len(results),
-                'total': len(results)
+                "success": True,
+                "results": results,
+                "count": len(results),
+                "total": len(results)
             })
-            
+
         except Exception as e:
-            logger.error(f'Error listing consultations: {str(e)}')
-            return Response({
-                'success': False,
-                'error': str(e)
-            }, status=500)
+            return Response({"success": False, "error": str(e)}, status=500)
     
     def create(self, request):
         """Create new consultation using direct SQL"""
@@ -240,7 +249,7 @@ class ConsultationViewSet(viewsets.ViewSet):
                     request.data.get('private_notes', ''),
                     request.data.get('mental_exam', {}),  # JSONB field
                     request.data.get('vital_signs', {}),  # JSONB field
-                    request.data.get('prescriptions', {}),  # JSONB field
+                    request.data.get('prescriptions', []),  # JSONB field
                     request.data.get('follow_up_instructions', ''),
                     request.data.get('status', 'draft'),
                     request.data.get('is_draft', True),
@@ -277,43 +286,176 @@ class ConsultationViewSet(viewsets.ViewSet):
     
     def update(self, request, pk=None):
         """Update consultation using direct SQL"""
+        from django.db import connection
+        from django.utils import timezone
+        from rest_framework.response import Response
+        from psycopg2.extras import Json
+        import json
+
+        # Campos JSONB (según tu DB real)
+        JSON_FIELDS = {
+            "mental_exam",
+            "vital_signs",
+            "prescriptions",          # ✅ JSONB en tu DB
+            "template_config",
+            "form_customizations",
+            "consultation_metadata",
+            "sections_completed",
+            "linked_assessments",
+            "evaluations",
+            "next_appointment",
+            "diagnoses",
+            "indications",
+        }
+
+        # Campos que NO quieres permitir que el front cambie aunque existan
+        BLOCKED_FIELDS = {
+            "id",
+        }
+
         try:
-            # Simple update using raw SQL
+            print("ENTRANDO AQUI UPDATE", pk)
+
             with connection.cursor() as cursor:
-                # Build dynamic update query
                 update_fields = []
                 params = []
-                
-                # ALL ALLOWED FIELDS including mental exam and new fields
+
                 allowed_fields = [
-                    'chief_complaint', 'history_present_illness', 'present_illness',
-                    'physical_examination', 'physical_exam', 'assessment', 'plan', 
-                    'treatment_plan', 'diagnosis', 'notes', 'clinical_notes', 
-                    'private_notes', 'mental_exam', 'vital_signs', 'prescriptions',
-                    'follow_up_instructions', 'duration_minutes', 'status',
-                    'is_draft', 'is_finalized', 'template_config', 'form_customizations',
-                    'consultation_metadata', 'sections_completed', 'linked_assessments',
-                    'linked_appointment_id', 'edit_reason'
+                    # UUIDs
+                    "patient_id",
+                    "professional_id",
+                    "edited_by",
+                    "finalized_by",
+                    "linked_appointment_id",
+                    "quality_reviewer_id",
+                    "user_id",
+
+                    # Dates / timestamps
+                    "consultation_date",
+                    # "created_at",   # (opcional) normalmente NO lo actualizas
+                    # "updated_at",   # se setea automático abajo
+                    "finalized_at",
+                    "quality_review_date",
+                    "follow_up_date",
+
+                    # Text fields
+                    "consultation_type",
+                    "chief_complaint",
+                    "history_present_illness",
+                    "present_illness",
+                    "review_of_systems",
+                    "physical_examination",
+                    "assessment",
+                    "plan",
+                    "notes",
+                    "treatment_plan",
+                    "clinical_notes",
+                    "private_notes",
+                    "follow_up_instructions",
+                    "edit_reason",
+                    "quality_notes",
+                    "status",
+
+                    # Numeric
+                    "duration_minutes",
+                    "revision_number",
+
+                    # Booleans
+                    "is_billable",
+                    "is_draft",
+                    "is_finalized",
+                    "quality_reviewed",
+                    "clinic_id",
+
+                    # Arrays (si en DB realmente son arrays)
+                    "diagnosis_codes",
+
+                    # Diagnosis (texto)
+                    "diagnosis",
+
+                    # JSONB
+                    "vital_signs",
+                    "mental_exam",
+                    "prescriptions",
+                    "template_config",
+                    "form_customizations",
+                    "consultation_metadata",
+                    "sections_completed",
+                    "linked_assessments",
+                    "evaluations",
+                    "next_appointment",
+                    "diagnoses",
+                    "indications",
+
+                    # Otros campos
+                    "additional_instructions",
+                    "current_condition",
                 ]
-                
+
                 for field in allowed_fields:
-                    if field in request.data:
-                        update_fields.append(f"{field} = %s")
-                        params.append(request.data[field])
-                
+                    if field in BLOCKED_FIELDS:
+                        continue
+
+                    if field not in request.data:
+                        continue
+
+                    value = request.data[field]
+
+                    # ✅ Si viene como string JSON (FormData/multipart), intentar parsearlo
+                    if field in JSON_FIELDS and isinstance(value, str):
+                        s = value.strip()
+                        if (s.startswith("[") and s.endswith("]")) or (s.startswith("{") and s.endswith("}")):
+                            try:
+                                value = json.loads(s)
+                            except Exception:
+                                # si no se puede parsear, lo dejamos tal cual
+                                pass
+
+                    # ✅ JSONB: dict/list -> Json() para psycopg2
+                    if field in JSON_FIELDS and isinstance(value, (dict, list)):
+                        value = Json(value)
+
+                    # 🧪 Debug opcional para cazar el campo que rompa por tipo
+                    # if isinstance(value, dict):
+                    #     print("DICT SIN ADAPTAR:", field, value)
+
+                    update_fields.append(f"{field} = %s")
+                    params.append(value)
+
                 if not update_fields:
-                    return Response({
-                        'success': False,
-                        'error': 'No valid fields to update'
-                    }, status=400)
-                
-                # Add updated_at
+                    return Response({"success": False, "error": "No valid fields to update"}, status=400)
+
+                # Always update timestamp
                 update_fields.append("updated_at = %s")
                 params.append(timezone.now())
-                params.append(pk)  # For WHERE clause
-                
-                sql = f"UPDATE consultations SET {', '.join(update_fields)} WHERE id = %s"
+
+                # Where
+                params.append(pk)
+
+                sql = f"""
+                    UPDATE public.consultations
+                    SET {', '.join(update_fields)}
+                    WHERE id = %s::uuid
+                """
                 cursor.execute(sql, params)
+
+                if cursor.rowcount == 0:
+                    return Response({"success": False, "error": "Consultation not found"}, status=404)
+
+            return Response({
+                "success": True,
+                "data": {"id": pk, "updated": True},
+                "message": "Consultation updated successfully",
+            })
+
+        except Exception as e:
+            logger.error(f"Error updating consultation: {str(e)}")
+            return Response({"success": False, "error": str(e)}, status=500)
+    def delete(self, request, pk=None):
+        """Delete consultation using direct SQL"""
+        try:
+            with connection.cursor() as cursor:
+                cursor.execute("DELETE FROM consultations WHERE id = %s", [pk])
                 
                 if cursor.rowcount == 0:
                     return Response({
@@ -323,12 +465,12 @@ class ConsultationViewSet(viewsets.ViewSet):
             
             return Response({
                 'success': True,
-                'data': {'id': pk, 'updated': True},
-                'message': 'Consultation updated successfully'
+                'data': {'id': pk, 'deleted': True},
+                'message': 'Consultation deleted successfully'
             })
             
         except Exception as e:
-            logger.error(f'Error updating consultation: {str(e)}')
+            logger.error(f'Error deleting consultation: {str(e)}')
             return Response({
                 'success': False,
                 'error': str(e)
@@ -439,13 +581,14 @@ class PrescriptionViewSet(viewsets.ViewSet):
     
     def list(self, request):
         """List prescriptions using direct SQL"""
+        print("ENTRANDO AQUI")
         try:
             sql = """
                 SELECT 
                     id, patient_id, consultation_id, medication_name,
                     dosage, frequency, duration, instructions, status,
                     created_at, updated_at
-                FROM prescriptions
+                FROM public.prescriptions
                 WHERE 1=1
             """
             
@@ -459,6 +602,9 @@ class PrescriptionViewSet(viewsets.ViewSet):
             
             # Order by date
             sql += " ORDER BY created_at DESC LIMIT 100"
+
+            print("SQL:", sql)
+            print("PARAMS:", params)
             
             with connection.cursor() as cursor:
                 cursor.execute(sql, params)
@@ -470,7 +616,7 @@ class PrescriptionViewSet(viewsets.ViewSet):
             
             return Response({
                 'success': True,
-                'results': results,
+                'data': results,
                 'count': len(results)
             })
             

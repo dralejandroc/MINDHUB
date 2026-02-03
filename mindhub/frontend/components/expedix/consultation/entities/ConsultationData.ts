@@ -70,9 +70,9 @@ export class ConsultationData {
 
   private validateVitalSigns(): void {
     const { bloodPressure } = this.vitalSigns;
-    if (bloodPressure.systolic && bloodPressure.diastolic) {
-      const systolic = parseInt(bloodPressure.systolic);
-      const diastolic = parseInt(bloodPressure.diastolic);
+    if (bloodPressure?.systolic && bloodPressure?.diastolic) {
+      const systolic = parseInt(bloodPressure?.systolic);
+      const diastolic = parseInt(bloodPressure?.diastolic);
       
       if (systolic <= diastolic) {
         throw new Error('La presión sistólica debe ser mayor que la diastólica');

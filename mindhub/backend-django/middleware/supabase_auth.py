@@ -302,6 +302,7 @@ class SupabaseAuthMiddleware(MiddlewareMixin):
         try:
             # First try local JWT validation with new secret key
             jwt_secret = getattr(settings, 'SUPABASE_JWT_SECRET', None)
+            print('jwt_secret', jwt_secret)
             if jwt_secret:
                 try:
                     import jwt
@@ -362,7 +363,8 @@ class SupabaseAuthMiddleware(MiddlewareMixin):
             
             # Fallback to service role key for development/proxy
             expected_service_key = getattr(settings, 'SUPABASE_SERVICE_ROLE_KEY', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp2YmNwbGR6b3lpY2VmZHRud2tkIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1NTQwMTQ3MCwiZXhwIjoyMDcwOTc3NDcwfQ.-iooltGuYeGqXVh7pgRhH_Oo_R64VtHIssbE3u_y0WQ')
-            
+            print('expected_service_key', expected_service_key)
+            print('token', token)
             if token == expected_service_key:
                 # Check for proxy headers first
                 proxy_auth = request.META.get('HTTP_X_PROXY_AUTH')

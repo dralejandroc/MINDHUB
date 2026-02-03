@@ -15,6 +15,7 @@ interface VitalSignsSectionProps {
 }
 
 const VitalSignsSection = memo(function VitalSignsSection({ vitalSigns, onChange }: VitalSignsSectionProps) {
+  
   const handleInputChange = (field: keyof VitalSigns | 'systolic' | 'diastolic', value: string) => {
     if (field === 'systolic' || field === 'diastolic') {
       onChange({
@@ -87,7 +88,7 @@ const VitalSignsSection = memo(function VitalSignsSection({ vitalSigns, onChange
           <label className="block text-sm font-medium mb-1">Presión Sistólica</label>
           <input
             type="number"
-            value={vitalSigns.bloodPressure.systolic}
+            value={vitalSigns?.bloodPressure?.systolic}
             onChange={(e) => handleInputChange('systolic', e.target.value)}
             className="w-full p-2 border rounded-md"
             placeholder="120"
@@ -98,7 +99,7 @@ const VitalSignsSection = memo(function VitalSignsSection({ vitalSigns, onChange
           <label className="block text-sm font-medium mb-1">Presión Diastólica</label>
           <input
             type="number"
-            value={vitalSigns.bloodPressure.diastolic}
+            value={vitalSigns?.bloodPressure?.diastolic}
             onChange={(e) => handleInputChange('diastolic', e.target.value)}
             className="w-full p-2 border rounded-md"
             placeholder="80"

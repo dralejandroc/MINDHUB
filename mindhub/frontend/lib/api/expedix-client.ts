@@ -425,8 +425,8 @@ class ExpedixApiClient {
   }
 
   // Consultation Management - Central Integration with Agenda
-  async getPatientConsultations(patientId: string): Promise<{ data: any[] }> {
-    return this.makeRequest<{ data: any[] }>(`/expedix/patients/${patientId}/consultations`);
+  async getPatientConsultations(patientId: string, consultationId?: string): Promise<{ data: any[] }> {
+    return this.makeRequest<{ data: any[] }>(`/expedix/patients/${patientId}/consultations?consultation_id=${consultationId || ''}`);
   }
 
   async createConsultation(consultationData: any): Promise<{ data: any }> {
@@ -444,7 +444,8 @@ class ExpedixApiClient {
   }
 
   async updateConsultation(consultationId: string, consultationData: any): Promise<{ data: any }> {
-    return this.makeRequest<{ data: any }>(`/expedix/consultations/${consultationId}`, {
+    console.log('llegamos a updateConsultation del client');
+    return this.makeRequest<{ data: any }>(`/expedix/consultations/?consultation_id=${consultationId}`, {
       method: 'PUT',
       body: JSON.stringify(consultationData),
     });
@@ -458,7 +459,7 @@ class ExpedixApiClient {
   }
 
   async deleteConsultation(consultationId: string): Promise<{ success: boolean }> {
-    return this.makeRequest<{ success: boolean }>(`/expedix/consultations/${consultationId}`, {
+    return this.makeRequest<{ success: boolean }>(`/expedix/consultations?consultation_id=${consultationId}`, {
       method: 'DELETE',
     });
   }
@@ -505,6 +506,10 @@ class ExpedixApiClient {
       method: 'POST',
       body: JSON.stringify(appointmentData),
     });
+  }
+
+  async getClinicData(): Promise<{ data: any }> {
+    return this.makeRequest<{ data: any }>('/tenant/context/');
   }
 }
 
@@ -579,13 +584,14 @@ export function useExpedixApi() {
     },
 
     // Consultation Management - Central Integration
-    getPatientConsultations: async (patientId: string) => {
-      return apiClient.getPatientConsultations(patientId);
+    getPatientConsultations: async (patientId: string, consultationId?: string) => {
+      return apiClient.getPatientConsultations(patientId, consultationId);
     },
     createConsultation: async (consultationData: any) => {
       return apiClient.createConsultation(consultationData);
     },
     updateConsultation: async (consultationId: string, consultationData: any) => {
+      console.log('llegamos a updateConsultation del hook');
       return apiClient.updateConsultation(consultationId, consultationData);
     },
     deleteConsultation: async (consultationId: string) => {
@@ -606,5 +612,8 @@ export function useExpedixApi() {
     createAppointmentFromConsultation: async (consultationId: string, appointmentData: any) => {
       return apiClient.createAppointmentFromConsultation(consultationId, appointmentData);
     },
+    getClinicData: async () => {
+      return apiClient.getClinicData();
+    }
   };
 }
