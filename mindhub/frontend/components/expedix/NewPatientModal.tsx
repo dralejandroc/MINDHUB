@@ -104,7 +104,7 @@ export default function NewPatientModal({ isOpen, onClose, onSuccess, setSelecte
 
       // Call API to create patient
       const response = await expedixApi.createPatient(patientData);
-      console.log('RESPONSE', response);
+      // console.log('RESPONSE', response);
       
       if ((response as any).success || response.data) {
         onSuccess(response);

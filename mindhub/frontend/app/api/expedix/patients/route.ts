@@ -114,7 +114,6 @@ export async function POST(request: Request) {
     // 2) Env checks (no hardcodear claves)
     const djangoUrlBase = process.env.NEXT_PUBLIC_DJANGO_API_URL;
     const serviceRoleKey = process.env.NEXT_PUBLIC_SUPABASE_SERVICE_ROLE_KEY;
-    console.log(djangoUrlBase);
     
 
     if (!djangoUrlBase) {
