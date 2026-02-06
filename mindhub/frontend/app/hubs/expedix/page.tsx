@@ -179,7 +179,7 @@ function ExpedixContent() {
   
   const handlePatientCreated = (newPatient: Patient) => {
     console.log('Paciente creado:', newPatient);
-    // window.location.reload();
+    window.location.reload();
   };
   
   const handleScheduleAppointment = (patient: Patient) => {
