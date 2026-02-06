@@ -104,36 +104,36 @@ export default function NewPatientModal({ isOpen, onClose, onSuccess, setSelecte
 
       // Call API to create patient
       const response = await expedixApi.createPatient(patientData);
-      console.log('RESPONSE', response);
+      // console.log('RESPONSE', response);
       
-      // if ((response as any).success || response.data) {
-      //   onSuccess(response);
-      //   onClose();
-      //   setSelectedPatientId?.(response.data.id);
-      //   // Reset form
-      //   setFormData({
-      //     first_name: '',
-      //     paternal_last_name: '',
-      //     maternal_last_name: '',
-      //     birth_date: '',
-      //     gender: 'male',
-      //     email: '',
-      //     cell_phone: '',
-      //     phone: '',
-      //     address: '',
-      //     city: '',
-      //     state: '',
-      //     postal_code: '',
-      //     emergency_contact_name: '',
-      //     emergency_contact_phone: '',
-      //     emergency_contact_relationship: '',
-      //     medical_history: '',
-      //     current_medications: '',
-      //     allergies: ''
-      //   });
-      // } else {
-      //   throw new Error((response as any).message || 'Error al crear el paciente');
-      // }
+      if ((response as any).success || response.data) {
+        onSuccess(response);
+        onClose();
+        setSelectedPatientId?.(response.data.id);
+        // Reset form
+        setFormData({
+          first_name: '',
+          paternal_last_name: '',
+          maternal_last_name: '',
+          birth_date: '',
+          gender: 'male',
+          email: '',
+          cell_phone: '',
+          phone: '',
+          address: '',
+          city: '',
+          state: '',
+          postal_code: '',
+          emergency_contact_name: '',
+          emergency_contact_phone: '',
+          emergency_contact_relationship: '',
+          medical_history: '',
+          current_medications: '',
+          allergies: ''
+        });
+      } else {
+        throw new Error((response as any).message || 'Error al crear el paciente');
+      }
     } catch (error) {
       console.error('Error creating patient:', error);
       setError(error instanceof Error ? error.message : 'Error al crear el paciente');
