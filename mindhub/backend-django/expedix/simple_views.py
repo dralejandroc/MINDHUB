@@ -37,10 +37,12 @@ class SimplePatientViewSet(viewsets.ModelViewSet):
     def create(self, request):
         """Crear paciente asociado al user autenticado - ARQUITECTURA SIMPLIFICADA"""
         data = request.data.copy()
-        data['user_id'] = request.user_id
-        
+        data['user_id'] = request.headers.get('X-User-Id')
+        data['created_by'] = request.headers.get('X-User-Id')
+        data['workspace_id'] = request.headers.get('X-Workspace-Id')
+        # print("Creating patient with data:", data)
         # Usar el create serializer para validación apropiada
-        serializer = PatientCreateSerializer(data=data)
+        serializer = PatientCreateSerializer(data=data, context={'request': request, 'expedix_config': getattr(request, 'expedix_config', None)})
         if serializer.is_valid():
             patient = serializer.save()
             logger.info(f'✅ [SIMPLIFIED] Patient created: {patient.id} by {patient.email}')

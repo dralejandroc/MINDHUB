@@ -155,7 +155,12 @@ export async function POST(request: Request) {
     // Get tenant context using unified resolver
     const tenantContext = await resolveTenantContext(user.id);
     console.log('[PATIENTS API POST] Tenant context:', tenantContext);
-
+    safeBody.created_by = user.id;
+    if (workspaceId) {
+      safeBody.workspace_id = workspaceId;
+    }
+    safeBody.user_id = user.id
+    console.log('[PATIENTS API] Creating patient for user:', user.id, 'with workspace:', workspaceId, safeBody);
     // 5) Proxy a Django
     const djangoUrl = `${djangoUrlBase.replace(/\/+$/,'')}/api/expedix/patients/`;
     console.log('[PATIENTS API] Proxying patient creation to Django at', djangoUrl);
@@ -168,6 +173,7 @@ export async function POST(request: Request) {
         'X-Proxy-Auth': 'verified',
         'X-User-ID': user.id,
         'X-User-Email': user.email || '',
+        'X-Workspace-ID': workspaceId || '',
         'X-Tenant-Context': JSON.stringify(tenantContext),
         'X-Glian-Context': 'expedix-patients',
       },
