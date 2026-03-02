@@ -103,7 +103,10 @@ class ExpedixGraphQLService {
           consultations_count: 0, // TODO: Add from GraphQL when available
           evaluations_count: 0, // TODO: Add from GraphQL when available
           created_at: edge.node.created_at || new Date().toISOString(),
-          updated_at: edge.node.updated_at || new Date().toISOString()
+          updated_at: edge.node.updated_at || new Date().toISOString(),
+          biological_sex: 'Masculino' as 'Masculino' | 'Femenino' | 'Intersexual', // Default to 'Masculino' if not available in basic GraphQL query
+          preferred_pronouns: '', // Not available in basic GraphQL query
+          religion: '' // Not available in basic GraphQL query
         };
       }) || [];
 
@@ -184,7 +187,10 @@ class ExpedixGraphQLService {
         consultations_count: 0, // TODO: Add from GraphQL when available
         evaluations_count: 0, // TODO: Add from GraphQL when available
         created_at: patientData.created_at || new Date().toISOString(),
-        updated_at: patientData.updated_at || new Date().toISOString()
+        updated_at: patientData.updated_at || new Date().toISOString(),
+        biological_sex: 'Masculino' as 'Masculino' | 'Femenino' | 'Intersexual', // Default value
+        preferred_pronouns: '', // Default value
+        religion: '' // Default value
       };
 
       console.log('✅ [ExpedixGraphQL] Patient loaded via GraphQL:', patient.id);
