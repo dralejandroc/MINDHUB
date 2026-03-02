@@ -12,6 +12,9 @@ export interface Patient {
   birth_date: string;
   age: number;
   gender: 'male' | 'female';
+  biological_sex: 'Masculino' | 'Femenino' | 'Intersexual';
+  preferred_pronouns: string;
+  religion: string;
   email: string;
   cell_phone: string;
   phone?: string;
@@ -200,26 +203,21 @@ class ExpedixApiClient {
     }
   }
 
-  async createPatient(patientData: Partial<Patient>): Promise<{ data: Patient }> {
-    const response = await this.makeRequest<any>(API_ROUTES.expedix.patients, {
-      method: 'POST',
-      body: JSON.stringify(patientData),
-    });
-    console.log('RESPONSEEEEE', response);
-    type respType = {
-      success: boolean;
-      data: Patient;
-    };
-    const respuesta: respType = response;
-    if (response?.length) {
-      respuesta.success = true;
-      respuesta.data = response;
+  async createPatient(patientData: Partial<Patient>): Promise<{ success: boolean; data: Patient }> {
+    const response = await this.makeRequest<{ success: boolean; data: Patient }>(
+      API_ROUTES.expedix.patients,
+      {
+        method: 'POST',
+        body: JSON.stringify(patientData),
+      }
+    );
+
+    // response ya viene con {success, data}
+    if (!response?.success || !response?.data) {
+      throw new Error('Respuesta inválida del servidor');
     }
-    else{
-      respuesta.success = false;
-      respuesta.data = {} as Patient;
-    }
-    return respuesta;
+
+    return response;
   }
 
   async updatePatient(id: string, patientData: Partial<Patient>): Promise<{ data: Patient }> {

@@ -38,7 +38,7 @@ interface PatientFormData {
 interface NewPatientModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSuccess: (patient: any) => void;
+  onSuccess: (patient: any, keep?: boolean) => void;
   setSelectedPatientId?: (id: string | undefined) => void;
 }
 
@@ -66,6 +66,7 @@ export default function NewPatientModal({ isOpen, onClose, onSuccess, setSelecte
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [keep, setKeep] = useState(false);
 
   const handleInputChange = (field: keyof PatientFormData, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
@@ -87,7 +88,6 @@ export default function NewPatientModal({ isOpen, onClose, onSuccess, setSelecte
     e.preventDefault();
     setLoading(true);
     setError(null);
-    console.log('ENTRO ACAAAAA');
     
     try {
       // Calculate age
@@ -107,7 +107,9 @@ export default function NewPatientModal({ isOpen, onClose, onSuccess, setSelecte
       // console.log('RESPONSE', response);
       
       if ((response as any).success || response.data) {
-        onSuccess(response);
+        console.log('RESPONSE DESDE MODAL:',response);
+        
+        onSuccess(response, keep);
         onClose();
         setSelectedPatientId?.(response.data.id);
         // Reset form
@@ -497,6 +499,7 @@ export default function NewPatientModal({ isOpen, onClose, onSuccess, setSelecte
               type="submit"
               className="bg-blue-600 hover:bg-blue-700 text-white"
               disabled={loading}
+              onClick={() => setKeep(true)}
             >
               {loading ? (
                 <>
@@ -505,6 +508,21 @@ export default function NewPatientModal({ isOpen, onClose, onSuccess, setSelecte
                 </>
               ) : (
                 'Crear Paciente'
+              )}
+            </Button>
+            <Button
+              type="submit"
+              className="bg-blue-600 hover:bg-blue-700 text-white"
+              disabled={loading}
+              onClick={() => setKeep(false)}
+            >
+              {loading ? (
+                <>
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                  Guardando...
+                </>
+              ) : (
+                'Crear Paciente e ir al expediente'
               )}
             </Button>
           </div>

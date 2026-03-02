@@ -280,6 +280,24 @@ class Consultation(models.Model):
     diagnoses = models.JSONField(blank=True, null=True)   # jsonb
     indications = models.JSONField(blank=True, null=True) # jsonb
 
+    # Nuevos campos clínicos JSON (sintomatologia_actual → intervencion_crisis)
+    sintomatologia_actual        = models.JSONField(blank=True, null=True)
+    historia_personal            = models.JSONField(blank=True, null=True)
+    antecedentes_psiquiatricos   = models.JSONField(blank=True, null=True)
+    historia_riesgo              = models.JSONField(blank=True, null=True)
+    uso_sustancias               = models.JSONField(blank=True, null=True)
+    antecedentes_medicos         = models.JSONField(blank=True, null=True)
+    antecedentes_heredofamiliares = models.JSONField(blank=True, null=True)
+    historia_personal_social     = models.JSONField(blank=True, null=True)
+    plan_manejo                  = models.JSONField(blank=True, null=True)
+    analisis_conclusiones        = models.JSONField(blank=True, null=True)
+    formulacion_caso             = models.JSONField(blank=True, null=True)
+    estado_inicio                = models.JSONField(blank=True, null=True)
+    contenido_sesion             = models.JSONField(blank=True, null=True)
+    otros_campos                 = models.JSONField(blank=True, null=True)
+    red_apoyo                    = models.JSONField(blank=True, null=True)
+    intervencion_crisis          = models.JSONField(blank=True, null=True)
+
     class Meta:
         db_table = 'consultations'
         indexes = [
@@ -406,12 +424,19 @@ class ConsultationTemplate(models.Model):
     Define la estructura y campos disponibles para las consultas
     """
     TEMPLATE_TYPE_CHOICES = [
-        ('general', 'Consulta General'),
-        ('followup', 'Consulta de Seguimiento'),
-        ('initial', 'Primera Consulta'),
-        ('emergency', 'Consulta de Emergencia'),
+        # Tipos clínicos específicos (nuevos)
+        ('psychiatry_initial',    'Psiquiatría — Primera Consulta'),
+        ('psychiatry_followup',   'Psiquiatría — Seguimiento'),
+        ('psychology_initial',    'Psicología — Primera Consulta'),
+        ('psychotherapy_followup','Psicoterapia — Sesión'),
+        ('soap',                  'Nota SOAP'),
+        ('emergency',             'Urgencia / Crisis'),
+        ('custom',                'Plantilla Personalizada'),
+        # Tipos legacy (compatibilidad con plantillas existentes)
+        ('general',     'Consulta General'),
+        ('followup',    'Consulta de Seguimiento'),
+        ('initial',     'Primera Consulta'),
         ('specialized', 'Consulta Especializada'),
-        ('custom', 'Plantilla Personalizada'),
     ]
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
@@ -425,7 +450,7 @@ class ConsultationTemplate(models.Model):
     # Template basic info
     name = models.CharField(max_length=200)
     description = models.TextField(blank=True, null=True)
-    template_type = models.CharField(max_length=20, choices=TEMPLATE_TYPE_CHOICES, default='general')
+    template_type = models.CharField(max_length=50, choices=TEMPLATE_TYPE_CHOICES, default='general')
     
     # FormX integration - this links to FormX dynamic forms
     formx_template_id = models.UUIDField(blank=True, null=True, help_text="ID del template en FormX")

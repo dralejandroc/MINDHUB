@@ -6,6 +6,7 @@ Replaces Node.js API responses with Django serializers
 from rest_framework import serializers
 from .models import Profile, Patient, MedicalHistory, Consultation, Prescription, ExpedixConfiguration, ConsultationTemplate, MedicationDatabase, PrescriptionMedication, ScheduleConfig, UserDocument, PatientDocument
 from .services.patient_service import PatientService
+from .defaults import DEFAULT_MENTAL_EXAM
 # from agenda.models import Appointment  # REMOVED for Vercel deployment
 
 
@@ -229,22 +230,188 @@ class MedicalHistorySerializer(serializers.ModelSerializer):
 
 
 class ConsultationSerializer(serializers.ModelSerializer):
-    """Consultation serializer"""
-    patient_name = serializers.CharField(source='patient.full_name', read_only=True)
+    patient_name = serializers.SerializerMethodField()
     professional_name = serializers.SerializerMethodField()
-    
+
+    # fuerza dict en output
+    mental_exam = serializers.SerializerMethodField()
+
     class Meta:
         model = Consultation
         fields = [
-            'id', 'patient', 'professional', 'consultation_date', 'reason',
-            'consultation_notes', 'diagnosis', 'treatment_plan', 'status',
-            'duration_minutes', 'created_at', 'updated_at',
-            'patient_name', 'professional_name'
+            "id",
+            "patient_id",
+            "professional_id",
+            "user_id",
+            "clinic_id",
+
+            "consultation_date",
+            "consultation_type",
+            "chief_complaint",
+            "history_present_illness",
+            "review_of_systems",
+            "physical_examination",
+
+            "vital_signs",
+            "mental_exam",
+
+            "assessment",
+            "plan",
+            "diagnosis",
+            "treatment_plan",
+            "current_condition",
+            "additional_instructions",
+            "diagnoses",
+            "indications",
+
+            "sintomatologia_actual",
+            "historia_personal",
+            "antecedentes_psiquiatricos",
+            "historia_riesgo",
+            "uso_sustancias",
+            "antecedentes_medicos",
+            "antecedentes_heredofamiliares",
+            "historia_personal_social",
+            "plan_manejo",
+            "analisis_conclusiones",
+            "formulacion_caso",
+            "estado_inicio",
+            "contenido_sesion",
+            "otros_campos",
+            "red_apoyo",
+            "intervencion_crisis",
+
+            "status",
+            "duration_minutes",
+            "is_draft",
+            "is_finalized",
+            "finalized_at",
+
+            "created_at",
+            "updated_at",
+
+            "patient_name",
+            "professional_name",
         ]
-        read_only_fields = ['id', 'created_at', 'updated_at']
+
+    def get_mental_exam(self, obj):
+        # si viene null, regresa el default completo
+        raw = obj.mental_exam
+        if not isinstance(raw, dict) or not raw:
+            return DEFAULT_MENTAL_EXAM
+        # merge shallow por si faltan secciones
+        out = {**DEFAULT_MENTAL_EXAM, **raw}
+        return out
+
+    def get_patient_name(self, obj):
+        # Si NO tienes FK real, devuelve vacío o resuelve aparte
+        return ""
 
     def get_professional_name(self, obj):
-        return f"{obj.professional.first_name} {obj.professional.last_name}".strip()
+        return ""
+
+class ConsultationWriteSerializer(serializers.ModelSerializer):
+    mental_exam = serializers.JSONField(required=False, allow_null=True)
+    vital_signs = serializers.JSONField(required=False, allow_null=True)
+    sintomatologia_actual = serializers.JSONField(required=False, allow_null=True)
+    historia_personal = serializers.JSONField(required=False, allow_null=True)
+    antecedentes_psiquiatricos = serializers.JSONField(required=False, allow_null=True)
+    historia_riesgo = serializers.JSONField(required=False, allow_null=True)
+    uso_sustancias = serializers.JSONField(required=False, allow_null=True)
+    antecedentes_medicos = serializers.JSONField(required=False, allow_null=True)
+    antecedentes_heredofamiliares = serializers.JSONField(required=False, allow_null=True)
+    historia_personal_social = serializers.JSONField(required=False, allow_null=True)
+    plan_manejo = serializers.JSONField(required=False, allow_null=True)
+    analisis_conclusiones = serializers.JSONField(required=False, allow_null=True)
+    formulacion_caso = serializers.JSONField(required=False, allow_null=True)
+    estado_inicio = serializers.JSONField(required=False, allow_null=True)
+    contenido_sesion = serializers.JSONField(required=False, allow_null=True)
+    otros_campos = serializers.JSONField(required=False, allow_null=True)
+    red_apoyo = serializers.JSONField(required=False, allow_null=True)
+    intervencion_crisis = serializers.JSONField(required=False, allow_null=True)
+
+    class Meta:
+        model = Consultation
+        fields = [
+            "patient_id",
+            "professional_id",
+            "user_id",
+            "clinic_id",
+
+            "consultation_date",
+            "consultation_type",
+            "chief_complaint",
+            "history_present_illness",
+            "review_of_systems",
+            "physical_examination",
+
+            "vital_signs",
+            "mental_exam",
+
+            "assessment",
+            "plan",
+            "diagnosis",
+            "treatment_plan",
+            "current_condition",
+            "additional_instructions",
+            "diagnoses",
+            "indications",
+
+            "sintomatologia_actual",
+            "historia_personal",
+            "antecedentes_psiquiatricos",
+            "historia_riesgo",
+            "uso_sustancias",
+            "antecedentes_medicos",
+            "antecedentes_heredofamiliares",
+            "historia_personal_social",
+            "plan_manejo",
+            "analisis_conclusiones",
+            "formulacion_caso",
+            "estado_inicio",
+            "contenido_sesion",
+            "otros_campos",
+            "red_apoyo",
+            "intervencion_crisis",
+
+            "status",
+            "duration_minutes",
+            "is_draft",
+        ]
+
+    def validate_mental_exam(self, value):
+        # Permite null -> default
+        if value is None:
+            return DEFAULT_MENTAL_EXAM
+
+        if not isinstance(value, dict):
+            raise serializers.ValidationError("mental_exam debe ser un objeto JSON")
+
+        # Validación mínima: asegurar secciones base (evita que te manden cualquier cosa)
+        required_sections = [
+            "apariencia","conducta","actitud","habla","afecto","animo",
+            "pensamiento_proceso","pensamiento_contenido","percepcion",
+            "cognicion","insight_juicio","funcionalidad"
+        ]
+        missing = [k for k in required_sections if k not in value]
+        if missing:
+            # si prefieres “autocompletar” en vez de error, reemplaza por merge y no lances excepción
+            # return {**DEFAULT_MENTAL_EXAM, **value}
+            raise serializers.ValidationError(f"mental_exam incompleto, faltan secciones: {missing}")
+
+        return value
+
+    def create(self, validated_data):
+        # si no viene, seteamos default
+        if "mental_exam" not in validated_data or validated_data["mental_exam"] in (None, {}, []):
+            validated_data["mental_exam"] = DEFAULT_MENTAL_EXAM
+        return super().create(validated_data)
+
+    def update(self, instance, validated_data):
+        # si viene explícitamente null, lo volvemos default (opcional)
+        if "mental_exam" in validated_data and validated_data["mental_exam"] in (None, {}, []):
+            validated_data["mental_exam"] = DEFAULT_MENTAL_EXAM
+        return super().update(instance, validated_data)
 
 
 class ConsultationCreateSerializer(serializers.ModelSerializer):

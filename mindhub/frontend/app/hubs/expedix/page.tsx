@@ -177,9 +177,19 @@ function ExpedixContent() {
     setState(prev => ({ ...prev, showNewPatientModal: true }));
   };
   
-  const handlePatientCreated = (newPatient: Patient) => {
+  const handlePatientCreated = (newPatient: any, keep?: boolean) => {
+    console.log('KEEP', keep);
+    
     console.log('Paciente creado:', newPatient);
-    window.location.reload();
+    if (keep) {
+      setState(prev => ({ ...prev, showNewPatientModal: false }));
+    } else {
+      // Update URL to reflect new patient
+      console.log('llendo al expediente...');
+      if (newPatient){
+        router.push(`/hubs/expedix?patient=${newPatient.data.id}`);
+      }
+    }
   };
   
   const handleScheduleAppointment = (patient: Patient) => {
@@ -190,8 +200,6 @@ function ExpedixContent() {
   const handleSettings = () => {
     router.push('/hubs/expedix/settings');
   };
-
-
 
   // Clean Architecture: Error handling logic
   const handleRetry = () => {
@@ -305,12 +313,15 @@ function ExpedixContent() {
           onScheduleAppointment={handleScheduleAppointment}
           onSettings={handleSettings}
           onChangeView={(mode: ViewMode) => setState(prev => ({ ...prev, viewMode: mode }))}
+          searchText={state.searchTerm}  
         />
       )}
       
       {state.viewMode === 'cards' && (
         <ExpedientsGrid
           onSelectPatient={handleSelectPatient}
+          searchText={state.searchTerm}
+          refreshPatients={!state.showNewPatientModal}  
         />
       )}
       

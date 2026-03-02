@@ -150,7 +150,24 @@ class ConsultationViewSet(viewsets.ViewSet):
                         "consultation_metadata",
                         "sections_completed",
                         "vital_signs",
-                        "next_appointment"
+                        "next_appointment",
+                        # Nuevos campos clínicos JSON
+                        "sintomatologia_actual",
+                        "historia_personal",
+                        "antecedentes_psiquiatricos",
+                        "historia_riesgo",
+                        "uso_sustancias",
+                        "antecedentes_medicos",
+                        "antecedentes_heredofamiliares",
+                        "historia_personal_social",
+                        "plan_manejo",
+                        "analisis_conclusiones",
+                        "formulacion_caso",
+                        "estado_inicio",
+                        "contenido_sesion",
+                        "otros_campos",
+                        "red_apoyo",
+                        "intervencion_crisis",
                     ):
                         consultation_dict[f] = coerce_json(consultation_dict.get(f), {})
 
@@ -306,6 +323,23 @@ class ConsultationViewSet(viewsets.ViewSet):
             "next_appointment",
             "diagnoses",
             "indications",
+            # Nuevos campos clínicos JSON
+            "sintomatologia_actual",
+            "historia_personal",
+            "antecedentes_psiquiatricos",
+            "historia_riesgo",
+            "uso_sustancias",
+            "antecedentes_medicos",
+            "antecedentes_heredofamiliares",
+            "historia_personal_social",
+            "plan_manejo",
+            "analisis_conclusiones",
+            "formulacion_caso",
+            "estado_inicio",
+            "contenido_sesion",
+            "otros_campos",
+            "red_apoyo",
+            "intervencion_crisis",
         }
 
         # Campos que NO quieres permitir que el front cambie aunque existan
@@ -390,6 +424,24 @@ class ConsultationViewSet(viewsets.ViewSet):
                     # Otros campos
                     "additional_instructions",
                     "current_condition",
+
+                    # Nuevos campos clínicos JSON
+                    "sintomatologia_actual",
+                    "historia_personal",
+                    "antecedentes_psiquiatricos",
+                    "historia_riesgo",
+                    "uso_sustancias",
+                    "antecedentes_medicos",
+                    "antecedentes_heredofamiliares",
+                    "historia_personal_social",
+                    "plan_manejo",
+                    "analisis_conclusiones",
+                    "formulacion_caso",
+                    "estado_inicio",
+                    "contenido_sesion",
+                    "otros_campos",
+                    "red_apoyo",
+                    "intervencion_crisis",
                 ]
 
                 for field in allowed_fields:

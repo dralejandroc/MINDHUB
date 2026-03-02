@@ -2,14 +2,18 @@
 
 import { useState, useEffect, useCallback, useRef, use } from 'react';
 import { Card } from '@/components/ui/Card';
+import { FullscreenHandwritingPad } from '@/components/inputs/FullscreenHandwritingPad';
 import { Button } from '@/components/ui/Button';
-import { 
+// import { ChevronDownIcon, Icon } from 'lucide-react';
+import {
   ArrowLeftIcon,
   ClockIcon,
   DocumentTextIcon,
   UserIcon,
   ChevronLeftIcon,
   ChevronRightIcon,
+  ChevronUpIcon,
+  ChevronDownIcon,
   CalendarIcon,
   PlusIcon,
   EyeIcon,
@@ -21,7 +25,7 @@ import {
 } from '@heroicons/react/24/outline';
 import { expedixApi, type Patient, type Prescription } from '@/lib/api/expedix-client';
 import { useAuthenticatedFetch } from '@/lib/api/supabase-auth';
-import { format, set } from 'date-fns';
+import { format, set, eachDayOfInterval } from 'date-fns';
 import { es } from 'date-fns/locale';
 import ConsultationPreviewDialog from './ConsultationPreviewDialog';
 import { MentalExamFormatter, type MentalExamData } from '@/lib/utils/mental-exam-formatter';
@@ -31,7 +35,6 @@ import { PrescriptionCreator } from '../../prescriptions/PrescriptionCreator';
 import { MedicationModal } from '../MedicationModal';
 import { PrescriptionDesigner } from '../PrescriptionDesigner';
 import DiagnosesSelector from './components/DiagnosesSelector';
-import { ChevronDownIcon, Icon } from 'lucide-react';
 import { IconButton } from '@/components/design-system/Button';
 import Swal from 'sweetalert2';
 import RecetasAddForm from './RecetasAddForm';
@@ -39,9 +42,12 @@ import { clinimetrixProClient } from '@/lib/api/clinimetrix-pro-client';
 import { EvaluationsMultiSelect } from './EvaluationsMultiselect';
 import toast from 'react-hot-toast';
 import moment from 'moment';
-import { ConsultationData, Consultation } from 'types/expedix-models';
+import { ConsultationData, Consultation, MentalExamDetailed } from 'types/expedix-models';
 import { supabase } from '@/lib/supabase/client';
 import { DictationTextarea } from '@/components/inputs/DictationTextarea';
+import { checkboxesDelirios, checkboxesTiposCompulsiones, checkboxesTiposObsesiones, optionsAlucinacionesAuditivas,
+    optionsAlucinacionesOlfatorias, optionsAlucinacionesGustativas, optionsAlucinacionesTactiles, optionsAlucinacionesVisuales, optionsDespersonalizacion, optionsDesrealizacion, optionsIlusiones } from './helpers';
+import { MultiSelectChips } from '@/components/inputs/MultiSelectChipsProps';
 
 interface CentralizedConsultationInterfaceProps {
   patient: Patient;
@@ -74,7 +80,22 @@ type FieldKey =
   | 'vitalSigns'
   | 'evaluations'
   | 'labOrders'
-  | 'labResults';
+  | 'labResults'
+  // nuevas secciones
+  | 'sintomatologiaActual'
+  | 'antecedentesPsiquiatricos'
+  | 'historiaRiesgo'
+  | 'usoSustancias'
+  | 'antecedentesMedicos'
+  | 'antecedentesHeredofamiliares'
+  | 'historiaPersonalSocial'
+  | 'estadoInicio'
+  | 'contenidoSesion'
+  | 'planManejo'
+  | 'analisisConclusiones'
+  | 'formulacionCaso'
+  | 'redApoyo'
+  | 'intervencionCrisis';
 
 const resolveTemplateBySelectValue = (
   templatesArr: ConsultationTemplate[],
@@ -101,12 +122,140 @@ const defaultConsultationTypes = [
   { value: 'specialized', label: 'Consulta Especializada' }
 ]
 
+// Maps legacy Spanish-label values (stored in old consultations) back to canonical keys
+const LEGACY_CONSULTATION_TYPE_MAP: Record<string, string> = {
+  'Consulta General': 'general',
+  'Primera Consulta': 'initial',
+  'Consulta de Seguimiento': 'followup',
+  'Consulta de Emergencia': 'emergency',
+  'Consulta Especializada': 'specialized',
+};
+
+/** Normalises a raw consultation_type value that may be a legacy Spanish label into the canonical key used by the select options and resolveTemplateBySelectValue. */
+const normalizeConsultationType = (raw: string | undefined | null): string => {
+  if (!raw) return 'general';
+  return LEGACY_CONSULTATION_TYPE_MAP[raw] ?? raw;
+};
+
 type UIMode = 'history' | 'detail';
 
 type SidebarView = 'consultations' | 'prescriptions' | 'appointments';
 
+const initMentalExamDetailed: MentalExamDetailed = {
+  apariencia: {
+    aspecto_general: "Adecuado",
+    higiene: "Buena",
+    vestimenta: "Apropiada para contexto",
+    edad_aparente: "Aparenta edad cronológica",
+    complexion: "Normal",
+    facies: "Normal",
+    caracteristicas_distintivas: "",
+  },
+  conducta: {
+    nivel_psicomotor: "Normal",
+    contacto_visual: "Adecuado",
+    postura: "Normal / Relajada",
+    marcha: "Normal",
+    movimientos_anormales: "Ninguno",
+    cooperacion_entrevista: "Cooperador",
+  },
+  actitud: {
+    actitud_general: "Colaboradora",
+    rapport: "Fácil de establecer",
+  },
+  habla: {
+    velocidad: "Normal",
+    volumen: "Normal",
+    tono: "Normal",
+    articulacion: "Clara",
+    cantidad: "Normal",
+    latencia_respuesta: "Normal",
+    prosodia: "Normal",
+  },
+  afecto: {
+    tipo: "Eutímico",
+    rango_afectivo: "Normal",
+    intensidad: "Normal",
+    reactividad: "Reactivo",
+    congruencia: "Congruente",
+    estabilidad: "Estable",
+  },
+  animo: {
+    estado_animo: "",
+    nivel: 5,
+    concordancia_animo_afecto: "Concordante",
+  },
+  pensamiento_proceso: {
+    curso_pensamiento: "Lógico y coherente",
+    velocidad_pensamiento: "Normal",
+    contenido_discurso: "Apropiado y relevante",
+  },
+  pensamiento_contenido: {
+    ideas_muerte: "Ausentes",
+    ideacion_suicida: "Ausente",
+    plan_suicida: "",
+    ideacion_homicida: "Ausente",
+    delirios: [],
+    caracteristicas_delirios: "No aplica",
+    ideas_sobrevaloradas: "Ausentes",
+    obsesiones: "Ausentes",
+    tipo_obsesiones: [],
+    compulsiones: "Ausentes",
+    tipo_compulsiones: [],
+    fobias: "Ausentes",
+    preocupaciones_excesivas: "Ausentes",
+  },
+  percepcion: {
+    alucinaciones_auditivas: "Ausentes",
+    alucinaciones_auditivas_caracteristicas: "",
+    alucinaciones_visuales: "Ausentes",
+    alucinaciones_visuales_caracteristicas: "",
+    alucinaciones_tactiles: "Ausentes",
+    alucinaciones_tactiles_caracteristicas: "",
+    alucinaciones_olfatorias: "Ausentes",
+    alucinaciones_olfatorias_caracteristicas: "",
+    alucinaciones_gustativas: "Ausentes",
+    alucinaciones_gustativas_caracteristicas: "",
+    ilusiones: "Ausentes",
+    ilusiones_caracteristicas: "",
+    despersonalizacion: "Ausente",
+    despersonalizacion_caracteristicas: "",
+    desrealizacion: "Ausente",
+    desrealizacion_caracteristicas: "",
+  },
+  cognicion: {
+    nivel_conciencia: "Alerta",
+    orientacion_persona: "Orientado",
+    orientacion_lugar: "Orientado",
+    orientacion_tiempo: "Orientado",
+    orientacion_situacion: "Orientado",
+    atencion: "Normal",
+    concentracion: "Adecuada",
+    memoria_inmediata: "Conservada",
+    memoria_reciente: "Conservada",
+    memoria_remota: "Conservada",
+    capacidad_abstracta: "Normal",
+    calculo: "Conservado",
+    inteligencia_clinica_estimada: "Normal",
+    funciones_ejecutivas: "Sin alteraciones aparentes",
+  },
+  insight_juicio: {
+    insight: "Completo",
+    grado: "",
+    juicio: "Conservado",
+    juicio_social: "Adecuado",
+    control_impulsos: "Adecuado",
+  },
+  funcionalidad: {
+    nivel_global: 100,
+    laboral_escolar: "Sin afectación",
+    funcionalidad_social: "Sin afectación",
+    autocuidado: "Independiente",
+  },
+};
+
 const initFormData = {
-    consultation_type: 'Consulta General',
+    consultation_type: 'general',
     consultation_date: new Date().toISOString().split('T')[0],
     current_condition: '',
     diagnosis: '',
@@ -127,46 +276,286 @@ const initFormData = {
     indications: [],
     additional_instructions: '',
     next_appointment: { date: '', time: '' },
-    mental_exam: {
-      descripcionInspeccion: '',
-      apariencia: '',
-      actitud: '',
-      conciencia: '',
-      orientacion: '',
-      atencion: '',
-      lenguaje: '',
-      afecto: '',
-      sensopercepcion: '',
-      memoria: '',
-      pensamientoPrincipal: '',
-      pensamientoDetalles: '',
-      appearance: '',
-      attitude: '',
-      consciousness: '',
-      customAppearance: '',
-      speechRate: '',
-      speechVolume: '',
-      speechFluency: '',
-      customSpeech: '',
-      affectIntensity: '',
-      affectQuality: '',
-      customAffect: '',
-      perceptions: '',
-      customPerceptions: '',
-      memory: '',
-      thoughtContent: '',
-      customThought: '',
-      thoughtProcess: '',
-      customInsightJudgment: '',
-      generalSummary: '',
-      moodState: '',
-      customCognition: '',
-      orientation: '',
-      attention: '',
-      insight: '',
-      judgment: ''
-    }
-}
+    mental_exam: initMentalExamDetailed,
+    sintomatologia_actual: {
+      motivo_consulta: '',
+      queja_principal: '',
+      sintoma_principal: '',
+      historia_sintomas_actuales: '',
+      duracion_sintomas: '',
+      factores_precipitantes: '',
+      referido_por: 'Autoreferencia' as const,
+      nombre_refiere: '',
+      padecimiento_actual: '',
+      curso_enfermedad: 'Agudo' as const,
+      sintomas_cardinales: '',
+      impacto_fucional: 'Nulo' as const,
+      espera_terapia: '',
+      terapia_antes: 'No' as const,
+      terapia_funciono: '',
+      descripcion_problema: '',
+      situaciones_problema: '',
+      pensamientos_asociados: '',
+      emociones_asociadas: '',
+      conductas_asociadas: '',
+      consecuencias: '',
+      intentos_previos_solucion: '',
+      impactos_vida: 'Personal' as const,
+      sueno: 'Regular' as const,
+      apetito: 'Bueno' as const,
+      energia: 'Buena' as const,
+      nivel_funcionamiento: '',
+    },
+    historia_personal: {
+      desarrollo_temprano: '',
+      relacion_padres: '',
+      relacion_hermanos: '',
+      experiencias_escolares: '',
+      historia_relacion_pareja: '',
+      patron_relaciones: '',
+      experiencias_traumaticas: '',
+      fortalezas_personales: '',
+      valores_importantes: '',
+      metas_vida: '',
+    },
+    antecedentes_psiquiatricos: {
+      diagnosticos_previos: [] as string[],
+      diagnosticos_previos_detalle: '',
+      hospitalizaciones_previas: 'No' as const,
+      motivos_hospitalizacion: '',
+      tratamientos_previos: 'No' as const,
+      tratamientos_previos_detalle: { medicamento: '', dosis: '', durecion: '', respuesta: '', motivo_suspension: '' },
+      psiquiatra_tratante: '',
+      psicoterapias_previas: 'No' as const,
+      psicoterapias_previas_detalle: { tipo: '', duracion: '', terapeuta: '', resultado: '' },
+      tec: 'No' as const,
+      tec_detalle: '',
+      emt: 'No' as const,
+      emt_detalle: '',
+      otros_tratamientos_somaticos: '',
+    },
+    historia_riesgo: {
+      ideacion_suicida_previa: 'No' as const,
+      intentos_suicidio_previos: 'No' as const,
+      intentos_suicidio_detalle: '',
+      autolesiones_no_suicidas: 'No' as const,
+      autolesiones_no_suicidas_detalle: '',
+      ideacion_homicida_previa: 'No' as const,
+      ideacion_homicida_detalle: '',
+      conductas_violentas_previas: 'No' as const,
+      conductas_violentas_detalle: '',
+      acceso_armas: 'No' as const,
+      acceso_armas_detalle: '',
+      acceso_medicamentos_cantidad: 'No' as const,
+      acceso_medicamentos_cantidad_detalle: '',
+      acceso_medios_letales: 'No' as const,
+      acceso_medios_letales_detalle: '',
+      otro_factor_riesgo: 'No' as const,
+      otro_factor_riesgo_detalle: '',
+      conducta_agresiva: 'No' as const,
+      conducta_agresiva_detalle: '',
+      nivel_riesgo: 'NA' as const,
+      plan_seguridad: '',
+      eventos_precipitantes: '',
+      uso_sustancias_recienta: 'No' as const,
+      uso_sustancias_recienta_detalle: '',
+      suspension_medicamentos: 'No' as const,
+      suspension_medicamentos_detalle: '',
+      estresores_identificados: 'No' as const,
+      estresores_identificados_detalle: '',
+      perdidas_recientes: 'No' as const,
+      perdidas_recientes_detalle: '',
+    },
+    uso_sustancias: {
+      tabaco: 'Nunca' as const,
+      alcohol: 'Ocasional' as const,
+      cannabis: 'No' as const,
+      cannabis_frecuencia: 'Previo' as const,
+      cocaina: 'No' as const,
+      cocaina_frecuencia: 'Previo' as const,
+      opioides: 'No' as const,
+      opioides_frecuencia: 'Previo' as const,
+      benzodiacepinas: 'No' as const,
+      benzodiacepinas_frecuencia: 'Previo' as const,
+      otras_sustancias: 'No' as const,
+      otras_sustancias_detalle: '',
+      tratamientos_previos_accidente: 'No' as const,
+      tratamientos_previos_accidente_detalle: '',
+      internamientos_previos_sustancias: 'No' as const,
+      internamientos_previos_sustancias_detalle: '',
+      ultima_intoxicacion: '',
+      inicio_abstinencia: '',
+    },
+    antecedentes_medicos: {
+      enfermedades_cronicas: [] as string[],
+      cirugias_previas: 'No' as const,
+      cirugias_previas_detalle: [{ precedimiento: '', fecha: '', hospital: '' }] as [{ precedimiento: string; fecha: string; hospital: string }],
+      hospitalizaciones_medicas: '',
+      alergias_medicamentos: 'No' as const,
+      alergias_medicamentos_detalle: [{ medicamento: '', reaccion: '' }] as [{ medicamento: string; reaccion: string }],
+      otras_alergias: '',
+      medicamentos_actuales: [{ medicamento: '', dosis: '', frecuencia: '', indicacion: '' }] as [{ medicamento: string; dosis: string; frecuencia: string; indicacion: string }],
+      condiciones_neurologicas: [] as string[],
+      enfermedades_endocrinas: [] as string[],
+      embarazo_actual: 'NA' as const,
+      lactancia: 'NA' as const,
+      ultima_menstruacion: '',
+      metodo_anticonceptivo: 'NA' as const,
+      metodo_anticonceptivo_detalle: '',
+    },
+    antecedentes_heredofamiliares: {
+      antecedentes_psicologicos: [{ parentesco: '', diagnostico: '', tratamiento: '', suicidio: 'No' as const }] as [{ parentesco: string; diagnostico: string; tratamiento: string; suicidio: 'Si' | 'No' }],
+      derpesion: [{ parentesco: '', diagnostico: '', tratamiento: '', suicidio: 'No' as const }] as [{ parentesco: string; diagnostico: string; tratamiento: string; suicidio: 'Si' | 'No' }],
+      trastorno_bipolar: [{ parentesco: '', diagnostico: '', tratamiento: '', suicidio: 'No' as const }] as [{ parentesco: string; diagnostico: string; tratamiento: string; suicidio: 'Si' | 'No' }],
+      esquizofrenia: [{ parentesco: '', diagnostico: '', tratamiento: '', suicidio: 'No' as const }] as [{ parentesco: string; diagnostico: string; tratamiento: string; suicidio: 'Si' | 'No' }],
+      ansiedad: [{ parentesco: '', diagnostico: '', tratamiento: '', suicidio: 'No' as const }] as [{ parentesco: string; diagnostico: string; tratamiento: string; suicidio: 'Si' | 'No' }],
+      uso_sustancias: [{ parentesco: '', diagnostico: '', tratamiento: '', suicidio: 'No' as const }] as [{ parentesco: string; diagnostico: string; tratamiento: string; suicidio: 'Si' | 'No' }],
+      suicidio: [{ parentesco: '', diagnostico: '', tratamiento: '', suicidio: 'No' as const }] as [{ parentesco: string; diagnostico: string; tratamiento: string; suicidio: 'Si' | 'No' }],
+      tdah: [{ parentesco: '', diagnostico: '', tratamiento: '', suicidio: 'No' as const }] as [{ parentesco: string; diagnostico: string; tratamiento: string; suicidio: 'Si' | 'No' }],
+      demencia: [{ parentesco: '', diagnostico: '', tratamiento: '', suicidio: 'No' as const }] as [{ parentesco: string; diagnostico: string; tratamiento: string; suicidio: 'Si' | 'No' }],
+      enfermedades_relevantes: '',
+    },
+    historia_personal_social: {
+      embarazo_parto: '',
+      desarrollo_psicomotor: 'Normal' as const,
+      desarrollo_psicomotor_detalle: '',
+      historia_escolar: '',
+      problemas_aprendizaje: 'No' as const,
+      problemas_aprendizaje_detalle: '',
+      historia_laboral: '',
+      situacion_laboral_actual: '',
+      historia_relaciones: '',
+      relacion_actual: '',
+      hijos: [{ pareja: '', sexo: '', edad: 0 }] as [{ pareja: string; sexo: string; edad: number }],
+      convivencia_actual: '',
+      apoyo_social: 5,
+      situacion_economica: 'Buena' as const,
+      situacion_legal: 'No' as const,
+      situacion_legal_detalle: '',
+      trauma_infantil: 'No' as const,
+      trauma_infantil_detalle: '',
+      abuso_fisico: 'No interrogado' as const,
+      abuso_sexual: 'No interrogado' as const,
+      negligencia: 'No interrogado' as const,
+      voilencia_domestica: 'No interrogado' as const,
+      intereses_pasatiempos: '',
+      fortalezas_paciente: '',
+    },
+    plan_manejo: {
+      farmacoterapia_indicada: 'No' as const,
+      efectos_secundarios_reportados: '',
+      estresores_actuales: '',
+      plan_manejo_tratamiento: '',
+      tiempo_seguimiento_meses: 'Corto plazo' as const,
+      psicoterapia_indicada: 'No' as const,
+      numero_sesiones_previstas: 0,
+      receta: '',
+      enfoque_terapeutico_propuesto: '',
+      objetivos_terapeuticos: '',
+      tarea_proxima_sesion: '',
+      tareas_asignadas_previamente: '',
+      frecuencia_sesiones: 'Semanal' as const,
+      duracion_estimada: '',
+      necesidad_evaluacion_psiquiatrica: 'No' as const,
+      necesidad_pruebas_neuropsicologicas: 'No' as const,
+      tipo_pruebas_neuropsicologicas: 'Cognitivas' as const,
+      contrato_terapeutico: 'No' as const,
+      referencias_interconsultas: '',
+      psicoeducacion_proporcionada: '',
+      temas_a_continuar: '',
+      progreso: 'Nulo' as const,
+      proxima_cita: '',
+      cambios_plan_tratamiento: '',
+    },
+    analisis_conclusiones: {
+      analisis_clinico: '',
+      diagnostico_principal: [],
+      diagnosticos_secundarios: [],
+      diagnostico_diferencial: '',
+      formulacion_caso: '',
+      notas_privadas: '',
+      observaciones_progreso: '',
+      estado_emocional: '',
+      nivel_malestar_cierre: 5,
+      cambios_ultima_visita: '',
+      adherencia_tratamiento: 'Nulo' as const,
+      adherencia_detalle: '',
+      pronostico: 'No se puede pronosticar aún' as const,
+      pronostico_detalle: '',
+    },
+    formulacion_caso: {
+      hipotesis_trabajo: '',
+      factores_predisponentes: '',
+      factores_precipitantes: '',
+      factores_mantenimiento: '',
+      factores_protectores: '',
+      diagnostico_presuntivo: '',
+    },
+    estado_inicio: {
+      estado_emocional: '',
+      nivel_malestar: 5,
+      eventos_ultima_sesion: '',
+      trae_hoy: '',
+    },
+    contenido_sesion: {
+      temas_principales: '',
+      tecnicas_utilizadas: [] as string[],
+      momentos_significativos: '',
+      insights_paciente: '',
+      emociones_trabajadas: [] as string[],
+      emociones_trabajadas_detalle: '',
+      resistencias_observadas: '',
+    },
+    otros_campos: {
+      documentos: [] as string[],
+      estudios_gabinete: {
+        tac: { check: 'No' as const, detalle: '' },
+        rm: { check: 'No' as const, detalle: '' },
+        ultrasonido: { check: 'No' as const, detalle: '' },
+        poligrafia: { check: 'No' as const, detalle: '' },
+        polisomnografia: { check: 'No' as const, detalle: '' },
+        otro: { check: 'No' as const, detalle: '' },
+      },
+      estudios_laboratorio: [],
+      tipo_urgencia: 'Sentida' as const,
+      evaluacion_intento_suicidio: {
+        intencional: '',
+        peligrosidad: '',
+        impulsividad: '',
+      },
+    },
+    red_apoyo: {
+      redes_disponibles: 'No' as const,
+      redes_disponibles_detalle: '',
+      contencion: 'No' as const,
+      contencion_detalle: '',
+      contacto_emergencia: 'No' as const,
+      contacto_emergencia_detalle: '',
+    },
+    intervencion_crisis: {
+      intervencion_crisis: '',
+      contencion_verbal: '',
+      medicacion_urgencia: '',
+      restriccion_medios: 'No' as const,
+      restriccion_medios_detalle: '',
+      llamada_familia: 'No' as const,
+      llamada_familia_detalle: '',
+      psicoeducacion: '',
+      responsable_egreso: { nombre: '', parentesco: '', telefono: '' },
+      destino: 'Alta' as const,
+      justificacion: '',
+      criterios_hospitalizacion: 'No' as const,
+      criterios_hospitalizacion_detalle: '',
+      consentimiento_paciente: 'No' as const,
+      consentimiento_paciente_detalle: '',
+      consentimiento_familiar: 'No' as const,
+      consentimiento_familiar_detalle: '',
+      plan_egreso: '',
+      instrucciones: '',
+      numeros_emergencia: [] as string[],
+      indicaciones_escrito: '',
+    },
+} as ConsultationData
 
 // Safe date formatting function to avoid Invalid time value errors
 const safeFormatDate = (dateString: string | null | undefined, formatStr: string = 'dd MMM yyyy'): string => {
@@ -209,6 +598,8 @@ export default function CentralizedConsultationInterface({
   
   // Navigation states
   const [sidebarView, setSidebarView] = useState<SidebarView>('consultations');
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [headerCollapsed, setHeaderCollapsed] = useState(false);
   const [currentConsultationIndex, setCurrentConsultationIndex] = useState(0);
   const [showPreviewDialog, setShowPreviewDialog] = useState(false);
   
@@ -233,6 +624,10 @@ export default function CentralizedConsultationInterface({
 
   const [activeTemplate, setActiveTemplate] = useState<ConsultationTemplate | null>(null);
   const [activeFields, setActiveFields] = useState<Set<string> | null>(null);
+
+    // states from pad
+  const [openPad, setOpenPad] = useState(false);
+  const [noteImg, setNoteImg] = useState<string | null>(null);
 
   type ExpedixConfig = {
     settings?: {
@@ -284,7 +679,13 @@ export default function CentralizedConsultationInterface({
   const isVisible = (key: FieldKey) => {
     // null => no hay filtro => todo visible
     if (!activeFields) return true;
-    return activeFields.has(key);
+    // Clave exacta (formato antiguo: 'mentalExam', 'vitalSigns', etc.)
+    if (activeFields.has(key)) return true;
+    // Formato dotted: si existe cualquier 'key.campo' la sección es visible
+    for (const f of activeFields) {
+      if (f.startsWith(key + '.')) return true;
+    }
+    return false;
   };
 
   const loadExpedixConfig = useCallback(async () => {
@@ -507,7 +908,7 @@ export default function CentralizedConsultationInterface({
       const newConsultation = {
         patient_id: patient.id, // Changed from patientId to patient_id to match backend
         consultation_date: new Date().toISOString(),
-        consultation_type: 'Consulta General',
+        consultation_type: 'general',
         status: 'draft',
         current_condition: '',
         diagnosis: ''
@@ -541,42 +942,39 @@ export default function CentralizedConsultationInterface({
           setShowReceta(false);
         }
         setConsultationData({
-          consultation_type: data.consultation_type || 'Consulta General',
+          ...initFormData,
+          ...data,
+          consultation_type: normalizeConsultationType(data.consultation_type),
           consultation_date: data.consultation_date ? moment(data.consultation_date).format('YYYY-MM-DD') : new Date().toISOString().split('T')[0],
           current_condition: data.current_condition || '',
           diagnosis: data.diagnosis || '',
           diagnoses: data.diagnoses || [],
           evaluations: data.evaluations || [],
           treatment_plan: data.treatment_plan || '',
-          vital_signs: data.vital_signs || {
-            height: '',
-            weight: '',
-            blood_pressure: { systolic: '', diastolic: '' },
-            temperature: '',
-            heartRate: '',
-            respiratoryRate: '',
-            oxygenSaturation: ''
-          },
+          vital_signs: data.vital_signs || initFormData.vital_signs,
           physical_examination: data.physical_examination || '',
           prescriptions: data.prescriptions || [],
           indications: data.indications || [],
           additional_instructions: data.additional_instructions || '',
           next_appointment: data.next_appointment || { date: '', time: '' },
-          mental_exam: data.mental_exam || {
-            descripcionInspeccion: '',
-            apariencia: '',
-            actitud: '',
-            conciencia: '',
-            orientacion: '',
-            atencion: '',
-            lenguaje: '',
-            afecto: '',
-            sensopercepcion: '',
-            memoria: '',
-            pensamientoPrincipal: '',
-            pensamientoDetalles: ''
-          }
-        });
+          mental_exam: data.mental_exam || initMentalExamDetailed,
+          sintomatologia_actual: data.sintomatologia_actual || initFormData.sintomatologia_actual,
+          historia_personal: data.historia_personal || initFormData.historia_personal,
+          antecedentes_psiquiatricos: data.antecedentes_psiquiatricos || initFormData.antecedentes_psiquiatricos,
+          historia_riesgo: data.historia_riesgo || initFormData.historia_riesgo,
+          uso_sustancias: data.uso_sustancias || initFormData.uso_sustancias,
+          antecedentes_medicos: data.antecedentes_medicos || initFormData.antecedentes_medicos,
+          antecedentes_heredofamiliares: data.antecedentes_heredofamiliares || initFormData.antecedentes_heredofamiliares,
+          historia_personal_social: data.historia_personal_social || initFormData.historia_personal_social,
+          plan_manejo: data.plan_manejo || initFormData.plan_manejo,
+          analisis_conclusiones: data.analisis_conclusiones || initFormData.analisis_conclusiones,
+          formulacion_caso: data.formulacion_caso || initFormData.formulacion_caso,
+          estado_inicio: data.estado_inicio || initFormData.estado_inicio,
+          contenido_sesion: data.contenido_sesion || initFormData.contenido_sesion,
+          otros_campos: data.otros_campos || initFormData.otros_campos,
+          red_apoyo: data.red_apoyo || initFormData.red_apoyo,
+          intervencion_crisis: data.intervencion_crisis || initFormData.intervencion_crisis,
+        } as ConsultationData);
       }
       // setLoading(false);
       toast.dismiss();
@@ -664,7 +1062,7 @@ export default function CentralizedConsultationInterface({
       // Update existing consultation
        try {
         // Formatear examen mental para almacenamiento
-        const formattedMentalExam = MentalExamFormatter.formatForStorage(consultationData.mental_exam as MentalExamData);
+        // const formattedMentalExam = MentalExamFormatter.formatForStorage(consultationData.mental_exam as MentalExamData);
         
         const updateData = {
           ...consultationData,
@@ -737,7 +1135,7 @@ export default function CentralizedConsultationInterface({
       consultation: currentConsultation,
       consultationData,
       patient,
-      formattedMentalExam: MentalExamFormatter.formatForStorage(consultationData.mental_exam as MentalExamData)
+      // formattedMentalExam: MentalExamFormatter.formatForStorage(consultationData.mental_exam as MentalExamData)
     };
     
     // Abrir ventana de impresión
@@ -1567,47 +1965,61 @@ export default function CentralizedConsultationInterface({
   return (
     <div className="flex h-screen bg-gray-50">
       {/* Left Sidebar - Patient History Navigation */}
-      <div className="w-80 bg-white shadow-lg border-r border-gray-200 flex flex-col">
+      <div className={`${sidebarCollapsed ? 'w-10' : 'w-80'} transition-all duration-300 bg-white shadow-lg border-r border-gray-200 flex flex-col overflow-hidden shrink-0`}>
         {/* Patient Header */}
         <div className="p-4 border-b border-gray-200 bg-gradient-to-r from-primary-50 to-primary-100">
           <div className="flex items-center justify-between mb-2">
-            <Button variant="outline" size="sm" onClick={onClose}>
-              <ArrowLeftIcon className="h-4 w-4 mr-1" />
-              Volver
-            </Button>
+            {!sidebarCollapsed && (
+              <Button variant="outline" size="sm" onClick={onClose}>
+                <ArrowLeftIcon className="h-4 w-4 mr-1" />
+                Volver
+              </Button>
+            )}
+            <button
+              onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+              className="ml-auto p-1 rounded hover:bg-primary-200 text-primary-700 transition-colors"
+              title={sidebarCollapsed ? 'Expandir historial' : 'Colapsar historial'}
+            >
+              {sidebarCollapsed
+                ? <ChevronRightIcon className="h-4 w-4" />
+                : <ChevronLeftIcon className="h-4 w-4" />
+              }
+            </button>
           </div>
-          <div className="flex items-center space-x-3">
-            <div className="w-12 h-12 bg-primary-200 rounded-full flex items-center justify-center">
-              <UserIcon className="h-6 w-6 text-primary-700" />
-            </div>
-            <div>
-              <div className="flex items-center space-x-2">
-                <h2 className="font-semibold text-gray-900">
-                  {patient.first_name} {patient.paternal_last_name}
-                </h2>
-                {/* Autosave indicator */}
-                {isAutoSaving && (
-                  <div className="flex items-center space-x-1 text-xs text-blue-600">
-                    <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
-                    <span>Guardando...</span>
-                  </div>
-                )}
-                {lastSaved && !isAutoSaving && (
-                  <div className="text-xs text-green-600 flex items-center space-x-1">
-                    <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                    <span>Guardado {lastSaved.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
-                  </div>
-                )}
+          {!sidebarCollapsed && (
+            <div className="flex items-center space-x-3">
+              <div className="w-12 h-12 bg-primary-200 rounded-full flex items-center justify-center">
+                <UserIcon className="h-6 w-6 text-primary-700" />
               </div>
-              <p className="text-sm text-gray-600">
-                {patient.age} años • #{patient.id.slice(0, 8)}
-              </p>
+              <div>
+                <div className="flex items-center space-x-2">
+                  <h2 className="font-semibold text-gray-900">
+                    {patient.first_name} {patient.paternal_last_name}
+                  </h2>
+                  {/* Autosave indicator */}
+                  {isAutoSaving && (
+                    <div className="flex items-center space-x-1 text-xs text-blue-600">
+                      <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
+                      <span>Guardando...</span>
+                    </div>
+                  )}
+                  {lastSaved && !isAutoSaving && (
+                    <div className="text-xs text-green-600 flex items-center space-x-1">
+                      <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                      <span>Guardado {lastSaved.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
+                    </div>
+                  )}
+                </div>
+                <p className="text-sm text-gray-600">
+                  {patient.age} años • #{patient.id.slice(0, 8)}
+                </p>
+              </div>
             </div>
-          </div>
+          )}
         </div>
 
         {/* Navigation Tabs */}
-        <div className="flex border-b border-gray-200">
+        <div className={`flex border-b border-gray-200 ${sidebarCollapsed ? 'hidden' : ''}`}>
           {[
             { id: 'consultations', label: 'Consultas', icon: DocumentTextIcon },
             { id: 'prescriptions', label: 'Recetas', icon: ClockIcon },
@@ -1629,7 +2041,7 @@ export default function CentralizedConsultationInterface({
         </div>
 
         {/* Content Area */}
-        <div className="flex-1 overflow-y-auto">
+        <div className={`flex-1 overflow-y-auto ${sidebarCollapsed ? 'hidden' : ''}`}>
           {sidebarView === 'consultations' && (
             <div className="p-4 space-y-3">
               <div className="flex items-center justify-between">
@@ -1757,12 +2169,14 @@ export default function CentralizedConsultationInterface({
       {/* Main Content Area - Current Consultation */}
       <div className="flex-1 flex flex-col">
         {/* Header with Navigation */}
-        <div className="bg-white border-b border-gray-200 px-6 py-4">
+        <div className={`bg-white border-b border-gray-200 transition-all duration-300 ${headerCollapsed ? 'px-3 py-1' : 'px-6 py-4'}`}>
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
-              <h1 className="text-xl font-semibold text-gray-900">
-                {currentConsultation ? 'Editar Consulta' : 'Nueva Consulta'}
-              </h1>
+              {!headerCollapsed && (
+                <h1 className="text-xl font-semibold text-gray-900">
+                  {currentConsultation ? 'Editar Consulta' : 'Nueva Consulta'}
+                </h1>
+              )}
               {consultations.length > 1 && (
                 <div className="flex items-center space-x-2">
                   <Button
@@ -1788,35 +2202,72 @@ export default function CentralizedConsultationInterface({
               )}
             </div>
             <div className="flex items-center space-x-2">
-              <Button variant="outline" onClick={() => setUiMode('history')}>
-                ← Historial
-              </Button>
+              {headerCollapsed ? (
+                <>
+                  <button
+                    onClick={() => setUiMode('history')}
+                    title="Historial"
+                    className="p-1.5 rounded border border-gray-300 hover:bg-gray-100 text-gray-600 transition-colors"
+                  >
+                    <ArrowLeftIcon className="h-4 w-4" />
+                  </button>
+                  <button
+                    onClick={startNewConsultation}
+                    title="Crear Consulta"
+                    className="p-1.5 rounded bg-primary-600 hover:bg-primary-700 text-white transition-colors"
+                  >
+                    <PlusIcon className="h-4 w-4" />
+                  </button>
+                  <button
+                    onClick={() => setShowPreviewDialog(true)}
+                    title="Vista previa"
+                    className="p-1.5 rounded border border-gray-300 hover:bg-gray-100 text-gray-600 transition-colors"
+                  >
+                    <EyeIcon className="h-4 w-4" />
+                  </button>
+                </>
+              ) : (
+                <>
+                  <Button variant="outline" onClick={() => setUiMode('history')}>
+                    ← Historial
+                  </Button>
+                  <Button variant="primary" onClick={startNewConsultation}>
+                    <PlusIcon className="h-4 w-4 mr-1" />
+                    Crear Consulta
+                  </Button>
+                  <Button variant="outline" onClick={() => setShowPreviewDialog(true)}>
+                    <EyeIcon className="h-4 w-4 mr-1" />
+                    Vista previa
+                  </Button>
+                </>
+              )}
 
-              <Button variant="primary" onClick={startNewConsultation}>
-                <PlusIcon className="h-4 w-4 mr-1" />
-                Crear Consulta
-              </Button>
-
-              <Button variant="outline" onClick={() => setShowPreviewDialog(true)}>
-                <EyeIcon className="h-4 w-4 mr-1" />
-                Vista previa
-              </Button>
-              
-              {/* Print Menu */}
+              {/* Print Menu — siempre en DOM para que el dropdown funcione en ambos modos */}
               <div className="relative">
-                <Button
-                  variant="outline"
-                  onClick={() => setShowPrintMenu(!showPrintMenu)}
-                  disabled={!currentConsultation}
-                >
-                  <PrinterIcon className="h-4 w-4 mr-1" />
-                  Imprimir
-                </Button>
-                
+                {headerCollapsed ? (
+                  <button
+                    onClick={() => setShowPrintMenu(!showPrintMenu)}
+                    disabled={!currentConsultation}
+                    title="Imprimir"
+                    className="p-1.5 rounded border border-gray-300 hover:bg-gray-100 text-gray-600 transition-colors disabled:opacity-40"
+                  >
+                    <PrinterIcon className="h-4 w-4" />
+                  </button>
+                ) : (
+                  <Button
+                    variant="outline"
+                    onClick={() => setShowPrintMenu(!showPrintMenu)}
+                    disabled={!currentConsultation}
+                  >
+                    <PrinterIcon className="h-4 w-4 mr-1" />
+                    Imprimir
+                  </Button>
+                )}
+
                 {showPrintMenu && (
                   <>
-                    <div 
-                      className="fixed inset-0 z-10" 
+                    <div
+                      className="fixed inset-0 z-10"
                       onClick={() => setShowPrintMenu(false)}
                     ></div>
                     <div className="absolute right-0 top-full mt-1 w-56 bg-white border border-gray-200 rounded-md shadow-lg z-20">
@@ -1857,7 +2308,18 @@ export default function CentralizedConsultationInterface({
                   </>
                 )}
               </div>
-              
+
+              {/* Toggle header */}
+              <button
+                onClick={() => setHeaderCollapsed(!headerCollapsed)}
+                title={headerCollapsed ? 'Expandir barra' : 'Compactar barra'}
+                className="p-1.5 rounded border border-gray-200 hover:bg-gray-100 text-gray-500 transition-colors"
+              >
+                {headerCollapsed
+                  ? <ChevronDownIcon className="h-4 w-4" />
+                  : <ChevronUpIcon className="h-4 w-4" />
+                }
+              </button>
             </div>
           </div>
         </div>
@@ -2075,81 +2537,134 @@ export default function CentralizedConsultationInterface({
               </h3>
               
               <div className="space-y-6">
-                {/* Apariencia y Comportamiento */}
+                {/* Apariencia */}
                 <div className="border-l-4 border-blue-500 pl-4">
-                  <h4 className="font-medium text-gray-900 mb-4">1. Apariencia y Comportamiento</h4>
+                  <h4 className="font-medium text-gray-900 mb-4">1. Apariencia</h4>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Apariencia General</label>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Aspecto General</label>
                       <select
-                        value={consultationData.mental_exam.appearance}
+                        value={consultationData.mental_exam.apariencia.aspecto_general}
                         onChange={(e) => setConsultationData(prev => ({ 
                           ...prev, 
-                          mental_exam: { ...prev.mental_exam, appearance: e.target.value }
+                          mental_exam: { 
+                            ...prev.mental_exam, 
+                            apariencia: { 
+                              ...prev.mental_exam.apariencia, 
+                              aspecto_general: e.target.value as typeof prev.mental_exam.apariencia.aspecto_general 
+                            } 
+                          }
                         }))}
                         className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-primary-500 focus:border-primary-500"
                       >
                         <option value="">Seleccionar...</option>
-                        <option value="bien cuidado">Bien cuidado</option>
-                        <option value="descuidado">Descuidado</option>
-                        <option value="excesivamente arreglado">Excesivamente arreglado</option>
-                        <option value="inapropiado para la ocasión">Inapropiado para la ocasión</option>
-                        <option value="normal para la edad">Normal para la edad</option>
-                        <option value="personalizado">Personalizado (especificar abajo)</option>
+                        <option value="Adecuado">Bien cuidado</option>
+                        <option value="Descuidado">Descuidado</option>
+                        <option value="Desaliñado">Desaliñado</option>
+                        <option value="Extravagante">Extravagante</option>
+                        <option value="Raro">Raro</option>
                       </select>
                     </div>
                     
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Actitud hacia el Examinador</label>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Higiene</label>
                       <select
-                        value={consultationData.mental_exam.attitude}
+                        value={consultationData.mental_exam.apariencia.higiene}
                         onChange={(e) => setConsultationData(prev => ({ 
                           ...prev, 
-                          mental_exam: { ...prev.mental_exam, attitude: e.target.value }
+                          mental_exam: { ...prev.mental_exam, apariencia: { ...prev.mental_exam.apariencia, higiene: e.target.value as typeof prev.mental_exam.apariencia.higiene } }
                         }))}
                         className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-primary-500 focus:border-primary-500"
                       >
                         <option value="">Seleccionar...</option>
-                        <option value="cooperativo">Cooperativo</option>
-                        <option value="hostil">Hostil</option>
-                        <option value="defensivo">Defensivo</option>
-                        <option value="suspicaz">Suspicaz</option>
-                        <option value="evasivo">Evasivo</option>
-                        <option value="apático">Apático</option>
-                        <option value="fácilmente distraído">Fácilmente distraído</option>
-                        <option value="enfocado">Enfocado</option>
-                        <option value="personalizado">Personalizado (especificar abajo)</option>
+                        <option value="Buena">Buena</option>
+                        <option value="Regular">Regular</option>
+                        <option value="Mala">Mala</option>
                       </select>
                     </div>
                     
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Nivel de Conciencia</label>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Vestimenta</label>
                       <select
-                        value={consultationData.mental_exam.consciousness}
+                        value={consultationData.mental_exam.apariencia.vestimenta}
                         onChange={(e) => setConsultationData(prev => ({ 
                           ...prev, 
-                          mental_exam: { ...prev.mental_exam, consciousness: e.target.value }
+                          mental_exam: { ...prev.mental_exam, apariencia: { ...prev.mental_exam.apariencia, vestimenta: e.target.value as typeof prev.mental_exam.apariencia.vestimenta } }
                         }))}
                         className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-primary-500 focus:border-primary-500"
                       >
                         <option value="">Seleccionar...</option>
-                        <option value="alerta">Alerta</option>
-                        <option value="vigilante">Vigilante</option>
-                        <option value="somnoliento">Somnoliento</option>
-                        <option value="letárgico">Letárgico</option>
-                        <option value="estuporoso">Estuporoso</option>
-                        <option value="confuso">Confuso</option>
-                        <option value="fluctuante">Fluctuante</option>
+                        <option value="Apropiada para contexto">Apropiada para contexto</option>
+                        <option value="Inapropiada para clima">Inapropiada para clima</option>
+                        <option value="Inapropiada para situación">Inapropiada para situación</option>
+                        <option value="Descuidada">Descuidada</option>
+                        <option value="Desaliñada">Desaliñada</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Edad aparente vs cronológica</label>
+                      <select
+                        value={consultationData.mental_exam.apariencia.edad_aparente}
+                        onChange={(e) => setConsultationData(prev => ({ 
+                          ...prev, 
+                          mental_exam: { ...prev.mental_exam, apariencia: { ...prev.mental_exam.apariencia, edad_aparente: e.target.value as typeof prev.mental_exam.apariencia.edad_aparente } }
+                        }))}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-primary-500 focus:border-primary-500"
+                      >
+                        <option value="">Seleccionar...</option>
+                        <option value="Aparenta edad cronológica">Aparenta edad cronológica</option>
+                        <option value="Aparenta mayor edad">Aparenta mayor edad</option>
+                        <option value="Aparenta menor edad">Aparenta menor edad</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Complexión</label>
+                      <select
+                        value={consultationData.mental_exam.apariencia.complexion}
+                        onChange={(e) => setConsultationData(prev => ({ 
+                          ...prev, 
+                          mental_exam: { ...prev.mental_exam, apariencia: { ...prev.mental_exam.apariencia, complexion: e.target.value as typeof prev.mental_exam.apariencia.complexion } }
+                        }))}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-primary-500 focus:border-primary-500"
+                      >
+                        <option value="">Seleccionar...</option>
+                        <option value="Normal">Normal</option>
+                        <option value="Delgado">Delgado</option>
+                        <option value="Sobrepeso">Sobrepeso</option>
+                        <option value="Obesidad">Obesidad</option>
+                        <option value="Caquectico">Caquectico</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Facies</label>
+                      <select
+                        value={consultationData.mental_exam.apariencia.facies}
+                        onChange={(e) => setConsultationData(prev => ({ 
+                          ...prev, 
+                          mental_exam: { ...prev.mental_exam, apariencia: { ...prev.mental_exam.apariencia, facies: e.target.value as typeof prev.mental_exam.apariencia.facies } }
+                        }))}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-primary-500 focus:border-primary-500"
+                      >
+                        <option value="">Seleccionar...</option>
+                        <option value="Normal">Normal</option>
+                        <option value="Ansiosa">Ansiosa</option>
+                        <option value="Deprimida">Deprimida</option>
+                        <option value="Inexpresiva">Inexpresiva</option>
+                        <option value="Dolorosa">Dolorosa</option>
+                        <option value="Eufórica">Eufórica</option>
                       </select>
                     </div>
                     
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Observaciones Adicionales</label>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Características distintivas</label>
                       <textarea
-                        value={consultationData.mental_exam.customAppearance}
+                        value={consultationData.mental_exam.apariencia.caracteristicas_distintivas}
                         onChange={(e) => setConsultationData(prev => ({ 
                           ...prev, 
-                          mental_exam: { ...prev.mental_exam, customAppearance: e.target.value }
+                          mental_exam: { ...prev.mental_exam, apariencia: { ...prev.mental_exam.apariencia, caracteristicas_distintivas: e.target.value } }
                         }))}
                         rows={2}
                         className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-primary-500 focus:border-primary-500"
@@ -2159,392 +2674,1405 @@ export default function CentralizedConsultationInterface({
                   </div>
                 </div>
 
-                {/* Habla y Lenguaje */}
+                {/* Conducta y actividad psicomotora */}
                 <div className="border-l-4 border-green-500 pl-4">
-                  <h4 className="font-medium text-gray-900 mb-4">2. Habla y Lenguaje</h4>
+                  <h4 className="font-medium text-gray-900 mb-4">2. Conducta Y Actividad Psicomotora</h4>
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Velocidad del Habla</label>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Nivel de actividad psicomotora</label>
                       <select
-                        value={consultationData.mental_exam.speechRate}
+                        value={consultationData.mental_exam.conducta.nivel_psicomotor}
                         onChange={(e) => setConsultationData(prev => ({ 
                           ...prev, 
-                          mental_exam: { ...prev.mental_exam, speechRate: e.target.value }
+                          mental_exam: { ...prev.mental_exam, conducta: { ...prev.mental_exam.conducta, nivel_psicomotor: e.target.value as typeof prev.mental_exam.conducta.nivel_psicomotor } }
                         }))}
                         className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-primary-500 focus:border-primary-500"
                       >
                         <option value="">Seleccionar...</option>
-                        <option value="normal">Normal</option>
-                        <option value="rápido">Rápido</option>
-                        <option value="lento">Lento</option>
-                        <option value="presionado">Presionado</option>
-                        <option value="tartamudeante">Tartamudeante</option>
+                        <option value="Normal">Normal</option>
+                        <option value="Aumentada (inquietud)">Aumentada (inquietud)</option>
+                        <option value="Aumentada (agitación)">Aumentada (agitación)</option>
+                        <option value="Disminuida (enlentecimiento)">Disminuida (enlentecimiento)</option>
+                        <option value="Disminuida (estupor)">Disminuida (estupor)</option>
+                        <option value="Catatonía">Catatonía</option>
+                      </select>
+                    </div>
+                    
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Contacto Visual</label>
+                      <select
+                        value={consultationData.mental_exam.conducta.contacto_visual}
+                        onChange={(e) => setConsultationData(prev => ({ 
+                          ...prev, 
+                          mental_exam: { ...prev.mental_exam, conducta: { ...prev.mental_exam.conducta, contacto_visual: e.target.value as typeof prev.mental_exam.conducta.contacto_visual } }
+                        }))}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-primary-500 focus:border-primary-500"
+                      >
+                        <option value="">Seleccionar...</option>
+                        <option value="Adecuando">Adecuado</option>
+                        <option value="Evitativo">Evitativo</option>
+                        <option value="Fijo/penetrante">Fijo/penetrante</option>
+                        <option value="Ausente">Ausente</option>
+                        <option value="Variable">Variable</option>
+                      </select>
+                    </div>
+                    
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Postura</label>
+                      <select
+                        value={consultationData.mental_exam.conducta.postura}
+                        onChange={(e) => setConsultationData(prev => ({ 
+                          ...prev, 
+                          mental_exam: { ...prev.mental_exam, conducta: { ...prev.mental_exam.conducta, postura: e.target.value as typeof prev.mental_exam.conducta.postura } }
+                        }))}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-primary-500 focus:border-primary-500"
+                      >
+                        <option value="">Seleccionar...</option>
+                        <option value="Normal">Normal</option>
+                        <option value="Relajada">Relajada</option>
+                        <option value="Tensa">Tensa</option>
+                        <option value="Encorvada">Encorvada</option>
+                        <option value="Rígida">Rígida</option>
+                        <option value="Rara">Rara</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Marcha</label>
+                      <select
+                        value={consultationData.mental_exam.conducta.marcha}
+                        onChange={(e) => setConsultationData(prev => ({ 
+                          ...prev, 
+                          mental_exam: { ...prev.mental_exam, conducta: { ...prev.mental_exam.conducta, marcha: e.target.value as typeof prev.mental_exam.conducta.marcha } }
+                        }))}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-primary-500 focus:border-primary-500"
+                      >
+                        <option value="">Seleccionar...</option>
+                        <option value="Normal">Normal</option>
+                        <option value="Lenta">Lenta</option>
+                        <option value="Rápida">Rápida</option>
+                        <option value="Atáxica">Atáxica</option>
+                        <option value="Parkinsoniana">Parkinsoniana</option>
+                        <option value="No evaluada">No evaluada</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Marcha</label>
+                      <select
+                        value={consultationData.mental_exam.conducta.marcha}
+                        onChange={(e) => setConsultationData(prev => ({ 
+                          ...prev, 
+                          mental_exam: { ...prev.mental_exam, conducta: { ...prev.mental_exam.conducta, marcha: e.target.value as typeof prev.mental_exam.conducta.marcha } }
+                        }))}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-primary-500 focus:border-primary-500"
+                      >
+                        <option value="">Seleccionar...</option>
+                        <option value="Normal">Normal</option>
+                        <option value="Lenta">Lenta</option>
+                        <option value="Rápida">Rápida</option>
+                        <option value="Atáxica">Atáxica</option>
+                        <option value="Parkinsoniana">Parkinsoniana</option>
+                        <option value="No evaluada">No evaluada</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Movimientos anormales</label>
+                      <select
+                        value={consultationData.mental_exam.conducta.movimientos_anormales}
+                        onChange={(e) => setConsultationData(prev => ({ 
+                          ...prev, 
+                          mental_exam: { ...prev.mental_exam, conducta: { ...prev.mental_exam.conducta, movimientos_anormales: e.target.value as typeof prev.mental_exam.conducta.movimientos_anormales } }
+                        }))}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-primary-500 focus:border-primary-500"
+                      >
+                        <option value="">Seleccionar...</option>
+                        <option value="Ninguno">Ninguna</option>
+                        <option value="Temblor">Temblor</option>
+                        <option value="Discinesias">Discinesias</option>
+                        <option value="Tics">Tics</option>
+                        <option value="Manierismos">Manierismos</option>
+                        <option value="Estereotipias">Estereotipias</option>
+                        <option value="Acatisia">Acatisia</option>
+                        <option value="Distonía">Distonía</option>
+                      </select>
+                    </div>
+                    
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Cooperación con la entrevista</label>
+                      <select
+                        value={consultationData.mental_exam.conducta.cooperacion_entrevista}
+                        onChange={(e) => setConsultationData(prev => ({ 
+                          ...prev, 
+                          mental_exam: { ...prev.mental_exam, conducta: { ...prev.mental_exam.conducta, cooperacion_entrevista: e.target.value as typeof prev.mental_exam.conducta.cooperacion_entrevista } }
+                        }))}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-primary-500 focus:border-primary-500"
+                      >
+                        <option value="">Seleccionar...</option>
+                        <option value="Cooperador">Cooperador</option>
+                        <option value="Parcialmente cooperador">Parcialmente cooperador</option>
+                        <option value="No cooperador">No cooperador</option>
+                        <option value="Hostil">Hostil</option>
+                        <option value="Oposicionista">Oposicionista</option>
+                      </select>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Actitud hacia el entrevistador */}
+                <div className="border-l-4 border-green-500 pl-4">
+                  <h4 className="font-medium text-gray-900 mb-4">3. Actitud Hacia el Entrevistador</h4>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Actitud General</label>
+                      <select
+                        value={consultationData.mental_exam.actitud.actitud_general}
+                        onChange={(e) => setConsultationData(prev => ({ 
+                          ...prev, 
+                          mental_exam: { ...prev.mental_exam, actitud: { ...prev.mental_exam.actitud, actitud_general: e.target.value as typeof prev.mental_exam.actitud.actitud_general } }
+                        }))}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-primary-500 focus:border-primary-500"
+                      >
+                        <option value="">Seleccionar...</option>
+                        <option value="Colaboradora">Colaboradora</option>
+                        <option value="Amable">Amable</option>
+                        <option value="Suspicaz">Suspicaz</option>
+                        <option value="Irritable / Hostil">Irritable / Hostil</option>
+                        <option value="Indiferente">Indiferente</option>
+                        <option value="Defensiva">Defensiva</option>
+                        <option value="Seductora">Seductora</option>
+                        <option value="Manipuladora">Manipuladora</option>
+                        <option value="Demandante">Demandante</option>
+                        <option value="Evasiva">Evasiva</option>
+                      </select>
+                    </div>
+                    
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Rapport</label>
+                      <select
+                        value={consultationData.mental_exam.actitud.rapport}
+                        onChange={(e) => setConsultationData(prev => ({ 
+                          ...prev, 
+                          mental_exam: { ...prev.mental_exam, actitud: { ...prev.mental_exam.actitud, rapport: e.target.value as typeof prev.mental_exam.actitud.rapport } }
+                        }))}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-primary-500 focus:border-primary-500"
+                      >
+                        <option value="">Seleccionar...</option>
+                        <option value="Fácil de establecer">Fácil de establecer</option>
+                        <option value="Difícil de establecer">Difícil de establecer</option>
+                        <option value="No se logró establecer / no valorable">No se logró establecer / no valorable</option>
+                      </select>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Habla y Lenguaje */}
+                <div className="border-l-4 border-green-500 pl-4">
+                  <h4 className="font-medium text-gray-900 mb-4">4. Habla y Lenguaje</h4>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Velocidad</label>
+                      <select
+                        value={consultationData.mental_exam.habla.velocidad}
+                        onChange={(e) => setConsultationData(prev => ({ 
+                          ...prev, 
+                          mental_exam: { ...prev.mental_exam, habla: { ...prev.mental_exam.habla, velocidad: e.target.value as typeof prev.mental_exam.habla.velocidad } }
+                        }))}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-primary-500 focus:border-primary-500"
+                      >
+                        <option value="">Seleccionar...</option>
+                        <option value="Normal">Normal</option>
+                        <option value="Rápida">Rápida</option>
+                        <option value="Lenta">Lenta</option>
+                        <option value="Presionada (taquilalia)">Presionada (taquilalia)</option>
+                        <option value="Bradilalia">Bradilalia</option>
                       </select>
                     </div>
                     
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">Volumen</label>
                       <select
-                        value={consultationData.mental_exam.speechVolume}
+                        value={consultationData.mental_exam.habla.volumen}
                         onChange={(e) => setConsultationData(prev => ({ 
                           ...prev, 
-                          mental_exam: { ...prev.mental_exam, speechVolume: e.target.value }
+                          mental_exam: { ...prev.mental_exam, habla: { ...prev.mental_exam.habla, volumen: e.target.value as typeof prev.mental_exam.habla.volumen } }
                         }))}
                         className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-primary-500 focus:border-primary-500"
                       >
                         <option value="">Seleccionar...</option>
-                        <option value="normal">Normal</option>
-                        <option value="alto">Alto</option>
-                        <option value="bajo">Bajo</option>
-                        <option value="monótono">Monótono</option>
-                        <option value="débil">Débil</option>
-                        <option value="fuerte">Fuerte</option>
+                        <option value="Normal">Normal</option>
+                        <option value="Alto">Alto</option>
+                        <option value="Bajo">Bajo</option>
+                        <option value="Susurrante">Susurrante</option>
+                        <option value="Variable">Variable</option>
                       </select>
                     </div>
                     
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Fluidez</label>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Tono</label>
                       <select
-                        value={consultationData.mental_exam.speechFluency}
+                        value={consultationData.mental_exam.habla.tono}
                         onChange={(e) => setConsultationData(prev => ({ 
                           ...prev, 
-                          mental_exam: { ...prev.mental_exam, speechFluency: e.target.value }
+                          mental_exam: { ...prev.mental_exam, habla: { ...prev.mental_exam.habla, tono: e.target.value as typeof prev.mental_exam.habla.tono } }
                         }))}
                         className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-primary-500 focus:border-primary-500"
                       >
                         <option value="">Seleccionar...</option>
-                        <option value="clara">Clara</option>
-                        <option value="arrastrada">Arrastrada</option>
-                        <option value="vacilante">Vacilante</option>
-                        <option value="buena articulación">Buena articulación</option>
-                        <option value="afásico">Afásico</option>
+                        <option value="Normal">Normal</option>
+                        <option value="Monótono">Monótono</option>
+                        <option value="Variable">Variable</option>
+                        <option value="Elevado">Elevado</option>
                       </select>
                     </div>
-                    
-                    <div className="md:col-span-3">
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Observaciones sobre Habla</label>
-                      <textarea
-                        value={consultationData.mental_exam.customSpeech}
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Articulacón</label>
+                      <select
+                        value={consultationData.mental_exam.habla.articulacion}
                         onChange={(e) => setConsultationData(prev => ({ 
                           ...prev, 
-                          mental_exam: { ...prev.mental_exam, customSpeech: e.target.value }
+                          mental_exam: { ...prev.mental_exam, habla: { ...prev.mental_exam.habla, articulacion: e.target.value as typeof prev.mental_exam.habla.articulacion } }
                         }))}
-                        rows={2}
                         className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-primary-500 focus:border-primary-500"
-                        placeholder="Detalles específicos sobre el habla y lenguaje..."
-                      />
+                      >
+                        <option value="">Seleccionar...</option>
+                        <option value="Clara">Clara</option>
+                        <option value="Disártrica">Disártrica</option>
+                        <option value="Farfullante">Farfullante</option>
+                        <option value="Musitante">Musitante</option>
+                      </select>
                     </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Cantidad</label>
+                      <select
+                        value={consultationData.mental_exam.habla.cantidad}
+                        onChange={(e) => setConsultationData(prev => ({ 
+                          ...prev, 
+                          mental_exam: { ...prev.mental_exam, habla: { ...prev.mental_exam.habla, cantidad: e.target.value as typeof prev.mental_exam.habla.cantidad } }
+                        }))}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-primary-500 focus:border-primary-500"
+                      >
+                        <option value="">Seleccionar...</option>
+                        <option value="Normal">Normal</option>
+                        <option value="Verborreico (logorrea)">Verborreico (logorrea)</option>
+                        <option value="Lacónico">Lacónico</option>
+                        <option value="Mutismo">Mutismo</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Latencia de respuesta</label>
+                      <select
+                        value={consultationData.mental_exam.habla.latencia_respuesta}
+                        onChange={(e) => setConsultationData(prev => ({ 
+                          ...prev, 
+                          mental_exam: { ...prev.mental_exam, habla: { ...prev.mental_exam.habla, latencia_respuesta: e.target.value as typeof prev.mental_exam.habla.latencia_respuesta } }
+                        }))}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-primary-500 focus:border-primary-500"
+                      >
+                        <option value="">Seleccionar...</option>
+                        <option value="Normal">Normal</option>
+                        <option value="Aumentada">Aumentada</option>
+                        <option value="Disminuida">Disminuida</option>
+                      </select>
+                    </div>
+
+                     <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Prosodia</label>
+                      <select
+                        value={consultationData.mental_exam.habla.prosodia}
+                        onChange={(e) => setConsultationData(prev => ({ 
+                          ...prev, 
+                          mental_exam: { ...prev.mental_exam, habla: { ...prev.mental_exam.habla, prosodia: e.target.value as typeof prev.mental_exam.habla.prosodia } }
+                        }))}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-primary-500 focus:border-primary-500"
+                      >
+                        <option value="">Seleccionar...</option>
+                        <option value="Normal">Normal</option>
+                        <option value="Aprosódica">Aprosódica</option>
+                        <option value="Disprosódica">Disprosódica</option>
+                      </select>
+                    </div>
+
                   </div>
                 </div>
 
-                {/* Afecto y Estado de Ánimo */}
+                {/* Afecto */}
                 <div className="border-l-4 border-yellow-500 pl-4">
-                  <h4 className="font-medium text-gray-900 mb-4">3. Afecto y Estado de Ánimo</h4>
+                  <h4 className="font-medium text-gray-900 mb-4">5. Afecto</h4>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Intensidad del Afecto</label>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Tipo de afecto observado</label>
                       <select
-                        value={consultationData.mental_exam.affectIntensity}
+                        value={consultationData.mental_exam.afecto.tipo}
                         onChange={(e) => setConsultationData(prev => ({ 
                           ...prev, 
-                          mental_exam: { ...prev.mental_exam, affectIntensity: e.target.value }
+                          mental_exam: { ...prev.mental_exam, afecto: { ...prev.mental_exam.afecto, tipo: e.target.value as typeof prev.mental_exam.afecto.tipo } }
                         }))}
                         className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-primary-500 focus:border-primary-500"
                       >
                         <option value="">Seleccionar...</option>
-                        <option value="normal">Normal</option>
-                        <option value="embotado">Embotado</option>
-                        <option value="plano">Plano</option>
-                        <option value="hiper-energizado">Hiper-energizado</option>
-                        <option value="restringido">Restringido</option>
-                        <option value="lábil">Lábil</option>
-                        <option value="expansivo">Expansivo</option>
+                        <option value="Eutímico">Eutímico</option>
+                        <option value="Ansioso">Ansioso</option>
+                        <option value="Deprimido">Deprimido</option>
+                        <option value="Irritable">Irritable</option>
+                        <option value="Eufórico">Eufórico</option>
+                        <option value="Disfórico">Disfórico</option>
+                        <option value="Apático">Apático</option>
+                        <option value="Lábil">Lábil</option>
+                        <option value="Aplanado">Aplanado</option>
+                        <option value="Embotado">Embotado</option>
+                        <option value="Inapropiado">Inapropiado</option>
                       </select>
                     </div>
                     
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Cualidad del Afecto</label>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Rango afectivo</label>
                       <select
-                        value={consultationData.mental_exam.affectQuality}
+                        value={consultationData.mental_exam.afecto.rango_afectivo}
                         onChange={(e) => setConsultationData(prev => ({ 
                           ...prev, 
-                          mental_exam: { ...prev.mental_exam, affectQuality: e.target.value }
+                          mental_exam: { ...prev.mental_exam, afecto: { ...prev.mental_exam.afecto, rango_afectivo: e.target.value as typeof prev.mental_exam.afecto.rango_afectivo } }
                         }))}
                         className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-primary-500 focus:border-primary-500"
                       >
                         <option value="">Seleccionar...</option>
-                        <option value="eutímico">Eutímico</option>
-                        <option value="triste">Triste</option>
-                        <option value="ansioso">Ansioso</option>
-                        <option value="irritable">Irritable</option>
-                        <option value="eufórico">Eufórico</option>
-                        <option value="hostil">Hostil</option>
-                        <option value="indiferente">Indiferente</option>
-                        <option value="animado">Animado</option>
-                        <option value="disfórico">Disfórico</option>
+                        <option value="Amplio">Amplio</option>
+                        <option value="Normal">Normal</option>
+                        <option value="Restringido">Restringido</option>
+                        <option value="Constreñido">Constreñido</option>
+                        <option value="Aplanado">Aplanado</option>
                       </select>
                     </div>
                     
                     <div className="md:col-span-2">
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Estado de Ánimo Reportado</label>
-                      <input
-                        type="text"
-                        value={consultationData.mental_exam.moodState}
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Intensidad</label>
+                      <select
+                        value={consultationData.mental_exam.afecto.intensidad}
                         onChange={(e) => setConsultationData(prev => ({ 
                           ...prev, 
-                          mental_exam: { ...prev.mental_exam, moodState: e.target.value }
+                          mental_exam: { ...prev.mental_exam, afecto: { ...prev.mental_exam.afecto, intensidad: e.target.value as typeof prev.mental_exam.afecto.intensidad } }
                         }))}
                         className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-primary-500 focus:border-primary-500"
-                        placeholder="Cómo describe el paciente su estado de ánimo..."
-                      />
+                      >
+                        <option value="">Seleccionar...</option>
+                        <option value="Normal">Normal</option>
+                        <option value="Aumentada">Aumentada</option>
+                        <option value="Disminuida">Disminuida</option>
+                      </select>
                     </div>
                     
                     <div className="md:col-span-2">
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Observaciones Emocionales</label>
-                      <textarea
-                        value={consultationData.mental_exam.customAffect}
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Reactividad</label>
+                      <select
+                        value={consultationData.mental_exam.afecto.reactividad}
                         onChange={(e) => setConsultationData(prev => ({ 
                           ...prev, 
-                          mental_exam: { ...prev.mental_exam, customAffect: e.target.value }
+                          mental_exam: { ...prev.mental_exam, afecto: { ...prev.mental_exam.afecto, reactividad: e.target.value as typeof prev.mental_exam.afecto.reactividad } }
                         }))}
-                        rows={2}
                         className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-primary-500 focus:border-primary-500"
-                        placeholder="Detalles sobre el estado emocional y afectivo..."
-                      />
+                      >
+                        <option value="">Seleccionar...</option>
+                        <option value="Reactivo">Reactivo</option>
+                        <option value="Poco reactivo">Poco reactivo</option>
+                        <option value="No reactivo">No reactivo</option>
+                      </select>
+                    </div>
+
+                    <div className="md:col-span-2">
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Congruencia con contenido</label>
+                      <select
+                        value={consultationData.mental_exam.afecto.congruencia}
+                        onChange={(e) => setConsultationData(prev => ({ 
+                          ...prev, 
+                          mental_exam: { ...prev.mental_exam, afecto: { ...prev.mental_exam.afecto, congruencia: e.target.value as typeof prev.mental_exam.afecto.congruencia } }
+                        }))}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-primary-500 focus:border-primary-500"
+                      >
+                        <option value="">Seleccionar...</option>
+                        <option value="Congruente">Congruente</option>
+                        <option value="Incongruente">Incongruente</option>
+                      </select>
+                    </div>
+
+                    <div className="md:col-span-2">
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Estabilidad</label>
+                      <select
+                        value={consultationData.mental_exam.afecto.estabilidad}
+                        onChange={(e) => setConsultationData(prev => ({ 
+                          ...prev, 
+                          mental_exam: { ...prev.mental_exam, afecto: { ...prev.mental_exam.afecto, estabilidad: e.target.value as typeof prev.mental_exam.afecto.estabilidad } }
+                        }))}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-primary-500 focus:border-primary-500"
+                      >
+                        <option value="">Seleccionar...</option>
+                        <option value="Estable">Estable</option>
+                        <option value="Lábil">Lábil</option>
+                      </select>
                     </div>
                   </div>
                 </div>
 
-                {/* Pensamiento */}
+                {/* Estado de Ánimo */}
+                <div className="border-l-4 border-yellow-500 pl-4">
+                  <h4 className="font-medium text-gray-900 mb-4">6. Estado de Ánimo</h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Estado de ánimo subjetivo (palabras del paciente)</label>
+                      <textarea
+                        value={consultationData.mental_exam.animo.estado_animo}
+                        onChange={(e) => setConsultationData(prev => ({ 
+                          ...prev, 
+                          mental_exam: { ...prev.mental_exam, animo: { ...prev.mental_exam.animo, estado_animo: e.target.value } }
+                        }))}
+                        rows={3}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-primary-500 focus:border-primary-500"
+                        placeholder="Ej: 'Me siento triste y sin energía'..."
+                      />
+                    </div>
+                    
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Nivel subjetivo (escala)</label>
+                      <input
+                        type="number"
+                        value={consultationData.mental_exam.animo.nivel}
+                        onChange={(e) => setConsultationData(prev => ({ 
+                          ...prev, 
+                          mental_exam: { ...prev.mental_exam, animo: { ...prev.mental_exam.animo, nivel: parseInt(e.target.value) } }
+                        }))}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-primary-500 focus:border-primary-500"
+                        placeholder="0 (peor estado) a 10 (mejor estado)"
+                        min={0}
+                        max={10}
+                      />
+                    </div>
+                    
+                    <div className="md:col-span-2">
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Concordancia ánimo-afecto</label>
+                      <select
+                        value={consultationData.mental_exam.animo.concordancia_animo_afecto}
+                        onChange={(e) => setConsultationData(prev => ({ 
+                          ...prev, 
+                          mental_exam: { ...prev.mental_exam, animo: { ...prev.mental_exam.animo, concordancia_animo_afecto: e.target.value as typeof prev.mental_exam.animo.concordancia_animo_afecto } }
+                        }))}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-primary-500 focus:border-primary-500"
+                      >
+                        <option value="">Seleccionar...</option>
+                        <option value="Concordante">Concordante</option>
+                        <option value="Discordante">Discordante</option>
+                      </select>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Pensamiento Proceso (Forma) */}
                 <div className="border-l-4 border-purple-500 pl-4">
-                  <h4 className="font-medium text-gray-900 mb-4">4. Pensamiento</h4>
+                  <h4 className="font-medium text-gray-900 mb-4">7. Pensamiento Proceso (Forma)</h4>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Proceso del Pensamiento</label>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Curso del Pensamiento</label>
                       <select
-                        value={consultationData.mental_exam.thoughtProcess}
+                        value={consultationData.mental_exam.pensamiento_proceso.curso_pensamiento}
                         onChange={(e) => setConsultationData(prev => ({ 
                           ...prev, 
-                          mental_exam: { ...prev.mental_exam, thoughtProcess: e.target.value }
+                          mental_exam: { ...prev.mental_exam, pensamiento_proceso: { ...prev.mental_exam.pensamiento_proceso, curso_pensamiento: e.target.value as typeof prev.mental_exam.pensamiento_proceso.curso_pensamiento } }
                         }))}
                         className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-primary-500 focus:border-primary-500"
                       >
                         <option value="">Seleccionar...</option>
-                        <option value="lineal y dirigido al objetivo">Lineal y dirigido al objetivo</option>
-                        <option value="circunstancial">Circunstancial</option>
-                        <option value="tangencial">Tangencial</option>
-                        <option value="incoherente">Incoherente</option>
-                        <option value="fuga de ideas">Fuga de ideas</option>
-                        <option value="bloqueo del pensamiento">Bloqueo del pensamiento</option>
-                        <option value="perseveración">Perseveración</option>
-                        <option value="asociaciones libres">Asociaciones libres</option>
-                        <option value="ensalada de palabras">Ensalada de palabras</option>
+                        <option value="Lógico y coherente">Lógico y coherente</option>
+                        <option value="Circunstancial">Circunstancial</option>
+                        <option value="Tangencial">Tangencial</option>
+                        <option value="Laxo (asociaciones laxas)">Laxo (asociaciones laxas)</option>
+                        <option value="Fuga de ideas">Fuga de ideas</option>
+                        <option value="Perseverativo">Perseverativo</option>
+                        <option value="Bloqueo del pensamiento">Bloqueo del pensamiento</option>
+                        <option value="Incoherente">Incoherente</option>
+                        <option value="Disgregado">Disgregado</option>
                       </select>
                     </div>
                     
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Contenido del Pensamiento</label>
-                      <input
-                        type="text"
-                        value={consultationData.mental_exam.thoughtContent}
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Velocidad del Pensamiento</label>
+                      <select
+                        value={consultationData.mental_exam.pensamiento_proceso.velocidad_pensamiento}
                         onChange={(e) => setConsultationData(prev => ({ 
                           ...prev, 
-                          mental_exam: { ...prev.mental_exam, thoughtContent: e.target.value }
+                          mental_exam: { ...prev.mental_exam, pensamiento_proceso: { ...prev.mental_exam.pensamiento_proceso, velocidad_pensamiento: e.target.value as typeof prev.mental_exam.pensamiento_proceso.velocidad_pensamiento } }
                         }))}
                         className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-primary-500 focus:border-primary-500"
-                        placeholder="Ideas dominantes, preocupaciones, obsesiones..."
-                      />
+                      >
+                        <option value="">Seleccionar...</option>
+                        <option value="Lógico y coherente">Normal</option>
+                        <option value="Acelerado (taquipsiquia)">Acelerado (taquipsiquia)</option>
+                        <option value="Enlentecido (bradipsiquia)">Enlentecido (bradipsiquia)</option>
+                      </select>
                     </div>
                     
-                    <div className="md:col-span-2">
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Observaciones del Pensamiento</label>
-                      <textarea
-                        value={consultationData.mental_exam.customThought}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Contenido del Discurso</label>
+                      <select
+                        value={consultationData.mental_exam.pensamiento_proceso.contenido_discurso}
                         onChange={(e) => setConsultationData(prev => ({ 
                           ...prev, 
-                          mental_exam: { ...prev.mental_exam, customThought: e.target.value }
+                          mental_exam: { ...prev.mental_exam, pensamiento_proceso: { ...prev.mental_exam.pensamiento_proceso, contenido_discurso: e.target.value as typeof prev.mental_exam.pensamiento_proceso.contenido_discurso } }
                         }))}
-                        rows={2}
                         className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-primary-500 focus:border-primary-500"
-                        placeholder="Detalles sobre el curso y contenido del pensamiento..."
-                      />
+                      >
+                        <option value="">Seleccionar...</option>
+                        <option value="Apropiado y relevante">Apropiado y relevante</option>
+                        <option value="Pobre">Pobre</option>
+                        <option value="Vago">Vago</option>
+                        <option value="Perseverativo">Perseverativo</option>
+                        <option value="Tangencial">Tangencial</option>
+                      </select>
                     </div>
                   </div>
                 </div>
 
-                {/* Percepción */}
-                <div className="border-l-4 border-red-500 pl-4">
-                  <h4 className="font-medium text-gray-900 mb-4">5. Percepción</h4>
-                  <div className="grid grid-cols-1 gap-4">
+                {/* Pensamiento Contenido */}
+                <div className="border-l-4 border-purple-500 pl-4">
+                  <h4 className="font-medium text-gray-900 mb-4">8. Pensamiento Contenido</h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Alteraciones Perceptuales</label>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Ideas de Muerte</label>
                       <select
-                        value={consultationData.mental_exam.perceptions}
+                        value={consultationData.mental_exam.pensamiento_contenido.ideas_muerte}
                         onChange={(e) => setConsultationData(prev => ({ 
                           ...prev, 
-                          mental_exam: { ...prev.mental_exam, perceptions: e.target.value }
+                          mental_exam: { ...prev.mental_exam, pensamiento_contenido: { ...prev.mental_exam.pensamiento_contenido, ideas_muerte: e.target.value as typeof prev.mental_exam.pensamiento_contenido.ideas_muerte } }
                         }))}
                         className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-primary-500 focus:border-primary-500"
                       >
-                        <option value="">Sin alteraciones reportadas</option>
-                        <option value="alucinaciones auditivas">Alucinaciones auditivas</option>
-                        <option value="alucinaciones visuales">Alucinaciones visuales</option>
-                        <option value="alucinaciones táctiles">Alucinaciones táctiles</option>
-                        <option value="ilusiones">Ilusiones</option>
-                        <option value="despersonalización">Despersonalización</option>
-                        <option value="desrealización">Desrealización</option>
-                        <option value="personalizado">Personalizado (especificar abajo)</option>
+                        <option value="">Seleccionar...</option>
+                        <option value="Ausentes">Ausentes</option>
+                        <option value="Presentes pasivas">Presentes pasivas</option>
+                        <option value="Presentes activas">Presentes activas</option>
                       </select>
                     </div>
                     
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Detalles sobre Percepción</label>
-                      <textarea
-                        value={consultationData.mental_exam.customPerceptions}
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Ideación Suicida</label>
+                      <select
+                        value={consultationData.mental_exam.pensamiento_contenido.ideacion_suicida}
                         onChange={(e) => setConsultationData(prev => ({ 
                           ...prev, 
-                          mental_exam: { ...prev.mental_exam, customPerceptions: e.target.value }
+                          mental_exam: { ...prev.mental_exam, pensamiento_contenido: { ...prev.mental_exam.pensamiento_contenido, ideacion_suicida: e.target.value as typeof prev.mental_exam.pensamiento_contenido.ideacion_suicida } }
                         }))}
-                        rows={2}
                         className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-primary-500 focus:border-primary-500"
-                        placeholder="Descripción detallada de alteraciones perceptuales..."
+                      >
+                        <option value="">Seleccionar...</option>
+                        <option value="Ausentes">Ausentes</option>
+                        <option value="Pasiva sin plan">Pasiva sin plan</option>
+                        <option value="Activa sin plan">Activa sin plan</option>
+                        <option value="Activa con plan sin intención">Activa con plan sin intención</option>
+                        <option value="Activa con plan e intención">Activa con plan e intención</option>
+                      </select>
+                    </div>
+                    
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Plan Suicida</label>
+                      <textarea
+                        value={consultationData.mental_exam.pensamiento_contenido.plan_suicida}
+                        onChange={(e) => setConsultationData(prev => ({ 
+                          ...prev, 
+                          mental_exam: { ...prev.mental_exam, pensamiento_contenido: { ...prev.mental_exam.pensamiento_contenido, plan_suicida: e.target.value } }
+                        }))}
+                        rows={3}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-primary-500 focus:border-primary-500"
+                        placeholder="Descripción detallada del plan suicida (si aplica)..."
                       />
                     </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Ideación Homocida</label>
+                      <select
+                        value={consultationData.mental_exam.pensamiento_contenido.ideacion_homicida}
+                        onChange={(e) => setConsultationData(prev => ({ 
+                          ...prev, 
+                          mental_exam: { ...prev.mental_exam, pensamiento_contenido: { ...prev.mental_exam.pensamiento_contenido, ideacion_homicida: e.target.value as typeof prev.mental_exam.pensamiento_contenido.ideacion_homicida } }
+                        }))}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-primary-500 focus:border-primary-500"
+                      >
+                        <option value="">Seleccionar...</option>
+                        <option value="Ausente">Ausente</option>
+                        <option value="Presente sin plan">Presente sin plan</option>
+                        <option value="Presente con plan">Presente con plan</option>
+                      </select>
+                    </div>
+
+                    {/* checkbox multiple */}
+                    <MultiSelectChips
+                      label="Delirios"
+                      options={checkboxesDelirios} // [{value,label}]
+                      value={consultationData?.mental_exam?.pensamiento_contenido?.delirios ?? []}
+                      onChange={(next) => {
+                        setConsultationData((prev) => ({
+                          ...prev,
+                          mental_exam: {
+                            ...(prev.mental_exam ?? {}),
+                            pensamiento_contenido: {
+                              ...(prev.mental_exam?.pensamiento_contenido ?? {}),
+                              delirios: next, // ✅ array de strings
+                            },
+                          },
+                        }));
+                      }}
+                      placeholder="Selecciona uno o varios..."
+                    />
+
+                    { consultationData.mental_exam.pensamiento_contenido.delirios.length > 0 && (
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Caracteristicas de Delirios</label>
+                        <textarea
+                          value={consultationData.mental_exam.pensamiento_contenido.caracteristicas_delirios}
+                          onChange={(e) => setConsultationData(prev => ({ 
+                            ...prev, 
+                            mental_exam: { ...prev.mental_exam, pensamiento_contenido: { ...prev.mental_exam.pensamiento_contenido, caracteristicas_delirios: e.target.value as typeof prev.mental_exam.pensamiento_contenido.caracteristicas_delirios } }
+                          }))}
+                          rows={3}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-primary-500 focus:border-primary-500"
+                          placeholder="Descripción detallada de características de delirios (si aplica)..."
+                        />
+                      </div>
+                    )}
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Ideas Sobrevaloradas</label>
+                      <select
+                        value={consultationData.mental_exam.pensamiento_contenido.ideas_sobrevaloradas}
+                        onChange={(e) => setConsultationData(prev => ({ 
+                          ...prev, 
+                          mental_exam: { ...prev.mental_exam, pensamiento_contenido: { ...prev.mental_exam.pensamiento_contenido, ideas_sobrevaloradas: e.target.value as typeof prev.mental_exam.pensamiento_contenido.ideas_sobrevaloradas } }
+                        }))}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-primary-500 focus:border-primary-500"
+                      >
+                        <option value="">Seleccionar...</option>
+                        <option value="Ausentes">Ausentes</option>
+                        <option value="Presentes">Presentes</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <MultiSelectChips 
+                        label='Obseciones'
+                        options={checkboxesTiposObsesiones} // [{value,label}]
+                        value={consultationData?.mental_exam?.pensamiento_contenido?.tipo_obsesiones ?? []}
+                        onChange={(next) => {
+                          setConsultationData((prev) => ({
+                            ...prev,
+                            mental_exam: {
+                              ...(prev.mental_exam ?? {}),
+                              pensamiento_contenido: {
+                                ...(prev.mental_exam?.pensamiento_contenido ?? {}),
+                                tipo_obsesiones: next, // ✅ array de strings
+                              },
+                            },
+                          }));
+                        }}
+                        placeholder="Selecciona uno o varios..."
+                      />
+                    </div>
+
+                    <div>
+                      <MultiSelectChips 
+                        label='Compulsiones'
+                        options={checkboxesTiposCompulsiones} // [{value,label}]
+                        value={consultationData?.mental_exam?.pensamiento_contenido?.tipo_compulsiones ?? []}
+                        onChange={(next) => {
+                          setConsultationData((prev) => ({
+                            ...prev,
+                            mental_exam: {
+                              ...(prev.mental_exam ?? {}),
+                              pensamiento_contenido: {
+                                ...(prev.mental_exam?.pensamiento_contenido ?? {}),
+                                tipo_compulsiones: next, // ✅ array de strings
+                              },
+                            },
+                          }));
+                        }}
+                        placeholder="Selecciona uno o varios..."
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Fobias</label>
+                      <select
+                        value={consultationData.mental_exam.pensamiento_contenido.fobias}
+                        onChange={(e) => setConsultationData(prev => ({ 
+                          ...prev, 
+                          mental_exam: { ...prev.mental_exam, pensamiento_contenido: { ...prev.mental_exam.pensamiento_contenido, fobias: e.target.value as typeof prev.mental_exam.pensamiento_contenido.fobias } }
+                        }))}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-primary-500 focus:border-primary-500"
+                      >
+                        <option value="">Seleccionar...</option>
+                        <option value="Ausentes">Ausentes</option>
+                        <option value="Presentes">Presentes</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Preocupaciones Excesivas</label>
+                      <select
+                        value={consultationData.mental_exam.pensamiento_contenido.preocupaciones_excesivas}
+                        onChange={(e) => setConsultationData(prev => ({ 
+                          ...prev, 
+                          mental_exam: { ...prev.mental_exam, pensamiento_contenido: { ...prev.mental_exam.pensamiento_contenido, preocupaciones_excesivas: e.target.value as typeof prev.mental_exam.pensamiento_contenido.preocupaciones_excesivas } }
+                        }))}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-primary-500 focus:border-primary-500"
+                      >
+                        <option value="">Seleccionar...</option>
+                        <option value="Ausentes">Ausentes</option>
+                        <option value="Presentes">Presentes</option>
+                      </select>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Percepcion */}
+                <div className="border-l-4 border-purple-500 pl-4">
+                  <h4 className="font-medium text-gray-900 mb-4">9. Percepción</h4>
+                  <div className="grid grid-cols-1 md:grid-cols-1 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Alucinaciones Auditivas</label>
+                      <select
+                        value={consultationData.mental_exam.percepcion.alucinaciones_auditivas}
+                        onChange={(e) => setConsultationData(prev => ({ 
+                          ...prev, 
+                          mental_exam: { ...prev.mental_exam, percepcion: { ...prev.mental_exam.percepcion, alucinaciones_auditivas: e.target.value as typeof prev.mental_exam.percepcion.alucinaciones_auditivas } }
+                        }))}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-primary-500 focus:border-primary-500"
+                      >
+                        {
+                          optionsAlucinacionesAuditivas.map((option) => (
+                            <option key={option.value} value={option.value}>{option.label}</option>
+                          ))
+                        }
+                      </select>
+                    </div>
+                    { consultationData.mental_exam.percepcion.alucinaciones_auditivas !== 'Ausentes' && consultationData.mental_exam.percepcion.alucinaciones_auditivas !== 'No evaluado' && (
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Características de Alucinaciones Auditivas</label>
+                        <textarea
+                          value={consultationData.mental_exam.percepcion.alucinaciones_auditivas_caracteristicas}
+                          onChange={(e) => setConsultationData(prev => ({ 
+                            ...prev, 
+                            mental_exam: { ...prev.mental_exam, percepcion: { ...prev.mental_exam.percepcion, alucinaciones_auditivas_caracteristicas: e.target.value } }
+                          }))}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-primary-500 focus:border-primary-500"
+                        />
+                      </div>
+                    )}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Alucinaciones Visuales</label>
+                      <select
+                        value={consultationData.mental_exam.percepcion.alucinaciones_visuales}
+                        onChange={(e) => setConsultationData(prev => ({ 
+                          ...prev, 
+                          mental_exam: { ...prev.mental_exam, percepcion: { ...prev.mental_exam.percepcion, alucinaciones_visuales: e.target.value as typeof prev.mental_exam.percepcion.alucinaciones_visuales } }
+                        }))}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-primary-500 focus:border-primary-500"
+                      >
+                        {
+                          optionsAlucinacionesVisuales.map((option) => (
+                            <option key={option.value} value={option.value}>{option.label}</option>
+                          ))
+                        }
+                      </select>
+                    </div>
+                    { consultationData.mental_exam.percepcion.alucinaciones_visuales !== 'Ausentes' && consultationData.mental_exam.percepcion.alucinaciones_visuales !== 'No evaluado' && (
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Características de Alucinaciones Visuales</label>
+                        <textarea
+                          value={consultationData.mental_exam.percepcion.alucinaciones_visuales_caracteristicas}
+                          onChange={(e) => setConsultationData(prev => ({ 
+                            ...prev, 
+                            mental_exam: { ...prev.mental_exam, percepcion: { ...prev.mental_exam.percepcion, alucinaciones_visuales_caracteristicas: e.target.value } }
+                          }))}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-primary-500 focus:border-primary-500"
+                        />
+                      </div>
+                    )}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Alucinaciones Táctiles</label>
+                      <select
+                        value={consultationData.mental_exam.percepcion.alucinaciones_tactiles}
+                        onChange={(e) => setConsultationData(prev => ({ 
+                          ...prev, 
+                          mental_exam: { ...prev.mental_exam, percepcion: { ...prev.mental_exam.percepcion, alucinaciones_tactiles: e.target.value as typeof prev.mental_exam.percepcion.alucinaciones_tactiles } }
+                        }))}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-primary-500 focus:border-primary-500"
+                      >
+                        {
+                          optionsAlucinacionesTactiles.map((option) => (
+                            <option key={option.value} value={option.value}>{option.label}</option>
+                          ))
+                        }
+                      </select>
+                    </div>
+                    { consultationData.mental_exam.percepcion.alucinaciones_tactiles !== 'Ausentes' && consultationData.mental_exam.percepcion.alucinaciones_tactiles !== 'No evaluado' && (
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Características de Alucinaciones Táctiles</label>
+                        <textarea
+                          value={consultationData.mental_exam.percepcion.alucinaciones_tactiles_caracteristicas}
+                          onChange={(e) => setConsultationData(prev => ({ 
+                            ...prev, 
+                            mental_exam: { ...prev.mental_exam, percepcion: { ...prev.mental_exam.percepcion, alucinaciones_tactiles_caracteristicas: e.target.value } }
+                          }))}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-primary-500 focus:border-primary-500"
+                        />
+                      </div>
+                    )}
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Alucinaciones Olfativas</label>
+                      <select
+                        value={consultationData.mental_exam.percepcion.alucinaciones_olfatorias}
+                        onChange={(e) => setConsultationData(prev => ({ 
+                          ...prev, 
+                          mental_exam: { ...prev.mental_exam, percepcion: { ...prev.mental_exam.percepcion, alucinaciones_olfatorias: e.target.value as typeof prev.mental_exam.percepcion.alucinaciones_olfatorias } }
+                        }))}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-primary-500 focus:border-primary-500"
+                      >
+                        {
+                          optionsAlucinacionesOlfatorias.map((option) => (
+                            <option key={option.value} value={option.value}>{option.label}</option>
+                          ))
+                        }
+                      </select>
+                    </div>
+                    { consultationData.mental_exam.percepcion.alucinaciones_olfatorias !== 'Ausentes' && consultationData.mental_exam.percepcion.alucinaciones_olfatorias !== 'No evaluado' && (
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Características de Alucinaciones Olfativas</label>
+                        <textarea
+                          value={consultationData.mental_exam.percepcion.alucinaciones_olfatorias_caracteristicas}
+                          onChange={(e) => setConsultationData(prev => ({ 
+                            ...prev,
+                            mental_exam: { ...prev.mental_exam, percepcion: { ...prev.mental_exam.percepcion, alucinaciones_olfatorias_caracteristicas: e.target.value } }
+                          }))}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-primary-500 focus:border-primary-500"
+                        />
+                      </div>
+                    )}
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Alucinaciones Gustativas</label>
+                      <select
+                        value={consultationData.mental_exam.percepcion.alucinaciones_gustativas}
+                        onChange={(e) => setConsultationData(prev => ({ 
+                          ...prev, 
+                          mental_exam: { ...prev.mental_exam, percepcion: { ...prev.mental_exam.percepcion, alucinaciones_gustativas: e.target.value as typeof prev.mental_exam.percepcion.alucinaciones_gustativas } }
+                        }))}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-primary-500 focus:border-primary-500"
+                      >
+                        {
+                          optionsAlucinacionesGustativas.map((option) => (
+                            <option key={option.value} value={option.value}>{option.label}</option>
+                          ))
+                        }
+                      </select>
+                    </div>
+                    { consultationData.mental_exam.percepcion.alucinaciones_gustativas !== 'Ausentes' && consultationData.mental_exam.percepcion.alucinaciones_gustativas !== 'No evaluado' && (
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Características de Alucinaciones Gustativas</label>
+                        <textarea
+                          value={consultationData.mental_exam.percepcion.alucinaciones_gustativas_caracteristicas}
+                          onChange={(e) => setConsultationData(prev => ({ 
+                            ...prev,
+                            mental_exam: { ...prev.mental_exam, percepcion: { ...prev.mental_exam.percepcion, alucinaciones_gustativas_caracteristicas: e.target.value } }
+                          }))}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-primary-500 focus:border-primary-500"
+                        />
+                      </div>
+                    )}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Ilusiones</label>
+                      <select
+                        value={consultationData.mental_exam.percepcion.ilusiones}
+                        onChange={(e) => setConsultationData(prev => ({ 
+                          ...prev, 
+                          mental_exam: { ...prev.mental_exam, percepcion: { ...prev.mental_exam.percepcion, ilusiones: e.target.value as typeof prev.mental_exam.percepcion.ilusiones } }
+                        }))}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-primary-500 focus:border-primary-500"
+                      >
+                        {optionsIlusiones.map((option) => (
+                          <option key={option.value} value={option.value}>{option.label}</option>
+                        ))}
+                      </select>
+                    </div>
+                    { consultationData.mental_exam.percepcion.ilusiones !== 'Ausentes' && consultationData.mental_exam.percepcion.ilusiones !== 'No evaluado' && (
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Características de Ilusiones</label>
+                        <textarea
+                          value={consultationData.mental_exam.percepcion.ilusiones_caracteristicas}
+                          onChange={(e) => setConsultationData(prev => ({ 
+                            ...prev,
+                            mental_exam: { ...prev.mental_exam, percepcion: { ...prev.mental_exam.percepcion, ilusiones_caracteristicas: e.target.value } }
+                          }))}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-primary-500 focus:border-primary-500"
+                        />
+                      </div>
+                    )}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Despersonalización</label>
+                      <select
+                        value={consultationData.mental_exam.percepcion.despersonalizacion}
+                        onChange={(e) => setConsultationData(prev => ({ 
+                          ...prev, 
+                          mental_exam: { ...prev.mental_exam, percepcion: { ...prev.mental_exam.percepcion, despersonalizacion: e.target.value as typeof prev.mental_exam.percepcion.despersonalizacion } }
+                        }))}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-primary-500 focus:border-primary-500"
+                      >
+                        {optionsDespersonalizacion.map((option) => (
+                          <option key={option.value} value={option.value}>{option.label}</option>
+                        ))}
+                      </select>
+                    </div>
+                    { consultationData.mental_exam.percepcion.despersonalizacion !== 'Ausente' && consultationData.mental_exam.percepcion.despersonalizacion !== 'No evaluado' && (
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Características de Despersonalización</label>
+                        <textarea
+                          value={consultationData.mental_exam.percepcion.despersonalizacion_caracteristicas}
+                          onChange={(e) => setConsultationData(prev => ({ 
+                            ...prev,
+                            mental_exam: { ...prev.mental_exam, percepcion: { ...prev.mental_exam.percepcion, despersonalizacion_caracteristicas: e.target.value } }
+                          }))}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-primary-500 focus:border-primary-500"
+                        />
+                        </div>
+                    )}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Desrealización</label>
+                      <select
+                        value={consultationData.mental_exam.percepcion.desrealizacion}
+                        onChange={(e) => setConsultationData(prev => ({ 
+                          ...prev, 
+                          mental_exam: { ...prev.mental_exam, percepcion: { ...prev.mental_exam.percepcion, desrealizacion: e.target.value as typeof prev.mental_exam.percepcion.desrealizacion } }
+                        }))}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-primary-500 focus:border-primary-500"
+                      >
+                        {optionsDesrealizacion.map((option) => (
+                          <option key={option.value} value={option.value}>{option.label}</option>
+                        ))}
+                      </select>
+                    </div>
+                    { consultationData.mental_exam.percepcion.desrealizacion !== 'Ausente' && consultationData.mental_exam.percepcion.desrealizacion !== 'No evaluado' && (
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Características de Desrealización</label>
+                        <textarea
+                          value={consultationData.mental_exam.percepcion.desrealizacion_caracteristicas}
+                          onChange={(e) => setConsultationData(prev => ({ 
+                            ...prev,
+                            mental_exam: { ...prev.mental_exam, percepcion: { ...prev.mental_exam.percepcion, desrealizacion_caracteristicas: e.target.value } }
+                          }))}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-primary-500 focus:border-primary-500"
+                        />
+                      </div>
+                    )}
                   </div>
                 </div>
 
                 {/* Cognición */}
-                <div className="border-l-4 border-indigo-500 pl-4">
-                  <h4 className="font-medium text-gray-900 mb-4">6. Cognición</h4>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Orientación</label>
-                      <input
-                        type="text"
-                        value={consultationData.mental_exam.orientation}
-                        onChange={(e) => setConsultationData(prev => ({ 
-                          ...prev, 
-                          mental_exam: { ...prev.mental_exam, orientation: e.target.value }
-                        }))}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-primary-500 focus:border-primary-500"
-                        placeholder="Tiempo, lugar, persona..."
-                      />
-                    </div>
-                    
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Atención</label>
-                      <input
-                        type="text"
-                        value={consultationData.mental_exam.attention}
-                        onChange={(e) => setConsultationData(prev => ({ 
-                          ...prev, 
-                          mental_exam: { ...prev.mental_exam, attention: e.target.value }
-                        }))}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-primary-500 focus:border-primary-500"
-                        placeholder="Concentración, distraibilidad..."
-                      />
-                    </div>
-                    
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Memoria</label>
-                      <input
-                        type="text"
-                        value={consultationData.mental_exam.memory}
-                        onChange={(e) => setConsultationData(prev => ({ 
-                          ...prev, 
-                          mental_exam: { ...prev.mental_exam, memory: e.target.value }
-                        }))}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-primary-500 focus:border-primary-500"
-                        placeholder="Inmediata, reciente, remota..."
-                      />
-                    </div>
-                    
-                    <div className="md:col-span-3">
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Evaluación Cognitiva Adicional</label>
-                      <textarea
-                        value={consultationData.mental_exam.customCognition}
-                        onChange={(e) => setConsultationData(prev => ({ 
-                          ...prev, 
-                          mental_exam: { ...prev.mental_exam, customCognition: e.target.value }
-                        }))}
-                        rows={2}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-primary-500 focus:border-primary-500"
-                        placeholder="Cálculo, abstracción, función ejecutiva..."
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                {/* Insight y Juicio */}
-                <div className="border-l-4 border-orange-500 pl-4">
-                  <h4 className="font-medium text-gray-900 mb-4">7. Insight y Juicio</h4>
+                <div className="border-l-4 border-purple-500 pl-4">
+                  <h4 className="font-medium text-gray-900 mb-4">10. Cognición</h4>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Insight (Conciencia de Enfermedad)</label>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Nivel de conciencia</label>
                       <select
-                        value={consultationData.mental_exam.insight}
+                        value={consultationData.mental_exam.cognicion.nivel_conciencia}
                         onChange={(e) => setConsultationData(prev => ({ 
                           ...prev, 
-                          mental_exam: { ...prev.mental_exam, insight: e.target.value }
+                          mental_exam: { ...prev.mental_exam, cognicion: { ...prev.mental_exam.cognicion, nivel_conciencia: e.target.value as typeof prev.mental_exam.cognicion.nivel_conciencia } }
                         }))}
                         className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-primary-500 focus:border-primary-500"
                       >
                         <option value="">Seleccionar...</option>
-                        <option value="pobre">Pobre</option>
-                        <option value="regular">Regular</option>
-                        <option value="bueno">Bueno</option>
-                        <option value="excelente">Excelente</option>
+                        <option value="Alerta">Alerta</option>
+                        <option value="Somnoliento">Somnoliento</option>
+                        <option value="Estuporoso">Estuporoso</option>
+                        <option value="Comatoso">Comatoso</option>
                       </select>
                     </div>
-                    
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Orientación en Persona</label>
+                      <select
+                        value={consultationData.mental_exam.cognicion.orientacion_persona}
+                        onChange={(e) => setConsultationData(prev => ({ 
+                          ...prev, 
+                          mental_exam: { ...prev.mental_exam, cognicion: { ...prev.mental_exam.cognicion, orientacion_persona: e.target.value as typeof prev.mental_exam.cognicion.orientacion_persona } }
+                        }))}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-primary-500 focus:border-primary-500"
+                      >
+                        <option value="">Seleccionar...</option>
+                        <option value="Orientado">Orientado</option>
+                        <option value="Desorientado">Desorientado</option>
+                        <option value="No evaluado">No evaluado</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Orientación en Lugar</label>
+                      <select
+                        value={consultationData.mental_exam.cognicion.orientacion_lugar}
+                        onChange={(e) => setConsultationData(prev => ({ 
+                          ...prev, 
+                          mental_exam: { ...prev.mental_exam, cognicion: { ...prev.mental_exam.cognicion, orientacion_lugar: e.target.value as typeof prev.mental_exam.cognicion.orientacion_lugar } }
+                        }))}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-primary-500 focus:border-primary-500"
+                      >
+                        <option value="">Seleccionar...</option>
+                        <option value="Orientado">Orientado</option>
+                        <option value="Desorientado">Desorientado</option>
+                        <option value="No evaluado">No evaluado</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Orientación en Tiempo</label>
+                      <select
+                        value={consultationData.mental_exam.cognicion.orientacion_tiempo}
+                        onChange={(e) => setConsultationData(prev => ({ 
+                          ...prev, 
+                          mental_exam: { ...prev.mental_exam, cognicion: { ...prev.mental_exam.cognicion, orientacion_tiempo: e.target.value as typeof prev.mental_exam.cognicion.orientacion_tiempo } }
+                        }))}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-primary-500 focus:border-primary-500"
+                      >
+                        <option value="">Seleccionar...</option>
+                        <option value="Orientado">Orientado</option>
+                        <option value="Desorientado">Desorientado</option>
+                        <option value="No evaluado">No evaluado</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Orientación en Situación/Circunstancia</label>
+                      <select
+                        value={consultationData.mental_exam.cognicion.orientacion_situacion}
+                        onChange={(e) => setConsultationData(prev => ({ 
+                          ...prev, 
+                          mental_exam: { ...prev.mental_exam, cognicion: { ...prev.mental_exam.cognicion, orientacion_situacion: e.target.value as typeof prev.mental_exam.cognicion.orientacion_situacion } }
+                        }))}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-primary-500 focus:border-primary-500"
+                      >
+                        <option value="">Seleccionar...</option>
+                        <option value="Orientado">Orientado</option>
+                        <option value="Desorientado">Desorientado</option>
+                        <option value="No evaluado">No evaluado</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Atención</label>
+                      <select
+                        value={consultationData.mental_exam.cognicion.atencion}
+                        onChange={(e) => setConsultationData(prev => ({ 
+                          ...prev, 
+                          mental_exam: { ...prev.mental_exam, cognicion: { ...prev.mental_exam.cognicion, atencion: e.target.value as typeof prev.mental_exam.cognicion.atencion } }
+                        }))}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-primary-500 focus:border-primary-500"
+                      >
+                        <option value="">Seleccionar...</option>
+                        <option value="Normal">Normal</option>
+                        <option value="Hipoprosexia">Hipoprosexia</option>
+                        <option value="Hiperprosexia">Hiperprosexia</option>
+                        <option value="Distraibilidad">Distraibilidad</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Concentración</label>
+                      <select
+                        value={consultationData.mental_exam.cognicion.concentracion}
+                        onChange={(e) => setConsultationData(prev => ({ 
+                          ...prev, 
+                          mental_exam: { ...prev.mental_exam, cognicion: { ...prev.mental_exam.cognicion, concentracion: e.target.value as typeof prev.mental_exam.cognicion.concentracion } }
+                        }))}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-primary-500 focus:border-primary-500"
+                      >
+                        <option value="">Seleccionar...</option>
+                        <option value="Adecuada">Adecuada</option>
+                        <option value="Disminuida">Disminuida</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Memoria inmediata (registro)</label>
+                      <select
+                        value={consultationData.mental_exam.cognicion.memoria_inmediata}
+                        onChange={(e) => setConsultationData(prev => ({ 
+                          ...prev, 
+                          mental_exam: { ...prev.mental_exam, cognicion: { ...prev.mental_exam.cognicion, memoria_inmediata: e.target.value as typeof prev.mental_exam.cognicion.memoria_inmediata } }
+                        }))}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-primary-500 focus:border-primary-500"
+                      >
+                        <option value="">Seleccionar...</option>
+                        <option value="Conservada">Conservada</option>
+                        <option value="Alterada">Alterada</option>
+                        <option value="No evaluado">No evaluado</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Memoria reciente (corto plazo)</label>
+                      <select
+                        value={consultationData.mental_exam.cognicion.memoria_reciente}
+                        onChange={(e) => setConsultationData(prev => ({ 
+                          ...prev, 
+                          mental_exam: { ...prev.mental_exam, cognicion: { ...prev.mental_exam.cognicion, memoria_reciente: e.target.value as typeof prev.mental_exam.cognicion.memoria_reciente } }
+                        }))}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-primary-500 focus:border-primary-500"
+                      >
+                        <option value="">Seleccionar...</option>
+                        <option value="Conservada">Conservada</option>
+                        <option value="Alterada">Alterada</option>
+                        <option value="No evaluado">No evaluado</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Memoria remota (largo plazo)</label>
+                      <select
+                        value={consultationData.mental_exam.cognicion.memoria_remota}
+                        onChange={(e) => setConsultationData(prev => ({ 
+                          ...prev, 
+                          mental_exam: { ...prev.mental_exam, cognicion: { ...prev.mental_exam.cognicion, memoria_remota: e.target.value as typeof prev.mental_exam.cognicion.memoria_remota } }
+                        }))}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-primary-500 focus:border-primary-500"
+                      >
+                        <option value="">Seleccionar...</option>
+                        <option value="Conservada">Conservada</option>
+                        <option value="Alterada">Alterada</option>
+                        <option value="No evaluado">No evaluado</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Capacidad de abstracción</label>
+                      <select
+                        value={consultationData.mental_exam.cognicion.capacidad_abstracta}
+                        onChange={(e) => setConsultationData(prev => ({ 
+                          ...prev, 
+                          mental_exam: { ...prev.mental_exam, cognicion: { ...prev.mental_exam.cognicion, capacidad_abstracta: e.target.value as typeof prev.mental_exam.cognicion.capacidad_abstracta } }
+                        }))}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-primary-500 focus:border-primary-500"
+                      >
+                        <option value="">Seleccionar...</option>
+                        <option value="Normal">Normal</option>
+                        <option value="Concreta">Concreta</option>
+                        <option value="Alterada">Alterada</option>
+                        <option value="No evaluado">No evaluado</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Cálculo</label>
+                      <select
+                        value={consultationData.mental_exam.cognicion.calculo}
+                        onChange={(e) => setConsultationData(prev => ({ 
+                          ...prev, 
+                          mental_exam: { ...prev.mental_exam, cognicion: { ...prev.mental_exam.cognicion, calculo: e.target.value as typeof prev.mental_exam.cognicion.calculo } }
+                        }))}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-primary-500 focus:border-primary-500"
+                      >
+                        <option value="">Seleccionar...</option>
+                        <option value="Conservado">Conservado</option>
+                        <option value="Alterado">Alterado</option>
+                        <option value="No evaluado">No evaluado</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Inteligencia clínica estimada</label>
+                      <select
+                        value={consultationData.mental_exam.cognicion.inteligencia_clinica_estimada}
+                        onChange={(e) => setConsultationData(prev => ({ 
+                          ...prev, 
+                          mental_exam: { ...prev.mental_exam, cognicion: { ...prev.mental_exam.cognicion, inteligencia_clinica_estimada: e.target.value as typeof prev.mental_exam.cognicion.inteligencia_clinica_estimada } }
+                        }))}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-primary-500 focus:border-primary-500"
+                      >
+                        <option value="">Seleccionar...</option>
+                        <option value="Superior">Superior</option>
+                        <option value="Normal">Normal</option>
+                        <option value="Limítrofe">Limítrofe</option>
+                        <option value="Deficiente leve">Deficiente leve</option>
+                        <option value="Deficiente moderada">Deficiente moderada</option>
+                        <option value="Deficiente severa">Deficiente severa</option>
+                        <option value="No evaluado">No evaluado</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Funciones ejecutivas (impresión clínica)</label>
+                      <select
+                        value={consultationData.mental_exam.cognicion.funciones_ejecutivas}
+                        onChange={(e) => setConsultationData(prev => ({ 
+                          ...prev, 
+                          mental_exam: { ...prev.mental_exam, cognicion: { ...prev.mental_exam.cognicion, funciones_ejecutivas: e.target.value as typeof prev.mental_exam.cognicion.funciones_ejecutivas } }
+                        }))}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-primary-500 focus:border-primary-500"
+                      >
+                        <option value="">Seleccionar...</option>
+                        <option value="Sin alteraciones aparentes">Sin alteraciones aparentes</option>
+                        <option value="Con alteraciones aparentes">Con alteraciones aparentes</option>
+                        <option value="No evaluado">No evaluado</option>
+                      </select>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Insight Juicio */}
+                <div className="border-l-4 border-purple-500 pl-4">
+                  <h4 className="font-medium text-gray-900 mb-4">11. Insight y Juicio</h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Insight (conciencia de enfermedad)</label>
+                      <select
+                        value={consultationData.mental_exam.cognicion.nivel_conciencia}
+                        onChange={(e) => setConsultationData(prev => ({ 
+                          ...prev, 
+                          mental_exam: { ...prev.mental_exam, cognicion: { ...prev.mental_exam.cognicion, nivel_conciencia: e.target.value as typeof prev.mental_exam.cognicion.nivel_conciencia } }
+                        }))}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-primary-500 focus:border-primary-500"
+                      >
+                        <option value="">Seleccionar...</option>
+                        <option value="Completo">Completo</option>
+                        <option value="Parcial">Parcial</option>
+                        <option value="Ausente (nulo)">Ausente (nulo)</option>
+                        <option value="No evaluado">No evaluado</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium tet-gray-700 mb-2">Grado de insight</label>
+                      <textarea
+                        value={consultationData.mental_exam.insight_juicio.grado}
+                        onChange={(e) => setConsultationData(prev => ({ 
+                          ...prev, 
+                          mental_exam: { ...prev.mental_exam, insight_juicio: { ...prev.mental_exam.insight_juicio, grado: e.target.value } }
+                        }))}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-primary-500 focus:border-primary-500"
+                      />
+                    </div>
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">Juicio</label>
                       <select
-                        value={consultationData.mental_exam.judgment}
+                        value={consultationData.mental_exam.insight_juicio.juicio}
                         onChange={(e) => setConsultationData(prev => ({ 
                           ...prev, 
-                          mental_exam: { ...prev.mental_exam, judgment: e.target.value }
+                          mental_exam: { ...prev.mental_exam, insight_juicio: { ...prev.mental_exam.insight_juicio, juicio: e.target.value as typeof prev.mental_exam.insight_juicio.juicio } }
                         }))}
                         className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-primary-500 focus:border-primary-500"
                       >
                         <option value="">Seleccionar...</option>
-                        <option value="alterado">Alterado</option>
-                        <option value="pobre">Pobre</option>
-                        <option value="bueno">Bueno</option>
+                        <option value="Conservado">Conservado</option>
+                        <option value="Parcialmente alterado">Parcialmente alterado</option>
+                        <option value="Suavemente alterado">Suavemente alterado</option>
+                        <option value="No evaluado">No evaluado</option>
                       </select>
                     </div>
-                    
-                    <div className="md:col-span-2">
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Observaciones sobre Insight y Juicio</label>
-                      <textarea
-                        value={consultationData.mental_exam.customInsightJudgment}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Juicio Social</label>
+                      <select
+                        value={consultationData.mental_exam.insight_juicio.juicio_social}
                         onChange={(e) => setConsultationData(prev => ({ 
                           ...prev, 
-                          mental_exam: { ...prev.mental_exam, customInsightJudgment: e.target.value }
+                          mental_exam: { ...prev.mental_exam, insight_juicio: { ...prev.mental_exam.insight_juicio, juicio_social: e.target.value as typeof prev.mental_exam.insight_juicio.juicio_social } }
                         }))}
-                        rows={2}
                         className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-primary-500 focus:border-primary-500"
-                        placeholder="Detalles sobre la conciencia de enfermedad y capacidad de juicio..."
-                      />
+                      >
+                        <option value="">Seleccionar...</option>
+                        <option value="Adecuado">Adecuado</option>
+                        <option value="Inadecuado">Inadecuado</option>
+                        <option value="No evaluado">No evaluado</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Control de Impulsos</label>
+                      <select
+                        value={consultationData.mental_exam.insight_juicio.control_impulsos}
+                        onChange={(e) => setConsultationData(prev => ({ 
+                          ...prev, 
+                          mental_exam: { ...prev.mental_exam, insight_juicio: { ...prev.mental_exam.insight_juicio, control_impulsos: e.target.value as typeof prev.mental_exam.insight_juicio.control_impulsos } }
+                        }))}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-primary-500 focus:border-primary-500"
+                      >
+                        <option value="">Seleccionar...</option>
+                        <option value="Adecuado">Adecuado</option>
+                        <option value="Parcialmente alterado">Parcialmente alterado</option>
+                        <option value="Severamente alterado">Severamente alterado</option>
+                        <option value="No evaluado">No evaluado</option>
+                      </select>
                     </div>
                   </div>
                 </div>
 
-                {/* Resumen General */}
-                <div className="border-l-4 border-gray-500 pl-4">
-                  <h4 className="font-medium text-gray-900 mb-4">8. Resumen General del Examen Mental</h4>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Impresión General</label>
-                    <textarea
-                      value={consultationData.mental_exam.generalSummary}
-                      onChange={(e) => setConsultationData(prev => ({ 
-                        ...prev, 
-                        mental_exam: { ...prev.mental_exam, generalSummary: e.target.value }
-                      }))}
-                      rows={3}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-primary-500 focus:border-primary-500"
-                      placeholder="Resumen integrado del estado mental, impresiones clínicas principales y observaciones relevantes..."
-                    />
+                {/* Funcionalidad */}
+                <div className="border-l-4 border-purple-500 pl-4">
+                  <h4 className="font-medium text-gray-900 mb-4">12. Funcionalidad</h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Nivel de funcionamiento global (GAF/EEAG)</label>
+                      {/* escala numerica */}
+                      <input
+                        type="number"
+                        value={consultationData.mental_exam.funcionalidad.nivel_global}
+                        onChange={(e) => setConsultationData(prev => ({ 
+                          ...prev, 
+                          mental_exam: { ...prev.mental_exam, funcionalidad: { ...prev.mental_exam.funcionalidad, nivel_global: e.target.value ? parseInt(e.target.value) : 0 } }
+                        }))}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-primary-500 focus:border-primary-500"
+                        min={0}
+                        max={100}
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Funcionalidad laboral/escolar</label>
+                      <select
+                        value={consultationData.mental_exam.funcionalidad.laboral_escolar}
+                        onChange={(e) => setConsultationData(prev => ({ 
+                          ...prev, 
+                          mental_exam: { ...prev.mental_exam, funcionalidad: { ...prev.mental_exam.funcionalidad, laboral_escolar: e.target.value as typeof prev.mental_exam.funcionalidad.laboral_escolar } }
+                        }))}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-primary-500 focus:border-primary-500"
+                      >
+                        <option value="">Seleccionar...</option>
+                        <option value="Sin afectación">Sin afectación</option>
+                        <option value="Afectación leve">Dificultades leves</option>
+                        <option value="Afectación moderada">Dificultades moderadas</option>
+                        <option value="Afectación severa">Dificultades severas</option>
+                        <option value="Incapacitante">Incapacitante</option>
+                        <option value="No evaluado">No evaluado</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Funcionalidad social</label>
+                      <select
+                        value={consultationData.mental_exam.funcionalidad.funcionalidad_social}
+                        onChange={(e) => setConsultationData(prev => ({ 
+                          ...prev, 
+                          mental_exam: { ...prev.mental_exam, funcionalidad: { ...prev.mental_exam.funcionalidad, funcionalidad_social: e.target.value as typeof prev.mental_exam.funcionalidad.funcionalidad_social } }
+                        }))}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-primary-500 focus:border-primary-500"
+                      >
+                        <option value="">Seleccionar...</option>
+                        <option value="Sin afectación">Sin afectación</option>
+                        <option value="Afectación leve">Afectación leve</option>
+                        <option value="Afectación moderada">Afectación moderada</option>
+                        <option value="Afectación severa">Afectación severa</option>
+                        <option value="Aislamiento severo">Aislamiento severo</option>
+                        <option value="No evaluado">No evaluado</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Autocuidado</label>
+                      <select
+                        value={consultationData.mental_exam.funcionalidad.autocuidado}
+                        onChange={(e) => setConsultationData(prev => ({ 
+                          ...prev, 
+                          mental_exam: { ...prev.mental_exam, funcionalidad: { ...prev.mental_exam.funcionalidad, autocuidado: e.target.value as typeof prev.mental_exam.funcionalidad.autocuidado } }
+                        }))}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-primary-500 focus:border-primary-500"
+                      >
+                        <option value="">Seleccionar...</option>
+                        <option value="Independiente">Independiente</option>
+                        <option value="Requiere supervisión ocasional">Requiere supervisión ocasional</option>
+                        <option value="Requiere supervisión constante">Requiere supervisión constante</option>
+                        <option value="Requiere asistencia parcial">Requiere asistencia parcial</option>
+                        <option value="Dependiente total">Dependiente total</option>
+                        <option value="No evaluado">No evaluado</option>
+                      </select>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -2615,6 +4143,125 @@ export default function CentralizedConsultationInterface({
               />
             </Card>)}
 
+            {/* Solicitud de Estudios de Gabinete */}
+            {isVisible('labOrders') && (<Card className="p-6">
+              <h3 className="text-lg font-medium text-gray-900 mb-4">🔬 Solicitud de Estudios de Gabinete</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {(['tac', 'rm', 'ultrasonido', 'poligrafia', 'polisomnografia', 'otro'] as const).map((estudio) => {
+                  const labels: Record<string, string> = {
+                    tac: 'TAC', rm: 'Resonancia Magnética', ultrasonido: 'Ultrasonido',
+                    poligrafia: 'Poligrafía', polisomnografia: 'Polisomnografía', otro: 'Otro'
+                  };
+                  return (
+                    <div key={estudio} className="border rounded-lg p-3">
+                      <label className="flex items-center gap-2 mb-2 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={consultationData.otros_campos.estudios_gabinete[estudio].check === 'Si'}
+                          onChange={(e) => setConsultationData(prev => ({
+                            ...prev,
+                            otros_campos: {
+                              ...prev.otros_campos,
+                              estudios_gabinete: {
+                                ...prev.otros_campos.estudios_gabinete,
+                                [estudio]: { ...prev.otros_campos.estudios_gabinete[estudio], check: e.target.checked ? 'Si' : 'No' }
+                              }
+                            }
+                          }))}
+                          className="rounded"
+                        />
+                        <span className="font-medium text-sm">{labels[estudio]}</span>
+                      </label>
+                      {consultationData.otros_campos.estudios_gabinete[estudio].check === 'Si' && (
+                        <input
+                          type="text"
+                          placeholder="Indicaciones / detalles..."
+                          value={consultationData.otros_campos.estudios_gabinete[estudio].detalle}
+                          onChange={(e) => setConsultationData(prev => ({
+                            ...prev,
+                            otros_campos: {
+                              ...prev.otros_campos,
+                              estudios_gabinete: {
+                                ...prev.otros_campos.estudios_gabinete,
+                                [estudio]: { ...prev.otros_campos.estudios_gabinete[estudio], detalle: e.target.value }
+                              }
+                            }
+                          }))}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-primary-500 focus:border-primary-500"
+                        />
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </Card>)}
+
+            {/* Resultados de Estudios de Laboratorio */}
+            {isVisible('labResults') && (<Card className="p-6">
+              <h3 className="text-lg font-medium text-gray-900 mb-4">🧪 Resultados de Estudios de Laboratorio</h3>
+              {consultationData.otros_campos.estudios_laboratorio.length === 0 ? (
+                <p className="text-sm text-gray-500 italic">Sin resultados registrados.</p>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm border-collapse">
+                    <thead>
+                      <tr className="bg-gray-50">
+                        <th className="border px-3 py-2 text-left">Estudio</th>
+                        <th className="border px-3 py-2 text-left">Categoría</th>
+                        <th className="border px-3 py-2 text-left">Valor</th>
+                        <th className="border px-3 py-2 text-left">Unidad</th>
+                        <th className="border px-3 py-2 text-left">Fecha</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {consultationData.otros_campos.estudios_laboratorio.map((lab, idx) => (
+                        <tr key={idx} className="hover:bg-gray-50">
+                          <td className="border px-3 py-2">{lab.name}</td>
+                          <td className="border px-3 py-2 text-gray-500">{lab.category}</td>
+                          <td className="border px-3 py-2 font-medium">{lab.value ?? '—'}</td>
+                          <td className="border px-3 py-2 text-gray-500">{lab.unit ?? '—'}</td>
+                          <td className="border px-3 py-2 text-gray-500">{lab.takenAt ?? '—'}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+              <div className="mt-3">
+                <textarea
+                  placeholder="Notas sobre resultados de laboratorio..."
+                  rows={2}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-primary-500 focus:border-primary-500"
+                />
+              </div>
+            </Card>)}
+
+            <Card className="p-6">
+              <div className="p-4">
+                <Button onClick={() => setOpenPad(true)}>Abrir nota a mano</Button>
+
+                {noteImg && (
+                  <div className="mt-4">
+                    <div className="text-sm font-medium mb-2">Nota guardada:</div>
+                    <img src={noteImg} alt="nota" className="border rounded-lg max-w-full" />
+                  </div>
+                )}
+
+                <FullscreenHandwritingPad
+                  open={openPad}
+                  onClose={() => setOpenPad(false)}
+                  onSavePng={({ dataUrl }) => {
+                    setNoteImg(dataUrl);
+                    setOpenPad(false);
+                  }}
+                  onSaveSvg={({ svg }) => {
+                    console.log(svg);
+                    setOpenPad(false);
+                  }}
+                />
+              </div>
+            </Card>
+
             {/* Next Appointment */}
             { isVisible('nextAppointment') && ( <Card className="p-6">
               <h3 className="text-lg font-medium text-gray-900 mb-4">Próxima Cita</h3>
@@ -2650,6 +4297,935 @@ export default function CentralizedConsultationInterface({
               </div>
             </Card>)}
             
+            {/* Sintomatología Actual */}
+            {isVisible('sintomatologiaActual') && (<Card className="p-6">
+              <h3 className="text-lg font-medium text-gray-900 mb-4">🩺 Sintomatología Actual</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Motivo de consulta</label>
+                  <DictationTextarea rows={2} value={consultationData.sintomatologia_actual?.motivo_consulta ?? ''} onChange={(v) => setConsultationData(prev => ({ ...prev, sintomatologia_actual: { ...prev.sintomatologia_actual, motivo_consulta: v } }))} placeholder="Motivo de consulta..." />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Queja principal</label>
+                  <DictationTextarea rows={2} value={consultationData.sintomatologia_actual?.queja_principal ?? ''} onChange={(v) => setConsultationData(prev => ({ ...prev, sintomatologia_actual: { ...prev.sintomatologia_actual, queja_principal: v } }))} placeholder="Queja principal..." />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Síntoma principal</label>
+                  <DictationTextarea rows={2} value={consultationData.sintomatologia_actual?.sintoma_principal ?? ''} onChange={(v) => setConsultationData(prev => ({ ...prev, sintomatologia_actual: { ...prev.sintomatologia_actual, sintoma_principal: v } }))} placeholder="Síntoma principal..." />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Duración de síntomas</label>
+                  <input type="text" className="w-full px-3 py-2 border border-gray-300 rounded-md" value={consultationData.sintomatologia_actual?.duracion_sintomas ?? ''} onChange={(e) => setConsultationData(prev => ({ ...prev, sintomatologia_actual: { ...prev.sintomatologia_actual, duracion_sintomas: e.target.value } }))} placeholder="Ej. 3 meses..." />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Referido por</label>
+                  <select className="w-full px-3 py-2 border border-gray-300 rounded-md" value={consultationData.sintomatologia_actual?.referido_por ?? 'Autoreferencia'} onChange={(e) => setConsultationData(prev => ({ ...prev, sintomatologia_actual: { ...prev.sintomatologia_actual, referido_por: e.target.value as any } }))}>
+                    <option value="Autoreferencia">Autoreferencia</option>
+                    <option value="Médico">Médico</option>
+                    <option value="Psicologo">Psicólogo</option>
+                    <option value="Familiar">Familiar</option>
+                    <option value="Otro Profesional">Otro Profesional</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Nombre de quien refiere</label>
+                  <input type="text" className="w-full px-3 py-2 border border-gray-300 rounded-md" value={consultationData.sintomatologia_actual?.nombre_refiere ?? ''} onChange={(e) => setConsultationData(prev => ({ ...prev, sintomatologia_actual: { ...prev.sintomatologia_actual, nombre_refiere: e.target.value } }))} />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Curso de enfermedad</label>
+                  <select className="w-full px-3 py-2 border border-gray-300 rounded-md" value={consultationData.sintomatologia_actual?.curso_enfermedad ?? 'Agudo'} onChange={(e) => setConsultationData(prev => ({ ...prev, sintomatologia_actual: { ...prev.sintomatologia_actual, curso_enfermedad: e.target.value as any } }))}>
+                    <option value="Agudo">Agudo</option>
+                    <option value="Subagudo">Subagudo</option>
+                    <option value="Crónico">Crónico</option>
+                    <option value="Episódico">Episódico</option>
+                    <option value="Progresivo">Progresivo</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Impacto funcional</label>
+                  <select className="w-full px-3 py-2 border border-gray-300 rounded-md" value={consultationData.sintomatologia_actual?.impacto_fucional ?? 'Nulo'} onChange={(e) => setConsultationData(prev => ({ ...prev, sintomatologia_actual: { ...prev.sintomatologia_actual, impacto_fucional: e.target.value as any } }))}>
+                    <option value="Nulo">Nulo</option>
+                    <option value="Mínimo">Mínimo</option>
+                    <option value="Leve">Leve</option>
+                    <option value="Moderado">Moderado</option>
+                    <option value="Severo">Severo</option>
+                    <option value="Incapacitante">Incapacitante</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Sueño</label>
+                  <select className="w-full px-3 py-2 border border-gray-300 rounded-md" value={consultationData.sintomatologia_actual?.sueno ?? 'Regular'} onChange={(e) => setConsultationData(prev => ({ ...prev, sintomatologia_actual: { ...prev.sintomatologia_actual, sueno: e.target.value as any } }))}>
+                    <option value="Regular">Regular</option>
+                    <option value="Irregular">Irregular</option>
+                    <option value="Bueno">Bueno</option>
+                    <option value="Insomnio">Insomnio</option>
+                    <option value="Invertido">Invertido</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Apetito</label>
+                  <select className="w-full px-3 py-2 border border-gray-300 rounded-md" value={consultationData.sintomatologia_actual?.apetito ?? 'Bueno'} onChange={(e) => setConsultationData(prev => ({ ...prev, sintomatologia_actual: { ...prev.sintomatologia_actual, apetito: e.target.value as any } }))}>
+                    <option value="Bueno">Bueno</option>
+                    <option value="Bajo">Bajo</option>
+                    <option value="Alto">Alto</option>
+                    <option value="Problematico">Problemático</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Energía</label>
+                  <select className="w-full px-3 py-2 border border-gray-300 rounded-md" value={consultationData.sintomatologia_actual?.energia ?? 'Buena'} onChange={(e) => setConsultationData(prev => ({ ...prev, sintomatologia_actual: { ...prev.sintomatologia_actual, energia: e.target.value as any } }))}>
+                    <option value="Buena">Buena</option>
+                    <option value="Baja">Baja</option>
+                    <option value="Alta">Alta</option>
+                    <option value="Irregular">Irregular</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Terapia anterior</label>
+                  <select className="w-full px-3 py-2 border border-gray-300 rounded-md" value={consultationData.sintomatologia_actual?.terapia_antes ?? 'No'} onChange={(e) => setConsultationData(prev => ({ ...prev, sintomatologia_actual: { ...prev.sintomatologia_actual, terapia_antes: e.target.value as any } }))}>
+                    <option value="Sí">Sí</option>
+                    <option value="No">No</option>
+                  </select>
+                </div>
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Historia de síntomas actuales</label>
+                  <DictationTextarea rows={3} value={consultationData.sintomatologia_actual?.historia_sintomas_actuales ?? ''} onChange={(v) => setConsultationData(prev => ({ ...prev, sintomatologia_actual: { ...prev.sintomatologia_actual, historia_sintomas_actuales: v } }))} placeholder="Historia detallada..." />
+                </div>
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Factores precipitantes</label>
+                  <DictationTextarea rows={2} value={consultationData.sintomatologia_actual?.factores_precipitantes ?? ''} onChange={(v) => setConsultationData(prev => ({ ...prev, sintomatologia_actual: { ...prev.sintomatologia_actual, factores_precipitantes: v } }))} placeholder="Factores precipitantes identificados..." />
+                </div>
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Síntomas cardinales</label>
+                  <DictationTextarea rows={2} value={consultationData.sintomatologia_actual?.sintomas_cardinales ?? ''} onChange={(v) => setConsultationData(prev => ({ ...prev, sintomatologia_actual: { ...prev.sintomatologia_actual, sintomas_cardinales: v } }))} placeholder="Síntomas cardinales..." />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Pensamientos asociados</label>
+                  <DictationTextarea rows={2} value={consultationData.sintomatologia_actual?.pensamientos_asociados ?? ''} onChange={(v) => setConsultationData(prev => ({ ...prev, sintomatologia_actual: { ...prev.sintomatologia_actual, pensamientos_asociados: v } }))} placeholder="Pensamientos asociados..." />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Emociones asociadas</label>
+                  <DictationTextarea rows={2} value={consultationData.sintomatologia_actual?.emociones_asociadas ?? ''} onChange={(v) => setConsultationData(prev => ({ ...prev, sintomatologia_actual: { ...prev.sintomatologia_actual, emociones_asociadas: v } }))} placeholder="Emociones asociadas..." />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Conductas asociadas</label>
+                  <DictationTextarea rows={2} value={consultationData.sintomatologia_actual?.conductas_asociadas ?? ''} onChange={(v) => setConsultationData(prev => ({ ...prev, sintomatologia_actual: { ...prev.sintomatologia_actual, conductas_asociadas: v } }))} placeholder="Conductas asociadas..." />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Consecuencias</label>
+                  <DictationTextarea rows={2} value={consultationData.sintomatologia_actual?.consecuencias ?? ''} onChange={(v) => setConsultationData(prev => ({ ...prev, sintomatologia_actual: { ...prev.sintomatologia_actual, consecuencias: v } }))} placeholder="Consecuencias identificadas..." />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Intentos previos de solución</label>
+                  <DictationTextarea rows={2} value={consultationData.sintomatologia_actual?.intentos_previos_solucion ?? ''} onChange={(v) => setConsultationData(prev => ({ ...prev, sintomatologia_actual: { ...prev.sintomatologia_actual, intentos_previos_solucion: v } }))} placeholder="Intentos previos de solución..." />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Nivel de funcionamiento</label>
+                  <DictationTextarea rows={2} value={consultationData.sintomatologia_actual?.nivel_funcionamiento ?? ''} onChange={(v) => setConsultationData(prev => ({ ...prev, sintomatologia_actual: { ...prev.sintomatologia_actual, nivel_funcionamiento: v } }))} placeholder="Nivel de funcionamiento global..." />
+                </div>
+              </div>
+            </Card>)}
+
+            {/* Antecedentes Psiquiátricos */}
+            {isVisible('antecedentesPsiquiatricos') && (<Card className="p-6">
+              <h3 className="text-lg font-medium text-gray-900 mb-4">🧬 Antecedentes Psiquiátricos</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Hospitalizaciones previas</label>
+                  <select className="w-full px-3 py-2 border border-gray-300 rounded-md" value={consultationData.antecedentes_psiquiatricos?.hospitalizaciones_previas ?? 'No'} onChange={(e) => setConsultationData(prev => ({ ...prev, antecedentes_psiquiatricos: { ...prev.antecedentes_psiquiatricos, hospitalizaciones_previas: e.target.value as any } }))}>
+                    <option value="Si">Sí</option>
+                    <option value="No">No</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Motivos de hospitalización</label>
+                  <input type="text" className="w-full px-3 py-2 border border-gray-300 rounded-md" value={consultationData.antecedentes_psiquiatricos?.motivos_hospitalizacion ?? ''} onChange={(e) => setConsultationData(prev => ({ ...prev, antecedentes_psiquiatricos: { ...prev.antecedentes_psiquiatricos, motivos_hospitalizacion: e.target.value } }))} />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Psiquiatra tratante</label>
+                  <input type="text" className="w-full px-3 py-2 border border-gray-300 rounded-md" value={consultationData.antecedentes_psiquiatricos?.psiquiatra_tratante ?? ''} onChange={(e) => setConsultationData(prev => ({ ...prev, antecedentes_psiquiatricos: { ...prev.antecedentes_psiquiatricos, psiquiatra_tratante: e.target.value } }))} />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Psicoterapias previas</label>
+                  <select className="w-full px-3 py-2 border border-gray-300 rounded-md" value={consultationData.antecedentes_psiquiatricos?.psicoterapias_previas ?? 'No'} onChange={(e) => setConsultationData(prev => ({ ...prev, antecedentes_psiquiatricos: { ...prev.antecedentes_psiquiatricos, psicoterapias_previas: e.target.value as any } }))}>
+                    <option value="Si">Sí</option>
+                    <option value="No">No</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">TEC</label>
+                  <select className="w-full px-3 py-2 border border-gray-300 rounded-md" value={consultationData.antecedentes_psiquiatricos?.tec ?? 'No'} onChange={(e) => setConsultationData(prev => ({ ...prev, antecedentes_psiquiatricos: { ...prev.antecedentes_psiquiatricos, tec: e.target.value as any } }))}>
+                    <option value="Si">Sí</option>
+                    <option value="No">No</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">EMT</label>
+                  <select className="w-full px-3 py-2 border border-gray-300 rounded-md" value={consultationData.antecedentes_psiquiatricos?.emt ?? 'No'} onChange={(e) => setConsultationData(prev => ({ ...prev, antecedentes_psiquiatricos: { ...prev.antecedentes_psiquiatricos, emt: e.target.value as any } }))}>
+                    <option value="Si">Sí</option>
+                    <option value="No">No</option>
+                  </select>
+                </div>
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Diagnósticos previos (detalle)</label>
+                  <DictationTextarea rows={2} value={consultationData.antecedentes_psiquiatricos?.diagnosticos_previos_detalle ?? ''} onChange={(v) => setConsultationData(prev => ({ ...prev, antecedentes_psiquiatricos: { ...prev.antecedentes_psiquiatricos, diagnosticos_previos_detalle: v } }))} placeholder="Detalles de diagnósticos previos..." />
+                </div>
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Otros tratamientos somáticos</label>
+                  <DictationTextarea rows={2} value={consultationData.antecedentes_psiquiatricos?.otros_tratamientos_somaticos ?? ''} onChange={(v) => setConsultationData(prev => ({ ...prev, antecedentes_psiquiatricos: { ...prev.antecedentes_psiquiatricos, otros_tratamientos_somaticos: v } }))} placeholder="Otros tratamientos somáticos..." />
+                </div>
+                <div className="md:col-span-2 border-t pt-3">
+                  <h4 className="font-medium text-gray-700 mb-2 text-sm">Último medicamento psiquiátrico</h4>
+                  <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
+                    {(['medicamento','dosis','durecion','respuesta','motivo_suspension'] as const).map((field) => (
+                      <div key={field}>
+                        <label className="block text-xs text-gray-500 mb-1 capitalize">{field.replace('_',' ')}</label>
+                        <input type="text" className="w-full px-2 py-1 border border-gray-300 rounded text-sm" value={(consultationData.antecedentes_psiquiatricos?.tratamientos_previos_detalle as any)?.[field] ?? ''} onChange={(e) => setConsultationData(prev => ({ ...prev, antecedentes_psiquiatricos: { ...prev.antecedentes_psiquiatricos, tratamientos_previos_detalle: { ...prev.antecedentes_psiquiatricos?.tratamientos_previos_detalle, [field]: e.target.value } } }))} />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </Card>)}
+
+            {/* Historia de Riesgo */}
+            {isVisible('historiaRiesgo') && (<Card className="p-6 border-l-4 border-red-500">
+              <h3 className="text-lg font-medium text-gray-900 mb-4">⚠️ Historia de Riesgo</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {([
+                  { key: 'ideacion_suicida_previa', label: 'Ideación suicida previa', opts: ['Si','No','Desconocido'] },
+                  { key: 'intentos_suicidio_previos', label: 'Intentos de suicidio previos', opts: ['Si','No'] },
+                  { key: 'autolesiones_no_suicidas', label: 'Autolesiones no suicidas', opts: ['Si','No'] },
+                  { key: 'ideacion_homicida_previa', label: 'Ideación homicida previa', opts: ['Si','No'] },
+                  { key: 'conductas_violentas_previas', label: 'Conductas violentas previas', opts: ['Si','No'] },
+                  { key: 'acceso_armas', label: 'Acceso a armas', opts: ['Si','No'] },
+                  { key: 'acceso_medicamentos_cantidad', label: 'Acceso a medicamentos (cantidad letal)', opts: ['Si','No'] },
+                  { key: 'acceso_medios_letales', label: 'Acceso a medios letales', opts: ['Si','No'] },
+                  { key: 'conducta_agresiva', label: 'Conducta agresiva', opts: ['Si','No'] },
+                  { key: 'uso_sustancias_recienta', label: 'Uso de sustancias reciente', opts: ['Si','No'] },
+                  { key: 'suspension_medicamentos', label: 'Suspensión de medicamentos', opts: ['Si','No'] },
+                  { key: 'estresores_identificados', label: 'Estresores identificados', opts: ['Si','No'] },
+                  { key: 'perdidas_recientes', label: 'Pérdidas recientes', opts: ['Si','No'] },
+                ] as { key: keyof typeof consultationData.historia_riesgo; label: string; opts: string[] }[]).map(({ key, label, opts }) => (
+                  <div key={String(key)}>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">{label}</label>
+                    <select className="w-full px-3 py-2 border border-gray-300 rounded-md" value={(consultationData.historia_riesgo as any)?.[key] ?? 'No'} onChange={(e) => setConsultationData(prev => ({ ...prev, historia_riesgo: { ...prev.historia_riesgo, [key]: e.target.value } }))}>
+                      {opts.map(o => <option key={o} value={o}>{o}</option>)}
+                    </select>
+                  </div>
+                ))}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Nivel de riesgo</label>
+                  <select className="w-full px-3 py-2 border border-gray-300 rounded-md" value={consultationData.historia_riesgo?.nivel_riesgo ?? 'NA'} onChange={(e) => setConsultationData(prev => ({ ...prev, historia_riesgo: { ...prev.historia_riesgo, nivel_riesgo: e.target.value as any } }))}>
+                    <option value="NA">NA</option>
+                    <option value="Bajo">Bajo</option>
+                    <option value="Moderado">Moderado</option>
+                    <option value="Alto">Alto</option>
+                  </select>
+                </div>
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Plan de seguridad</label>
+                  <DictationTextarea rows={2} value={consultationData.historia_riesgo?.plan_seguridad ?? ''} onChange={(v) => setConsultationData(prev => ({ ...prev, historia_riesgo: { ...prev.historia_riesgo, plan_seguridad: v } }))} placeholder="Plan de seguridad establecido..." />
+                </div>
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Eventos precipitantes</label>
+                  <DictationTextarea rows={2} value={consultationData.historia_riesgo?.eventos_precipitantes ?? ''} onChange={(v) => setConsultationData(prev => ({ ...prev, historia_riesgo: { ...prev.historia_riesgo, eventos_precipitantes: v } }))} placeholder="Eventos precipitantes identificados..." />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Detalle intentos de suicidio</label>
+                  <DictationTextarea rows={2} value={consultationData.historia_riesgo?.intentos_suicidio_detalle ?? ''} onChange={(v) => setConsultationData(prev => ({ ...prev, historia_riesgo: { ...prev.historia_riesgo, intentos_suicidio_detalle: v } }))} placeholder="Detalle..." />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Detalle autolesiones no suicidas</label>
+                  <DictationTextarea rows={2} value={consultationData.historia_riesgo?.autolesiones_no_suicidas_detalle ?? ''} onChange={(v) => setConsultationData(prev => ({ ...prev, historia_riesgo: { ...prev.historia_riesgo, autolesiones_no_suicidas_detalle: v } }))} placeholder="Detalle..." />
+                </div>
+              </div>
+            </Card>)}
+
+            {/* Uso de Sustancias */}
+            {isVisible('usoSustancias') && (<Card className="p-6">
+              <h3 className="text-lg font-medium text-gray-900 mb-4">💊 Uso de Sustancias</h3>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Tabaco</label>
+                  <select className="w-full px-3 py-2 border border-gray-300 rounded-md" value={consultationData.uso_sustancias?.tabaco ?? 'Nunca'} onChange={(e) => setConsultationData(prev => ({ ...prev, uso_sustancias: { ...prev.uso_sustancias, tabaco: e.target.value as any } }))}>
+                    <option value="Nunca">Nunca</option>
+                    <option value="Exfumador">Exfumador</option>
+                    <option value="Actual">Actual</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Alcohol</label>
+                  <select className="w-full px-3 py-2 border border-gray-300 rounded-md" value={consultationData.uso_sustancias?.alcohol ?? 'Ocasional'} onChange={(e) => setConsultationData(prev => ({ ...prev, uso_sustancias: { ...prev.uso_sustancias, alcohol: e.target.value as any } }))}>
+                    <option value="Ocasional">Ocasional</option>
+                    <option value="Social">Social</option>
+                    <option value="Abuso">Abuso</option>
+                    <option value="Dependencia">Dependencia</option>
+                  </select>
+                </div>
+                {([
+                  { key: 'cannabis', freqKey: 'cannabis_frecuencia', label: 'Cannabis' },
+                  { key: 'cocaina', freqKey: 'cocaina_frecuencia', label: 'Cocaína' },
+                  { key: 'opioides', freqKey: 'opioides_frecuencia', label: 'Opioides' },
+                  { key: 'benzodiacepinas', freqKey: 'benzodiacepinas_frecuencia', label: 'Benzodiacepinas' },
+                ] as { key: keyof typeof consultationData.uso_sustancias; freqKey: keyof typeof consultationData.uso_sustancias; label: string }[]).map(({ key, freqKey, label }) => (
+                  <div key={String(key)} className="space-y-2">
+                    <label className="block text-sm font-medium text-gray-700">{label}</label>
+                    <div className="flex gap-2">
+                      <select className="flex-1 px-2 py-2 border border-gray-300 rounded-md text-sm" value={(consultationData.uso_sustancias as any)?.[key] ?? 'No'} onChange={(e) => setConsultationData(prev => ({ ...prev, uso_sustancias: { ...prev.uso_sustancias, [key]: e.target.value } }))}>
+                        <option value="Si">Sí</option>
+                        <option value="No">No</option>
+                      </select>
+                      <select className="flex-1 px-2 py-2 border border-gray-300 rounded-md text-sm" value={(consultationData.uso_sustancias as any)?.[freqKey] ?? 'Previo'} onChange={(e) => setConsultationData(prev => ({ ...prev, uso_sustancias: { ...prev.uso_sustancias, [freqKey]: e.target.value } }))}>
+                        <option value="Previo">Previo</option>
+                        <option value="Ocasional">Ocasional</option>
+                        <option value="Abuso">Abuso</option>
+                        <option value="Dependencia">Dependencia</option>
+                      </select>
+                    </div>
+                  </div>
+                ))}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Otras sustancias</label>
+                  <select className="w-full px-3 py-2 border border-gray-300 rounded-md" value={consultationData.uso_sustancias?.otras_sustancias ?? 'No'} onChange={(e) => setConsultationData(prev => ({ ...prev, uso_sustancias: { ...prev.uso_sustancias, otras_sustancias: e.target.value as any } }))}>
+                    <option value="Si">Sí</option>
+                    <option value="No">No</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Detalle otras sustancias</label>
+                  <input type="text" className="w-full px-3 py-2 border border-gray-300 rounded-md" value={consultationData.uso_sustancias?.otras_sustancias_detalle ?? ''} onChange={(e) => setConsultationData(prev => ({ ...prev, uso_sustancias: { ...prev.uso_sustancias, otras_sustancias_detalle: e.target.value } }))} />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Última intoxicación</label>
+                  <input type="text" className="w-full px-3 py-2 border border-gray-300 rounded-md" value={consultationData.uso_sustancias?.ultima_intoxicacion ?? ''} onChange={(e) => setConsultationData(prev => ({ ...prev, uso_sustancias: { ...prev.uso_sustancias, ultima_intoxicacion: e.target.value } }))} />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Inicio de abstinencia</label>
+                  <input type="text" className="w-full px-3 py-2 border border-gray-300 rounded-md" value={consultationData.uso_sustancias?.inicio_abstinencia ?? ''} onChange={(e) => setConsultationData(prev => ({ ...prev, uso_sustancias: { ...prev.uso_sustancias, inicio_abstinencia: e.target.value } }))} />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Internamientos previos por sustancias</label>
+                  <select className="w-full px-3 py-2 border border-gray-300 rounded-md" value={consultationData.uso_sustancias?.internamientos_previos_sustancias ?? 'No'} onChange={(e) => setConsultationData(prev => ({ ...prev, uso_sustancias: { ...prev.uso_sustancias, internamientos_previos_sustancias: e.target.value as any } }))}>
+                    <option value="Si">Sí</option>
+                    <option value="No">No</option>
+                  </select>
+                </div>
+              </div>
+            </Card>)}
+
+            {/* Antecedentes Médicos */}
+            {isVisible('antecedentesMedicos') && (<Card className="p-6">
+              <h3 className="text-lg font-medium text-gray-900 mb-4">🏥 Antecedentes Médicos</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Cirugías previas</label>
+                  <select className="w-full px-3 py-2 border border-gray-300 rounded-md" value={consultationData.antecedentes_medicos?.cirugias_previas ?? 'No'} onChange={(e) => setConsultationData(prev => ({ ...prev, antecedentes_medicos: { ...prev.antecedentes_medicos, cirugias_previas: e.target.value as any } }))}>
+                    <option value="Si">Sí</option>
+                    <option value="No">No</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Alergias a medicamentos</label>
+                  <select className="w-full px-3 py-2 border border-gray-300 rounded-md" value={consultationData.antecedentes_medicos?.alergias_medicamentos ?? 'No'} onChange={(e) => setConsultationData(prev => ({ ...prev, antecedentes_medicos: { ...prev.antecedentes_medicos, alergias_medicamentos: e.target.value as any } }))}>
+                    <option value="Si">Sí</option>
+                    <option value="No">No</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Otras alergias</label>
+                  <input type="text" className="w-full px-3 py-2 border border-gray-300 rounded-md" value={consultationData.antecedentes_medicos?.otras_alergias ?? ''} onChange={(e) => setConsultationData(prev => ({ ...prev, antecedentes_medicos: { ...prev.antecedentes_medicos, otras_alergias: e.target.value } }))} />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Embarazo actual</label>
+                  <select className="w-full px-3 py-2 border border-gray-300 rounded-md" value={consultationData.antecedentes_medicos?.embarazo_actual ?? 'NA'} onChange={(e) => setConsultationData(prev => ({ ...prev, antecedentes_medicos: { ...prev.antecedentes_medicos, embarazo_actual: e.target.value as any } }))}>
+                    <option value="NA">NA</option>
+                    <option value="Si">Sí</option>
+                    <option value="No">No</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Lactancia</label>
+                  <select className="w-full px-3 py-2 border border-gray-300 rounded-md" value={consultationData.antecedentes_medicos?.lactancia ?? 'NA'} onChange={(e) => setConsultationData(prev => ({ ...prev, antecedentes_medicos: { ...prev.antecedentes_medicos, lactancia: e.target.value as any } }))}>
+                    <option value="NA">NA</option>
+                    <option value="Si">Sí</option>
+                    <option value="No">No</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Última menstruación</label>
+                  <input type="text" className="w-full px-3 py-2 border border-gray-300 rounded-md" value={consultationData.antecedentes_medicos?.ultima_menstruacion ?? ''} onChange={(e) => setConsultationData(prev => ({ ...prev, antecedentes_medicos: { ...prev.antecedentes_medicos, ultima_menstruacion: e.target.value } }))} />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Método anticonceptivo</label>
+                  <select className="w-full px-3 py-2 border border-gray-300 rounded-md" value={consultationData.antecedentes_medicos?.metodo_anticonceptivo ?? 'NA'} onChange={(e) => setConsultationData(prev => ({ ...prev, antecedentes_medicos: { ...prev.antecedentes_medicos, metodo_anticonceptivo: e.target.value as any } }))}>
+                    <option value="NA">NA</option>
+                    <option value="Si">Sí</option>
+                    <option value="No">No</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Detalle método anticonceptivo</label>
+                  <input type="text" className="w-full px-3 py-2 border border-gray-300 rounded-md" value={consultationData.antecedentes_medicos?.metodo_anticonceptivo_detalle ?? ''} onChange={(e) => setConsultationData(prev => ({ ...prev, antecedentes_medicos: { ...prev.antecedentes_medicos, metodo_anticonceptivo_detalle: e.target.value } }))} />
+                </div>
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Hospitalizaciones médicas</label>
+                  <DictationTextarea rows={2} value={consultationData.antecedentes_medicos?.hospitalizaciones_medicas ?? ''} onChange={(v) => setConsultationData(prev => ({ ...prev, antecedentes_medicos: { ...prev.antecedentes_medicos, hospitalizaciones_medicas: v } }))} placeholder="Hospitalizaciones médicas previas..." />
+                </div>
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Enfermedades crónicas</label>
+                  <div className="flex flex-wrap gap-2">
+                    {(['Diabetes','Hipertensión','Enfermedad cardíaca','Enfermedad pulmonar','Enfermedad renal','Enfermedad hepática','Otra'] as const).map((enf) => (
+                      <label key={enf} className="flex items-center gap-1 text-sm">
+                        <input type="checkbox" checked={(consultationData.antecedentes_medicos?.enfermedades_cronicas ?? []).includes(enf)} onChange={(e) => {
+                          const current = [...(consultationData.antecedentes_medicos?.enfermedades_cronicas ?? [])];
+                          if (e.target.checked) current.push(enf); else current.splice(current.indexOf(enf), 1);
+                          setConsultationData(prev => ({ ...prev, antecedentes_medicos: { ...prev.antecedentes_medicos, enfermedades_cronicas: current as any } }));
+                        }} />
+                        {enf}
+                      </label>
+                    ))}
+                  </div>
+                </div>
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Condiciones neurológicas</label>
+                  <div className="flex flex-wrap gap-2">
+                    {(['Epilepsia','EVC','Alzheimer','Parkinson','Otro'] as const).map((cond) => (
+                      <label key={cond} className="flex items-center gap-1 text-sm">
+                        <input type="checkbox" checked={(consultationData.antecedentes_medicos?.condiciones_neurologicas ?? []).includes(cond)} onChange={(e) => {
+                          const current = [...(consultationData.antecedentes_medicos?.condiciones_neurologicas ?? [])];
+                          if (e.target.checked) current.push(cond); else current.splice(current.indexOf(cond), 1);
+                          setConsultationData(prev => ({ ...prev, antecedentes_medicos: { ...prev.antecedentes_medicos, condiciones_neurologicas: current as any } }));
+                        }} />
+                        {cond}
+                      </label>
+                    ))}
+                  </div>
+                </div>
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Enfermedades endocrinas</label>
+                  <div className="flex flex-wrap gap-2">
+                    {(['Hipotiroidismo','Hipertiroidismo','SOP','Addison'] as const).map((enf) => (
+                      <label key={enf} className="flex items-center gap-1 text-sm">
+                        <input type="checkbox" checked={(consultationData.antecedentes_medicos?.enfermedades_endocrinas ?? []).includes(enf)} onChange={(e) => {
+                          const current = [...(consultationData.antecedentes_medicos?.enfermedades_endocrinas ?? [])];
+                          if (e.target.checked) current.push(enf); else current.splice(current.indexOf(enf), 1);
+                          setConsultationData(prev => ({ ...prev, antecedentes_medicos: { ...prev.antecedentes_medicos, enfermedades_endocrinas: current as any } }));
+                        }} />
+                        {enf}
+                      </label>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </Card>)}
+
+            {/* Antecedentes Heredofamiliares */}
+            {isVisible('antecedentesHeredofamiliares') && (<Card className="p-6">
+              <h3 className="text-lg font-medium text-gray-900 mb-4">👨‍👩‍👧 Antecedentes Heredofamiliares</h3>
+              <div className="space-y-3">
+                {([
+                  { key: 'derpesion', label: 'Depresión' },
+                  { key: 'trastorno_bipolar', label: 'Trastorno Bipolar' },
+                  { key: 'esquizofrenia', label: 'Esquizofrenia' },
+                  { key: 'ansiedad', label: 'Ansiedad' },
+                  { key: 'uso_sustancias', label: 'Uso de Sustancias' },
+                  { key: 'suicidio', label: 'Suicidio' },
+                  { key: 'tdah', label: 'TDAH' },
+                  { key: 'demencia', label: 'Demencia' },
+                ] as { key: keyof typeof consultationData.antecedentes_heredofamiliares; label: string }[]).map(({ key, label }) => {
+                  const row = (consultationData.antecedentes_heredofamiliares as any)?.[key]?.[0] ?? { parentesco: '', diagnostico: '', tratamiento: '', suicidio: 'No' };
+                  return (
+                    <div key={String(key)} className="border rounded p-3">
+                      <h4 className="text-sm font-medium text-gray-700 mb-2">{label}</h4>
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                        <div>
+                          <label className="block text-xs text-gray-500 mb-1">Parentesco</label>
+                          <input type="text" className="w-full px-2 py-1 border border-gray-300 rounded text-sm" value={row.parentesco} onChange={(e) => setConsultationData(prev => ({ ...prev, antecedentes_heredofamiliares: { ...prev.antecedentes_heredofamiliares, [key]: [{ ...row, parentesco: e.target.value }] } }))} />
+                        </div>
+                        <div>
+                          <label className="block text-xs text-gray-500 mb-1">Diagnóstico</label>
+                          <input type="text" className="w-full px-2 py-1 border border-gray-300 rounded text-sm" value={row.diagnostico} onChange={(e) => setConsultationData(prev => ({ ...prev, antecedentes_heredofamiliares: { ...prev.antecedentes_heredofamiliares, [key]: [{ ...row, diagnostico: e.target.value }] } }))} />
+                        </div>
+                        <div>
+                          <label className="block text-xs text-gray-500 mb-1">Tratamiento</label>
+                          <input type="text" className="w-full px-2 py-1 border border-gray-300 rounded text-sm" value={row.tratamiento} onChange={(e) => setConsultationData(prev => ({ ...prev, antecedentes_heredofamiliares: { ...prev.antecedentes_heredofamiliares, [key]: [{ ...row, tratamiento: e.target.value }] } }))} />
+                        </div>
+                        <div>
+                          <label className="block text-xs text-gray-500 mb-1">Suicidio</label>
+                          <select className="w-full px-2 py-1 border border-gray-300 rounded text-sm" value={row.suicidio} onChange={(e) => setConsultationData(prev => ({ ...prev, antecedentes_heredofamiliares: { ...prev.antecedentes_heredofamiliares, [key]: [{ ...row, suicidio: e.target.value }] } }))}>
+                            <option value="Si">Sí</option>
+                            <option value="No">No</option>
+                          </select>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Enfermedades relevantes en familia</label>
+                  <DictationTextarea rows={2} value={consultationData.antecedentes_heredofamiliares?.enfermedades_relevantes ?? ''} onChange={(v) => setConsultationData(prev => ({ ...prev, antecedentes_heredofamiliares: { ...prev.antecedentes_heredofamiliares, enfermedades_relevantes: v } }))} placeholder="Otras enfermedades relevantes en la familia..." />
+                </div>
+              </div>
+            </Card>)}
+
+            {/* Historia Personal y Social */}
+            {isVisible('historiaPersonalSocial') && (<Card className="p-6">
+              <h3 className="text-lg font-medium text-gray-900 mb-4">📋 Historia Personal y Social</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Embarazo y parto</label>
+                  <DictationTextarea rows={2} value={consultationData.historia_personal_social?.embarazo_parto ?? ''} onChange={(v) => setConsultationData(prev => ({ ...prev, historia_personal_social: { ...prev.historia_personal_social, embarazo_parto: v } }))} placeholder="Antecedentes perinatales..." />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Desarrollo psicomotor</label>
+                  <select className="w-full px-3 py-2 border border-gray-300 rounded-md" value={consultationData.historia_personal_social?.desarrollo_psicomotor ?? 'Normal'} onChange={(e) => setConsultationData(prev => ({ ...prev, historia_personal_social: { ...prev.historia_personal_social, desarrollo_psicomotor: e.target.value as any } }))}>
+                    <option value="Normal">Normal</option>
+                    <option value="Retraso">Retraso</option>
+                    <option value="Desconocido">Desconocido</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Historia escolar</label>
+                  <DictationTextarea rows={2} value={consultationData.historia_personal_social?.historia_escolar ?? ''} onChange={(v) => setConsultationData(prev => ({ ...prev, historia_personal_social: { ...prev.historia_personal_social, historia_escolar: v } }))} placeholder="Historia académica..." />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Problemas de aprendizaje</label>
+                  <select className="w-full px-3 py-2 border border-gray-300 rounded-md" value={consultationData.historia_personal_social?.problemas_aprendizaje ?? 'No'} onChange={(e) => setConsultationData(prev => ({ ...prev, historia_personal_social: { ...prev.historia_personal_social, problemas_aprendizaje: e.target.value as any } }))}>
+                    <option value="Si">Sí</option>
+                    <option value="No">No</option>
+                    <option value="Desconocido">Desconocido</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Historia laboral</label>
+                  <DictationTextarea rows={2} value={consultationData.historia_personal_social?.historia_laboral ?? ''} onChange={(v) => setConsultationData(prev => ({ ...prev, historia_personal_social: { ...prev.historia_personal_social, historia_laboral: v } }))} placeholder="Historia laboral..." />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Situación laboral actual</label>
+                  <input type="text" className="w-full px-3 py-2 border border-gray-300 rounded-md" value={consultationData.historia_personal_social?.situacion_laboral_actual ?? ''} onChange={(e) => setConsultationData(prev => ({ ...prev, historia_personal_social: { ...prev.historia_personal_social, situacion_laboral_actual: e.target.value } }))} />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Relación actual</label>
+                  <input type="text" className="w-full px-3 py-2 border border-gray-300 rounded-md" value={consultationData.historia_personal_social?.relacion_actual ?? ''} onChange={(e) => setConsultationData(prev => ({ ...prev, historia_personal_social: { ...prev.historia_personal_social, relacion_actual: e.target.value } }))} />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Convivencia actual</label>
+                  <input type="text" className="w-full px-3 py-2 border border-gray-300 rounded-md" value={consultationData.historia_personal_social?.convivencia_actual ?? ''} onChange={(e) => setConsultationData(prev => ({ ...prev, historia_personal_social: { ...prev.historia_personal_social, convivencia_actual: e.target.value } }))} />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Apoyo social (0-10)</label>
+                  <input type="number" min={0} max={10} className="w-full px-3 py-2 border border-gray-300 rounded-md" value={consultationData.historia_personal_social?.apoyo_social ?? 5} onChange={(e) => setConsultationData(prev => ({ ...prev, historia_personal_social: { ...prev.historia_personal_social, apoyo_social: Number(e.target.value) } }))} />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Situación económica</label>
+                  <select className="w-full px-3 py-2 border border-gray-300 rounded-md" value={consultationData.historia_personal_social?.situacion_economica ?? 'Buena'} onChange={(e) => setConsultationData(prev => ({ ...prev, historia_personal_social: { ...prev.historia_personal_social, situacion_economica: e.target.value as any } }))}>
+                    <option value="Mala">Mala</option>
+                    <option value="Precaria">Precaria</option>
+                    <option value="Buena">Buena</option>
+                    <option value="Excelente">Excelente</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Situación legal</label>
+                  <select className="w-full px-3 py-2 border border-gray-300 rounded-md" value={consultationData.historia_personal_social?.situacion_legal ?? 'No'} onChange={(e) => setConsultationData(prev => ({ ...prev, historia_personal_social: { ...prev.historia_personal_social, situacion_legal: e.target.value as any } }))}>
+                    <option value="Si">Sí (problemas legales)</option>
+                    <option value="No">No</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Trauma infantil</label>
+                  <select className="w-full px-3 py-2 border border-gray-300 rounded-md" value={consultationData.historia_personal_social?.trauma_infantil ?? 'No'} onChange={(e) => setConsultationData(prev => ({ ...prev, historia_personal_social: { ...prev.historia_personal_social, trauma_infantil: e.target.value as any } }))}>
+                    <option value="Si">Sí</option>
+                    <option value="No">No</option>
+                  </select>
+                </div>
+                {([
+                  { key: 'abuso_fisico', label: 'Abuso físico' },
+                  { key: 'abuso_sexual', label: 'Abuso sexual' },
+                  { key: 'negligencia', label: 'Negligencia' },
+                  { key: 'voilencia_domestica', label: 'Violencia doméstica' },
+                ] as { key: keyof typeof consultationData.historia_personal_social; label: string }[]).map(({ key, label }) => (
+                  <div key={String(key)}>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">{label}</label>
+                    <select className="w-full px-3 py-2 border border-gray-300 rounded-md" value={(consultationData.historia_personal_social as any)?.[key] ?? 'No interrogado'} onChange={(e) => setConsultationData(prev => ({ ...prev, historia_personal_social: { ...prev.historia_personal_social, [key]: e.target.value } }))}>
+                      <option value="Si">Sí</option>
+                      <option value="No">No</option>
+                      <option value="Prefiere no decir">Prefiere no decir</option>
+                      <option value="No interrogado">No interrogado</option>
+                    </select>
+                  </div>
+                ))}
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Intereses y pasatiempos</label>
+                  <DictationTextarea rows={2} value={consultationData.historia_personal_social?.intereses_pasatiempos ?? ''} onChange={(v) => setConsultationData(prev => ({ ...prev, historia_personal_social: { ...prev.historia_personal_social, intereses_pasatiempos: v } }))} placeholder="Intereses y pasatiempos del paciente..." />
+                </div>
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Fortalezas del paciente</label>
+                  <DictationTextarea rows={2} value={consultationData.historia_personal_social?.fortalezas_paciente ?? ''} onChange={(v) => setConsultationData(prev => ({ ...prev, historia_personal_social: { ...prev.historia_personal_social, fortalezas_paciente: v } }))} placeholder="Fortalezas identificadas..." />
+                </div>
+              </div>
+            </Card>)}
+
+            {/* Estado de Inicio */}
+            {isVisible('estadoInicio') && (<Card className="p-6">
+              <h3 className="text-lg font-medium text-gray-900 mb-4">🌡️ Estado de Inicio de Sesión</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Estado emocional</label>
+                  <input type="text" className="w-full px-3 py-2 border border-gray-300 rounded-md" value={consultationData.estado_inicio?.estado_emocional ?? ''} onChange={(e) => setConsultationData(prev => ({ ...prev, estado_inicio: { ...prev.estado_inicio, estado_emocional: e.target.value } }))} placeholder="Estado emocional al inicio..." />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Nivel de malestar (0-10)</label>
+                  <input type="number" min={0} max={10} className="w-full px-3 py-2 border border-gray-300 rounded-md" value={consultationData.estado_inicio?.nivel_malestar ?? 5} onChange={(e) => setConsultationData(prev => ({ ...prev, estado_inicio: { ...prev.estado_inicio, nivel_malestar: Number(e.target.value) } }))} />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Eventos desde última sesión</label>
+                  <DictationTextarea rows={2} value={consultationData.estado_inicio?.eventos_ultima_sesion ?? ''} onChange={(v) => setConsultationData(prev => ({ ...prev, estado_inicio: { ...prev.estado_inicio, eventos_ultima_sesion: v } }))} placeholder="Eventos relevantes desde la última sesión..." />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">¿Qué trae hoy?</label>
+                  <DictationTextarea rows={2} value={consultationData.estado_inicio?.trae_hoy ?? ''} onChange={(v) => setConsultationData(prev => ({ ...prev, estado_inicio: { ...prev.estado_inicio, trae_hoy: v } }))} placeholder="Tema principal que trae el paciente hoy..." />
+                </div>
+              </div>
+            </Card>)}
+
+            {/* Contenido de Sesión */}
+            {isVisible('contenidoSesion') && (<Card className="p-6">
+              <h3 className="text-lg font-medium text-gray-900 mb-4">📝 Contenido de Sesión</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Temas principales</label>
+                  <DictationTextarea rows={3} value={consultationData.contenido_sesion?.temas_principales ?? ''} onChange={(v) => setConsultationData(prev => ({ ...prev, contenido_sesion: { ...prev.contenido_sesion, temas_principales: v } }))} placeholder="Temas trabajados en sesión..." />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Momentos significativos</label>
+                  <DictationTextarea rows={2} value={consultationData.contenido_sesion?.momentos_significativos ?? ''} onChange={(v) => setConsultationData(prev => ({ ...prev, contenido_sesion: { ...prev.contenido_sesion, momentos_significativos: v } }))} placeholder="Momentos significativos de la sesión..." />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Insights del paciente</label>
+                  <DictationTextarea rows={2} value={consultationData.contenido_sesion?.insights_paciente ?? ''} onChange={(v) => setConsultationData(prev => ({ ...prev, contenido_sesion: { ...prev.contenido_sesion, insights_paciente: v } }))} placeholder="Insights observados..." />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Emociones trabajadas (detalle)</label>
+                  <DictationTextarea rows={2} value={consultationData.contenido_sesion?.emociones_trabajadas_detalle ?? ''} onChange={(v) => setConsultationData(prev => ({ ...prev, contenido_sesion: { ...prev.contenido_sesion, emociones_trabajadas_detalle: v } }))} placeholder="Descripción de emociones trabajadas..." />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Resistencias observadas</label>
+                  <DictationTextarea rows={2} value={consultationData.contenido_sesion?.resistencias_observadas ?? ''} onChange={(v) => setConsultationData(prev => ({ ...prev, contenido_sesion: { ...prev.contenido_sesion, resistencias_observadas: v } }))} placeholder="Resistencias observadas durante la sesión..." />
+                </div>
+              </div>
+            </Card>)}
+
+            {/* Plan de Manejo */}
+            {isVisible('planManejo') && (<Card className="p-6">
+              <h3 className="text-lg font-medium text-gray-900 mb-4">🗓️ Plan de Manejo</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Farmacoterapia indicada</label>
+                  <select className="w-full px-3 py-2 border border-gray-300 rounded-md" value={consultationData.plan_manejo?.farmacoterapia_indicada ?? 'No'} onChange={(e) => setConsultationData(prev => ({ ...prev, plan_manejo: { ...prev.plan_manejo, farmacoterapia_indicada: e.target.value as any } }))}>
+                    <option value="Si">Sí</option>
+                    <option value="No">No</option>
+                    <option value="Dudoso">Dudoso</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Psicoterapia indicada</label>
+                  <select className="w-full px-3 py-2 border border-gray-300 rounded-md" value={consultationData.plan_manejo?.psicoterapia_indicada ?? 'No'} onChange={(e) => setConsultationData(prev => ({ ...prev, plan_manejo: { ...prev.plan_manejo, psicoterapia_indicada: e.target.value as any } }))}>
+                    <option value="Si">Sí</option>
+                    <option value="No">No</option>
+                    <option value="Dudoso">Dudoso</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Frecuencia de sesiones</label>
+                  <select className="w-full px-3 py-2 border border-gray-300 rounded-md" value={consultationData.plan_manejo?.frecuencia_sesiones ?? 'Semanal'} onChange={(e) => setConsultationData(prev => ({ ...prev, plan_manejo: { ...prev.plan_manejo, frecuencia_sesiones: e.target.value as any } }))}>
+                    <option value="Semanal">Semanal</option>
+                    <option value="Quincenal">Quincenal</option>
+                    <option value="Cada 3er Semana">Cada 3ª semana</option>
+                    <option value="Mensual">Mensual</option>
+                    <option value="Irregular">Irregular</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Número de sesiones previstas</label>
+                  <input type="number" min={0} className="w-full px-3 py-2 border border-gray-300 rounded-md" value={consultationData.plan_manejo?.numero_sesiones_previstas ?? 0} onChange={(e) => setConsultationData(prev => ({ ...prev, plan_manejo: { ...prev.plan_manejo, numero_sesiones_previstas: Number(e.target.value) } }))} />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Tiempo de seguimiento</label>
+                  <select className="w-full px-3 py-2 border border-gray-300 rounded-md" value={consultationData.plan_manejo?.tiempo_seguimiento_meses ?? 'Corto plazo'} onChange={(e) => setConsultationData(prev => ({ ...prev, plan_manejo: { ...prev.plan_manejo, tiempo_seguimiento_meses: e.target.value as any } }))}>
+                    <option value="Corto plazo">Corto plazo</option>
+                    <option value="Largo plazo">Largo plazo</option>
+                    <option value="Crónico">Crónico</option>
+                    <option value="Indeterminado">Indeterminado</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Progreso</label>
+                  <select className="w-full px-3 py-2 border border-gray-300 rounded-md" value={consultationData.plan_manejo?.progreso ?? 'Nulo'} onChange={(e) => setConsultationData(prev => ({ ...prev, plan_manejo: { ...prev.plan_manejo, progreso: e.target.value as any } }))}>
+                    <option value="Nulo">Nulo</option>
+                    <option value="Mínimo">Mínimo</option>
+                    <option value="Regular">Regular</option>
+                    <option value="Bueno">Bueno</option>
+                    <option value="Muy bueno">Muy bueno</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Necesidad de evaluación psiquiátrica</label>
+                  <select className="w-full px-3 py-2 border border-gray-300 rounded-md" value={consultationData.plan_manejo?.necesidad_evaluacion_psiquiatrica ?? 'No'} onChange={(e) => setConsultationData(prev => ({ ...prev, plan_manejo: { ...prev.plan_manejo, necesidad_evaluacion_psiquiatrica: e.target.value as any } }))}>
+                    <option value="Si">Sí</option>
+                    <option value="No">No</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Contrato terapéutico</label>
+                  <select className="w-full px-3 py-2 border border-gray-300 rounded-md" value={consultationData.plan_manejo?.contrato_terapeutico ?? 'No'} onChange={(e) => setConsultationData(prev => ({ ...prev, plan_manejo: { ...prev.plan_manejo, contrato_terapeutico: e.target.value as any } }))}>
+                    <option value="Si">Sí</option>
+                    <option value="No">No</option>
+                  </select>
+                </div>
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Plan de manejo / tratamiento</label>
+                  <DictationTextarea rows={3} value={consultationData.plan_manejo?.plan_manejo_tratamiento ?? ''} onChange={(v) => setConsultationData(prev => ({ ...prev, plan_manejo: { ...prev.plan_manejo, plan_manejo_tratamiento: v } }))} placeholder="Plan de manejo detallado..." />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Enfoque terapéutico propuesto</label>
+                  <DictationTextarea rows={2} value={consultationData.plan_manejo?.enfoque_terapeutico_propuesto ?? ''} onChange={(v) => setConsultationData(prev => ({ ...prev, plan_manejo: { ...prev.plan_manejo, enfoque_terapeutico_propuesto: v } }))} placeholder="Enfoque terapéutico propuesto..." />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Objetivos terapéuticos</label>
+                  <DictationTextarea rows={2} value={consultationData.plan_manejo?.objetivos_terapeuticos ?? ''} onChange={(v) => setConsultationData(prev => ({ ...prev, plan_manejo: { ...prev.plan_manejo, objetivos_terapeuticos: v } }))} placeholder="Objetivos terapéuticos..." />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Tarea próxima sesión</label>
+                  <DictationTextarea rows={2} value={consultationData.plan_manejo?.tarea_proxima_sesion ?? ''} onChange={(v) => setConsultationData(prev => ({ ...prev, plan_manejo: { ...prev.plan_manejo, tarea_proxima_sesion: v } }))} placeholder="Tarea para la próxima sesión..." />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Tareas asignadas previamente</label>
+                  <DictationTextarea rows={2} value={consultationData.plan_manejo?.tareas_asignadas_previamente ?? ''} onChange={(v) => setConsultationData(prev => ({ ...prev, plan_manejo: { ...prev.plan_manejo, tareas_asignadas_previamente: v } }))} placeholder="Tareas asignadas previamente..." />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Referencias / Interconsultas</label>
+                  <DictationTextarea rows={2} value={consultationData.plan_manejo?.referencias_interconsultas ?? ''} onChange={(v) => setConsultationData(prev => ({ ...prev, plan_manejo: { ...prev.plan_manejo, referencias_interconsultas: v } }))} placeholder="Referencias e interconsultas..." />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Psicoeducación proporcionada</label>
+                  <DictationTextarea rows={2} value={consultationData.plan_manejo?.psicoeducacion_proporcionada ?? ''} onChange={(v) => setConsultationData(prev => ({ ...prev, plan_manejo: { ...prev.plan_manejo, psicoeducacion_proporcionada: v } }))} placeholder="Psicoeducación proporcionada..." />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Temas a continuar</label>
+                  <DictationTextarea rows={2} value={consultationData.plan_manejo?.temas_a_continuar ?? ''} onChange={(v) => setConsultationData(prev => ({ ...prev, plan_manejo: { ...prev.plan_manejo, temas_a_continuar: v } }))} placeholder="Temas a continuar en próximas sesiones..." />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Cambios en plan de tratamiento</label>
+                  <DictationTextarea rows={2} value={consultationData.plan_manejo?.cambios_plan_tratamiento ?? ''} onChange={(v) => setConsultationData(prev => ({ ...prev, plan_manejo: { ...prev.plan_manejo, cambios_plan_tratamiento: v } }))} placeholder="Cambios al plan de tratamiento..." />
+                </div>
+              </div>
+            </Card>)}
+
+            {/* Análisis y Conclusiones */}
+            {isVisible('analisisConclusiones') && (<Card className="p-6">
+              <h3 className="text-lg font-medium text-gray-900 mb-4">🔬 Análisis y Conclusiones</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Análisis clínico</label>
+                  <DictationTextarea rows={3} value={consultationData.analisis_conclusiones?.analisis_clinico ?? ''} onChange={(v) => setConsultationData(prev => ({ ...prev, analisis_conclusiones: { ...prev.analisis_conclusiones, analisis_clinico: v } }))} placeholder="Análisis clínico detallado..." />
+                </div>
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Diagnóstico diferencial</label>
+                  <DictationTextarea rows={2} value={consultationData.analisis_conclusiones?.diagnostico_diferencial ?? ''} onChange={(v) => setConsultationData(prev => ({ ...prev, analisis_conclusiones: { ...prev.analisis_conclusiones, diagnostico_diferencial: v } }))} placeholder="Diagnósticos diferenciales..." />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Observaciones de progreso</label>
+                  <DictationTextarea rows={2} value={consultationData.analisis_conclusiones?.observaciones_progreso ?? ''} onChange={(v) => setConsultationData(prev => ({ ...prev, analisis_conclusiones: { ...prev.analisis_conclusiones, observaciones_progreso: v } }))} placeholder="Observaciones del progreso del paciente..." />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Estado emocional</label>
+                  <input type="text" className="w-full px-3 py-2 border border-gray-300 rounded-md" value={consultationData.analisis_conclusiones?.estado_emocional ?? ''} onChange={(e) => setConsultationData(prev => ({ ...prev, analisis_conclusiones: { ...prev.analisis_conclusiones, estado_emocional: e.target.value } }))} placeholder="Estado emocional al cierre..." />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Nivel de malestar al cierre (0-10)</label>
+                  <input type="number" min={0} max={10} className="w-full px-3 py-2 border border-gray-300 rounded-md" value={consultationData.analisis_conclusiones?.nivel_malestar_cierre ?? 5} onChange={(e) => setConsultationData(prev => ({ ...prev, analisis_conclusiones: { ...prev.analisis_conclusiones, nivel_malestar_cierre: Number(e.target.value) } }))} />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Adherencia al tratamiento</label>
+                  <select className="w-full px-3 py-2 border border-gray-300 rounded-md" value={consultationData.analisis_conclusiones?.adherencia_tratamiento ?? 'Nulo'} onChange={(e) => setConsultationData(prev => ({ ...prev, analisis_conclusiones: { ...prev.analisis_conclusiones, adherencia_tratamiento: e.target.value as any } }))}>
+                    <option value="Nulo">Nulo</option>
+                    <option value="Malo">Malo</option>
+                    <option value="Regular">Regular</option>
+                    <option value="Bueno">Bueno</option>
+                    <option value="Muy bueno">Muy bueno</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Pronóstico</label>
+                  <select className="w-full px-3 py-2 border border-gray-300 rounded-md" value={consultationData.analisis_conclusiones?.pronostico ?? 'No se puede pronosticar aún'} onChange={(e) => setConsultationData(prev => ({ ...prev, analisis_conclusiones: { ...prev.analisis_conclusiones, pronostico: e.target.value as any } }))}>
+                    <option value="No se puede pronosticar aún">No se puede pronosticar aún</option>
+                    <option value="Reservado">Reservado</option>
+                    <option value="Negativo">Negativo</option>
+                    <option value="Dependiente de apego terapéutico">Dependiente de apego terapéutico</option>
+                    <option value="Dependiente de cese de factores de riesgo">Dependiente de cese de factores de riesgo</option>
+                    <option value="Bueno a corto plazo">Bueno a corto plazo</option>
+                    <option value="Bueno a largo plazo">Bueno a largo plazo</option>
+                    <option value="Crónico controlable">Crónico controlable</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Detalle pronóstico</label>
+                  <DictationTextarea rows={2} value={consultationData.analisis_conclusiones?.pronostico_detalle ?? ''} onChange={(v) => setConsultationData(prev => ({ ...prev, analisis_conclusiones: { ...prev.analisis_conclusiones, pronostico_detalle: v } }))} placeholder="Detalle del pronóstico..." />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Cambios desde última visita</label>
+                  <DictationTextarea rows={2} value={consultationData.analisis_conclusiones?.cambios_ultima_visita ?? ''} onChange={(v) => setConsultationData(prev => ({ ...prev, analisis_conclusiones: { ...prev.analisis_conclusiones, cambios_ultima_visita: v } }))} placeholder="Cambios observados desde la última visita..." />
+                </div>
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Notas privadas</label>
+                  <DictationTextarea rows={2} value={consultationData.analisis_conclusiones?.notas_privadas ?? ''} onChange={(v) => setConsultationData(prev => ({ ...prev, analisis_conclusiones: { ...prev.analisis_conclusiones, notas_privadas: v } }))} placeholder="Notas privadas del clínico (no se imprimen)..." />
+                </div>
+              </div>
+            </Card>)}
+
+            {/* Formulación del Caso */}
+            {isVisible('formulacionCaso') && (<Card className="p-6">
+              <h3 className="text-lg font-medium text-gray-900 mb-4">📐 Formulación del Caso</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {([
+                  { key: 'hipotesis_trabajo', label: 'Hipótesis de trabajo' },
+                  { key: 'factores_predisponentes', label: 'Factores predisponentes' },
+                  { key: 'factores_precipitantes', label: 'Factores precipitantes' },
+                  { key: 'factores_mantenimiento', label: 'Factores de mantenimiento' },
+                  { key: 'factores_protectores', label: 'Factores protectores' },
+                  { key: 'diagnostico_presuntivo', label: 'Diagnóstico presuntivo' },
+                ] as { key: keyof typeof consultationData.formulacion_caso; label: string }[]).map(({ key, label }) => (
+                  <div key={String(key)}>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">{label}</label>
+                    <DictationTextarea rows={2} value={(consultationData.formulacion_caso as any)?.[key] ?? ''} onChange={(v) => setConsultationData(prev => ({ ...prev, formulacion_caso: { ...prev.formulacion_caso, [key]: v } }))} placeholder={`${label}...`} />
+                  </div>
+                ))}
+              </div>
+            </Card>)}
+
+            {/* Red de Apoyo */}
+            {isVisible('redApoyo') && (<Card className="p-6">
+              <h3 className="text-lg font-medium text-gray-900 mb-4">🤝 Red de Apoyo</h3>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Redes disponibles</label>
+                  <select className="w-full px-3 py-2 border border-gray-300 rounded-md" value={consultationData.red_apoyo?.redes_disponibles ?? 'No'} onChange={(e) => setConsultationData(prev => ({ ...prev, red_apoyo: { ...prev.red_apoyo, redes_disponibles: e.target.value as any } }))}>
+                    <option value="Si">Sí</option>
+                    <option value="No">No</option>
+                  </select>
+                </div>
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Detalle redes disponibles</label>
+                  <input type="text" className="w-full px-3 py-2 border border-gray-300 rounded-md" value={consultationData.red_apoyo?.redes_disponibles_detalle ?? ''} onChange={(e) => setConsultationData(prev => ({ ...prev, red_apoyo: { ...prev.red_apoyo, redes_disponibles_detalle: e.target.value } }))} />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Contención</label>
+                  <select className="w-full px-3 py-2 border border-gray-300 rounded-md" value={consultationData.red_apoyo?.contencion ?? 'No'} onChange={(e) => setConsultationData(prev => ({ ...prev, red_apoyo: { ...prev.red_apoyo, contencion: e.target.value as any } }))}>
+                    <option value="Si">Sí</option>
+                    <option value="No">No</option>
+                  </select>
+                </div>
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Detalle contención</label>
+                  <input type="text" className="w-full px-3 py-2 border border-gray-300 rounded-md" value={consultationData.red_apoyo?.contencion_detalle ?? ''} onChange={(e) => setConsultationData(prev => ({ ...prev, red_apoyo: { ...prev.red_apoyo, contencion_detalle: e.target.value } }))} />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Contacto de emergencia</label>
+                  <select className="w-full px-3 py-2 border border-gray-300 rounded-md" value={consultationData.red_apoyo?.contacto_emergencia ?? 'No'} onChange={(e) => setConsultationData(prev => ({ ...prev, red_apoyo: { ...prev.red_apoyo, contacto_emergencia: e.target.value as any } }))}>
+                    <option value="Si">Sí</option>
+                    <option value="No">No</option>
+                  </select>
+                </div>
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Detalle contacto de emergencia</label>
+                  <input type="text" className="w-full px-3 py-2 border border-gray-300 rounded-md" value={consultationData.red_apoyo?.contacto_emergencia_detalle ?? ''} onChange={(e) => setConsultationData(prev => ({ ...prev, red_apoyo: { ...prev.red_apoyo, contacto_emergencia_detalle: e.target.value } }))} />
+                </div>
+              </div>
+            </Card>)}
+
+            {/* Intervención en Crisis */}
+            {isVisible('intervencionCrisis') && (<Card className="p-6 border-l-4 border-orange-500">
+              <h3 className="text-lg font-medium text-gray-900 mb-4">🚨 Intervención en Crisis</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Intervención en crisis</label>
+                  <DictationTextarea rows={2} value={consultationData.intervencion_crisis?.intervencion_crisis ?? ''} onChange={(v) => setConsultationData(prev => ({ ...prev, intervencion_crisis: { ...prev.intervencion_crisis, intervencion_crisis: v } }))} placeholder="Descripción de la intervención en crisis..." />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Contención verbal</label>
+                  <DictationTextarea rows={2} value={consultationData.intervencion_crisis?.contencion_verbal ?? ''} onChange={(v) => setConsultationData(prev => ({ ...prev, intervencion_crisis: { ...prev.intervencion_crisis, contencion_verbal: v } }))} placeholder="Técnicas de contención verbal utilizadas..." />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Medicación de urgencia</label>
+                  <input type="text" className="w-full px-3 py-2 border border-gray-300 rounded-md" value={consultationData.intervencion_crisis?.medicacion_urgencia ?? ''} onChange={(e) => setConsultationData(prev => ({ ...prev, intervencion_crisis: { ...prev.intervencion_crisis, medicacion_urgencia: e.target.value } }))} placeholder="Medicación de urgencia administrada..." />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Restricción de medios</label>
+                  <select className="w-full px-3 py-2 border border-gray-300 rounded-md" value={consultationData.intervencion_crisis?.restriccion_medios ?? 'No'} onChange={(e) => setConsultationData(prev => ({ ...prev, intervencion_crisis: { ...prev.intervencion_crisis, restriccion_medios: e.target.value as any } }))}>
+                    <option value="Si">Sí</option>
+                    <option value="No">No</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Llamada a familia</label>
+                  <select className="w-full px-3 py-2 border border-gray-300 rounded-md" value={consultationData.intervencion_crisis?.llamada_familia ?? 'No'} onChange={(e) => setConsultationData(prev => ({ ...prev, intervencion_crisis: { ...prev.intervencion_crisis, llamada_familia: e.target.value as any } }))}>
+                    <option value="Si">Sí</option>
+                    <option value="No">No</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Destino</label>
+                  <select className="w-full px-3 py-2 border border-gray-300 rounded-md" value={consultationData.intervencion_crisis?.destino ?? 'Alta'} onChange={(e) => setConsultationData(prev => ({ ...prev, intervencion_crisis: { ...prev.intervencion_crisis, destino: e.target.value as any } }))}>
+                    <option value="Alta">Alta</option>
+                    <option value="Hospitalización">Hospitalización</option>
+                    <option value="Traslado otro hospital">Traslado a otro hospital</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Criterios de hospitalización</label>
+                  <select className="w-full px-3 py-2 border border-gray-300 rounded-md" value={consultationData.intervencion_crisis?.criterios_hospitalizacion ?? 'No'} onChange={(e) => setConsultationData(prev => ({ ...prev, intervencion_crisis: { ...prev.intervencion_crisis, criterios_hospitalizacion: e.target.value as any } }))}>
+                    <option value="Si">Sí</option>
+                    <option value="No">No</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Consentimiento paciente</label>
+                  <select className="w-full px-3 py-2 border border-gray-300 rounded-md" value={consultationData.intervencion_crisis?.consentimiento_paciente ?? 'No'} onChange={(e) => setConsultationData(prev => ({ ...prev, intervencion_crisis: { ...prev.intervencion_crisis, consentimiento_paciente: e.target.value as any } }))}>
+                    <option value="Si">Sí</option>
+                    <option value="No">No</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Consentimiento familiar</label>
+                  <select className="w-full px-3 py-2 border border-gray-300 rounded-md" value={consultationData.intervencion_crisis?.consentimiento_familiar ?? 'No'} onChange={(e) => setConsultationData(prev => ({ ...prev, intervencion_crisis: { ...prev.intervencion_crisis, consentimiento_familiar: e.target.value as any } }))}>
+                    <option value="Si">Sí</option>
+                    <option value="No">No</option>
+                  </select>
+                </div>
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Plan de egreso</label>
+                  <DictationTextarea rows={2} value={consultationData.intervencion_crisis?.plan_egreso ?? ''} onChange={(v) => setConsultationData(prev => ({ ...prev, intervencion_crisis: { ...prev.intervencion_crisis, plan_egreso: v } }))} placeholder="Plan de egreso..." />
+                </div>
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Instrucciones</label>
+                  <DictationTextarea rows={2} value={consultationData.intervencion_crisis?.instrucciones ?? ''} onChange={(v) => setConsultationData(prev => ({ ...prev, intervencion_crisis: { ...prev.intervencion_crisis, instrucciones: v } }))} placeholder="Instrucciones al egreso..." />
+                </div>
+                <div className="md:col-span-2 border-t pt-3">
+                  <h4 className="font-medium text-sm text-gray-700 mb-2">Responsable de egreso</h4>
+                  <div className="grid grid-cols-3 gap-2">
+                    {(['nombre','parentesco','telefono'] as const).map((field) => (
+                      <div key={field}>
+                        <label className="block text-xs text-gray-500 mb-1 capitalize">{field}</label>
+                        <input type="text" className="w-full px-2 py-1 border border-gray-300 rounded text-sm" value={consultationData.intervencion_crisis?.responsable_egreso?.[field] ?? ''} onChange={(e) => setConsultationData(prev => ({ ...prev, intervencion_crisis: { ...prev.intervencion_crisis, responsable_egreso: { ...prev.intervencion_crisis?.responsable_egreso, [field]: e.target.value } } }))} />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </Card>)}
+
             {/* Save Button - Moved to bottom */}
             <div className="mt-8 flex justify-center sticky bottom-0 bg-white pt-4 pb-2 border-t border-gray-200">
               <div className="flex space-x-4">
@@ -2673,20 +5249,20 @@ export default function CentralizedConsultationInterface({
         patient={patient}
         consultationData={{
           ...consultationData,
-          mental_exam: {
-            descripcionInspeccion: consultationData.mental_exam.customAppearance || consultationData.mental_exam.appearance || '',
-            apariencia: consultationData.mental_exam.appearance || consultationData.mental_exam.customAppearance || '',
-            actitud: consultationData.mental_exam.attitude || '',
-            conciencia: consultationData.mental_exam.consciousness || '',
-            orientacion: consultationData.mental_exam.orientation || '',
-            atencion: consultationData.mental_exam.attention || '',
-            lenguaje: consultationData.mental_exam.customSpeech || `${consultationData.mental_exam.speechRate} ${consultationData.mental_exam.speechVolume} ${consultationData.mental_exam.speechFluency}`.trim() || '',
-            afecto: consultationData.mental_exam.customAffect || `${consultationData.mental_exam.affectIntensity} ${consultationData.mental_exam.affectQuality}`.trim() || '',
-            sensopercepcion: consultationData.mental_exam.customPerceptions || consultationData.mental_exam.perceptions || '',
-            memoria: consultationData.mental_exam.memory || '',
-            pensamientoPrincipal: consultationData.mental_exam.thoughtContent || '',
-            pensamientoDetalles: consultationData.mental_exam.customThought || consultationData.mental_exam.thoughtProcess || ''
-          }
+          // mental_exam: {
+          //   descripcionInspeccion: consultationData.mental_exam.customAppearance || consultationData.mental_exam.appearance || '',
+          //   apariencia: consultationData.mental_exam.appearance || consultationData.mental_exam.customAppearance || '',
+          //   actitud: consultationData.mental_exam.attitude || '',
+          //   conciencia: consultationData.mental_exam.consciousness || '',
+          //   orientacion: consultationData.mental_exam.orientation || '',
+          //   atencion: consultationData.mental_exam.attention || '',
+          //   lenguaje: consultationData.mental_exam.customSpeech || `${consultationData.mental_exam.speechRate} ${consultationData.mental_exam.speechVolume} ${consultationData.mental_exam.speechFluency}`.trim() || '',
+          //   afecto: consultationData.mental_exam.customAffect || `${consultationData.mental_exam.affectIntensity} ${consultationData.mental_exam.affectQuality}`.trim() || '',
+          //   sensopercepcion: consultationData.mental_exam.customPerceptions || consultationData.mental_exam.perceptions || '',
+          //   memoria: consultationData.mental_exam.memory || '',
+          //   pensamientoPrincipal: consultationData.mental_exam.thoughtContent || '',
+          //   pensamientoDetalles: consultationData.mental_exam.customThought || consultationData.mental_exam.thoughtProcess || ''
+          // }
         }}
         professionalName={professionalName}
         // clinicName={`${config.clinicName}`}
