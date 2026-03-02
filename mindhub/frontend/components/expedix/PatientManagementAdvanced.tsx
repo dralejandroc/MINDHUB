@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { 
   UserGroupIcon, 
   PlusIcon, 
@@ -40,6 +40,7 @@ interface PatientManagementAdvancedProps {
   onScheduleAppointment?: (patient: Patient) => void;
   onSettings?: () => void;
   onChangeView?: (view: 'cards' | 'timeline') => void;
+  searchText?: string;
 }
 
 type ViewMode = 'list' | 'cards';
@@ -65,7 +66,8 @@ export default function PatientManagementAdvanced({
   onClinicalAssessment,
   onScheduleAppointment,
   onSettings,
-  onChangeView
+  onChangeView,
+  searchText
 }: PatientManagementAdvancedProps) {
   // Use the authenticated Expedix API hook
   const expedixApi = useExpedixApi();
@@ -81,15 +83,28 @@ export default function PatientManagementAdvanced({
   const [showTagManager, setShowTagManager] = useState(false);
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
 
+   const didFetchRef = useRef(false);
+
   // Fetch patients with enhanced data
   const fetchPatients = async () => {
     try {
       setLoading(true);
       const response = await expedixApi.getPatients(searchTerm || undefined);
+
+      const rawPatients: Patient[] = Array.isArray(response.data) ? response.data : [];
+
+      // ✅ DEDUPE por patient.id para evitar keys duplicadas
+      const uniquePatients = Array.from(
+        new Map(
+          rawPatients
+            .filter(p => (p as any)?.id)
+            .map(p => [String((p as any).id), p])
+        ).values()
+      );
       
       // Enhance patient data with additional information
       // PERFORMANCE FIX: Use pre-calculated counts from backend instead of N+1 queries
-      const enhancedPatients: EnhancedPatient[] = response.data.map((patient) => {
+      const enhancedPatients: EnhancedPatient[] = uniquePatients.map((patient) => {
         try {
           // Use pre-calculated counts from the patient object instead of individual API calls
           const consultationsCount = patient.consultations_count || 0;
@@ -256,26 +271,37 @@ export default function PatientManagementAdvanced({
   };
 
   useEffect(() => {
+    if (didFetchRef.current) return;
+    didFetchRef.current = true;
     fetchPatients();
-  }, [searchTerm]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Filter patients based on search, tags, and status
-  const filteredPatients = patients.filter(patient => {
-    const matchesSearch = !searchTerm || 
-      `${patient.first_name} ${patient.paternal_last_name} ${patient.maternal_last_name}`
-        .toLowerCase().includes(searchTerm.toLowerCase()) ||
-      patient.cell_phone?.includes(searchTerm) ||
-      patient.email?.toLowerCase().includes(searchTerm.toLowerCase());
-    
-    const matchesTags = selectedTags.length === 0 || 
-      selectedTags.some(tagName => 
-        patient.tags.some(tag => tag.name === tagName)
-      );
-    
-    const matchesStatus = statusFilter === 'all' || patient.followUpStatus === statusFilter;
-    
-    return matchesSearch && matchesTags && matchesStatus;
-  });
+  const filteredPatients = useMemo(() => {
+    const q = (searchText ?? '').trim().toLowerCase();
+
+    return patients.filter(patient => {
+      const fullName = `${patient.first_name ?? ''} ${patient.paternal_last_name ?? ''} ${patient.maternal_last_name ?? ''}`
+        .toLowerCase()
+        .trim();
+
+      const matchesSearch =
+        !q ||
+        fullName.includes(q) ||
+        (patient.cell_phone ?? '').includes(q) ||
+        (patient.email ?? '').toLowerCase().includes(q);
+
+      const matchesTags =
+        selectedTags.length === 0 ||
+        selectedTags.some(tagName => patient.tags.some(tag => tag.name === tagName));
+
+      const matchesStatus =
+        statusFilter === 'all' || patient.followUpStatus === statusFilter;
+
+      return matchesSearch && matchesTags && matchesStatus;
+    });
+  }, [patients, searchText, selectedTags, statusFilter]);
 
   // Patient actions dropdown
   const PatientActionsDropdown = ({ patient }: { patient: EnhancedPatient }) => {

@@ -580,6 +580,21 @@ export default function PatientDashboard({
                     </div>
 
                     <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Pronombres preferidos</label>
+                      {editingPatient ? (
+                        <input
+                          type="text"
+                          value={patientData.preferred_pronouns || ''}
+                          onChange={(e) => handleFieldChange('preferred_pronouns', e.target.value)}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          placeholder="Ej. él/lo, ella/la, elle/le"
+                        />
+                      ) : (
+                        <p className="text-gray-900 py-2">{patientData.preferred_pronouns || 'No especificado'}</p>
+                      )}
+                    </div>
+
+                    <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">
                         Fecha de Nacimiento *
                       </label>
@@ -594,6 +609,50 @@ export default function PatientDashboard({
                         <p className="text-gray-900 py-2">
                           {patientData.birth_date ? new Date(patientData.birth_date).toLocaleDateString('es-ES') : 'No especificado'}
                           {patientData.age && ` (${patientData.age} años)`}
+                        </p>
+                      )}
+                    </div>
+
+                     <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Sexo biológico *</label>
+                      {/* radio buttons */}
+                      {editingPatient ? (
+                        <div className="flex items-center space-x-4">
+                          <label className="inline-flex items-center">
+                            <input
+                              type="radio"
+                              name="biological_sex"
+                              value="Masculino"
+                              checked={patientData.biological_sex === 'Masculino'}
+                              onChange={(e) => handleFieldChange('biological_sex', e.target.value)}
+                            />
+                            <span className="ml-2">Masculino</span>
+                          </label>
+                          <label className="inline-flex items-center">
+                            <input
+                              type="radio"
+                              name="biological_sex"
+                              value="Femenino"
+                              checked={patientData.biological_sex === 'Femenino'}
+                              onChange={(e) => handleFieldChange('biological_sex', e.target.value)}
+                            />
+                            <span className="ml-2">Femenino</span>
+                          </label>
+                          <label className="inline-flex items-center">
+                            <input
+                              type="radio"
+                              name="biological_sex"
+                              value="Intersexual"
+                              checked={patientData.biological_sex === 'Intersexual'}
+                              onChange={(e) => handleFieldChange('biological_sex', e.target.value)}
+                            />
+                            <span className="ml-2">Intersexual</span>
+                          </label>
+                        </div>
+                      ) : (
+                        <p className="text-gray-900 py-2">
+                          {patientData.biological_sex === 'Masculino' ? 'Masculino' : 
+                           patientData.biological_sex === 'Femenino' ? 'Femenino' : 'Intersexual'}
                         </p>
                       )}
                     </div>
@@ -643,9 +702,10 @@ export default function PatientDashboard({
 
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Teléfono Celular *
+                        Teléfono Principal *
                       </label>
                       {editingPatient ? (
+                        // phone format with input mask (999) 999-9999
                         <input
                           type="tel"
                           value={patientData.cell_phone || ''}
@@ -659,7 +719,7 @@ export default function PatientDashboard({
 
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Teléfono Fijo
+                        Teléfono Secundario
                       </label>
                       {editingPatient ? (
                         <input
@@ -758,6 +818,20 @@ export default function PatientDashboard({
                         />
                       ) : (
                         <p className="text-gray-900 py-2">{patientData.occupation || 'No especificado'}</p>
+                      )}
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Religión/espiritualidad</label>
+                      {editingPatient ? (
+                        <input
+                          type="text"
+                          value={patientData.religion || ''}
+                          onChange={(e) => handleFieldChange('religion', e.target.value)}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        />
+                      ) : (
+                        <p className="text-gray-900 py-2">{patientData.religion || 'No especificado'}</p>
                       )}
                     </div>
 
@@ -902,13 +976,22 @@ export default function PatientDashboard({
                             onChange={(e) => handleFieldChange('emergency_contact_phone', e.target.value)}
                             className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                           />
-                          <input
-                            type="text"
-                            placeholder="Parentesco"
+                          <select 
+                            name="" 
+                            id=""
                             value={patientData.emergency_contact_relationship || ''}
                             onChange={(e) => handleFieldChange('emergency_contact_relationship', e.target.value)}
                             className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                          />
+                          >
+                            <option value="">Seleccionar parentesco...</option>
+                            <option value="Padre">Padre</option>
+                            <option value="Madre">Madre</option>
+                            <option value="Hijo/a">Hijo/a</option>
+                            <option value="Esposo/a">Esposo/a</option>
+                            <option value="Familia">Familia</option>
+                            <option value="Amigo/a">Amigo/a</option>
+                            <option value="Otro">Otro</option>
+                          </select>
                         </div>
                       ) : (
                         <div className="text-gray-900 py-2">

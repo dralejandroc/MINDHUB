@@ -16,39 +16,6 @@ import { XMarkIcon, PrinterIcon } from '@heroicons/react/24/outline';
 import type { Patient } from '@/lib/api/expedix-client';
 import { ConsultationData } from 'types/expedix-models';
 
-// interface ConsultationData {
-//   consultation_type: string;
-//   date: string;
-//   currentCondition: string;
-//   diagnosis: string;
-//   vital_signs: {
-//     height: string;
-//     weight: string;
-//     blood_pressure: { systolic: string; diastolic: string };
-//     temperature: string;
-//     heartRate: string;
-//     respiratoryRate: string;
-//     oxygenSaturation: string;
-//   };
-//   physicalExamination: string;
-//   medications: any[];
-//   additionalInstructions: string;
-//   next_appointment: { date: string; time: string };
-//   mental_exam: {
-//     descripcionInspeccion: string;
-//     apariencia: string;
-//     actitud: string;
-//     conciencia: string;
-//     orientacion: string;
-//     atencion: string;
-//     lenguaje: string;
-//     afecto: string;
-//     sensopercepcion: string;
-//     memoria: string;
-//     pensamientoPrincipal: string;
-//     pensamientoDetalles: string;
-//   };
-// }
 
 interface ConsultationPreviewDialogProps {
   isOpen: boolean;
@@ -203,7 +170,7 @@ export default function ConsultationPreviewDialog({
             )}
 
             {/* Mental Exam */}
-            {(consultationData.mental_exam && Object.values(consultationData.mental_exam).some(v => v && v.trim())) && (
+            {/* {(consultationData.mental_exam && Object.values(consultationData.mental_exam).some(v => v && v.trim())) && (
               <Card className="p-4">
                 <h3 className="text-lg font-semibold text-gray-800 mb-3">🧠 Examen Mental</h3>
                 <div className="grid grid-cols-2 gap-3 text-sm">
@@ -269,7 +236,7 @@ export default function ConsultationPreviewDialog({
                   )}
                 </div>
               </Card>
-            )}
+            )} */}
 
             {/* Medications */}
             {consultationData.prescriptions && consultationData.prescriptions.length > 0 && (

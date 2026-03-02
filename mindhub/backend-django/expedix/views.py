@@ -262,63 +262,55 @@ class PatientViewSet(ExpedixDualViewSet):  # 🎯 RESTORED DUAL SYSTEM after fix
 
 
 class ConsultationViewSet(ExpedixDualViewSet):
-    """
-    🎯 DUAL SYSTEM Consultation management ViewSet
-    Automatically filters by license type through patient relationship
-    """
-    queryset = Consultation.objects.select_related('patient').all()
+    queryset = Consultation.objects.all()
     serializer_class = ConsultationSerializer
     authentication_classes = [SupabaseProxyAuthentication]
     permission_classes = [IsAuthenticated]
     filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
-    search_fields = ['patient__first_name', 'patient__paternal_last_name', 'reason', 'diagnosis']
-    filterset_fields = ['status', 'patient']
+    search_fields = ['diagnosis']  # deja lo que exista en tu modelo real
+    filterset_fields = ['status']
     ordering_fields = ['consultation_date', 'created_at']
     ordering = ['-consultation_date']
 
     def get_serializer_class(self):
-        if self.action == 'create':
-            return ConsultationCreateSerializer
+        if self.action in ['create', 'update', 'partial_update']:
+            return ConsultationWriteSerializer
         return ConsultationSerializer
 
     def perform_create(self, serializer):
-        # Don't set professional as we don't have a users table
         serializer.save()
 
     @action(detail=False, methods=['get'])
     def upcoming(self, request):
-        """Get upcoming consultations"""
         upcoming = self.queryset.filter(
             consultation_date__gte=timezone.now(),
             status='scheduled'
         ).order_by('consultation_date')[:10]
-        
+
         serializer = self.get_serializer(upcoming, many=True)
         return Response(serializer.data)
 
     @action(detail=False, methods=['get'])
     def by_patient(self, request):
-        """Get consultations by patient ID"""
         patient_id = request.query_params.get('patient_id')
         if not patient_id:
             return Response({'error': 'patient_id parameter required'}, status=400)
-            
+
         consultations = self.queryset.filter(patient_id=patient_id)
         serializer = self.get_serializer(consultations, many=True)
         return Response(serializer.data)
 
     @action(detail=True, methods=['patch'])
     def update_status(self, request, pk=None):
-        """Update consultation status"""
         consultation = self.get_object()
         new_status = request.data.get('status')
-        
+
         if new_status not in dict(Consultation.STATUS_CHOICES):
             return Response({'error': 'Invalid status'}, status=400)
-            
+
         consultation.status = new_status
         consultation.save()
-        
+
         serializer = self.get_serializer(consultation)
         return Response(serializer.data)
 

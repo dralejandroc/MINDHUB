@@ -72,6 +72,29 @@ export const WeeklyView: React.FC<WeeklyViewProps> = ({
   const weekEnd = endOfWeek(currentDate, { weekStartsOn: 1 });
   const weekDays = eachDayOfInterval({ start: weekStart, end: weekEnd });
 
+  const popoverRef = useRef<HTMLDivElement | null>(null);
+  const [moreOpenKey, setMoreOpenKey] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!moreOpenKey) return;
+
+    const onDocDown = (e: PointerEvent) => {
+      const el = popoverRef.current;
+      if (!el) return;
+
+      // ✅ si el click fue dentro del popover, NO cierres
+      if (el.contains(e.target as Node)) return;
+
+      setMoreOpenKey(null);
+    };
+
+    document.addEventListener('pointerdown', onDocDown);
+
+    return () => document.removeEventListener('pointerdown', onDocDown);
+  }, [moreOpenKey]);
+
+
+
   // Group appointments by day
   const appointmentsByDay = appointments.reduce((acc, appointment) => {
     const dayKey = format(appointment.startTime, 'yyyy-MM-dd');
@@ -285,85 +308,133 @@ export const WeeklyView: React.FC<WeeklyViewProps> = ({
                               handleTimeSlotDrop(day, hour, minute);
                             }}
                           >
-                            {/* Appointments for this time slot */}
-                            {dayAppointments
-                              .filter(apt => {
+                          {/* Appointments for this time slot */}
+                            {(() => {
+                              const slotAppointments = dayAppointments.filter(apt => {
                                 const aptHour = apt.startTime.getHours();
                                 const aptMinute = apt.startTime.getMinutes();
-                                return aptHour === hour && Math.floor(aptMinute / scheduleConfig.slotDuration) * scheduleConfig.slotDuration === minute;
-                              })
-                              .map(appointment => (
-                                <div
-                                  key={appointment.id}
-                                  className="absolute inset-1"
-                                  onClick={(e) => {
-                                    // ONLY stop propagation to prevent time slot click
+                                return (
+                                  aptHour === hour &&
+                                  Math.floor(aptMinute / scheduleConfig.slotDuration) * scheduleConfig.slotDuration === minute
+                                );
+                              });
+
+                              if (slotAppointments.length === 0) return null;
+                              const dayKey = format(day, 'yyyy-MM-dd');
+                              const slotKey = `${dayKey}-${hour}-${minute}`;
+
+                              const MAX_VISIBLE = 2;
+                              const visible = slotAppointments.slice(0, MAX_VISIBLE);
+                              const remaining = slotAppointments.length - visible.length;
+
+                              return (
+                                <div 
+                                  ref={popoverRef}
+                                  className="absolute inset-1 flex flex-col gap-1"
+                                  onPointerDown={(e) => {
                                     e.stopPropagation();
-                                    onAppointmentClick?.(appointment, e);
                                   }}
-                                  onMouseDown={(e) => {
-                                    // ONLY stop propagation, keep default behavior
+                                  onClick={(e) => {
                                     e.stopPropagation();
-                                    
-                                    let holdTimer: NodeJS.Timeout;
-                                    let isHolding = false;
-                                    
-                                    // Start hold timer (200ms - much faster)
-                                    holdTimer = setTimeout(() => {
-                                      isHolding = true;
-                                      setHoldingAppointment(appointment.id);
-                                      // Provide haptic feedback if available
-                                      if ('vibrate' in navigator) {
-                                        navigator.vibrate(50);
-                                      }
-                                    }, 200);
-                                    
-                                    const handleMouseUp = () => {
-                                      clearTimeout(holdTimer);
-                                      document.removeEventListener('mouseup', handleMouseUp);
-                                      
-                                      if (!isHolding) {
-                                        // Quick click - onClick handler will show context menu
-                                      } else {
-                                        // Reset holding state if was holding
-                                        setHoldingAppointment(null);
-                                      }
-                                    };
-                                    
-                                    document.addEventListener('mouseup', handleMouseUp);
                                   }}
                                 >
-                                  <AppointmentCard
-                                    appointment={appointment}
-                                    size="compact"
-                                    draggable={false}
-                                    onClick={() => {
-                                      // Empty - handled by parent wrapper
-                                    }}
-                                    onDragStart={(e) => {
-                                      e.dataTransfer.setData('text/plain', appointment.id);
-                                      handleAppointmentDragStart(appointment);
-                                    }}
-                                    onDragEnd={(e) => {
-                                      handleAppointmentDragEnd();
-                                      setHoldingAppointment(null);
-                                    }}
-                                    className={`w-full h-full transition-all duration-300 ${
-                                      holdingAppointment === appointment.id 
-                                        ? 'ring-2 ring-white ring-opacity-90 scale-110 shadow-xl opacity-80 cursor-grab' 
-                                        : 'hover:shadow-md hover:scale-[1.02]'
-                                    }`}
-                                    data-appointment-card="true"
-                                  />
-                                  
-                                  {/* Visual indicator when holding - subtle glow effect */}
-                                  {holdingAppointment === appointment.id && (
-                                    <div className="absolute inset-0 bg-white bg-opacity-20 rounded-lg animate-pulse pointer-events-none">
-                                      <div className="absolute top-1 right-1 w-2 h-2 bg-white bg-opacity-80 rounded-full animate-ping"></div>
+                                  {visible.map((appointment) => {
+                                    const eachHeightPx = 22; // prueba 22 o 24
+                                    return (
+                                    <div
+                                      key={appointment.id}
+                                      className="relative w-full"
+                                      style={{ height: `${eachHeightPx}px` }}
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        onAppointmentClick?.(appointment, e);
+                                      }}
+                                      onPointerDown={(e) => {
+                                        // IMPORTANTÍSIMO: evita que el slot detecte click/drag/menú
+                                        e.stopPropagation();
+                                      }}
+                                    >
+                                      <AppointmentCard
+                                        appointment={appointment}
+                                        size="compact"
+                                        draggable={false}
+                                        onClick={() => {}}
+                                        className="w-full h-full"   // 👈 sin overflow-hidden
+                                      />
                                     </div>
+                                  )})}
+
+                                  {remaining > 0 && (
+                                    <>
+                                      <button
+                                        type="button"
+                                        className="absolute -bottom-1 right-0 z-50 pointer-events-auto text-[10px] leading-none px-2 py-1 rounded-full bg-gray-900 text-white shadow"
+                                        onPointerDown={(e) => {
+                                          e.preventDefault();
+                                          e.stopPropagation(); // 👈 evita que el slot abra modal/menú
+                                        }}
+                                        onClick={(e) => {
+                                          e.preventDefault();
+                                          e.stopPropagation();
+                                          setMoreOpenKey((prev) => (prev === slotKey ? null : slotKey));
+                                        }}
+                                        title={`Ver ${remaining} más`}
+                                      >
+                                        +{remaining}
+                                      </button>
+
+                                      {moreOpenKey === slotKey && (
+                                        <div
+                                          className="absolute right-0 bottom-7 z-50 w-64 rounded-lg bg-white shadow-xl border border-gray-200 p-2 pointer-events-auto"
+                                          style={{ overflow: 'hidden' }}   // ✅ evita scroll raro del contenedor
+                                          onPointerDown={(e) => e.stopPropagation()}
+                                          onClick={(e) => e.stopPropagation()}
+                                        >
+                                          <div className="text-xs font-semibold text-gray-700 mb-2">
+                                            Más citas ({slotAppointments.length})
+                                          </div>
+
+                                          <div className="max-h-56 overflow-y-auto overflow-x-hidden pr-1 space-y-1">
+                                            {slotAppointments.slice(MAX_VISIBLE).map((apt) => (
+                                              <div
+                                                key={apt.id}
+                                                className="h-9"
+                                                onPointerDown={(e) => {
+                                                  // evita que el slot o document capture cierre/abra cosas
+                                                  e.stopPropagation();
+                                                }}
+                                                onClick={(e) => {
+                                                  e.stopPropagation();
+                                                }}
+                                                onContextMenu={(e) => {
+                                                  // si tu menú usa click derecho
+                                                  e.preventDefault();
+                                                  e.stopPropagation();
+                                                }}
+                                              >
+                                                <AppointmentCard
+                                                  appointment={apt}
+                                                  size="compact"
+                                                  draggable={false}
+                                                  onClick={(e: any) => {
+                                                    // ✅ aquí sí llama tu misma lógica
+                                                    // pero NO cierres el popover todavía
+                                                    onAppointmentClick?.(apt, e);
+                                                  }}
+                                                  className="w-full h-full"
+                                                />
+                                              </div>
+                                            ))}
+                                          </div>
+                                        </div>
+                                      )}
+                                    </>
                                   )}
+
                                 </div>
-                              ))}
+                              );
+                            })()}
+
                           </div>
                         );
                       })}
