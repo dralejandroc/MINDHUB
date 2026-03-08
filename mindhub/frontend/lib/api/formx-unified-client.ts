@@ -108,12 +108,25 @@ export interface FormXPatientForm {
 // UTILIDADES DE AUTENTICACIÓN
 // =====================================================================
 
-const getAuthHeaders = () => {
-  // TODO: Integrar con Auth cuando esté disponible
-  return {
+// Async auth helper that attaches the Supabase JWT access token
+const getAuthHeadersAsync = async (): Promise<Record<string, string>> => {
+  const headers: Record<string, string> = {
     'Content-Type': 'application/json',
-    // 'Authorization': `Bearer ${supabaseToken}` // Se agregará cuando Auth esté integrado
   };
+
+  if (typeof window !== 'undefined') {
+    try {
+      const { supabase } = await import('@/lib/supabase/client');
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.access_token) {
+        headers['Authorization'] = `Bearer ${session.access_token}`;
+      }
+    } catch (err) {
+      console.warn('[FormXUnifiedClient] Could not retrieve Supabase session:', err);
+    }
+  }
+
+  return headers;
 };
 
 // =====================================================================
@@ -151,7 +164,7 @@ export class FormXUnifiedClient {
   static async healthCheck(): Promise<any> {
     try {
       const response = await fetch(`${getFormXBaseUrl()}/../health`, {
-        headers: getAuthHeaders(),
+        headers: await getAuthHeadersAsync(),
       });
       return await response.json();
     } catch (error) {
@@ -167,7 +180,7 @@ export class FormXUnifiedClient {
   static async getTemplates(): Promise<{ templates: FormXTemplate[]; total: number }> {
     try {
       const response = await fetch(`${getFormXBaseUrl()}/templates`, {
-        headers: getAuthHeaders(),
+        headers: await getAuthHeadersAsync(),
       });
       
       if (!response.ok) {
@@ -184,7 +197,7 @@ export class FormXUnifiedClient {
   static async getTemplate(templateId: string): Promise<FormXTemplate> {
     try {
       const response = await fetch(`${getFormXBaseUrl()}/templates/${templateId}`, {
-        headers: getAuthHeaders(),
+        headers: await getAuthHeadersAsync(),
       });
       
       if (!response.ok) {
@@ -202,7 +215,7 @@ export class FormXUnifiedClient {
     try {
       const response = await fetch(`${getFormXBaseUrl()}/templates`, {
         method: 'POST',
-        headers: getAuthHeaders(),
+        headers: await getAuthHeadersAsync(),
         body: JSON.stringify(templateData),
       });
       
@@ -223,7 +236,7 @@ export class FormXUnifiedClient {
     try {
       const response = await fetch(`${getFormXBaseUrl()}/templates/${templateId}`, {
         method: 'PUT',
-        headers: getAuthHeaders(),
+        headers: await getAuthHeadersAsync(),
         body: JSON.stringify(templateData),
       });
       
@@ -244,7 +257,7 @@ export class FormXUnifiedClient {
     try {
       const response = await fetch(`${getFormXBaseUrl()}/templates/${templateId}`, {
         method: 'DELETE',
-        headers: getAuthHeaders(),
+        headers: await getAuthHeadersAsync(),
       });
       
       if (!response.ok) {
@@ -274,7 +287,7 @@ export class FormXUnifiedClient {
     try {
       const response = await fetch(`${getFormXBaseUrl()}/assignments`, {
         method: 'POST',
-        headers: getAuthHeaders(),
+        headers: await getAuthHeadersAsync(),
         body: JSON.stringify(data),
       });
       
@@ -294,7 +307,7 @@ export class FormXUnifiedClient {
   static async getAssignment(assignmentId: string): Promise<FormXAssignment> {
     try {
       const response = await fetch(`${getFormXBaseUrl()}/assignments/${assignmentId}`, {
-        headers: getAuthHeaders(),
+        headers: await getAuthHeadersAsync(),
       });
       
       if (!response.ok) {
@@ -311,7 +324,7 @@ export class FormXUnifiedClient {
   static async getPatientAssignments(patientId: string): Promise<{ assignments: FormXAssignment[] }> {
     try {
       const response = await fetch(`${getFormXBaseUrl()}/patients/${patientId}/assignments`, {
-        headers: getAuthHeaders(),
+        headers: await getAuthHeadersAsync(),
       });
       
       if (!response.ok) {
@@ -379,7 +392,7 @@ export class FormXUnifiedClient {
     try {
       const response = await fetch(`${getFormXBaseUrl()}/assignments/${assignmentId}/sync-expedix`, {
         method: 'POST',
-        headers: getAuthHeaders(),
+        headers: await getAuthHeadersAsync(),
       });
       
       if (!response.ok) {

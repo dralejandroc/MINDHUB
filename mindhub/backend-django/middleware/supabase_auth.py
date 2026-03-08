@@ -225,15 +225,8 @@ class SupabaseAuthMiddleware(MiddlewareMixin):
         """
         Determine if this request needs Supabase auth validation
         """
-        # Skip auth for debug endpoints
-        debug_paths = [
-            '/api/expedix/debug-auth/',
-        ]
-        
-        if any(request.path.startswith(path) for path in debug_paths):
-            return False
-            
-        # Only validate auth for specific bridge endpoints  
+        # Only validate auth for specific bridge endpoints
+
         bridge_paths = [
             '/assessments/api/create-from-react/',  # ✅ ACTIVAR validación
             '/assessments/api/patient/',            # ✅ AGREGAR validación patient assessments
@@ -302,7 +295,6 @@ class SupabaseAuthMiddleware(MiddlewareMixin):
         try:
             # First try local JWT validation with new secret key
             jwt_secret = getattr(settings, 'SUPABASE_JWT_SECRET', None)
-            print('jwt_secret', jwt_secret)
             if jwt_secret:
                 try:
                     import jwt
@@ -362,9 +354,7 @@ class SupabaseAuthMiddleware(MiddlewareMixin):
                     }
             
             # Fallback to service role key for development/proxy
-            expected_service_key = getattr(settings, 'SUPABASE_SERVICE_ROLE_KEY', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp2YmNwbGR6b3lpY2VmZHRud2tkIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1NTQwMTQ3MCwiZXhwIjoyMDcwOTc3NDcwfQ.-iooltGuYeGqXVh7pgRhH_Oo_R64VtHIssbE3u_y0WQ')
-            print('expected_service_key', expected_service_key)
-            print('token', token)
+            expected_service_key = getattr(settings, 'SUPABASE_SERVICE_ROLE_KEY', '')
             if token == expected_service_key:
                 # Check for proxy headers first
                 proxy_auth = request.META.get('HTTP_X_PROXY_AUTH')

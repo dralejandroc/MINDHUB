@@ -44,6 +44,7 @@ function AgendaContent() {
   const [showNewAppointment, setShowNewAppointment] = useState(false);
   const [showNewPatientModal, setShowNewPatientModal] = useState(false);
   const [licenseType, setLicenseType] = useState<'clinic' | 'individual'>('individual');
+  const [professionals, setProfessionals] = useState<import('@/components/agenda-v2/views/ClinicGlobalView').ProfessionalData[]>([]);
   const [lastRefresh, setLastRefresh] = useState<Date | undefined>(undefined);
   const [refreshPatients, setRefreshPatients] = useState(false);
   const [selectedPatientId, setSelectedPatientId] = useState<string | undefined>(searchParams?.get('patient') || undefined);
@@ -83,26 +84,6 @@ function AgendaContent() {
     blockedSlots: []
   };
 
-  // Professional data for clinic view (mock for now)
-  const professionals = [
-    {
-      id: '1',
-      name: 'Dr. García',
-      specialization: 'Psiquiatría',
-      color: '#3B82F6',
-      isActive: true,
-      scheduleConfig
-    },
-    {
-      id: '2',
-      name: 'Dra. López',
-      specialization: 'Psicología',
-      color: '#10B981',
-      isActive: true,
-      scheduleConfig
-    }
-  ];
-
   // Initialize dates on client side to avoid hydration issues
   useEffect(() => {
     setCurrentDate(new Date());
@@ -118,7 +99,6 @@ function AgendaContent() {
   useEffect(() => {
     const view = searchParams?.get('view') as ViewType;
     const date = searchParams?.get('date');
-    console.log('dateSearchParams', date);
     
     const action = searchParams?.get('action');
     const patient = searchParams?.get('patient');
@@ -165,10 +145,39 @@ function AgendaContent() {
       const response = await authGet('/api/expedix/clinic-configuration');
       if (response.ok) {
         const data = await response.json();
-        setLicenseType(data.license_type || 'individual');
+        const license = data.license_type || 'individual';
+        setLicenseType(license);
+        if (license === 'clinic') {
+          loadProfessionals();
+        }
       }
     } catch (error) {
       console.error('Error checking license type:', error);
+    }
+  };
+
+  const PROFESSIONAL_COLORS = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899', '#06B6D4', '#84CC16'];
+
+  const loadProfessionals = async () => {
+    try {
+      const response = await authGet('/api/tenant/memberships');
+      if (response.ok) {
+        const data = await response.json();
+        const members = data.data || [];
+        const mapped = members
+          .filter((m: any) => m.is_active)
+          .map((m: any, idx: number) => ({
+            id: m.user_id || m.id,
+            name: m.profiles?.full_name || m.user_email || `Profesional ${idx + 1}`,
+            specialization: m.profiles?.specialty || m.role || 'Profesional de salud',
+            color: PROFESSIONAL_COLORS[idx % PROFESSIONAL_COLORS.length],
+            isActive: true,
+            scheduleConfig
+          }));
+        setProfessionals(mapped);
+      }
+    } catch (error) {
+      console.error('Error loading professionals:', error);
     }
   };
 
@@ -182,14 +191,10 @@ function AgendaContent() {
         start_date: toYMD(start), // o "start" según tu backend
         end_date: toYMD(end),     // o "end"
       });
-      console.log('PARAMS FECHAS', params.toString());
-      
       const response = await authGet(`/api/expedix/agenda/appointments?${params.toString()}`);
-      console.log('RESPONSE AGENDA', response);
 
       if (response.ok) {
         const data = await response.json();
-        console.log('APPOINTMENTS DATA', data);
 
         const transformedAppointments: AppointmentData[] = (data.data || []).map((apt: any) => {
           const appointmentDate = apt.appointment_date || apt.date;
@@ -287,14 +292,15 @@ function AgendaContent() {
   // Handle view change with URL navigation
   const handleViewChange = (newView: ViewType) => {
     setCurrentView(newView);
-    
-    // Update URL to reflect current view and date
-    const params = new URLSearchParams(searchParams?.toString() || '');
+    setShowNewAppointment(false); // Close modal if open
+
+    // Update URL to reflect current view and date (clear action/time params)
+    const params = new URLSearchParams();
     params.set('view', newView);
     if (currentDate) {
       params.set('date', currentDate.toISOString().split('T')[0]);
     }
-    
+
     router.push(`/hubs/agenda?${params.toString()}`);
   };
 
@@ -333,20 +339,16 @@ function AgendaContent() {
   const handleSearch = async (text: string) => {
     // Implement search functionality
     if (!currentDate) return;
-    console.log('Search:', text);
     const { start, end } = getVisibleRange(currentDate, currentView);
       const params = new URLSearchParams({
-        start_date: toYMD(start), // o "start" según tu backend
-        end_date: toYMD(end),     // o "end"
+        start_date: toYMD(start),
+        end_date: toYMD(end),
         patient: text
       });
-      console.log('PARAMS FECHAS', params.toString());
-      
+
       const response = await authGet(`/api/expedix/agenda/appointments?${params.toString()}`);
-      console.log('RESPONSE AGENDA', response);
       if (response.ok) {
         const resp = await response.json();
-        console.log('APPOINTMENTS DATA', resp);
         const { data } = resp;
 
         if (!data) {
@@ -413,8 +415,6 @@ function AgendaContent() {
         return;
       }
 
-      console.log('[handleStartConsultation] Starting consultation for appointment:', appointmentId, 'patient:', appointment.patientId);
-
       // First, try to find an existing pending consultation for this appointment
       let consultationId = null;
       
@@ -436,7 +436,6 @@ function AgendaContent() {
           
           if (linkedConsultation) {
             consultationId = linkedConsultation.id;
-            console.log('[handleStartConsultation] Found existing pending consultation:', consultationId);
             
             // Update it to in_progress status
             const updateResponse = await authFetch('/api/expedix/consultations', {
@@ -463,7 +462,6 @@ function AgendaContent() {
       
       // If no pending consultation found, create a new one
       if (!consultationId) {
-        console.log('[handleStartConsultation] No pending consultation found, creating new one');
         
         const consultationData: any = {
           patient_id: appointment.patientId,
@@ -512,7 +510,6 @@ function AgendaContent() {
       
       // Now we have a consultationId (either found or created)
       if (consultationId) {
-        console.log('[handleStartConsultation] Consultation ready:', consultationId);
         
         // Update appointment status to "in-progress" or "active"
         try {
@@ -525,7 +522,7 @@ function AgendaContent() {
         }
         
         // Redirect to expedix with patient and consultation selected
-        router.push(`/hubs/expedix?patient=${appointment.patientId}&tab=consultations&consultation=${consultationId}`);
+        router.push(`/hubs/expedix?patient=${appointment.patientId}&action=consultation&consultation=${consultationId}`);
         toast.success('Consulta iniciada exitosamente');
       } else {
         console.error('[handleStartConsultation] No consultation ID available');
@@ -544,14 +541,12 @@ function AgendaContent() {
   };
 
   // Drag & Drop handlers
-  const handleAppointmentDragStart = (appointment: AppointmentData) => {
-    console.log('[handleAppointmentDragStart] Dragging appointment:', appointment.id);
+  const handleAppointmentDragStart = (_appointment: AppointmentData) => {
+    // intentionally left empty - drag state handled by WeeklyView
   };
 
   const handleAppointmentDrop = async (appointment: AppointmentData, newDate: Date, newHour: number, newMinute: number) => {
     try {
-      console.log('[handleAppointmentDrop] Dropping appointment:', appointment.id, 'to', newDate, newHour, newMinute);
-      
       // Calculate new start and end times
       const newStartTime = new Date(newDate);
       newStartTime.setHours(newHour, newMinute, 0, 0);
@@ -566,13 +561,6 @@ function AgendaContent() {
       const startTime = `${String(newHour).padStart(2, '0')}:${String(newMinute).padStart(2, '0')}`;
       const endTime = `${String(newEndTime.getHours()).padStart(2, '0')}:${String(newEndTime.getMinutes()).padStart(2, '0')}`;
       
-      console.log('[handleAppointmentDrop] Updating appointment with:', { 
-        appointmentDate, 
-        startTime, 
-        endTime,
-        originalDuration 
-      });
-
       // Update appointment via API
       const updateData = {
         appointment_date: appointmentDate,
@@ -636,13 +624,15 @@ function AgendaContent() {
     }
   };
 
+  const [rescheduleAppointment, setRescheduleAppointment] = useState<AppointmentData | null>(null);
+
   const handleReschedule = (appointmentId: string) => {
     setContextMenuData(null); // Close context menu
-    
-    // Show instructions to user for new hold-to-drag system
-    toast.success('Para mover la cita: Mantén presionado 1 segundo sobre la cita y arrástrala', {
-      duration: 5000
-    });
+    const appointment = appointments.find(a => a.id === appointmentId);
+    if (appointment) {
+      setRescheduleAppointment(appointment);
+      setShowNewAppointment(true);
+    }
   };
 
   const handleGoToRecord = (patientId: string) => {
@@ -667,9 +657,8 @@ function AgendaContent() {
     setContextMenuData(null); // Close context menu
   };
 
-  const handleSendResource = (patientId: string) => {
-    // TODO: Show popup for resource selection and sending
-    console.log('Send resource to patient:', patientId);
+  const handleSendResource = (_patientId: string) => {
+    toast('Envío de recursos próximamente disponible');
   };
 
   const handleSendScale = (patientId: string) => {
@@ -833,10 +822,7 @@ function AgendaContent() {
             todayStats={todayStats}
             isLoading={loading}
             lastRefresh={lastRefresh}
-            onDayClick={(date) => {
-              console.log('onDayClick:', date);
-              goTo('day', date);
-            }}
+            onDayClick={(date) => goTo('day', date)}
             onAppointmentClick={handleAppointmentClick}
             onSettings={handleSettings}
           />
@@ -857,8 +843,9 @@ function AgendaContent() {
             isLoading={loading}
             lastRefresh={lastRefresh}
             onAppointmentClick={handleAppointmentClick}
-            onTimeSlotClick={(professionalId, date, hour, minute) => {
-              console.log('New appointment for professional:', professionalId);
+            onTimeSlotClick={(_professionalId, date, hour, minute) => {
+              const time = `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
+              setSelectedSlot({ date, time });
               setShowNewAppointment(true);
             }}
             onStartConsultation={handleStartConsultation}
@@ -919,18 +906,56 @@ function AgendaContent() {
       {/* New Appointment Modal */}
       {showNewAppointment && (
         <NewAppointmentModal
-          key={selectedSlot ? `slot-${selectedSlot.time}-${selectedSlot.date.getTime()}` : 'general'}
-          selectedDate={selectedSlot?.date || currentDate || new Date()}
-          selectedTime={selectedSlot?.time}
-          preselectedPatientId={selectedPatientId || selectedPatient || ''} 
-          editingAppointment={null}
+          key={rescheduleAppointment ? `reschedule-${rescheduleAppointment.id}` : selectedSlot ? `slot-${selectedSlot.time}-${selectedSlot.date.getTime()}` : 'general'}
+          selectedDate={rescheduleAppointment ? rescheduleAppointment.startTime : selectedSlot?.date || currentDate || new Date()}
+          selectedTime={rescheduleAppointment ? `${String(rescheduleAppointment.startTime.getHours()).padStart(2,'0')}:${String(rescheduleAppointment.startTime.getMinutes()).padStart(2,'0')}` : selectedSlot?.time}
+          preselectedPatientId={rescheduleAppointment ? rescheduleAppointment.patientId : selectedPatientId || selectedPatient || ''}
+          editingAppointment={rescheduleAppointment ? {
+            patientId: rescheduleAppointment.patientId,
+            date: rescheduleAppointment.startTime.toISOString().split('T')[0],
+            time: `${String(rescheduleAppointment.startTime.getHours()).padStart(2,'0')}:${String(rescheduleAppointment.startTime.getMinutes()).padStart(2,'0')}`,
+            duration: rescheduleAppointment.duration,
+            type: rescheduleAppointment.type,
+            notes: rescheduleAppointment.notes || ''
+          } : null}
           refreshPatients={refreshPatients}
           onClose={() => {
             setShowNewAppointment(false);
-            setSelectedSlot(null); // Clear selected slot when closing
+            setSelectedSlot(null);
+            setRescheduleAppointment(null);
           }}
           onSave={async (appointmentData: any) => {
             try {
+              // If rescheduling, update existing appointment
+              if (rescheduleAppointment) {
+                const updateData = {
+                  appointment_date: appointmentData.date,
+                  appointment_time: appointmentData.time,
+                  start_time: appointmentData.time,
+                  end_time: (() => {
+                    const [h, m] = appointmentData.time.split(':').map(Number);
+                    const end = new Date(0, 0, 0, h, m + (appointmentData.duration || 60));
+                    return `${String(end.getHours()).padStart(2,'0')}:${String(end.getMinutes()).padStart(2,'0')}`;
+                  })(),
+                  duration: appointmentData.duration || 60,
+                  status: 'modified'
+                };
+                const response = await authFetch(`/api/expedix/agenda/appointments/${rescheduleAppointment.id}`, {
+                  method: 'PUT',
+                  body: JSON.stringify(updateData)
+                });
+                if (response.ok) {
+                  toast.success('Cita reagendada exitosamente');
+                  setShowNewAppointment(false);
+                  setRescheduleAppointment(null);
+                  loadAppointments();
+                } else {
+                  const err = await response.json().catch(() => ({}));
+                  toast.error('Error al reagendar: ' + (err.error || 'Error desconocido'));
+                }
+                return;
+              }
+
               // Map frontend field names to API field names
               const apiData = {
                 patient_id: appointmentData.patientId,
@@ -942,14 +967,11 @@ function AgendaContent() {
                 status: 'scheduled'
               };
               
-              console.log('[Agenda] Saving appointment:', apiData);
-              
               // Create appointment in database
               const response = await authPost('/api/expedix/agenda/appointments', apiData);
               
               if (response.ok) {
                 const result = await response.json();
-                console.log('[Agenda] Appointment created:', result);
                 
                 // Create a pending consultation for this appointment
                 try {
@@ -979,8 +1001,6 @@ function AgendaContent() {
                     consultationData.user_id = userId;
                   }
                   
-                  console.log('[Agenda] Creating pending consultation for appointment:', consultationData);
-                  
                   const consultationResponse = await authFetch('/api/expedix/consultations', {
                     method: 'POST',
                     headers: {
@@ -990,10 +1010,7 @@ function AgendaContent() {
                     body: JSON.stringify(consultationData)
                   });
                   
-                  if (consultationResponse.ok) {
-                    const consultationResult = await consultationResponse.json();
-                    console.log('[Agenda] Pending consultation created:', consultationResult.data?.id || consultationResult.id);
-                  } else {
+                  if (!consultationResponse.ok) {
                     console.warn('[Agenda] Failed to create pending consultation, but appointment was created');
                   }
                 } catch (consultationError) {
@@ -1017,15 +1034,11 @@ function AgendaContent() {
                       created_by_appointment: true
                     };
                     
-                    console.log('[Agenda] Creating pending charge in Finance:', financeData);
-                    
                     const financeResponse = await authPost('/api/finance/income', financeData);
-                    
+
                     if (financeResponse.ok) {
-                      console.log('[Agenda] Pending charge created successfully');
                       toast.success('Cita creada y cobro pendiente registrado');
                     } else {
-                      console.warn('[Agenda] Failed to create pending charge, but appointment was created');
                       toast.success('Cita creada exitosamente (sin cobro pendiente)');
                     }
                   } catch (financeError) {
@@ -1038,7 +1051,8 @@ function AgendaContent() {
                 
                 await loadAppointments(); // Reload appointments to show the new one
                 setShowNewAppointment(false);
-                setSelectedSlot(null); // Clear selected slot after successful save
+                setSelectedSlot(null);
+                setRescheduleAppointment(null);
               } else {
                 const errorData = await response.json().catch(() => ({ error: 'Error desconocido' }));
                 toast.error('Error al crear la cita: ' + (errorData.error || errorData.message || 'Error desconocido'));
@@ -1058,8 +1072,6 @@ function AgendaContent() {
         onClose={() => handleCloseNewPatientModal()}
         setSelectedPatientId={setSelectedPatientId}
         onSuccess={(patient) => {
-          console.log('onSuccess:', patient);
-          
           const id = String(patient.id);             // 👈 fuerza string
           setSelectedPatientId(id);
           setSelectedPatient(id);

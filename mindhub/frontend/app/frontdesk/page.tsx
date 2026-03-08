@@ -88,56 +88,27 @@ function FrontDeskContent() {
 
   useEffect(() => {
     if (user && session && !authLoading) {
-      // loadDashboardData();
-
-      // getPatients();
+      loadDashboardData();
     }
   }, [user, session, authLoading]);
-
-  useEffect(() => {
-    getPatients();
-  }, []);
-
-  const getPatients = async () => {
-    try {
-      setLoading(true);
-      
-
-      const response = await axiosClient.get('/api/expedix/patients?limit=20');
-      console.log('response from axios:', response);
-      
-      if (response.status === 200) {
-        setPatients(response.data.results || response.data.data || []);
-      }
-    } catch (error) {
-      setLoading(false);
-      console.error('Error during getPatients call:', error);
-    }
-  };
 
   const loadDashboardData = async () => {
     try {
       setLoading(true);
-      
-      // Load today's stats
-      const statsResponse = await authGet('/api/frontdesk/stats/today');
-      // console.log('statsResponse:', statsResponse);
-      
-      if (statsResponse.ok) {
-        const data = await statsResponse.json();
+
+      // Load today's stats and patients in parallel
+      const [statsResponse, patientsResponse] = await Promise.allSettled([
+        authGet('/api/frontdesk/stats/today'),
+        axiosClient.get('/api/expedix/patients?limit=20')
+      ]);
+
+      if (statsResponse.status === 'fulfilled' && statsResponse.value.ok) {
+        const data = await statsResponse.value.json();
         setStats(data.results || data.data || stats);
       }
 
-      // Load recent patients for quick access
-      const patientsResponse = await authGet('/api/expedix/django/patients?limit=20');
-      console.log('patientsResponse:', patientsResponse);
-      
-      if (patientsResponse.ok) {
-        const data = await patientsResponse.json();
-        console.log('Recent patients data:', data);
-        if (data.results && data.results.length > 0) {
-          setPatients(data.results);
-        }
+      if (patientsResponse.status === 'fulfilled' && patientsResponse.value.status === 200) {
+        setPatients(patientsResponse.value.data.results || patientsResponse.value.data.data || []);
       }
     } catch (error) {
       console.error('Error loading dashboard data:', error);
@@ -239,7 +210,7 @@ function FrontDeskContent() {
   );
 
   const handleSuccess = () => {
-    getPatients();
+    loadDashboardData();
   };
 
   // Show loading while auth is being determined

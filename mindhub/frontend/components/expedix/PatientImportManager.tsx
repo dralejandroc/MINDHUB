@@ -1,340 +1,353 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useCallback } from 'react';
 import {
   CloudArrowUpIcon,
   DocumentArrowDownIcon,
   CheckCircleIcon,
   ExclamationTriangleIcon,
   XMarkIcon,
-  DocumentTextIcon,
-  TableCellsIcon,
   UserGroupIcon,
-  StarIcon,
-  BuildingOfficeIcon
+  ArrowPathIcon,
 } from '@heroicons/react/24/outline';
-import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
-import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
+import { expedixApi } from '@/lib/api/expedix-client';
 
 interface PatientImportManagerProps {
   onClose: () => void;
   onImportComplete: (importedCount: number) => void;
 }
 
-interface ImportResult {
-  total: number;
-  processed: number;
-  errorsCount: number;
-  warningsCount: number;
-  errors: any[];
-  warnings: any[];
-  samplePatients?: any[];
+interface CsvRow {
+  nombre: string;
+  apellido_paterno: string;
+  apellido_materno: string;
+  fecha_nacimiento: string;
+  genero: string;
+  email: string;
+  telefono_celular: string;
+  telefono_fijo?: string;
+  direccion?: string;
+  ciudad?: string;
+  estado?: string;
+  codigo_postal?: string;
+  contacto_emergencia_nombre?: string;
+  contacto_emergencia_telefono?: string;
+  contacto_emergencia_parentesco?: string;
+  historial_medico?: string;
+  medicamentos_actuales?: string;
+  alergias?: string;
 }
 
-interface ImportLimits {
-  maxPatientsPerImport: number;
-  maxFileSize: string;
-  allowedFormats: string[];
-  templateTypes: {
-    type: string;
-    name: string;
-    description: string;
-    maxPatients: number;
-  }[];
+interface ParsedPatient {
+  rowIndex: number;
+  data: CsvRow;
+  errors: string[];
+  valid: boolean;
+}
+
+interface ImportProgress {
+  total: number;
+  completed: number;
+  failed: number;
+  errors: { row: number; name: string; error: string }[];
+}
+
+type Step = 'upload' | 'preview' | 'importing' | 'complete';
+
+// CSV template columns and a sample row
+const CSV_COLUMNS = [
+  'nombre',
+  'apellido_paterno',
+  'apellido_materno',
+  'fecha_nacimiento',
+  'genero',
+  'email',
+  'telefono_celular',
+  'telefono_fijo',
+  'direccion',
+  'ciudad',
+  'estado',
+  'codigo_postal',
+  'contacto_emergencia_nombre',
+  'contacto_emergencia_telefono',
+  'contacto_emergencia_parentesco',
+  'historial_medico',
+  'medicamentos_actuales',
+  'alergias',
+];
+
+const CSV_SAMPLE_ROW = [
+  'Juan',
+  'García',
+  'López',
+  '1990-05-15',
+  'masculino',
+  'juan.garcia@ejemplo.com',
+  '5512345678',
+  '5587654321',
+  'Calle Reforma 123 Col. Centro',
+  'Ciudad de México',
+  'CDMX',
+  '06600',
+  'María García',
+  '5598765432',
+  'madre',
+  'Hipertensión diagnosticada en 2015',
+  'Losartán 50mg diario',
+  'Penicilina',
+];
+
+function downloadCsvTemplate() {
+  const header = CSV_COLUMNS.join(',');
+  const sample = CSV_SAMPLE_ROW.map(v => `"${v}"`).join(',');
+  const content = `${header}\n${sample}\n`;
+  const blob = new Blob(['\uFEFF' + content], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = 'plantilla-pacientes-glian.csv';
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
+}
+
+function parseCsv(text: string): ParsedPatient[] {
+  const lines = text
+    .split('\n')
+    .map(l => l.replace(/\r$/, ''))
+    .filter(l => l.trim());
+
+  if (lines.length < 2) return [];
+
+  const header = lines[0].split(',').map(h => h.trim().replace(/^"|"$/g, '').toLowerCase());
+  const results: ParsedPatient[] = [];
+
+  for (let i = 1; i < lines.length; i++) {
+    const rawLine = lines[i];
+    if (!rawLine.trim()) continue;
+
+    // Handle quoted fields that may contain commas
+    const values: string[] = [];
+    let current = '';
+    let inQuotes = false;
+    for (let c = 0; c < rawLine.length; c++) {
+      const ch = rawLine[c];
+      if (ch === '"') {
+        inQuotes = !inQuotes;
+      } else if (ch === ',' && !inQuotes) {
+        values.push(current.trim());
+        current = '';
+      } else {
+        current += ch;
+      }
+    }
+    values.push(current.trim());
+
+    const row: Partial<CsvRow> = {};
+    header.forEach((col, idx) => {
+      (row as any)[col] = values[idx] ?? '';
+    });
+
+    const errors: string[] = [];
+
+    if (!row.nombre?.trim()) errors.push('Nombre requerido');
+    if (!row.apellido_paterno?.trim()) errors.push('Apellido paterno requerido');
+    if (!row.fecha_nacimiento?.trim()) {
+      errors.push('Fecha de nacimiento requerida');
+    } else if (!/^\d{4}-\d{2}-\d{2}$/.test(row.fecha_nacimiento.trim())) {
+      errors.push('Fecha de nacimiento debe ser YYYY-MM-DD');
+    }
+    if (!row.email?.trim()) {
+      errors.push('Email requerido');
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(row.email.trim())) {
+      errors.push('Email inválido');
+    }
+    if (!row.telefono_celular?.trim()) errors.push('Teléfono celular requerido');
+
+    const genero = row.genero?.trim().toLowerCase();
+    if (!genero) {
+      errors.push('Género requerido');
+    } else if (!['masculino', 'femenino', 'male', 'female'].includes(genero)) {
+      errors.push('Género debe ser masculino o femenino');
+    }
+
+    results.push({
+      rowIndex: i + 1,
+      data: row as CsvRow,
+      errors,
+      valid: errors.length === 0,
+    });
+  }
+
+  return results;
+}
+
+function calculateAge(birthDate: string): number {
+  const today = new Date();
+  const birth = new Date(birthDate);
+  let age = today.getFullYear() - birth.getFullYear();
+  const m = today.getMonth() - birth.getMonth();
+  if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) age--;
+  return age;
 }
 
 export default function PatientImportManager({ onClose, onImportComplete }: PatientImportManagerProps) {
-  const [step, setStep] = useState<'setup' | 'upload' | 'preview' | 'processing' | 'complete'>('setup');
-  const [selectedTemplate, setSelectedTemplate] = useState<'basic' | 'complete' | 'clinic'>('complete');
+  const [step, setStep] = useState<Step>('upload');
+  const [parsedPatients, setParsedPatients] = useState<ParsedPatient[]>([]);
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
-  const [previewResult, setPreviewResult] = useState<ImportResult | null>(null);
-  const [processing, setProcessing] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [limits, setLimits] = useState<ImportLimits | null>(null);
-  const [hasPermissions, setHasPermissions] = useState<boolean | null>(null);
+  const [parseError, setParseError] = useState<string | null>(null);
+  const [progress, setProgress] = useState<ImportProgress | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Cargar límites y permisos al montar el componente
-  useState(() => {
-    loadImportLimits();
-  });
-
-  const loadImportLimits = async () => {
-    try {
-      const response = await fetch('/api/expedix/import/limits');
-      const data = await response.json();
-      
-      if (data.success) {
-        setLimits(data.data);
-        setHasPermissions(true);
-      } else {
-        setHasPermissions(false);
-        setError(data.message || 'Error desconocido');
-      }
-    } catch (error) {
-      console.error('Error loading import limits:', error);
-      setHasPermissions(false);
-      setError('Error al cargar los límites de importación');
-    }
-  };
-
-  const downloadTemplate = async (templateType: string) => {
-    try {
-      setProcessing(true);
-      const response = await fetch(`/api/expedix/import/template/${templateType}`);
-      
-      if (response.ok) {
-        const blob = await response.blob();
-        const url = window.URL.createObjectURL(blob);
-        const link = document.createElement('a');
-        link.href = url;
-        
-        const contentDisposition = response.headers.get('content-disposition');
-        let fileName = `plantilla-${templateType}.xlsx`;
-        if (contentDisposition) {
-          const fileNameMatch = contentDisposition.match(/filename="?([^"]+)"?/);
-          if (fileNameMatch) {
-            fileName = fileNameMatch[1];
-          }
-        }
-        
-        link.download = fileName;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        window.URL.revokeObjectURL(url);
-      } else {
-        throw new Error('Error al descargar la plantilla');
-      }
-    } catch (error) {
-      console.error('Error downloading template:', error);
-      setError('Error al descargar la plantilla');
-    } finally {
-      setProcessing(false);
-    }
-  };
-
-  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
-    if (file) {
-      // Validar tipo de archivo
-      const allowedTypes = [
-        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-        'application/vnd.ms-excel',
-        'text/csv'
-      ];
-      
-      if (!allowedTypes.includes(file.type)) {
-        setError('Tipo de archivo no permitido. Solo se aceptan archivos Excel (.xlsx, .xls) y CSV');
-        return;
-      }
-      
-      // Validar tamaño
-      const maxSize = 10 * 1024 * 1024; // 10MB
-      if (file.size > maxSize) {
-        setError('El archivo es demasiado grande. Tamaño máximo: 10MB');
-        return;
-      }
-      
-      setUploadedFile(file);
-      setError(null);
-      setStep('upload');
-    }
-  };
+    if (!file) return;
 
-  const processPreview = async () => {
-    if (!uploadedFile) return;
-    
-    setProcessing(true);
-    setError(null);
-    
-    try {
-      const formData = new FormData();
-      formData.append('file', uploadedFile);
-      
-      const response = await fetch('/api/expedix/import/preview', {
-        method: 'POST',
-        body: formData
-      });
-      
-      const data = await response.json();
-      
-      if (data.success) {
-        setPreviewResult(data.data);
-        setStep('preview');
-      } else {
-        setError(data.message || 'Error desconocido');
-      }
-    } catch (error) {
-      console.error('Error processing preview:', error);
-      setError('Error al procesar la vista previa');
-    } finally {
-      setProcessing(false);
+    if (!file.name.endsWith('.csv')) {
+      setParseError('Solo se aceptan archivos CSV (.csv)');
+      return;
     }
-  };
+
+    setParseError(null);
+    setUploadedFile(file);
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const text = e.target?.result as string;
+      try {
+        const patients = parseCsv(text);
+        if (patients.length === 0) {
+          setParseError('El archivo no contiene datos de pacientes (solo encabezado o vacío)');
+          return;
+        }
+        setParsedPatients(patients);
+        setStep('preview');
+      } catch {
+        setParseError('Error al leer el archivo CSV. Verifica el formato.');
+      }
+    };
+    reader.readAsText(file, 'UTF-8');
+  }, []);
+
+  const handleDrop = useCallback((e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    const file = e.dataTransfer.files[0];
+    if (!file) return;
+    // Simulate input change
+    const dt = new DataTransfer();
+    dt.items.add(file);
+    if (fileInputRef.current) {
+      fileInputRef.current.files = dt.files;
+      fileInputRef.current.dispatchEvent(new Event('change', { bubbles: true }));
+    }
+  }, []);
 
   const executeImport = async () => {
-    if (!uploadedFile) return;
-    
-    setProcessing(true);
-    setError(null);
-    setStep('processing');
-    
-    try {
-      const formData = new FormData();
-      formData.append('file', uploadedFile);
-      
-      const response = await fetch('/api/expedix/import/execute', {
-        method: 'POST',
-        body: formData
-      });
-      
-      const data = await response.json();
-      
-      if (data.success) {
-        setStep('complete');
-        onImportComplete(data.data.processed);
-      } else {
-        setError(data.message || 'Error desconocido');
-        setStep('preview'); // Volver a preview para mostrar errores
+    const validPatients = parsedPatients.filter(p => p.valid);
+    if (validPatients.length === 0) return;
+
+    setStep('importing');
+    const prog: ImportProgress = {
+      total: validPatients.length,
+      completed: 0,
+      failed: 0,
+      errors: [],
+    };
+    setProgress({ ...prog });
+
+    for (const patient of validPatients) {
+      const { data } = patient;
+      const genderNorm = ['masculino', 'male'].includes(data.genero?.toLowerCase()) ? 'male' : 'female';
+
+      try {
+        await expedixApi.createPatient({
+          first_name: data.nombre.trim(),
+          paternal_last_name: data.apellido_paterno.trim(),
+          maternal_last_name: data.apellido_materno?.trim() || '',
+          birth_date: data.fecha_nacimiento.trim(),
+          gender: genderNorm,
+          email: data.email.trim(),
+          cell_phone: data.telefono_celular.trim(),
+          phone: data.telefono_fijo?.trim() || '',
+          address: data.direccion?.trim() || '',
+          city: data.ciudad?.trim() || '',
+          state: data.estado?.trim() || '',
+          postal_code: data.codigo_postal?.trim() || '',
+          emergency_contact_name: data.contacto_emergencia_nombre?.trim() || '',
+          emergency_contact_phone: data.contacto_emergencia_telefono?.trim() || '',
+          emergency_contact_relationship: data.contacto_emergencia_parentesco?.trim() || '',
+          medical_history: data.historial_medico?.trim() || '',
+          current_medications: data.medicamentos_actuales?.trim() || '',
+          allergies: data.alergias?.trim() || '',
+          age: calculateAge(data.fecha_nacimiento.trim()),
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        });
+        prog.completed++;
+      } catch (err) {
+        prog.failed++;
+        prog.errors.push({
+          row: patient.rowIndex,
+          name: `${data.nombre} ${data.apellido_paterno}`,
+          error: err instanceof Error ? err.message : 'Error desconocido',
+        });
       }
-    } catch (error) {
-      console.error('Error executing import:', error);
-      setError('Error al importar los pacientes');
-      setStep('preview');
-    } finally {
-      setProcessing(false);
+
+      setProgress({ ...prog });
     }
+
+    setStep('complete');
+    onImportComplete(prog.completed);
   };
 
-  const resetImport = () => {
-    setStep('setup');
+  const reset = () => {
+    setStep('upload');
+    setParsedPatients([]);
     setUploadedFile(null);
-    setPreviewResult(null);
-    setError(null);
-    if (fileInputRef.current) {
-      fileInputRef.current.value = '';
-    }
+    setParseError(null);
+    setProgress(null);
+    if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
-  // Renderizar pantalla de permisos insuficientes
-  if (hasPermissions === false) {
-    return (
-      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-        <div className="bg-white rounded-lg shadow-xl w-full max-w-2xl">
-          <div className="flex items-center justify-between p-6 border-b border-gray-200">
-            <div className="flex items-center">
-              <StarIcon className="h-6 w-6 text-yellow-600 mr-3" />
-              <h2 className="text-xl font-semibold text-gray-900">
-                Funcionalidad Premium
-              </h2>
-            </div>
-            <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
-              <XMarkIcon className="h-6 w-6" />
-            </button>
-          </div>
-          
-          <div className="p-6 text-center">
-            <div className="mb-6">
-              <StarIcon className="h-16 w-16 text-yellow-500 mx-auto mb-4" />
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                Importación Masiva de Pacientes
-              </h3>
-              <p className="text-gray-600">
-                Esta funcionalidad está disponible exclusivamente para usuarios Premium y Clínicas
-              </p>
-            </div>
-            
-            <div className="bg-gradient-to-r from-blue-50 to-purple-50 p-6 rounded-lg mb-6">
-              <h4 className="font-semibold text-gray-900 mb-3">Beneficios Premium:</h4>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm text-gray-700">
-                <div className="flex items-center">
-                  <CheckCircleIcon className="h-4 w-4 text-green-500 mr-2" />
-                  <span>Importación de hasta 1000 pacientes</span>
-                </div>
-                <div className="flex items-center">
-                  <CheckCircleIcon className="h-4 w-4 text-green-500 mr-2" />
-                  <span>Plantillas predefinidas</span>
-                </div>
-                <div className="flex items-center">
-                  <CheckCircleIcon className="h-4 w-4 text-green-500 mr-2" />
-                  <span>Validación automática de datos</span>
-                </div>
-                <div className="flex items-center">
-                  <CheckCircleIcon className="h-4 w-4 text-green-500 mr-2" />
-                  <span>Soporte técnico prioritario</span>
-                </div>
-              </div>
-            </div>
-            
-            <div className="flex justify-center space-x-4">
-              <Button variant="outline" onClick={onClose}>
-                Cerrar
-              </Button>
-              <Button className="bg-gradient-to-r from-blue-600 to-purple-600 text-white">
-                <StarIcon className="h-4 w-4 mr-2" />
-                Actualizar a Premium
-              </Button>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
+  const validCount = parsedPatients.filter(p => p.valid).length;
+  const invalidCount = parsedPatients.filter(p => !p.valid).length;
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-      <div className="bg-white rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] overflow-hidden">
+      <div className="bg-white rounded-xl shadow-xl w-full max-w-3xl max-h-[90vh] flex flex-col overflow-hidden">
         {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-gray-200">
-          <div className="flex items-center">
-            <CloudArrowUpIcon className="h-6 w-6 text-blue-600 mr-3" />
-            <h2 className="text-xl font-semibold text-gray-900">
-              Importación Masiva de Pacientes
-            </h2>
+        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200">
+          <div className="flex items-center gap-3">
+            <CloudArrowUpIcon className="h-6 w-6 text-primary-600" />
+            <h2 className="text-xl font-bold text-gray-900">Carga Masiva de Pacientes</h2>
           </div>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
-            <XMarkIcon className="h-6 w-6" />
+          <button onClick={onClose} className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors">
+            <XMarkIcon className="h-5 w-5 text-gray-500" />
           </button>
         </div>
 
-        {/* Progress Steps */}
-        <div className="px-6 py-4 border-b border-gray-200 bg-gray-50">
-          <div className="flex items-center justify-between">
-            {[
-              { key: 'setup', name: 'Configuración', icon: DocumentArrowDownIcon },
-              { key: 'upload', name: 'Subir Archivo', icon: CloudArrowUpIcon },
-              { key: 'preview', name: 'Vista Previa', icon: TableCellsIcon },
-              { key: 'complete', name: 'Completado', icon: CheckCircleIcon }
-            ].map((stepItem, index) => {
-              const IconComponent = stepItem.icon;
-              const isActive = step === stepItem.key;
-              const isCompleted = [
-                'setup', 'upload', 'preview', 'processing', 'complete'
-              ].indexOf(step) > index;
-              
+        {/* Steps indicator */}
+        <div className="px-6 py-3 bg-gray-50 border-b border-gray-200">
+          <div className="flex items-center gap-2 text-sm">
+            {(['upload', 'preview', 'importing', 'complete'] as Step[]).map((s, idx) => {
+              const labels: Record<Step, string> = {
+                upload: '1. Subir CSV',
+                preview: '2. Vista previa',
+                importing: '3. Importando',
+                complete: '4. Completo',
+              };
+              const steps: Step[] = ['upload', 'preview', 'importing', 'complete'];
+              const currentIdx = steps.indexOf(step);
+              const isActive = s === step;
+              const isDone = steps.indexOf(s) < currentIdx;
               return (
-                <div key={stepItem.key} className="flex items-center">
-                  <div className={`flex items-center justify-center w-8 h-8 rounded-full ${
-                    isActive ? 'bg-blue-600 text-white' :
-                    isCompleted ? 'bg-green-600 text-white' :
-                    'bg-gray-300 text-gray-600'
-                  }`}>
-                    <IconComponent className="h-4 w-4" />
-                  </div>
-                  <span className={`ml-2 text-sm font-medium ${
-                    isActive ? 'text-blue-600' :
-                    isCompleted ? 'text-green-600' :
-                    'text-gray-500'
-                  }`}>
-                    {stepItem.name}
+                <div key={s} className="flex items-center gap-2">
+                  <span className={`font-medium ${isActive ? 'text-primary-600' : isDone ? 'text-green-600' : 'text-gray-400'}`}>
+                    {labels[s]}
                   </span>
-                  {index < 3 && (
-                    <div className={`w-12 h-px mx-4 ${
-                      isCompleted ? 'bg-green-600' : 'bg-gray-300'
-                    }`} />
-                  )}
+                  {idx < 3 && <span className="text-gray-300">›</span>}
                 </div>
               );
             })}
@@ -342,330 +355,224 @@ export default function PatientImportManager({ onClose, onImportComplete }: Pati
         </div>
 
         {/* Content */}
-        <div className="p-6 overflow-y-auto max-h-[60vh]">
-          {/* Error display */}
-          {error && (
-            <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
-              <div className="flex">
-                <ExclamationTriangleIcon className="h-5 w-5 text-red-400 mr-3" />
-                <div>
-                  <h3 className="text-sm font-medium text-red-800">Error</h3>
-                  <p className="text-sm text-red-700 mt-1">{error}</p>
+        <div className="flex-1 overflow-y-auto p-6">
+
+          {/* STEP: UPLOAD */}
+          {step === 'upload' && (
+            <div className="space-y-6">
+              {/* Template download */}
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                <div className="flex items-start gap-3">
+                  <DocumentArrowDownIcon className="h-5 w-5 text-blue-600 mt-0.5 shrink-0" />
+                  <div className="flex-1">
+                    <p className="font-medium text-blue-800 text-sm">Paso 1: Descarga la plantilla CSV</p>
+                    <p className="text-blue-700 text-xs mt-0.5">
+                      Llena la plantilla con los datos de tus pacientes. Los campos obligatorios son:
+                      nombre, apellido paterno, fecha de nacimiento (YYYY-MM-DD), género (masculino/femenino), email y teléfono celular.
+                    </p>
+                  </div>
+                  <Button
+                    onClick={downloadCsvTemplate}
+                    variant="outline"
+                    size="sm"
+                    className="shrink-0 border-blue-300 text-blue-700 hover:bg-blue-100"
+                  >
+                    <DocumentArrowDownIcon className="h-4 w-4 mr-1" />
+                    Plantilla CSV
+                  </Button>
                 </div>
+              </div>
+
+              {/* Drop zone */}
+              <div
+                onDrop={handleDrop}
+                onDragOver={e => e.preventDefault()}
+                className="border-2 border-dashed border-gray-300 rounded-xl p-10 text-center hover:border-primary-400 transition-colors cursor-pointer"
+                onClick={() => fileInputRef.current?.click()}
+              >
+                <CloudArrowUpIcon className="h-12 w-12 text-gray-400 mx-auto mb-3" />
+                <p className="text-gray-700 font-medium mb-1">Arrastra tu CSV aquí o haz clic para seleccionarlo</p>
+                <p className="text-gray-500 text-sm">Solo archivos .csv — máximo 5 MB</p>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept=".csv,text/csv"
+                  onChange={handleFileChange}
+                  className="hidden"
+                />
+              </div>
+
+              {parseError && (
+                <div className="flex items-start gap-2 p-3 bg-red-50 border border-red-200 rounded-lg">
+                  <ExclamationTriangleIcon className="h-5 w-5 text-red-500 shrink-0" />
+                  <p className="text-sm text-red-700">{parseError}</p>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* STEP: PREVIEW */}
+          {step === 'preview' && (
+            <div className="space-y-4">
+              {/* Summary */}
+              <div className="grid grid-cols-3 gap-4">
+                <div className="bg-gray-50 rounded-lg p-4 text-center border border-gray-200">
+                  <div className="text-2xl font-bold text-gray-800">{parsedPatients.length}</div>
+                  <div className="text-xs text-gray-500 mt-1">Total registros</div>
+                </div>
+                <div className="bg-green-50 rounded-lg p-4 text-center border border-green-200">
+                  <div className="text-2xl font-bold text-green-700">{validCount}</div>
+                  <div className="text-xs text-green-600 mt-1">Válidos para importar</div>
+                </div>
+                <div className="bg-red-50 rounded-lg p-4 text-center border border-red-200">
+                  <div className="text-2xl font-bold text-red-600">{invalidCount}</div>
+                  <div className="text-xs text-red-500 mt-1">Con errores (se omitirán)</div>
+                </div>
+              </div>
+
+              {/* Rows table */}
+              <div className="border border-gray-200 rounded-lg overflow-hidden">
+                <div className="overflow-x-auto max-h-72">
+                  <table className="w-full text-sm">
+                    <thead className="bg-gray-50 sticky top-0">
+                      <tr>
+                        <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Fila</th>
+                        <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Nombre</th>
+                        <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Email</th>
+                        <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">F. Nacimiento</th>
+                        <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Estado</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-100">
+                      {parsedPatients.map(p => (
+                        <tr key={p.rowIndex} className={p.valid ? 'bg-white' : 'bg-red-50'}>
+                          <td className="px-3 py-2 text-gray-500">{p.rowIndex}</td>
+                          <td className="px-3 py-2 font-medium text-gray-900">
+                            {[p.data.nombre, p.data.apellido_paterno, p.data.apellido_materno].filter(Boolean).join(' ')}
+                          </td>
+                          <td className="px-3 py-2 text-gray-600">{p.data.email || '—'}</td>
+                          <td className="px-3 py-2 text-gray-600">{p.data.fecha_nacimiento || '—'}</td>
+                          <td className="px-3 py-2">
+                            {p.valid ? (
+                              <span className="inline-flex items-center gap-1 text-green-700 text-xs">
+                                <CheckCircleIcon className="h-3.5 w-3.5" /> OK
+                              </span>
+                            ) : (
+                              <span className="inline-flex items-center gap-1 text-red-600 text-xs" title={p.errors.join('\n')}>
+                                <ExclamationTriangleIcon className="h-3.5 w-3.5" />
+                                {p.errors[0]}
+                              </span>
+                            )}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              {invalidCount > 0 && (
+                <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg p-3">
+                  Los registros con errores se omitirán en la importación. Corrige el CSV y vuelve a subirlo si deseas incluirlos.
+                </p>
+              )}
+            </div>
+          )}
+
+          {/* STEP: IMPORTING */}
+          {step === 'importing' && progress && (
+            <div className="flex flex-col items-center justify-center py-10 gap-6">
+              <ArrowPathIcon className="h-12 w-12 text-primary-500 animate-spin" />
+              <div className="text-center">
+                <p className="text-lg font-semibold text-gray-800">Importando pacientes...</p>
+                <p className="text-gray-500 text-sm mt-1">
+                  {progress.completed + progress.failed} de {progress.total} procesados
+                </p>
+              </div>
+              <div className="w-full max-w-sm bg-gray-200 rounded-full h-3">
+                <div
+                  className="bg-primary-500 h-3 rounded-full transition-all duration-300"
+                  style={{ width: `${((progress.completed + progress.failed) / progress.total) * 100}%` }}
+                />
+              </div>
+              <div className="flex gap-6 text-sm">
+                <span className="text-green-600 font-medium">{progress.completed} exitosos</span>
+                <span className="text-red-500 font-medium">{progress.failed} fallidos</span>
               </div>
             </div>
           )}
 
-          {step === 'setup' && renderSetupStep()}
-          {step === 'upload' && renderUploadStep()}
-          {step === 'preview' && renderPreviewStep()}
-          {step === 'processing' && renderProcessingStep()}
-          {step === 'complete' && renderCompleteStep()}
+          {/* STEP: COMPLETE */}
+          {step === 'complete' && progress && (
+            <div className="flex flex-col items-center justify-center py-8 gap-5">
+              <CheckCircleIcon className="h-16 w-16 text-green-500" />
+              <div className="text-center">
+                <p className="text-xl font-bold text-gray-900">¡Importación completada!</p>
+                <p className="text-gray-600 mt-1">
+                  Se importaron <span className="font-semibold text-green-700">{progress.completed}</span> pacientes correctamente.
+                  {progress.failed > 0 && (
+                    <span className="text-red-500"> {progress.failed} fallaron.</span>
+                  )}
+                </p>
+              </div>
+
+              {progress.errors.length > 0 && (
+                <div className="w-full bg-red-50 border border-red-200 rounded-lg p-4 max-h-40 overflow-y-auto">
+                  <p className="text-sm font-medium text-red-800 mb-2">Errores de importación:</p>
+                  {progress.errors.map((e, i) => (
+                    <div key={i} className="text-xs text-red-700 mb-1">
+                      Fila {e.row} — {e.name}: {e.error}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* Footer */}
+        <div className="flex items-center justify-between px-6 py-4 border-t border-gray-200 bg-gray-50">
+          {step === 'upload' && (
+            <>
+              <span className="text-xs text-gray-400">
+                Archivo: {uploadedFile?.name ?? 'ninguno'}
+              </span>
+              <Button variant="outline" onClick={onClose}>Cancelar</Button>
+            </>
+          )}
+
+          {step === 'preview' && (
+            <>
+              <Button variant="outline" onClick={reset}>
+                Cambiar archivo
+              </Button>
+              <Button
+                onClick={executeImport}
+                disabled={validCount === 0}
+                variant="primary"
+              >
+                <CloudArrowUpIcon className="h-4 w-4 mr-1.5" />
+                Importar {validCount} paciente{validCount !== 1 ? 's' : ''}
+              </Button>
+            </>
+          )}
+
+          {step === 'importing' && (
+            <span className="text-sm text-gray-500 mx-auto">Por favor espera...</span>
+          )}
+
+          {step === 'complete' && (
+            <>
+              <Button variant="outline" onClick={reset}>
+                Importar más
+              </Button>
+              <Button variant="primary" onClick={onClose}>
+                Cerrar
+              </Button>
+            </>
+          )}
         </div>
       </div>
     </div>
   );
-
-  function renderSetupStep() {
-    if (!limits) {
-      return (
-        <div className="flex items-center justify-center py-12">
-          <LoadingSpinner size="lg" />
-          <span className="ml-3 text-gray-600">Cargando configuración...</span>
-        </div>
-      );
-    }
-
-    return (
-      <div className="space-y-6">
-        <div className="text-center">
-          <UserGroupIcon className="h-16 w-16 text-blue-600 mx-auto mb-4" />
-          <h3 className="text-lg font-semibold text-gray-900 mb-2">
-            Importa Pacientes desde Excel
-          </h3>
-          <p className="text-gray-600">
-            Descarga una plantilla, llénala con tus datos y súbela para importar múltiples pacientes a la vez
-          </p>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {limits.templateTypes.map((template) => (
-            <Card key={template.type} className={`p-6 cursor-pointer transition-all ${
-              selectedTemplate === template.type ? 'ring-2 ring-blue-500 bg-blue-50' : 'hover:shadow-lg'
-            }`} onClick={() => setSelectedTemplate(template.type as any)}>
-              <div className="text-center">
-                <div className={`w-12 h-12 rounded-lg mx-auto mb-4 flex items-center justify-center ${
-                  template.type === 'basic' ? 'bg-green-100' :
-                  template.type === 'complete' ? 'bg-blue-100' :
-                  'bg-purple-100'
-                }`}>
-                  {template.type === 'clinic' ? (
-                    <BuildingOfficeIcon className="h-6 w-6 text-purple-600" />
-                  ) : (
-                    <DocumentTextIcon className={`h-6 w-6 ${
-                      template.type === 'basic' ? 'text-green-600' :
-                      template.type === 'complete' ? 'text-blue-600' :
-                      'text-purple-600'
-                    }`} />
-                  )}
-                </div>
-                <h4 className="font-semibold text-gray-900 mb-2">{template.name}</h4>
-                <p className="text-sm text-gray-600 mb-3">{template.description}</p>
-                <p className="text-xs text-gray-500">Hasta {template.maxPatients} pacientes</p>
-              </div>
-            </Card>
-          ))}
-        </div>
-
-        <div className="flex justify-between">
-          <div className="text-sm text-gray-500">
-            <p>Límites de tu cuenta:</p>
-            <ul className="list-disc list-inside mt-1">
-              <li>Máximo {limits.maxPatientsPerImport} pacientes por importación</li>
-              <li>Tamaño máximo de archivo: {limits.maxFileSize}</li>
-              <li>Formatos permitidos: {limits.allowedFormats.join(', ')}</li>
-            </ul>
-          </div>
-          
-          <div className="flex space-x-3">
-            <Button variant="outline" onClick={onClose}>
-              Cancelar
-            </Button>
-            <Button
-              onClick={() => downloadTemplate(selectedTemplate)}
-              disabled={processing}
-              className="bg-blue-600 hover:bg-blue-700"
-            >
-              {processing ? (
-                <>
-                  <LoadingSpinner size="sm" className="mr-2" />
-                  Descargando...
-                </>
-              ) : (
-                <>
-                  <DocumentArrowDownIcon className="h-4 w-4 mr-2" />
-                  Descargar Plantilla
-                </>
-              )}
-            </Button>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  function renderUploadStep() {
-    return (
-      <div className="space-y-6">
-        <div className="text-center">
-          <h3 className="text-lg font-semibold text-gray-900 mb-2">
-            Sube tu Archivo Completado
-          </h3>
-          <p className="text-gray-600">
-            Selecciona el archivo Excel que completaste con los datos de tus pacientes
-          </p>
-        </div>
-
-        <div className="border-2 border-dashed border-gray-300 rounded-lg p-8">
-          <div className="text-center">
-            <CloudArrowUpIcon className="h-16 w-16 text-gray-400 mx-auto mb-4" />
-            
-            {uploadedFile ? (
-              <div className="space-y-3">
-                <div className="bg-green-50 p-4 rounded-lg">
-                  <CheckCircleIcon className="h-6 w-6 text-green-600 mx-auto mb-2" />
-                  <p className="font-medium text-green-800">{uploadedFile.name}</p>
-                  <p className="text-sm text-green-600">
-                    {(uploadedFile.size / 1024 / 1024).toFixed(2)} MB
-                  </p>
-                </div>
-                
-                <div className="flex justify-center space-x-3">
-                  <Button variant="outline" onClick={() => setUploadedFile(null)}>
-                    Cambiar Archivo
-                  </Button>
-                  <Button
-                    onClick={processPreview}
-                    disabled={processing}
-                    className="bg-blue-600 hover:bg-blue-700"
-                  >
-                    {processing ? (
-                      <>
-                        <LoadingSpinner size="sm" className="mr-2" />
-                        Procesando...
-                      </>
-                    ) : (
-                      'Continuar'
-                    )}
-                  </Button>
-                </div>
-              </div>
-            ) : (
-              <div>
-                <p className="text-gray-600 mb-4">
-                  Arrastra tu archivo aquí o haz click para seleccionarlo
-                </p>
-                <Button onClick={() => fileInputRef.current?.click()}>
-                  Seleccionar Archivo
-                </Button>
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept=".xlsx,.xls,.csv"
-                  onChange={handleFileUpload}
-                  className="hidden"
-                />
-              </div>
-            )}
-          </div>
-        </div>
-
-        <div className="flex justify-between">
-          <Button variant="outline" onClick={() => setStep('setup')}>
-            Atrás
-          </Button>
-          <Button variant="outline" onClick={onClose}>
-            Cancelar
-          </Button>
-        </div>
-      </div>
-    );
-  }
-
-  function renderPreviewStep() {
-    if (!previewResult) return null;
-
-    return (
-      <div className="space-y-6">
-        <div className="text-center">
-          <h3 className="text-lg font-semibold text-gray-900 mb-2">
-            Vista Previa de Importación
-          </h3>
-          <p className="text-gray-600">
-            Revisa los resultados antes de proceder con la importación
-          </p>
-        </div>
-
-        {/* Resumen */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <Card className="p-4 text-center">
-            <div className="text-2xl font-bold text-blue-600">{previewResult.total}</div>
-            <div className="text-sm text-gray-600">Total Registros</div>
-          </Card>
-          <Card className="p-4 text-center">
-            <div className="text-2xl font-bold text-green-600">{previewResult.processed}</div>
-            <div className="text-sm text-gray-600">Procesables</div>
-          </Card>
-          <Card className="p-4 text-center">
-            <div className="text-2xl font-bold text-yellow-600">{previewResult.warningsCount}</div>
-            <div className="text-sm text-gray-600">Advertencias</div>
-          </Card>
-          <Card className="p-4 text-center">
-            <div className="text-2xl font-bold text-red-600">{previewResult.errorsCount}</div>
-            <div className="text-sm text-gray-600">Errores</div>
-          </Card>
-        </div>
-
-        {/* Errores y advertencias */}
-        {(previewResult.errors.length > 0 || previewResult.warnings.length > 0) && (
-          <div className="space-y-4">
-            {previewResult.errors.length > 0 && (
-              <div className="bg-red-50 p-4 rounded-lg">
-                <h4 className="font-medium text-red-800 mb-2">Errores encontrados:</h4>
-                <div className="max-h-40 overflow-y-auto">
-                  {previewResult.errors.slice(0, 10).map((error, index) => (
-                    <div key={index} className="text-sm text-red-700 mb-1">
-                      Fila {error.row}: {error.field} - {error.error}
-                    </div>
-                  ))}
-                  {previewResult.errors.length > 10 && (
-                    <div className="text-sm text-red-600 font-medium">
-                      ...y {previewResult.errors.length - 10} errores más
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
-            
-            {previewResult.warnings.length > 0 && (
-              <div className="bg-yellow-50 p-4 rounded-lg">
-                <h4 className="font-medium text-yellow-800 mb-2">Advertencias:</h4>
-                <div className="max-h-40 overflow-y-auto">
-                  {previewResult.warnings.slice(0, 10).map((warning, index) => (
-                    <div key={index} className="text-sm text-yellow-700 mb-1">
-                      Fila {warning.row}: {warning.field} - {warning.warning}
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
-        )}
-
-        <div className="flex justify-between">
-          <Button variant="outline" onClick={resetImport}>
-            Empezar de Nuevo
-          </Button>
-          
-          {previewResult.errorsCount === 0 ? (
-            <Button
-              onClick={executeImport}
-              disabled={processing}
-              className="bg-green-600 hover:bg-green-700"
-            >
-              {processing ? (
-                <>
-                  <LoadingSpinner size="sm" className="mr-2" />
-                  Importando...
-                </>
-              ) : (
-                `Importar ${previewResult.processed} Pacientes`
-              )}
-            </Button>
-          ) : (
-            <div className="text-red-600 text-sm">
-              Corrige los errores antes de continuar
-            </div>
-          )}
-        </div>
-      </div>
-    );
-  }
-
-  function renderProcessingStep() {
-    return (
-      <div className="text-center py-12">
-        <LoadingSpinner size="xl" className="mb-6" />
-        <h3 className="text-lg font-semibold text-gray-900 mb-2">
-          Importando Pacientes...
-        </h3>
-        <p className="text-gray-600">
-          Por favor espera mientras procesamos tu archivo. Esto puede tomar algunos minutos.
-        </p>
-      </div>
-    );
-  }
-
-  function renderCompleteStep() {
-    return (
-      <div className="text-center py-12">
-        <CheckCircleIcon className="h-16 w-16 text-green-600 mx-auto mb-6" />
-        <h3 className="text-lg font-semibold text-gray-900 mb-2">
-          ¡Importación Completada!
-        </h3>
-        <p className="text-gray-600 mb-6">
-          Se han importado exitosamente {previewResult?.processed || 0} pacientes a tu sistema.
-        </p>
-        
-        <div className="flex justify-center space-x-4">
-          <Button variant="outline" onClick={resetImport}>
-            Importar Más
-          </Button>
-          <Button onClick={onClose} className="bg-green-600 hover:bg-green-700">
-            Cerrar
-          </Button>
-        </div>
-      </div>
-    );
-  }
 }

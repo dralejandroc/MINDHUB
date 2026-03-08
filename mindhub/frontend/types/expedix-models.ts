@@ -14,12 +14,12 @@ export interface MentalExamDetailed {
     aspecto_general: "Adecuado" | "Descuidado" | "Desaliñado" | "Extravagante" | "Raro";
     higiene: "Buena" | "Regular" | "Mala";
     vestimenta:
-      | "Apropiada para contexto"
-      | "Inapropiada para clima"
-      | "Inapropiada para situación"
-      | "Descuidada"
-      | "Extravagante"
-      | "Desaliñada";
+    | "Apropiada para contexto"
+    | "Inapropiada para clima"
+    | "Inapropiada para situación"
+    | "Descuidada"
+    | "Extravagante"
+    | "Desaliñada";
     edad_aparente: "Aparenta edad cronológica" | "Aparenta mayor edad" | "Aparenta menor edad";
     complexion: "Normal" | "Delgado" | "Sobrepeso" | "Obesidad" | "Caquéctico";
     facies: "Normal" | "Ansiosa" | "Deprimida" | "Inexpresiva" | "Dolorosa" | "Eufórica";
@@ -28,39 +28,39 @@ export interface MentalExamDetailed {
 
   conducta: {
     nivel_psicomotor:
-      | "Normal"
-      | "Aumentada (inquietud)"
-      | "Aumentada (agitación)"
-      | "Disminuida (enlentecimiento)"
-      | "Disminuida (estupor)"
-      | "Catatonía";
+    | "Normal"
+    | "Aumentada (inquietud)"
+    | "Aumentada (agitación)"
+    | "Disminuida (enlentecimiento)"
+    | "Disminuida (estupor)"
+    | "Catatonía";
     contacto_visual: "Adecuado" | "Evitativo" | "Fijo/penetrante" | "Ausente" | "Variable";
     postura: "Normal / Relajada" | "Tensa" | "Encorvada" | "Rígida" | "Rara";
     marcha: "Normal" | "Lenta" | "Rápida" | "Atáxica" | "Parkinsoniana" | "No evaluada";
     movimientos_anormales:
-      | "Ninguno"
-      | "Temblor"
-      | "Discinesias"
-      | "Tics"
-      | "Manierismos"
-      | "Estereotipias"
-      | "Acatisia"
-      | "Distonía";
+    | "Ninguno"
+    | "Temblor"
+    | "Discinesias"
+    | "Tics"
+    | "Manierismos"
+    | "Estereotipias"
+    | "Acatisia"
+    | "Distonía";
     cooperacion_entrevista: "Cooperador" | "Parcialmente cooperador" | "No cooperador" | "Hostil" | "Oposicionista";
   };
 
   actitud: {
     actitud_general:
-      | "Colaboradora"
-      | "Amable"
-      | "Suspicaz"
-      | "Irritable / Hostil"
-      | "Indiferente"
-      | "Defensiva"
-      | "Seductora"
-      | "Manipuladora"
-      | "Demandante"
-      | "Evasiva";
+    | "Colaboradora"
+    | "Amable"
+    | "Suspicaz"
+    | "Irritable / Hostil"
+    | "Indiferente"
+    | "Defensiva"
+    | "Seductora"
+    | "Manipuladora"
+    | "Demandante"
+    | "Evasiva";
     rapport: "Fácil de establecer" | "Difícil de establecer" | "No se logró establecer / no valorable";
   };
 
@@ -76,17 +76,17 @@ export interface MentalExamDetailed {
 
   afecto: {
     tipo:
-      | "Eutímico"
-      | "Ansioso"
-      | "Deprimido"
-      | "Irritable"
-      | "Eufórico"
-      | "Disfórico"
-      | "Apático"
-      | "Lábil"
-      | "Aplanado"
-      | "Embotado"
-      | "Inapropiado";
+    | "Eutímico"
+    | "Ansioso"
+    | "Deprimido"
+    | "Irritable"
+    | "Eufórico"
+    | "Disfórico"
+    | "Apático"
+    | "Lábil"
+    | "Aplanado"
+    | "Embotado"
+    | "Inapropiado";
     rango_afectivo: "Amplio" | "Normal" | "Restringido" | "Constreñido" | "Aplanado";
     intensidad: "Normal" | "Aumentada" | "Disminuida";
     reactividad: "Reactivo" | "Poco reactivo" | "No reactivo";
@@ -102,15 +102,15 @@ export interface MentalExamDetailed {
 
   pensamiento_proceso: {
     curso_pensamiento:
-      | "Lógico y coherente"
-      | "Circunstancial"
-      | "Tangencial"
-      | "Laxo (asociaciones laxas)"
-      | "Fuga de ideas"
-      | "Perseverativo"
-      | "Bloqueo del pensamiento"
-      | "Incoherente"
-      | "Disgregado";
+    | "Lógico y coherente"
+    | "Circunstancial"
+    | "Tangencial"
+    | "Laxo (asociaciones laxas)"
+    | "Fuga de ideas"
+    | "Perseverativo"
+    | "Bloqueo del pensamiento"
+    | "Incoherente"
+    | "Disgregado";
     velocidad_pensamiento: "Normal" | "Acelerado (taquipsiquia)" | "Enlentecido (bradipsiquia)";
     contenido_discurso: "Apropiado y relevante" | "Pobre" | "Vago" | "Perseverativo" | "Tangencial";
   };
@@ -118,11 +118,11 @@ export interface MentalExamDetailed {
   pensamiento_contenido: {
     ideas_muerte: "Ausentes" | "Presentes pasivas" | "Presentes activas";
     ideacion_suicida:
-      | "Ausente"
-      | "Pasiva sin plan"
-      | "Activa sin plan"
-      | "Activa con plan sin intención"
-      | "Activa con plan e intención";
+    | "Ausente"
+    | "Pasiva sin plan"
+    | "Activa sin plan"
+    | "Activa con plan sin intención"
+    | "Activa con plan e intención";
     plan_suicida: string;
     ideacion_homicida: "Ausente" | "Presente sin plan" | "Presente con plan";
     delirios: string[];
@@ -138,12 +138,12 @@ export interface MentalExamDetailed {
 
   percepcion: {
     alucinaciones_auditivas:
-      | "Ausentes"
-      | "Presentes - voces comentadoras"
-      | "Presentes - voces comandatorias"
-      | "Presentes - voces dialogantes"
-      | "Presentes - otros sonidos"
-      | "No evaluado";
+    | "Ausentes"
+    | "Presentes - voces comentadoras"
+    | "Presentes - voces comandatorias"
+    | "Presentes - voces dialogantes"
+    | "Presentes - otros sonidos"
+    | "No evaluado";
     alucinaciones_auditivas_caracteristicas: string;
 
     alucinaciones_visuales: "Ausentes" | "Presentes - simples" | "Presentes - complejas" | "No evaluado";
@@ -182,13 +182,13 @@ export interface MentalExamDetailed {
     capacidad_abstracta: "Normal" | "Concreta" | "Alterada" | "No evaluado";
     calculo: "Conservado" | "Alterado" | "No evaluado";
     inteligencia_clinica_estimada:
-      | "Superior"
-      | "Normal"
-      | "Limítrofe"
-      | "Deficiente leve"
-      | "Deficiente moderada"
-      | "Deficiente severa"
-      | "No evaluado";
+    | "Superior"
+    | "Normal"
+    | "Limítrofe"
+    | "Deficiente leve"
+    | "Deficiente moderada"
+    | "Deficiente severa"
+    | "No evaluado";
     funciones_ejecutivas: "Sin alteraciones aparentes" | "Con alteraciones aparentes" | "No evaluado";
   };
 
@@ -205,12 +205,12 @@ export interface MentalExamDetailed {
     laboral_escolar: "Sin afectación" | "Afectación leve" | "Afectación moderada" | "Afectación severa" | "Incapacitante" | "No evaluada";
     funcionalidad_social: "Sin afectación" | "Afectación leve" | "Afectación moderada" | "Afectación severa" | "Aislamiento completo" | "No evaluada";
     autocuidado:
-      | "Independiente"
-      | "Requiere supervisión ocasional"
-      | "Requiere supervisión constante"
-      | "Requiere asistencia parcial"
-      | "Dependiente total"
-      | "No evaluado";
+    | "Independiente"
+    | "Requiere supervisión ocasional"
+    | "Requiere supervisión constante"
+    | "Requiere asistencia parcial"
+    | "Dependiente total"
+    | "No evaluado";
   };
 };
 
@@ -226,7 +226,7 @@ export interface SintomalogiaActual {
   padecimiento_actual: string;
   curso_enfermedad: "Agudo" | "Subagudo" | "Crónico" | "Episódico" | "Progresivo";
   sintomas_cardinales: string;
-  impacto_fucional: "Nulo"| "Mínimo" |"Leve"|"Moderado"|"Severo"|"Incapacitante";
+  impacto_fucional: "Nulo" | "Mínimo" | "Leve" | "Moderado" | "Severo" | "Incapacitante";
   espera_terapia: string;
   terapia_antes: "Sí" | "No";
   terapia_funciono: string;
@@ -326,7 +326,7 @@ export interface UsoSustancias {
   cocaina: "Si" | "No";
   cocaina_frecuencia: "Previo" | "Ocasional" | "Abuso" | "Dependencia";
   opioides: "Si" | "No";
-  opioides_frecuencia : "Previo" | "Ocasional" | "Abuso" | "Dependencia";
+  opioides_frecuencia: "Previo" | "Ocasional" | "Abuso" | "Dependencia";
   benzodiacepinas: "Si" | "No";
   benzodiacepinas_frecuencia: "Previo" | "Ocasional" | "Abuso" | "Dependencia";
   otras_sustancias: "Si" | "No";
@@ -378,55 +378,55 @@ export interface AntecedentesMedicos {
 }
 
 export interface AntecedentesHeredofamiliares {
-  antecedentes_psicologicos:[{
+  antecedentes_psicologicos: [{
     parentesco: string;
     diagnostico: string;
     tratamiento: string;
     suicidio: "Si" | "No";
   }];
-  derpesion:[{
+  derpesion: [{
     parentesco: string;
     diagnostico: string;
     tratamiento: string;
     suicidio: "Si" | "No";
   }];
-  trastorno_bipolar:[{
+  trastorno_bipolar: [{
     parentesco: string;
     diagnostico: string;
     tratamiento: string;
     suicidio: "Si" | "No";
   }];
-  esquizofrenia:[{
+  esquizofrenia: [{
     parentesco: string;
     diagnostico: string;
     tratamiento: string;
     suicidio: "Si" | "No";
   }];
-  ansiedad:[{
+  ansiedad: [{
     parentesco: string;
     diagnostico: string;
     tratamiento: string;
     suicidio: "Si" | "No";
   }];
-  uso_sustancias:[{
+  uso_sustancias: [{
     parentesco: string;
     diagnostico: string;
     tratamiento: string;
     suicidio: "Si" | "No";
   }];
-  suicidio:[{
+  suicidio: [{
     parentesco: string;
     diagnostico: string;
     tratamiento: string;
     suicidio: "Si" | "No";
   }];
-  tdah:[{
+  tdah: [{
     parentesco: string;
     diagnostico: string;
     tratamiento: string;
     suicidio: "Si" | "No";
   }];
-  demencia:[{
+  demencia: [{
     parentesco: string;
     diagnostico: string;
     tratamiento: string;
@@ -446,7 +446,7 @@ export interface HistoriaPersonalSocial {
   situacion_laboral_actual: string;
   historia_relaciones: string;
   relacion_actual: string;
-  hijos:[{
+  hijos: [{
     pareja: string;
     sexo: string;
     edad: number;
@@ -544,13 +544,13 @@ export interface TriajeInicial {
 
 export interface OtrosCampos {
   documentos: string[];
-  estudios_gabinete:{
-    tac:{check: "Si" | "No"; detalle: string};
-    rm:{check: "Si" | "No"; detalle: string};
-    ultrasonido:{check: "Si" | "No"; detalle: string};
-    poligrafia:{check: "Si" | "No"; detalle: string};
-    polisomnografia:{check: "Si" | "No"; detalle: string};
-    otro:{check: "Si" | "No"; detalle: string};
+  estudios_gabinete: {
+    tac: { check: "Si" | "No"; detalle: string };
+    rm: { check: "Si" | "No"; detalle: string };
+    ultrasonido: { check: "Si" | "No"; detalle: string };
+    poligrafia: { check: "Si" | "No"; detalle: string };
+    polisomnografia: { check: "Si" | "No"; detalle: string };
+    otro: { check: "Si" | "No"; detalle: string };
   }
   estudios_laboratorio: LabResult[];
   tipo_urgencia: "Sentida" | "Real" | "Intento de suicidio" | "Legal";
@@ -558,7 +558,10 @@ export interface OtrosCampos {
     intencional: string;
     peligrosidad: string;
     impulsividad: string;
-  }
+  };
+  sectionModes?: Record<string, 'text' | 'canvas' | null>;
+  sectionFreeText?: Record<string, string>;
+  sectionCanvasData?: Record<string, string>;
 }
 
 export interface RedApoyo {

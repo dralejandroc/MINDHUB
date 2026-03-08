@@ -1,15 +1,17 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
-import { 
-  DocumentTextIcon, 
-  CalendarIcon, 
+import toast from 'react-hot-toast';
+import {
+  DocumentTextIcon,
+  CalendarIcon,
   ClipboardDocumentListIcon,
   LinkIcon,
   CameraIcon,
-  DocumentArrowUpIcon 
+  DocumentArrowUpIcon
 } from '@heroicons/react/24/outline';
 
 interface FieldConfig {
@@ -49,13 +51,14 @@ interface DynamicConsultationFormProps {
   initialData?: any;
 }
 
-export default function DynamicConsultationForm({ 
-  patient, 
-  template, 
-  onSave, 
-  onCancel, 
-  initialData = {} 
+export default function DynamicConsultationForm({
+  patient,
+  template,
+  onSave,
+  onCancel,
+  initialData = {}
 }: DynamicConsultationFormProps) {
+  const router = useRouter();
   const [formData, setFormData] = useState<Record<string, any>>({});
   const [loading, setLoading] = useState(false);
   const [uploadedFiles, setUploadedFiles] = useState<Record<string, File[]>>({});
@@ -166,10 +169,7 @@ export default function DynamicConsultationForm({
                     <p className="text-sm text-gray-600 mb-3">{fieldConfig.placeholder}</p>
                     <Button
                       variant="outline"
-                      onClick={() => {
-                        // TODO: Open Clinimetrix integration
-                        alert('Abrir ClinimetrixPro para aplicar escalas');
-                      }}
+                      onClick={() => router.push(`/hubs/clinimetrix?patient=${patient.id}`)}
                       className="text-purple-600 border-purple-300 hover:bg-purple-50"
                     >
                       <LinkIcon className="h-4 w-4 mr-2" />
@@ -177,17 +177,14 @@ export default function DynamicConsultationForm({
                     </Button>
                   </>
                 )}
-                
+
                 {fieldConfig.integration_type === 'resources' && (
                   <>
                     <DocumentTextIcon className="h-12 w-12 mx-auto text-blue-400 mb-3" />
                     <p className="text-sm text-gray-600 mb-3">{fieldConfig.placeholder}</p>
                     <Button
                       variant="outline"
-                      onClick={() => {
-                        // TODO: Open Resources integration
-                        alert('Abrir sistema de recursos médicos');
-                      }}
+                      onClick={() => router.push(`/hubs/resources?patient=${patient.id}`)}
                       className="text-blue-600 border-blue-300 hover:bg-blue-50"
                     >
                       <LinkIcon className="h-4 w-4 mr-2" />
@@ -195,17 +192,14 @@ export default function DynamicConsultationForm({
                     </Button>
                   </>
                 )}
-                
+
                 {fieldConfig.integration_type === 'prescriptions' && (
                   <>
                     <DocumentTextIcon className="h-12 w-12 mx-auto text-green-400 mb-3" />
                     <p className="text-sm text-gray-600 mb-3">{fieldConfig.placeholder}</p>
                     <Button
                       variant="outline"
-                      onClick={() => {
-                        // TODO: Open Prescriptions integration
-                        alert('Abrir Recetix para generar prescripciones');
-                      }}
+                      onClick={() => toast('Módulo de recetas próximamente disponible')}
                       className="text-green-600 border-green-300 hover:bg-green-50"
                     >
                       <LinkIcon className="h-4 w-4 mr-2" />
@@ -311,7 +305,7 @@ export default function DynamicConsultationForm({
       
     } catch (error) {
       console.error('[DynamicConsultationForm] Error saving consultation:', error);
-      alert(`Error al guardar la consulta: ${error instanceof Error ? error.message : 'Error desconocido'}`);
+      toast.error(`Error al guardar la consulta: ${error instanceof Error ? error.message : 'Error desconocido'}`);
     } finally {
       setLoading(false);
     }

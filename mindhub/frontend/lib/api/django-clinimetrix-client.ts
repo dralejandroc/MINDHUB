@@ -46,8 +46,8 @@ class DjangoClinimetrixClient {
   private baseUrl: string;
 
   constructor() {
-    // Use environment variable or fallback to localhost for development
-    this.baseUrl = process.env.NEXT_PUBLIC_DJANGO_API_URL || 'http://localhost:8000';
+    // Use environment variable or fallback to production Django backend
+    this.baseUrl = process.env.NEXT_PUBLIC_DJANGO_API_URL || 'https://mindhub-django-backend.vercel.app';
   }
 
   /**

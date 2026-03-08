@@ -314,10 +314,10 @@ export default function AgendaCalendar({ selectedDate, onDateSelect, onNewAppoin
     : monthName;
 
   return (
-    <div className="w-full max-w-6xl mx-auto">
+    <div className="w-full max-w-full overflow-x-hidden">
       {/* Calendario */}
-      <div 
-        className="bg-white rounded-xl p-4 border"
+      <div
+        className="bg-white rounded-xl p-4 border overflow-x-auto"
         style={{ 
           border: '1px solid rgba(8, 145, 178, 0.1)',
           boxShadow: 'var(--shadow)'

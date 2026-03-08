@@ -17,9 +17,10 @@ import CentralizedConsultationInterface from '@/components/expedix/consultation/
 import PatientManagementAdvanced from '@/components/expedix/PatientManagementAdvanced';
 import PatientTimeline from '@/components/expedix/PatientTimeline';
 import NewPatientModal from '@/components/expedix/NewPatientModal';
+import PatientImportManager from '@/components/expedix/PatientImportManager';
 import ClinimetrixScaleSelector from '@/components/expedix/ClinimetrixScaleSelector';
 import { 
-  DocumentTextIcon, 
+  DocumentTextIcon,
   UserIcon,
   UserGroupIcon,
   TableCellsIcon,
@@ -27,7 +28,8 @@ import {
   FolderOpenIcon,
   PlusIcon,
   ClockIcon,
-  MagnifyingGlassIcon
+  MagnifyingGlassIcon,
+  CloudArrowUpIcon
 } from '@heroicons/react/24/outline';
 // Clean Architecture: API Layer imports
 import { expedixApi } from '@/lib/api/expedix-client';
@@ -46,6 +48,8 @@ interface ExpedixState {
   error: string | null;
   searchTerm: string;
   showNewPatientModal: boolean;
+  showImportModal: boolean;
+  activeConsultationId: string | null;
 }
 
 // Clean Architecture: Use Cases - Expedix business logic
@@ -61,7 +65,9 @@ function ExpedixContent() {
     loading: false,
     error: null,
     searchTerm: '',
-    showNewPatientModal: false
+    showNewPatientModal: false,
+    showImportModal: false,
+    activeConsultationId: null,
   });
 
   // Clean Architecture: Set document title (UI layer concern)
@@ -77,6 +83,10 @@ function ExpedixContent() {
     // if (action) {
     //   setState(prev => ({...prev, showNewPatientModal: true }));
     // }
+
+    if (action === 'new-patient') {
+      setState(prev => ({ ...prev, showNewPatientModal: true }));
+    }
 
     if (patientId) {
       loadPatient(patientId, action);
@@ -135,10 +145,22 @@ function ExpedixContent() {
       ...prev,
       selectedPatient: patient,
       viewMode: 'expedient',
-      detailView: 'consultation'
+      detailView: 'consultation',
+      activeConsultationId: null,
     }));
-    // Update URL to reflect consultation view
     router.push(`/hubs/expedix?patient=${patient.id}&action=consultation`);
+  };
+
+  const handleViewConsultation = (consultationId: string) => {
+    setState(prev => ({
+      ...prev,
+      viewMode: 'expedient',
+      detailView: 'consultation',
+      activeConsultationId: consultationId,
+    }));
+    if (state.selectedPatient) {
+      router.push(`/hubs/expedix?patient=${state.selectedPatient.id}&action=consultation&consultation=${consultationId}`);
+    }
   };
 
   const handleClinicalAssessment = (patient: Patient) => {
@@ -165,8 +187,7 @@ function ExpedixContent() {
   };
 
   const handleBackToPatientDashboard = () => {
-    setState(prev => ({ ...prev, detailView: 'dashboard' }));
-    // Update URL to remove action parameter but keep patient
+    setState(prev => ({ ...prev, detailView: 'dashboard', activeConsultationId: null }));
     const currentPatientId = state.selectedPatient?.id;
     if (currentPatientId) {
       router.push(`/hubs/expedix?patient=${currentPatientId}`);
@@ -234,6 +255,14 @@ function ExpedixContent() {
             <Button onClick={handleNewPatient} variant="primary" size="sm">
               <PlusIcon className="h-4 w-4 mr-1" />
               Nuevo Paciente
+            </Button>
+            <Button
+              onClick={() => setState(prev => ({ ...prev, showImportModal: true }))}
+              variant="outline"
+              size="sm"
+            >
+              <CloudArrowUpIcon className="h-4 w-4 mr-1" />
+              Carga Masiva
             </Button>
           </div>
         }
@@ -351,17 +380,17 @@ function ExpedixContent() {
               onClose={handleBackToList}
               onNewConsultation={() => handleNewConsultation(state.selectedPatient!)}
               onClinicalAssessment={() => handleClinicalAssessment(state.selectedPatient!)}
+              onViewConsultation={handleViewConsultation}
             />
           )}
 
           {state.detailView === 'consultation' && (
             <CentralizedConsultationInterface
               patient={state.selectedPatient}
-              consultationId={searchParams?.get('consultation') || undefined}
+              consultationId={state.activeConsultationId || searchParams?.get('consultation') || undefined}
               onClose={handleBackToPatientDashboard}
               onSave={(data) => {
                 console.log('Consulta guardada:', data);
-                // handleBackToPatientDashboard();
               }}
             />
           )}
@@ -388,6 +417,15 @@ function ExpedixContent() {
         onClose={() => setState(prev => ({ ...prev, showNewPatientModal: false }))}
         onSuccess={handlePatientCreated}
       />
+
+      {state.showImportModal && (
+        <PatientImportManager
+          onClose={() => setState(prev => ({ ...prev, showImportModal: false }))}
+          onImportComplete={(count) => {
+            setState(prev => ({ ...prev, showImportModal: false }));
+          }}
+        />
+      )}
     </div>
   );
 }
