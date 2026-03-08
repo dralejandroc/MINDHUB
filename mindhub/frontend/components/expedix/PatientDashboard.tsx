@@ -35,6 +35,7 @@ interface PatientDashboardProps {
   onClose: () => void;
   onNewConsultation: () => void;
   onClinicalAssessment: () => void;
+  onViewConsultation?: (consultationId: string) => void;
 }
 
 interface DashboardData {
@@ -67,11 +68,12 @@ interface NextAppointment {
   reason?: string;
 }
 
-export default function PatientDashboard({ 
-  patient, 
-  onClose, 
-  onNewConsultation, 
-  onClinicalAssessment 
+export default function PatientDashboard({
+  patient,
+  onClose,
+  onNewConsultation,
+  onClinicalAssessment,
+  onViewConsultation,
 }: PatientDashboardProps) {
   const expedixApi = useExpedixApi(); // Use authenticated API client
   const [activeTab, setActiveTab] = useState('timeline');
@@ -160,8 +162,8 @@ export default function PatientDashboard({
       const result = await axiosClient.get(`/api/expedix/prescriptions/?patient_id=${patient.id}`);
       const { data } = result;
       console.log('prescriptions', data);
-      console.log(data && data.results.length > 0);
-      if (data && data.results.length > 0) {
+      console.log(data && data?.results?.length > 0);
+      if (data && data?.results?.length > 0) {
         setDashboardData(prev => ({
           ...prev,
           prescriptions: data.results
@@ -1153,7 +1155,17 @@ export default function PatientDashboard({
 
             {activeTab === 'consultations' && (
               <div className="bg-white rounded-xl p-6 border shadow">
-                <h3 className="text-lg font-bold mb-4 text-gray-900">Historial de Consultas</h3>
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-bold text-gray-900">Historial de Consultas</h3>
+                  <Button
+                    size="sm"
+                    variant="primary"
+                    onClick={onNewConsultation}
+                  >
+                    <PlusIcon className="h-4 w-4 mr-1" />
+                    Nueva Consulta
+                  </Button>
+                </div>
                 {dashboardData.consultations.length === 0 ? (
                   <div className="text-center py-6">
                     <CalendarIcon className="h-10 w-10 text-gray-300 mx-auto mb-2" />
@@ -1177,13 +1189,10 @@ export default function PatientDashboard({
                                   <span className="px-2 py-1 text-xs rounded-full bg-yellow-100 text-yellow-800">
                                     Pendiente
                                   </span>
-                                  <Button 
-                                    size="sm" 
+                                  <Button
+                                    size="sm"
                                     variant="primary"
-                                    onClick={() => {
-                                      // Navigate to start this consultation
-                                      window.location.href = `/hubs/expedix?patient=${patient.id}&tab=consultations&consultation=${consultation.id}`;
-                                    }}
+                                    onClick={() => onViewConsultation?.(consultation.id)}
                                   >
                                     Iniciar Consulta
                                   </Button>
@@ -1212,7 +1221,7 @@ export default function PatientDashboard({
                         </div>
                       </div>
                     )}
-                    
+
                     {/* In Progress Consultations */}
                     {dashboardData.consultations.filter(c => c.status === 'in_progress').length > 0 && (
                       <div>
@@ -1228,13 +1237,10 @@ export default function PatientDashboard({
                                   <span className="px-2 py-1 text-xs rounded-full bg-blue-100 text-blue-800">
                                     En Progreso
                                   </span>
-                                  <Button 
-                                    size="sm" 
-                                    variant="secondary"
-                                    onClick={() => {
-                                      // Navigate to continue this consultation
-                                      window.location.href = `/hubs/expedix?patient=${patient.id}&tab=consultations&consultation=${consultation.id}`;
-                                    }}
+                                  <Button
+                                    size="sm"
+                                    variant="primary"
+                                    onClick={() => onViewConsultation?.(consultation.id)}
                                   >
                                     Continuar
                                   </Button>
@@ -1249,8 +1255,8 @@ export default function PatientDashboard({
                         </div>
                       </div>
                     )}
-                    
-                    {/* Completed Consultations */}
+
+                    {/* Completed / Draft Consultations */}
                     {dashboardData.consultations.filter(c => c.status === 'completed' || c.status === 'draft').length > 0 && (
                       <div>
                         <h4 className="text-sm font-semibold text-gray-700 mb-3">✅ Consultas Completadas</h4>
@@ -1258,40 +1264,53 @@ export default function PatientDashboard({
                           {dashboardData.consultations.filter(c => c.status === 'completed' || c.status === 'draft').map((consultation, index) => (
                             <div key={consultation.id || `completed-${index}`} className="border border-gray-200 rounded-lg p-4">
                               <div className="flex items-start justify-between mb-2">
-                                <h4 className="font-medium text-gray-900">
-                                  {consultation.chief_complaint || consultation.reason || 'Consulta médica'}
-                                </h4>
-                                <span className="px-2 py-1 text-xs rounded-full bg-green-100 text-green-800">
-                                  Completada
-                                </span>
-                              </div>
-                              <div className="text-sm text-gray-600 mb-2">
-                                <div className="flex items-center space-x-4">
-                                  <span className="flex items-center">
-                                    <CalendarIcon className="h-4 w-4 mr-1" />
-                                    {new Date(consultation.consultation_date || consultation.consultationDate).toLocaleDateString('es-ES', {
-                                      weekday: 'long',
-                                      year: 'numeric',
-                                      month: 'long',
-                                      day: 'numeric'
-                                    })}
+                                <div className="flex-1 min-w-0">
+                                  <h4 className="font-medium text-gray-900 truncate">
+                                    {consultation.chief_complaint || consultation.reason || 'Consulta médica'}
+                                  </h4>
+                                  <div className="text-sm text-gray-500 mt-0.5 flex items-center gap-3">
+                                    <span className="flex items-center">
+                                      <CalendarIcon className="h-3.5 w-3.5 mr-1" />
+                                      {new Date(consultation.consultation_date || consultation.consultationDate).toLocaleDateString('es-ES', {
+                                        year: 'numeric',
+                                        month: 'long',
+                                        day: 'numeric'
+                                      })}
+                                    </span>
+                                    {consultation.practitioner_name && (
+                                      <span className="flex items-center">
+                                        <UserIcon className="h-3.5 w-3.5 mr-1" />
+                                        {consultation.practitioner_name}
+                                      </span>
+                                    )}
+                                  </div>
+                                </div>
+                                <div className="flex items-center gap-2 ml-3 shrink-0">
+                                  <span className={`px-2 py-1 text-xs rounded-full ${
+                                    consultation.status === 'draft'
+                                      ? 'bg-gray-100 text-gray-600'
+                                      : 'bg-green-100 text-green-800'
+                                  }`}>
+                                    {consultation.status === 'draft' ? 'Borrador' : 'Completada'}
                                   </span>
-                                  <span className="flex items-center">
-                                    <UserIcon className="h-4 w-4 mr-1" />
-                                    Dr. Alejandro Contreras
-                                  </span>
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={() => onViewConsultation?.(consultation.id)}
+                                  >
+                                    Ver consulta
+                                  </Button>
                                 </div>
                               </div>
                               {consultation.diagnosis && (
-                                <div className="text-sm text-gray-700 mb-2">
-                                  <strong>Diagnóstico:</strong> {consultation.diagnosis}
-                                </div>
+                                <p className="text-sm text-gray-700 mt-2">
+                                  <span className="font-medium">Diagnóstico:</span> {consultation.diagnosis}
+                                </p>
                               )}
-                              {consultation.notes && (
-                                <div className="text-sm text-gray-600">
-                                  <strong>Notas:</strong> {consultation.notes.substring(0, 200)}
-                                  {consultation.notes.length > 200 && '...'}
-                                </div>
+                              {consultation.chief_complaint && consultation.notes && (
+                                <p className="text-sm text-gray-500 mt-1 line-clamp-2">
+                                  {consultation.notes}
+                                </p>
                               )}
                             </div>
                           ))}
@@ -1305,11 +1324,88 @@ export default function PatientDashboard({
 
             {activeTab === 'prescriptions' && (
               <div className="bg-white rounded-xl p-6 border shadow">
-                <h3 className="text-lg font-bold mb-4 text-gray-900">Recetas Médicas</h3>
-                <div className="text-center py-8">
-                  <DocumentTextIcon className="h-12 w-12 text-gray-300 mx-auto mb-2" />
-                  <p className="text-gray-500">No hay recetas registradas</p>
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-bold text-gray-900">Recetas Médicas</h3>
+                  <Button size="sm" variant="primary" onClick={onNewConsultation}>
+                    <PlusIcon className="h-4 w-4 mr-1" />
+                    Nueva Receta
+                  </Button>
                 </div>
+                {tabLoading ? (
+                  <div className="flex items-center justify-center py-8">
+                    <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-500 mr-3"></div>
+                    <span className="text-gray-500">Cargando recetas...</span>
+                  </div>
+                ) : dashboardData.prescriptions.length === 0 ? (
+                  <div className="text-center py-8">
+                    <DocumentTextIcon className="h-12 w-12 text-gray-300 mx-auto mb-2" />
+                    <p className="text-gray-500">No hay recetas registradas</p>
+                    <p className="text-gray-400 text-xs mt-1">Las recetas se crean al finalizar una consulta</p>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {dashboardData.prescriptions.map((prescription: any, index: number) => (
+                      <div key={prescription.id || index} className="border border-gray-200 rounded-lg p-4">
+                        <div className="flex items-start justify-between mb-3">
+                          <div>
+                            <p className="font-medium text-gray-900">
+                              {prescription.diagnosis || 'Receta médica'}
+                            </p>
+                            <p className="text-sm text-gray-500 mt-0.5">
+                              <CalendarIcon className="h-3.5 w-3.5 inline mr-1" />
+                              {prescription.created_at
+                                ? new Date(prescription.created_at).toLocaleDateString('es-ES', {
+                                    year: 'numeric',
+                                    month: 'long',
+                                    day: 'numeric'
+                                  })
+                                : 'Sin fecha'}
+                              {prescription.practitioner_name && (
+                                <span className="ml-3">
+                                  <UserIcon className="h-3.5 w-3.5 inline mr-1" />
+                                  {prescription.practitioner_name}
+                                </span>
+                              )}
+                            </p>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <span className={`px-2 py-1 text-xs rounded-full ${
+                              prescription.status === 'active'
+                                ? 'bg-green-100 text-green-800'
+                                : prescription.status === 'completed'
+                                ? 'bg-gray-100 text-gray-600'
+                                : 'bg-yellow-100 text-yellow-700'
+                            }`}>
+                              {prescription.status === 'active' ? 'Activa'
+                                : prescription.status === 'completed' ? 'Completada'
+                                : prescription.status || 'Activa'}
+                            </span>
+                          </div>
+                        </div>
+                        {prescription.medications && prescription.medications.length > 0 && (
+                          <div className="bg-gray-50 rounded-lg p-3">
+                            <p className="text-xs font-medium text-gray-500 uppercase mb-2">Medicamentos</p>
+                            <div className="space-y-1.5">
+                              {prescription.medications.map((med: any, mIdx: number) => (
+                                <div key={mIdx} className="text-sm text-gray-800">
+                                  <span className="font-medium">{med.name}</span>
+                                  {med.dosage && <span className="text-gray-500"> — {med.dosage}</span>}
+                                  {med.frequency && <span className="text-gray-500"> • {med.frequency}</span>}
+                                  {med.duration && <span className="text-gray-500"> • {med.duration}</span>}
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                        {prescription.notes && (
+                          <p className="text-sm text-gray-600 mt-2">
+                            <span className="font-medium">Notas:</span> {prescription.notes}
+                          </p>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             )}
 

@@ -4,28 +4,29 @@ Replaces Node.js Express routing
 """
 
 from django.urls import path, include
+from django.conf import settings
 from rest_framework.routers import DefaultRouter
 from . import views
 from .views_consultation import ConsultationViewSet, PrescriptionViewSet
 from .views_medications import MedicationViewSet, DiagnosisViewSet
 from .simple_views import SimplePatientViewSet, SimpleConsultationViewSet, SimplePrescriptionViewSet
 from .views import ScheduleConfigView
-from .views_documents import UserDocumentViewSet 
+from .views_documents import UserDocumentViewSet
 from .views_patient_documents import PatientDocumentViewSet
 from .views_appointments import AppointmentViewSet
 
 
 # Create DRF router
 router = DefaultRouter()
-# ✅ ARQUITECTURA SIMPLIFICADA - usar views simples
 router.register(r'patients', SimplePatientViewSet, basename='patients')
-router.register(r'consultations', ConsultationViewSet, basename='consultations')  # Use the real consultation views
+router.register(r'consultations', ConsultationViewSet, basename='consultations')
 router.register(r'medical-history', views.MedicalHistoryViewSet)
-router.register(r'prescriptions', PrescriptionViewSet, basename='prescriptions')  # Use the real prescription views
+router.register(r'prescriptions', PrescriptionViewSet, basename='prescriptions')
 router.register(r'users', views.UserViewSet)
-# router.register(r'schedule-config', views.ScheduleConfigViewSet, basename='schedule-config')
-router.register(r'debug-auth', views.DebugAuthViewSet, basename='debug-auth')
-router.register(r'dual-system-test', views.DualSystemTestViewSet, basename='dual-system-test')
+# Debug-only endpoints — only registered in DEBUG mode
+if settings.DEBUG:
+    router.register(r'debug-auth', views.DebugAuthViewSet, basename='debug-auth')
+    router.register(r'dual-system-test', views.DualSystemTestViewSet, basename='dual-system-test')
 # Configuration endpoints
 router.register(r'configuration', views.ExpedixConfigurationViewSet, basename='expedix-config')
 router.register(r'consultation-templates', views.ConsultationTemplateViewSet, basename='consultation-templates')

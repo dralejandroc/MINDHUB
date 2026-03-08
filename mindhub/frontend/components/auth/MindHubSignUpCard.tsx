@@ -97,7 +97,7 @@ export const GlianSignUpCard = ({
                 className="text-4xl font-bold mb-4 text-center"
               >
                 <span className="text-transparent bg-clip-text bg-gradient-to-r from-teal-600 via-cyan-600 to-blue-600">
-                  MindHub
+                  Glian
                 </span>
               </motion.h2>
               
@@ -147,7 +147,7 @@ export const GlianSignUpCard = ({
             className="max-w-lg mx-auto w-full"
           >
             <h1 className="text-3xl font-bold mb-2 text-gray-900">
-              Crear cuenta MindHub
+              Crear cuenta Glian
             </h1>
             <p className="text-gray-500 mb-8">
               Configura tu clínica en menos de 5 minutos
@@ -336,7 +336,7 @@ export const GlianSignUpCard = ({
                   )}
                 >
                   <span className="flex items-center justify-center relative z-10">
-                    Crear mi cuenta MindHub
+                    Crear mi cuenta Glian
                   </span>
                   {isHovered && (
                     <motion.span

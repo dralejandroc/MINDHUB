@@ -11,14 +11,10 @@ import {
   HeartIcon
 } from '@heroicons/react/24/outline';
 import { StarIcon as StarSolidIcon } from '@heroicons/react/24/solid';
-// Clean Architecture imports temporarily removed for compilation
-// import { useScales } from '../../src/modules/clinimetrix/hooks/useScales';
-// import { useAssessments } from '../../src/modules/clinimetrix/hooks/useAssessments';
-// import type { ScaleViewModel } from '../../src/modules/clinimetrix/presenters/ClinimetrixPresenter';
 import { ClinimetrixProAssessmentModal } from '@/components/ClinimetrixPro/ClinimetrixProAssessmentModal';
 import { Button } from '@/components/ui/Button';
+import { authGet, authPost } from '@/lib/api/auth-fetch';
 
-// Temporary type definition for compilation
 type ScaleViewModel = {
   id: string;
   name: string;
@@ -37,26 +33,6 @@ type ScaleViewModel = {
     icon: string;
   };
 };
-
-// Mock data for compilation
-const mockScales: ScaleViewModel[] = [];
-
-// Mock hooks for compilation
-const useScales = (config?: any) => ({ 
-  scales: mockScales, 
-  loading: false,
-  error: null,
-  searchScales: () => Promise.resolve(),
-  addToFavorites: (scaleId: string) => Promise.resolve(),
-  removeFromFavorites: (scaleId: string) => Promise.resolve(),
-  isScaleFavorite: (scaleId: string) => false,
-  activeFilters: {},
-  setFilters: () => {}
-});
-const useAssessments = (config?: any) => ({ 
-  startAssessment: (scaleId: string, patientId: string) => Promise.resolve('/test-url'),
-  error: null
-});
 
 interface ClinimetrixScaleSelectorProps {
   patient: {
@@ -79,36 +55,67 @@ export default function ClinimetrixScaleSelector({
   isQuickMode = false,
   onAssessmentCompleted
 }: ClinimetrixScaleSelectorProps) {
-  // Clean Architecture hooks
-  const {
-    scales,
-    loading,
-    error,
-    searchScales,
-    addToFavorites,
-    removeFromFavorites,
-    isScaleFavorite,
-    activeFilters,
-    setFilters
-  } = useScales({
-    autoLoad: true,
-    userLevel: 'professional', // TODO: Get from auth context
-    userExperience: 'intermediate' // TODO: Get from user profile
-  });
-
-  const {
-    startAssessment,
-    error: assessmentError
-  } = useAssessments({
-    patientId: patient.id,
-    clinicId: 'current-clinic', // TODO: Get from context
-    administratorId: 'current-user' // TODO: Get from auth context
-  });
-
-  // UI State
+  const [scales, setScales] = useState<ScaleViewModel[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [favorites, setFavorites] = useState<Set<string>>(new Set());
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedScale, setSelectedScale] = useState<ScaleViewModel | null>(null);
   const [showAssessment, setShowAssessment] = useState(false);
+
+  useEffect(() => {
+    const loadScales = async () => {
+      setLoading(true);
+      try {
+        const response = await authGet('/api/clinimetrix/scales');
+        if (response.ok) {
+          const data = await response.json();
+          const rawScales = data.data || data.results || data || [];
+          const mapped: ScaleViewModel[] = rawScales.map((s: any) => ({
+            id: String(s.id),
+            name: s.name || s.scale_name || '',
+            abbreviation: s.abbreviation || s.scale_code || '',
+            category: s.category || s.scale_category || 'General',
+            description: s.description || '',
+            duration: s.duration || '',
+            estimatedTime: s.estimated_time || s.duration || '10-15 min',
+            totalItems: s.total_items || s.items_count || 0,
+            isFavorite: false,
+            isFeatured: s.is_featured || false,
+            hasSubscales: s.has_subscales || false,
+            subscaleCount: s.subscale_count || 0,
+            ui: { color: s.color || '#6366F1', icon: s.icon || 'document' }
+          }));
+          setScales(mapped);
+        }
+      } catch (error) {
+        console.error('Error loading scales:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    loadScales();
+  }, []);
+
+  const isScaleFavorite = (scaleId: string) => favorites.has(scaleId);
+
+  const toggleFavorite = (scaleId: string) => {
+    setFavorites(prev => {
+      const next = new Set(prev);
+      if (next.has(scaleId)) next.delete(scaleId);
+      else next.add(scaleId);
+      return next;
+    });
+  };
+
+  const startAssessment = async (scaleId: string, patientId: string): Promise<string> => {
+    const response = await authPost('/api/clinimetrix/assessment/create-link', {
+      scale_id: scaleId,
+      patient_id: patientId
+    });
+    if (!response.ok) throw new Error('No se pudo crear el enlace de evaluación');
+    const data = await response.json();
+    return data.data?.assessment_url || data.assessment_url || '';
+  };
 
   // Search and filter scales
   const filteredScales = useMemo(() => {
@@ -123,40 +130,16 @@ export default function ClinimetrixScaleSelector({
     );
   }, [scales, searchTerm]);
 
-  // Handle search input changes
   const handleSearchChange = (value: string) => {
     setSearchTerm(value);
-    
-    // Optional: Use debounced search with Clean Architecture
-    if (value.trim()) {
-      // searchScales(value); // Could be used for server-side search
-    }
-  };
-
-  // Toggle favorites using Clean Architecture
-  const toggleFavorite = async (scaleId: string) => {
-    try {
-      if (isScaleFavorite(scaleId)) {
-        await removeFromFavorites(scaleId);
-      } else {
-        await addToFavorites(scaleId);
-      }
-    } catch (error) {
-      console.error('Error toggling favorite:', error);
-    }
   };
 
   const handleSelectScale = async (scale: ScaleViewModel) => {
     try {
       setSelectedScale(scale);
-      
-      console.log(`🚀 Iniciando evaluación ${scale.abbreviation} para ${patient.first_name}...`);
-      
-      // Use Clean Architecture assessment hook
+
       const assessmentUrl = await startAssessment(scale.id, patient.id);
-      
-      console.log('✅ Assessment URL generated:', assessmentUrl);
-      
+
       // For hybrid system: redirect to Django focused_take
       if (assessmentUrl.includes('focused-take')) {
         // Create return URL with patient context
@@ -165,24 +148,17 @@ export default function ClinimetrixScaleSelector({
         
         window.location.href = urlWithReturn;
       } else {
-        // Fallback to React modal (if implemented)
-        console.log('🔄 Fallback activado: usando React Assessment Modal...');
         setShowAssessment(true);
       }
       
     } catch (error) {
-      console.error('❌ Error starting assessment:', error);
-      
-      // Reset selection on error
+      console.error('Error starting assessment:', error);
       setSelectedScale(null);
-      
-      // Show user-friendly error
       alert(`No se pudo iniciar la evaluación: ${error instanceof Error ? error.message : 'Error desconocido'}`);
     }
   };
 
   const handleAssessmentComplete = async (results: any) => {
-    console.log('Assessment completed:', results);
     
     // Auto-guardar resultados en el expediente del paciente
     try {
@@ -279,7 +255,8 @@ export default function ClinimetrixScaleSelector({
     );
   }
 
-  if (error || assessmentError) {
+  if (false) {
+    // Error state placeholder — errors handled inline
     return (
       <div className="bg-red-50 border border-red-200 rounded-lg p-4">
         <div className="flex items-center">
@@ -287,7 +264,7 @@ export default function ClinimetrixScaleSelector({
           <h3 className="text-sm font-medium text-red-800">Error al cargar escalas</h3>
         </div>
         <p className="text-sm text-red-700 mt-1">
-          {error || assessmentError}
+          Error loading scales
         </p>
         <button
           onClick={onClose}

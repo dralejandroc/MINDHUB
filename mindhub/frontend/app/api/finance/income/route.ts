@@ -19,7 +19,6 @@ export async function GET(request: NextRequest) {
       console.error('[EXPEDIX APPOINTMENTS PROXY] Auth error:', authError);
       return createErrorResponse('Unauthorized', 'Valid authentication required', 401);
     }
-    console.log('TEST INCOME AUTH:', request.headers.get('Authorization'));
     // Forward all query parameters
     const params = new URLSearchParams();
     searchParams.forEach((value, key) => {
@@ -38,9 +37,6 @@ export async function GET(request: NextRequest) {
 
     // Forward Authorization header (Auth token)
     const authHeader = request.headers.get('Authorization');
-    console.log('AUTHHEADER:', authHeader);
-  
-    
     if (authHeader) {
       headers['Authorization'] = authHeader;
     }
@@ -50,7 +46,6 @@ export async function GET(request: NextRequest) {
     // if (userContextHeader) {
     //   headers['X-User-Context'] = userContextHeader;
     // }
-    console.log('FINAL URL:', url);
     const response = await fetch(url, {
       method: 'GET',
       headers,

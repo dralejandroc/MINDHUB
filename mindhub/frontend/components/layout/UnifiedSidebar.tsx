@@ -125,11 +125,21 @@ export function UnifiedSidebar({ children }: UnifiedSidebarProps) {
   const [isCollapsed, setIsCollapsed] = useState(true); // Default to collapsed
   const footerConfig = useFooterConfig();
 
-  // Keep sidebar collapsed when navigating between pages
+  // Close mobile sidebar on navigation, but persist desktop collapse state
   useEffect(() => {
-    setIsCollapsed(true);
-    setSidebarOpen(false); // Also close mobile sidebar when navigating
+    setSidebarOpen(false);
   }, [pathname]);
+
+  // Persist collapse state in localStorage
+  useEffect(() => {
+    const saved = localStorage.getItem('sidebar-collapsed');
+    if (saved !== null) setIsCollapsed(saved === 'true');
+  }, []);
+
+  const persistCollapse = (value: boolean) => {
+    setIsCollapsed(value);
+    localStorage.setItem('sidebar-collapsed', String(value));
+  };
 
   // Get user from Supabase Auth
   const { user } = useAuth();
@@ -178,11 +188,11 @@ export function UnifiedSidebar({ children }: UnifiedSidebarProps) {
   };
 
   const toggleCollapse = () => {
-    setIsCollapsed(!isCollapsed);
+    persistCollapse(!isCollapsed);
   };
 
-  const sidebarWidth = isCollapsed ? 'w-12' : 'w-40'; // Collapsed: w-12, Expanded: w-40 (10% increase from w-36)
-  const sidebarWidthLg = isCollapsed ? 'sm:w-12' : 'sm:w-40';
+  const sidebarWidth = isCollapsed ? 'w-14' : 'w-56';
+  const sidebarWidthLg = isCollapsed ? 'sm:w-14' : 'sm:w-56';
 
   const renderNavigationItem = (item: typeof NAVIGATION_GROUPS[0]['items'][0]) => {
     const IconComponent = item.icon;
@@ -411,88 +421,51 @@ export function UnifiedSidebar({ children }: UnifiedSidebarProps) {
   );
 
   return (
-    <div className="min-h-screen gradient-background">
+    <div className="overflow-x-hidden gradient-background">
       {renderSidebar()}
-      
-      {/* Mobile menu button - only on very small screens */}
-      {!sidebarOpen && (
-        <button
-          onClick={toggleSidebar}
-          className="sm:hidden fixed top-4 left-4 z-50 p-2 bg-white rounded-md shadow-md border border-gray-200 text-gray-600 hover:text-gray-900"
-        >
-          <Bars3Icon className="h-6 w-6" />
-        </button>
-      )}
 
-      {/* Main content area */}
+      {/* Main content: block element — naturally shrinks to (100vw - sidebar) */}
       <div className={cn(
-        'min-h-screen transition-all duration-300 relative z-10',
-        // Mobile: full width
-        'w-full',
-        // Desktop: account for sidebar width
-        isCollapsed ? 'sm:ml-12' : 'sm:ml-40'
+        'flex flex-col min-h-screen transition-all duration-300',
+        isCollapsed ? 'sm:ml-14' : 'sm:ml-56'
       )}>
-        {/* Top bar for mobile/collapsed mode user info */}
-        <div className={cn(
-          'sticky top-0 z-40 flex h-16 shrink-0 items-center justify-between gap-x-4 border-b border-gray-200 bg-white px-4 shadow-sm sm:gap-x-6 sm:px-6 lg:px-8',
-          !isCollapsed && 'sm:hidden'
-        )}>
-          <div className="flex items-center">
-            {/* Mobile hamburger - only show on very small screens */}
-            <button
-              type="button"
-              className="sm:hidden -m-2.5 p-2.5 text-gray-700"
-              onClick={toggleSidebar}
-            >
-              <Bars3Icon className="h-6 w-6" />
-            </button>
-          </div>
-
-          {/* User info in top bar when collapsed on desktop */}
-          <div className={cn(
-            'flex items-center gap-x-3',
-            !isCollapsed && 'sm:hidden'
-          )}>
-            <UserCircleIcon className="h-8 w-8 text-gray-400" />
-            <div className="hidden sm:flex sm:flex-col sm:items-start">
-              <span className="text-sm font-semibold leading-6 text-gray-900">
-                {displayUser.name}
-              </span>
-              <span className="text-xs leading-5 text-gray-500">
-                {displayUser.email}
-              </span>
-            </div>
-            <button
-              onClick={handleLogout}
-              className="p-2 text-gray-400 hover:text-gray-500"
-              title="Cerrar Sesión"
-            >
-              <ArrowLeftOnRectangleIcon className="h-5 w-5" />
-            </button>
-          </div>
+        {/* Mobile-only top bar */}
+        <div className="sm:hidden shrink-0 flex h-10 items-center justify-between border-b border-gray-200 bg-white px-3 shadow-sm">
+          <button
+            type="button"
+            onClick={toggleSidebar}
+            className="p-1.5 rounded-md text-gray-600 hover:bg-gray-100"
+          >
+            <Bars3Icon className="h-5 w-5" />
+          </button>
+          <button
+            onClick={handleLogout}
+            className="p-1.5 rounded-md text-gray-400 hover:text-gray-600 hover:bg-gray-100"
+            title="Cerrar Sesión"
+          >
+            <ArrowLeftOnRectangleIcon className="h-5 w-5" />
+          </button>
         </div>
 
-        {/* Main content */}
-        <div className="flex flex-col min-h-[calc(100vh-4rem)]">
-          <main className="flex-1 py-2 sm:py-4 lg:py-6">
-            <div className="px-2 sm:px-4 lg:px-6 w-full max-w-none">
-              {children}
-            </div>
-          </main>
-          
-          {/* Adaptive Footer */}
-          {footerConfig.show && (
-            <MindHubFooter 
-              variant={footerConfig.variant} 
-              className={footerConfig.className}
-            />
-          )}
-        </div>
+        {/* Page content */}
+        <main className="flex-1 overflow-x-hidden">
+          <div className="px-3 sm:px-4 lg:px-5 py-3 sm:py-4">
+            {children}
+          </div>
+        </main>
+
+        {/* Adaptive Footer */}
+        {footerConfig.show && (
+          <MindHubFooter
+            variant={footerConfig.variant}
+            className={footerConfig.className}
+          />
+        )}
       </div>
 
-      {/* Mobile overlay - only on very small screens */}
+      {/* Mobile overlay */}
       {sidebarOpen && (
-        <div 
+        <div
           className="sm:hidden fixed inset-0 bg-black bg-opacity-50 z-40"
           onClick={toggleSidebar}
         />

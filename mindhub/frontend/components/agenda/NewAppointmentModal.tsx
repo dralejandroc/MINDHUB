@@ -258,40 +258,38 @@ export default function NewAppointmentModal({ selectedDate, selectedTime, presel
     setSearchTerm('');
   }, []);
 
+  const [saving, setSaving] = useState(false);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.patientId || !formData.date || !formData.time || !formData.type) {
       return;
     }
+    if (saving) return; // Prevent double submission
 
+    setSaving(true);
     try {
-      // Get current user for logging
-      // Get current user from auth context instead of localStorage
-      // The backend will handle user context via JWT authentication
-
       // Find selected consultation type to get price for Finance integration
       const selectedConsultationType = consultationTypes.find(type => type.name === formData.type);
       const appointmentPrice = selectedConsultationType?.price || 0;
 
-      // Create appointment with Finance integration data
       const appointmentData = {
         ...formData,
-        // Remove hardcoded user data - let backend handle via JWT
-        // Finance integration fields
         price: appointmentPrice,
         serviceId: selectedConsultationType?.id || null,
         serviceName: selectedConsultationType?.name || formData.type,
-        createPendingCharge: appointmentPrice > 0 // Only create charge if there's a price
+        createPendingCharge: appointmentPrice > 0
       };
 
       console.log('[NewAppointmentModal] Submitting appointment with Finance data:', appointmentData);
 
-      // Save appointment and create log
       await onSave(appointmentData);
 
     } catch (error) {
       console.error('Error creating appointment:', error);
       alert('Error al crear la cita. Por favor intenta de nuevo.');
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -657,18 +655,18 @@ export default function NewAppointmentModal({ selectedDate, selectedTime, presel
             </button>
             <button
               type="submit"
-              disabled={!isFormValid}
+              disabled={!isFormValid || saving}
               className={`px-6 py-3 text-white text-sm font-medium rounded-lg transition-all duration-200 ${
-                isFormValid ? 'hover:-translate-y-1' : 'opacity-50 cursor-not-allowed'
+                isFormValid && !saving ? 'hover:-translate-y-1' : 'opacity-50 cursor-not-allowed'
               }`}
-              style={{ 
-                background: isFormValid 
+              style={{
+                background: isFormValid && !saving
                   ? 'linear-gradient(135deg, var(--secondary-500), var(--secondary-600))'
                   : 'var(--neutral-400)',
-                boxShadow: isFormValid ? '0 8px 20px -5px rgba(41, 169, 140, 0.3)' : 'none'
+                boxShadow: isFormValid && !saving ? '0 8px 20px -5px rgba(41, 169, 140, 0.3)' : 'none'
               }}
             >
-              Agendar Cita
+              {saving ? 'Guardando...' : 'Agendar Cita'}
             </button>
           </div>
         </form>

@@ -286,7 +286,7 @@ export function createHybridClient(config?: Partial<HybridClientConfig>): Hybrid
   const defaultConfig: HybridClientConfig = {
     supabaseUrl: process.env.NEXT_PUBLIC_SUPABASE_URL!,
     supabaseKey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    djangoApiUrl: process.env.NEXT_PUBLIC_DJANGO_API_URL || 'http://localhost:8000',
+    djangoApiUrl: process.env.NEXT_PUBLIC_DJANGO_API_URL || 'https://mindhub-django-backend.vercel.app',
     useAuth: true
   }
 

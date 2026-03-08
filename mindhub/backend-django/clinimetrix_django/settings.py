@@ -374,6 +374,7 @@ CLINIMETRIX_SETTINGS = {
 
 # Guardian settings
 GUARDIAN_MONKEY_PATCH_USER = False
+ANONYMOUS_USER_NAME = None  # Disable anonymous user creation (clinimetrix_users managed by Supabase)
 
 # Supabase integration for production - CORREGIDO con keys válidos y nueva JWT secret
 SUPABASE_URL = os.environ.get('SUPABASE_URL', 'https://jvbcpldzoyicefdtnwkd.supabase.co')

@@ -112,13 +112,25 @@ export interface FormXCatalogResponse {
   }>;
 }
 
-// Auth helper
-const getAuthHeaders = () => {
-  // TODO: Integrate with Supabase auth from existing MindHub system
-  return {
+// Async auth helper that attaches the Supabase JWT access token
+const getAuthHeadersAsync = async (): Promise<Record<string, string>> => {
+  const headers: Record<string, string> = {
     'Content-Type': 'application/json',
-    // 'Authorization': `Bearer ${token}` // Will be added when auth is integrated
   };
+
+  if (typeof window !== 'undefined') {
+    try {
+      const { supabase } = await import('@/lib/supabase/client');
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.access_token) {
+        headers['Authorization'] = `Bearer ${session.access_token}`;
+      }
+    } catch (err) {
+      console.warn('[FormXDjangoClient] Could not retrieve Supabase session:', err);
+    }
+  }
+
+  return headers;
 };
 
 // Error handler
@@ -163,7 +175,7 @@ export class FormXDjangoClient {
   static async getTemplatesCatalog(): Promise<FormXCatalogResponse> {
     try {
       const response = await fetch(`${getFormXBaseUrl()}/templates/catalog/`, {
-        headers: getAuthHeaders(),
+        headers: await getAuthHeadersAsync(),
       });
       
       if (!response.ok) {
@@ -180,7 +192,7 @@ export class FormXDjangoClient {
   static async getTemplate(templateId: string): Promise<FormXTemplate> {
     try {
       const response = await fetch(`${getFormXBaseUrl()}/templates/${templateId}/`, {
-        headers: getAuthHeaders(),
+        headers: await getAuthHeadersAsync(),
       });
       
       if (!response.ok) {
@@ -198,7 +210,7 @@ export class FormXDjangoClient {
     try {
       const response = await fetch(`${getFormXBaseUrl()}/templates/`, {
         method: 'POST',
-        headers: getAuthHeaders(),
+        headers: await getAuthHeadersAsync(),
         body: JSON.stringify(templateData),
       });
       
@@ -219,7 +231,7 @@ export class FormXDjangoClient {
     try {
       const response = await fetch(`${getFormXBaseUrl()}/templates/${templateId}/`, {
         method: 'PUT',
-        headers: getAuthHeaders(),
+        headers: await getAuthHeadersAsync(),
         body: JSON.stringify(templateData),
       });
       
@@ -240,7 +252,7 @@ export class FormXDjangoClient {
     try {
       const response = await fetch(`${getFormXBaseUrl()}/templates/${templateId}/`, {
         method: 'DELETE',
-        headers: getAuthHeaders(),
+        headers: await getAuthHeadersAsync(),
       });
       
       if (!response.ok) {
@@ -270,7 +282,7 @@ export class FormXDjangoClient {
     try {
       const response = await fetch(`${getFormXBaseUrl()}/form-builder/`, {
         method: 'POST',
-        headers: getAuthHeaders(),
+        headers: await getAuthHeadersAsync(),
         body: JSON.stringify(formData),
       });
       
@@ -294,7 +306,7 @@ export class FormXDjangoClient {
   }> {
     try {
       const response = await fetch(`${getFormXBaseUrl()}/templates/${templateId}/preview/`, {
-        headers: getAuthHeaders(),
+        headers: await getAuthHeadersAsync(),
       });
       
       if (!response.ok) {
@@ -324,7 +336,7 @@ export class FormXDjangoClient {
     try {
       const response = await fetch(`${getFormXBaseUrl()}/send-form/`, {
         method: 'POST',
-        headers: getAuthHeaders(),
+        headers: await getAuthHeadersAsync(),
         body: JSON.stringify(data),
       });
       
@@ -352,7 +364,7 @@ export class FormXDjangoClient {
     try {
       const response = await fetch(`${getFormXBaseUrl()}/templates/${templateId}/send_to_patient/`, {
         method: 'POST',
-        headers: getAuthHeaders(),
+        headers: await getAuthHeadersAsync(),
         body: JSON.stringify(data),
       });
       
@@ -380,7 +392,7 @@ export class FormXDjangoClient {
         : `${getFormXBaseUrl()}/submissions/`;
         
       const response = await fetch(url, {
-        headers: getAuthHeaders(),
+        headers: await getAuthHeadersAsync(),
       });
       
       if (!response.ok) {
@@ -399,7 +411,7 @@ export class FormXDjangoClient {
     try {
       const response = await fetch(`${getFormXBaseUrl()}/submissions/${submissionId}/sync_to_expedix/`, {
         method: 'POST',
-        headers: getAuthHeaders(),
+        headers: await getAuthHeadersAsync(),
       });
       
       if (!response.ok) {
@@ -432,7 +444,7 @@ export class FormXDjangoClient {
     try {
       const response = await fetch(`${getFormXBaseUrl()}/expedix-mapping/`, {
         method: 'POST',
-        headers: getAuthHeaders(),
+        headers: await getAuthHeadersAsync(),
         body: JSON.stringify({ fields }),
       });
       
@@ -454,7 +466,7 @@ export class FormXDjangoClient {
   static async getDocumentTemplates(): Promise<FormXDocumentTemplate[]> {
     try {
       const response = await fetch(`${getFormXBaseUrl()}/documents/`, {
-        headers: getAuthHeaders(),
+        headers: await getAuthHeadersAsync(),
       });
       
       if (!response.ok) {
@@ -479,7 +491,7 @@ export class FormXDjangoClient {
     try {
       const response = await fetch(`${getFormXBaseUrl()}/generate-document/`, {
         method: 'POST',
-        headers: getAuthHeaders(),
+        headers: await getAuthHeadersAsync(),
         body: JSON.stringify(data),
       });
       
@@ -502,7 +514,7 @@ export class FormXDjangoClient {
     try {
       const response = await fetch(`${getFormXBaseUrl()}/send-document/`, {
         method: 'POST',
-        headers: getAuthHeaders(),
+        headers: await getAuthHeadersAsync(),
         body: JSON.stringify(data),
       });
       
@@ -526,7 +538,7 @@ export class FormXDjangoClient {
   static async getDashboardStats(): Promise<FormXStats> {
     try {
       const response = await fetch(`${getFormXBaseUrl()}/dashboard/stats/`, {
-        headers: getAuthHeaders(),
+        headers: await getAuthHeadersAsync(),
       });
       
       if (!response.ok) {
