@@ -78,7 +78,7 @@ export default function AgendaCalendar({ selectedDate, onDateSelect, onNewAppoin
                 id: apt.id,
                 patientId: apt.patient_id || apt.patientId,
                 patientName,
-                time: apt.appointment_time || apt.time || '00:00',
+                time: apt.start_time || apt.appointment_time || apt.time || '00:00',
                 duration: apt.duration || 60,
                 type: apt.appointment_type || apt.type || 'Consulta general',
                 status: apt.status as any,

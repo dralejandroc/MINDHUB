@@ -151,23 +151,7 @@ class ConsultationViewSet(viewsets.ViewSet):
                         "sections_completed",
                         "vital_signs",
                         "next_appointment",
-                        # Nuevos campos clínicos JSON
-                        "sintomatologia_actual",
-                        "historia_personal",
-                        "antecedentes_psiquiatricos",
-                        "historia_riesgo",
-                        "uso_sustancias",
-                        "antecedentes_medicos",
-                        "antecedentes_heredofamiliares",
-                        "historia_personal_social",
-                        "plan_manejo",
-                        "analisis_conclusiones",
-                        "formulacion_caso",
-                        "estado_inicio",
-                        "contenido_sesion",
-                        "otros_campos",
-                        "red_apoyo",
-                        "intervencion_crisis",
+                        "otros_campos",  # incluye campos clínicos extendidos
                     ):
                         consultation_dict[f] = coerce_json(consultation_dict.get(f), {})
 
@@ -232,11 +216,32 @@ class ConsultationViewSet(viewsets.ViewSet):
                     'timestamp': timezone.now().isoformat()
                 }, status=500)
             
+            # Resolve consultation datetime
+            from datetime import datetime, timedelta
+            import json as json_lib
+
+            raw_date = request.data.get('consultation_date')
+            if raw_date:
+                if isinstance(raw_date, str):
+                    try:
+                        consultation_dt = datetime.fromisoformat(raw_date.replace('Z', '+00:00'))
+                    except ValueError:
+                        consultation_dt = timezone.now()
+                else:
+                    consultation_dt = raw_date
+            else:
+                consultation_dt = timezone.now()
+
+            # Determine the linked_appointment_id to use
+            linked_appointment_id = request.data.get('linked_appointment_id')
+
+            # "Próxima Cita" appointment scheduling is handled by the frontend after save
+
             # Insert consultation using raw SQL with ALL fields
             with connection.cursor() as cursor:
                 cursor.execute("""
                     INSERT INTO consultations (
-                        id, patient_id, professional_id, consultation_date, 
+                        id, patient_id, professional_id, consultation_date,
                         consultation_type, chief_complaint, history_present_illness,
                         physical_examination, assessment, plan, diagnosis,
                         notes, clinical_notes, private_notes, mental_exam,
@@ -253,7 +258,7 @@ class ConsultationViewSet(viewsets.ViewSet):
                     consultation_id,
                     patient_id,
                     professional_id,
-                    request.data.get('consultation_date') or timezone.now(),
+                    consultation_dt,
                     request.data.get('consultation_type', 'general'),
                     request.data.get('chief_complaint', ''),
                     request.data.get('history_present_illness', ''),
@@ -276,7 +281,7 @@ class ConsultationViewSet(viewsets.ViewSet):
                     request.data.get('consultation_metadata', {}),  # JSONB field
                     request.data.get('sections_completed', {}),  # JSONB field
                     request.data.get('linked_assessments', []),  # JSONB array
-                    request.data.get('linked_appointment_id'),
+                    linked_appointment_id,
                     clinic_id,  # Use context-based clinic_id
                     workspace_id,  # Use context-based workspace_id
                     timezone.now(),
@@ -289,7 +294,8 @@ class ConsultationViewSet(viewsets.ViewSet):
                     'id': consultation_id,
                     'patient_id': patient_id,
                     'professional_id': professional_id,
-                    'status': 'draft'
+                    'status': 'draft',
+                    'linked_appointment_id': linked_appointment_id
                 },
                 'message': 'Consultation created successfully'
             }, status=201)
@@ -309,167 +315,59 @@ class ConsultationViewSet(viewsets.ViewSet):
         from psycopg2.extras import Json
         import json
 
-        # Campos JSONB (según tu DB real)
+        # Campos que son JSONB/array — necesitan conversión especial para psycopg2
         JSON_FIELDS = {
-            "mental_exam",
-            "vital_signs",
-            "prescriptions",          # ✅ JSONB en tu DB
-            "template_config",
-            "form_customizations",
-            "consultation_metadata",
-            "sections_completed",
-            "linked_assessments",
-            "evaluations",
-            "next_appointment",
-            "diagnoses",
-            "indications",
-            # Nuevos campos clínicos JSON
-            "sintomatologia_actual",
-            "historia_personal",
-            "antecedentes_psiquiatricos",
-            "historia_riesgo",
-            "uso_sustancias",
-            "antecedentes_medicos",
-            "antecedentes_heredofamiliares",
-            "historia_personal_social",
-            "plan_manejo",
-            "analisis_conclusiones",
-            "formulacion_caso",
-            "estado_inicio",
-            "contenido_sesion",
-            "otros_campos",
-            "red_apoyo",
-            "intervencion_crisis",
+            "mental_exam", "vital_signs", "prescriptions", "template_config",
+            "form_customizations", "consultation_metadata", "sections_completed",
+            "linked_assessments", "evaluations", "next_appointment",
+            "diagnoses", "indications",
+            # campos clínicos extendidos (existen como columnas en algunas instancias)
+            "sintomatologia_actual", "historia_personal", "antecedentes_psiquiatricos",
+            "historia_riesgo", "uso_sustancias", "antecedentes_medicos",
+            "antecedentes_heredofamiliares", "historia_personal_social", "plan_manejo",
+            "analisis_conclusiones", "formulacion_caso", "estado_inicio",
+            "contenido_sesion", "otros_campos", "red_apoyo", "intervencion_crisis",
         }
 
-        # Campos que NO quieres permitir que el front cambie aunque existan
-        BLOCKED_FIELDS = {
-            "id",
-        }
+        BLOCKED_FIELDS = {"id", "created_at"}
 
         try:
             print("ENTRANDO AQUI UPDATE", pk)
 
             with connection.cursor() as cursor:
+                # ── 1. Descubrir columnas reales de la tabla ──────────────────────
+                cursor.execute("""
+                    SELECT column_name
+                    FROM information_schema.columns
+                    WHERE table_schema = 'public'
+                      AND table_name   = 'consultations'
+                """)
+                real_columns = {row[0] for row in cursor.fetchall()}
+
+                # ── 2. Construir SET solo con campos que existen en la BD ─────────
                 update_fields = []
                 params = []
 
-                allowed_fields = [
-                    # UUIDs
-                    "patient_id",
-                    "professional_id",
-                    "edited_by",
-                    "finalized_by",
-                    "linked_appointment_id",
-                    "quality_reviewer_id",
-                    "user_id",
-
-                    # Dates / timestamps
-                    "consultation_date",
-                    # "created_at",   # (opcional) normalmente NO lo actualizas
-                    # "updated_at",   # se setea automático abajo
-                    "finalized_at",
-                    "quality_review_date",
-                    "follow_up_date",
-
-                    # Text fields
-                    "consultation_type",
-                    "chief_complaint",
-                    "history_present_illness",
-                    "present_illness",
-                    "review_of_systems",
-                    "physical_examination",
-                    "assessment",
-                    "plan",
-                    "notes",
-                    "treatment_plan",
-                    "clinical_notes",
-                    "private_notes",
-                    "follow_up_instructions",
-                    "edit_reason",
-                    "quality_notes",
-                    "status",
-
-                    # Numeric
-                    "duration_minutes",
-                    "revision_number",
-
-                    # Booleans
-                    "is_billable",
-                    "is_draft",
-                    "is_finalized",
-                    "quality_reviewed",
-                    "clinic_id",
-
-                    # Arrays (si en DB realmente son arrays)
-                    "diagnosis_codes",
-
-                    # Diagnosis (texto)
-                    "diagnosis",
-
-                    # JSONB
-                    "vital_signs",
-                    "mental_exam",
-                    "prescriptions",
-                    "template_config",
-                    "form_customizations",
-                    "consultation_metadata",
-                    "sections_completed",
-                    "linked_assessments",
-                    "evaluations",
-                    "next_appointment",
-                    "diagnoses",
-                    "indications",
-
-                    # Otros campos
-                    "additional_instructions",
-                    "current_condition",
-
-                    # Nuevos campos clínicos JSON
-                    "sintomatologia_actual",
-                    "historia_personal",
-                    "antecedentes_psiquiatricos",
-                    "historia_riesgo",
-                    "uso_sustancias",
-                    "antecedentes_medicos",
-                    "antecedentes_heredofamiliares",
-                    "historia_personal_social",
-                    "plan_manejo",
-                    "analisis_conclusiones",
-                    "formulacion_caso",
-                    "estado_inicio",
-                    "contenido_sesion",
-                    "otros_campos",
-                    "red_apoyo",
-                    "intervencion_crisis",
-                ]
-
-                for field in allowed_fields:
+                for field, value in request.data.items():
                     if field in BLOCKED_FIELDS:
                         continue
-
-                    if field not in request.data:
+                    if field not in real_columns:
+                        # columna no existe en la DB — ignorar silenciosamente
                         continue
 
-                    value = request.data[field]
-
-                    # ✅ Si viene como string JSON (FormData/multipart), intentar parsearlo
+                    # Parsear strings JSON si vienen como texto plano
                     if field in JSON_FIELDS and isinstance(value, str):
                         s = value.strip()
-                        if (s.startswith("[") and s.endswith("]")) or (s.startswith("{") and s.endswith("}")):
+                        if (s.startswith("[") and s.endswith("]")) or \
+                           (s.startswith("{") and s.endswith("}")):
                             try:
                                 value = json.loads(s)
                             except Exception:
-                                # si no se puede parsear, lo dejamos tal cual
                                 pass
 
-                    # ✅ JSONB: dict/list -> Json() para psycopg2
+                    # Convertir dict/list a Json() para psycopg2
                     if field in JSON_FIELDS and isinstance(value, (dict, list)):
                         value = Json(value)
-
-                    # 🧪 Debug opcional para cazar el campo que rompa por tipo
-                    # if isinstance(value, dict):
-                    #     print("DICT SIN ADAPTAR:", field, value)
 
                     update_fields.append(f"{field} = %s")
                     params.append(value)
@@ -477,11 +375,8 @@ class ConsultationViewSet(viewsets.ViewSet):
                 if not update_fields:
                     return Response({"success": False, "error": "No valid fields to update"}, status=400)
 
-                # Always update timestamp
                 update_fields.append("updated_at = %s")
                 params.append(timezone.now())
-
-                # Where
                 params.append(pk)
 
                 sql = f"""

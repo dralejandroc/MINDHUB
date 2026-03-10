@@ -159,10 +159,117 @@ export async function GET(request: Request) {
   }
 }
 
+// Auto-create an appointment for a consultation when none is linked yet.
+// Returns the new appointment id, or null if creation failed (non-blocking).
+async function autoCreateAppointmentForConsultation(
+  consultationId: string,
+  patientId: string,
+  userId: string,
+  consultationDate: string,
+  consultationType: string,
+  reason: string
+): Promise<string | null> {
+  try {
+    // If consultationDate is just YYYY-MM-DD, use it directly to avoid timezone drift.
+    // If it contains a time component (T...), extract both the date and time parts.
+    let appointmentDate: string;
+    let startTime: string;
+    let endTime: string;
+
+    if (consultationDate.includes('T') || consultationDate.includes(' ')) {
+      const dt = new Date(consultationDate);
+      appointmentDate = dt.toISOString().split('T')[0];
+      const h = dt.getUTCHours();
+      const m = dt.getUTCMinutes();
+      startTime = `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`;
+      const endH = h + 1 >= 24 ? 23 : h + 1;
+      endTime = `${endH.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`;
+    } else {
+      // Plain YYYY-MM-DD — use the current server time for start/end, keep the date as-is
+      appointmentDate = consultationDate;
+      const now = new Date();
+      const h = now.getUTCHours();
+      const m = now.getUTCMinutes();
+      startTime = `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`;
+      const endH = h + 1 >= 24 ? 23 : h + 1;
+      endTime = `${endH.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`;
+    }
+
+    // Resolve workspace/clinic context (same pattern as appointments POST)
+    let workspaceId: string | null = null;
+    let clinicId: string | null = null;
+
+    const { data: workspace } = await supabaseAdmin
+      .from('individual_workspaces')
+      .select('id')
+      .eq('owner_id', userId)
+      .single();
+
+    if (workspace) {
+      workspaceId = workspace.id;
+    } else {
+      const { data: membership } = await supabaseAdmin
+        .from('tenant_memberships')
+        .select('clinic_id')
+        .eq('user_id', userId)
+        .limit(1)
+        .single();
+      if (membership) {
+        clinicId = membership.clinic_id;
+      }
+    }
+
+    // workspace/clinic are nullable — proceed even if neither is found
+    if (!workspaceId && !clinicId) {
+      console.warn('[CONSULTATIONS API] auto-appointment: no workspace/clinic context found, creating appointment without tenant context');
+    }
+
+    const appointmentId = crypto.randomUUID();
+    const { error: apptError } = await supabaseAdmin
+      .from('appointments')
+      .insert({
+        id: appointmentId,
+        patient_id: patientId,
+        professional_id: userId,
+        appointment_date: appointmentDate,
+        start_time: startTime,
+        end_time: endTime,
+        appointment_type: consultationType || 'Consulta',
+        status: 'in_progress',
+        reason: reason || '',
+        notes: '',
+        confirmation_sent: false,
+        reminder_sent: false,
+        is_recurring: false,
+        workspace_id: workspaceId,
+        clinic_id: clinicId,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      });
+
+    if (apptError) {
+      console.error('[CONSULTATIONS API] auto-appointment insert error:', apptError.message);
+      return null;
+    }
+
+    // Link back the appointment to the consultation
+    await supabaseAdmin
+      .from('consultations')
+      .update({ linked_appointment_id: appointmentId, updated_at: new Date().toISOString() })
+      .eq('id', consultationId);
+
+    console.log('[CONSULTATIONS API] Auto-created appointment:', appointmentId, 'linked to consultation:', consultationId);
+    return appointmentId;
+  } catch (err) {
+    console.error('[CONSULTATIONS API] auto-appointment unexpected error:', err);
+    return null;
+  }
+}
+
 export async function POST(request: Request) {
   try {
     console.log('[CONSULTATIONS API] Processing POST request - Django Backend with Supabase Fallback');
-    
+
     // Verify authentication
     const { user, error: authError } = await getAuthenticatedUser(request);
     if (authError || !user) {
@@ -203,7 +310,10 @@ export async function POST(request: Request) {
 
       if (backendResponse.ok) {
         const backendData = await backendResponse.json();
-        console.log('[CONSULTATIONS API] Successfully created consultation in Django backend:', backendData.id);
+        const consultationId = backendData.id || backendData.data?.id;
+        console.log('[CONSULTATIONS API] Successfully created consultation in Django backend:', consultationId);
+
+        // Note: "Próxima Cita" appointment scheduling is handled by the frontend after save
 
         return createResponse({
           success: true,
@@ -230,9 +340,8 @@ export async function POST(request: Request) {
       console.log('[CONSULTATIONS API] Resolved tenant context:', tenantContext);
 
       // Prepare consultation data with unified tenant context
-      const consultationDateTime = body.consultation_date 
-        ? new Date(body.consultation_date).toISOString() 
-        : new Date().toISOString();
+      // Store the date as-is to avoid UTC midnight timezone shift (YYYY-MM-DD stays YYYY-MM-DD)
+      const consultationDateTime = body.consultation_date || new Date().toISOString();
 
       const baseConsultationData = {
         id: crypto.randomUUID(),
@@ -282,6 +391,8 @@ export async function POST(request: Request) {
       }
 
       console.log('[CONSULTATIONS API] Successfully created consultation via Supabase fallback:', consultation.id);
+
+      // Note: "Próxima Cita" appointment scheduling is handled by the frontend after save
 
       return createResponse({
         success: true,
@@ -359,11 +470,35 @@ export async function PUT(request: Request) {
     } catch (djangoError) {
       console.error('[CONSULTATIONS API] Django backend failed for PUT, using Supabase fallback:', djangoError);
 
-      // FALLBACK: Direct Supabase update
+      // FALLBACK: Direct Supabase update — only include real DB columns
       console.log('[CONSULTATIONS API] Using Supabase direct update as fallback');
 
+      // Only columns confirmed to exist in the real Supabase consultations table
+      const ALLOWED_COLUMNS = new Set([
+        'patient_id', 'professional_id', 'consultation_date', 'consultation_type',
+        'chief_complaint', 'history_present_illness', 'physical_examination',
+        'assessment', 'plan', 'diagnosis', 'notes', 'clinical_notes', 'private_notes',
+        'mental_exam', 'vital_signs', 'prescriptions', 'follow_up_instructions',
+        'status', 'is_draft', 'is_finalized', 'template_config', 'form_customizations',
+        'consultation_metadata', 'sections_completed', 'linked_assessments',
+        'linked_appointment_id', 'additional_instructions', 'current_condition',
+        'evaluations', 'next_appointment', 'diagnoses', 'indications',
+        'treatment_plan', 'edited_by', 'edit_reason', 'duration_minutes',
+        'is_billable', 'updated_at',
+        // Extended clinical columns — present if DB was migrated
+        'sintomatologia_actual', 'historia_personal', 'antecedentes_psiquiatricos',
+        'historia_riesgo', 'uso_sustancias', 'antecedentes_medicos',
+        'antecedentes_heredofamiliares', 'historia_personal_social', 'plan_manejo',
+        'analisis_conclusiones', 'formulacion_caso', 'estado_inicio',
+        'contenido_sesion', 'otros_campos', 'red_apoyo', 'intervencion_crisis',
+      ]);
+
+      const filteredBody = Object.fromEntries(
+        Object.entries(body).filter(([key]) => ALLOWED_COLUMNS.has(key))
+      );
+
       const updateData = {
-        ...body,
+        ...filteredBody,
         updated_at: new Date().toISOString()
       };
 
@@ -410,6 +545,68 @@ export async function PUT(request: Request) {
       error instanceof Error ? error.message : 'Unknown error',
       500
     );
+  }
+}
+
+export async function PATCH(request: Request) {
+  try {
+    const { user, error: authError } = await getAuthenticatedUser(request);
+    if (authError || !user) {
+      return createErrorResponse('Unauthorized', 'Valid authentication required', 401);
+    }
+
+    const tenantId = request.headers.get('X-Tenant-ID');
+    const tenantType = request.headers.get('X-Tenant-Type');
+
+    const url = new URL(request.url);
+    const consultationId = url.searchParams.get('consultation_id');
+    const action = url.searchParams.get('action');
+
+    if (!consultationId) {
+      return createErrorResponse('Validation error', 'Consultation ID is required', 400);
+    }
+
+    try {
+      // Call Django finalize_consultation action
+      const djangoUrl = action === 'finalize'
+        ? `${API_CONFIG.BACKEND_URL}/api/expedix/consultations/${consultationId}/finalize_consultation/`
+        : `${API_CONFIG.BACKEND_URL}/api/expedix/consultations/${consultationId}/`;
+
+      const backendResponse = await fetch(djangoUrl, {
+        method: 'PATCH',
+        headers: {
+          'Authorization': `Bearer ${process.env.NEXT_PUBLIC_SUPABASE_SERVICE_ROLE_KEY}`,
+          'X-Proxy-Auth': 'verified',
+          'X-User-ID': user.id,
+          'X-User-Email': user.email || '',
+          'X-Tenant-ID': tenantId || '',
+          'X-Tenant-Type': tenantType || '',
+          'Content-Type': 'application/json'
+        },
+        cache: 'no-store'
+      });
+
+      if (backendResponse.ok) {
+        const backendData = await backendResponse.json();
+        return createResponse({ success: true, data: backendData, source: 'django_backend' });
+      } else {
+        throw new Error(`Django backend error: ${backendResponse.status}`);
+      }
+    } catch (djangoError) {
+      console.error('[CONSULTATIONS API] Django backend failed for PATCH:', djangoError);
+      // Fallback: update via Supabase directly
+      const { error } = await supabaseAdmin
+        .from('consultations')
+        .update({ is_finalized: true, is_draft: false, status: 'completed', updated_at: new Date().toISOString() })
+        .eq('id', consultationId);
+
+      if (error) {
+        return createErrorResponse('Database error', error.message, 500);
+      }
+      return createResponse({ success: true, data: { id: consultationId, is_finalized: true }, source: 'supabase_fallback' });
+    }
+  } catch (error) {
+    return createErrorResponse('Failed to finalize consultation', error instanceof Error ? error.message : 'Unknown error', 500);
   }
 }
 

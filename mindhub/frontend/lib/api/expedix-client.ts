@@ -456,6 +456,12 @@ class ExpedixApiClient {
     });
   }
 
+  async finalizeConsultation(consultationId: string): Promise<{ success: boolean; data: any }> {
+    return this.makeRequest<{ success: boolean; data: any }>(`/expedix/consultations?consultation_id=${consultationId}&action=finalize`, {
+      method: 'PATCH',
+    });
+  }
+
   async deleteConsultation(consultationId: string): Promise<{ success: boolean }> {
     return this.makeRequest<{ success: boolean }>(`/expedix/consultations?consultation_id=${consultationId}`, {
       method: 'DELETE',
@@ -591,6 +597,9 @@ export function useExpedixApi() {
     updateConsultation: async (consultationId: string, consultationData: any) => {
       console.log('llegamos a updateConsultation del hook');
       return apiClient.updateConsultation(consultationId, consultationData);
+    },
+    finalizeConsultation: async (consultationId: string) => {
+      return apiClient.finalizeConsultation(consultationId);
     },
     deleteConsultation: async (consultationId: string) => {
       return apiClient.deleteConsultation(consultationId);

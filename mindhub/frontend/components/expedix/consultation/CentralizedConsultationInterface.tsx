@@ -1080,16 +1080,42 @@ export default function CentralizedConsultationInterface({
           setShowReceta(false);
         }
 
-        // Restore section modes and alternative data from otros_campos if available
-        if (data.otros_campos) {
-          if (data.otros_campos.sectionModes) setSectionModes(data.otros_campos.sectionModes);
-          if (data.otros_campos.sectionFreeText) setSectionFreeText(data.otros_campos.sectionFreeText);
-          if (data.otros_campos.sectionCanvasData) setSectionCanvasData(data.otros_campos.sectionCanvasData);
-        }
+        // Restore UI state and extended clinical fields from consultation_metadata
+        // (also check top-level otros_campos for backward-compat with old saves)
+        const meta = data.consultation_metadata || {};
+        if (meta.sectionModes) setSectionModes(meta.sectionModes);
+        if (meta.sectionFreeText) setSectionFreeText(meta.sectionFreeText);
+        if (meta.sectionCanvasData) setSectionCanvasData(meta.sectionCanvasData);
+
+        // Restore extended clinical fields — first try top-level column, then fallback to metadata blob
+        const extendedFields = {
+          sintomatologia_actual: data.sintomatologia_actual || meta.sintomatologia_actual,
+          historia_personal: data.historia_personal || meta.historia_personal,
+          antecedentes_psiquiatricos: data.antecedentes_psiquiatricos || meta.antecedentes_psiquiatricos,
+          historia_riesgo: data.historia_riesgo || meta.historia_riesgo,
+          uso_sustancias: data.uso_sustancias || meta.uso_sustancias,
+          antecedentes_medicos: data.antecedentes_medicos || meta.antecedentes_medicos,
+          antecedentes_heredofamiliares: data.antecedentes_heredofamiliares || meta.antecedentes_heredofamiliares,
+          historia_personal_social: data.historia_personal_social || meta.historia_personal_social,
+          plan_manejo: data.plan_manejo || meta.plan_manejo,
+          analisis_conclusiones: data.analisis_conclusiones || meta.analisis_conclusiones,
+          formulacion_caso: data.formulacion_caso || meta.formulacion_caso,
+          estado_inicio: data.estado_inicio || meta.estado_inicio,
+          contenido_sesion: data.contenido_sesion || meta.contenido_sesion,
+          red_apoyo: data.red_apoyo || meta.red_apoyo,
+          intervencion_crisis: data.intervencion_crisis || meta.intervencion_crisis,
+        };
+
         setConsultationData(prev => ({
           ...deepMerge(initFormData, data),
+          ...extendedFields,
+          // Merge saved otros_campos with defaults so nested arrays are never undefined
+          otros_campos: deepMerge(
+            initFormData.otros_campos,
+            data.otros_campos || meta.otros_campos || {}
+          ),
           consultation_type: normalizeConsultationType(data.consultation_type),
-          consultation_date: data.consultation_date ? moment(data.consultation_date).format('YYYY-MM-DD') : new Date().toISOString().split('T')[0],
+          consultation_date: data.consultation_date ? moment.utc(data.consultation_date).format('YYYY-MM-DD') : new Date().toISOString().split('T')[0],
           current_condition: data.current_condition || '',
           diagnosis: data.diagnosis || '',
           diagnoses: data.diagnoses || [],
@@ -1120,6 +1146,63 @@ export default function CentralizedConsultationInterface({
     loadConsultationData(consultation);
   };
 
+  // Build complete save payload with correct field names matching backend
+  const buildSavePayload = (status: string) => {
+    // Extended clinical fields + UI state get stored inside consultation_metadata JSONB.
+    // This avoids issues when the DB doesn't have their dedicated columns yet.
+    const metadataBlob = {
+      ...(consultationData.consultation_metadata || {}),
+      // otros_campos data (estudios_laboratorio, estudios_gabinete, etc.)
+      otros_campos: consultationData.otros_campos,
+      // UI / canvas state
+      sectionModes,
+      sectionFreeText,
+      sectionCanvasData,
+      // Extended clinical fields
+      sintomatologia_actual: consultationData.sintomatologia_actual,
+      historia_personal: consultationData.historia_personal,
+      antecedentes_psiquiatricos: consultationData.antecedentes_psiquiatricos,
+      historia_riesgo: consultationData.historia_riesgo,
+      uso_sustancias: consultationData.uso_sustancias,
+      antecedentes_medicos: consultationData.antecedentes_medicos,
+      antecedentes_heredofamiliares: consultationData.antecedentes_heredofamiliares,
+      historia_personal_social: consultationData.historia_personal_social,
+      plan_manejo: consultationData.plan_manejo,
+      analisis_conclusiones: consultationData.analisis_conclusiones,
+      formulacion_caso: consultationData.formulacion_caso,
+      estado_inicio: consultationData.estado_inicio,
+      contenido_sesion: consultationData.contenido_sesion,
+      red_apoyo: consultationData.red_apoyo,
+      intervencion_crisis: consultationData.intervencion_crisis,
+    };
+
+    // Map ConsultationData frontend fields → DB column names.
+    // Django filters via information_schema so unknown keys are ignored safely.
+    return {
+      patient_id: patient.id,
+      consultation_type: consultationData.consultation_type,
+      consultation_date: consultationData.consultation_date,
+      current_condition: consultationData.current_condition,
+      chief_complaint: consultationData.current_condition,
+      physical_examination: consultationData.physical_examination,
+      diagnosis: consultationData.diagnosis,
+      diagnoses: consultationData.diagnoses,
+      additional_instructions: consultationData.additional_instructions,
+      plan: consultationData.additional_instructions,
+      treatment_plan: consultationData.treatment_plan,
+      vital_signs: consultationData.vital_signs,
+      mental_exam: consultationData.mental_exam,
+      prescriptions: consultationData.prescriptions,
+      indications: consultationData.indications,
+      evaluations: consultationData.evaluations,
+      next_appointment: consultationData.next_appointment,
+      consultation_metadata: metadataBlob,
+      status,
+      is_draft: status !== 'completed',
+      updated_at: new Date().toISOString()
+    };
+  };
+
   // Auto-save function
   const handleAutoSave = useCallback(async () => {
     if (isAutoSaving) return; // Prevent multiple simultaneous auto-saves
@@ -1128,30 +1211,29 @@ export default function CentralizedConsultationInterface({
       if (IdConsultation) {
         setIsAutoSaving(true);
 
-        // Preparar diagnósticos para guardado
-        const primaryDiagnosis = consultationData.diagnoses.find(d => d.isPrimary) || consultationData.diagnoses[0];
-        const diagnosesText = consultationData.diagnoses.length > 0
-          ? consultationData.diagnoses.map(d => {
-            let text = d.code ? `${d.code} - ${d.description}` : d.description;
-            if (d.isPrimary) text = `[PRINCIPAL] ${text}`;
-            if (d.notes) text += ` (${d.notes})`;
-            return text;
-          }).join('\n')
-          : consultationData.diagnosis; // Fallback para compatibilidad
-
         const updateData = {
           patient_id: patient.id,
-          subjective: consultationData.current_condition,
-          objective: `${consultationData.vital_signs.height ? `Talla: ${consultationData.vital_signs.height}cm` : ''} ${consultationData.vital_signs.weight ? `Peso: ${consultationData.vital_signs.weight}kg` : ''} ${consultationData.vital_signs.blood_pressure?.systolic ? `TA: ${consultationData.vital_signs.blood_pressure?.systolic}/${consultationData.vital_signs.blood_pressure?.diastolic}` : ''} ${consultationData.vital_signs.temperature ? `Temp: ${consultationData.vital_signs.temperature}°C` : ''} ${consultationData.vital_signs.heartRate ? `FC: ${consultationData.vital_signs.heartRate}bpm` : ''}`.trim(),
-          assessment: diagnosesText,
-          // Agregar los diagnósticos estructurados como campo adicional
-          diagnoses_structured: consultationData.diagnoses,
+          current_condition: consultationData.current_condition,
+          chief_complaint: consultationData.current_condition,
+          physical_examination: consultationData.physical_examination,
+          diagnoses: consultationData.diagnoses,
+          diagnosis: consultationData.diagnosis,
+          additional_instructions: consultationData.additional_instructions,
           plan: consultationData.additional_instructions || '',
-          status: 'draft', // Auto-saved consultations are drafts
+          vital_signs: consultationData.vital_signs,
+          mental_exam: consultationData.mental_exam,
+          prescriptions: consultationData.prescriptions,
+          consultation_metadata: {
+            ...(consultationData.consultation_metadata || {}),
+            sectionModes,
+            sectionFreeText,
+            sectionCanvasData,
+          },
+          status: 'draft',
+          is_draft: true,
           consultation_type: consultationData.consultation_type
         };
 
-        // await expedixApi.createConsultation(updateData);
         await expedixApi.updateConsultation(IdConsultation, updateData);
         setLastSaved(new Date());
         console.log('✅ Auto-saved consultation data');
@@ -1161,7 +1243,7 @@ export default function CentralizedConsultationInterface({
     } finally {
       setIsAutoSaving(false);
     }
-  }, [consultationData, patient.id, isAutoSaving]);
+  }, [consultationData, sectionModes, sectionFreeText, sectionCanvasData, patient.id, isAutoSaving]);
 
   // Auto-save effect with debounce
   useEffect(() => {
@@ -1180,84 +1262,102 @@ export default function CentralizedConsultationInterface({
     return () => clearTimeout(autoSaveTimeout);
   }, [consultationData]);
 
-  const handleSaveConsultation = async () => {
-    console.log('💾 Saving consultation data...', consultationData);
-    console.log('consultationId', IdConsultation);
+  // Schedule "Próxima Cita" in agenda if date is filled — non-blocking, runs after save
+  const scheduleNextAppointmentIfNeeded = async () => {
+    const { date, time } = consultationData.next_appointment || {};
+    if (!date || !patient?.id) return;
 
-    if (IdConsultation) {
-      // Update existing consultation
-      try {
-        // Formatear examen mental para almacenamiento
-        // const formattedMentalExam = MentalExamFormatter.formatForStorage(consultationData.mental_exam as MentalExamData);
-
-        const updateData = {
-          ...consultationData,
-          otros_campos: {
-            ...(consultationData.otros_campos || {}),
-            sectionModes,
-            sectionFreeText,
-            sectionCanvasData
-          },
-          status: 'completed',
-          updated_at: new Date().toISOString()
-        };
-
-        console.log('💾 Saving consultation with structured mental exam:', updateData);
-
-        await expedixApi.updateConsultation(IdConsultation, updateData);
-
-        // // Refresh consultations list
-        // await loadPatientData();
-
-        // if (onSave) {
-        //   onSave(updateData);
-        // }
-
-        // // Show success message
-        // console.log('✅ Consultation saved successfully with mental exam data');
-
-      } catch (error) {
-        console.error('❌ Error saving consultation:', error);
-      }
-    } else {
-      try {
-        // create new consultation
-
-        // Preparar diagnósticos para guardado
-        const primaryDiagnosis = consultationData.diagnoses.find(d => d.isPrimary) || consultationData.diagnoses[0];
-        const diagnosesText = consultationData.diagnoses.length > 0
-          ? consultationData.diagnoses.map(d => {
-            let text = d.code ? `${d.code} - ${d.description}` : d.description;
-            if (d.isPrimary) text = `[PRINCIPAL] ${text}`;
-            if (d.notes) text += ` (${d.notes})`;
-            return text;
-          }).join('\n')
-          : consultationData.diagnosis;
-
-        const updateData = {
+    try {
+      const headers = await getAuthHeaders();
+      await fetch('/api/expedix/agenda/appointments', {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({
           patient_id: patient.id,
-          subjective: consultationData.current_condition,
-          objective: `${consultationData.vital_signs.height ? `Talla: ${consultationData.vital_signs.height}cm` : ''} ${consultationData.vital_signs.weight ? `Peso: ${consultationData.vital_signs.weight}kg` : ''} ${consultationData.vital_signs.blood_pressure?.systolic ? `TA: ${consultationData.vital_signs.blood_pressure?.systolic}/${consultationData.vital_signs.blood_pressure?.diastolic}` : ''} ${consultationData.vital_signs.temperature ? `Temp: ${consultationData.vital_signs.temperature}°C` : ''} ${consultationData.vital_signs.heartRate ? `FC: ${consultationData.vital_signs.heartRate}bpm` : ''}`.trim(),
-          assessment: diagnosesText,
-          // Agregar los diagnósticos estructurados como campo adicional
-          diagnoses_structured: consultationData.diagnoses,
-          plan: consultationData.additional_instructions || '',
-          status: 'draft', // Auto-saved consultations are drafts
-          consultation_type: consultationData.consultation_type,
-          otros_campos: {
-            ...(consultationData.otros_campos || {}),
-            sectionModes,
-            sectionFreeText,
-            sectionCanvasData
-          }
+          appointment_date: date,
+          appointment_time: time || '09:00',
+          duration: 60,
+          appointment_type: consultationData.consultation_type || 'Consulta',
+          reason: consultationData.current_condition || '',
+          status: 'scheduled',
+        }),
+      });
+      console.log('✅ Próxima cita agendada:', date, time);
+    } catch (err) {
+      console.error('⚠️ Error agendando próxima cita (no crítico):', err);
+    }
+  };
+
+  // Save as draft (without finishing) — also works for brand-new consultations
+  const handleSaveDraft = async () => {
+    try {
+      if (!IdConsultation) {
+        // New consultation — create it with in_progress status
+        const createData = {
+          ...buildSavePayload('in_progress'),
+          patient_id: patient.id,
         };
-
-        await expedixApi.createConsultation(updateData);
-
-      } catch (error) {
-        console.log('error creando new consultation', error);
-
+        const response = await expedixApi.createConsultation(createData);
+        const newId = response?.data?.id ?? null;
+        if (newId) setIdConsultation(newId);
+        setLastSaved(new Date());
+        toast.success('Consulta guardada correctamente');
+      } else {
+        const updateData = buildSavePayload('in_progress');
+        await expedixApi.updateConsultation(IdConsultation, updateData);
+        setLastSaved(new Date());
+        toast.success('Consulta guardada correctamente');
       }
+      // Schedule next appointment in agenda if date was provided
+      await scheduleNextAppointmentIfNeeded();
+    } catch (error) {
+      console.error('❌ Error saving draft:', error);
+      toast.error('Error al guardar la consulta');
+    }
+  };
+
+  // Save and finalize consultation
+  const handleSaveConsultation = async () => {
+    console.log('💾 Saving and finalizing consultation...', IdConsultation);
+
+    try {
+      if (!IdConsultation) {
+        // New consultation — create and finalize in one step
+        const createData = {
+          ...buildSavePayload('completed'),
+          patient_id: patient.id,
+        };
+        const response = await expedixApi.createConsultation(createData);
+        const newId = response?.data?.id ?? null;
+        if (newId) {
+          setIdConsultation(newId);
+          try { await expedixApi.finalizeConsultation(newId); } catch { /* acceptable */ }
+        }
+        toast.success('Consulta creada exitosamente');
+        // Schedule next appointment in agenda if date was provided
+        await scheduleNextAppointmentIfNeeded();
+        return;
+      }
+
+      // 1. Save all data with status completed
+      const updateData = buildSavePayload('completed');
+      await expedixApi.updateConsultation(IdConsultation, updateData);
+
+      // 2. Finalize (ignore if already finalized)
+      try {
+        await expedixApi.finalizeConsultation(IdConsultation);
+      } catch {
+        console.log('Consultation already finalized or finalize failed - data saved');
+      }
+
+      // Schedule next appointment in agenda if date was provided
+      await scheduleNextAppointmentIfNeeded();
+
+      setLastSaved(new Date());
+      toast.success('Consulta finalizada y guardada exitosamente');
+    } catch (error) {
+      console.error('❌ Error saving consultation:', error);
+      toast.error('Error al guardar la consulta');
     }
   };
 
@@ -5199,7 +5299,7 @@ export default function CentralizedConsultationInterface({
                 />
               )}
               {(sectionModes['labResults'] ?? null) === null && (<>
-                {consultationData.otros_campos.estudios_laboratorio.length === 0 ? (
+                {consultationData?.otros_campos?.estudios_laboratorio?.length === 0 ? (
                   <p className="text-sm text-gray-500 italic">Sin resultados registrados.</p>
                 ) : (
                   <div className="overflow-x-auto">
@@ -5792,7 +5892,7 @@ export default function CentralizedConsultationInterface({
               </>)}
             </Card>)}
 
-            <Card className="p-6">
+            {/* <Card className="p-6">
               <div className="p-4">
                 <Button onClick={() => setOpenPad(true)}>Abrir nota a mano</Button>
 
@@ -5816,7 +5916,7 @@ export default function CentralizedConsultationInterface({
                   }}
                 />
               </div>
-            </Card>
+            </Card> */}
 
             {/* Next Appointment */}
             {isVisible('nextAppointment') && (<Card className="p-6">
@@ -5896,12 +5996,15 @@ export default function CentralizedConsultationInterface({
               </>)}
             </Card>)}
 
-            {/* Save Button - Moved to bottom */}
+            {/* Save Buttons - Sticky bottom bar */}
             <div className="mt-8 flex justify-center sticky bottom-0 bg-white pt-4 pb-2 border-t border-gray-200">
-              <div className="flex space-x-4">
+              <div className="flex space-x-4 items-center">
                 <Button variant="outline" onClick={() => setShowPreviewDialog(true)}>
                   <EyeIcon className="h-4 w-4 mr-2" />
                   Vista previa
+                </Button>
+                <Button variant="outline" onClick={handleSaveDraft} className="px-6">
+                  Guardar
                 </Button>
                 <Button variant="primary" onClick={handleSaveConsultation} className="px-8">
                   Guardar y terminar consulta
