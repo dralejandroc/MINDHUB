@@ -642,6 +642,8 @@ export interface ConsultationData {
   otros_campos: OtrosCampos;
   red_apoyo: RedApoyo;
   intervencion_crisis: IntrvencionCrisis;
+  // DB-level metadata blob (stores canvas, section modes, etc.)
+  consultation_metadata?: Record<string, any>;
 }
 
 export interface Consultation {
